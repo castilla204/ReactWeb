@@ -3,12 +3,13 @@ import { useWindowSize } from '../hooks/useWindowSize';
 import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, List, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
-import { useLoadScript } from '@react-google-maps/api';
+// useLoadScript ya no es necesario - MapContainer lo maneja internamente
 import { useServices } from '../hooks/useServices';
 import { useInfiniteServices } from '../hooks/useInfiniteServices';
-import { useMapExperts } from '../hooks/useMapExperts'; // ✅ Mantener para compatibilidad
+// useMapExperts ya no es necesario - MapContainer lo maneja internamente
 import { useMapMarkers } from '../hooks/useMapMarkers'; // ✅ NUEVO: Marcadores ultra ligeros
-import { LocationMap } from './LocationMap';
+import { MapContainer } from './Map/MapContainer';
+import { Service } from '../hooks/useServiceLoader';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
@@ -29,7 +30,7 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import Autocomplete from 'react-google-autocomplete';
 
-const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
+// libraries ya no es necesario - MapContainer lo maneja internamente
 
 // Componente para la card del servicio en el mapa
 interface MapServiceCardProps {
@@ -998,12 +999,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const iconSize = isLargeMobile ? 24 : isMediumMobile ? 20 : 16; // w-6, w-5, w-4
     const countrySelectorMinWidth = isLargeMobile ? 160 : isMediumMobile ? 130 : 100;
     
-    const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
-        libraries
-    });
+    // useLoadScript ya no es necesario - MapContainer lo maneja internamente
     const [error, setError] = useState<string | null>(null);
-    const [map, setMap] = useState<google.maps.Map | null>(null);
+    // map ya no es necesario - MapContainer lo maneja internamente
     // País por defecto: España
     const [selectedCountry, setSelectedCountry] = useState<string>('es');
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
@@ -1039,16 +1037,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [selectedCountry]);
 
-    // Inicializar el mapa con el país por defecto cuando se carga
-    useEffect(() => {
-        if (isLoaded && map && selectedCountry) {
-            const countryCoords = getCountryCoordinates(selectedCountry);
-            if (countryCoords) {
-                map.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
-                map.setZoom(countryCoords.zoom);
-            }
-        }
-    }, [isLoaded, map, selectedCountry]);
+    // El mapa se inicializa automáticamente con MapContainer
    
     // Sincronizar selectedLocation con formData cuando hay coordenadas
     useEffect(() => {
@@ -1142,12 +1131,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         rating: 0 as number, // Mínimo de estrellas (0-5)
     });
    
-    // Estado para bounds del mapa (para carga dinámica)
-    const [mapBounds, setMapBounds] = useState<{
-        northeast: { lat: number; lng: number };
-        southwest: { lat: number; lng: number };
-    } | null>(null);
-    const [mapZoom, setMapZoom] = useState<number>(10);
+    // MapContainer maneja bounds internamente - ya no necesitamos estos estados
    
     // ✅ INFINITE SCROLL: Cargar servicios con paginación infinita
     const {
@@ -1165,47 +1149,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         pageSize: 20, // ✅ Cargar 20 servicios por página
     });
    
-    // ✅ CORREGIDO: Usar useMapExperts con bounds para cargar servicios completos cuando se mueve el mapa
-    // Esto carga tanto marcadores como servicios completos con toda la información
-    const { 
-        experts: mapExperts, 
-        services: servicesFromBounds, 
-        loading: boundsLoading 
-    } = useMapExperts(
-        selectedCategory,
-        serviceTypeId,
-        mapBounds ? {
-            bounds: mapBounds,
-            zoom: mapZoom,
-            limit: 50 // Límite recomendado para bounds (optimizado)
-        } : undefined // Sin bounds = carga inicial
-    );
-    
-    // Handler para cuando cambian los bounds del mapa
-    // ✅ CORREGIDO: Con debouncing mejorado para evitar múltiples llamadas
-    const handleBoundsChange = useCallback((bounds: {
-        northeast: { lat: number; lng: number };
-        southwest: { lat: number; lng: number };
-    }, zoom: number) => {
-        // Actualizar bounds para que useMapExperts cargue servicios del área visible
-        setMapBounds(bounds);
-        setMapZoom(zoom);
-    }, []);
+    // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
    
-    // ✅ CORREGIDO: Combinar servicios: de bounds (cuando se mueve el mapa) o de ubicación (cuando hay locationRange)
-    // Si hay bounds, usar servicios de bounds. Si no, usar servicios de ubicación.
+    // ✅ Combinar servicios: usar servicios de ubicación (useInfiniteServices)
+    // MapContainer maneja la carga dinámica por viewport internamente
     const allServicesCombined = useMemo(() => {
-        if (mapBounds && servicesFromBounds.length > 0) {
-            // Cuando se mueve el mapa, usar servicios de bounds
-            return servicesFromBounds;
-        } else if (formData.latitude && formData.longitude && formData.locationRange) {
-            // Cuando hay ubicación específica, usar servicios de ubicación
-            return allServices;
-        } else {
-            // Carga inicial: usar servicios de ubicación si existen
-            return allServices;
+        let services: typeof allServices = allServices;
+        
+        // ✅ FILTRAR POR CATEGORÍA: Solo servicios de la categoría seleccionada
+        if (selectedCategory > 0) {
+            services = services.filter(s => {
+                const serviceCategoryId = s.categoryId || (s as any).CategoryId;
+                return serviceCategoryId === selectedCategory;
+            });
         }
-    }, [mapBounds, servicesFromBounds, allServices, formData.latitude, formData.longitude, formData.locationRange]);
+        
+        return services;
+    }, [allServices, selectedCategory]);
     
     // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
     const reorderedServices = useMemo(() => {
@@ -1444,14 +1404,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             ...(address && { address }),
             locationName // ✅ NUEVO: Rellenar automáticamente el nombre de ubicación
         }));
-        // Actualizar mapa
-        if (map) {
-            map.panTo(newLocation);
-            const radius = 25; // Fijo a 25km
-            const zoom = getZoomLevel(radius);
-            map.setZoom(zoom);
-        }
-        // El círculo se actualiza automáticamente con el componente Circle de React
+        // El mapa se actualiza automáticamente con MapContainer
     };
     useEffect(() => {
         setFormData(prev => ({
@@ -1460,44 +1413,63 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }));
     }, []);
     useEffect(() => {
+        // Verificar si geolocalización está disponible y permitida
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const currentLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    
-                    // Geocodificar la ubicación actual para mostrar la dirección
-                    if (window.google?.maps?.Geocoder) {
-                        const geocoder = new google.maps.Geocoder();
-                        geocoder.geocode({ location: currentLocation }, (results, status) => {
-                            if (status === 'OK' && results && results[0]) {
-                                updateLocationAndMap(currentLocation, results[0].formatted_address);
-                            } else {
-                                updateLocationAndMap(currentLocation);
-                            }
-                        });
-                    } else {
-                        updateLocationAndMap(currentLocation);
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        // Geocodificar la ubicación actual para mostrar la dirección
+                        if (window.google?.maps?.Geocoder) {
+                            const geocoder = new google.maps.Geocoder();
+                            geocoder.geocode({ location: currentLocation }, (results, status) => {
+                                if (status === 'OK' && results && results[0]) {
+                                    updateLocationAndMap(currentLocation, results[0].formatted_address);
+                                } else {
+                                    updateLocationAndMap(currentLocation);
+                                }
+                            });
+                        } else {
+                            updateLocationAndMap(currentLocation);
+                        }
+                    },
+                    (error) => {
+                        // Manejar errores de geolocalización silenciosamente
+                        // No mostrar errores en consola si está bloqueado por política
+                        if (error.code !== error.PERMISSION_DENIED) {
+                            console.warn('Error de geolocalización:', error.message);
+                        }
+                        setFormData(prev => ({
+                            ...prev,
+                            latitude: defaultCenter.lat.toString(),
+                            longitude: defaultCenter.lng.toString()
+                        }));
+                        // El mapa se actualiza automáticamente con MapContainer
+                    },
+                    {
+                        timeout: 10000,
+                        maximumAge: 300000, // 5 minutos
+                        enableHighAccuracy: false
                     }
-                },
-                () => {
-                    setFormData(prev => ({
-                        ...prev,
-                        latitude: defaultCenter.lat.toString(),
-                        longitude: defaultCenter.lng.toString()
-                    }));
-                    if (map) {
-                        map.panTo(defaultCenter);
-                        const radius = 25; // Fijo a 25km
-                        const zoom = getZoomLevel(radius);
-                        map.setZoom(zoom);
-                    }
+                );
+            } catch (error) {
+                // Capturar errores de permisos antes de que se lancen
+                // Silenciar errores de política de permisos
+                if (error instanceof Error && !error.message.includes('Permissions policy')) {
+                    console.warn('Error al acceder a geolocalización:', error);
                 }
-            );
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: defaultCenter.lat.toString(),
+                    longitude: defaultCenter.lng.toString()
+                }));
+            }
         }
-    }, [map]);
+    }, []);
     // Handler para cuando se selecciona un lugar
     const handlePlaceSelected = (place: any) => {
         if (!place || !place.geometry || !place.geometry.location) {
@@ -1526,14 +1498,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     
         setIsGeocoding(false);
         
-        // Centrar el mapa
-                    setTimeout(() => {
-                        if (map) {
-                            map.panTo(newLocation);
-                const zoom = getZoomLevel(parseInt(formData.locationRange || '25'));
-                map.setZoom(zoom);
-            }
-        }, 200);
+        // El mapa se actualiza automáticamente con MapContainer
     };
 
     // Agregar estilos para las sugerencias de Google Places
@@ -1585,10 +1550,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     }, []);
     // Efecto para asegurar que el mapa se actualice cuando cambie la ubicación
     useEffect(() => {
-        if (map && selectedLocation && formData.latitude && formData.longitude) {
-            map.panTo(selectedLocation);
-        }
-    }, [selectedLocation, map, formData.latitude, formData.longitude]);
+        // El mapa se actualiza automáticamente con MapContainer
+    }, [selectedLocation, formData.latitude, formData.longitude]);
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
         // ✅ Si el drawer está abierto, cerrarlo y marcar como cerrado manualmente
         if (isDrawerOpen && isDrawerVisible) {
@@ -1889,37 +1852,25 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </div>
                         </div>
                         
-                        {loadError ? (
-                        <div className="h-full flex items-center justify-center bg-gray-100">
-                            <div className="text-red-500">Error al cargar el mapa</div>
-                            </div>
-                        ) : (
-                            <>
-                            {/* Map - ocupa todo el espacio restante */}
+                        {/* Map - ocupa todo el espacio restante */}
                                 <div className="flex-1 relative w-full overflow-visible">
-                                    {isLoaded ? (
-                                        <LocationMap
-                                            selectedLocation={selectedLocation}
-                                            mapExperts={mapExperts}
-                                            services={services}
-                                            selectedService={selectedService}
-                                            onMapClick={handleMapClick}
-                                            onMapLoad={(mapInstance) => {
-                                                setMap(mapInstance);
-                                                // Centrar en el país por defecto al cargar
-                                                const countryCoords = getCountryCoordinates(selectedCountry);
-                                                if (countryCoords) {
-                                                    mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
-                                                    mapInstance.setZoom(countryCoords.zoom);
-                                                }
-                                            }}
-                                            onServiceSelect={handleServiceSelect}
-                                            onBoundsChange={handleBoundsChange}
-                                            locationRange={parseInt(formData.locationRange)}
-                                            isMobile={true}
-                                            isLoaded={isLoaded}
-                                        />
-                                    ) : null}
+                                    <MapContainer
+                                        categoryId={selectedCategory}
+                                        serviceTypeId={serviceTypeId}
+                                        initialCenter={selectedLocation || (() => {
+                                            const countryCoords = getCountryCoordinates(selectedCountry);
+                                            return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
+                                        })()}
+                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 12}
+                                        onServiceSelect={(service: Service) => {
+                                            // Convertir Service a formato esperado por handleServiceSelect
+                                            const serviceId = service.id;
+                                            handleServiceSelect(serviceId);
+                                        }}
+                                        selectedServiceId={selectedService}
+                                        isMobile={true}
+                                        style={{ width: '100%', height: '100%' }}
+                                    />
                                 </div>
                                 
                             {/* Floating Button - Siempre visible cuando NO hay card seleccionada */}
@@ -1983,14 +1934,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         </Button>
                                 </div>
                                 )}
-                            </>
-                        )}
                         
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
                 <div className="hidden lg:flex lg:flex-1 relative bg-white" style={{ paddingTop: '80px', paddingLeft: '0px', paddingRight: '32px', paddingBottom: '32px', minWidth: '400px' }}>
-                        {loadError ? (
+                        {false ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
                             </div>
@@ -2006,33 +1955,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 bottom: '32px',
                                 boxShadow: '0 0 0 24px white'
                             }}>
-                                {isLoaded ? (
-                                    <LocationMap
-                                        selectedLocation={selectedLocation}
-                                        mapExperts={mapExperts}
-                                        services={services}
-                                        selectedService={selectedService}
-                                        onMapClick={handleMapClick}
-                                        onMapLoad={async (mapInstance) => {
-                                            setMap(mapInstance);
-                                            // Centrar en el país por defecto al cargar
-                                            const countryCoords = getCountryCoordinates(selectedCountry);
-                                            if (countryCoords) {
-                                                mapInstance.setCenter({ lat: countryCoords.lat, lng: countryCoords.lng });
-                                                mapInstance.setZoom(countryCoords.zoom);
-                                            } else {
-                                        const radius = 25;
-                                        const zoom = getZoomLevel(radius);
-                                            mapInstance.setZoom(zoom);
-                                            }
-                                        }}
-                                        onServiceSelect={handleServiceSelect}
-                                        onBoundsChange={handleBoundsChange}
-                                        locationRange={25}
-                                        isMobile={false}
-                                        isLoaded={isLoaded}
-                                    />
-                                ) : null}
+                                <MapContainer
+                                    categoryId={selectedCategory}
+                                    serviceTypeId={serviceTypeId}
+                                    initialCenter={selectedLocation || (() => {
+                                        const countryCoords = getCountryCoordinates(selectedCountry);
+                                        return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
+                                    })()}
+                                    initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((25 * 1000) / 500)))) : 12}
+                                    onServiceSelect={(service: Service) => {
+                                        // Convertir Service a formato esperado por handleServiceSelect
+                                        const serviceId = service.id;
+                                        handleServiceSelect(serviceId);
+                                    }}
+                                    selectedServiceId={selectedService}
+                                    isMobile={false}
+                                    style={{ width: '100%', height: '100%' }}
+                                />
                                 
                                 {/* Floating Card Desktop - OCULTA EN PC */}
                             </div>

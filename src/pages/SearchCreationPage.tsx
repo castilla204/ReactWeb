@@ -15,10 +15,8 @@ import { Button } from '../components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { mfaService } from '../services/mfaService';
-import { useLoadScript } from '@react-google-maps/api';
-import { LocationMap } from '../components/LocationMap';
-import { useMapExperts } from '../hooks/useMapExperts';
-import { useServices } from '../hooks/useServices';
+import { MapContainer } from '../components/Map/MapContainer';
+import { Service } from '../hooks/useServiceLoader';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
@@ -30,7 +28,7 @@ import logoImg from '../media/logoi.png';
 import { Footer } from '../components/Footer';
 import { MapPageSkeleton } from '../components/ui/map-page-skeleton';
 
-const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
+// Libraries ya no son necesarias - el nuevo MapContainer las maneja internamente
 
 
 interface SearchParameters {
@@ -77,30 +75,13 @@ const SearchCreationPage: React.FC = () => {
     });
     
     // Estado del mapa compartido para pasos 1, 2 y 3
-    const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
-        libraries
-    });
-    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-    const [selectedCountry, setSelectedCountry] = useState<string>('es');
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [selectedCountry, setSelectedCountry] = useState<string>('es');
     const [searchAddress, setSearchAddress] = useState<string>('');
     const searchInputRef = React.useRef<HTMLInputElement>(null);
     const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
-    
-    // Cargar expertos y servicios para el mapa
-    const { experts: mapExperts } = useMapExperts(
-        searchParameters.category ?? null,
-        searchParameters.serviceTypeId ?? null
-    );
-    
-    const { services: mapServices } = useServices({
-        categoryId: searchParameters.category || undefined,
-        serviceTypeId: searchParameters.serviceTypeId || undefined,
-        latitude: searchParameters.latitude || undefined,
-        longitude: searchParameters.longitude || undefined,
-        locationRange: searchParameters.locationRange || 25,
-    });
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
     
     // Inicializar ubicación con coordenadas de searchParameters o país por defecto
     useEffect(() => {
@@ -118,17 +99,7 @@ const SearchCreationPage: React.FC = () => {
         }
     }, [searchParameters.latitude, searchParameters.longitude, selectedCountry]);
     
-    // Actualizar mapa cuando cambia la ubicación
-    useEffect(() => {
-        if (mapInstance && selectedLocation) {
-            mapInstance.panTo(selectedLocation);
-            if (searchParameters.locationRange) {
-                const radius = searchParameters.locationRange;
-                const zoom = Math.min(14, Math.max(4, Math.floor(14 - Math.log2((radius * 1000) / 500))));
-                mapInstance.setZoom(zoom);
-            }
-        }
-    }, [mapInstance, selectedLocation, searchParameters.locationRange]);
+    // El mapa se actualiza automáticamente con el nuevo MapContainer
     
     // Notificar a App.tsx cuando estamos en un formulario (step 1, 2 o 3) para ocultar el header en móvil
     React.useEffect(() => {
@@ -136,6 +107,10 @@ const SearchCreationPage: React.FC = () => {
             sessionStorage.setItem('isInFormStep', 'true');
         } else {
             sessionStorage.removeItem('isInFormStep');
+        }
+        // Resetear isMapLoaded cuando se sale del paso 1
+        if (currentStep !== 1) {
+            setIsMapLoaded(false);
         }
         // Disparar evento para que App.tsx pueda reaccionar
         window.dispatchEvent(new CustomEvent('formStepChanged', { detail: { step: currentStep } }));
@@ -158,15 +133,13 @@ const SearchCreationPage: React.FC = () => {
         if (serviceIdParam && !selectedServiceId) {
             const serviceId = parseInt(serviceIdParam, 10);
             if (!isNaN(serviceId)) {
-                // Primero intentar buscar en mapServices
-                let service = mapServices.find(s => s.id === serviceId);
-                
-                // Si no está en mapServices, buscarlo directamente desde la API
+                // Buscar servicio directamente desde la API
+                let service = null;
                 if (!service) {
                     const loadService = async () => {
                         try {
                             const url = API_CONFIG.endpoints.expert.services.get(serviceId);
-                            const fetchedService = await fetchApi<typeof mapServices[0]>(url);
+                            const fetchedService = await fetchApi<any>(url);
                             if (fetchedService) {
                                 setSelectedServiceId(serviceId);
                                 setExpertProfilePicture(fetchedService.expert?.profilePictureUrl || fetchedService.expert?.profilePicture);
@@ -203,7 +176,7 @@ const SearchCreationPage: React.FC = () => {
                     };
                     loadService();
                 } else {
-                    // Si encontramos el servicio en mapServices, configurarlo
+                    // Configurar el servicio
                     setSelectedServiceId(serviceId);
                     setExpertProfilePicture(service.expert?.profilePictureUrl || service.expert?.profilePicture);
                     setExpertName(service.expert?.user?.name || service.expert?.name);
@@ -255,7 +228,7 @@ const SearchCreationPage: React.FC = () => {
                 setCurrentStep(1);
             }
         }
-    }, [location.search, mapServices, selectedServiceId, fetchApi]);
+    }, [location.search, selectedServiceId, fetchApi]);
 
     const safeCategories = Array.isArray(categories) ? categories : [];
     const [showMoreCategories, setShowMoreCategories] = useState(false);
@@ -546,30 +519,36 @@ const SearchCreationPage: React.FC = () => {
             locationName: address
         }));
         
-        // Actualizar mapa
-        if (mapInstance) {
-            mapInstance.panTo(location);
-            const radius = searchParameters.locationRange || 25;
-            const zoom = Math.min(14, Math.max(4, Math.floor(14 - Math.log2((radius * 1000) / 500))));
-            mapInstance.setZoom(zoom);
-        }
+        // El mapa se actualizará automáticamente con el nuevo MapContainer
         
         setIsGeocoding(false);
     };
     
-    // Función para manejar clic en el mapa
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        if (!e.latLng) return;
-        const location = {
-            lat: e.latLng.lat(),
-            lng: e.latLng.lng()
-        };
-        setSelectedLocation(location);
-        setSearchParameters(prev => ({
-            ...prev,
-            latitude: location.lat.toString(),
-            longitude: location.lng.toString()
-        }));
+    // Función para manejar selección de servicio en el mapa
+    const handleServiceSelect = (service: Service) => {
+        setSelectedService(service);
+        setSelectedServiceId(service.id);
+        // Extraer información del servicio
+        const expert = (service as any).raw?.expert || (service as any).expert || {};
+        setExpertProfilePicture(expert.profilePictureUrl || expert.ProfilePictureUrl);
+        setExpertName(expert.user?.name || expert.User?.Name || service.name);
+        setServicePrice(service.price);
+        setServiceDescription((service as any).raw?.serviceTypeDescription || service.type || '');
+        setServiceImageUrls((service as any).raw?.imageUrls || []);
+        
+        // Actualizar parámetros de búsqueda
+        if ((service as any).raw?.serviceTypeId || (service as any).serviceTypeId) {
+            setSearchParameters(prev => ({ 
+                ...prev, 
+                serviceTypeId: (service as any).raw?.serviceTypeId || (service as any).serviceTypeId 
+            }));
+        }
+        if ((service as any).raw?.categoryId || (service as any).categoryId) {
+            setSearchParameters(prev => ({ 
+                ...prev, 
+                category: (service as any).raw?.categoryId || (service as any).categoryId 
+            }));
+        }
     };
 
     return (
@@ -649,42 +628,18 @@ const SearchCreationPage: React.FC = () => {
                     
                     {/* Right Side - Map (Desktop only, solo en paso 1) */}
                     <div className="hidden lg:flex lg:flex-1 relative bg-gray-100 border-l border-gray-200">
-                            {mapLoadError ? (
-                                <div className="h-full w-full flex items-center justify-center bg-gray-100">
-                                    <div className="text-red-500">Error al cargar el mapa</div>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Map ocupa todo el espacio - La barra de búsqueda está en SearchParameterForm */}
-                                    <div className="absolute inset-0">
-                                        {isMapLoaded && selectedLocation ? (
-                                            <LocationMap
-                                                selectedLocation={selectedLocation}
-                                                mapExperts={mapExperts}
-                                                services={mapServices}
-                                                selectedService={selectedServiceId}
-                                                onMapClick={handleMapClick}
-                                                onMapLoad={(map) => {
-                                                    setMapInstance(map);
-                                                    if (selectedLocation) {
-                                                        map.panTo(selectedLocation);
-                                                        const radius = searchParameters.locationRange || 25;
-                                                        const zoom = Math.min(14, Math.max(4, Math.floor(14 - Math.log2((radius * 1000) / 500))));
-                                                        map.setZoom(zoom);
-                                                    }
-                                                }}
-                                                onServiceSelect={(serviceId) => {
-                                                    // No hacer nada, solo mostrar en el mapa
-                                                }}
-                                                locationRange={searchParameters.locationRange || 25}
-                                                isMobile={false}
-                                                isLoaded={isMapLoaded}
-                                            />
-                                        ) : null}
-                                    </div>
-                        </>
-                    )}
-                        </div>
+                        <MapContainer
+                            categoryId={searchParameters.category ?? null}
+                            serviceTypeId={searchParameters.serviceTypeId ?? null}
+                            initialCenter={selectedLocation || { lat: 40.4168, lng: -3.7038 }}
+                            initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2(((searchParameters.locationRange || 25) * 1000) / 500)))) : 12}
+                            onServiceSelect={handleServiceSelect}
+                            selectedServiceId={selectedServiceId}
+                            isMobile={false}
+                            style={{ width: '100%', height: '100%' }}
+                            onMapLoad={() => setIsMapLoaded(true)}
+                        />
+                    </div>
                 </div>
                 </>
             )}
