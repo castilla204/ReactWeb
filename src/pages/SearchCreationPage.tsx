@@ -631,8 +631,8 @@ const SearchCreationPage: React.FC = () => {
                         <MapContainer
                             categoryId={searchParameters.category ?? null}
                             serviceTypeId={searchParameters.serviceTypeId ?? null}
-                            initialCenter={selectedLocation || { lat: 41.5, lng: -3.7 }}
-                            initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2(((searchParameters.locationRange || 25) * 1000) / 500)))) : 5.5}
+                            initialCenter={selectedLocation || { lat: 42.5, lng: -3.7 }}
+                            initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2(((searchParameters.locationRange || 25) * 1000) / 500)))) : 5}
                             onServiceSelect={handleServiceSelect}
                             selectedServiceId={selectedServiceId}
                             isMobile={false}

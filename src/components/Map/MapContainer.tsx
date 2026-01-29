@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { APIProvider, Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 import { ClusteredMarkers } from './ClusteredMarkers';
@@ -14,199 +14,310 @@ interface MapContainerProps {
   className?: string;
   style?: React.CSSProperties;
   onMapLoad?: () => void;
+  onServicesCountChange?: (count: number) => void; // Callback para notificar cambios en el número de servicios
+  onServicesChange?: (services: Service[]) => void; // Callback para pasar servicios al padre (para favoritos)
+  // Opciones de optimización
+  debounceMs?: number; // Tiempo de debounce (default: 500ms)
+  clusterRadius?: number; // Radio de clustering (default: 75px)
+  maxClusterZoom?: number; // Zoom máximo para clustering (default: 16)
 }
 
 /**
- * Componente principal del mapa con carga dinámica de servicios
- * Implementa clustering, debounce y optimizaciones de rendimiento
- * Similar a Airbnb/Google Maps
+ * Componente principal del mapa optimizado
+ * - Clustering real con Supercluster
+ * - Debounce inteligente
+ * - Gestión limpia de estado
+ * - Sin acumulación de servicios
+ * - Compatible móvil/desktop
  */
 export const MapContainer: React.FC<MapContainerProps> = ({
   categoryId,
   serviceTypeId,
-  initialCenter = { lat: 40.0, lng: -3.0 }, // Centro de España por defecto
-  initialZoom = 5, // Zoom para ver toda España
+  initialCenter = { lat: 40.0, lng: -3.0 },
+  initialZoom = 5, // Zoom 5 para ver toda España
   onServiceSelect,
   selectedServiceId,
   isMobile = false,
   className,
   style,
   onMapLoad,
+  onServicesCountChange,
+  onServicesChange,
+  debounceMs = 500, // 500ms es óptimo según research de Airbnb
+  clusterRadius = 75,
+  maxClusterZoom = 16,
 }) => {
+  // Estado del mapa
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [currentViewport, setCurrentViewport] = useState<ViewportRequest | null>(null);
+
+  // Referencias para debounce y control
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isDraggingRef = useRef(false);
-  const prevBoundsKeyRef = useRef<string>('');
+  const lastBoundsKeyRef = useRef<string>('');
 
-  // Obtener API Key desde variables de entorno o usar la key hardcodeada del proyecto
+  // API Key (usa variable de entorno en producción)
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '__REDACTED_GOOGLE_API_KEY__';
-  
-  // Map ID hardcodeado para Advanced Markers
-  const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'inspecciono-map';
+  // Map ID requerido para AdvancedMarker - usar DEMO_MAP_ID si no está configurado
+  const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 
-  // Cargar servicios según viewport
-  // ✅ Usar useMemo para estabilizar la referencia de services y evitar re-renders innecesarios
+  // Hook de carga de servicios (con todas las optimizaciones)
   const { services, loading, error } = useServiceLoader(
     categoryId,
     serviceTypeId,
     currentViewport,
     {
-      enabled: isMapLoaded,
+      enabled: isMapLoaded && currentViewport !== null,
+      cacheTTL: 5 * 60 * 1000, // 5 minutos
     }
   );
 
-  // ✅ DEDUPLICAR servicios en el nivel del contenedor también
-  // Esto es una capa adicional de protección contra duplicados
-  const uniqueServices = useMemo(() => {
-    console.log(`🔍 MapContainer: Recibidos ${services.length} servicios de useServiceLoader`);
-    const seen = new Map<number, Service>();
-    let duplicatesCount = 0;
-    // Usar Map para mantener el último servicio si hay duplicados
-    services.forEach(service => {
-      if (service && service.id && !isNaN(service.id)) {
-        // Si ya existe, mantener el que tiene mejor información (más campos)
-        const existing = seen.get(service.id);
-        if (!existing || (service.raw && !existing.raw)) {
-          seen.set(service.id, service);
-        } else {
-          duplicatesCount++;
-          console.warn('⚠️ MapContainer: Servicio duplicado detectado, manteniendo el primero:', service.id);
-        }
-      }
-    });
-    const unique = Array.from(seen.values());
-    if (duplicatesCount > 0) {
-      console.log(`⚠️ MapContainer: ${duplicatesCount} servicios duplicados filtrados`);
+  // Notificar cambios en el número de servicios
+  useEffect(() => {
+    if (onServicesCountChange) {
+      onServicesCountChange(services.length);
     }
-    console.log(`✅ MapContainer: Pasando ${unique.length} servicios únicos a ClusteredMarkers`);
-    return unique;
-  }, [services]);
+  }, [services.length, onServicesCountChange]);
+
+  // Notificar cambios en los servicios (para favoritos)
+  useEffect(() => {
+    if (onServicesChange) {
+      onServicesChange(services);
+    }
+  }, [services, onServicesChange]);
 
   // Configuración del mapa según dispositivo
-  const mapOptions = useMemo(() => ({
-    disableDefaultUI: false,
-    zoomControl: !isMobile,
-    mapTypeControl: false,
-    scaleControl: false,
-    streetViewControl: false,
-    rotateControl: false,
-    fullscreenControl: !isMobile,
-    gestureHandling: isMobile ? 'cooperative' : 'greedy',
-    clickableIcons: false,
-    minZoom: 3,
-    maxZoom: 20,
-    styles: [
-      {
-        featureType: 'poi',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }],
+  const mapOptions = useMemo(
+    () => ({
+      disableDefaultUI: false,
+      zoomControl: !isMobile,
+      mapTypeControl: false,
+      scaleControl: false,
+      streetViewControl: false,
+      rotateControl: false,
+      fullscreenControl: !isMobile,
+      gestureHandling: isMobile ? 'cooperative' : 'greedy',
+      clickableIcons: false,
+      minZoom: 3,
+      maxZoom: 20,
+      restriction: {
+        latLngBounds: {
+          north: 85,
+          south: -85,
+          west: -180,
+          east: 180,
+        },
+        strictBounds: false,
       },
-      {
-        featureType: 'transit',
-        elementType: 'labels',
-        stylers: [{ visibility: 'off' }],
-      },
-    ],
-  }), [isMobile]);
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }],
+        },
+        {
+          featureType: 'poi',
+          elementType: 'labels.text',
+          stylers: [{ visibility: 'off' }],
+        },
+        {
+          featureType: 'poi.business',
+          stylers: [{ visibility: 'off' }],
+        },
+        {
+          featureType: 'transit',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }],
+        },
+        {
+          featureType: 'transit.station',
+          stylers: [{ visibility: 'off' }],
+        },
+        {
+          featureType: 'road',
+          elementType: 'labels.icon',
+          stylers: [{ visibility: 'off' }],
+        },
+      ],
+    }),
+    [isMobile]
+  );
 
-  // Componente interno para manejar eventos del mapa
-  const MapEventHandler: React.FC = () => {
-    const map = useMap();
-    
-    // Detectar cuando el mapa está listo
-    useEffect(() => {
-      if (map && !isMapLoaded) {
-        setIsMapLoaded(true);
-        onMapLoad?.();
-      }
-    }, [map, isMapLoaded, onMapLoad]);
+  /**
+   * Genera una clave única para los bounds (evita updates innecesarios)
+   */
+  const getBoundsKey = useCallback((bounds: google.maps.LatLngBounds, zoom: number): string => {
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+    return `${sw.lat().toFixed(4)},${sw.lng().toFixed(4)},${ne.lat().toFixed(4)},${ne.lng().toFixed(4)},${zoom}`;
+  }, []);
 
-    useEffect(() => {
-      if (!map || !isMapLoaded) {
-        // ✅ Asegurar que viewport sea null si el mapa no está listo
-        setCurrentViewport(null);
+  /**
+   * Valida que los bounds sean correctos
+   */
+  const validateBounds = useCallback((bounds: google.maps.LatLngBounds, zoom: number): boolean => {
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+
+    if (
+      !isFinite(ne.lat()) ||
+      !isFinite(ne.lng()) ||
+      !isFinite(sw.lat()) ||
+      !isFinite(sw.lng()) ||
+      !isFinite(zoom)
+    ) {
+      return false;
+    }
+
+    if (Math.abs(ne.lat()) > 90 || Math.abs(sw.lat()) > 90) {
+      return false;
+    }
+
+    if (Math.abs(ne.lng()) > 180 || Math.abs(sw.lng()) > 180) {
+      return false;
+    }
+
+    if (ne.lat() <= sw.lat()) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  /**
+   * Actualiza el viewport (con debounce)
+   */
+  const updateViewport = useCallback(
+    (map: google.maps.Map) => {
+      if (!map || isDraggingRef.current) return;
+
+      const bounds = map.getBounds();
+      const zoom = map.getZoom();
+
+      if (!bounds || !zoom) {
+        console.warn('⚠️ Bounds o zoom no disponibles');
         return;
       }
 
-      const updateViewport = () => {
-        if (!map || isDraggingRef.current) return;
+      // Validar bounds
+      if (!validateBounds(bounds, zoom)) {
+        console.warn('⚠️ Bounds inválidos, ignorando update');
+        return;
+      }
 
-        const bounds = map.getBounds();
-        const zoom = map.getZoom() || initialZoom;
+      // Generar clave para evitar duplicados
+      const boundsKey = getBoundsKey(bounds, zoom);
 
-        // ✅ Asegurarse de que los bounds sean válidos antes de continuar
-        if (!bounds) {
-          // Si no hay bounds, mantener viewport en null
-          setCurrentViewport(null);
-          return;
+      if (lastBoundsKeyRef.current === boundsKey) {
+        console.log('⏭️ Bounds sin cambios, ignorando update');
+        return;
+      }
+
+      lastBoundsKeyRef.current = boundsKey;
+
+      // Limpiar debounce anterior
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Aplicar debounce
+      debounceTimerRef.current = setTimeout(() => {
+        if (isDraggingRef.current) return;
+
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+
+        const viewport: ViewportRequest = {
+          northeast: { lat: ne.lat(), lng: ne.lng() },
+          southwest: { lat: sw.lat(), lng: sw.lng() },
+          zoom,
+        };
+
+        console.log('✅ Actualizando viewport:', {
+          ne: viewport.northeast,
+          sw: viewport.southwest,
+          zoom: viewport.zoom,
+        });
+
+        setCurrentViewport(viewport);
+      }, debounceMs);
+    },
+    [validateBounds, getBoundsKey, debounceMs]
+  );
+
+  /**
+   * Componente interno para manejar eventos del mapa
+   * Debe estar dentro de APIProvider para acceder al contexto
+   */
+  const MapEventHandler: React.FC = () => {
+    const map = useMap();
+
+    // Efecto para marcar el mapa como cargado
+    useEffect(() => {
+      if (map && !isMapLoaded) {
+        console.log('🗺️ Mapa cargado correctamente');
+        setIsMapLoaded(true);
+        onMapLoad?.();
+
+        // Ajustar zoom inicial para ver toda España (zoom 5)
+        const currentZoom = map.getZoom() || initialZoom;
+        if (currentZoom > 5) {
+          map.setZoom(5);
+          map.setCenter({ lat: 40.0, lng: -3.0 });
         }
 
-        const northeast = bounds.getNorthEast();
-        const southwest = bounds.getSouthWest();
+        // Cargar viewport inicial inmediatamente (sin debounce para la carga inicial)
+        const loadInitialViewport = () => {
+          const bounds = map.getBounds();
+          const zoom = map.getZoom() || initialZoom;
 
-        // Validar que los bounds sean válidos (no infinitos ni NaN)
-        if (
-          !northeast || !southwest ||
-          !isFinite(northeast.lat()) || !isFinite(northeast.lng()) ||
-          !isFinite(southwest.lat()) || !isFinite(southwest.lng())
-        ) {
-          return;
-        }
-
-        // Serializar bounds para comparación
-        const boundsKey = `${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${zoom}`;
-
-        // Si los bounds no cambiaron significativamente, no actualizar
-        if (prevBoundsKeyRef.current === boundsKey) {
-          return;
-        }
-
-        prevBoundsKeyRef.current = boundsKey;
-
-        // Limpiar timer anterior
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-
-        // Debounce para evitar múltiples llamadas
-        debounceTimerRef.current = setTimeout(() => {
-          if (!isDraggingRef.current && bounds) {
-            // ✅ VALIDACIÓN FINAL: Verificar que los bounds sean válidos antes de establecer viewport
-            const neLat = northeast.lat();
-            const neLng = northeast.lng();
-            const swLat = southwest.lat();
-            const swLng = southwest.lng();
-            
-            if (isFinite(neLat) && isFinite(neLng) && 
-                isFinite(swLat) && isFinite(swLng) &&
-                isFinite(zoom) &&
-                Math.abs(neLat) <= 90 && Math.abs(swLat) <= 90 &&
-                Math.abs(neLng) <= 180 && Math.abs(swLng) <= 180 &&
-                neLat > swLat) { // Asegurar que northeast está realmente al norte de southwest
-              console.log('✅ MapContainer: Estableciendo viewport válido:', { neLat, neLng, swLat, swLng, zoom });
-              setCurrentViewport({
-                northeast: { lat: neLat, lng: neLng },
-                southwest: { lat: swLat, lng: swLng },
-                zoom,
-              });
-            } else {
-              // Si los bounds no son válidos, mantener viewport en null
-              console.log('⚠️ MapContainer: Bounds inválidos, no actualizar viewport:', { neLat, neLng, swLat, swLng, zoom });
-              setCurrentViewport(null);
-            }
+          if (!bounds || !zoom) {
+            // Si los bounds no están listos, esperar un poco y reintentar
+            setTimeout(loadInitialViewport, 100);
+            return;
           }
-        }, 400);
-      };
 
+          // Validar bounds
+          if (!validateBounds(bounds, zoom)) {
+            setTimeout(loadInitialViewport, 100);
+            return;
+          }
+
+          const ne = bounds.getNorthEast();
+          const sw = bounds.getSouthWest();
+
+          const viewport: ViewportRequest = {
+            northeast: { lat: ne.lat(), lng: ne.lng() },
+            southwest: { lat: sw.lat(), lng: sw.lng() },
+            zoom,
+          };
+
+          console.log('✅ Cargando viewport inicial:', {
+            ne: viewport.northeast,
+            sw: viewport.southwest,
+            zoom: viewport.zoom,
+          });
+
+          setCurrentViewport(viewport);
+          lastBoundsKeyRef.current = getBoundsKey(bounds, zoom);
+        };
+
+        // Esperar a que el mapa esté completamente inicializado
+        setTimeout(loadInitialViewport, 200);
+      }
+    }, [map, isMapLoaded, initialZoom, validateBounds, getBoundsKey]);
+
+    // Efecto para manejar eventos del mapa
+    useEffect(() => {
+      if (!map || !isMapLoaded) return;
+
+      // Handler para cuando el mapa termina de moverse
       const handleIdle = () => {
         isDraggingRef.current = false;
-        // ✅ Solo actualizar viewport si el mapa está completamente cargado y tiene bounds válidos
-        if (map && map.getBounds()) {
-          updateViewport();
-        }
+        updateViewport(map);
       };
 
+      // Handler para cuando empieza a moverse
       const handleDragStart = () => {
         isDraggingRef.current = true;
         if (debounceTimerRef.current) {
@@ -215,24 +326,34 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         }
       };
 
-      // Agregar listeners
+      // Registrar listeners
       const idleListener = map.addListener('idle', handleIdle);
       const dragStartListener = map.addListener('dragstart', handleDragStart);
-      const zoomChangedListener = map.addListener('zoom_changed', handleIdle);
+      const zoomChangedListener = map.addListener('zoom_changed', () => {
+        // Solo actualizar en idle, no en cada cambio de zoom
+      });
 
-      // NO hacer carga inicial automática - solo cargar cuando el usuario mueva el mapa
-      // Esto evita cargar todos los servicios al inicio
+      console.log('👂 Event listeners registrados');
+
+      // Cargar viewport inicial inmediatamente cuando se registran los listeners
+      // Esto asegura que se carguen servicios al inicio
+      setTimeout(() => {
+        handleIdle();
+      }, 300);
 
       // Cleanup
       return () => {
         google.maps.event.removeListener(idleListener);
         google.maps.event.removeListener(dragStartListener);
         google.maps.event.removeListener(zoomChangedListener);
+
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
+
+        console.log('🧹 Event listeners removidos');
       };
-    }, [map, isMapLoaded, initialZoom]);
+    }, [map, isMapLoaded, updateViewport]);
 
     return null;
   };
@@ -259,82 +380,120 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           fullscreenControl={mapOptions.fullscreenControl}
           gestureHandling={mapOptions.gestureHandling}
           clickableIcons={mapOptions.clickableIcons}
+          minZoom={mapOptions.minZoom}
+          maxZoom={mapOptions.maxZoom}
+          restriction={mapOptions.restriction}
           styles={mapOptions.styles}
           style={{ width: '100%', height: '100%' }}
         >
-              <MapEventHandler />
-              {isMapLoaded && (
-                <ClusteredMarkers
-                  services={uniqueServices}
-                  selectedServiceId={selectedServiceId}
-                  onServiceClick={onServiceSelect}
-                />
-              )}
+          <MapEventHandler />
+
+          {/* Renderizar marcadores solo cuando el mapa esté cargado */}
+          {isMapLoaded && services.length > 0 && (
+            <ClusteredMarkers
+              services={services}
+              selectedServiceId={selectedServiceId}
+              onServiceClick={onServiceSelect}
+              clusterRadius={clusterRadius}
+              maxZoom={maxClusterZoom}
+            />
+          )}
         </GoogleMap>
 
-        {/* Loading overlay */}
+        {/* Indicador de carga */}
         {loading && (
           <div
             style={{
               position: 'absolute',
-              top: '10px',
+              top: '16px',
               left: '50%',
               transform: 'translateX(-50%)',
               background: 'rgba(255, 255, 255, 0.95)',
-              padding: '8px 16px',
-              borderRadius: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              fontSize: '14px',
-              fontWeight: '500',
+              padding: isMobile ? '8px 12px' : '10px 18px',
+              borderRadius: '24px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              fontSize: isMobile ? '12px' : '14px',
+              fontWeight: '600',
               zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: isMobile ? '6px' : '10px',
+              whiteSpace: 'nowrap',
+              fontFamily:
+                '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, sans-serif',
             }}
           >
             <div
               style={{
-                width: '16px',
-                height: '16px',
-                border: '2px solid #e5e5e5',
+                width: isMobile ? '14px' : '18px',
+                height: isMobile ? '14px' : '18px',
+                border: '2.5px solid #e5e5e5',
                 borderTopColor: '#FF385C',
                 borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
+                animation: 'spin 0.7s linear infinite',
+                flexShrink: 0,
               }}
             />
-            Cargando servicios...
+            <span>Cargando servicios...</span>
           </div>
         )}
 
-        {/* Error overlay */}
+        {/* Indicador de error */}
         {error && (
           <div
             style={{
               position: 'absolute',
-              top: '10px',
+              top: '16px',
               left: '50%',
               transform: 'translateX(-50%)',
               background: '#ff4444',
               color: '#ffffff',
-              padding: '8px 16px',
-              borderRadius: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              padding: '10px 18px',
+              borderRadius: '24px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
               fontSize: '14px',
-              fontWeight: '500',
+              fontWeight: '600',
               zIndex: 1000,
+              fontFamily:
+                '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, sans-serif',
             }}
           >
-            {error}
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Contador de servicios visible (opcional, útil para debug) */}
+        {import.meta.env.DEV && isMapLoaded && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '16px',
+              left: '16px',
+              background: 'rgba(0, 0, 0, 0.7)',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: '600',
+              zIndex: 1000,
+              fontFamily: 'monospace',
+            }}
+          >
+            {services.length} servicios cargados
           </div>
         )}
       </APIProvider>
 
-      {/* CSS para spinner */}
+      {/* Estilos de animación */}
       <style>{`
         @keyframes spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </div>
   );
 };
+
+export default React.memo(MapContainer);

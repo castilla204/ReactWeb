@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, List, ChevronUp } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
@@ -57,14 +57,18 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
     
-    // Verificar favorito si no se pasó estado inicial
-    const { data: favoriteCheck } = checkFavorite(serviceId);
+    // ✅ OPTIMIZADO: Solo verificar favorito individual si no viene en initialIsFavorite
+    // Esto evita llamadas duplicadas ya que checkMultipleFavorites se ejecuta en el padre
+    const { data: favoriteCheck } = checkFavorite(serviceId, {
+        enabled: initialIsFavorite === undefined && isAuthenticated, // Solo si no viene inicial
+    });
     
     useEffect(() => {
-        if (favoriteCheck?.data?.isFavorite !== undefined) {
-            setIsFavorite(favoriteCheck.data.isFavorite);
-        } else if (initialIsFavorite !== undefined) {
+        // Priorizar initialIsFavorite (viene de checkMultipleFavorites)
+        if (initialIsFavorite !== undefined) {
             setIsFavorite(initialIsFavorite);
+        } else if (favoriteCheck?.data?.isFavorite !== undefined) {
+            setIsFavorite(favoriteCheck.data.isFavorite);
         }
     }, [favoriteCheck, initialIsFavorite]);
     
@@ -1058,6 +1062,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // Estados para servicios
     const [selectedService, setSelectedService] = useState<number | null>(null);
+    // Estado para el número real de servicios del mapa
+    const [mapServicesCount, setMapServicesCount] = useState<number>(0);
+    // Estado para servicios del mapa (para verificar favoritos)
+    const [mapServices, setMapServices] = useState<Service[]>([]);
     // Estado para prevenir clics accidentales en la card móvil justo después de abrirse
     const [cardJustOpened, setCardJustOpened] = useState(false);
     const cardOpenTimeRef = useRef<number>(0);
@@ -1133,7 +1141,31 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     // MapContainer maneja bounds internamente - ya no necesitamos estos estados
    
-    // ✅ INFINITE SCROLL: Cargar servicios con paginación infinita
+    // ✅ OPTIMIZADO: Debounce de parámetros para evitar llamadas excesivas al cambiar filtros
+    const [debouncedParams, setDebouncedParams] = useState({
+        categoryId: selectedCategory || undefined,
+        serviceTypeId: serviceTypeId || undefined,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+        locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
+    });
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedParams({
+                categoryId: selectedCategory || undefined,
+                serviceTypeId: serviceTypeId || undefined,
+                latitude: formData.latitude || undefined,
+                longitude: formData.longitude || undefined,
+                locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
+            });
+        }, 300); // Debounce de 300ms para cambios de filtros
+
+        return () => clearTimeout(timer);
+    }, [selectedCategory, serviceTypeId, formData.latitude, formData.longitude, formData.locationRange]);
+   
+    // ✅ OPTIMIZADO: Lazy loading - Solo cargar servicios cuando el drawer esté abierto
+    // Esto evita llamadas innecesarias cuando el usuario solo está viendo el mapa
     const {
         services: allServices,
         isLoading: isLoadingServices,
@@ -1141,12 +1173,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         hasNextPage,
         fetchNextPage,
     } = useInfiniteServices({
-        categoryId: selectedCategory || undefined,
-        serviceTypeId: serviceTypeId || undefined,
-        latitude: formData.latitude || undefined,
-        longitude: formData.longitude || undefined,
-        locationRange: formData.locationRange ? parseInt(formData.locationRange) : undefined,
+        categoryId: debouncedParams.categoryId,
+        serviceTypeId: debouncedParams.serviceTypeId,
+        latitude: debouncedParams.latitude,
+        longitude: debouncedParams.longitude,
+        locationRange: debouncedParams.locationRange,
         pageSize: 20, // ✅ Cargar 20 servicios por página
+        enabled: (isDrawerOpen || isDrawerVisible) && !!(debouncedParams.categoryId && debouncedParams.serviceTypeId && debouncedParams.latitude && debouncedParams.longitude && debouncedParams.locationRange), // ✅ Solo cargar cuando el drawer esté abierto Y haya parámetros válidos
     });
    
     // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
@@ -1206,11 +1239,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return true;
     });
     
-    // Verificar favoritos de todos los servicios de una vez (check-multiple) - para el drawer
+    // ✅ OPTIMIZADO: Verificar favoritos de servicios del mapa y del drawer de una vez
     const { isAuthenticated } = useAuth();
     const { checkMultipleFavorites } = useServiceFavorites();
-    const serviceIds = useMemo(() => services.map(s => s.id || s.Id), [services]);
-    const { data: favoritesData } = checkMultipleFavorites(serviceIds);
+    
+    // Combinar IDs de servicios del mapa y del drawer
+    const allServiceIds = useMemo(() => {
+        const drawerIds = services.map(s => s.id || (s as any).Id).filter(Boolean);
+        const mapIds = mapServices.map(s => s.id).filter(Boolean);
+        // Combinar y deduplicar
+        const combined = [...new Set([...drawerIds, ...mapIds])];
+        return combined;
+    }, [services, mapServices]);
+    
+    // Una sola llamada para todos los servicios (mapa + drawer)
+    const { data: favoritesData } = checkMultipleFavorites(allServiceIds);
     const favoritesMap = favoritesData?.data || {};
     
     // ✅ INFINITE SCROLL: IntersectionObserver para cargar más servicios
@@ -1748,6 +1791,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     service={service}
                                                     isSelected={isSelected}
                                                     onSelect={handleServiceSelect}
+                                                    initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                                 />
                                             </div>
                                         );
@@ -1859,9 +1903,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         serviceTypeId={serviceTypeId}
                                         initialCenter={selectedLocation || (() => {
                                             const countryCoords = getCountryCoordinates(selectedCountry);
-                                            return countryCoords ? { lat: 41.5, lng: -3.7 } : { lat: 41.5, lng: -3.7 };
+                                            return countryCoords ? { lat: 42.5, lng: -3.7 } : { lat: 42.5, lng: -3.7 };
                                         })()}
-                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5.5}
+                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5}
                                         onServiceSelect={(service: Service) => {
                                             // Convertir Service a formato esperado por handleServiceSelect
                                             const serviceId = service.id;
@@ -1870,6 +1914,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         selectedServiceId={selectedService}
                                         isMobile={true}
                                         style={{ width: '100%', height: '100%' }}
+                                        onServicesCountChange={setMapServicesCount}
+                                        onServicesChange={setMapServices}
                                     />
                                 </div>
                                 
@@ -1892,44 +1938,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 }
                                             }}
                                             size="lg"
-                                            className="shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-0 h-14 px-8 text-base rounded-full font-semibold transition-all duration-200 pointer-events-auto bg-[#222222] text-white hover:bg-[#000000] active:bg-[#000000] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:scale-[1.02] active:scale-[0.98]"
+                                            className="shadow-[0_2px_8px_rgba(0,0,0,0.1)] border border-gray-200 h-12 px-6 text-sm rounded-full font-medium transition-all duration-200 pointer-events-auto bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 hover:shadow-[0_2px_12px_rgba(0,0,0,0.15)]"
                                             disabled={false}
                                             style={{
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                 letterSpacing: '-0.01em',
                                             }}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className="relative flex-shrink-0">
-                                                    <List className="w-5 h-5 text-white" strokeWidth={2.5} />
-                                                    {allServicesCombined.length > 0 && (
-                                                        <div 
-                                                            className="absolute -top-1 -right-1 bg-white rounded-full flex items-center justify-center shadow-sm z-10"
-                                                            style={{
-                                                                minWidth: allServicesCombined.length > 9 ? '20px' : '18px',
-                                                                height: '18px',
-                                                                paddingLeft: '4px',
-                                                                paddingRight: '4px',
-                                                            }}
-                                                        >
-                                                            <span 
-                                                                className="text-[10px] font-bold text-[#222222] leading-none whitespace-nowrap"
-                                                                style={{
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                {allServicesCombined.length > 99 ? '99+' : allServicesCombined.length}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div className="flex items-center gap-2">
                                                 <span>
-                                                    {allServicesCombined.length > 0 
-                                                        ? `Ver ${allServicesCombined.length} ${allServicesCombined.length === 1 ? 'resultado' : 'resultados'}`
+                                                    {mapServicesCount > 0 
+                                                        ? `Ver ${mapServicesCount} ${mapServicesCount === 1 ? 'resultado' : 'resultados'}`
                                                         : 'Ver resultados'
                                                     }
                                                 </span>
-                                                <ChevronUp className="w-4 h-4 text-white/80" strokeWidth={2.5} />
+                                                <ChevronUp className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
                                             </div>
                                         </Button>
                                 </div>

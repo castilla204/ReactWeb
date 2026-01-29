@@ -89,13 +89,13 @@ export const useServiceFavorites = () => {
     });
 
     // Verificar si un servicio es favorito
-    const checkFavorite = (searchServiceId: number) => {
+    const checkFavorite = (searchServiceId: number, options?: { enabled?: boolean }) => {
         return useQuery({
             queryKey: ['favorite', searchServiceId],
             queryFn: async (): Promise<CheckFavoriteResponse> => {
                 return get<CheckFavoriteResponse>(API_CONFIG.endpoints.favorites.check(searchServiceId));
             },
-            enabled: isAuthenticated && !!searchServiceId,
+            enabled: (options?.enabled !== false) && isAuthenticated && !!searchServiceId,
             staleTime: 30000, // 30 segundos
         });
     };

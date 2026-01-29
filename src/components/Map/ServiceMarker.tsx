@@ -1,5 +1,5 @@
-import React from 'react';
-import { AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import React, { useState } from 'react';
+import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import { Service } from '../../hooks/useServiceLoader';
 
 interface ServiceMarkerProps {
@@ -9,41 +9,59 @@ interface ServiceMarkerProps {
 }
 
 /**
- * Marcador individual de servicio estilo Airbnb
- * Muestra el precio en un badge circular
+ * Componente de marcador individual de servicio
+ * Estilo Airbnb: precio en etiqueta redondeada
+ * Con hover y animaciones suaves
  */
 export const ServiceMarker: React.FC<ServiceMarkerProps> = ({
   service,
   isSelected = false,
   onClick,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const priceText = service.price > 0 ? `€${Math.round(service.price)}` : 'Consultar';
+
+  // Colores según estado
+  const backgroundColor = isSelected ? '#000000' : isHovered ? '#f7f7f7' : '#ffffff';
+  const textColor = isSelected ? '#ffffff' : 'rgb(34, 34, 34)';
+  const scale = isSelected ? 1.1 : isHovered ? 1.05 : 1;
 
   return (
     <AdvancedMarker
       position={{ lat: service.lat, lng: service.lng }}
       onClick={() => onClick?.(service)}
-      zIndex={isSelected ? 1000 : 100}
+      zIndex={isSelected ? 1000 : isHovered ? 900 : 100}
     >
       <div
         style={{
-          background: isSelected ? '#000000' : '#ffffff',
-          color: isSelected ? '#ffffff' : 'rgb(34, 34, 34)',
-          padding: '4px 12px',
+          background: backgroundColor,
+          color: textColor,
+          padding: '6px 14px',
           borderRadius: '20px',
           fontSize: '14px',
           fontWeight: '700',
-          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-          border: isSelected ? 'none' : '1px solid #e5e5e5',
+          fontFamily:
+            '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+          boxShadow: isSelected
+            ? '0 4px 16px rgba(0,0,0,0.4)'
+            : isHovered
+            ? '0 3px 10px rgba(0,0,0,0.3)'
+            : '0 2px 6px rgba(0,0,0,0.25)',
+          border: isSelected ? 'none' : '1.5px solid #e5e5e5',
           whiteSpace: 'nowrap',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: `scale(${scale})`,
+          userSelect: 'none',
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {priceText}
       </div>
     </AdvancedMarker>
   );
 };
+
+export default React.memo(ServiceMarker);
