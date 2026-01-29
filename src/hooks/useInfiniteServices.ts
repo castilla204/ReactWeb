@@ -13,6 +13,7 @@ interface UseInfiniteServicesProps {
     longitude?: string;
     locationRange?: number;
     pageSize?: number;
+    enabled?: boolean; // Nueva opción para controlar si se ejecuta la query
 }
 
 interface PaginatedResponse {
@@ -34,6 +35,7 @@ export function useInfiniteServices({
     longitude,
     locationRange,
     pageSize = 20,
+    enabled = true, // Por defecto habilitado para mantener compatibilidad
 }: UseInfiniteServicesProps = {}) {
     const { signOut } = useAuth();
     const { fetchApi } = useApi();
@@ -182,7 +184,7 @@ export function useInfiniteServices({
                 },
             } as PaginatedResponse;
         },
-        enabled: !!(categoryId && categoryId > 0 && serviceTypeId && serviceTypeId > 0 && latitude && longitude && locationRange && locationRange > 0),
+        enabled: enabled && !!(categoryId && categoryId > 0 && serviceTypeId && serviceTypeId > 0 && latitude && longitude && locationRange && locationRange > 0),
         getNextPageParam: (lastPage) => {
             if (lastPage.pagination?.hasNextPage) {
                 return (lastPage.pagination.page || 1) + 1;

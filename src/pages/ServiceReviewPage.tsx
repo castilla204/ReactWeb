@@ -30,7 +30,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import { useServices, Service } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
-import { Dialog, DialogContent } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../lib/toast';
@@ -97,7 +97,10 @@ export function ServiceReviewPage({
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [mobileImageIndex, setMobileImageIndex] = useState(0);
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
     const [showPreHireChat, setShowPreHireChat] = useState(false);
@@ -624,6 +627,35 @@ export function ServiceReviewPage({
         }
     };
 
+    // Handlers para swipe
+    const handleTouchStart = (e: React.TouchEvent) => {
+        touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        touchEndX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current) return;
+        
+        const distance = touchStartX.current - touchEndX.current;
+        const minSwipeDistance = 50;
+
+        if (Math.abs(distance) > minSwipeDistance) {
+            if (distance > 0) {
+                // Swipe izquierda - siguiente
+                handleLightboxNavigation('next');
+            } else {
+                // Swipe derecha - anterior
+                handleLightboxNavigation('prev');
+            }
+        }
+
+        touchStartX.current = null;
+        touchEndX.current = null;
+    };
+
     // Funciones para manejar el lightbox de imágenes de reseñas
     const handleReviewLightboxNavigation = (reviewId: number, direction: 'prev' | 'next', totalImages: number) => {
         setReviewLightboxIndex(prev => {
@@ -915,6 +947,11 @@ export function ServiceReviewPage({
                                     type="button"
                                     aria-label={`${finalExpertName} es revisor verificado de inspecciono.com. Obtén más información sobre ${finalExpertName}.`}
                                     className="relative w-full h-full border-none bg-transparent p-0 cursor-pointer"
+                                    onClick={() => {
+                                        if (finalExpertPicture) {
+                                            setIsExpertPhotoOpen(true);
+                                        }
+                                    }}
                                 >
                                     <Avatar className="w-10 h-10 flex-shrink-0 border-0" style={{ height: '40px', width: '40px', borderRadius: '50%' }}>
                                 <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
@@ -2516,6 +2553,11 @@ export function ServiceReviewPage({
                                             type="button"
                                             aria-label={`${finalExpertName} es revisor verificado de inspecciono.com. Obtén más información sobre ${finalExpertName}.`}
                                             className="relative w-full h-full border-none bg-transparent p-0 cursor-pointer"
+                                            onClick={() => {
+                                                if (finalExpertPicture) {
+                                                    setIsExpertPhotoOpen(true);
+                                                }
+                                            }}
                                         >
                                             <Avatar className="w-10 h-10 flex-shrink-0 border-0" style={{ height: '40px', width: '40px', borderRadius: '50%' }}>
                                                 <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
@@ -2886,39 +2928,36 @@ export function ServiceReviewPage({
             {/* Lightbox */}
             <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
                 <DialogContent 
-                    className="max-w-7xl w-full p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
-                    overlayClassName="bg-black/20"
+                    className="max-w-full w-full h-full p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
+                    overlayClassName="bg-black/80"
+                    hideCloseButton={true}
+                    onPointerDownOutside={(e) => {
+                        // Permitir cerrar al hacer clic fuera
+                        setIsLightboxOpen(false);
+                    }}
+                    onEscapeKeyDown={() => setIsLightboxOpen(false)}
                 >
-                    <div className="relative h-[90vh] max-h-[90vh]">
-                        <button
-                            onClick={() => setIsLightboxOpen(false)}
-                            className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
+                    <DialogTitle className="sr-only">Foto {lightboxIndex + 1} de {validImages.length} del servicio</DialogTitle>
+                    <DialogDescription className="sr-only">Imagen ampliada del servicio</DialogDescription>
+                    <div 
+                        className="relative w-full h-full flex items-center justify-center pointer-events-auto"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onClick={(e) => {
+                            // Cerrar si se hace clic fuera de la imagen
+                            if (e.target === e.currentTarget) {
+                                setIsLightboxOpen(false);
+                            }
+                        }}
+                    >
+                        <div 
+                            className="w-full h-full flex items-center justify-center"
                         >
-                            <X className="w-5 h-5 text-gray-700" />
-                        </button>
-                        
-                        {validImages.length > 1 && (
-                            <>
-                                <button
-                                    onClick={() => handleLightboxNavigation('prev')}
-                                    className="absolute left-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
-                                >
-                                    <ChevronLeft className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
-                                </button>
-                                <button
-                                    onClick={() => handleLightboxNavigation('next')}
-                                    className="absolute right-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
-                                >
-                                    <ChevronRight className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
-                                </button>
-                            </>
-                        )}
-
-                        <div className="h-full flex items-center justify-center p-8">
                             {validImages[lightboxIndex] ? (
                                 <>
                                     {loadingImages.has(validImages[lightboxIndex]) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
                                             <div className="w-12 h-12 border-3 border-white/50 border-t-white rounded-full animate-spin"></div>
                                         </div>
                                     )}
@@ -2926,12 +2965,13 @@ export function ServiceReviewPage({
                                         key={lightboxIndex}
                                         src={validImages[lightboxIndex]}
                                         alt={`Foto ${lightboxIndex + 1} del servicio`}
-                                        className={`max-w-full max-h-full object-contain transition-all duration-300 ease-in-out ${
+                                        className={`w-full h-full object-contain transition-all duration-300 ease-in-out ${
                                             loadingImages.has(validImages[lightboxIndex]) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                                         }`}
                                         onError={() => handleImageError(validImages[lightboxIndex])}
                                         onLoad={() => handleImageLoad(validImages[lightboxIndex])}
                                         onLoadStart={() => handleImageLoadStart(validImages[lightboxIndex])}
+                                        onClick={(e) => e.stopPropagation()}
                                     />
                                     {failedImages.has(validImages[lightboxIndex]) && (
                                         <div className="text-center text-white">
@@ -3172,6 +3212,32 @@ export function ServiceReviewPage({
                 </DialogContent>
             </Dialog>
         </div>
+        
+        {/* Modal para ampliar foto del experto */}
+        {finalExpertPicture && (
+            <Dialog open={isExpertPhotoOpen} onOpenChange={setIsExpertPhotoOpen}>
+                <DialogContent className="max-w-2xl w-full p-0 bg-transparent border-none">
+                    <DialogTitle className="sr-only">Foto de perfil de {finalExpertName}</DialogTitle>
+                    <DialogDescription className="sr-only">Imagen ampliada del perfil del experto</DialogDescription>
+                    <div 
+                        className="relative w-full h-full flex items-center justify-center p-8 cursor-pointer"
+                        onClick={() => setIsExpertPhotoOpen(false)}
+                    >
+                        <div 
+                            className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border-4 border-white shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <img
+                                src={finalExpertPicture}
+                                alt={finalExpertName}
+                                className="w-full h-full object-cover"
+                                style={{ borderRadius: '50%' }}
+                            />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        )}
         </>
     );
 }
