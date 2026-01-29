@@ -1859,9 +1859,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         serviceTypeId={serviceTypeId}
                                         initialCenter={selectedLocation || (() => {
                                             const countryCoords = getCountryCoordinates(selectedCountry);
-                                            return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
+                                            return countryCoords ? { lat: 41.5, lng: -3.7 } : { lat: 41.5, lng: -3.7 };
                                         })()}
-                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5}
+                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5.5}
                                         onServiceSelect={(service: Service) => {
                                             // Convertir Service a formato esperado por handleServiceSelect
                                             const serviceId = service.id;
