@@ -831,7 +831,7 @@ export function ServiceReviewPage({
                                     padding: 0,
                                 }}
                             >
-                                {serviceTypeName} <span className="underline decoration-gray-300 underline-offset-2">por {finalExpertName}</span>
+                                {serviceTypeName} por <span style={{ textDecoration: 'underline', textDecorationColor: 'rgb(209, 213, 219)', textUnderlineOffset: '3px' }}>{finalExpertName}</span>
                             </h1>
                             
                             {/* Ubicación y tipo centrados */}
@@ -1227,157 +1227,269 @@ export function ServiceReviewPage({
                         {/* Contenido del tab "¿Cómo funciona?" */}
                         {activeTab === 'how' && (
                             <div className="pt-6 px-5">
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     {/* Paso 1 */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
-                                                <Shield className="w-6 h-6 text-white" />
-                                            </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: '#E61E4D',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                1.
+                                            </span>
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                Pago seguro
+                                            </h4>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-semibold text-gray-500">Paso 1</span>
-                                                <h4 className="text-base font-semibold text-gray-900 m-0">
-                                                    Pago seguro
-                                                </h4>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                                Realiza el pago y tu dinero queda protegido en custodia. Se abrirá automáticamente un chat con el experto.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Línea conectora */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0 w-12 flex justify-center">
-                                            <div className="w-0.5 h-6 bg-gray-200"></div>
-                                        </div>
-                                        <div className="flex-1"></div>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                paddingLeft: '20px',
+                                            }}
+                                        >
+                                            Realiza el pago y tu dinero queda protegido en custodia. Se abrirá automáticamente un chat con el experto.
+                                        </p>
                                     </div>
 
                                     {/* Paso 2 */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
-                                                <Calendar className="w-6 h-6 text-white" />
-                                            </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: '#E61E4D',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                2.
+                                            </span>
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                Propón una cita
+                                            </h4>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-semibold text-gray-500">Paso 2</span>
-                                                <h4 className="text-base font-semibold text-gray-900 m-0">
-                                                    Propón una cita
-                                                </h4>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed m-0 mb-2">
-                                                Propón fecha, hora y ubicación a través del chat. Debe cumplir:
-                                            </p>
-                                            <ul className="text-sm text-gray-600 space-y-1 m-0 pl-4 list-disc">
-                                                <li>Mínimo 24h de antelación</li>
-                                                <li>Dentro del horario del experto</li>
-                                                <li>Ubicación dentro del rango de cobertura</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-
-                                    {/* Línea conectora */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0 w-12 flex justify-center">
-                                            <div className="w-0.5 h-6 bg-gray-200"></div>
-                                        </div>
-                                        <div className="flex-1"></div>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                marginBottom: '8px',
+                                                paddingLeft: '20px',
+                                            }}
+                                        >
+                                            Propón fecha, hora y ubicación a través del chat. Debe cumplir:
+                                        </p>
+                                        <ul 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                paddingLeft: '40px',
+                                                listStyleType: 'disc',
+                                            }}
+                                        >
+                                            <li style={{ marginBottom: '4px' }}>Mínimo 24h de antelación</li>
+                                            <li style={{ marginBottom: '4px' }}>Dentro del horario del experto</li>
+                                            <li>Ubicación dentro del rango de cobertura</li>
+                                        </ul>
                                     </div>
 
                                     {/* Paso 3 */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
-                                                <CheckCircle className="w-6 h-6 text-white" />
-                                            </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: '#E61E4D',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                3.
+                                            </span>
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                Confirmación
+                                            </h4>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-semibold text-gray-500">Paso 3</span>
-                                                <h4 className="text-base font-semibold text-gray-900 m-0">
-                                                    Confirmación
-                                                </h4>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                                El experto acepta o rechaza la cita. Si la rechaza, se te devuelve el dinero automáticamente.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Línea conectora */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0 w-12 flex justify-center">
-                                            <div className="w-0.5 h-6 bg-gray-200"></div>
-                                        </div>
-                                        <div className="flex-1"></div>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                paddingLeft: '20px',
+                                            }}
+                                        >
+                                            El experto acepta o rechaza la cita. Si la rechaza, se te devuelve el dinero automáticamente.
+                                        </p>
                                     </div>
 
                                     {/* Paso 4 */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
-                                                <Zap className="w-6 h-6 text-white" />
-                                            </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: '#E61E4D',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                4.
+                                            </span>
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                Realización del servicio
+                                            </h4>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-semibold text-gray-500">Paso 4</span>
-                                                <h4 className="text-base font-semibold text-gray-900 m-0">
-                                                    Realización del servicio
-                                                </h4>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                                El experto realiza la inspección en la fecha y lugar acordados. Tu dinero sigue protegido.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Línea conectora */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0 w-12 flex justify-center">
-                                            <div className="w-0.5 h-6 bg-gray-200"></div>
-                                        </div>
-                                        <div className="flex-1"></div>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                paddingLeft: '20px',
+                                            }}
+                                        >
+                                            El experto realiza la inspección en la fecha y lugar acordados. Tu dinero sigue protegido.
+                                        </p>
                                     </div>
 
                                     {/* Paso 5 */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
-                                                <Award className="w-6 h-6 text-white" />
-                                            </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span 
+                                                style={{
+                                                    fontSize: '14px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: '#E61E4D',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                }}
+                                            >
+                                                5.
+                                            </span>
+                                            <h4 
+                                                style={{
+                                                    fontSize: '16px',
+                                                    lineHeight: '20px',
+                                                    fontWeight: 600,
+                                                    color: 'rgb(34, 34, 34)',
+                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                Aprobación final
+                                            </h4>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-semibold text-gray-500">Paso 5</span>
-                                                <h4 className="text-base font-semibold text-gray-900 m-0">
-                                                    Aprobación final
-                                                </h4>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
-                                                Recibe los materiales (videos, informes, documentos) y aprueba cuando todo esté correcto. Solo entonces se libera el pago.
-                                            </p>
-                                        </div>
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                paddingLeft: '20px',
+                                            }}
+                                        >
+                                            Recibe los materiales (videos, informes, documentos) y aprueba cuando todo esté correcto. Solo entonces se libera el pago.
+                                        </p>
                                     </div>
 
                                     {/* Badge de seguridad */}
-                                    <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                        <div className="flex items-start gap-3">
-                                            <Shield className="w-5 h-5 text-[#E61E4D] flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900 m-0 mb-1">
-                                                    Tu dinero siempre protegido
-                                                </p>
-                                                <p className="text-xs text-gray-600 m-0 leading-relaxed">
-                                                    Durante todo el proceso, tu pago permanece seguro en custodia. Solo se libera cuando apruebas el trabajo completado.
-                                                </p>
-                                            </div>
-                                        </div>
+                                    <div 
+                                        style={{
+                                            marginTop: '24px',
+                                            padding: '16px',
+                                            backgroundColor: '#F9FAFB',
+                                            borderRadius: '12px',
+                                            border: '1px solid #E5E7EB',
+                                        }}
+                                    >
+                                        <p 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                                marginBottom: '4px',
+                                            }}
+                                        >
+                                            Tu dinero siempre protegido
+                                        </p>
+                                        <p 
+                                            style={{
+                                                fontSize: '13px',
+                                                lineHeight: '18px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                margin: 0,
+                                            }}
+                                        >
+                                            Durante todo el proceso, tu pago permanece seguro en custodia. Solo se libera cuando apruebas el trabajo completado.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
