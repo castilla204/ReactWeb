@@ -22,7 +22,8 @@ import {
     FileText,
     Video,
     Image,
-    File
+    File,
+    Calendar
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
@@ -815,9 +816,9 @@ export function ServiceReviewPage({
                     </div>
 
                     {/* Card blanco mejorado con mejor espaciado */}
-                    <div className="relative -mt-12 bg-white rounded-t-3xl pt-6 pb-36 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                    <div className="relative -mt-12 bg-white rounded-t-3xl pt-4 pb-36 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                         {/* Título y ubicación centrados estilo Airbnb - Tipografía exacta */}
-                        <div className="mb-4 px-5 text-center">
+                        <div className="px-5 text-center" style={{ marginBottom: '12px' }}>
                             <h1 
                                 style={{
                                     fontSize: '22px',
@@ -830,11 +831,11 @@ export function ServiceReviewPage({
                                     padding: 0,
                                 }}
                             >
-                                {serviceTypeName} por {finalExpertName}
+                                {serviceTypeName} <span className="underline decoration-gray-300 underline-offset-2">por {finalExpertName}</span>
                             </h1>
                             
                             {/* Ubicación y tipo centrados */}
-                            <div className="mb-3">
+                            <div style={{ marginBottom: '12px' }}>
                                 <h2 
                                     style={{
                                         fontSize: '14px',
@@ -866,7 +867,7 @@ export function ServiceReviewPage({
                             
                             {/* ✅ HORARIO AL PRINCIPIO - Estilo SearchDashboard */}
                             {finalAvailability && (
-                                <div className="mb-3 px-5">
+                                <div className="px-5" style={{ marginBottom: '0px' }}>
                                     <div 
                                         className="flex flex-wrap items-center justify-center gap-1.5"
                                         style={{
@@ -904,10 +905,10 @@ export function ServiceReviewPage({
                                 </div>
                     
                     {/* Barra de separación discreta */}
-                    <div className="border-t border-gray-200 my-6"></div>
+                    <div className="border-t border-gray-200" style={{ marginTop: '0px', marginBottom: '12px' }}></div>
                     
                     {/* Sección "Revisor" estilo Airbnb */}
-                    <div className="mb-4 px-6">
+                    <div className="px-6" style={{ marginTop: '12px', marginBottom: '12px' }}>
                         <div className="flex items-start gap-4">
                             <div className="relative flex-shrink-0" style={{ height: '40px', width: '40px' }}>
                                 <button
@@ -971,7 +972,7 @@ export function ServiceReviewPage({
                     </div>
                     
                     {/* Barra de separación discreta */}
-                    <div className="border-t border-gray-200 my-6"></div>
+                    <div className="border-t border-gray-200" style={{ marginTop: '0px', marginBottom: '12px' }}></div>
                     
                     {/* Tabs: Acerca del servicio y ¿Cómo funciona? */}
                         <div className="mb-6 px-5">
@@ -1225,94 +1226,158 @@ export function ServiceReviewPage({
                         
                         {/* Contenido del tab "¿Cómo funciona?" */}
                         {activeTab === 'how' && (
-                            <div className="pt-6">
-                                <div 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <h4 style={{ 
-                                            fontSize: '15px', 
-                                            lineHeight: '20px', 
-                                            fontWeight: 600, 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            1. Realiza el pago seguro
-                                        </h4>
-                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
-                                            Una vez que realices el pago, tu dinero queda completamente a salvo en custodia. Se abrirá automáticamente un chat con el experto donde comenzará un flujo de trabajo completamente automatizado gestionado por inspecciono.com.
-                                        </p>
+                            <div className="pt-6 px-5">
+                                <div className="space-y-6">
+                                    {/* Paso 1 */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
+                                                <Shield className="w-6 h-6 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm font-semibold text-gray-500">Paso 1</span>
+                                                <h4 className="text-base font-semibold text-gray-900 m-0">
+                                                    Pago seguro
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
+                                                Realiza el pago y tu dinero queda protegido en custodia. Se abrirá automáticamente un chat con el experto.
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <h4 style={{ 
-                                            fontSize: '15px', 
-                                            lineHeight: '20px', 
-                                            fontWeight: 600, 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            2. Propón una cita válida
-                                        </h4>
-                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
-                                            A través del chat automatizado, deberás proponer una fecha, hora y ubicación para la cita. <strong>Es fundamental que la cita cumpla estos requisitos:</strong> debe tener un mínimo de 24 horas de antelación, debe estar dentro del horario disponible del experto (mostrado arriba) y la ubicación debe estar dentro del rango de cobertura del experto (indicado en el mapa). Si no cumple estos requisitos, el sistema automatizado no permitirá realizar la inspección.
-                                        </p>
+                                    {/* Línea conectora */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-12 flex justify-center">
+                                            <div className="w-0.5 h-6 bg-gray-200"></div>
+                                        </div>
+                                        <div className="flex-1"></div>
                                     </div>
 
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <h4 style={{ 
-                                            fontSize: '15px', 
-                                            lineHeight: '20px', 
-                                            fontWeight: 600, 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            3. Confirmación del experto
-                                        </h4>
-                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
-                                            El experto puede aceptar o rechazar la cita propuesta. Si la rechaza, tendrá una única oportunidad para hacerlo. Si rechaza la cita, se te devolverá el dinero automáticamente y de forma segura. Tu dinero siempre está protegido.
-                                        </p>
+                                    {/* Paso 2 */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
+                                                <Calendar className="w-6 h-6 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm font-semibold text-gray-500">Paso 2</span>
+                                                <h4 className="text-base font-semibold text-gray-900 m-0">
+                                                    Propón una cita
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed m-0 mb-2">
+                                                Propón fecha, hora y ubicación a través del chat. Debe cumplir:
+                                            </p>
+                                            <ul className="text-sm text-gray-600 space-y-1 m-0 pl-4 list-disc">
+                                                <li>Mínimo 24h de antelación</li>
+                                                <li>Dentro del horario del experto</li>
+                                                <li>Ubicación dentro del rango de cobertura</li>
+                                            </ul>
+                                        </div>
                                     </div>
 
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <h4 style={{ 
-                                            fontSize: '15px', 
-                                            lineHeight: '20px', 
-                                            fontWeight: 600, 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            4. Realización del servicio
-                                        </h4>
-                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
-                                            Una vez aceptada la cita, el experto realizará la inspección en la fecha, hora y ubicación acordadas. Durante todo este proceso, tu dinero permanece seguro en custodia.
-                                        </p>
+                                    {/* Línea conectora */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-12 flex justify-center">
+                                            <div className="w-0.5 h-6 bg-gray-200"></div>
+                                        </div>
+                                        <div className="flex-1"></div>
                                     </div>
 
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <h4 style={{ 
-                                            fontSize: '15px', 
-                                            lineHeight: '20px', 
-                                            fontWeight: 600, 
-                                            marginBottom: '8px', 
-                                            marginTop: 0,
-                                            color: 'rgb(34, 34, 34)',
-                                        }}>
-                                            5. Entrega y aprobación final
-                                        </h4>
-                                        <p style={{ marginBottom: 0, marginTop: 0 }}>
-                                            El experto te enviará todos los materiales acordados (videos, informes, documentos, etc.) a través del chat. Solo cuando tú, como cliente, apruebes explícitamente que todo está correcto y completo, se liberará el pago al experto. Hasta ese momento, tu dinero permanece completamente seguro en custodia. Si no estás satisfecho, puedes solicitar correcciones y el dinero seguirá protegido.
-                                        </p>
+                                    {/* Paso 3 */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
+                                                <CheckCircle className="w-6 h-6 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm font-semibold text-gray-500">Paso 3</span>
+                                                <h4 className="text-base font-semibold text-gray-900 m-0">
+                                                    Confirmación
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
+                                                El experto acepta o rechaza la cita. Si la rechaza, se te devuelve el dinero automáticamente.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Línea conectora */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-12 flex justify-center">
+                                            <div className="w-0.5 h-6 bg-gray-200"></div>
+                                        </div>
+                                        <div className="flex-1"></div>
+                                    </div>
+
+                                    {/* Paso 4 */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
+                                                <Zap className="w-6 h-6 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm font-semibold text-gray-500">Paso 4</span>
+                                                <h4 className="text-base font-semibold text-gray-900 m-0">
+                                                    Realización del servicio
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
+                                                El experto realiza la inspección en la fecha y lugar acordados. Tu dinero sigue protegido.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Línea conectora */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-12 flex justify-center">
+                                            <div className="w-0.5 h-6 bg-gray-200"></div>
+                                        </div>
+                                        <div className="flex-1"></div>
+                                    </div>
+
+                                    {/* Paso 5 */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#E61E4D] to-[#D70466] flex items-center justify-center">
+                                                <Award className="w-6 h-6 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-sm font-semibold text-gray-500">Paso 5</span>
+                                                <h4 className="text-base font-semibold text-gray-900 m-0">
+                                                    Aprobación final
+                                                </h4>
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed m-0">
+                                                Recibe los materiales (videos, informes, documentos) y aprueba cuando todo esté correcto. Solo entonces se libera el pago.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Badge de seguridad */}
+                                    <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                        <div className="flex items-start gap-3">
+                                            <Shield className="w-5 h-5 text-[#E61E4D] flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900 m-0 mb-1">
+                                                    Tu dinero siempre protegido
+                                                </p>
+                                                <p className="text-xs text-gray-600 m-0 leading-relaxed">
+                                                    Durante todo el proceso, tu pago permanece seguro en custodia. Solo se libera cuando apruebas el trabajo completado.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

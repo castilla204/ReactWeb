@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 import { ClusteredMarkers } from './ClusteredMarkers';
 
@@ -24,8 +24,8 @@ interface MapContainerProps {
 export const MapContainer: React.FC<MapContainerProps> = ({
   categoryId,
   serviceTypeId,
-  initialCenter = { lat: 40.4168, lng: -3.7038 }, // Madrid por defecto
-  initialZoom = 12,
+  initialCenter = { lat: 40.0, lng: -3.0 }, // Centro de España por defecto
+  initialZoom = 5, // Zoom para ver toda España
   onServiceSelect,
   selectedServiceId,
   isMobile = false,
@@ -46,6 +46,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'inspecciono-map';
 
   // Cargar servicios según viewport
+  // ✅ Usar useMemo para estabilizar la referencia de services y evitar re-renders innecesarios
   const { services, loading, error } = useServiceLoader(
     categoryId,
     serviceTypeId,
@@ -54,6 +55,33 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       enabled: isMapLoaded,
     }
   );
+
+  // ✅ DEDUPLICAR servicios en el nivel del contenedor también
+  // Esto es una capa adicional de protección contra duplicados
+  const uniqueServices = useMemo(() => {
+    console.log(`🔍 MapContainer: Recibidos ${services.length} servicios de useServiceLoader`);
+    const seen = new Map<number, Service>();
+    let duplicatesCount = 0;
+    // Usar Map para mantener el último servicio si hay duplicados
+    services.forEach(service => {
+      if (service && service.id && !isNaN(service.id)) {
+        // Si ya existe, mantener el que tiene mejor información (más campos)
+        const existing = seen.get(service.id);
+        if (!existing || (service.raw && !existing.raw)) {
+          seen.set(service.id, service);
+        } else {
+          duplicatesCount++;
+          console.warn('⚠️ MapContainer: Servicio duplicado detectado, manteniendo el primero:', service.id);
+        }
+      }
+    });
+    const unique = Array.from(seen.values());
+    if (duplicatesCount > 0) {
+      console.log(`⚠️ MapContainer: ${duplicatesCount} servicios duplicados filtrados`);
+    }
+    console.log(`✅ MapContainer: Pasando ${unique.length} servicios únicos a ClusteredMarkers`);
+    return unique;
+  }, [services]);
 
   // Configuración del mapa según dispositivo
   const mapOptions = useMemo(() => ({
@@ -95,7 +123,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     }, [map, isMapLoaded, onMapLoad]);
 
     useEffect(() => {
-      if (!map || !isMapLoaded) return;
+      if (!map || !isMapLoaded) {
+        // ✅ Asegurar que viewport sea null si el mapa no está listo
+        setCurrentViewport(null);
+        return;
+      }
 
       const updateViewport = () => {
         if (!map || isDraggingRef.current) return;
@@ -103,10 +135,24 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         const bounds = map.getBounds();
         const zoom = map.getZoom() || initialZoom;
 
-        if (!bounds) return;
+        // ✅ Asegurarse de que los bounds sean válidos antes de continuar
+        if (!bounds) {
+          // Si no hay bounds, mantener viewport en null
+          setCurrentViewport(null);
+          return;
+        }
 
         const northeast = bounds.getNorthEast();
         const southwest = bounds.getSouthWest();
+
+        // Validar que los bounds sean válidos (no infinitos ni NaN)
+        if (
+          !northeast || !southwest ||
+          !isFinite(northeast.lat()) || !isFinite(northeast.lng()) ||
+          !isFinite(southwest.lat()) || !isFinite(southwest.lng())
+        ) {
+          return;
+        }
 
         // Serializar bounds para comparación
         const boundsKey = `${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${zoom}`;
@@ -125,19 +171,40 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
         // Debounce para evitar múltiples llamadas
         debounceTimerRef.current = setTimeout(() => {
-          if (!isDraggingRef.current) {
-            setCurrentViewport({
-              northeast: { lat: northeast.lat(), lng: northeast.lng() },
-              southwest: { lat: southwest.lat(), lng: southwest.lng() },
-              zoom,
-            });
+          if (!isDraggingRef.current && bounds) {
+            // ✅ VALIDACIÓN FINAL: Verificar que los bounds sean válidos antes de establecer viewport
+            const neLat = northeast.lat();
+            const neLng = northeast.lng();
+            const swLat = southwest.lat();
+            const swLng = southwest.lng();
+            
+            if (isFinite(neLat) && isFinite(neLng) && 
+                isFinite(swLat) && isFinite(swLng) &&
+                isFinite(zoom) &&
+                Math.abs(neLat) <= 90 && Math.abs(swLat) <= 90 &&
+                Math.abs(neLng) <= 180 && Math.abs(swLng) <= 180 &&
+                neLat > swLat) { // Asegurar que northeast está realmente al norte de southwest
+              console.log('✅ MapContainer: Estableciendo viewport válido:', { neLat, neLng, swLat, swLng, zoom });
+              setCurrentViewport({
+                northeast: { lat: neLat, lng: neLng },
+                southwest: { lat: swLat, lng: swLng },
+                zoom,
+              });
+            } else {
+              // Si los bounds no son válidos, mantener viewport en null
+              console.log('⚠️ MapContainer: Bounds inválidos, no actualizar viewport:', { neLat, neLng, swLat, swLng, zoom });
+              setCurrentViewport(null);
+            }
           }
         }, 400);
       };
 
       const handleIdle = () => {
         isDraggingRef.current = false;
-        updateViewport();
+        // ✅ Solo actualizar viewport si el mapa está completamente cargado y tiene bounds válidos
+        if (map && map.getBounds()) {
+          updateViewport();
+        }
       };
 
       const handleDragStart = () => {
@@ -153,10 +220,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const dragStartListener = map.addListener('dragstart', handleDragStart);
       const zoomChangedListener = map.addListener('zoom_changed', handleIdle);
 
-      // Carga inicial
-      setTimeout(() => {
-        updateViewport();
-      }, 300);
+      // NO hacer carga inicial automática - solo cargar cuando el usuario mueva el mapa
+      // Esto evita cargar todos los servicios al inicio
 
       // Cleanup
       return () => {
@@ -183,7 +248,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       }}
     >
       <APIProvider apiKey={apiKey} libraries={['marker']}>
-        <Map
+        <GoogleMap
           defaultCenter={initialCenter}
           defaultZoom={initialZoom}
           mapId={mapId}
@@ -197,15 +262,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           styles={mapOptions.styles}
           style={{ width: '100%', height: '100%' }}
         >
-          <MapEventHandler />
-          {isMapLoaded && (
-            <ClusteredMarkers
-              services={services}
-              selectedServiceId={selectedServiceId}
-              onServiceClick={onServiceSelect}
-            />
-          )}
-        </Map>
+              <MapEventHandler />
+              {isMapLoaded && (
+                <ClusteredMarkers
+                  services={uniqueServices}
+                  selectedServiceId={selectedServiceId}
+                  onServiceClick={onServiceSelect}
+                />
+              )}
+        </GoogleMap>
 
         {/* Loading overlay */}
         {loading && (

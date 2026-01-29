@@ -47,10 +47,81 @@ export function useServiceLoader(
 
   const loadServices = useCallback(
     async (viewportData: ViewportRequest) => {
+      // ✅ VALIDACIÓN ESTRICTA: No hacer llamada si falta información esencial
       if (!categoryId || !serviceTypeId || options?.enabled === false) {
         setServices([]);
+        setLoading(false);
         return;
       }
+
+      // ✅ VALIDACIÓN CRÍTICA: Verificar que viewportData tenga bounds válidos
+      if (!viewportData || 
+          !viewportData.northeast || !viewportData.southwest ||
+          !isFinite(viewportData.northeast.lat) || !isFinite(viewportData.northeast.lng) ||
+          !isFinite(viewportData.southwest.lat) || !isFinite(viewportData.southwest.lng) ||
+          !isFinite(viewportData.zoom)) {
+        console.log('⚠️ useServiceLoader: Viewport inválido, no hacer llamada:', viewportData);
+        setServices([]);
+        setLoading(false);
+        return;
+      }
+
+      // ✅ VALIDACIÓN ADICIONAL: Verificar que los bounds sean razonables (no infinitos ni NaN)
+      const neLat = viewportData.northeast.lat;
+      const neLng = viewportData.northeast.lng;
+      const swLat = viewportData.southwest.lat;
+      const swLng = viewportData.southwest.lng;
+      
+      // Validar que las latitudes estén en rango válido
+      if (Math.abs(neLat) > 90 || Math.abs(swLat) > 90) {
+        console.log('⚠️ useServiceLoader: Latitudes fuera de rango:', { neLat, swLat });
+        setServices([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Validar que las longitudes estén en rango válido
+      if (Math.abs(neLng) > 180 || Math.abs(swLng) > 180) {
+        console.log('⚠️ useServiceLoader: Longitudes fuera de rango:', { neLng, swLng });
+        setServices([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Validar que northeast esté realmente al norte de southwest
+      if (neLat <= swLat) {
+        console.log('⚠️ useServiceLoader: northeast no está al norte de southwest:', { neLat, swLat });
+        setServices([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Validar que los bounds tengan un área razonable (no sean demasiado pequeños o grandes)
+      const latDiff = neLat - swLat;
+      const lngDiff = Math.abs(neLng - swLng);
+      if (latDiff < 0.001 || (lngDiff < 0.001 && lngDiff > 0 && Math.abs(neLng - swLng) < 359)) {
+        console.log('⚠️ useServiceLoader: Bounds demasiado pequeños:', { latDiff, lngDiff });
+        setServices([]);
+        setLoading(false);
+        return;
+      }
+
+      // Cancelar petición anterior si existe
+      if (abortControllerRef.current) {
+        console.log('🛑 useServiceLoader: Cancelando petición anterior');
+        abortControllerRef.current.abort();
+      }
+
+      // Crear nuevo AbortController ANTES de verificar caché
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      // ✅ LIMPIAR servicios INMEDIATAMENTE al iniciar nueva carga
+      // Esto previene acumulación de servicios de viewports anteriores
+      console.log('🔄 useServiceLoader: Limpiando servicios anteriores antes de nueva carga');
+      setServices([]);
+      setLoading(true);
+      setError(null);
 
       // Crear clave de caché
       const cacheKey = `${categoryId}-${serviceTypeId}-${viewportData.northeast.lat.toFixed(3)}-${viewportData.northeast.lng.toFixed(3)}-${viewportData.southwest.lat.toFixed(3)}-${viewportData.southwest.lng.toFixed(3)}-${viewportData.zoom}`;
@@ -58,21 +129,14 @@ export function useServiceLoader(
       // Verificar caché
       const cached = cacheRef.current.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        setServices(cached.services);
+        // ✅ Asegurar que solo se establezcan los servicios del caché si la petición no fue cancelada
+        if (!signal.aborted) {
+          console.log('✅ useServiceLoader: Usando servicios del caché:', cached.services.length);
+          setServices(cached.services);
+          setLoading(false);
+        }
         return;
       }
-
-      // Cancelar petición anterior si existe
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Crear nuevo AbortController
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
-      setLoading(true);
-      setError(null);
 
       try {
         const limit = options?.limit || getMaxResults(viewportData.zoom);
@@ -133,9 +197,29 @@ export function useServiceLoader(
           })).filter((s: Service) => !isNaN(s.lat) && !isNaN(s.lng));
         }
 
+        // ✅ DEDUPLICAR servicios por id antes de guardar
+        // Esto previene marcadores duplicados en la misma posición
+        const uniqueServicesMap = new Map<number, Service>();
+        let duplicatesCount = 0;
+        mappedServices.forEach(service => {
+          // Usar id como clave única
+          if (!uniqueServicesMap.has(service.id)) {
+            uniqueServicesMap.set(service.id, service);
+          } else {
+            // Si hay duplicados, mantener el primero
+            duplicatesCount++;
+            console.warn('⚠️ useServiceLoader: Servicio duplicado detectado en la respuesta de la API, ignorando:', service.id);
+          }
+        });
+        const deduplicatedServices = Array.from(uniqueServicesMap.values());
+        if (duplicatesCount > 0) {
+          console.log(`⚠️ useServiceLoader: ${duplicatesCount} servicios duplicados filtrados de la respuesta`);
+        }
+        console.log(`✅ useServiceLoader: ${deduplicatedServices.length} servicios únicos después de deduplicación (de ${mappedServices.length} recibidos)`);
+
         // Guardar en caché
         cacheRef.current.set(cacheKey, {
-          services: mappedServices,
+          services: deduplicatedServices,
           timestamp: Date.now(),
         });
 
@@ -150,7 +234,10 @@ export function useServiceLoader(
         }
 
         if (!signal.aborted) {
-          setServices(mappedServices);
+          console.log(`✅ useServiceLoader: Estableciendo ${deduplicatedServices.length} servicios únicos en el estado`);
+          setServices(deduplicatedServices);
+        } else {
+          console.log('⚠️ useServiceLoader: Petición cancelada, no establecer servicios');
         }
       } catch (err: any) {
         if (err.name === 'AbortError') {
@@ -170,16 +257,41 @@ export function useServiceLoader(
   );
 
   useEffect(() => {
-    if (viewport) {
+    // ✅ VALIDACIÓN ESTRICTA: Solo cargar si viewport es válido, no es null, y enabled es true
+    if (options?.enabled === false) {
+      console.log('⚠️ useServiceLoader: Deshabilitado (enabled=false), NO hacer llamada');
+      setServices([]);
+      setLoading(false);
+      return;
+    }
+    
+    if (viewport && 
+        viewport.northeast && viewport.southwest &&
+        isFinite(viewport.northeast.lat) && isFinite(viewport.northeast.lng) &&
+        isFinite(viewport.southwest.lat) && isFinite(viewport.southwest.lng) &&
+        isFinite(viewport.zoom)) {
+      console.log('✅ useServiceLoader: Viewport válido, iniciando carga de servicios:', {
+        ne: viewport.northeast,
+        sw: viewport.southwest,
+        zoom: viewport.zoom
+      });
+      // loadServices ya limpia los servicios al inicio, no es necesario hacerlo aquí
       loadServices(viewport);
+    } else {
+      // ✅ Si viewport es null o inválido, asegurar que no haya servicios cargados
+      console.log('⚠️ useServiceLoader: Viewport null o inválido, limpiando servicios:', viewport);
+      setServices([]);
+      setLoading(false);
     }
 
     return () => {
+      // ✅ Cancelar petición en curso cuando cambia el viewport
       if (abortControllerRef.current) {
+        console.log('🛑 useServiceLoader: Limpiando al desmontar o cambiar dependencias');
         abortControllerRef.current.abort();
       }
     };
-  }, [viewport, loadServices]);
+  }, [viewport, loadServices, options?.enabled]);
 
   return {
     services,
