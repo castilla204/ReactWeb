@@ -1861,7 +1861,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const countryCoords = getCountryCoordinates(selectedCountry);
                                             return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
                                         })()}
-                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 12}
+                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5}
                                         onServiceSelect={(service: Service) => {
                                             // Convertir Service a formato esperado por handleServiceSelect
                                             const serviceId = service.id;
@@ -1962,7 +1962,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         const countryCoords = getCountryCoordinates(selectedCountry);
                                         return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
                                     })()}
-                                    initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((25 * 1000) / 500)))) : 12}
+                                    initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((25 * 1000) / 500)))) : 5}
                                     onServiceSelect={(service: Service) => {
                                         // Convertir Service a formato esperado por handleServiceSelect
                                         const serviceId = service.id;

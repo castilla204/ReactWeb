@@ -214,8 +214,8 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                 />
               </div>
               
-              {/* Badge "Recomendamos" - Estructura similar a Airbnb */}
-              {isGuestFavorite && (
+              {/* Badge "Mejor valorado" - Para servicios con rating > 4.5 */}
+              {service.averageRating && service.averageRating > 4.5 && (
                 <div
                   className="absolute top-3 left-3 z-10"
                   style={{
@@ -226,6 +226,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
+                      gap: '4px',
                       paddingTop: '4px',
                       paddingBottom: '4px',
                       paddingLeft: '8px',
@@ -237,18 +238,42 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                       whiteSpace: 'nowrap',
                     }}
                   >
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '16px',
+                        height: '16px',
+                        flexShrink: 0,
+                      }}
+                      role="presentation"
+                      aria-hidden="true"
+                    >
+                      <img
+                        src="https://a0.muscache.com/pictures/airbnb-platform-assets/AirbnbPlatformAssets-email-dls-icons/original/c3c390ab-d1ab-4627-9cd7-608ac53b171e.png"
+                        alt=""
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          display: 'block',
+                          objectFit: 'contain',
+                        }}
+                        aria-hidden="true"
+                      />
+                    </div>
                     <span
                       style={{
                         fontSize: '10px',
                         lineHeight: '12px',
                         fontWeight: 400,
-                        color: '#222222',
+                        color: '#000000',
                         fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                         letterSpacing: '0',
                       }}
-                      aria-label="Recomendamos"
+                      aria-label="Mejor valorado"
                     >
-                      Recomendamos
+                      Mejor valorado
                     </span>
                     <div
                       style={{
@@ -262,7 +287,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                           fontSize: '10px',
                           lineHeight: '12px',
                           fontWeight: 400,
-                          color: '#222222',
+                          color: '#000000',
                           fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
                           letterSpacing: '0',
                           position: 'absolute',
@@ -270,7 +295,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                           pointerEvents: 'none',
                         }}
                       >
-                        Recomendamos
+                        Mejor valorado
                       </span>
                     </div>
                   </div>
@@ -601,20 +626,15 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                 style={{ 
                   fontSize: '18px', 
                   lineHeight: '24px', 
-                  fontWeight: 600,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  fontWeight: 500,
+                  fontFamily: 'Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif',
                   color: 'rgb(34, 34, 34)',
+                  letterSpacing: '0.3px',
                   margin: 0,
                   padding: 0,
                 }}
               >
-                <span style={{
-                  fontSize: '18px',
-                  lineHeight: '24px',
-                  fontWeight: 600,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(34, 34, 34)',
-                }}>{title.replace(' >', '')}</span>
+                {title.replace(' >', '')}
               </h2>
             </a>
             {subtitle && (
@@ -643,8 +663,8 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               display: 'inline-flex', 
               alignItems: 'center',
               justifyContent: 'center',
-              width: '24px',
-              height: '24px',
+              width: '28px',
+              height: '28px',
               borderRadius: '50%',
               backgroundColor: '#F7F7F7',
             }}>
@@ -657,8 +677,8 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                 style={{
                   display: 'block',
                   fill: 'none',
-                  height: '12px',
-                  width: '12px',
+                  height: '14px',
+                  width: '14px',
                   stroke: 'currentColor',
                   strokeWidth: '4',
                   overflow: 'visible',
