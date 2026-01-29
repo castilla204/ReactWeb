@@ -1189,6 +1189,67 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const allServicesCombined = useMemo(() => {
         let services: typeof allServices = allServices;
         
+        // ✅ DEDUPLICAR: Crear un Map para evitar servicios duplicados por ID
+        const servicesMap = new Map<number, typeof allServices[0]>();
+        
+        // Primero agregar todos los servicios de allServices
+        allServices.forEach(service => {
+            const serviceId = service.id || (service as any).Id;
+            if (serviceId && !servicesMap.has(serviceId)) {
+                servicesMap.set(serviceId, service);
+            }
+        });
+        
+        // ✅ INCLUIR SERVICIOS DEL MAPA: Solo agregar servicios del mapa que NO están ya en allServices
+        // Esto permite que los servicios nuevos (fuera del rango de ubicación) sean clicables
+        // PERO evitamos duplicados
+        mapServices.forEach(mapService => {
+            const mapServiceId = mapService.id;
+            // Solo agregar si no existe ya en allServices
+            if (mapServiceId && !servicesMap.has(mapServiceId)) {
+                // Convertir Service de useServiceLoader al formato de Service de useServices
+                const rawService = mapService.raw || {};
+                const rawExpert = rawService.expert || rawService.Expert || {};
+                const rawUser = rawExpert.user || rawExpert.User || {};
+                
+                const convertedService = {
+                    id: mapService.id,
+                    expertProfileId: rawExpert.id || rawExpert.Id,
+                    categoryId: rawService.categoryId || rawService.CategoryId || selectedCategory,
+                    serviceTypeId: rawService.serviceTypeId || rawService.ServiceTypeId || serviceTypeId,
+                    serviceTypeName: mapService.type || rawService.serviceTypeName || rawService.ServiceTypeName,
+                    serviceTypeDescription: rawService.serviceTypeDescription || rawService.ServiceTypeDescription,
+                    price: mapService.price,
+                    conditions: rawService.conditions || rawService.Conditions || '',
+                    durationInHours: rawService.durationInHours || rawService.DurationInHours || null,
+                    createdAt: rawService.createdAt || rawService.CreatedAt || new Date().toISOString(),
+                    imageUrls: rawService.imageUrls || rawService.ImageUrls || [],
+                    categoryName: rawService.categoryName || rawService.CategoryName,
+                    completedSearches: rawService.completedSearches || rawService.CompletedSearches || 0,
+                    totalReviews: rawService.totalReviews || rawService.TotalReviews || 0,
+                    averageRating: rawService.averageRating || rawService.AverageRating || 0,
+                    isActive: rawService.isActive !== undefined ? rawService.isActive : true,
+                    expert: {
+                        id: rawExpert.id || rawExpert.Id,
+                        profilePictureUrl: rawExpert.profilePictureUrl || rawExpert.ProfilePictureUrl || '',
+                        description: rawExpert.description || rawExpert.Description || '',
+                        createdAt: rawExpert.createdAt || rawExpert.CreatedAt || new Date().toISOString(),
+                        user: {
+                            name: mapService.name || rawUser.name || rawUser.Name || 'Experto',
+                            email: rawUser.email || rawUser.Email || '',
+                        },
+                        latitude: rawExpert.latitude || rawExpert.Latitude || mapService.lat?.toString(),
+                        longitude: rawExpert.longitude || rawExpert.Longitude || mapService.lng?.toString(),
+                    },
+                } as typeof allServices[0];
+                
+                servicesMap.set(mapServiceId, convertedService);
+            }
+        });
+        
+        // Convertir Map a Array
+        services = Array.from(servicesMap.values());
+        
         // ✅ FILTRAR POR CATEGORÍA: Solo servicios de la categoría seleccionada
         if (selectedCategory > 0) {
             services = services.filter(s => {
@@ -1197,8 +1258,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             });
         }
         
+        console.log('🔍 allServicesCombined:', {
+            allServicesCount: allServices.length,
+            mapServicesCount: mapServices.length,
+            combinedCount: services.length,
+            uniqueIds: services.map(s => s.id).slice(0, 10)
+        });
+        
         return services;
-    }, [allServices, selectedCategory]);
+    }, [allServices, selectedCategory, mapServices, serviceTypeId]);
     
     // ✅ Reordenar servicios: el seleccionado aparece primero (como en Airbnb)
     const reorderedServices = useMemo(() => {
@@ -1760,17 +1828,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             })()}
                             {reorderedServices.length > 0 ? (
                                 <>
-                                    {/* Header con total de revisiones estilo Airbnb */}
+                                    {/* Header con total de servicios estilo Airbnb */}
                                     <div className="px-8 md:px-10 pb-4">
                                         <p className="text-base font-medium text-gray-900">
                                             {(() => {
-                                                const totalReviews = reorderedServices.reduce((sum, service) => {
-                                                    const reviews = service.totalReviews || (service as any).TotalReviews || service.expert?.totalReviews || service.expert?.TotalReviews || 0;
-                                                    return sum + reviews;
-                                                }, 0);
-                                                return totalReviews > 0 
-                                                    ? `Más de ${totalReviews} ${totalReviews === 1 ? 'revisión' : 'revisiones'}`
-                                                    : `${reorderedServices.length} ${reorderedServices.length === 1 ? 'experto disponible' : 'expertos disponibles'}`;
+                                                // ✅ CORREGIDO: Mostrar número de servicios, no de revisiones
+                                                const servicesCount = reorderedServices.length;
+                                                return servicesCount > 0 
+                                                    ? `${servicesCount} ${servicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}`
+                                                    : 'Sin servicios disponibles';
                                             })()}
                                         </p>
                                     </div>
@@ -1907,8 +1973,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         })()}
                                         initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5}
                                         onServiceSelect={(service: Service) => {
-                                            // Convertir Service a formato esperado por handleServiceSelect
+                                            // ✅ Convertir Service a formato esperado por handleServiceSelect
+                                            // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
                                             const serviceId = service.id;
+                                            console.log('📍 Servicio seleccionado del mapa:', { serviceId, service });
                                             handleServiceSelect(serviceId);
                                         }}
                                         selectedServiceId={selectedService}
@@ -1987,8 +2055,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     })()}
                                     initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((25 * 1000) / 500)))) : 5}
                                     onServiceSelect={(service: Service) => {
-                                        // Convertir Service a formato esperado por handleServiceSelect
+                                        // ✅ Convertir Service a formato esperado por handleServiceSelect
+                                        // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
                                         const serviceId = service.id;
+                                        console.log('📍 Servicio seleccionado del mapa (desktop):', { serviceId, service });
                                         handleServiceSelect(serviceId);
                                     }}
                                     selectedServiceId={selectedService}
@@ -2023,9 +2093,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             }
                         }}
                         title={(() => {
+                            // ✅ USAR EL CONTADOR CORRECTO: Mostrar número de servicios, no de revisiones
                             const drawerServicesCount = services.length;
                             return drawerServicesCount > 0 
-                                ? `Más de ${drawerServicesCount} ${drawerServicesCount === 1 ? 'revisión' : 'revisiones'}` 
+                                ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}` 
                                 : 'Sin servicios';
                         })()}
                         className="lg:hidden"
@@ -2185,11 +2256,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     }}
                                 >
                                     {(() => {
+                                        // ✅ USAR EL CONTADOR CORRECTO: Mostrar número de servicios, no de revisiones
                                         const drawerServicesCount = selectedService 
                                             ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
                                             : services.length;
                                         return drawerServicesCount > 0 
-                                            ? `Más de ${drawerServicesCount} ${drawerServicesCount === 1 ? 'revisión' : 'revisiones'}` 
+                                            ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}` 
                                             : 'Sin servicios';
                                     })()}
                                 </h2>
