@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, FolderTree, ArrowLeft, Filter } from 'lucide-react';
+import { Search, ChevronDown, FolderTree, ArrowLeft, Filter, ChevronUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
@@ -126,6 +126,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
+  
+  // ✅ En móvil, abrir automáticamente el acordeón de categorías cuando se abre el modal
+  useEffect(() => {
+    if (isMobileSearchOpen && isMobile) {
+      setExpandedAccordion('where');
+    }
+  }, [isMobileSearchOpen, isMobile]);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -1122,16 +1129,26 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
             }}
           >
-            {/* Botón cerrar arriba derecha - Mejorado y con mejor espaciado */}
-            <div className="absolute top-4 right-4 z-[60]">
+            {/* Botones de navegación arriba - ChevronUp a la izquierda, cerrar a la derecha */}
+            <div className="absolute top-4 left-4 right-4 z-[60] flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => {
-                  if (expandedAccordion === 'where') {
-                    setExpandedAccordion(null);
-                  } else {
-                    setIsMobileSearchOpen(false);
-                  }
+                  navigate('/');
+                  setIsMobileSearchOpen(false);
+                }}
+                className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 active:scale-95"
+                aria-label="Volver a inicio"
+                style={{
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)'
+                }}
+              >
+                <ChevronUp className="w-5 h-5 text-gray-900" style={{ strokeWidth: 2.5 }} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
                 }}
                 className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 active:scale-95"
                 aria-label="Cerrar"
@@ -1170,7 +1187,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   transition: 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
-                {expandedAccordion === 'where' ? (
+                {/* ✅ En móvil: Siempre mostrar desplegado, sin modo colapsado */}
+                {(expandedAccordion === 'where' || isMobile) ? (
                   <>
                     {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
                     <div className="px-4 pt-16 pb-4 border-b border-gray-200">
@@ -1191,14 +1209,29 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         >
                           ¿Qué revisamos?
                         </h2>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedAccordion(null)}
-                          className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
-                          aria-label="Comprimir categorías"
-                        >
-                          <ChevronDown className="w-5 h-5 text-gray-900 rotate-180" style={{ strokeWidth: 2.5 }} />
-                        </button>
+                        {/* ✅ En móvil: Botón ChevronUp para volver al home, en desktop: botón para colapsar */}
+                        {isMobile ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigate('/');
+                              setIsMobileSearchOpen(false);
+                            }}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
+                            aria-label="Volver a inicio"
+                          >
+                            <ChevronUp className="w-5 h-5 text-gray-900" style={{ strokeWidth: 2.5 }} />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedAccordion(null)}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
+                            aria-label="Comprimir categorías"
+                          >
+                            <ChevronDown className="w-5 h-5 text-gray-900 rotate-180" style={{ strokeWidth: 2.5 }} />
+                          </button>
+                        )}
                       </div>
                       <form role="search" className="w-full">
                         <label 
@@ -1271,14 +1304,28 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                       key={category.id}
                                       type="button"
                               onClick={() => {
+                                // ✅ En móvil: Navegar directamente al mapa con la categoría seleccionada
                                 setCategoryId(category.id);
                                 setCategorySearchQuery('');
-                                // Colapsar categorías y abrir tipo de servicio
-                                setExpandedAccordion('type');
-                                // Llamar a onSearch para actualizar los filtros
+                                
+                                // ✅ Usar serviceTypeId existente o 1 por defecto
+                                const defaultServiceTypeId = serviceTypeId || 1;
+                                
+                                // Navegar al mapa con la categoría y serviceTypeId por defecto
+                                const params = new URLSearchParams();
+                                params.append('categoryId', category.id.toString());
+                                params.append('serviceTypeId', defaultServiceTypeId.toString());
+                                if (adUrl) {
+                                  params.append('adUrl', adUrl);
+                                }
+                                
+                                // ✅ Usar window.location.href para navegación directa sin mostrar homepage
+                                window.location.href = `/crear-busqueda?${params.toString()}`;
+                                
+                                // Llamar a onSearch para actualizar los filtros (antes de navegar)
                                 if (onSearch) {
                                   onSearch({
-                                    serviceTypeId,
+                                    serviceTypeId: defaultServiceTypeId,
                                     categoryId: category.id,
                                     adUrl,
                                   });
@@ -1362,187 +1409,190 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   </>
                 ) : (
                   <>
-                    {/* Header fijo con título y buscador - Estilo Airbnb */}
-                    <div className="px-4 pt-6 pb-4 border-b border-gray-200">
-                      <h2 
-                        tabIndex={-1}
-                        className="mb-4"
-                        style={{
-                          fontSize: '22px',
-                          lineHeight: '26px',
-                          fontWeight: 700,
-                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                          color: 'rgb(34, 34, 34)',
-                          letterSpacing: '-0.01em',
-                          fontFeatureSettings: '"liga" 1, "kern" 1',
-                          WebkitFontSmoothing: 'antialiased',
-                          MozOsxFontSmoothing: 'grayscale',
-                        }}
-                      >
-                        ¿Qué revisamos?
-                      </h2>
-                      
-                      {/* Buscador fijo fuera del scroll */}
-                      <form role="search" className="w-full">
-                        <label 
-                          htmlFor="categories-search-input-collapsed"
-                          className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
-                          style={{ 
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
-                          }}
-                        >
-                          <div className="flex items-center justify-center mr-3">
-                            <svg 
-                              viewBox="0 0 32 32" 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              aria-hidden="true" 
-                              role="presentation" 
-                              focusable="false"
-                              style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
-                            >
-                              <path d="m20.666 20.666 10 10"></path>
-                              <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                            </svg>
-                          </div>
-                          <input
-                            id="categories-search-input-collapsed"
-                            type="search"
-                            placeholder="Buscar destinos"
-                            value={categorySearchQuery}
-                            onChange={(e) => setCategorySearchQuery(e.target.value)}
-                            className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
-                            style={{ 
-                              fontSize: '14px',
-                              lineHeight: '18px',
-                              fontWeight: 400,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                    {/* ✅ SOLO EN DESKTOP: Vista colapsada (en móvil nunca se muestra) */}
+                    {!isMobile && (
+                      <>
+                        {/* Header fijo con título y buscador - Estilo Airbnb */}
+                        <div className="px-4 pt-6 pb-4 border-b border-gray-200">
+                          <h2 
+                            tabIndex={-1}
+                            className="mb-4"
+                            style={{
+                              fontSize: '22px',
+                              lineHeight: '26px',
+                              fontWeight: 700,
+                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                              color: 'rgb(34, 34, 34)',
+                              letterSpacing: '-0.01em',
+                              fontFeatureSettings: '"liga" 1, "kern" 1',
+                              WebkitFontSmoothing: 'antialiased',
+                              MozOsxFontSmoothing: 'grayscale',
                             }}
-                            autoComplete="off"
-                            autoCorrect="off"
-                            spellCheck="false"
-                            aria-label="Buscar destinos"
-                          />
-                        </label>
-                      </form>
-                    </div>
-
-                    {/* Lista de categorías con scroll */}
-                    <div className="flex-1 overflow-y-auto px-4 py-4">
-                      <div>
-                        {categoriesLoading ? (
-                          <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                            <div className="space-y-2">
-                              {[...Array(4)].map((_, index) => (
-                                <Skeleton key={index} height={80} width={80} borderRadius={12} />
-                              ))}
-                            </div>
-                          </SkeletonTheme>
-                        ) : (
-                          <div>
-                            {normalizedCategories
-                              .filter(cat => cat.isActive)
-                              .filter(cat => {
-                                if (categorySearchQuery.trim()) {
-                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                }
-                                return true;
-                              })
-                              .map((category) => {
-                                const categoryImage = getCategoryImage(category.name);
-                                return (
-                <button
-                                    key={category.id}
-                  type="button"
-                                    onClick={() => {
-                                      setCategoryId(category.id);
-                                      setCategorySearchQuery('');
-                                      // Colapsar categorías y abrir tipo de servicio
-                                      setExpandedAccordion('type');
-                                      // Llamar a onSearch para actualizar los filtros
-                                      if (onSearch) {
-                                        onSearch({
-                                          serviceTypeId,
-                                          categoryId: category.id,
-                                          adUrl,
-                                        });
-                                      }
-                                    }}
-                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
-                                      categoryId === category.id 
-                                        ? 'bg-gray-900 text-white shadow-md' 
-                                        : 'hover:bg-gray-50 shadow-sm'
-                                    }`}
-                                  >
-                                    {categoryImage ? (
-                                      <img 
-                                        src={categoryImage}
-                                        alt=""
-                                        className="w-12 h-12 rounded-lg object-contain"
-                                      />
-                                    ) : (
-                                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                        categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
-                                      }`}>
-                                        <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
-                    </div>
-                                    )}
-                  <div>
-                                      <div 
-                                        className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
-                                        style={{ 
-                                          fontSize: '14px',
-                                          lineHeight: '18px',
-                                          fontWeight: 500,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                          color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
-                                        }}
-                                      >
-                                        {category.name}
-                    </div>
-                                      <div 
-                                        style={{ 
-                                          fontSize: '14px',
-                                          lineHeight: '18px',
-                                          fontWeight: 400,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
-                                        }}
-                                      >
-                                        Explorar servicios
-                  </div>
-                  </div>
-                </button>
-                                );
-                              })}
-                            {normalizedCategories
-                              .filter(cat => cat.isActive)
-                              .filter(cat => {
-                                if (categorySearchQuery.trim()) {
-                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                }
-                                return true;
-                              }).length === 0 && (
-                              <div 
-                                className="text-center py-4 text-gray-500"
+                          >
+                            ¿Qué revisamos?
+                          </h2>
+                          
+                          {/* Buscador fijo fuera del scroll */}
+                          <form role="search" className="w-full">
+                            <label 
+                              htmlFor="categories-search-input-collapsed"
+                              className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
+                              style={{ 
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                              }}
+                            >
+                              <div className="flex items-center justify-center mr-3">
+                                <svg 
+                                  viewBox="0 0 32 32" 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  aria-hidden="true" 
+                                  role="presentation" 
+                                  focusable="false"
+                                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
+                                >
+                                  <path d="m20.666 20.666 10 10"></path>
+                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                                </svg>
+                              </div>
+                              <input
+                                id="categories-search-input-collapsed"
+                                type="search"
+                                placeholder="Buscar destinos"
+                                value={categorySearchQuery}
+                                onChange={(e) => setCategorySearchQuery(e.target.value)}
+                                className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
                                 style={{ 
                                   fontSize: '14px',
                                   lineHeight: '18px',
                                   fontWeight: 400,
                                   fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
                                 }}
-                              >
-                                No se encontraron categorías
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck="false"
+                                aria-label="Buscar destinos"
+                              />
+                            </label>
+                          </form>
+                        </div>
+
+                        {/* Lista de categorías con scroll */}
+                        <div className="flex-1 overflow-y-auto px-4 py-4">
+                          <div>
+                            {categoriesLoading ? (
+                              <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+                                <div className="space-y-2">
+                                  {[...Array(4)].map((_, index) => (
+                                    <Skeleton key={index} height={80} width={80} borderRadius={12} />
+                                  ))}
+                                </div>
+                              </SkeletonTheme>
+                            ) : (
+                              <div>
+                                {normalizedCategories
+                                  .filter(cat => cat.isActive)
+                                  .filter(cat => {
+                                    if (categorySearchQuery.trim()) {
+                                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                    }
+                                    return true;
+                                  })
+                                  .map((category) => {
+                                    const categoryImage = getCategoryImage(category.name);
+                                    return (
+                    <button
+                                        key={category.id}
+                      type="button"
+                                        onClick={() => {
+                                          setCategoryId(category.id);
+                                          setCategorySearchQuery('');
+                                          setExpandedAccordion('type');
+                                          if (onSearch) {
+                                            onSearch({
+                                              serviceTypeId,
+                                              categoryId: category.id,
+                                              adUrl,
+                                            });
+                                          }
+                                        }}
+                                        className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
+                                          categoryId === category.id 
+                                            ? 'bg-gray-900 text-white shadow-md' 
+                                            : 'hover:bg-gray-50 shadow-sm'
+                                        }`}
+                                      >
+                                        {categoryImage ? (
+                                          <img 
+                                            src={categoryImage}
+                                            alt=""
+                                            className="w-12 h-12 rounded-lg object-contain"
+                                          />
+                                        ) : (
+                                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                            categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
+                                          }`}>
+                                            <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
+                      </div>
+                                        )}
+                      <div>
+                                          <div 
+                                            className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
+                                            style={{ 
+                                              fontSize: '14px',
+                                              lineHeight: '18px',
+                                              fontWeight: 500,
+                                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                              color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
+                                            }}
+                                          >
+                                            {category.name}
+                      </div>
+                                          <div 
+                                            style={{ 
+                                              fontSize: '14px',
+                                              lineHeight: '18px',
+                                              fontWeight: 400,
+                                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                              color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
+                                            }}
+                                          >
+                                            Explorar servicios
+                      </div>
+                      </div>
+                    </button>
+                                    );
+                                  })}
+                                {normalizedCategories
+                                  .filter(cat => cat.isActive)
+                                  .filter(cat => {
+                                    if (categorySearchQuery.trim()) {
+                                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
+                                    }
+                                    return true;
+                                  }).length === 0 && (
+                                  <div 
+                                    className="text-center py-4 text-gray-500"
+                                    style={{ 
+                                      fontSize: '14px',
+                                      lineHeight: '18px',
+                                      fontWeight: 400,
+                                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                    }}
+                                  >
+                                    No se encontraron categorías
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
 
-                {/* Separador y flecha al final - Solo cuando NO está expandido */}
-                {expandedAccordion !== 'where' && (
+                {/* Separador y flecha al final - Solo cuando NO está expandido Y NO es móvil */}
+                {expandedAccordion !== 'where' && !isMobile && (
                   <div className="border-t border-gray-200 mt-auto">
                     <button
                       type="button"
@@ -1555,7 +1605,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 )}
               </div>
 
-              {/* Tipo de servicio - Rectángulo con sombra - Estilo Airbnb */}
+              {/* ✅ OCULTAR en móvil: Tipo de servicio - Rectángulo con sombra - Estilo Airbnb */}
+              {!isMobile && (
               <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
                 <button
                   type="button"
@@ -1643,8 +1694,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     </div>
                 )}
               </div>
+              )}
 
-              {/* URL del anuncio - Rectángulo con sombra */}
+              {/* ✅ OCULTAR en móvil: URL del anuncio - Rectángulo con sombra */}
+              {!isMobile && (
               <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
                 <button
                   type="button"
@@ -1671,9 +1724,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     </div>
                 )}
               </div>
+              )}
             </div>
           </div>
 
+          {/* ✅ OCULTAR en móvil: Botones de acción */}
+          {!isMobile && (
           <div className="px-4 py-5 border-t border-gray-200 bg-white flex justify-between gap-4">
             <button
               type="button"
@@ -1705,6 +1761,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               Buscar
             </button>
           </div>
+          )}
         </div>
         </>,
         document.body
