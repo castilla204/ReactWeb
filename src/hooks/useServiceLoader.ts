@@ -85,33 +85,28 @@ export function useServiceLoader(
   const validateViewport = useCallback((viewport: ViewportRequest): boolean => {
     const { northeast, southwest, zoom } = viewport;
     
-    // Validar existencia
+      // Validar existencia
     if (!northeast || !southwest || !isFinite(zoom)) {
-      console.warn('⚠️ Viewport incompleto:', viewport);
       return false;
     }
 
     // Validar rangos
     if (Math.abs(northeast.lat) > 90 || Math.abs(southwest.lat) > 90) {
-      console.warn('⚠️ Latitudes fuera de rango:', { ne: northeast.lat, sw: southwest.lat });
       return false;
     }
 
     if (Math.abs(northeast.lng) > 180 || Math.abs(southwest.lng) > 180) {
-      console.warn('⚠️ Longitudes fuera de rango:', { ne: northeast.lng, sw: southwest.lng });
       return false;
     }
 
     // Validar que northeast esté al norte de southwest
     if (northeast.lat <= southwest.lat) {
-      console.warn('⚠️ Northeast no está al norte de southwest:', viewport);
       return false;
     }
 
     // Validar bounds no demasiado pequeños
     const latDiff = northeast.lat - southwest.lat;
     if (latDiff < 0.0001) {
-      console.warn('⚠️ Bounds demasiado pequeños:', { latDiff });
       return false;
     }
 
@@ -134,7 +129,6 @@ export function useServiceLoader(
       cacheRef.current.set(key, value);
     });
 
-    console.log(`🧹 Caché limpiado: ${entries.length} → ${cacheRef.current.size} entradas`);
   }, []);
 
   /**
@@ -144,7 +138,6 @@ export function useServiceLoader(
     async (viewportData: ViewportRequest) => {
       // Validar parámetros requeridos
       if (!categoryId || !serviceTypeId) {
-        console.warn('⚠️ Falta categoryId o serviceTypeId');
         setServices([]);
         setLoading(false);
         return;
@@ -152,7 +145,6 @@ export function useServiceLoader(
 
       // Validar que el hook esté habilitado
       if (options?.enabled === false) {
-        console.log('⏸️ Hook deshabilitado, no cargar servicios');
         setServices([]);
         setLoading(false);
         return;
@@ -170,7 +162,6 @@ export function useServiceLoader(
 
       // Evitar requests duplicados
       if (lastRequestRef.current === cacheKey) {
-        console.log('⏭️ Request duplicado ignorado:', cacheKey);
         return;
       }
       
@@ -179,10 +170,7 @@ export function useServiceLoader(
       // 2. La petición previa lleva al menos MIN_REQUEST_TIME ejecutándose (evita cancelar la primera llamada)
       const timeSinceLastRequest = Date.now() - requestStartTimeRef.current;
       if (abortControllerRef.current && timeSinceLastRequest >= MIN_REQUEST_TIME) {
-        console.log('🛑 Cancelando petición anterior (después de', timeSinceLastRequest, 'ms)');
         abortControllerRef.current.abort();
-      } else if (abortControllerRef.current) {
-        console.log('⏸️ Petición anterior muy reciente (', timeSinceLastRequest, 'ms), esperando antes de cancelar');
       }
       
       lastRequestRef.current = cacheKey;
