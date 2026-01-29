@@ -49,6 +49,8 @@ export function useServiceLoader(
   const abortControllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
   const lastRequestRef = useRef<string>('');
+  const requestStartTimeRef = useRef<number>(0);
+  const MIN_REQUEST_TIME = 200; // Mínimo tiempo antes de poder cancelar (200ms)
   
   const CACHE_TTL = options?.cacheTTL || 5 * 60 * 1000; // 5 minutos por defecto
   const MAX_CACHE_SIZE = 20; // Máximo de entradas en caché
@@ -171,13 +173,19 @@ export function useServiceLoader(
         console.log('⏭️ Request duplicado ignorado:', cacheKey);
         return;
       }
-      lastRequestRef.current = cacheKey;
-
-      // Cancelar petición anterior si existe
-      if (abortControllerRef.current) {
-        console.log('🛑 Cancelando petición anterior');
+      
+      // ✅ MEJORADO: Solo cancelar petición anterior si:
+      // 1. Existe una petición previa
+      // 2. La petición previa lleva al menos MIN_REQUEST_TIME ejecutándose (evita cancelar la primera llamada)
+      const timeSinceLastRequest = Date.now() - requestStartTimeRef.current;
+      if (abortControllerRef.current && timeSinceLastRequest >= MIN_REQUEST_TIME) {
+        console.log('🛑 Cancelando petición anterior (después de', timeSinceLastRequest, 'ms)');
         abortControllerRef.current.abort();
+      } else if (abortControllerRef.current) {
+        console.log('⏸️ Petición anterior muy reciente (', timeSinceLastRequest, 'ms), esperando antes de cancelar');
       }
+      
+      lastRequestRef.current = cacheKey;
 
       // Verificar caché
       const cached = cacheRef.current.get(cacheKey);
@@ -191,6 +199,7 @@ export function useServiceLoader(
       // Crear nuevo AbortController
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
+      requestStartTimeRef.current = Date.now(); // ✅ Registrar tiempo de inicio
 
       // Iniciar carga
       console.log('🔄 Iniciando carga de servicios:', {
@@ -355,9 +364,14 @@ export function useServiceLoader(
     loadServices(viewport);
 
     // Cleanup al desmontar o cambiar dependencias
+    // ✅ MEJORADO: Solo cancelar si la petición lleva suficiente tiempo ejecutándose
     return () => {
-      if (abortControllerRef.current) {
+      const timeSinceStart = Date.now() - requestStartTimeRef.current;
+      if (abortControllerRef.current && timeSinceStart >= MIN_REQUEST_TIME) {
+        console.log('🧹 Cleanup: Cancelando petición (después de', timeSinceStart, 'ms)');
         abortControllerRef.current.abort();
+      } else if (abortControllerRef.current) {
+        console.log('🧹 Cleanup: Petición muy reciente (', timeSinceStart, 'ms), no cancelando');
       }
     };
   }, [viewport, loadServices]);
