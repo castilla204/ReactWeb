@@ -62,7 +62,7 @@ export function ServiceSelection({
     
     // Google Maps configuration
     const { isLoaded } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
+        googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries
     });
 

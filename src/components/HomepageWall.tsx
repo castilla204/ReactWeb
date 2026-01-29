@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
-import { Star, ChevronRight } from 'lucide-react';
+import { Star, ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 
 // ✅ OPTIMIZADO: Debounce para resize events y memoización
 const useIsMobile = () => {
@@ -54,6 +55,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
   // ✅ Usar isFavorite del servicio directamente (viene del backend) o el estado inicial como fallback
   const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
   const [imageIndex, setImageIndex] = useState(0);
+  const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
   const isMobile = useIsMobile();
 
   // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
@@ -391,7 +393,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                               {/* Avatar del experto - Esquina inferior izquierda */}
                               {service.expert && (
                                 <div
-                                  className="absolute left-3 z-10"
+                                  className="absolute left-3 z-10 cursor-pointer"
                                   style={{
                                     width: isMobile ? '28px' : '32px',
                                     height: isMobile ? '28px' : '32px',
@@ -401,6 +403,16 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
                                     overflow: 'hidden',
                                     backgroundColor: '#f0f0f0',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (service.expert?.profilePictureUrl) {
+                                      setIsExpertPhotoOpen(true);
+                                    }
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
                                   }}
                                 >
                                   {service.expert.profilePictureUrl ? (
@@ -508,6 +520,32 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
           </div>
         </div>
       </motion.div>
+      
+      {/* Modal para ampliar foto del experto */}
+      {service.expert?.profilePictureUrl && (
+        <Dialog open={isExpertPhotoOpen} onOpenChange={setIsExpertPhotoOpen}>
+          <DialogContent className="max-w-2xl w-full p-0 bg-transparent border-none">
+            <DialogTitle className="sr-only">Foto de perfil de {service.expert.user?.name || 'Experto'}</DialogTitle>
+            <DialogDescription className="sr-only">Imagen ampliada del perfil del experto</DialogDescription>
+            <div 
+              className="relative w-full h-full flex items-center justify-center p-8 cursor-pointer"
+              onClick={() => setIsExpertPhotoOpen(false)}
+            >
+              <div 
+                className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border-4 border-white shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={service.expert.profilePictureUrl}
+                  alt={service.expert.user?.name || 'Experto'}
+                  className="w-full h-full object-cover"
+                  style={{ borderRadius: '50%' }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </a>
   );
 }, (prevProps, nextProps) => {
