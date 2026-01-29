@@ -113,11 +113,14 @@ export const useMapExperts = (
 
   // Usar useRef para evitar re-renders y llamadas múltiples
   const currentParams = useRef<string>('');
+  const isFetchingRef = useRef<boolean>(false); // ✅ NUEVO: Prevenir llamadas simultáneas
 
   // ✅ Estabilizar las dependencias del bounds para evitar re-renders innecesarios
+  // ✅ CORREGIDO: Reducir precisión para evitar cambios menores que disparan nuevas llamadas
   const boundsKey = useMemo(() => {
     if (!params?.bounds) return null;
-    return `${params.bounds.northeast.lat},${params.bounds.northeast.lng},${params.bounds.southwest.lat},${params.bounds.southwest.lng},${params.zoom || ''}`;
+    // ✅ Reducir precisión a 2 decimales para evitar cambios menores
+    return `${params.bounds.northeast.lat.toFixed(2)},${params.bounds.northeast.lng.toFixed(2)},${params.bounds.southwest.lat.toFixed(2)},${params.bounds.southwest.lng.toFixed(2)},${params.zoom || ''}`;
   }, [params?.bounds?.northeast?.lat, params?.bounds?.northeast?.lng, params?.bounds?.southwest?.lat, params?.bounds?.southwest?.lng, params?.zoom]);
 
   // ✅ Estabilizar las dependencias de location
@@ -145,8 +148,25 @@ export const useMapExperts = (
     }
 
     const fetchExperts = async () => {
+      // ✅ PREVENIR LLAMADAS SIMULTÁNEAS: Si ya hay una llamada en curso, cancelar
+      if (isFetchingRef.current) {
+        console.log('⚠️ useMapExperts: Ya hay una llamada en curso, cancelando...');
+        return;
+      }
+      
+      // ✅ NO hacer llamada si no hay bounds ni location (evitar carga inicial sin bounds)
+      if (!params?.bounds && !params?.location) {
+        console.log('⚠️ useMapExperts: Sin bounds ni location, NO hacer llamada inicial');
+        setExperts([]);
+        setServices([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       setError(null);
+      isFetchingRef.current = true; // ✅ Marcar como en curso
 
       try {
         const urlParams = new URLSearchParams({
@@ -173,11 +193,12 @@ export const useMapExperts = (
           urlParams.append('longitude', params.location.longitude);
           urlParams.append('locationRange', params.location.locationRange.toString());
         }
-        // Caso 1: Carga inicial (solo categoryId y serviceTypeId)
 
         const paramsKey = urlParams.toString();
         if (currentParams.current === paramsKey) {
+          console.log('⚠️ useMapExperts: Parámetros idénticos, cancelando llamada duplicada');
           setLoading(false);
+          isFetchingRef.current = false;
           return;
         }
 
@@ -311,17 +332,19 @@ export const useMapExperts = (
             } as Service;
           });
           
-          // También crear MapExpert[] para los marcadores - SIMPLIFICADO
+          // ✅ CORREGIDO: Crear MapExpert[] para los marcadores - CRÍTICO: id debe ser service.id para matching
           mappedExperts = mappedServices.map((service) => {
             const expert = service.expert || {};
-            const expertId = expert.id || service.expertProfileId || service.id;
+            // ✅ CRÍTICO: El id del MapExpert DEBE ser el service.id para que el matching funcione al hacer click
+            // Si usamos expert.id o expertProfileId, el matching en LocationMap no funcionará correctamente
+            const serviceId = service.id || (service as any).Id;
             
             // ✅ Las coordenadas ya están mapeadas en service.expert.latitude/longitude
             const latitude = expert.latitude?.toString() || '';
             const longitude = expert.longitude?.toString() || '';
             
             return {
-              id: expertId,
+              id: serviceId, // ✅ CRÍTICO: Usar service.id para que el matching funcione
               name: expert.user?.name || 'Experto',
               profilePictureUrl: expert.profilePictureUrl || '',
               averageRating: service.averageRating || 0,
@@ -346,6 +369,84 @@ export const useMapExperts = (
             return hasValidCoords;
           });
           
+          // ✅ FILTRADO ESTRICTO: Filtrar servicios por bounds EXACTOS que se enviaron
+          // Esto asegura que solo se muestren servicios que están realmente dentro del área visible
+          // Usar los bounds EXACTOS que se enviaron, no los bounds actuales del mapa (que pueden haber cambiado)
+          if (params?.bounds) {
+            const { northeast, southwest } = params.bounds;
+            const neLat = northeast.lat;
+            const neLng = northeast.lng;
+            const swLat = southwest.lat;
+            const swLng = southwest.lng;
+            
+            const antesFiltrado = mappedExperts.length;
+            
+            // ✅ Filtrar expertos que están dentro de los bounds EXACTOS que se enviaron
+            mappedExperts = mappedExperts.filter(expert => {
+              const lat = parseFloat(expert.latitude);
+              const lng = parseFloat(expert.longitude);
+              
+              if (isNaN(lat) || isNaN(lng)) return false;
+              
+              // ✅ Usar los bounds EXACTOS que se enviaron, no los bounds actuales
+              const latInBounds = lat >= swLat && lat <= neLat;
+              
+              // Manejar el caso de longitudes que cruzan el meridiano 180/-180
+              let lngInBounds;
+              if (swLng > neLng) {
+                // Bounds cruza el meridiano
+                lngInBounds = lng >= swLng || lng <= neLng;
+              } else {
+                // Caso normal
+                lngInBounds = lng >= swLng && lng <= neLng;
+              }
+              
+              return latInBounds && lngInBounds;
+            });
+            
+            // ✅ FILTRAR TAMBIÉN LOS SERVICIOS COMPLETOS por bounds EXACTOS
+            const serviciosAntesFiltrado = mappedServices.length;
+            mappedServices = mappedServices.filter(service => {
+              const expert = service.expert || (service as any).Expert || {};
+              const latStr = expert.latitude || expert.Latitude || '';
+              const lngStr = expert.longitude || expert.Longitude || '';
+              const lat = parseFloat(latStr);
+              const lng = parseFloat(lngStr);
+              
+              if (isNaN(lat) || isNaN(lng)) return false;
+              
+              // ✅ Usar los bounds EXACTOS que se enviaron
+              const latInBounds = lat >= swLat && lat <= neLat;
+              let lngInBounds;
+              if (swLng > neLng) {
+                lngInBounds = lng >= swLng || lng <= neLng;
+              } else {
+                lngInBounds = lng >= swLng && lng <= neLng;
+              }
+              
+              return latInBounds && lngInBounds;
+            });
+            
+            console.log('✅ FILTRADO ESTRICTO POR BOUNDS - Servicios filtrados:', {
+              expertosAntes: antesFiltrado,
+              expertosDespues: mappedExperts.length,
+              serviciosAntes: serviciosAntesFiltrado,
+              serviciosDespues: mappedServices.length,
+              boundsEnviados: { neLat, neLng, swLat, swLng }
+            });
+            
+            // ✅ CRÍTICO: El totalCount debe ser el número de servicios filtrados, no el de la API
+            total = mappedServices.length > 0 ? mappedServices.length : mappedExperts.length;
+            console.log('✅ TotalCount ajustado después del filtrado estricto:', total);
+          } else {
+            // Si no hay bounds, usar el totalCount de la API
+            if (response.pagination && typeof response.pagination.totalCount === 'number') {
+              total = response.pagination.totalCount;
+            } else {
+              total = mappedExperts.length;
+            }
+          }
+          
           console.log('📍 MapExperts creados desde servicios:', mappedExperts.length, 'expertos válidos');
           if (mappedExperts.length > 0) {
             console.log('📍 Primer experto ejemplo:', {
@@ -359,7 +460,6 @@ export const useMapExperts = (
           } else {
             console.warn('⚠️ No se crearon expertos válidos desde los servicios');
           }
-          total = mappedExperts.length;
           setServices(mappedServices);
         } else if (response?.Experts || response?.experts) {
           // Caso 1: ExpertMapResponseDto
@@ -442,6 +542,7 @@ export const useMapExperts = (
         setTotalCount(0);
       } finally {
         setLoading(false);
+        isFetchingRef.current = false; // ✅ Liberar el flag cuando termine
       }
     };
 

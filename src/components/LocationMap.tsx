@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
+// ✅ PROFESIONAL: MarkerClusterer instalado para futura implementación de clustering
+// import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { MapExpert } from '../hooks/useMapExperts';
 import { Service } from '../hooks/useServices';
 import CountrySelector from './CountrySelector';
@@ -121,7 +123,10 @@ export function LocationMap({
     const [isLargeMobile, setIsLargeMobile] = useState(false);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isDraggingRef = useRef<boolean>(false);
-    const lastBoundsRef = useRef<string>('');
+    const prevBoundsRef = useRef<string>(''); // ✅ PROFESIONAL: Bounds serializados para comparación
+    const mapLoadedRef = useRef<boolean>(false);
+    // ✅ PROFESIONAL: Clustering preparado para futura implementación (cuando haya >100 marcadores)
+    // const clustererRef = useRef<MarkerClusterer | null>(null);
 
     // Detectar si es una pantalla móvil grande (414px+)
     useEffect(() => {
@@ -147,39 +152,38 @@ export function LocationMap({
     // El círculo azul ha sido eliminado según solicitud del usuario
 
     const handleMapLoad = (mapInstance: google.maps.Map) => {
+        // ✅ PREVENIR LLAMADAS MÚLTIPLES: Solo ejecutar una vez
+        if (mapLoadedRef.current) {
+            console.log('⚠️ LocationMap: handleMapLoad ya ejecutado, ignorando llamada duplicada');
+            return;
+        }
+        mapLoadedRef.current = true;
+        
         setMap(mapInstance);
         if (onMapLoad) {
             onMapLoad(mapInstance);
         }
+        
+        // ✅ PROFESIONAL: Configurar cursor y opciones del mapa
+        mapInstance.setOptions({ 
+            draggableCursor: 'grab',
+            draggingCursor: 'grabbing'
+        });
+        
         // Forzar un resize después de que el mapa se carga para asegurar que el radar se dibuje correctamente
         setTimeout(() => {
             google.maps.event.trigger(mapInstance, 'resize');
             
-            // ✅ Disparar onBoundsChange automáticamente cuando el mapa se carga
-            // Esto asegura que los precios se carguen al mismo tiempo que el mapa
-            if (onBoundsChange) {
-                const bounds = mapInstance.getBounds();
-                const zoom = mapInstance.getZoom() || 10;
-                
-                if (bounds) {
-                    const northeast = bounds.getNorthEast();
-                    const southwest = bounds.getSouthWest();
-                    
-                    // Crear una clave única para estos bounds
-                    const boundsKey = `${northeast.lat().toFixed(4)},${northeast.lng().toFixed(4)},${southwest.lat().toFixed(4)},${southwest.lng().toFixed(4)},${zoom}`;
-                    lastBoundsRef.current = boundsKey;
-                    
-                    // Llamar inmediatamente sin debounce para la carga inicial
-                    onBoundsChange({
-                        northeast: { lat: northeast.lat(), lng: northeast.lng() },
-                        southwest: { lat: southwest.lat(), lng: southwest.lng() }
-                    }, zoom);
-                }
-            }
-        }, 300); // Reducido a 300ms para cargar más rápido
+            // ✅ PROFESIONAL: Llamar handleIdle manualmente tras onLoad (recomendado por Google)
+            // Esto asegura que se carguen los servicios inmediatamente cuando el mapa está listo
+            setTimeout(() => {
+                handleIdle();
+            }, 100);
+        }, 300);
     };
 
-    // ✅ CORREGIDO: Función para actualizar bounds con debouncing mejorado y validación de cambios significativos
+    // ✅ PROFESIONAL: Función para actualizar bounds usando comparación de bounds serializados
+    // Este es el método recomendado por Google y la comunidad (mejor que bounds_changed)
     const updateBounds = useCallback(() => {
         if (!map || !onBoundsChange || isDraggingRef.current) {
             return;
@@ -194,16 +198,50 @@ export function LocationMap({
         const southwest = bounds.getSouthWest();
         const zoom = map.getZoom() || 12;
         
-        // Crear una clave única para estos bounds (con más precisión para detectar cambios)
-        const boundsKey = `${northeast.lat().toFixed(3)},${northeast.lng().toFixed(3)},${southwest.lat().toFixed(3)},${southwest.lng().toFixed(3)},${zoom}`;
+        // ✅ PROFESIONAL: Serializar bounds para comparación (estándar recomendado)
+        // Formato: "swLat,swLng,neLat,neLng,zoom" - permite comparación exacta
+        const boundsStr = `${southwest.lat()},${southwest.lng()},${northeast.lat()},${northeast.lng()},${zoom}`;
         
-        // ✅ Solo actualizar si los bounds realmente cambiaron significativamente
-        // Esto evita llamadas innecesarias cuando el mapa se ajusta mínimamente
-        if (boundsKey === lastBoundsRef.current) {
+        // ✅ PROFESIONAL: Comparar bounds serializados para evitar refetch innecesario
+        // Esto es más eficiente que comparar objetos o calcular diferencias
+        if (prevBoundsRef.current === boundsStr) {
+            return; // Bounds no cambiaron, no hacer llamada
+        }
+        
+        // ✅ VALIDACIÓN: Asegurar que los bounds sean razonables
+        const latDiff = northeast.lat() - southwest.lat();
+        let lngDiff = northeast.lng() - southwest.lng();
+        // ✅ CORREGIDO: Calcular lngDiff correctamente cuando hay valores negativos y positivos
+        if (lngDiff < 0) {
+            lngDiff = lngDiff + 360;
+        }
+        const lngDiffAbs = Math.abs(lngDiff);
+        
+        // ✅ PROFESIONAL: Umbral de cambio mínimo (50m o 0.5 zoom) - evita micro-movimientos
+        // Si el cambio es muy pequeño, no hacer llamada
+        if (prevBoundsRef.current) {
+            const prevParts = prevBoundsRef.current.split(',');
+            const prevZoom = parseFloat(prevParts[4]);
+            const zoomDiff = Math.abs(zoom - prevZoom);
+            
+            // Si el zoom cambió menos de 0.5 y el área es similar, no hacer llamada
+            if (zoomDiff < 0.5 && latDiff < 0.001 && lngDiffAbs < 0.001) {
+                return;
+            }
+        }
+        
+        // ✅ AUMENTADO EL LÍMITE: 90 grados para permitir vistas continentales válidas
+        if (latDiff > 90 || lngDiffAbs > 90) {
+            console.warn('⚠️ LocationMap: Bounds demasiado grandes, saltando llamada', {
+                latDiff,
+                lngDiff: lngDiffAbs,
+                zoom
+            });
             return;
         }
         
-        lastBoundsRef.current = boundsKey;
+        // ✅ Actualizar bounds previos
+        prevBoundsRef.current = boundsStr;
         
         // ✅ Llamar a onBoundsChange para cargar servicios del área visible
         onBoundsChange({
@@ -212,22 +250,30 @@ export function LocationMap({
         }, zoom);
     }, [map, onBoundsChange]);
 
-    const handleMapIdle = () => {
-        if (map && !isDraggingRef.current) {
-            google.maps.event.trigger(map, 'resize');
-            // ✅ Solo actualizar marcadores cuando NO se está arrastrando (evita parpadeo)
-            setMarkerKey(prev => prev + 1);
-            
-            // ✅ CORREGIDO: Debouncing optimizado (300ms es suficiente y más responsivo)
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-            
-            debounceTimerRef.current = setTimeout(() => {
-                updateBounds();
-            }, 300); // ✅ Reducido a 300ms para mejor respuesta
+    // ✅ PROFESIONAL: handleIdle es el evento recomendado por Google (mejor que bounds_changed)
+    // Se dispara solo cuando el mapa "se asienta" (después de drag/zoom), optimizando costes y rendimiento
+    const handleIdle = useCallback(() => {
+        if (!map || !onBoundsChange || isDraggingRef.current) {
+            return;
         }
-    };
+        
+        // ✅ Actualizar marcadores visualmente
+        setMarkerKey(prev => prev + 1);
+        
+        // ✅ PROFESIONAL: Limpiar timer anterior si existe (debounce extra por seguridad)
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
+        
+        // ✅ PROFESIONAL: Debounce extra de 400ms (recomendado para evitar spam en zooms rápidos)
+        // Aunque `idle` ya se dispara solo cuando el mapa se asienta, añadir debounce extra es buena práctica
+        debounceTimerRef.current = setTimeout(() => {
+            updateBounds();
+        }, 400);
+    }, [map, onBoundsChange, updateBounds]);
+    
+    // ✅ Mantener handleMapIdle para compatibilidad (llama a handleIdle)
+    const handleMapIdle = handleIdle;
     
     // Handler para cuando comienza el arrastre
     const handleDragStart = () => {
@@ -239,41 +285,32 @@ export function LocationMap({
         }
     };
     
-    // Handler para cuando termina el arrastre
+    // ✅ PROFESIONAL: handleDragEnd - NO actualizar bounds aquí, esperar a handleIdle
+    // El evento `idle` se dispara automáticamente después de dragend, así que no necesitamos hacer nada aquí
     const handleDragEnd = () => {
         isDraggingRef.current = false;
-        // Actualizar bounds después de que termine el arrastre
-        if (map) {
-            // ✅ Forzar actualización de marcadores después del drag (solo una vez)
-            setMarkerKey(prev => prev + 1);
-            
-            // ✅ CORREGIDO: Usar un timeout más corto después del arrastre para respuesta más rápida
-            // Pero no demasiado corto para evitar múltiples llamadas
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-            debounceTimerRef.current = setTimeout(() => {
-                updateBounds();
-            }, 250); // ✅ 250ms es un buen balance entre respuesta y estabilidad
-        }
+        // ✅ NO hacer nada aquí - handleIdle se disparará automáticamente después de dragend
+        // Esto evita llamadas duplicadas y sigue el patrón recomendado por Google
     };
     
-    // Handler para cambios de zoom
+    // ✅ PROFESIONAL: handleZoomChanged - NO actualizar bounds aquí, esperar a handleIdle
+    // El evento `idle` se dispara automáticamente después de zoom_changed
     const handleZoomChanged = () => {
+        // ✅ NO hacer nada aquí - handleIdle se disparará automáticamente después de zoom_changed
+        // Solo actualizar marcadores visualmente si es necesario
         if (map && !isDraggingRef.current) {
-            // Forzar actualización de marcadores cuando cambia el zoom
             setMarkerKey(prev => prev + 1);
-            
-            // Actualizar bounds después del cambio de zoom
-            if (debounceTimerRef.current) {
-                clearTimeout(debounceTimerRef.current);
-            }
-            debounceTimerRef.current = setTimeout(() => {
-                updateBounds();
-            }, 300);
         }
     };
     
+    // ✅ PROFESIONAL: Clustering de marcadores (estilo Airbnb)
+    // NOTA: Por ahora deshabilitado porque los marcadores de React no se integran bien con MarkerClusterer
+    // Para implementar clustering completo, necesitaríamos renderizar marcadores nativos en lugar de React
+    // Esto se puede hacer en una futura optimización si hay muchos marcadores (>100)
+    // useEffect(() => {
+    //     // Clustering se puede implementar aquí cuando sea necesario
+    // }, [map, isLoaded, expertMarkers]);
+
     // Cleanup del debounce timer
     useEffect(() => {
         return () => {
@@ -340,6 +377,36 @@ export function LocationMap({
         const expertLng = parseFloat(expert.longitude);
         
         if (isNaN(expertLat) || isNaN(expertLng)) return { lat: 0, lng: 0 };
+        
+        // ✅ CORREGIDO: Primero verificar si hay múltiples servicios en la misma ubicación exacta
+        // Contar cuántos expertos tienen las mismas coordenadas (mismo experto, diferentes servicios)
+        // ✅ AUMENTADA TOLERANCIA: Usar 0.0005 grados (aproximadamente 50 metros) para agrupar servicios
+        const sameLocationExperts = allExperts.filter(e => {
+            const eLat = parseFloat(e.latitude);
+            const eLng = parseFloat(e.longitude);
+            return !isNaN(eLat) && !isNaN(eLng) && 
+                   Math.abs(eLat - expertLat) < 0.0005 && 
+                   Math.abs(eLng - expertLng) < 0.0005;
+        }).sort((a, b) => a.id - b.id); // ✅ Ordenar por ID para orden consistente
+        
+        // Si hay múltiples servicios en la misma ubicación, aplicar offset basado en índice
+        if (sameLocationExperts.length > 1) {
+            const index = sameLocationExperts.findIndex(e => e.id === expert.id);
+            if (index >= 0) {
+                // Aplicar offset circular alrededor de la ubicación
+                // El offset se distribuye uniformemente en un círculo
+                const angle = (index * 2 * Math.PI) / sameLocationExperts.length;
+                // ✅ AUMENTADO: Offset más grande para que los marcadores sean más visibles
+                // Ajustar según zoom: más offset en zoom bajo (más marcadores visibles), menos en zoom alto
+                const baseOffsetDistance = currentZoom > 12 ? 0.001 : currentZoom > 10 ? 0.002 : 0.003;
+                // Aumentar el offset proporcionalmente al número de servicios en la misma ubicación
+                const offsetDistance = baseOffsetDistance * Math.min(sameLocationExperts.length / 2, 1.5);
+                return {
+                    lat: Math.sin(angle) * offsetDistance,
+                    lng: Math.cos(angle) * offsetDistance
+                };
+            }
+        }
         
         // Distancia mínima en grados (ajustar según zoom)
         const minDistance = currentZoom > 12 ? 0.0005 : currentZoom > 10 ? 0.001 : 0.002;
@@ -419,21 +486,18 @@ export function LocationMap({
             }
 
             // ✅ CORREGIDO: Buscar servicio correspondiente con matching mejorado
-            // El expert.id puede ser el service.id o el expert.id real
+            // CRÍTICO: expert.id ahora SIEMPRE es service.id (corregido en useMapExperts)
             // Buscar por múltiples criterios en orden de prioridad:
-            // 1. Por service.id (más directo y confiable)
-            // 2. Por expertProfileId
-            // 3. Por expert.id
-            // 4. Por coordenadas (como último recurso)
+            // 1. Por service.id (más directo y confiable) - expert.id ahora es service.id
+            // 2. Por expertProfileId (fallback)
+            // 3. Por coordenadas (como último recurso)
             // NOTA: Los servicios pueden venir con Id (PascalCase) o id (camelCase)
             let matchingService = services.find(s => {
                 const serviceId = s.id || (s as any).Id;
                 const expertProfileId = s.expertProfileId || (s as any).ExpertProfileId;
-                const expertId = s.expert?.id || (s as any).Expert?.Id;
-                // ✅ Prioridad: service.id primero, luego expertProfileId, luego expert.id
-                return serviceId === expert.id ||
-                       expertProfileId === expert.id || 
-                       expertId === expert.id;
+                // ✅ Prioridad 1: service.id (expert.id ahora es service.id)
+                // ✅ Prioridad 2: expertProfileId (fallback por si acaso)
+                return serviceId === expert.id || expertProfileId === expert.id;
             });
             
             // Si no se encuentra, buscar por coordenadas con margen más amplio
@@ -713,9 +777,14 @@ export function LocationMap({
             );
         }).filter(Boolean);
         
-        // Logs comentados para evitar spam en consola
-        // console.log('✅ Marcadores creados:', markers.length, 'de', mapExperts.length, 'expertos');
-        // console.log('🎨 Estado de selección - selectedService:', selectedService);
+        // ✅ LOG TEMPORAL: Verificar cuántos marcadores se crean
+        console.log('✅ LocationMap - Marcadores creados:', {
+            totalMarkers: markers.length,
+            totalMapExperts: mapExperts.length,
+            filteredOut: mapExperts.length - markers.length,
+            selectedService: selectedService
+        });
+        
         return markers;
     }, [mapExperts, services, selectedService, onServiceSelect, isLoaded, map, isMobile, isLargeMobile, calculateOffset]);
 
