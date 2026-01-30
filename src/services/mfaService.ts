@@ -1,5 +1,6 @@
 import { API_CONFIG } from '../config/api';
 import { authService } from './authService';
+import { capacitorFetch } from '../utils/capacitorFetch';
 
 interface MFASetupResponse {
     qrCodeBase64: string;
@@ -62,7 +63,8 @@ class MFAService {
                     throw new Error('No authentication token');
                 }
 
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.setup}`, {
+                // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+                const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.setup}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -119,7 +121,8 @@ class MFAService {
                 throw new Error('No authentication token');
             }
 
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.enable}`, {
+            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+            const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.enable}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -145,7 +148,8 @@ class MFAService {
     // ============================================
     async verifyMFA(code: string, isRecoveryCode: boolean = false): Promise<MFAVerifyResponse> {
         try {
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.verify}`, {
+            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+            const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.verify}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,7 +212,8 @@ class MFAService {
                 throw new Error('No authentication token');
             }
 
-            const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.disable}`, {
+            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+            const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.disable}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -261,7 +266,8 @@ class MFAService {
                     throw new Error('No authentication token');
                 }
 
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.status}`, {
+                // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+                const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.mfa.status}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
