@@ -1,127 +1,123 @@
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
+import { jwtDecode } from 'jwt-decode';
 import { authService } from './authService';
 import { API_CONFIG } from '../config/api';
 
-/**
- * Servicio de autenticación nativa para Capacitor
- * Detecta automáticamente si está en web o nativo y usa el método apropiado
- */
+// ⚠️ IMPORTANTE: Usar el Web Client ID correcto
+const googleWebClientId = '61603823707-qdtl859lc1cktfh8m77ppl1brtdkndsv.apps.googleusercontent.com';
+
+const initConfig = {
+    google: {
+        webClientId: googleWebClientId.trim(),
+    },
+};
+
 class NativeAuthService {
     private isNative = Capacitor.isNativePlatform();
-
-    /**
-     * Autenticación con Google
-     * Usa OAuth nativo en móviles, web OAuth en navegador
-     */
-    async signInWithGoogle(): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
-        if (this.isNative) {
-            return this.signInWithGoogleNative();
-        } else {
-            // En web, el componente GoogleSignInButton maneja esto
-            throw new Error('Use GoogleSignInButton component for web authentication');
-        }
-    }
-
-    /**
-     * Autenticación nativa con Google (Android/iOS)
-     */
-    private async signInWithGoogleNative(): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
+    
+    async signInWithGoogle(): Promise<void> {
         try {
-            // ✅ Inicializar el plugin con el formato correcto
-            // El plugin @capgo/capacitor-social-login espera 'webClientId' para Android
-            // IMPORTANTE: Debe ser el Client ID de WEB, no el de Android
-            const googleWebClientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-            
-            console.log('🔧 [NativeAuth] Inicializando SocialLogin con webClientId:', googleWebClientId);
-            
-            // Verificar que el webClientId no esté vacío antes de inicializar
-            if (!googleWebClientId || googleWebClientId.trim().length === 0) {
-                throw new Error('Google Web Client ID is empty or undefined');
-            }
-            
-            // ✅ El plugin espera 'webClientId' para Android (según documentación)
-            const initConfig = {
-                google: {
-                    webClientId: googleWebClientId.trim(), // ✅ Cambiar de 'clientId' a 'webClientId'
-                },
-            };
-            
-            console.log('🔧 [NativeAuth] Configuración de inicialización:', JSON.stringify(initConfig));
-            
-            await (SocialLogin as any).initialize(initConfig);
-            
-            console.log('✅ [NativeAuth] SocialLogin inicializado correctamente');
+            console.log('🚀 [NativeAuth] Iniciando Google Sign-In...');
 
-            // ✅ Realizar login - El método correcto es 'login()', no 'signIn()'
-            // El plugin espera: { provider: 'google', options: GoogleLoginOptions }
-            // ✅ Agregar opciones recomendadas para evitar problemas con cuentas supervisadas
+            // ✅ PASO 1: Inicializar el plugin
+            await (SocialLogin as any).initialize(initConfig);
+            console.log('✅ [NativeAuth] Plugin inicializado con Web Client ID');
+
+            // ✅ PASO 2: Realizar login
             const loginResult = await (SocialLogin as any).login({
                 provider: 'google',
                 options: {
-                    filterByAuthorizedAccounts: false, // ✅ Útil si hay cuentas Family Link o supervisadas
-                    scopes: ['profile', 'email'], // ✅ Scopes necesarios para obtener información del usuario
+                    filterByAuthorizedAccounts: false,
+                    scopes: ['profile', 'email'],
                 },
-            }) as any;
-            
-            console.log('✅ [NativeAuth] Login exitoso:', loginResult);
-            
-            // El resultado tiene la estructura: { provider: 'google', result: GoogleLoginResponse }
-            const result = loginResult.result;
-
-            if (!result || !result.idToken) {
-                throw new Error('No token received from Google');
-            }
-
-            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
-            const { capacitorFetch } = await import('../utils/capacitorFetch');
-            
-            // Enviar el token al backend (mismo formato que web - el backend espera 'credential' como JWT)
-            const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    credential: result.idToken, // El backend espera 'credential' con el JWT
-                }),
             });
 
-            if (!response.ok) {
-                let errorMessage = 'Authentication failed';
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.error || errorMessage;
-                } catch {
-                    errorMessage = `Authentication failed (${response.status})`;
+            console.log('✅ [NativeAuth] Login exitoso');
+            console.log('📦 [NativeAuth] Result completo:', loginResult);
+
+            const result = loginResult.result;
+            
+            if (!result || !result.idToken) {
+                throw new Error('No se recibió idToken de Google');
+            }
+
+            console.log('🔑 [NativeAuth] idToken recibido:', result.idToken.substring(0, 50) + '...');
+
+            // ✅ PASO 3: Decodificar el idToken para extraer información
+            let decoded: any;
+            try {
+                decoded = jwtDecode(result.idToken);
+                console.log('✅ [NativeAuth] Token decodificado:', {
+                    email: decoded.email,
+                    name: decoded.name,
+                    sub: decoded.sub,
+                    aud: decoded.aud,
+                });
+            } catch (error) {
+                console.error('❌ [NativeAuth] Error decodificando token:', error);
+                throw new Error('Invalid token format from Google');
+            }
+
+            // ✅ PASO 4: Enviar al backend EN EL MISMO FORMATO QUE WEB
+            console.log('📡 [NativeAuth] Enviando al backend...');
+            
+            const response = await fetch(
+                `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.googleAuth}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        accessToken: result.idToken,  // ✅ Mismo nombre que web
+                        email: decoded.email || '',
+                        name: decoded.name || decoded.given_name || '',
+                        googleId: decoded.sub || '',
+                    }),
                 }
-                throw new Error(errorMessage);
+            );
+
+            console.log('📡 [NativeAuth] Response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ [NativeAuth] Error del servidor:', errorText);
+                
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { message: errorText };
+                }
+                
+                throw new Error(errorData.message || 'Authentication failed');
             }
 
             const data = await response.json();
+            console.log('✅ [NativeAuth] Respuesta del backend:', data);
 
-            if (!data.token || !data.user) {
-                throw new Error('Invalid response from server');
+            // ✅ PASO 5: Separar y guardar tokens
+            if (!data.token) {
+                throw new Error('No se recibió token del servidor');
             }
 
-            // Guardar tokens
             const [accessToken, refreshToken] = data.token.split('|');
+            
             if (!accessToken || !refreshToken) {
-                throw new Error('Invalid token format from server');
+                throw new Error('Formato de token inválido del servidor');
             }
 
+            console.log('💾 [NativeAuth] Guardando tokens...');
             authService.setTokens(accessToken, refreshToken);
-            authService.scheduleTokenRefresh();
+            
+            console.log('✅ [NativeAuth] Autenticación completada exitosamente');
 
-            return {
-                success: true,
-                user: data.user,
-                requiresMFA: data.requiresMFA || false,
-            };
         } catch (error: any) {
-            console.error('Google native auth error:', error);
+            console.error('❌ [NativeAuth] Error en signInWithGoogle:', error);
+            console.error('❌ [NativeAuth] Error stack:', error.stack);
             throw error;
         }
     }
@@ -260,12 +256,10 @@ class NativeAuthService {
         }
     }
 
-    /**
-     * Verificar si está en plataforma nativa
-     */
     isNativePlatform(): boolean {
-        return this.isNative;
+        const platform = Capacitor.getPlatform();
+        return platform === 'android' || platform === 'ios';
     }
 }
 
-export const nativeAuthService = new NativeAuthService();
+export default new NativeAuthService();
