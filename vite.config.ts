@@ -83,9 +83,17 @@ export default defineConfig({
     resolve: {
         dedupe: ['react', 'react-dom'],
     },
-    // ✅ Fuerza la pre-optimización de React
+    // ✅ Fuerza la pre-optimización de dependencias
     optimizeDeps: {
-        include: ['react', 'react-dom'],
+        include: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            'lucide-react',
+            '@tanstack/react-query',
+            'sonner',
+        ],
+        force: true, // ✅ Forzar reoptimización si hay cambios
     },
     server: {
         host: true,

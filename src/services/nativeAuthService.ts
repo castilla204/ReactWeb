@@ -30,8 +30,9 @@ class NativeAuthService {
     private async signInWithGoogleNative(): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
         try {
             // ✅ Inicializar el plugin con el formato correcto
-            // El plugin @capgo/capacitor-social-login espera 'webClientId' para Android, no 'clientId'
-            const googleWebClientId = '61603823707-qdtl859lc1cktfh8m77ppl1brtdkndsv.apps.googleusercontent.com';
+            // El plugin @capgo/capacitor-social-login espera 'webClientId' para Android
+            // IMPORTANTE: Debe ser el Client ID de WEB, no el de Android
+            const googleWebClientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
             
             console.log('🔧 [NativeAuth] Inicializando SocialLogin con webClientId:', googleWebClientId);
             
@@ -55,9 +56,13 @@ class NativeAuthService {
 
             // ✅ Realizar login - El método correcto es 'login()', no 'signIn()'
             // El plugin espera: { provider: 'google', options: GoogleLoginOptions }
+            // ✅ Agregar opciones recomendadas para evitar problemas con cuentas supervisadas
             const loginResult = await (SocialLogin as any).login({
                 provider: 'google',
-                options: {}, // Opciones vacías por defecto, o puedes agregar scopes, etc.
+                options: {
+                    filterByAuthorizedAccounts: false, // ✅ Útil si hay cuentas Family Link o supervisadas
+                    scopes: ['profile', 'email'], // ✅ Scopes necesarios para obtener información del usuario
+                },
             }) as any;
             
             console.log('✅ [NativeAuth] Login exitoso:', loginResult);

@@ -29,6 +29,12 @@ const config: CapacitorConfig = {
       style: 'light',
       overlaysWebView: false,
     },
+    // ✅ Configuración del plugin SocialLogin para Google Sign-In
+    SocialLogin: {
+      providers: {
+        google: true,
+      },
+    },
   },
 };
 
