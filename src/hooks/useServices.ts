@@ -177,7 +177,9 @@ export function useServices({
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(url, {
+            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+            const { capacitorFetch } = await import('../utils/capacitorFetch');
+            const response = await capacitorFetch(url, {
                 headers,
             });
 

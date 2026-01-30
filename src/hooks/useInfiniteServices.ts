@@ -5,6 +5,7 @@ import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { Service } from './useServices';
+import { capacitorFetch } from '../utils/capacitorFetch';
 
 interface UseInfiniteServicesProps {
     categoryId?: number;
@@ -60,7 +61,8 @@ export function useInfiniteServices({
             const url = `${API_CONFIG.baseUrl}/api/SearchService/map-experts?${params.toString()}`;
             console.log('🔍 useInfiniteServices: Fetching page', pageParam, 'from:', url);
 
-            const response = await fetch(url);
+            // ✅ Usar capacitorFetch para evitar CORS en Capacitor
+            const response = await capacitorFetch(url);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch services: ${response.statusText}`);
