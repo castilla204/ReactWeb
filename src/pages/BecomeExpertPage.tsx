@@ -1,12 +1,12 @@
-﻿import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle, CheckCircle2, Hourglass } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle, MapPin, Check, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useLoadScript, Marker, DrawingManager } from '@react-google-maps/api';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
-import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '../components/ui/empty';
+import { Stepper } from '../components/ui/stepper';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
@@ -77,6 +77,14 @@ const circleOptions = {
     draggable: false
 };
 
+const STEPS = [
+    { id: 1, label: 'Foto', icon: Upload },
+    { id: 2, label: 'Descripción', icon: UserPlus },
+    { id: 3, label: 'Ubicación', icon: MapPin },
+    { id: 4, label: 'Disponibilidad', icon: Clock },
+    { id: 5, label: 'Confirmar', icon: Check },
+];
+
 function BecomeExpertPage() {
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +106,7 @@ function BecomeExpertPage() {
         startTime: '09:00',
         endTime: '18:00',
     });
+    const [currentStep, setCurrentStep] = useState(1);
 
     const toggleDay = (day: string) => {
         setAvailability(prev => ({
@@ -135,22 +144,18 @@ function BecomeExpertPage() {
                 lng: e.latLng.lng()
             };
 
-            // Actualizar la ubicación seleccionada
             setSelectedLocation(newLocation);
 
-            // Actualizar el formulario
             setFormData((prev) => ({
                 ...prev,
                 latitude: newLocation.lat.toString(),
                 longitude: newLocation.lng.toString()
             }));
 
-            // Actualizar el círculo si existe
             if (circle) {
                 circle.setCenter(newLocation);
             }
 
-            // También llamar al handler original del hook
             handleMapClick(e);
         }
     };
@@ -175,31 +180,23 @@ function BecomeExpertPage() {
         }
     };
 
-    // Función para actualizar la ubicación
-    const updateLocationAndMap = (newLocation: { lat: number; lng: number }, address: string) => {
-        console.log('Actualizando ubicación:', newLocation, address);
+    const updateLocationAndMap = (newLocation: { lat: number; lng: number }) => {
         setSelectedLocation(newLocation);
-        setFormData((prev) => {
-            const newFormData = {
+        setFormData((prev) => ({
                 ...prev,
                 latitude: newLocation.lat.toString(),
                 longitude: newLocation.lng.toString()
-            };
-            console.log('Nuevo formData:', newFormData);
-            return newFormData;
-        });
+        }));
         
-        // Actualizar mapa
         if (map) {
             map.panTo(newLocation);
-            const zoom = getZoomLevel(100); // 100km
+            const zoom = getZoomLevel(100);
             map.setZoom(zoom);
         }
         
-        // Actualizar círculo - IMPORTANTE: actualizar tanto centro como radio
         if (circle) {
             circle.setCenter(newLocation);
-            circle.setRadius(100000); // 100km en metros
+            circle.setRadius(100000);
         }
     };
 
@@ -220,10 +217,7 @@ function BecomeExpertPage() {
                         lng: place.geometry.location.lng()
                     };
                     
-                    const address = place.formatted_address || place.name || '';
-                    updateLocationAndMap(newLocation, address);
-                    
-                    // Limpiar el campo de búsqueda después de seleccionar
+                    updateLocationAndMap(newLocation);
                     setSearchAddress('');
                 }
             });
@@ -232,17 +226,10 @@ function BecomeExpertPage() {
         }
     }, [isLoaded, autocomplete, circle, map]);
 
-    // Debug: verificar cuando cambia formData
-    useEffect(() => {
-        console.log('formData actualizado:', formData);
-    }, [formData]);
-
     // Mostrar toast cuando hay error de contrataciones activas
     useEffect(() => {
         if (error && (error.includes('contrataciones activas') || error.includes('contratación(es) activa(s)'))) {
             showToast('error', error, 8000);
-            // Limpiar el error del estado para que no se muestre fijo en el formulario
-            // El error se mostrará solo como toast
         }
     }, [error]);
 
@@ -250,199 +237,126 @@ function BecomeExpertPage() {
     useEffect(() => {
         if (map && selectedLocation) {
             map.panTo(selectedLocation);
-            const zoom = getZoomLevel(100); // 100km
+            const zoom = getZoomLevel(100);
             map.setZoom(zoom);
         }
         if (circle && selectedLocation) {
             circle.setCenter(selectedLocation);
-            circle.setRadius(100000); // 100km en metros
+            circle.setRadius(100000);
         }
     }, [selectedLocation, map, circle]);
 
-    return (
-        <div className="relative min-h-screen bg-white">
-            
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-16">
-                {/* Header con botón de volver */}
-                <div className="mb-4 sm:mb-6 lg:mb-8">
-                <button
-                    onClick={() => navigate('/')}
-                        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-all duration-200 group px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg hover:bg-white/60"
-                >
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        <span className="text-xs sm:text-sm font-medium">Volver al inicio</span>
-                </button>
-                </div>
+    const canGoNext = () => {
+        switch (currentStep) {
+            case 1:
+                return !!formData.profilePicture;
+            case 2:
+                return formData.description.length >= 50;
+            case 3:
+                return !!(formData.latitude && formData.longitude);
+            case 4:
+                return true; // Disponibilidad es opcional
+            case 5:
+                return acceptTerms;
+            default:
+                return false;
+        }
+    };
 
-                {/* Layout principal de dos columnas */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
-                    {/* Columna izquierda - Contenido informativo */}
-                    <div className="space-y-6 sm:space-y-8 lg:space-y-10">
-                        {/* Header principal */}
-                        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-                            <div>
-                                <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight mb-3 sm:mb-4">
-                                    <span className="bg-gradient-to-r from-gray-900 via-blue-700 to-blue-600 bg-clip-text text-transparent">
-                                    Conviértete en Buscador Experto
-                                    </span>
-                                </h1>
-                                <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed max-w-xl">
-                                    Ayuda a otros usuarios a encontrar lo que buscan y genera ingresos trabajando desde casa
-                                </p>
-                            </div>
-                            
-                            {/* Estadísticas */}
-                            <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-4 sm:pt-6 border-t border-gray-200">
-                                <div className="text-center">
-                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">Flexible</div>
-                                    <div className="text-xs text-gray-500">Horarios</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">100%</div>
-                                    <div className="text-xs text-gray-500">Remoto</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">Ingresos</div>
-                                    <div className="text-xs text-gray-500">Extra</div>
-                                </div>
-                            </div>
-                        </div>
+    const handleNext = () => {
+        if (canGoNext() && currentStep < STEPS.length) {
+            setCurrentStep(currentStep + 1);
+        }
+    };
 
-                        {/* Información sobre ser freelancer */}
-                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
-                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 lg:mb-5">¿Qué significa ser un Buscador Experto?</h2>
-                            
-                            <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-gray-600 leading-relaxed">
-                                <p>
-                                    Como Buscador Experto, trabajas de forma independiente (freelancer) ayudando a otros usuarios 
-                                    a encontrar vehículos o propiedades que se ajusten a sus necesidades específicas.
-                                </p>
-                                
-                                <p>
-                                    Tu trabajo consiste en realizar búsquedas detalladas en diferentes plataformas, 
-                                    verificar la información de los anuncios y presentar opciones de calidad a los usuarios.
-                                </p>
-                                
-                                <p>
-                                    Es un trabajo <strong className="text-gray-900 font-semibold">flexible</strong> que puedes realizar desde casa, eligiendo cuándo y cuántas 
-                                    búsquedas quieres hacer según tu disponibilidad.
-                                </p>
-                            </div>
-                        </div>
+    const handleBack = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+        }
+    };
 
+    const handleFinalSubmit = () => {
+        if (acceptTerms) {
+            handleSubmit();
+        }
+    };
 
-                        {/* Requisitos */}
-                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
-                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4 lg:mb-5">¿Qué necesitas para empezar?</h2>
-                            <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base text-gray-600">
-                                <li className="flex items-start gap-2 sm:gap-3">
-                                    <span className="text-blue-600 mt-1 font-bold">•</span>
-                                    <span>Conocimiento en vehículos o inmobiliario</span>
-                                </li>
-                                <li className="flex items-start gap-2 sm:gap-3">
-                                    <span className="text-blue-600 mt-1 font-bold">•</span>
-                                    <span>Tiempo disponible para realizar búsquedas</span>
-                                </li>
-                                <li className="flex items-start gap-2 sm:gap-3">
-                                    <span className="text-blue-600 mt-1 font-bold">•</span>
-                                    <span>Compromiso con la calidad del trabajo</span>
-                                </li>
-                                <li className="flex items-start gap-2 sm:gap-3">
-                                    <span className="text-blue-600 mt-1 font-bold">•</span>
-                                    <span>Buena comunicación con los usuarios</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Información adicional */}
-                        <div className="border-t border-gray-200 pt-6 sm:pt-8">
-                            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">¿Cómo funciona?</h3>
-                            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                                Una vez registrado, recibirás notificaciones cuando haya búsquedas 
-                                disponibles en tu área. Puedes aceptar las que te interesen y trabajar a tu ritmo.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Columna derecha - Formulario */}
-                    <div className="lg:sticky lg:top-8 lg:h-fit">
-                        <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 lg:p-6 shadow-sm">
-                            {/* Header del formulario */}
-                            <div className="mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-gray-200">
-                                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-1.5">Completa tu Registro</h2>
-                                <p className="text-xs text-gray-600">Solo te tomará unos minutos</p>
-                            </div>
-                            
-                                {/* Indicador de progreso */}
-                            <div className="mb-4 sm:mb-6">
-                                <div className="flex items-center justify-between text-xs text-gray-700 mb-2 sm:mb-2.5">
-                                    <span className="font-medium">Progreso</span>
-                                    <span className="font-semibold text-gray-900">
-                                            {[
-                                                formData.profilePicture,
-                                                formData.description.length >= 50,
-                                            formData.latitude && formData.longitude
-                                        ].filter(Boolean).length}/3
-                                        </span>
-                                    </div>
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                        <div 
-                                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                            style={{
-                                                width: `${([
-                                                    formData.profilePicture,
-                                                    formData.description.length >= 50,
-                                                formData.latitude && formData.longitude
-                                                ].filter(Boolean).length / 3) * 100}%`
-                                            }}
-                                        ></div>
-                        </div>
-                    </div>
-
-                            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4 sm:space-y-5">
-                                {/* Paso 1: Foto de perfil */}
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <div className="space-y-6">
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
-                                            formData.profilePicture 
-                                                ? 'bg-blue-600 text-white' 
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}>
-                                            {formData.profilePicture ? '✓' : '1'}
-                                        </div>
-                                        <label className="text-xs font-semibold text-gray-900">
-                                Foto de Perfil <span className="text-red-500">*</span>
-                            </label>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                Sube tu foto de perfil
+                            </div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Esta será la foto que verán todos los usuarios en tu perfil
+                            </div>
                                     </div>
                             <div
-                                        className={`border-2 border-dashed rounded-lg p-4 sm:p-5 text-center cursor-pointer transition-all ${
+                            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
                                             formData.profilePicture 
-                                                ? 'border-blue-200 bg-blue-50/50' 
-                                                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                                    ? 'border-gray-300 bg-gray-50' 
+                                    : 'border-gray-300 hover:border-gray-400'
                                         }`}
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 {previewUrl ? (
-                                            <div className="relative w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full overflow-hidden">
+                                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden">
                                         <img
                                             src={previewUrl}
                                             alt="Preview"
                                             className="w-full h-full object-cover"
                                         />
-                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
-                                                    <Upload className="w-3 h-3 text-white" />
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                        <Upload className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
                                 ) : (
-                                            <div className="space-y-2">
-                                                <div className="inline-flex p-2 bg-gray-100 rounded-lg">
-                                                    <Upload className="w-5 h-5 text-gray-500" />
+                                <div className="space-y-4">
+                                    <div className="inline-flex p-4 bg-gray-100 rounded-full">
+                                        <Upload className="w-8 h-8 text-gray-500" />
                                                 </div>
                                                 <div>
-                                                    <div className="text-xs font-medium text-gray-700 mb-0.5">
+                                        <div 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '4px',
+                                            }}
+                                        >
                                                     Haz clic para subir foto
                                         </div>
-                                                    <div className="text-xs text-gray-500">
+                                        <div 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontWeight: 400,
+                                                color: 'rgb(113, 113, 113)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
+                                        >
                                             PNG o JPG (máx. 5MB)
                                                     </div>
                                         </div>
@@ -456,109 +370,133 @@ function BecomeExpertPage() {
                                     className="hidden"
                                 />
                             </div>
-                                    <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
-                                        Esta será la foto que verán todos los usuarios
-                                    </p>
                         </div>
+                );
 
-                                {/* Paso 2: Descripción */}
+            case 2:
+                return (
+                    <div className="space-y-6">
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
-                                            formData.description.length >= 50 
-                                                ? 'bg-blue-600 text-white' 
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}>
-                                            {formData.description.length >= 50 ? '✓' : '2'}
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                Describe tu experiencia
+                            </div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Cuéntanos sobre tu experiencia y especialidad en vehículos o inmobiliario
                                         </div>
-                                        <label className="text-xs font-semibold text-gray-900">
-                                            Descripción de Perfil <span className="text-red-500">*</span>
-                            </label>
                                     </div>
                             <textarea
                                 value={formData.description}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                                        className={`w-full px-3 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none text-sm ${
-                                            formData.description.length >= 50 
-                                                ? 'border-blue-200 bg-blue-50/50' 
-                                                : 'border-gray-300'
-                                        }`}
-                                rows={4}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 resize-none"
+                            style={{
+                                fontSize: '14px',
+                                lineHeight: '20px',
+                                fontWeight: 400,
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            }}
+                            rows={6}
                                         placeholder="Describe tu experiencia y especialidad en vehículos o inmobiliario..."
                                 required
                                 minLength={50}
                             />
-                                    <div className="flex justify-between items-center mt-1.5 sm:mt-2">
-                                        <p className="text-xs text-gray-500">Mínimo 50 caracteres</p>
-                                        <span className={`text-xs font-medium ${
-                                            formData.description.length >= 50 ? 'text-blue-600' : 
-                                            formData.description.length > 0 ? 'text-gray-600' : 'text-gray-400'
-                                        }`}>
+                        <div className="flex justify-between items-center">
+                            <p 
+                                style={{
+                                    fontSize: '12px',
+                                    lineHeight: '16px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Mínimo 50 caracteres
+                            </p>
+                            <span 
+                                style={{
+                                    fontSize: '12px',
+                                    lineHeight: '16px',
+                                    fontWeight: 500,
+                                    color: formData.description.length >= 50 ? 'rgb(34, 34, 34)' : 'rgb(156, 163, 175)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
                                             {formData.description.length}/50
                                         </span>
                                     </div>
                         </div>
+                );
 
-                                {/* Paso 3: Ubicación */}
+            case 3:
+                return (
+                    <div className="space-y-6">
                         <div>
-                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
-                                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-semibold transition-all ${
-                                            formData.latitude && formData.longitude
-                                                ? 'bg-blue-600 text-white' 
-                                                : 'bg-gray-200 text-gray-500'
-                                        }`}>
-                                            {formData.latitude && formData.longitude ? '✓' : '3'}
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                Define tu área de trabajo
+                            </div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Área donde te encontrarán los usuarios y donde se te encargarán los trabajos
+                            </div>
                                         </div>
-                                        <label className="text-xs font-semibold text-gray-900">
-                                            Área de Trabajo <span className="text-red-500">*</span>
-                            </label>
-                                    </div>
-                                    {/* Buscador de direcciones */}
-                                    <div className="mb-2 sm:mb-3">
+                        <div>
                                         <input
                                             ref={searchInputRef}
                                             type="text"
                                             placeholder="Buscar dirección o ciudad..."
                                             value={searchAddress}
                                             onChange={(e) => setSearchAddress(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                                        />
-                                    </div>
-
-                                    <div className={`border-2 rounded-lg overflow-hidden transition-all ${
-                                        formData.latitude && formData.longitude 
-                                            ? 'border-blue-200' 
-                                            : 'border-gray-300'
-                                    }`}>
-                                        <div className="relative h-[180px] sm:h-[200px] lg:h-[220px]">
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 mb-4"
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            />
+                            <div className="border border-gray-300 rounded-xl overflow-hidden">
+                                <div className="relative h-[300px]">
                                     {!isLoaded ? (
                                         <div className="h-full flex items-center justify-center bg-gray-50">
-                                            <Empty className="py-8">
-                                                <EmptyMedia variant="icon">
-                                                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                                                </EmptyMedia>
-                                                <EmptyHeader>
-                                                    <EmptyDescription className="text-xs text-gray-500">
-                                                        Cargando mapa...
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
+                                            <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
                                         </div>
                                     ) : loadError ? (
                                         <div className="h-full flex items-center justify-center bg-gray-50">
-                                            <Empty className="py-8">
-                                                <EmptyMedia variant="icon">
-                                                    <AlertTriangle className="w-5 h-5 text-gray-400" />
-                                                </EmptyMedia>
-                                                <EmptyHeader>
-                                                    <EmptyDescription className="text-xs text-gray-500">
-                                                        Error al cargar el mapa
-                                                    </EmptyDescription>
-                                                </EmptyHeader>
-                                            </Empty>
+                                            <AlertTriangle className="w-6 h-6 text-gray-400" />
                                         </div>
                                     ) : (
-                                        <>
                                             <GoogleMap
                                                 mapContainerStyle={{ width: '100%', height: '100%' }}
                                                         zoom={getZoomLevel(100)}
@@ -592,163 +530,398 @@ function BecomeExpertPage() {
                                                     }}
                                                 />
                                             </GoogleMap>
-                                        </>
                                     )}
                                 </div>
                             </div>
-                                    <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
-                                        Área donde te encontrarán los usuarios y donde se te encargarán los trabajos de revisión o búsqueda
-                                    </p>
+                        </div>
+                    </div>
+                );
+
+            case 4:
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                Disponibilidad horaria
+                            </div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Define los días y horarios en los que estarás disponible (opcional)
+                            </div>
                                 </div>
-
-                                {/* Paso 4: Disponibilidad horaria (Opcional) */}
+                        <div className="space-y-4">
                                 <div>
-                                    <div className="flex items-center gap-2 sm:gap-2.5 mb-2 sm:mb-3">
-                                        <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-semibold bg-gray-200 text-gray-500">
-                                            4
-                                        </div>
-                                        <label className="text-xs font-semibold text-gray-900 flex items-center gap-2">
-                                            <Clock className="w-4 h-4" />
-                                            Disponibilidad Horaria <span className="text-gray-500 font-normal">(Opcional)</span>
+                                <label 
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '18px',
+                                        fontWeight: 500,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        marginBottom: '12px',
+                                        display: 'block',
+                                    }}
+                                >
+                                    Días de trabajo
                                         </label>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mb-3">
-                                        Define los días y horarios en los que estarás disponible para recibir contrataciones.
-                                    </p>
-
-                                    {/* Días de la semana */}
-                                    <div className="space-y-2 mb-4">
-                                        <label className="text-xs font-medium text-gray-700">Días de trabajo</label>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             {VALID_DAYS_OF_WEEK.map(day => (
                                                 <button
                                                     key={day}
                                                     type="button"
                                                     onClick={() => toggleDay(day)}
-                                                    className={`px-3 py-2 text-xs sm:text-sm font-medium rounded-lg border transition-all ${
+                                            className={`px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
                                                         availability.daysOfWeek.includes(day)
-                                                            ? 'bg-blue-600 text-white border-blue-600'
-                                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300 hover:bg-blue-50'
+                                                    ? 'bg-gray-900 text-white border-gray-900'
+                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                                                     }`}
+                                            style={{
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
                                                 >
                                                     {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* Horario */}
                                     {availability.daysOfWeek.length > 0 && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                        <label 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '18px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '8px',
+                                                display: 'block',
+                                            }}
+                                        >
                                                     Hora de inicio
                                                 </label>
                                                 <input
                                                     type="time"
                                                     value={availability.startTime}
                                                     onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                        <label 
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '18px',
+                                                fontWeight: 600,
+                                                color: 'rgb(34, 34, 34)',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                marginBottom: '8px',
+                                                display: 'block',
+                                            }}
+                                        >
                                                     Hora de fin
                                                 </label>
                                                 <input
                                                     type="time"
                                                     value={availability.endTime}
                                                     onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                            style={{
+                                                fontSize: '14px',
+                                                lineHeight: '20px',
+                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                            }}
                                                 />
                                             </div>
                                         </div>
                                     )}
                         </div>
+                    </div>
+                );
 
-                                {/* Casillas de verificación */}
-                                <div className="space-y-2 sm:space-y-2.5 pt-1 sm:pt-2">
-                                    <div className="flex items-start gap-2.5">
+            case 5:
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    color: 'rgb(34, 34, 34)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                Confirma y finaliza
+                            </div>
+                            <div 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgb(113, 113, 113)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                Revisa y acepta los términos para completar tu registro
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                                         <input
                                             type="checkbox"
                                             id="acceptTerms"
                                             checked={acceptTerms}
                                             onChange={(e) => setAcceptTerms(e.target.checked)}
-                                            className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-400 cursor-pointer"
+                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
                                             required
                                         />
-                                        <label htmlFor="acceptTerms" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                                <label 
+                                    htmlFor="acceptTerms"
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
+                                >
                                             Acepto las{' '}
-                                            <a href="/privacy-policy.html" target="_blank" className="text-gray-900 hover:underline font-medium">
+                                    <a href="/privacy-policy.html" target="_blank" style={{ color: 'rgb(34, 34, 34)', fontWeight: 500, textDecoration: 'underline' }}>
                                                 condiciones de uso de inspecciono.io
                                             </a>
                                             {' '}y confirmo que he leído la política de privacidad
                                         </label>
                                     </div>
-
-                                    <div className="flex items-start gap-2.5">
+                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                                         <input
                                             type="checkbox"
                                             id="acceptNotifications"
                                             checked={acceptNotifications}
                                             onChange={(e) => setAcceptNotifications(e.target.checked)}
-                                            className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-400 cursor-pointer"
-                                        />
-                                        <label htmlFor="acceptNotifications" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
+                                />
+                                <label 
+                                    htmlFor="acceptNotifications"
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: 'rgb(34, 34, 34)',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    }}
+                                >
                                             Acepto recibir notificaciones sobre nuevas búsquedas
                                         </label>
                                     </div>
                                 </div>
-
-                                {/* Error message - Solo mostrar si NO es error de contrataciones activas (ese se muestra como toast) */}
                         {error && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
-                            <Empty className="py-8">
-                                <EmptyMedia variant="icon">
-                                    <AlertTriangle className="w-6 h-6 text-gray-400" />
-                                </EmptyMedia>
-                                <EmptyHeader>
-                                    <EmptyTitle className="text-base">Error al procesar la solicitud</EmptyTitle>
-                                    <EmptyDescription className="text-sm text-gray-500 mt-1">
+                            <div className="p-4 border border-red-200 bg-red-50 rounded-xl">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    <span 
+                                        style={{
+                                            fontSize: '14px',
+                                            lineHeight: '18px',
+                                            fontWeight: 600,
+                                            color: '#991b1b',
+                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        }}
+                                    >
+                                        Error al procesar la solicitud
+                                    </span>
+                                </div>
+                                <p 
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '20px',
+                                        fontWeight: 400,
+                                        color: '#b91c1c',
+                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        marginTop: '4px',
+                                    }}
+                                >
                                         {error}
-                                    </EmptyDescription>
-                                </EmptyHeader>
-                            </Empty>
+                                </p>
+                            </div>
                         )}
+                    </div>
+                );
 
-                                {/* Submit button */}
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-white">
+            {/* Hero Header más pequeño */}
+            <div className="relative h-[200px] lg:h-[240px] overflow-hidden">
+                {/* Imagen de fondo con gradiente */}
+                <div 
+                    className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"
+                    style={{
+                        backgroundImage: `linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(79, 70, 229, 0.9) 100%), 
+                        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                    }}
+                />
+                
+                {/* Contenido del header */}
+                <div className="relative z-10 h-full flex flex-col">
+                    {/* Botón volver */}
+                    <div className="absolute top-4 left-4 z-20">
+                        <button 
+                            onClick={() => navigate('/')}
+                            className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg"
+                            aria-label="Atrás"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-900" />
+                        </button>
+                    </div>
+
+                    {/* Contenido centrado */}
+                    <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-16 pb-8">
+                        <div className="text-center max-w-2xl">
+                            <h1 
+                                style={{
+                                    fontSize: '22px',
+                                    lineHeight: '26px',
+                                    fontWeight: 600,
+                                    color: 'rgb(255, 255, 255)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    marginBottom: '8px',
+                                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                }}
+                            >
+                                Conviértete en Buscador Experto
+                            </h1>
+                            <p 
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '20px',
+                                    fontWeight: 400,
+                                    color: 'rgba(255, 255, 255, 0.95)',
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                    textShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+                                }}
+                            >
+                                Ayuda a otros usuarios y genera ingresos trabajando desde casa
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Contenido principal con stepper arriba */}
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 sm:-mt-12 relative z-20">
+                {/* Card del formulario */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+                    {/* Stepper arriba */}
+                    <div className="px-4 sm:px-8 py-5 border-b border-gray-200 bg-gray-50">
+                        <Stepper 
+                            steps={STEPS.map(s => ({ label: s.label, icon: <s.icon className="w-4 h-4" /> }))}
+                            currentStep={currentStep}
+                            size="default"
+                        />
+                    </div>
+
+                    {/* Contenido del paso */}
+                    <div className="px-4 sm:px-8 py-6 sm:py-8">
+                        {renderStepContent()}
+                    </div>
+
+                    {/* Botones de navegación */}
+                    <div className="px-4 sm:px-8 py-4 sm:py-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
                         <button
-                            type="submit"
-                                    disabled={isSubmitting || !formData.profilePicture || formData.description.length < 50 || !acceptTerms}
-                                    className="w-full flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-base rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow touch-manipulation"
+                            onClick={handleBack}
+                            disabled={currentStep === 1}
+                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
+                                currentStep === 1
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                            style={{
+                                fontSize: '14px',
+                                lineHeight: '18px',
+                                fontWeight: 600,
+                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                            }}
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className="hidden sm:inline">Atrás</span>
+                        </button>
+                        
+                        {currentStep < STEPS.length ? (
+                            <button
+                                onClick={handleNext}
+                                disabled={!canGoNext()}
+                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
+                                    canGoNext()
+                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }`}
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
+                            >
+                                <span>Siguiente</span>
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleFinalSubmit}
+                                disabled={!acceptTerms || isSubmitting}
+                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
+                                    acceptTerms && !isSubmitting
+                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }`}
+                                style={{
+                                    fontSize: '14px',
+                                    lineHeight: '18px',
+                                    fontWeight: 600,
+                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                }}
                         >
                             {isSubmitting ? (
                                 <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span>Procesando solicitud...</span>
+                                        <span>Procesando...</span>
                                 </>
                             ) : (
                                 <>
-                                            <UserPlus className="w-4 h-4" />
-                                            <span>Completar Registro</span>
+                                        <Check className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Completar Registro</span>
+                                        <span className="sm:hidden">Completar</span>
                                 </>
                             )}
                         </button>
-                        
-                        {/* Estado de carga profesional cuando se está enviando */}
-                        {isSubmitting && (
-                            <Empty className="py-6 border-t border-gray-100 mt-4">
-                                <EmptyMedia variant="icon">
-                                    <Hourglass className="w-5 h-5 text-gray-400 animate-pulse" />
-                                </EmptyMedia>
-                                <EmptyHeader>
-                                    <EmptyDescription className="text-xs text-gray-500">
-                                        Estamos procesando tu solicitud. Por favor, espera un momento...
-                                    </EmptyDescription>
-                                </EmptyHeader>
-                            </Empty>
                         )}
-                    </form>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -756,6 +929,5 @@ function BecomeExpertPage() {
     );
 }
 
-// Exportación por defecto Y nombrada para máxima compatibilidad
 export default BecomeExpertPage;
 export { BecomeExpertPage };

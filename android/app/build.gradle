@@ -65,15 +65,19 @@ dependencies {
     implementation project(':capacitor-android')
     
     // ✅ Dependencias para Google Sign-In con Credential Manager API
+    // IMPORTANTE: Estas dependencias deben estar ANTES de capacitor-cordova-android-plugins
+    // para que el plugin capacitor-social-login las detecte correctamente
     implementation "androidx.credentials:credentials:1.5.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.5.0"
     implementation "com.google.android.gms:play-services-auth:21.4.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
+    
+    // ✅ Asegurar que las dependencias estén disponibles para los plugins
+    implementation project(':capacitor-cordova-android-plugins')
 
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
-    implementation project(':capacitor-cordova-android-plugins')
 }
 
 apply from: 'capacitor.build.gradle'
