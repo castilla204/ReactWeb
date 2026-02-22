@@ -1,12 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-/** Proyecto Supabase activo (MCP). El ref antiguo rveqsehzlvbttlpmsbmi ya no resuelve en DNS. */
-const SUPABASE_URL =
-  import.meta.env.VITE_SUPABASE_URL || 'https://cckrnifvbrwuagzlsrbj.supabase.co';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
 /** Legacy anon: más fiable en WebSocket Realtime que sb_publishable en algunas versiones del SDK. */
-const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  '__REDACTED_JWT__';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 
 let supabaseClient: SupabaseClient | null = null;
 

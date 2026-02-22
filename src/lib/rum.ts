@@ -41,11 +41,8 @@ type NavigatorWithExtras = Navigator & {
     deviceMemory?: number;
 };
 
-const SUPABASE_URL =
-    import.meta.env.VITE_SUPABASE_URL || 'https://cckrnifvbrwuagzlsrbj.supabase.co';
-const SUPABASE_ANON_KEY =
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    '__REDACTED_JWT__';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
 const ENDPOINT = `${SUPABASE_URL}/rest/v1/web_vitals`;
 
 function isCapacitorNative(): boolean {
