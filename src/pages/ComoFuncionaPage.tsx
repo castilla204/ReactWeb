@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from '../components/Footer';
+import { useAuth } from '../contexts/AuthContext';
 import {
     BookOpen,
     Search,
@@ -22,6 +23,8 @@ interface Section {
 
 const ComoFuncionaPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isExpert = ((user as any)?.Role || (user as any)?.role) === 'Expert';
     const [activeSection, setActiveSection] = useState<string>('introduction');
 
     const sections: Section[] = [
@@ -201,6 +204,7 @@ const ComoFuncionaPage: React.FC = () => {
                         <div className="relative z-10">
                             <h3 className="text-2xl font-bold mb-4">Únete a nuestra red</h3>
                             <p className="text-slate-300 mb-6">Ofrece tus servicios a miles de clientes, gestiona tu negocio y recibe pagos seguros.</p>
+                            {!isExpert && (
                             <button
                                 onClick={() => navigate('/become-expert')}
                                 className="bg-white text-slate-900 px-6 py-2 rounded-lg font-medium hover:bg-slate-100 transition-colors inline-flex items-center gap-2"
@@ -208,6 +212,7 @@ const ComoFuncionaPage: React.FC = () => {
                                 Empezar ahora
                                 <ChevronRight className="w-4 h-4" />
                             </button>
+                            )}
                         </div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
                     </div>
@@ -313,6 +318,7 @@ const ComoFuncionaPage: React.FC = () => {
                             })}
 
                             <div className="mt-8 px-4 pt-8 border-t border-slate-100">
+                                {!isExpert && (
                                 <button
                                     onClick={() => navigate('/become-expert')}
                                     className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
@@ -320,6 +326,7 @@ const ComoFuncionaPage: React.FC = () => {
                                     Convertirse en experto
                                     <ChevronRight className="w-4 h-4" />
                                 </button>
+                                )}
                             </div>
                         </div>
                     </nav>
