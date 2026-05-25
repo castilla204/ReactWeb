@@ -7,6 +7,8 @@ import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
 import { Stepper } from '../components/ui/stepper';
+import { useAuth } from '../contexts/AuthContext';
+import { useExpert } from '../hooks/useExpert';
 
 // Define a local type to match the Library enum values
 type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
@@ -90,6 +92,20 @@ function BecomeExpertPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const { formData, previewUrl, isSubmitting, error, handleFileChange, handleMapClick, handleSubmit, setFormData } = useBecomeExpert();
+    const { user } = useAuth();
+    const { startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+    const isAlreadyExpert = user?.role === 'Expert';
+    // Si ya eres experto pero no completaste Stripe, NO mostramos el formulario (daría "ya eres experto"):
+    // comprobamos el estado y, si ya está completo, vamos al panel; si no, mostramos el botón de reanudar pagos.
+    useEffect(() => {
+        if (!isAlreadyExpert) return;
+        checkOnboardingStatus(true)
+            .then((status) => {
+                if (status?.onboardingCompleted) navigate('/expert-panel', { replace: true });
+            })
+            .catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAlreadyExpert]);
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries
@@ -774,6 +790,59 @@ function BecomeExpertPage() {
                 return null;
         }
     };
+
+    // Guard: ya eres experto → no mostrar el formulario; ofrecer reanudar la configuración de pagos.
+    if (isAlreadyExpert) {
+        return (
+            <div className="min-h-screen bg-white">
+                <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Atrás"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-900" />
+                    </button>
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center">
+                        <div className="inline-flex p-4 bg-blue-50 rounded-full mb-4">
+                            <Check className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <h1 className="text-xl font-semibold text-gray-900 mb-2">Ya casi eres experto</h1>
+                        <p className="text-sm text-gray-600 mb-6">
+                            Tu perfil de experto ya está creado. Solo falta <strong>configurar tus pagos con Stripe</strong> para
+                            poder recibir encargos y cobrar.
+                        </p>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await startOnboarding();
+                                } catch {
+                                    showToast('error', 'No se pudo iniciar la configuración de pagos. Inténtalo de nuevo en unos minutos.');
+                                }
+                            }}
+                            disabled={isStartingOnboarding}
+                            className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isStartingOnboarding ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Conectando con Stripe…</span>
+                                </>
+                            ) : (
+                                <span>Configurar pagos con Stripe</span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => navigate('/expert-panel')}
+                            className="mt-3 text-sm font-semibold text-gray-700 hover:text-gray-900 underline"
+                        >
+                            Ir a mi panel de experto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">

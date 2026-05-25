@@ -164,8 +164,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
         e.preventDefault();
         handleCardClick();
       }}
-      className="block flex-shrink-0"
-      style={{ width: isMobile ? '160px' : '169px' }}
+      className="block flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px] xl:w-[280px]"
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <motion.div 
@@ -563,6 +562,7 @@ interface HorizontalScrollSectionProps {
   subtitle?: string;
   services: SearchServiceDetailDto[];
   forceGuestFavorite?: boolean;
+  isLastSection?: boolean;
 }
 
 // ✅ Memoizar HorizontalScrollSection para evitar re-renders innecesarios
@@ -626,7 +626,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
 
   const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 300;
+      const scrollAmount = window.innerWidth >= 1024 ? 560 : window.innerWidth >= 768 ? 440 : 300;
       // ✅ OPTIMIZADO: Usar requestAnimationFrame para scroll más fluido
       requestAnimationFrame(() => {
         scrollRef.current?.scrollBy({
@@ -650,7 +650,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header */}
-      <div className="mb-4" style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '0', paddingBottom: '0' }}>
+      <div className="mb-4 px-6 md:px-8 lg:px-12">
         <div className="flex items-center justify-between">
           <div>
             <a
@@ -661,15 +661,9 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               }}
             >
               <h2
-                style={{ 
-                  fontSize: '18px', 
-                  lineHeight: '24px', 
-                  fontWeight: 500,
+                className="text-lg md:text-xl lg:text-[22px] leading-6 md:leading-7 font-medium text-[#222222] tracking-wide m-0 p-0"
+                style={{
                   fontFamily: 'Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif',
-                  color: 'rgb(34, 34, 34)',
-                  letterSpacing: '0.3px',
-                  margin: 0,
-                  padding: 0,
                 }}
               >
                 {title.replace(' >', '')}
@@ -736,22 +730,19 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         {/* Scroll area */}
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-hide pb-4"
+          className="flex overflow-x-auto scrollbar-hide pb-4 px-6 md:px-8 lg:px-12 gap-3 md:gap-4 lg:gap-5"
           style={{
-            paddingLeft: '24px',
-            paddingRight: '24px',
             // ✅ Scroll táctil mejorado - Momentum y snap
             WebkitOverflowScrolling: 'touch', // Momentum scrolling en iOS
             scrollBehavior: 'smooth', // Scroll suave
-            scrollSnapType: 'x mandatory', // Snap a posiciones
-            scrollPaddingLeft: '24px', // ✅ Respeta el padding izquierdo en snap
-            scrollPaddingRight: '24px', // ✅ Respeta el padding derecho en snap
+            scrollSnapType: 'x mandatory',
+            scrollPaddingLeft: '24px',
+            scrollPaddingRight: '24px',
             overscrollBehaviorX: 'contain', // Evita bounce del body
             willChange: 'scroll-position',
             contain: 'layout style paint',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            gap: '12px',
             // ✅ Perspectiva 3D para efecto parallax
             perspective: '1000px',
           }}
@@ -1021,10 +1012,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         <motion.div
           key={`section-${index}-${section.title}`} // ✅ Key más estable
           variants={sectionVariants}
-          className={index > 0 ? "mt-3" : ""} // ✅ Mismo margen superior entre secciones que desde arriba (pt-3 = 12px)
-          style={index > 0 ? { 
-            marginTop: '12px' // ✅ Mismo espaciado que el padding-top del contenedor (12px)
-          } : {}} 
+          className={index > 0 ? 'mt-6 md:mt-8 lg:mt-10' : ''}
         >
           <HorizontalScrollSection
             title={section.title} // ✅ Título ya viene formateado del backend
@@ -1043,29 +1031,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (isLoading || isFetching) {
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full flex justify-center">
-          <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+        <div className="w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12">
             {/* ✅ Skeleton para secciones */}
-            <div className="space-y-8 md:space-y-12">
+            <div className="space-y-8 md:space-y-12 lg:space-y-14">
               {/* Primera sección skeleton */}
               <div>
-                <div className="mb-4 px-6 md:px-0">
+                <div className="mb-4">
                   <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
                   <Skeleton height={16} width={128} borderRadius={4} />
                 </div>
-                <div 
-                  className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
-                  style={{ 
-                    scrollbarWidth: 'none', 
+                <div
+                  className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 lg:gap-5"
+                  style={{
+                    scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                     WebkitOverflowScrolling: 'touch',
                     willChange: 'scroll-position',
                     contain: 'layout style paint',
                   }}
                 >
-                  {[...Array(4)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0" style={{ width: '160px' }}>
-                      <Skeleton height={160} width={160} borderRadius={20} className="mb-2" />
+                  {[...Array(5)].map((_, index) => (
+                    <div key={index} className="flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px]">
+                      <Skeleton height={160} className="w-full aspect-square mb-2" borderRadius={20} />
                       <Skeleton height={16} width="100%" borderRadius={4} />
                     </div>
                   ))}
@@ -1074,30 +1061,29 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               
               {/* Segunda sección skeleton */}
               <div>
-                <div className="mb-4 px-6 md:px-0">
+                <div className="mb-4">
                   <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
                   <Skeleton height={16} width={128} borderRadius={4} />
                 </div>
-                <div 
-                  className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
-                  style={{ 
-                    scrollbarWidth: 'none', 
+                <div
+                  className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 lg:gap-5"
+                  style={{
+                    scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                     WebkitOverflowScrolling: 'touch',
                     willChange: 'scroll-position',
                     contain: 'layout style paint',
                   }}
                 >
-                  {[...Array(4)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0" style={{ width: '160px' }}>
-                      <Skeleton height={160} width={160} borderRadius={20} className="mb-2" />
+                  {[...Array(5)].map((_, index) => (
+                    <div key={index} className="flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px]">
+                      <Skeleton height={160} className="w-full aspect-square mb-2" borderRadius={20} />
                       <Skeleton height={16} width="100%" borderRadius={4} />
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </SkeletonTheme>
     );
@@ -1149,15 +1135,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         contain: 'layout style paint',
       }}
     >
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
-          {/* ✅ OPTIMIZADO: Usar secciones memoizadas (ya calculadas antes de los early returns) */}
+      <div className="w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12">
           {renderedSections}
-        </div>
       </div>
       
       {/* Footer */}
-      <motion.div className="mt-8 w-full" variants={sectionVariants} style={{ marginTop: '24px' }}>
+      <motion.div className="mt-8 lg:mt-12 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12" variants={sectionVariants}>
         <Footer />
       </motion.div>
     </motion.div>

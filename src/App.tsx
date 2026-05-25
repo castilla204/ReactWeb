@@ -39,6 +39,7 @@ import SearchCreationPage from './pages/SearchCreationPage';
 import Background from './components/Background';
 import { BecomeExpertPage } from './pages/BecomeExpertPage';
 import { ExpertPanelPage } from './pages/ExpertPanelPage';
+import { StripeOnboardingReturnPage } from './pages/StripeOnboardingReturnPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import TransactionsPage from './pages/TransactionsPage';
 import HomePage from './pages/HomePage';
@@ -158,6 +159,7 @@ const AppContent: React.FC = () => {
     
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
+    const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
     const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
     const [isInFormStep, setIsInFormStep] = useState(false);
     
@@ -261,7 +263,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
             {/* Header estilo Memorae - Oculto en móvil */}
-            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile ? 'hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
+            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || isHomePage ? '!hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
                         {/* Logo estilo Memorae */}
                         <div className="flex items-center gap-3">
@@ -666,6 +668,9 @@ const AppContent: React.FC = () => {
                             </Route>
                             <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
+                            {/* Retorno de Stripe Connect onboarding (return_url / refresh_url). Antes estas rutas no existían → 404. */}
+                            <Route path="/complete-onboarding" element={<ProtectedRoute><StripeOnboardingReturnPage /></ProtectedRoute>} />
+                            <Route path="/refresh-onboarding" element={<ProtectedRoute><StripeOnboardingReturnPage /></ProtectedRoute>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
                             <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
                             <Route path="/checkout/:serviceId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
