@@ -47,7 +47,11 @@ class StripeStatusCache {
             return status;
         } catch (error) {
             console.error('Error fetching Stripe status:', error);
-            return this.cache; // Devolver cache anterior en caso de error
+            // ⚠️ A7: marcar la cache como obsoleta para forzar un re-fetch en el próximo acceso,
+            // en vez de servir un estado potencialmente caduco durante todo el TTL. Se devuelve el
+            // último valor solo por continuidad visual; isStale() pasará a true.
+            this.lastFetch = 0;
+            return this.cache;
         }
     }
 

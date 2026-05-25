@@ -8,6 +8,7 @@ import { Label } from '../ui/label';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Pagination } from '../Pagination';
 import { getPriceDisplay } from '../../utils/priceUtils';
+import { TERMINAL_SEARCH_HIRE_STATUSES } from '../../constants/hireStatuses';
 
 interface Hire { 
     id: number; 
@@ -60,7 +61,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
             return hire.statusInfo.isFinalizationStatus;
         }
         // Fallback: usar status directamente (no hay statusInfo disponible)
-        return ['completed', 'cancelled', 'transfer_failed', 'dispute_resolved', 'dispute_resolved_client', 'dispute_resolved_expert'].includes(hire.status);
+        return (TERMINAL_SEARCH_HIRE_STATUSES as readonly string[]).includes(hire.status);
     });
     const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
         const matchesClient = !filters.clientName || (hire.client?.name || '').toLowerCase().includes(filters.clientName.toLowerCase());
@@ -150,7 +151,6 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                 <option value="completed">Completado</option>
                                 <option value="cancelled">Cancelado</option>
                                 <option value="transfer_failed">Transferencia Fallida</option>
-                                <option value="dispute_resolved">Disputa Resuelta</option>
                                 <option value="dispute_resolved_client">Disputa Resuelta (Cliente)</option>
                                 <option value="dispute_resolved_expert">Disputa Resuelta (Experto)</option>
                             </select>

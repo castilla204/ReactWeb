@@ -47,7 +47,8 @@ export const useExpertResponse = () => {
       console.log('[useExpertResponse] Expert response sent successfully');
       // Invalidar queries relacionadas con disputas
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
-      queryClient.invalidateQueries({ queryKey: ['searchDetails'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
     },
     onError: (error) => {
       console.error('[useExpertResponse] Error sending expert response:', error);

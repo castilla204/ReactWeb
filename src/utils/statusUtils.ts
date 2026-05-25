@@ -1,5 +1,7 @@
 import { SystemStatusDto } from '../types/searchDetails';
 
+import { DISPUTE_RESOLVED_STATUSES, TERMINAL_SEARCH_HIRE_STATUSES } from '../constants/hireStatuses';
+
 // Utilidades para manejar información de estados
 export const getStatusColor = (statusInfo: SystemStatusDto): string => {
   return statusInfo.color || '#6C757D';
@@ -47,10 +49,9 @@ export const getStatusInfoWithFallback = (
 export const isPositiveStatus = (statusInfo: SystemStatusDto): boolean => {
   const positiveStatuses = [
     'completed',
-    'dispute_resolved_client',
-    'dispute_resolved_expert',
+    ...DISPUTE_RESOLVED_STATUSES,
     'appointment_confirmed',
-    'appointment_completed'
+    'appointment_report_sent',
   ];
   
   return positiveStatuses.includes(statusInfo.statusValue) || 
@@ -74,11 +75,11 @@ export const isNegativeStatus = (statusInfo: SystemStatusDto): boolean => {
 export const isNeutralStatus = (statusInfo: SystemStatusDto): boolean => {
   const neutralStatuses = [
     'pending',
-    'in_progress',
     'awaiting_client_decision',
     'appointment_proposed',
     'appointment_report_sent',
-    'awaiting_appointment'
+    'awaiting_appointment',
+    'appointment_awaiting_report',
   ];
   
   return neutralStatuses.includes(statusInfo.statusValue);

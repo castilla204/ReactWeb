@@ -66,8 +66,9 @@ export const useExpertReport = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment'] });
       queryClient.invalidateQueries({ queryKey: ['searches'] });
-      queryClient.invalidateQueries({ queryKey: ['searchDetails'] });
-      queryClient.invalidateQueries({ queryKey: ['searchDetailsOptimized'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
+      queryClient.invalidateQueries({ queryKey: ['expertHires'] });
       
       // Actualizar el cache directamente con el nuevo estado
       if (data && data.id) {

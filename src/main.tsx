@@ -1,6 +1,6 @@
-import React, { StrictMode } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 // ✅ ReactQueryDevtools solo en desarrollo - importación condicional
 // En producción, Vite tree-shake eliminará este código
@@ -13,6 +13,104 @@ import { useBodyScrollSafety } from './hooks/useBodyScrollLock'
 import { getFriendlyErrorMessage, isNetworkError } from './hooks/useErrorHandler'
 import './index.css'
 
+function logUnhandledError(label: string, error: unknown) {
+    console.error(label, {
+        error,
+        timestamp: new Date().toISOString(),
+    })
+}
+
+type ApiErrorLike = {
+    response?: { status?: number }
+    config?: { url?: string }
+    request?: { url?: string }
+    code?: string
+    message?: string
+}
+
+function asApiError(error: unknown): ApiErrorLike {
+    return error && typeof error === 'object' ? error as ApiErrorLike : {}
+}
+
+function isAuthError(error: ApiErrorLike) {
+    return error.response?.status === 401 || error.response?.status === 403
+}
+
+function isApiDownError(error: ApiErrorLike) {
+    return error.code === 'ECONNREFUSED' ||
+        error.code === 'ETIMEDOUT' ||
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('NetworkError')
+}
+
+function logNetworkError(label: string, error: ApiErrorLike, errorMessage: string) {
+    console.error(label, {
+        error: errorMessage,
+        url: error.config?.url || error.request?.url,
+        status: error.response?.status,
+        timestamp: new Date().toISOString(),
+    })
+}
+
+function handleQueryError(error: unknown) {
+    const apiError = asApiError(error)
+
+    if (isAuthError(apiError) || apiError.response?.status === 404) {
+        return
+    }
+
+    const errorMessage = getFriendlyErrorMessage(error)
+
+    if (isNetworkError(error)) {
+        logNetworkError('🌐 Error de conexión (solo consola):', apiError, errorMessage)
+        return
+    }
+
+    if (apiError.response?.status && apiError.response.status >= 500) {
+        if (isApiDownError(apiError)) {
+            logNetworkError('🔴 API no disponible (solo consola):', apiError, errorMessage)
+            return
+        }
+
+        toast.error('Error al cargar datos', {
+            description: errorMessage,
+            duration: 6000,
+        })
+    }
+}
+
+function handleMutationError(error: unknown) {
+    const apiError = asApiError(error)
+
+    if (isAuthError(apiError)) {
+        return
+    }
+
+    const errorMessage = getFriendlyErrorMessage(error)
+
+    if (isNetworkError(error)) {
+        logNetworkError('🌐 Error de conexión (solo consola):', apiError, errorMessage)
+        return
+    }
+
+    if (apiError.response?.status && apiError.response.status >= 500) {
+        if (isApiDownError(apiError)) {
+            logNetworkError('🔴 API no disponible (solo consola):', apiError, errorMessage)
+            return
+        }
+
+        toast.error('Error del servidor', {
+            description: errorMessage,
+            duration: 6000,
+        })
+    } else if (apiError.response?.status && apiError.response.status >= 400) {
+        toast.error('Error en la operación', {
+            description: errorMessage,
+            duration: 5000,
+        })
+    }
+}
+
 // Ensure light mode is always active (dark mode removed)
 if (typeof document !== 'undefined') {
   document.documentElement.classList.remove('dark')
@@ -24,115 +122,25 @@ if (typeof document !== 'undefined') {
  * Basado en mejores prácticas 2024-2025
  */
 const queryClient = new QueryClient({
+    queryCache: new QueryCache({
+        onError: handleQueryError,
+    }),
+    mutationCache: new MutationCache({
+        onError: handleMutationError,
+    }),
     defaultOptions: {
         queries: {
             staleTime: 1000 * 60 * 5,  // 5 minutos
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
+                const apiError = asApiError(error)
                 // No reintentar en errores 4xx (excepto 429)
-                if (error?.response?.status >= 400 && error?.response?.status < 500 && error?.response?.status !== 429) {
+                if (apiError.response?.status && apiError.response.status >= 400 && apiError.response.status < 500 && apiError.response.status !== 429) {
                     return false;
                 }
                 // Reintentar hasta 2 veces para errores de red o 5xx
                 return failureCount < 2;
             },
             refetchOnWindowFocus: false,
-            // ✅ MEJOR PRÁCTICA: Manejo global de errores en queries
-            onError: (error: any) => {
-                // No mostrar errores de autenticación (ya se manejan en authService)
-                if (error?.response?.status === 401 || error?.response?.status === 403) {
-                    return;
-                }
-                
-                // No mostrar errores 404 en queries (se manejan individualmente)
-                if (error?.response?.status === 404) {
-                    return;
-                }
-                
-                const errorMessage = getFriendlyErrorMessage(error);
-                
-                // Solo loguear errores de red/API en consola, no mostrar toast
-                if (isNetworkError(error)) {
-                    console.error('🌐 Error de conexión (solo consola):', {
-                        error: errorMessage,
-                        url: error?.config?.url || error?.request?.url,
-                        timestamp: new Date().toISOString()
-                    });
-                    return; // No mostrar toast
-                }
-                
-                // Para errores 5xx, solo mostrar si no es un error de API caída
-                if (error?.response?.status >= 500) {
-                    // Verificar si es un error de API caída (timeout, connection refused, etc)
-                    const isApiDown = error?.code === 'ECONNREFUSED' || 
-                                     error?.code === 'ETIMEDOUT' ||
-                                     error?.message?.includes('Failed to fetch') ||
-                                     error?.message?.includes('NetworkError');
-                    
-                    if (isApiDown) {
-                        console.error('🔴 API no disponible (solo consola):', {
-                            error: errorMessage,
-                            status: error?.response?.status,
-                            timestamp: new Date().toISOString()
-                        });
-                        return; // No mostrar toast
-                    }
-                    
-                    // Solo mostrar toast para errores 5xx que no sean de API caída
-                    toast.error('Error al cargar datos', {
-                        description: errorMessage,
-                        duration: 6000,
-                    });
-                }
-            },
-        },
-        mutations: {
-            // ✅ MEJOR PRÁCTICA: Manejo global de errores en mutations
-            onError: (error: any) => {
-                // No mostrar errores de autenticación (ya se manejan en authService)
-                if (error?.response?.status === 401 || error?.response?.status === 403) {
-                    return;
-                }
-                
-                const errorMessage = getFriendlyErrorMessage(error);
-                
-                // Solo loguear errores de red/API en consola, no mostrar toast
-                if (isNetworkError(error)) {
-                    console.error('🌐 Error de conexión (solo consola):', {
-                        error: errorMessage,
-                        url: error?.config?.url || error?.request?.url,
-                        timestamp: new Date().toISOString()
-                    });
-                    return; // No mostrar toast
-                }
-                
-                // Para errores 5xx, verificar si es API caída
-                if (error?.response?.status >= 500) {
-                    const isApiDown = error?.code === 'ECONNREFUSED' || 
-                                     error?.code === 'ETIMEDOUT' ||
-                                     error?.message?.includes('Failed to fetch') ||
-                                     error?.message?.includes('NetworkError');
-                    
-                    if (isApiDown) {
-                        console.error('🔴 API no disponible (solo consola):', {
-                            error: errorMessage,
-                            status: error?.response?.status,
-                            timestamp: new Date().toISOString()
-                        });
-                        return; // No mostrar toast
-                    }
-                    
-                    // Solo mostrar toast para errores 5xx que no sean de API caída
-                    toast.error('Error del servidor', {
-                        description: errorMessage,
-                        duration: 6000,
-                    });
-                } else if (error?.response?.status >= 400) {
-                    toast.error('Error en la operación', {
-                        description: errorMessage,
-                        duration: 5000,
-                    });
-                }
-            },
         },
     },
 })
@@ -143,7 +151,25 @@ function AppWithSafety() {
     return <App />;
 }
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')
+
+if (!rootElement) {
+    throw new Error('No se encontró el elemento root para montar la aplicación')
+}
+
+window.addEventListener('error', (event) => {
+    logUnhandledError('Error global no capturado', event.error || event.message)
+})
+
+window.addEventListener('unhandledrejection', (event) => {
+    logUnhandledError('Promesa rechazada sin capturar', event.reason)
+})
+
+createRoot(rootElement, {
+    onRecoverableError: (error) => {
+        logUnhandledError('React recuperó un error de renderizado', error)
+    },
+}).render(
     <StrictMode>
         <GoogleOAuthProvider clientId="61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com">
             <QueryClientProvider client={queryClient}>

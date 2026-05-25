@@ -280,7 +280,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Mensaje específico para cita completada - VISTA EXPERTO */}
-      {appointment.status === 'appointment_completed' && userRole === 'expert' && (
+      {(appointment.status === 'appointment_report_sent' || appointment.status === 'appointment_completed_without_client_approval') && userRole === 'expert' && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-start space-x-3">
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -300,7 +300,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
       {/* Mensaje específico para cita completada - VISTA CLIENTE */}
-      {appointment.status === 'appointment_completed' && userRole === 'client' && (
+      {(appointment.status === 'appointment_report_sent' || appointment.status === 'appointment_completed_without_client_approval') && userRole === 'client' && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-start space-x-3">
             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -683,7 +683,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           {/* Información contextual */}
           <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
             <p className="text-xs text-gray-600">
-              {appointment.status === 'appointment_completed' ? (
+              {(appointment.status === 'appointment_report_sent' || appointment.status === 'appointment_completed_without_client_approval') ? (
                 <>✅ Servicio completado exitosamente</>
               ) : appointment.status === 'appointment_cancelled_by_expert_rejection' ? (
                 <>⚠️ Cancelación por rechazos del experto - Cliente recibe reembolso completo</>
