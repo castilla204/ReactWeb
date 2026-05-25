@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
+import { isActiveSearchHireStatus } from '../constants/hireStatuses';
 import { 
   SearchDetailsCompleteDto, 
   UseSearchDetailsCompleteReturn,
@@ -392,6 +393,12 @@ export const useSearchDetailsComplete = (
     staleTime,
     gcTime,
     refetchOnWindowFocus,
+    refetchInterval: (query) => {
+      const hire = query.state.data?.search?.searchHire;
+      if (!hire) return false;
+      const status = hire.statusInfo?.statusValue || hire.status;
+      return isActiveSearchHireStatus(status, hire.statusInfo) ? 15000 : false;
+    },
     retry: 2,
     retryDelay: 1000
   });

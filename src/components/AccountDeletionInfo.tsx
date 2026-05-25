@@ -11,8 +11,8 @@ export const AccountDeletionInfo: React.FC<AccountDeletionInfoProps> = ({
   appointment,
   className = ''
 }) => {
-  const isClientAccountDeletion = appointment.status === 'cancelled_by_client_account_delete';
-  const isExpertAccountDeletion = appointment.status === 'cancelled_by_expert_account_delete';
+  const isClientAccountDeletion = appointment.status === 'appointment_cancelled_by_client_account_delete';
+  const isExpertAccountDeletion = appointment.status === 'appointment_cancelled_by_expert_account_delete';
 
   if (!isClientAccountDeletion && !isExpertAccountDeletion) {
     return null;
@@ -86,8 +86,8 @@ export const AccountDeletionInfo: React.FC<AccountDeletionInfoProps> = ({
 
 // Componente compacto para mostrar solo el resumen
 export const AccountDeletionSummary: React.FC<{ appointment: Appointment }> = ({ appointment }) => {
-  const isClientAccountDeletion = appointment.status === 'cancelled_by_client_account_delete';
-  const isExpertAccountDeletion = appointment.status === 'cancelled_by_expert_account_delete';
+  const isClientAccountDeletion = appointment.status === 'appointment_cancelled_by_client_account_delete';
+  const isExpertAccountDeletion = appointment.status === 'appointment_cancelled_by_expert_account_delete';
 
   if (!isClientAccountDeletion && !isExpertAccountDeletion) {
     return null;

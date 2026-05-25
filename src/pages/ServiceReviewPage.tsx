@@ -1544,7 +1544,6 @@ export function ServiceReviewPage({
                                             style={{
                                                 fontSize: '13px',
                                                 lineHeight: '18px',
-                                                fontWeight: 400,
                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                 margin: 0,
                                                 padding: 0,
@@ -2056,7 +2055,6 @@ export function ServiceReviewPage({
                                                 style={{
                                                     fontSize: '14px',
                                                     lineHeight: '20px',
-                                                    fontWeight: 400,
                                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                     margin: 0,
                                                     padding: 0,

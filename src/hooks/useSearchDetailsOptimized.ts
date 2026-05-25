@@ -29,9 +29,14 @@ export const useSearchDetailsOptimized = (
   const invalidateAll = () => {
     if (options.searchHireId) {
       queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', options.searchHireId] });
-    } else if (searchId) {
-    queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete', searchId] });
     }
+    if (searchId) {
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete', searchId] });
+    }
+    queryClient.invalidateQueries({ queryKey: ['expertHires'] });
+    queryClient.invalidateQueries({ queryKey: ['searches'] });
+    queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    queryClient.invalidateQueries({ queryKey: ['disputes'] });
   };
   
   // ✅ Función para refetch

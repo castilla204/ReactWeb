@@ -182,11 +182,11 @@ export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
                 pagination: paginationData
             };
         },
-        staleTime: 60000, // ✅ Cache por 60 segundos para evitar llamadas repetidas
-        gcTime: 120000, // ✅ Mantener en caché por 2 minutos
-        retry: 1, // ✅ Solo reintentar una vez
-        refetchOnWindowFocus: false, // ✅ No refetch al cambiar de ventana
-        refetchOnMount: false, // ✅ No refetch al montar si hay datos en caché
+        staleTime: 30000,
+        gcTime: 120000,
+        retry: 1,
+        refetchOnWindowFocus: false,
+        refetchOnMount: true,
     });
 
     const updateStatusMutation = useMutation({

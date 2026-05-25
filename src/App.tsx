@@ -75,6 +75,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
 import { ScrollToTop } from './components/ScrollToTop';
+import { parsePositiveIntegerParam } from './utils/routeParams';
 import logoImg from './media/logoi.png';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
@@ -93,7 +94,11 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const searchHireId = id ? parseInt(id, 10) : undefined;
+    const searchHireId = parsePositiveIntegerParam(id);
+
+    if (!searchHireId) {
+        return <NotFoundPage />;
+    }
     
     return (
         <SearchDetails 

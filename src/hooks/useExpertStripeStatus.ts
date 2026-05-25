@@ -471,6 +471,12 @@ export const useExpertStripeStatus = () => {
         } catch (err: any) {
             setError(err.message);
             console.error('❌ useExpertStripeStatus: Error fetching status:', err);
+            // ⚠️ A7: ante un error NO conservar la cache como válida durante todo el TTL (60s).
+            // Marcarla obsoleta para forzar un re-fetch en el próximo acceso/poll, en lugar de
+            // seguir mostrando un estado potencialmente caduco (p.ej. "Approved" tras una
+            // restricción de Stripe). El backend es la autoridad real al cobrar; esto evita
+            // engañar al experto en la UI.
+            lastFetchRef.current = 0;
         } finally {
             setLoading(false);
             isFetchingRef.current = false;
@@ -589,6 +595,23 @@ export const useExpertStripeStatus = () => {
             }
         };
     }, [status?.stripeStatus, status?.onboardingCompleted, status?.hasStripeAccount]);
+
+    // ✅ A7: Re-verificar el estado al volver el foco a la pestaña/ventana. El onboarding de
+    // Stripe es una navegación EXTERNA; al regresar (la pestaña recupera el foco) refrescamos
+    // para no mostrar el estado previo al onboarding ni un estado caduco por la cache.
+    useEffect(() => {
+        const revalidate = () => {
+            if (document.visibilityState === 'visible') {
+                fetchStatus(true);
+            }
+        };
+        window.addEventListener('focus', revalidate);
+        document.addEventListener('visibilitychange', revalidate);
+        return () => {
+            window.removeEventListener('focus', revalidate);
+            document.removeEventListener('visibilitychange', revalidate);
+        };
+    }, [fetchStatus]);
 
     // Detener polling y limpiar cache cuando el estado es estable
     useEffect(() => {

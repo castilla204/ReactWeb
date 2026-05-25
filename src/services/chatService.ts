@@ -9,8 +9,13 @@ import type {
   toLegacyMessage
 } from '../types/chat.types'
 import { API_CONFIG } from '../config/api'
+import { fetchWithTimeout } from '../utils/fetchWithTimeout'
 
 const API_URL = API_CONFIG.baseUrl
+const CHAT_REQUEST_TIMEOUT_MS = 30000
+
+const chatFetch = (url: string, options: RequestInit = {}) =>
+  fetchWithTimeout(url, options, CHAT_REQUEST_TIMEOUT_MS)
 
 /** Headers con autenticación */
 const getAuthHeaders = (token: string): HeadersInit => ({
@@ -43,7 +48,7 @@ export const getConversation = async (
   searchId: number,
   token: string
 ): Promise<ConversationDto> => {
-  const response = await fetch(
+  const response = await chatFetch(
     `${API_URL}${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`,
     {
       method: 'GET',
@@ -66,7 +71,7 @@ export const getConversationBySearchHireId = async (
   searchHireId: number,
   token: string
 ): Promise<ConversationDto> => {
-  const response = await fetch(
+  const response = await chatFetch(
     `${API_URL}${API_CONFIG.endpoints.chat.conversationBySearchHire(searchHireId)}`,
     {
       method: 'GET',
@@ -135,7 +140,7 @@ export const sendMessage = async (
     })
   }
 
-  const response = await fetch(`${API_URL}${API_CONFIG.endpoints.chat.message}`, {
+  const response = await chatFetch(`${API_URL}${API_CONFIG.endpoints.chat.message}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -169,7 +174,7 @@ export const markMessageAsRead = async (
   messageId: number,
   token: string
 ): Promise<void> => {
-  const response = await fetch(
+  const response = await chatFetch(
     `${API_URL}${API_CONFIG.endpoints.chat.markAsRead(messageId)}`,
     {
       method: 'PUT',
@@ -194,7 +199,7 @@ export const notifyTyping = async (
   token: string
 ): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/api/Chat/typing`, {
+    const response = await chatFetch(`${API_URL}/api/Chat/typing`, {
       method: 'POST',
       headers: getAuthHeaders(token),
       body: JSON.stringify(dto)
@@ -226,7 +231,7 @@ export const uploadDeliverable = async (
     formData.append('Files', file)
   })
 
-  const response = await fetch(
+  const response = await chatFetch(
     `${API_URL}${API_CONFIG.endpoints.chat.deliverable(searchHireId)}`,
     {
       method: 'POST',
@@ -251,7 +256,7 @@ export const getDeliverables = async (
   searchHireId: number,
   token: string
 ): Promise<{ message: string; deliverable: any }> => {
-  const response = await fetch(
+  const response = await chatFetch(
     `${API_URL}${API_CONFIG.endpoints.chat.deliverable(searchHireId)}`,
     {
       method: 'GET',

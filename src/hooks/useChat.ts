@@ -247,94 +247,71 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             channelRef.current = null;
         }
 
-        const channelName = `chat:${conversation.id}:${Date.now()}`;
+        const channelName = `conversation:${conversation.id}`;
         console.log(`📡 [Supabase Chat] Conectando al canal ${channelName}`);
+
+        const applyMessageToCache = (messageData: any, mode: 'add' | 'update') => {
+            const msgConversationId = messageData.ConversationId ?? messageData.conversationId;
+            if (msgConversationId !== conversation.id) return;
+
+            const normalizedMsg = convertDbMessageToMessage(messageData);
+
+            const updateQueryData = (queryKey: (string | number | undefined)[]) => {
+                queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                    if (!prev) {
+                        return conversation ? { ...conversation, messages: [normalizedMsg] } : undefined;
+                    }
+                    if (mode === 'add') {
+                        if (prev.messages.some((m) => m.id === normalizedMsg.id)) return prev;
+                        return {
+                            ...prev,
+                            messages: [...prev.messages, normalizedMsg].sort(
+                                (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                            ),
+                        };
+                    }
+                    return {
+                        ...prev,
+                        messages: prev.messages.map((msg) =>
+                            msg.id === normalizedMsg.id ? { ...msg, ...normalizedMsg } : msg
+                        ),
+                    };
+                });
+            };
+
+            if (useSearchHireEndpoint && searchHireId) {
+                updateQueryData(['conversation', 'searchHire', searchHireId]);
+            }
+            if (searchId) {
+                updateQueryData(['conversation', searchId]);
+            }
+
+            if (mode === 'add') {
+                setTimeout(() => {
+                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                    if (chatContainer) {
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                }, 100);
+            }
+        };
 
         const channel = supabase
             .channel(channelName)
-            // Escuchar nuevos mensajes (INSERT)
             .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'Messages',
-                    filter: `ConversationId=eq.${conversation.id}`
-                },
-                (payload) => {
-                    console.log('📩 [Supabase Chat] Nuevo mensaje recibido:', payload.new);
-                    const newMsg = convertDbMessageToMessage(payload.new as DBMessage);
-                    
-                    // Actualizar cache de React Query
-                    const updateQueryData = (queryKey: any[]) => {
-                        queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
-                            if (!prev) {
-                                console.log('[Supabase Chat] No previous conversation, creating new with message');
-                                return conversation ? { ...conversation, messages: [newMsg] } : undefined;
-                            }
-                            // Evitar duplicados
-                            if (prev.messages.some(m => m.id === newMsg.id)) {
-                                return prev;
-                            }
-                            const updatedMessages = [
-                                ...prev.messages,
-                                newMsg,
-                            ].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-                            console.log('[Supabase Chat] Updated messages:', updatedMessages.length);
-                            return {
-                                ...prev,
-                                messages: updatedMessages,
-                            };
-                        });
-                    };
-
-                    if (useSearchHireEndpoint && searchHireId) {
-                        updateQueryData(['conversation', 'searchHire', searchHireId]);
-                    }
-                    if (searchId) {
-                        updateQueryData(['conversation', searchId]);
-                    }
-
-                    // Scroll al final
-                    setTimeout(() => {
-                        const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                        if (chatContainer) {
-                            chatContainer.scrollTop = chatContainer.scrollHeight;
-                        }
-                    }, 100);
+                'broadcast',
+                { event: 'new_message' },
+                ({ payload }) => {
+                    console.log('📩 [Supabase Chat] Mensaje recibido vía broadcast:', payload);
+                    applyMessageToCache(payload, 'add');
                 }
             )
-            // Escuchar actualizaciones (UPDATE - para isRead, etc.)
             .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'Messages',
-                    filter: `ConversationId=eq.${conversation.id}`
-                },
-                (payload) => {
-                    console.log('✏️ [Supabase Chat] Mensaje actualizado:', payload.new);
-                    const updatedMsg = convertDbMessageToMessage(payload.new as DBMessage);
-                    
-                    const updateQueryData = (queryKey: any[]) => {
-                        queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
-                            if (!prev) return prev;
-                            return {
-                                ...prev,
-                                messages: prev.messages.map((msg) =>
-                                    msg.id === updatedMsg.id ? { ...msg, ...updatedMsg } : msg
-                                ),
-                            };
-                        });
-                    };
-
-                    if (useSearchHireEndpoint && searchHireId) {
-                        updateQueryData(['conversation', 'searchHire', searchHireId]);
-                    }
-                    if (searchId) {
-                        updateQueryData(['conversation', searchId]);
-                    }
+                'broadcast',
+                { event: 'message_updated' },
+                ({ payload }) => {
+                    console.log('✏️ [Supabase Chat] Mensaje actualizado vía broadcast:', payload);
+                    applyMessageToCache(payload, 'update');
                 }
             )
             .subscribe((status) => {
@@ -573,8 +550,14 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         onSuccess: (deliverable) => {
             console.log('[Supabase Chat] Deliverable uploaded successfully:', deliverable);
             queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
-            queryClient.invalidateQueries({ queryKey: ['searchDetails', searchId] });
-            queryClient.invalidateQueries({ queryKey: ['searchDetailsOptimized', searchId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
+            if (searchHireId) {
+                queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', searchHireId] });
+            }
+            if (searchId) {
+                queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete', searchId] });
+            }
             queryClient.setQueryData(['deliverables', conversation?.searchHireId], deliverable);
             lastDeliverableFetch.current = Date.now();
             showToast('success', 'Entregable subido con éxito.', 5000);
