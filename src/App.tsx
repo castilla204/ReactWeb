@@ -352,7 +352,8 @@ const AppContent: React.FC = () => {
                                 </Button>
                             )}
 
-                            {/* Botón "Hazte revisor" estilo Airbnb */}
+                            {/* Botón "Hazte revisor" estilo Airbnb — oculto si ya eres experto */}
+                            {!isExpert && (
                             <Button
                                 variant="ghost"
                                 className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full px-4 py-2"
@@ -360,6 +361,7 @@ const AppContent: React.FC = () => {
                             >
                                 Hazte revisor
                             </Button>
+                            )}
 
                             {/* Icono de globo para idioma */}
                             <Button

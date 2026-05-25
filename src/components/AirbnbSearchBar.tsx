@@ -123,6 +123,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
   const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
   const userIsAdmin = isAuthenticated && (isAdminByEmail || isAdminByRole);
+  const isExpert = userRole === 'Expert';
   
   const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(CATEGORIES.INMOBILIARIA);
@@ -454,6 +455,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           </nav>
 
           <div className="flex items-center gap-3 ml-auto">
+            {!isExpert && (
             <Button
               variant="ghost"
               className="hidden lg:flex text-sm font-medium text-gray-700 hover:text-gray-900 rounded-full px-4 py-2"
@@ -461,6 +463,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             >
               Hazte revisor
             </Button>
+            )}
             <Button variant="ghost" size="icon" className="hidden lg:flex h-10 w-10 rounded-full hover:bg-gray-100">
               <Globe className="w-5 h-5 text-gray-700" />
             </Button>
