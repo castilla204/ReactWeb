@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, FolderTree, ArrowLeft, Filter, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, FolderTree, ArrowLeft, Filter, ChevronUp, Menu, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { useLoadScript } from '@react-google-maps/api';
+import { GoogleSignInButton } from './GoogleSignInButton';
+import { Button } from './ui/button';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import logoImg from '../media/logoi.png';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 // Importar imágenes directamente desde src/media para que Vite las procese
@@ -86,7 +90,7 @@ interface AirbnbSearchBarProps {
 
 export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onSearch }) => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
   // ✅ OPTIMIZADO: useServiceTypes y useCategories ya tienen cache, no hay problema en llamarlos aquí
   // Además, AirbnbSearchBar puede usarse independientemente, así que es correcto tenerlos aquí
   const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
@@ -94,10 +98,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   
   // ✅ PRERENDERIZAR MAPA: Cargar Google Maps API en móvil para que esté listo cuando navegue
   // ✅ OPTIMIZADO: Solo cargar cuando realmente se necesita (móvil y cuando el modal está abierto)
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
   React.useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -227,8 +233,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           }
           
           // Abrir el modal móvil automáticamente
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-          if (isMobile) {
+          const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+          if (isMobileViewport) {
             setIsMobileSearchOpen(true);
             // ✅ Desplegar automáticamente el acordeón de tipo de servicio
             setExpandedAccordion('type');
@@ -412,16 +418,99 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       
       <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
       {/* Desktop */}
-      <div className="hidden md:block max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
-        {userIsAdmin && (
+      <div className="hidden md:block max-w-7xl mx-auto px-4 lg:px-8 py-3 relative">
+        {/* Barra superior: logo + navegación + auth (reemplaza App header en homepage) */}
+        <div className="flex items-center justify-between h-14 mb-3">
+          <a
+            href="/"
+            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+            className="flex items-center shrink-0"
+          >
+            <img src={logoImg} alt="Inspecciono" className="h-8 w-auto object-contain" />
+          </a>
+
+          <nav className="hidden lg:flex items-center gap-6 mx-6">
             <button
-            onClick={() => navigate('/admin')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-[1000] text-sm font-semibold text-red-600 hover:text-red-700 px-4 py-2 rounded-md hover:bg-red-50 transition-colors bg-white border-2 border-red-400 shadow-lg"
+              type="button"
+              onClick={() => document.querySelector('[data-services-section]')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
             >
-              Admin
+              Servicios
             </button>
-        )}
-        
+            <button
+              type="button"
+              onClick={() => isAuthenticated ? navigate('/busquedas') : navigate('/crear-busqueda')}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
+            >
+              Mis revisiones
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/como-funciona')}
+              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
+            >
+              Cómo funciona
+            </button>
+          </nav>
+
+          <div className="flex items-center gap-3 ml-auto">
+            <Button
+              variant="ghost"
+              className="hidden lg:flex text-sm font-medium text-gray-700 hover:text-gray-900 rounded-full px-4 py-2"
+              onClick={() => navigate('/become-expert')}
+            >
+              Hazte revisor
+            </Button>
+            <Button variant="ghost" size="icon" className="hidden lg:flex h-10 w-10 rounded-full hover:bg-gray-100">
+              <Globe className="w-5 h-5 text-gray-700" />
+            </Button>
+            {userIsAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate('/admin')}
+                className="text-sm font-semibold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 bg-white border border-red-400"
+              >
+                Admin
+              </button>
+            )}
+            {isAuthenticated ? (
+              <>
+                <Button
+                  variant="ghost"
+                  className="hidden xl:flex text-sm font-medium text-gray-700"
+                  onClick={() => signOut()}
+                >
+                  Cerrar sesión
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="h-10 rounded-full px-2 border border-gray-300 hover:shadow-md flex items-center gap-2"
+                  onClick={() => navigate('/busquedas')}
+                >
+                  <Menu className="w-4 h-4 text-gray-700" />
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
+                      {(user as any)?.name?.[0]?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="hidden sm:flex">
+                  <GoogleSignInButton variant="compact" />
+                </div>
+                <Button
+                  className="bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg"
+                  onClick={() => navigate('/crear-busqueda')}
+                >
+                  Probar gratis
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Categorías encima de la barra de búsqueda - Solo Desktop */}
         <div className="flex items-center justify-center mb-3 max-w-[850px] mx-auto">
           <div className="flex items-center gap-8">
