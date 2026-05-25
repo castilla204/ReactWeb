@@ -1,16 +1,23 @@
 import React from 'react';
 import logoImg from '../media/logoi.png';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Footer = () => {
+    const { user } = useAuth();
+    const isExpert = ((user as any)?.Role || (user as any)?.role) === 'Expert';
     return (
         <footer className="hidden md:block bg-white border-t border-gray-100 relative z-30" style={{ backgroundColor: '#fbfbfb' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
                 {/* Links principales - Compacto */}
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-3 md:mb-4">
+                    {!isExpert && (
+                    <>
                     <a href="/become-expert" className="text-xs md:text-sm text-gray-600 hover:text-cyan-600 transition-colors" style={{ color: '#4b5563' }}>
                         Hazte Experto
                     </a>
                     <span className="text-gray-300">·</span>
+                    </>
+                    )}
                     <a href="/terms.html" className="text-xs md:text-sm text-gray-600 hover:text-cyan-600 transition-colors" style={{ color: '#4b5563' }}>
                         Términos y Condiciones
                     </a>
