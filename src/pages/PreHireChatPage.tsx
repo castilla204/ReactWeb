@@ -20,14 +20,16 @@ import { getCountryName } from '../utils/countries';
 import CountryFlag from '../components/CountryFlag';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
+import { parsePositiveIntegerParam } from '../utils/routeParams';
+import AppointmentMap from '../components/AppointmentMap';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
     const navigate = useNavigate();
-    const { isAuthenticated, user, updateUser, isLoading: authLoading } = useAuth();
+    const { isAuthenticated, user, updateUser } = useAuth();
     const { fetchApi } = useApi();
     
-    const serviceIdNumber = serviceId ? parseInt(serviceId, 10) : 0;
+    const serviceIdNumber = parsePositiveIntegerParam(serviceId) ?? 0;
     const token = authService.getAccessToken() || '';
     const userId = user?.id || user?.Id || 0;
     
@@ -39,6 +41,7 @@ export function PreHireChatPage() {
     const [authStep, setAuthStep] = useState<string>('');
     const [isChatConnected, setIsChatConnected] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
+    const [showMapPreview, setShowMapPreview] = useState(false);
     const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
     
     // ✅ Bloquear scroll del body y usar altura dinámica del viewport en móviles
@@ -219,8 +222,6 @@ export function PreHireChatPage() {
     // Renderizar botón de Google cuando se abre el diálogo de login
     useEffect(() => {
         if (showLoginDialog && window.google?.accounts?.id && googleButtonRefLoginDialog.current) {
-            const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-            
             googleButtonRefLoginDialog.current.innerHTML = '';
             
             window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
@@ -350,7 +351,6 @@ export function PreHireChatPage() {
         };
         
         loadService();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceIdNumber]);
     
     // Actualizar estado de favorito cuando cambian los datos - DEBE estar antes de cualquier return
@@ -391,51 +391,29 @@ export function PreHireChatPage() {
         );
     }
     
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('es-ES', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        }).format(price);
-    };
-    
     const serviceImage = service?.imageUrls?.[0] || '';
     const expertName = service?.expert?.user?.name || 'Experto';
     const expertAvatar = service?.expert?.profilePictureUrl || '';
-    const serviceTitle = service?.serviceTypeName || `Servicio #${serviceIdNumber}`;
-    const servicePrice = service?.price || 0;
     const expertRating = service?.averageRating || 0;
     const reviewsCount = service?.expert?.reviews?.length || 0;
     const expertCity = service?.expert?.city || null;
     const expertCountry = service?.expert?.country || null;
     const expertCountryName = expertCountry ? getCountryName(expertCountry) : null;
-    const expertAvailability = service?.expert?.currentAvailability;
+    const toFiniteNumber = (value: unknown): number | null => {
+        if (value === null || value === undefined || value === '') return null;
+        const parsed = typeof value === 'string' ? Number.parseFloat(value) : Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+    const expertLatitude = toFiniteNumber(service?.expert?.latitude ?? service?.expertLatitude);
+    const expertLongitude = toFiniteNumber(service?.expert?.longitude ?? service?.expertLongitude);
+    const expertRange = toFiniteNumber(service?.expert?.locationRange) ?? 25;
+    const hasExpertLocation = expertLatitude !== null && expertLongitude !== null;
+    const locationLabel = expertCity
+        ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}`
+        : expertCountryName || 'Zona no especificada';
     
     // Calcular tiempo de respuesta promedio (simulado - en producción vendría del backend)
     const responseTime = reviewsCount > 0 ? 'Menos de 1 hora' : null;
-    
-    // Función para formatear días de la semana
-    const formatDay = (day: string) => {
-        const dayMap: { [key: string]: string } = {
-            'Monday': 'L',
-            'Tuesday': 'M',
-            'Wednesday': 'X',
-            'Thursday': 'J',
-            'Friday': 'V',
-            'Saturday': 'S',
-            'Sunday': 'D'
-        };
-        return dayMap[day] || day.charAt(0);
-    };
-    
-    // Función para obtener todos los días de la semana en orden
-    const getAllDays = () => {
-        return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    };
-    
-    // Función para verificar si un día está disponible
-    const isDayAvailable = (day: string) => {
-        return expertAvailability?.daysOfWeek?.includes(day) || false;
-    };
     
     // Handler para favorito
     const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -488,34 +466,40 @@ export function PreHireChatPage() {
                             size="icon"
                             onClick={() => navigate(-1)}
                             className="flex-shrink-0"
+                            aria-label="Volver a la página anterior"
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         
                         {/* Información del experto en desktop */}
                         <div className="hidden md:flex items-center gap-3 flex-1 ml-4">
+                            <button
+                                type="button"
+                                className="relative cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setShowAvatarModal(true)}
+                                aria-label={`Ampliar foto de ${expertName}`}
+                            >
+                                <Avatar className="w-10 h-10">
+                                    <AvatarImage src={expertAvatar} alt={expertName} />
+                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                        {expertName.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                {isChatConnected && (
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" aria-label="Chat conectado"></span>
+                                )}
+                            </button>
                             <Link 
                                 to={`/service/${serviceIdNumber}`}
-                                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                                className="font-semibold text-gray-900 hover:opacity-80 transition-opacity"
                             >
-                                <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={(e) => { e.preventDefault(); setShowAvatarModal(true); }}>
-                                    <Avatar className="w-10 h-10">
-                                        <AvatarImage src={expertAvatar} alt={expertName} />
-                                        <AvatarFallback className="bg-gray-900 text-white text-sm">
-                                            {expertName.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    {isChatConnected && (
-                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
-                                    )}
-                                </div>
-                                <h5 className="font-semibold text-gray-900">{expertName}</h5>
+                                {expertName}
                             </Link>
                         </div>
                         
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="flex-shrink-0">
+                                <Button variant="ghost" size="icon" className="flex-shrink-0" aria-label="Abrir opciones del chat">
                                     <MoreVertical className="w-5 h-5" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -600,13 +584,53 @@ export function PreHireChatPage() {
                                                         marginTop: '4px',
                                                     }}
                                                 >
-                                                    {expertCity ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}` : expertCountryName || 'Sin localización'}
+                                                    {locationLabel}
                                                 </div>
                                             )}
                                         </Link>
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
+                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-gray-500" />}
+                                    <span className="truncate">{locationLabel}</span>
+                                </div>
+                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
+                                    <Clock className="h-4 w-4 text-gray-500" />
+                                    <span className="truncate">{responseTime || 'Respuesta rápida'}</span>
+                                </div>
+                            </div>
+
+                            {hasExpertLocation && (
+                                <div className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMapPreview((value) => !value)}
+                                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-gray-900"
+                                        aria-expanded={showMapPreview}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-[#E31C5F]" />
+                                            Zona aproximada del servicio
+                                        </span>
+                                        <span className="text-xs text-gray-500">{showMapPreview ? 'Ocultar' : 'Ver mapa'}</span>
+                                    </button>
+                                    {showMapPreview && (
+                                        <AppointmentMap
+                                            className="h-36 w-full"
+                                            expertLocation={{ latitude: expertLatitude!, longitude: expertLongitude! }}
+                                            expertRange={expertRange}
+                                            expertCountry={expertCountry}
+                                            disabled
+                                            showSearch={false}
+                                            showCountrySelector={false}
+                                            defaultZoom={11}
+                                        />
+                                    )}
+                                </div>
+                            )}
                             
                             {/* Barra de separación */}
                             <div className="border-t border-gray-200 my-3"></div>
@@ -617,6 +641,8 @@ export function PreHireChatPage() {
                                     onClick={handleFavoriteClick}
                                     variant="outline"
                                     className="flex-1 rounded-full"
+                                    aria-pressed={isFavorite}
+                                    aria-label={isFavorite ? 'Quitar servicio de favoritos' : 'Guardar servicio en favoritos'}
                                     style={{
                                         fontSize: '14px',
                                         lineHeight: '20px',
@@ -712,14 +738,19 @@ export function PreHireChatPage() {
                                                         marginTop: '4px',
                                                     }}
                                                 >
-                                                    {expertCity ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}` : expertCountryName || 'Sin localización'}
+                                                    {locationLabel}
                                                 </div>
                                             )}
                                         </Link>
                                     </div>
                                     {/* Avatar del experto a la derecha */}
                                     <div className="flex-shrink-0">
-                                        <div className="relative cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setShowAvatarModal(true)}>
+                                        <button
+                                            type="button"
+                                            className="relative cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() => setShowAvatarModal(true)}
+                                            aria-label={`Ampliar foto de ${expertName}`}
+                                        >
                                             <Avatar className="w-10 h-10">
                                                 <AvatarImage src={expertAvatar} alt={expertName} />
                                                 <AvatarFallback className="bg-gray-900 text-white text-sm">
@@ -727,12 +758,48 @@ export function PreHireChatPage() {
                                                 </AvatarFallback>
                                             </Avatar>
                                             {isChatConnected && (
-                                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" aria-label="Chat conectado"></span>
                                             )}
-                                        </div>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-gray-700">
+                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
+                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-gray-500" />}
+                                    <span className="truncate">{locationLabel}</span>
+                                </div>
+                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
+                                    <Clock className="h-4 w-4 text-gray-500" />
+                                    <span className="truncate">{responseTime || 'Respuesta rápida'}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowMapPreview((value) => !value)}
+                                    disabled={!hasExpertLocation}
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-gray-900 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    aria-expanded={showMapPreview}
+                                >
+                                    <MapPin className="h-4 w-4 text-[#E31C5F]" />
+                                    {showMapPreview ? 'Ocultar mapa' : 'Ver zona'}
+                                </button>
+                            </div>
+
+                            {hasExpertLocation && showMapPreview && (
+                                <div className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                                    <AppointmentMap
+                                        className="h-40 w-full"
+                                        expertLocation={{ latitude: expertLatitude!, longitude: expertLongitude! }}
+                                        expertRange={expertRange}
+                                        expertCountry={expertCountry}
+                                        disabled
+                                        showSearch={false}
+                                        showCountrySelector={false}
+                                        defaultZoom={11}
+                                    />
+                                </div>
+                            )}
                             
                             {/* Barra de separación */}
                             <div className="border-t border-gray-200 my-3"></div>
@@ -743,6 +810,8 @@ export function PreHireChatPage() {
                                     onClick={handleFavoriteClick}
                                     variant="outline"
                                     className="flex-1 rounded-full"
+                                    aria-pressed={isFavorite}
+                                    aria-label={isFavorite ? 'Quitar servicio de favoritos' : 'Guardar servicio en favoritos'}
                                     style={{
                                         fontSize: '14px',
                                         lineHeight: '20px',

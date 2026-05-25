@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApi } from './useApi';
 import { SystemStatusDto } from '../types/searchDetails';
 
@@ -54,6 +54,7 @@ export const useSearchHires = (type: 'client' | 'expert', page: number = 1, page
   const [hires, setHires] = useState<SearchHireResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [pagination, setPagination] = useState<{
     page: number;
     pageSize: number;
@@ -106,18 +107,18 @@ export const useSearchHires = (type: 'client' | 'expert', page: number = 1, page
     };
 
     fetchHires();
-  }, [type, page, pageSize, fetchApi]);
+  }, [type, page, pageSize, fetchApi, refreshKey]);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((key) => key + 1);
+  }, []);
 
   return { 
     hires, 
     loading, 
     error,
     pagination,
-    refetch: () => {
-      setLoading(true);
-      setError(null);
-      // El useEffect se ejecutará automáticamente
-    }
+    refetch,
   };
 };
 
@@ -126,6 +127,7 @@ export const useSearchHire = (hireId: number) => {
   const [hire, setHire] = useState<SearchHireResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { fetchApi } = useApi();
 
   useEffect(() => {
@@ -160,16 +162,16 @@ export const useSearchHire = (hireId: number) => {
     };
 
     fetchHire();
-  }, [hireId, fetchApi]);
+  }, [hireId, fetchApi, refreshKey]);
+
+  const refetch = useCallback(() => {
+    setRefreshKey((key) => key + 1);
+  }, []);
 
   return { 
     hire, 
     loading, 
     error,
-    refetch: () => {
-      setLoading(true);
-      setError(null);
-      // El useEffect se ejecutará automáticamente
-    }
+    refetch,
   };
 };

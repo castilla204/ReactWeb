@@ -124,9 +124,9 @@ export function useServices({
 
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
-        enabled: !expertProfileId || (expertProfileId > 0), // ✅ Solo ejecutar si expertProfileId es válido
-        staleTime: 60000, // ✅ Cache por 60 segundos para evitar llamadas repetidas
-        gcTime: 120000, // ✅ Mantener en caché por 2 minutos
+        enabled: expertProfileId ? !!expertProfileId : ((categoryId ?? 0) > 0 && (serviceTypeId ?? 0) > 0 && !!latitude && !!longitude && (locationRange ?? 0) > 0),
+        staleTime: 30000, // ✅ Cache por 30 segundos para evitar llamadas repetidas
+        gcTime: 60000, // ✅ Mantener en caché por 60 segundos
         refetchOnWindowFocus: false, // ✅ No refetch al cambiar de ventana
         refetchOnMount: false, // ✅ No refetch al montar si hay datos en caché
         queryFn: async () => {
@@ -350,10 +350,7 @@ export function useServices({
             
             return filteredData;
         },
-        enabled: expertProfileId ? !!expertProfileId : (categoryId > 0 && serviceTypeId > 0 && !!latitude && !!longitude && locationRange > 0),
         retry: 1,
-        staleTime: 30000, // ✅ Cache por 30 segundos para evitar llamadas repetidas
-        gcTime: 60000, // ✅ Mantener en caché por 60 segundos
     });
 
     const createServiceMutation = useMutation({

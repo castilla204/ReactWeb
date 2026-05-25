@@ -129,8 +129,8 @@ export interface ServiceTypeCategory {
 
 // Estados de cita disponibles
 export const APPOINTMENT_STATUSES = [
-  { value: 'appointment_completed', label: 'Servicio Completado' },
-  { value: 'completed_without_client_approval', label: 'Completado Sin Aprobación del Cliente' },
+  { value: 'appointment_report_sent', label: 'Reporte Enviado' },
+  { value: 'appointment_completed_without_client_approval', label: 'Completado Sin Aprobación del Cliente' },
   { value: 'appointment_cancelled_by_client', label: 'Cliente Cancela (1ª vez)' },
   { value: 'appointment_cancelled_by_client_second', label: 'Cliente Cancela (2ª vez)' },
   { value: 'appointment_cancelled_by_expert', label: 'Experto Cancela' },

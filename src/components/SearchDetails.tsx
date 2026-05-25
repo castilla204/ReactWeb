@@ -49,6 +49,13 @@ import { useMoneyDistributionConfig, shouldShowMoneyDistribution } from '../hook
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
+import {
+    canLeaveReview,
+    canProposeAppointment,
+    isDisputeResolvedStatus,
+    isTerminalSearchHireStatus,
+    SEARCH_HIRE_STATUS,
+} from '../constants/hireStatuses';
 import { useExpertResponse } from '../hooks/useExpertResponse';
 import { getPriceDisplay } from '../utils/priceUtils';
 
@@ -84,7 +91,6 @@ const categoryBanners: { [key: number]: string } = {
 
 const statusRoadmap = [
     { label: 'Pendiente', status: 'pending', color: 'bg-yellow-600' },
-    { label: 'En progreso', status: 'in_progress', color: 'bg-blue-600' },
     { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-blue-600' },
     { label: 'Completado', status: 'completed', color: 'bg-green-600' },
 ];
@@ -773,16 +779,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         0
     );
 
-    // ✅ Determinar si es cliente o experto
-    // Si search es null, intentar obtener clientId de searchHire.client
-    // ✅ MEJORADO: Verificar también desde searchHire.client para contrataciones recién creadas
-    const isClient = search 
-        ? (userId === clientId) 
-        : (userId === Number(search?.searchHire?.client?.id ?? 0));
     const isExpert = userId === expertId || 
                      (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id)) ||
                      (expertInfo?.id && userId === Number(expertInfo.id)) ||
                      (expertProfile?.id && userId === Number(expertProfile.id));
+    const isClient = clientId > 0
+        ? userId === clientId
+        : !isExpert && !isAdmin && !!user;
     const userRole = isClient ? 'client' : 'expert';
     
     // Debug: Verificar isExpert
@@ -801,14 +804,20 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const hasReviewed = !!review;
     // ✅ Usar statusInfo.statusValue cuando esté disponible (viene del backend con valores correctos)
     const searchHireStatus = search?.searchHire?.statusInfo?.statusValue || search?.searchHire?.status;
+    const searchHireStatusInfoObj = search?.searchHire?.statusInfo;
     const canReview =
-        isClient && search?.searchHire && ['completed', 'dispute_resolved'].includes(searchHireStatus || '') && !hasReviewed;
+        isClient && search?.searchHire && canLeaveReview(searchHireStatus || '') && !hasReviewed;
     
-    const canDispute = isClient && searchHireStatus === 'awaiting_client_decision';
-    const canApprove = isClient && searchHireStatus === 'awaiting_client_decision';
-    const canCancel = isExpert && search?.searchHire && !['completed', 'canceled', 'disputed'].includes(searchHireStatus || '');
-    const isDisputed = (isClient || isExpert) && searchHireStatus === 'disputed';
-    const isDisputeResolved = (isClient || isExpert) && searchHireStatus === 'dispute_resolved';
+    const canDispute = isClient && searchHireStatus === SEARCH_HIRE_STATUS.AWAITING_CLIENT_DECISION;
+    const canApprove = isClient && searchHireStatus === SEARCH_HIRE_STATUS.AWAITING_CLIENT_DECISION;
+    const nonCancellableStatuses = [
+        SEARCH_HIRE_STATUS.COMPLETED,
+        SEARCH_HIRE_STATUS.CANCELLED,
+        SEARCH_HIRE_STATUS.DISPUTED,
+    ];
+    const canCancel = isExpert && search?.searchHire && !nonCancellableStatuses.includes(searchHireStatus || '');
+    const isDisputed = (isClient || isExpert) && searchHireStatus === SEARCH_HIRE_STATUS.DISPUTED;
+    const isDisputeResolved = (isClient || isExpert) && isDisputeResolvedStatus(searchHireStatus || '');
     
     // Determinar si el experto puede responder a la disputa
     // ✅ SOLO PARA EXPERTOS: Verificar que el usuario actual es el experto de la disputa
@@ -848,9 +857,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // ✅ Usar categoría del endpoint details-complete
     const categoryName = category?.name || 'Unknown Category';
 
-    // ✅ Verificar si el SearchHire está finalizado (según la guía)
-    const isSearchHireFinalized = search?.searchHire?.statusInfo?.isFinalizationStatus === true ||
-                                  (searchHireStatus && ['completed', 'canceled', 'disputed', 'dispute_resolved'].includes(searchHireStatus));
+    const isSearchHireFinalized = isTerminalSearchHireStatus(
+        searchHireStatus || '',
+        searchHireStatusInfoObj
+    );
 
     // ✅ Función helper para determinar qué botones mostrar según la guía
     const getAppointmentButtons = () => {
@@ -866,15 +876,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
         // Si no hay cita, solo el cliente puede proponer (si el SearchHire está en estado válido)
         if (!appointment) {
-            // ✅ Estados válidos para proponer cita cuando no hay cita previa
-            // Incluir 'pending', 'in_progress' y también estados iniciales comunes
-            const validHireStatuses = ['pending', 'in_progress', 'awaiting_appointment'];
-            const currentHireStatus = searchHireStatus;
-            // ✅ Si no hay estado o el estado es válido, permitir proponer (siempre que no esté finalizado)
-            const canPropose = !isSearchHireFinalized && (
-                !currentHireStatus || // Si no hay estado, permitir (contratación recién creada)
-                validHireStatuses.includes(currentHireStatus)
-            );
+            const currentHireStatus = searchHireStatus || '';
+            const canPropose = !isSearchHireFinalized && canProposeAppointment(currentHireStatus, isSearchHireFinalized);
             
             console.log('[SearchDetails] getAppointmentButtons - No appointment:', {
                 isClient,
@@ -1250,6 +1253,18 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     </div>
                 </div>
             </header>
+
+            {searchHireStatus === SEARCH_HIRE_STATUS.TRANSFER_FAILED && (
+                <div className="mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <div className="flex items-center gap-2 font-medium">
+                        <AlertCircle className="h-4 w-4" />
+                        Error en la transferencia de pago
+                    </div>
+                    <p className="mt-1 text-red-700">
+                        El servicio se marcó como completado pero la transferencia al experto falló. Contacta con soporte si persiste.
+                    </p>
+                </div>
+            )}
 
             {/* ✅ Mensaje simple para errores de red */}
             {isNetworkErr && (

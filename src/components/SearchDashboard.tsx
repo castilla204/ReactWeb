@@ -38,6 +38,7 @@ import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
+import { isTerminalSearchHireStatus } from '../constants/hireStatuses';
 import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 import type { SearchItem, SearchFilters, PaginationMetadata } from '../hooks/useSearch.hooks';
 import { useNavigate } from 'react-router-dom';
@@ -390,8 +391,7 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
         
         // Fallback: lógica hardcodeada anterior (usar statusInfo.statusValue si está disponible)
         const currentStatus = search.searchHire.statusInfo?.statusValue || search.searchHire.status;
-        const terminalStatuses = ['dispute_resolved', 'completed', 'cancelled'];
-        return !terminalStatuses.includes(currentStatus) ? 'Activa' : 'Inactiva';
+        return isTerminalSearchHireStatus(currentStatus, search.searchHire.statusInfo) ? 'Inactiva' : 'Activa';
     };
 
     // ✅ HOOK DINÁMICO PARA ESTADOS
@@ -789,7 +789,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                             { value: 'completed', label: 'Completado' },
                                             { value: 'cancelled', label: 'Cancelado' },
                                             { value: 'transfer_failed', label: 'Fallida' },
-                                            { value: 'dispute_resolved', label: 'Resuelta' },
+                                            { value: 'dispute_resolved_client', label: 'Resuelta (cliente)' },
+                                            { value: 'dispute_resolved_expert', label: 'Resuelta (experto)' },
                                         ].find(s => s.value === filters.searchHireStatus)?.label || 'Estado'
                                         : 'Estado'
                                     }
@@ -819,7 +820,8 @@ const SearchDashboard = ({ /* onBack */ }: SearchDashboardProps) => {
                                 { value: 'completed', label: 'Completado' },
                                 { value: 'cancelled', label: 'Cancelado' },
                                 { value: 'transfer_failed', label: 'Transferencia fallida' },
-                                { value: 'dispute_resolved', label: 'Disputa resuelta' },
+                                { value: 'dispute_resolved_client', label: 'Disputa resuelta (cliente)' },
+                                { value: 'dispute_resolved_expert', label: 'Disputa resuelta (experto)' },
                             ].map((status) => {
                                 const isSelected = filters.searchHireStatus === status.value;
                                 return (

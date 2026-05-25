@@ -1,6 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Copy, Check } from 'lucide-react';
 import { Button } from './ui/button';
+
+const isDevelopment = import.meta.env.DEV;
 
 interface Props {
     children: ReactNode;
@@ -58,7 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
         // }
         
         // Log adicional para debugging en desarrollo
-        if (process.env.NODE_ENV === 'development') {
+        if (isDevelopment) {
             console.group('🔴 ErrorBoundary - Detalles del error');
             console.error('Error:', error);
             console.error('Component Stack:', errorInfo.componentStack);
@@ -80,7 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
         try {
             // Opcional: limpiar cache de errores si existe
             sessionStorage.removeItem('lastError');
-        } catch (e) {
+        } catch {
             // Ignorar errores de localStorage/sessionStorage
         }
     };
@@ -145,7 +147,7 @@ export class ErrorBoundary extends Component<Props, State> {
                             Ha ocurrido un error inesperado. Por favor, intenta recargar la página o volver al inicio.
                         </p>
 
-                        {process.env.NODE_ENV === 'development' && this.state.error && (
+        {isDevelopment && this.state.error && (
                             <details className="mb-6 text-left">
                                 <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer mb-2">
                                     Detalles del error (solo en desarrollo)

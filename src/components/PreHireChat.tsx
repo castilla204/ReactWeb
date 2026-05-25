@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { getSupabaseClient, updateSupabaseAuth } from '../lib/supabase';
 import { API_CONFIG } from '../config/api';
 import { sendMessage } from '../services/chatService';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { AlertCircle, CheckCheck, Loader2, MessageCircle, RefreshCw, Send, Wifi, WifiOff, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { useAuth } from '../contexts/AuthContext';
+import { Textarea } from './ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Skeleton } from './ui/skeleton';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 interface PreHireChatProps {
   serviceId: number;
@@ -43,16 +47,46 @@ interface Conversation {
   messages: Message[];
 }
 
+const CHAT_FETCH_TIMEOUT_MS = 30000;
+
+function sortMessagesByDate(messages: Message[]) {
+  return [...messages].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+}
+
+function formatMessageTime(value: string) {
+  return new Date(value).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatMessageDay(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Hoy';
+  if (date.toDateString() === yesterday.toDateString()) return 'Ayer';
+
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
 export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionChange }: PreHireChatProps) => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<any>(null);
   const messagesRef = useRef<Message[]>([]);
-  const queryClient = useQueryClient();
   const API_URL = API_CONFIG.baseUrl;
   
   // ✅ Obtener cliente Supabase autenticado
@@ -88,17 +122,18 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
   }, [messages]);
 
   // Obtener o crear conversación previa
-  const { data: conversation, isLoading } = useQuery<Conversation>({
+  const { data: conversation, isLoading, isFetching, error: conversationError, refetch } = useQuery<Conversation>({
     queryKey: ['pre-hire-conversation', serviceId],
     queryFn: async () => {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${API_URL}/api/Chat/conversation-by-service?searchServiceId=${serviceId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
-        }
+        },
+        CHAT_FETCH_TIMEOUT_MS
       );
 
       if (!response.ok) {
@@ -140,12 +175,18 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
   useEffect(() => {
     if (conversation?.messages) {
       // Ordenar mensajes por fecha
-      const sortedMessages = conversation.messages.sort((a, b) => 
-        new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-      );
+      const sortedMessages = sortMessagesByDate(conversation.messages);
       setMessages(sortedMessages);
     }
   }, [conversation]);
+
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage) return;
+
+    const author = lastMessage.senderId === userId ? 'Tú' : lastMessage.senderName || 'La otra persona';
+    setLiveAnnouncement(`${author}: ${lastMessage.content}`);
+  }, [messages, userId]);
 
   // ✅ NOTA: handleNewMessage ahora se define dentro del useEffect para capturar conversation.id actual
 
@@ -198,14 +239,15 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           // Intentar obtener el nombre real desde la API
           (async () => {
             try {
-              const userResponse = await fetch(
+              const userResponse = await fetchWithTimeout(
                 `${API_URL}/api/Users/${senderId}`,
                 {
                   headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                   }
-                }
+                },
+                CHAT_FETCH_TIMEOUT_MS
               );
               
               if (userResponse.ok) {
@@ -246,9 +288,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
             console.log('🔄 [PreHireChat] Reemplazando mensaje optimístico con mensaje real desde Supabase');
             const updated = [...prev];
             updated[existingIndex] = messageDto; // Reemplazar con el mensaje real
-            return updated.sort((a, b) => 
-              new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-            );
+            return sortMessagesByDate(updated);
           }
           console.log('⚠️ [PreHireChat] Mensaje duplicado ignorado (ya existe y no es optimístico):', messageDto.id);
           return prev; // Ya existe y no es optimístico, no hacer nada
@@ -266,15 +306,11 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           console.log('🔄 [PreHireChat] Reemplazando mensaje optimístico con mensaje real desde Supabase (por contenido)');
           const updated = [...prev];
           updated[optimisticIndex] = messageDto; // Reemplazar con el mensaje real
-          return updated.sort((a, b) => 
-            new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-          );
+          return sortMessagesByDate(updated);
         }
 
         // ✅ Agregar nuevo mensaje y ordenar por fecha
-        const updated = [...prev, messageDto].sort((a, b) => 
-          new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-        );
+        const updated = sortMessagesByDate([...prev, messageDto]);
 
         console.log('✅ [PreHireChat] Mensaje agregado. Total mensajes:', updated.length);
         return updated;
@@ -379,11 +415,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           console.log('🔍 [PreHireChat] ¿Tiene Id?', 'Id' in payload || 'id' in payload);
           console.log('🔍 [PreHireChat] ¿Tiene ConversationId?', 'ConversationId' in payload || 'conversationId' in payload);
           
-          // Si es un evento new_message, también procesarlo
-          if (event === 'new_message') {
-            console.log('🔍 [PreHireChat] Procesando new_message desde listener de *');
-            handleNewMessage(payload);
-          }
+          // Listener de diagnóstico: el procesamiento real lo hace el listener new_message.
         }
       )
       
@@ -537,6 +569,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
       };
     },
     onMutate: async (content) => {
+      setSendError(null);
       // ✅ OPTIMISTIC UPDATE: Agregar mensaje inmediatamente
       const optimisticMessage: Message = {
         id: Date.now(), // ID temporal (se reemplazará con el real)
@@ -555,19 +588,16 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
       console.log('🚀 [PreHireChat] Agregando mensaje optimístico:', optimisticMessage);
 
       setMessages(prev => {
-        const updated = [...prev, optimisticMessage].sort((a, b) => 
-          new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-        );
+        const updated = sortMessagesByDate([...prev, optimisticMessage]);
         console.log('✅ [PreHireChat] Mensaje optimístico agregado. Total mensajes:', updated.length);
         return updated;
       });
 
       setInputValue(''); // Limpiar input inmediatamente
-      setIsTyping(false);
 
       return { optimisticMessage };
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables) => {
       console.log('✅ [PreHireChat] Mensaje enviado exitosamente:', data);
       
       // ✅ Reemplazar mensaje optimístico con el real inmediatamente
@@ -591,13 +621,12 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           updated.push(data);
         }
         
-        return updated.sort((a, b) => 
-          new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-        );
+        return sortMessagesByDate(updated);
       });
     },
     onError: (error, variables, context) => {
       console.error('❌ [PreHireChat] Error al enviar mensaje:', error);
+      setSendError(error instanceof Error ? error.message : 'No se pudo enviar el mensaje. Revisa tu conexión e inténtalo de nuevo.');
       
       // ✅ Remover mensaje optimístico en caso de error
       if (context?.optimisticMessage) {
@@ -614,10 +643,11 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
 
   const handleSend = () => {
     if (!inputValue.trim() || !conversation) return;
+    setSendError(null);
     sendMessageMutation.mutate(inputValue.trim());
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -626,16 +656,53 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-gray-600">Cargando conversación...</p>
+      <div className="flex h-full flex-col bg-white">
+        <div className="flex-1 space-y-5 overflow-hidden p-4" aria-label="Cargando conversación">
+          <div className="flex gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-16 w-64 rounded-2xl" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-14 w-72 rounded-2xl" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-20 w-56 rounded-2xl" />
+          </div>
+        </div>
+        <div className="border-t border-gray-200 p-4">
+          <Skeleton className="h-12 w-full rounded-full" />
+        </div>
       </div>
     );
   }
 
-  if (!conversation) {
+  if (conversationError || !conversation) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-red-600">No se pudo cargar la conversación</p>
+      <div className="flex h-full items-center justify-center bg-white p-6">
+        <Alert variant="destructive" className="max-w-lg">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No se pudo cargar la conversación</AlertTitle>
+          <AlertDescription className="mt-2 space-y-3">
+            <p>
+              Revisa tu conexión o vuelve a intentarlo. Si el problema continúa, abre el servicio desde su ficha.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-2"
+            >
+              {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Reintentar
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -649,6 +716,9 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
     
     return (
         <div className={`flex flex-col ${containerHeight} ${onClose ? 'border border-gray-200 rounded-lg' : ''} bg-white`}>
+            <div className="sr-only" aria-live="polite" aria-atomic="false">
+              {liveAnnouncement}
+            </div>
             {/* Header - Solo mostrar si hay onClose (para modales) */}
             {onClose && (
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
@@ -660,13 +730,13 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
                         {/* Indicador de conexión */}
                         <div className="flex items-center gap-1.5">
                             {isConnected ? (
-                                <span className="text-xs text-green-600 flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span className="text-xs text-green-600 flex items-center gap-1" aria-label="Chat conectado">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></span>
                                     Conectado
                                 </span>
                             ) : (
-                                <span className="text-xs text-red-600 flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                <span className="text-xs text-red-600 flex items-center gap-1" aria-label="Chat desconectado">
+                                    <span className="w-2 h-2 bg-red-500 rounded-full" aria-hidden="true"></span>
                                     Desconectado
                                 </span>
                             )}
@@ -681,72 +751,107 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
                     </div>
                 </div>
             )}
-            
+      <div className={`mx-4 mt-3 flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs ${isConnected ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-amber-100 bg-amber-50 text-amber-800'}`}>
+        {isConnected ? <Wifi className="h-4 w-4" aria-hidden="true" /> : <WifiOff className="h-4 w-4" aria-hidden="true" />}
+        <span>
+          {isConnected
+            ? 'Chat en tiempo real activo. Recibirás las respuestas al instante.'
+            : 'Conectando con el chat en tiempo real. Puedes escribir, pero el envío se habilitará al reconectar.'}
+        </span>
+      </div>
 
       {/* Lista de mensajes */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div
+        ref={messageListRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 overscroll-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-label="Mensajes del chat antes de contratar"
+        tabIndex={0}
+      >
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500 text-center">
-              No hay mensajes aún. ¡Empieza la conversación!
-            </p>
+          <div className="flex h-full items-center justify-center">
+            <div className="max-w-sm rounded-3xl border border-gray-100 bg-gray-50 px-6 py-7 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+                <MessageCircle className="h-6 w-6 text-gray-700" aria-hidden="true" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Pregunta antes de contratar</h3>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                Resuelve dudas sobre disponibilidad, alcance del servicio o zona de trabajo antes de continuar.
+              </p>
+            </div>
           </div>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             const isOwnMessage = message.senderId === userId;
+            const previousMessage = messages[index - 1];
+            const showDaySeparator = !previousMessage ||
+              new Date(previousMessage.sentAt).toDateString() !== new Date(message.sentAt).toDateString();
             
             return (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
-              >
-                {/* ✅ Foto de perfil */}
-                {!isOwnMessage && (
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage 
-                      src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
-                      alt={message.senderName}
-                    />
-                    <AvatarFallback className="bg-gray-900 text-white text-xs">
-                      {message.senderName?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                  {!isOwnMessage && (
-                    <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
-                  )}
-                  <div
-                    className={`px-3 py-2 rounded-2xl ${
-                      isOwnMessage
-                        ? 'bg-primary text-white rounded-tr-sm'
-                        : 'bg-gray-100 text-gray-900 rounded-tl-sm'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              <div key={message.id}>
+                {showDaySeparator && (
+                  <div className="my-4 flex justify-center" aria-label={`Mensajes de ${formatMessageDay(message.sentAt)}`}>
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                      {formatMessageDay(message.sentAt)}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(message.sentAt).toLocaleTimeString('es-ES', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                  
-                  {/* Adjuntos */}
-                  {message.attachmentUrls && message.attachmentUrls.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {message.attachmentUrls.map((url, idx) => (
-                        <img
-                          key={idx}
-                          src={url}
-                          alt={`Adjunto ${idx + 1}`}
-                          className="max-w-[200px] max-h-[200px] rounded-lg object-cover"
-                        />
-                      ))}
-                    </div>
+                )}
+                <article
+                  className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[86%] sm:max-w-[72%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
+                  aria-label={`${isOwnMessage ? 'Tú' : message.senderName} a las ${formatMessageTime(message.sentAt)}`}
+                >
+                  {!isOwnMessage && (
+                    <Avatar className="w-8 h-8 flex-shrink-0 shadow-sm">
+                      <AvatarImage 
+                        src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
+                        alt={message.senderName}
+                      />
+                      <AvatarFallback className="bg-gray-900 text-white text-xs">
+                        {message.senderName?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
-                </div>
+                  
+                  <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                    {!isOwnMessage && (
+                      <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
+                    )}
+                    <div
+                      className={`px-4 py-2.5 rounded-3xl shadow-sm ${
+                        isOwnMessage
+                          ? 'bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] text-white rounded-tr-md'
+                          : 'bg-gray-100 text-gray-900 rounded-tl-md'
+                      } ${message.isOptimistic ? 'opacity-75' : ''}`}
+                    >
+                      <p className="text-sm leading-6 whitespace-pre-wrap break-words">{message.content}</p>
+                    </div>
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      {formatMessageTime(message.sentAt)}
+                      {isOwnMessage && (
+                        <>
+                          {message.isOptimistic ? 'Enviando' : 'Enviado'}
+                          {!message.isOptimistic && <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />}
+                        </>
+                      )}
+                    </span>
+                    
+                    {message.attachmentUrls && message.attachmentUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {message.attachmentUrls.map((url, idx) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt={`Adjunto ${idx + 1}`}
+                            className="max-w-[220px] max-h-[220px] rounded-2xl object-cover shadow-sm"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </article>
               </div>
             );
           })
@@ -755,28 +860,44 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 p-4 border-t border-gray-200 bg-white rounded-b-lg relative z-10">
-        <input
-          type="text"
+      <div className="border-t border-gray-200 bg-white p-3 sm:p-4 rounded-b-lg relative z-10">
+        {sendError && (
+          <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {sendError}
+          </div>
+        )}
+        <div className="flex items-end gap-2">
+        <Textarea
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder={!isConnected ? "Conectando..." : "Escribe tu mensaje..."}
           disabled={sendMessageMutation.isPending}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          aria-label="Escribe tu mensaje"
+          aria-describedby="chat-input-help"
+          aria-invalid={!!sendError}
+          rows={1}
+          maxLength={1200}
+          className="min-h-[44px] max-h-32 flex-1 resize-none rounded-3xl border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-5 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
           style={{ pointerEvents: 'auto' }}
         />
         <Button
+          type="button"
           onClick={handleSend}
           disabled={!inputValue.trim() || sendMessageMutation.isPending || !isConnected}
-          className="rounded-full px-6"
+          className="h-11 w-11 rounded-full p-0 shadow-sm"
+          aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
         >
           {sendMessageMutation.isPending ? (
-            'Enviando...'
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           ) : (
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" aria-hidden="true" />
           )}
         </Button>
+        </div>
+        <p id="chat-input-help" className="mt-2 px-2 text-[11px] text-gray-500">
+          Pulsa Enter para enviar. Usa Shift + Enter para escribir en varias líneas.
+        </p>
       </div>
     </div>
   );

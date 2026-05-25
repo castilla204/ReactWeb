@@ -874,7 +874,13 @@ export function ExpertPanelPage() {
         });
     }, [services]);
 
-    const activeHires = hires ? hires.filter((hire) => ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status)) : [];
+    const activeHires = hires
+        ? hires.filter((hire) =>
+            hire.statusInfo
+                ? !hire.statusInfo.isFinalizationStatus
+                : ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status)
+          )
+        : [];
 
     if (!user) {
         return (

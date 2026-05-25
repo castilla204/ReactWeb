@@ -1,7 +1,9 @@
-﻿import { useDisputes } from './useDisputes';
+﻿import { useRef } from 'react';
+import { useDisputes } from './useDisputes';
 import { useApi } from './useApi';
 import { useNavigate } from 'react-router-dom';
 import { showToast, NotificationType } from '../lib/toast';
+import { API_CONFIG } from '../config/api';
 
 export function useSearchActions() {
     const { createDispute, resolveDispute } = useDisputes();
@@ -11,6 +13,25 @@ export function useSearchActions() {
     const addNotification = (type: NotificationType, message: string, duration?: number) => {
         showToast(type, message, duration);
     };
+
+    // 🔁 Guard anti doble-submit: bloquea reentradas de la MISMA acción sobre el MISMO hire
+    // (doble-clic / doble-tap) mientras la petición está en vuelo. Evita disputas/completados
+    // duplicados y toasts de error confusos. El backend además es idempotente, esto es la 1ª línea.
+    const inFlight = useRef<Record<string, boolean>>({});
+    function guard<T extends (...args: any[]) => Promise<any>>(key: string, fn: T): T {
+        return (async (...args: any[]) => {
+            const id = `${key}-${args[0] ?? ''}`;
+            if (inFlight.current[id]) {
+                return undefined;
+            }
+            inFlight.current[id] = true;
+            try {
+                return await fn(...args);
+            } finally {
+                inFlight.current[id] = false;
+            }
+        }) as T;
+    }
 
     const handleCancelService = async (searchHireId: number | undefined) => {
         try {
@@ -187,11 +208,12 @@ export function useSearchActions() {
     };
 
     return {
-        handleCancelService,
-        handleForceFinalize,
-        handleCompleteService,
-        handleDisputeSubmit,
-        handleResolveDispute,
+        // 🔁 envueltos con guard anti doble-submit (clave por acción + searchHireId)
+        handleCancelService: guard('cancel', handleCancelService),
+        handleForceFinalize: guard('forceFinalize', handleForceFinalize),
+        handleCompleteService: guard('complete', handleCompleteService),
+        handleDisputeSubmit: guard('dispute', handleDisputeSubmit),
+        handleResolveDispute: guard('resolve', handleResolveDispute),
         handleAddAd,
     };
 }
