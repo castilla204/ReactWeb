@@ -53,10 +53,10 @@ const defaultCenter = {
 };
 
 // Espejo de newApi.Common.SupportedConnectCountries (backend). Solo para aviso temprano:
-// EEA-27 + NO + US/CA/GB/CH (IS/LI fuera). La validación REAL la hace el backend.
+// EEA-27 + NO/LI + US/CA/GB/CH (IS fuera). La validación REAL la hace el backend.
 const SUPPORTED_PAYOUT_COUNTRIES = new Set<string>([
     'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
-    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','NO',
+    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','NO','LI',
     'US','CA','GB','CH',
 ]);
 
