@@ -52,6 +52,14 @@ const defaultCenter = {
     lng: -3.7038
 };
 
+// Espejo de newApi.Common.SupportedConnectCountries (backend). Solo para aviso temprano:
+// EEA-27 + NO + US/CA/GB/CH (IS/LI fuera). La validación REAL la hace el backend.
+const SUPPORTED_PAYOUT_COUNTRIES = new Set<string>([
+    'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
+    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','NO',
+    'US','CA','GB','CH',
+]);
+
 const getZoomLevel = (radius: number) => {
     const radiusInMeters = radius * 1000;
     return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
@@ -228,7 +236,7 @@ function BecomeExpertPage() {
                 types: ['address'],
                 // Sin componentRestrictions: el marketplace es global, los expertos
                 // pueden estar en cualquier país (no solo España).
-                fields: ['formatted_address', 'geometry', 'name']
+                fields: ['formatted_address', 'geometry', 'name', 'address_components']
             });
 
             autoCompleteInstance.addListener('place_changed', () => {
@@ -238,7 +246,20 @@ function BecomeExpertPage() {
                         lat: place.geometry.location.lat(),
                         lng: place.geometry.location.lng()
                     };
-                    
+
+                    // Aviso temprano (P3): si el país del lugar elegido no puede recibir pagos,
+                    // advertimos ANTES de completar el formulario (el backend lo bloquea igualmente).
+                    const countryCode = place.address_components
+                        ?.find(c => c.types.includes('country'))
+                        ?.short_name?.toUpperCase();
+                    if (countryCode && !SUPPORTED_PAYOUT_COUNTRIES.has(countryCode)) {
+                        showToast(
+                            'error',
+                            'Tu país aún no puede recibir pagos en la plataforma, por lo que no podrás cobrar como experto. Elige otra ubicación o contacta con soporte.',
+                            9000
+                        );
+                    }
+
                     updateLocationAndMap(newLocation);
                     setSearchAddress('');
                 }
