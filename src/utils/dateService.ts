@@ -268,9 +268,14 @@ const getRelativeTime = (date: Date): string => {
 export const isValidFutureDateTime = (
   date: string,
   time: string,
-  minHoursAhead: number = 24
+  minHoursAhead: number = 24,
+  timezone?: string
 ): boolean => {
-  const dateTime = new Date(`${date}T${time}`);
+  // 🔧 FIX D12: si se pasa el huso del experto, interpretar la fecha/hora en ESE huso (epoch UTC correcto).
+  // Fallback: sin huso → se interpreta en el huso del navegador (comportamiento anterior, no rompe nada).
+  const dateTime = timezone
+    ? fromZonedTime(`${date}T${time}`, timezone)
+    : new Date(`${date}T${time}`);
   const now = new Date();
   const minTime = new Date(now.getTime() + minHoursAhead * 60 * 60 * 1000);
   return dateTime > minTime;
