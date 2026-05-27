@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe } from 'lucide-react';
+import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe, Heart, User } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -273,222 +273,50 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
             {/* Header estilo Memorae - Oculto en móvil */}
-            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? '!hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
-                    <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
-                        {/* Logo estilo Memorae */}
-                        <div className="flex items-center gap-3">
-                            <a 
-                                href="/"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate('/');
-                                }}
-                                className="flex items-center"
+            <header className={`h-12 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? '!hidden' : ''}`} style={{ backgroundColor: '#ffffff' }}>
+                    <div className="w-full h-full px-4 lg:px-6 flex items-center justify-between">
+                        <a
+                            href="/"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigate('/');
+                            }}
+                            className="flex items-center shrink-0"
+                        >
+                            <span
+                                className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-[#FF385C]/10 text-[#222] font-semibold text-[11px] tracking-[0.18em]"
+                                aria-label="Inspecciono"
                             >
-                                <img 
-                                    src={logoImg} 
-                                    alt="Logo" 
-                                    className="h-8 w-auto object-contain"
-                                />
-                            </a>
-                        </div>
+                                INSPECCIONO
+                            </span>
+                        </a>
 
-                        {/* Navegación estilo Memorae */}
-                        <nav className="hidden md:flex items-center gap-6">
-                            <Button
-                                variant="ghost"
-                                className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => {
-                                    if (location.pathname === '/') {
-                                        const formSection = document.getElementById('form-section');
-                                        if (formSection) {
-                                            const elementPosition = formSection.getBoundingClientRect().top + window.pageYOffset;
-                                            window.scrollTo({
-                                                top: elementPosition - 20,
-                                                behavior: 'smooth'
-                                            });
-                                        } else {
-                                            sessionStorage.setItem('scrollToFormSection', 'true');
-                                        }
-                                    } else {
-                                        sessionStorage.setItem('scrollToFormSection', 'true');
-                                        navigate('/');
-                                    }
-                                }}
-                            >
-                                Servicios
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => isAuthenticated ? navigate('/busquedas') : handleRequireAuth('Ver tus revisiones')}
-                            >
-                                Mis revisiones
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
-                                onClick={() => {
-                                    if (isAuthenticated) {
-                                        setShowNotifications(true);
-                                    } else {
-                                        handleRequireAuth('Ver notificaciones');
-                                    }
-                                }}
-                            >
-                                Notificaciones
-                                {unreadCount > 0 && (
-                                    <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
-                                )}
-                            </Button>
+                        <div className="flex items-center gap-2">
+                            {userIsAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin')}
+                                    className="text-xs font-semibold text-red-600 px-2.5 py-1 rounded-md border border-red-300 hover:bg-red-50"
+                                >
+                                    Admin
+                                </button>
+                            )}
                             <button
-                                onClick={() => navigate('/como-funciona')}
-                                className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
+                                type="button"
+                                aria-label="Favoritos"
+                                onClick={() => navigate('/favoritos')}
+                                className="h-8 w-8 rounded-full border border-[#e5e7eb] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
                             >
-                                Cómo funciona
+                                <Heart className="w-4 h-4" />
                             </button>
-                        </nav>
-
-                        {/* Botones de acción estilo Memorae */}
-                        <div className="flex items-center gap-4">
-                            {/* Botón menú móvil - Solo visible si está autenticado */}
-                            {isAuthenticated && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className="md:hidden h-9 w-9"
-                                >
-                                    <Menu className="w-5 h-5" />
-                                </Button>
-                            )}
-
-                            {/* Botón "Hazte revisor" estilo Airbnb — oculto si ya eres experto */}
-                            {!isExpert && (
-                            <Button
-                                variant="ghost"
-                                className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full px-4 py-2"
-                                onClick={() => navigate('/become-expert')}
+                            <button
+                                type="button"
+                                aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+                                onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
+                                className="h-8 w-8 rounded-full border border-[#d1d5db] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
                             >
-                                Hazte revisor
-                            </Button>
-                            )}
-
-                            {/* Icono de globo para idioma */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="hidden md:flex h-10 w-10 rounded-full hover:bg-gray-100"
-                            >
-                                <Globe className="w-5 h-5 text-gray-700" />
-                            </Button>
-
-                            {isAuthenticated && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="hidden md:flex h-10 w-10 rounded-full hover:bg-gray-100 relative"
-                                    onClick={() => setShowNotifications(true)}
-                                    aria-label="Notificaciones"
-                                >
-                                    <Bell className="w-5 h-5 text-gray-700" />
-                                    {unreadCount > 0 && (
-                                        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                        </span>
-                                    )}
-                                </Button>
-                            )}
-
-                            {isAuthenticated ? (
-                                <>
-                                    <Button
-                                        variant="ghost"
-                                        className="hidden md:flex text-sm font-medium text-gray-700 hover:text-gray-900"
-                                        onClick={handleSignOut}
-                                    >
-                                        Cerrar Sesión
-                                    </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                className="relative h-10 w-auto rounded-full p-1 border border-gray-300 hover:shadow-md transition-shadow flex items-center gap-2 px-3"
-                                            >
-                                                <Menu className="w-4 h-4 text-gray-700" />
-                                                <Avatar className="h-8 w-8">
-                                                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
-                                                        {user?.name?.[0]?.toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56">
-                                            <DropdownMenuLabel>
-                                                <div className="flex flex-col space-y-1">
-                                                    <p className="text-sm font-normal leading-none">{user?.name}</p>
-                                                    <p className="text-xs leading-none text-muted-foreground truncate font-normal">{user?.email}</p>
-                                                </div>
-                                            </DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            {isExpert && (
-                                            <DropdownMenuItem
-                                                onClick={() => navigate('/expert-panel')}
-                                                className="text-sm font-normal cursor-pointer"
-                                            >
-                                                <Briefcase className="w-4 h-4 mr-2" />
-                                                Panel de Experto
-                                            </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuItem
-                                                onClick={() => navigate('/transacciones')}
-                                                className="text-sm font-normal cursor-pointer"
-                                            >
-                                                <Wallet className="w-4 h-4 mr-2" />
-                                                Transacciones
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => setShowAccountSettings(true)}
-                                                className="text-sm font-normal cursor-pointer"
-                                            >
-                                                <Settings className="w-4 h-4 mr-2" />
-                                                Configuración
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                onClick={handleSignOut}
-                                                className="text-sm font-normal text-red-600 cursor-pointer"
-                                            >
-                                                <LogOut className="w-4 h-4 mr-2" />
-                                                Cerrar Sesión
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="hidden md:flex">
-                                        <GoogleSignInButton variant="compact" />
-                                    </div>
-                                    <Button
-                                        className="hidden md:flex bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg"
-                                        onClick={() => {
-                                            if (location.pathname === '/') {
-                                                const formSection = document.getElementById('form-section');
-                                                if (formSection) {
-                                                    formSection.scrollIntoView({ behavior: 'smooth' });
-                                                }
-                                            } else {
-                                                navigate('/');
-                                            }
-                                        }}
-                                    >
-                                        Probar Gratis
-                                    </Button>
-                                </>
-                            )}
+                                <User className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </header>

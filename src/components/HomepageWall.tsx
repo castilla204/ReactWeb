@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
+import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
+import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
 import { Star, ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Footer } from './Footer';
@@ -11,6 +13,9 @@ import { showToast } from '../lib/toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+
+const COCHES_CATEGORY_ID = 5;
+const INMOBILIARIA_CATEGORY_ID = 3;
 
 // ✅ OPTIMIZADO: Debounce para resize events y memoización
 const useIsMobile = () => {
@@ -48,7 +53,7 @@ interface ServiceCardProps {
 }
 
 // ✅ Memoizar ServiceCard para evitar re-renders innecesarios
-const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
+export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { toggleFavoriteAsync } = useServiceFavorites();
@@ -164,7 +169,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
         e.preventDefault();
         handleCardClick();
       }}
-      className="block flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px] xl:w-[280px]"
+      className="block flex-shrink-0 w-[160px] md:w-[184px]"
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <motion.div 
@@ -177,16 +182,16 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
         }}
-        whileHover={{ scale: 1.05, y: -4 }} // ✅ Efecto hover más pronunciado con elevación
-        whileTap={{ scale: 0.95 }} // ✅ Efecto de presión al hacer tap
+        whileHover={isMobile ? { scale: 1.05, y: -4 } : { scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
-          className="relative w-full overflow-hidden mb-2" 
+          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl"
           style={{ 
-            aspectRatio: '1', 
-            borderRadius: '20px', 
+            aspectRatio: isMobile ? '1' : '4 / 3',
+            borderRadius: isMobile ? '20px' : '12px',
             width: '100%',
             // ✅ Optimizaciones máximas para fluidez
             willChange: 'transform',
@@ -444,7 +449,7 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGues
         </div>
 
         {/* Información del servicio - Estructura exacta como Airbnb */}
-        <div style={{ marginTop: '6px' }}>
+        <div style={{ marginTop: isMobile ? '6px' : '4px' }}>
           {/* Primera fila: Título */}
           <div
             className="overflow-hidden"
@@ -573,10 +578,10 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   forceGuestFavorite = false,
   isLastSection = false, // ✅ Solo la última sección tendrá margen inferior
 }) => {
+  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   // ✅ OPTIMIZADO: Debounce para scroll events
   const checkScroll = useCallback(() => {
@@ -603,11 +608,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           if (rafId === null) {
             rafId = requestAnimationFrame(() => {
               checkScroll();
-              // ✅ Calcular progreso del scroll para efecto parallax
-              const { scrollLeft, scrollWidth, clientWidth } = scrollElement;
-              const maxScroll = scrollWidth - clientWidth;
-              const progress = maxScroll > 0 ? scrollLeft / maxScroll : 0;
-              setScrollProgress(progress);
               rafId = null;
             });
           }
@@ -626,7 +626,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
 
   const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = window.innerWidth >= 1024 ? 560 : window.innerWidth >= 768 ? 440 : 300;
+      const scrollAmount = window.innerWidth >= 1024 ? 392 : window.innerWidth >= 768 ? 392 : 300;
       // ✅ OPTIMIZADO: Usar requestAnimationFrame para scroll más fluido
       requestAnimationFrame(() => {
         scrollRef.current?.scrollBy({
@@ -649,95 +649,27 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         contain: 'layout style paint',
       }}
     >
-      {/* Header */}
-      <div className="mb-4 px-6 md:px-8 lg:px-12">
-        <div className="flex items-center justify-between">
-          <div>
-            <a
-              href="#"
-              style={{ 
-                textDecoration: 'none',
-                color: '#222222',
-              }}
-            >
-              <h2
-                className="text-lg md:text-xl lg:text-[22px] leading-6 md:leading-7 font-medium text-[#222222] tracking-wide m-0 p-0"
-                style={{
-                  fontFamily: 'Airbnb Cereal VF, Circular, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif',
-                }}
-              >
-                {title.replace(' >', '')}
-              </h2>
-            </a>
-            {subtitle && (
-              <div
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '16px',
-                  fontWeight: 400,
-                  color: '#717171',
-                  marginTop: '4px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                }}
-              >
-                {subtitle}
-              </div>
-            )}
-          </div>
-          <a
-            href="#"
-            style={{ 
-              textDecoration: 'none',
-              color: '#222222',
-            }}
-          >
-            <span style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              backgroundColor: '#F7F7F7',
-            }}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 32 32"
-                aria-hidden="true"
-                role="presentation"
-                focusable="false"
-                style={{
-                  display: 'block',
-                  fill: 'none',
-                  height: '14px',
-                  width: '14px',
-                  stroke: 'currentColor',
-                  strokeWidth: '4',
-                  overflow: 'visible',
-                }}
-              >
-                <g fill="none">
-                  <path d="M28 16H2M17 4l11.3 11.3a1 1 0 0 1 0 1.4L17 28"></path>
-                </g>
-              </svg>
-            </span>
-          </a>
-        </div>
+      {/* Header sección */}
+      <div className="mb-2 md:mb-2.5 px-4 md:px-0">
+        <h2 className="text-lg md:text-xl font-medium text-[#222222] m-0 tracking-tight">
+          {title.replace(' >', '')}
+        </h2>
+        {subtitle && (
+          <p className="mt-1 text-sm text-[#717171]">{subtitle}</p>
+        )}
       </div>
 
-      {/* Scroll container */}
-      <div className="relative">
-        {/* Scroll area */}
+      {/* Tablón horizontal — igual que móvil */}
+      <div className="relative group/scroll md:w-[min(100%,calc(6*184px+60px))] md:overflow-hidden">
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-hide pb-4 px-6 md:px-8 lg:px-12 gap-3 md:gap-4 lg:gap-5"
+          className="flex overflow-x-auto scrollbar-hide pb-3 md:pb-0 px-4 md:px-0 md:pr-0 gap-4 md:gap-3"
           style={{
-            // ✅ Scroll táctil mejorado - Momentum y snap
-            WebkitOverflowScrolling: 'touch', // Momentum scrolling en iOS
-            scrollBehavior: 'smooth', // Scroll suave
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
             scrollSnapType: 'x mandatory',
-            scrollPaddingLeft: '24px',
-            scrollPaddingRight: '24px',
+            scrollPaddingLeft: isMobile ? '16px' : '0px',
+            scrollPaddingRight: isMobile ? '16px' : '0px',
             overscrollBehaviorX: 'contain', // Evita bounce del body
             willChange: 'scroll-position',
             contain: 'layout style paint',
@@ -748,60 +680,25 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           }}
           onScroll={checkScroll}
         >
-          {useMemo(() => services.map((service, index) => {
-            // ✅ OPTIMIZADO: Memoizar cálculos de parallax
-            const parallaxY = Math.sin((index * 0.5) + scrollProgress * Math.PI * 2) * 3;
-            const parallaxRotate = Math.sin((index * 0.3) + scrollProgress * Math.PI) * 2;
-            
-            return (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, scale: 0.95, x: 30 }}
-                animate={{ 
-                  opacity: 1, 
-                  scale: 1, 
-                  x: 0,
-                  // ✅ Efecto parallax suave basado en scroll
-                  y: parallaxY,
-                  rotateY: parallaxRotate,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 500, // ✅ Aumentado para respuesta más rápida
-                  damping: 35, // ✅ Aumentado para menos rebote
-                  delay: index * 0.015, // ✅ Reducido delay para entrada más rápida
-                  // ✅ Transición ultra-rápida para cambios de scroll
-                  y: { type: "spring", stiffness: 200, damping: 25 },
-                  rotateY: { type: "spring", stiffness: 200, damping: 25 },
-                }}
-                style={{ 
-                  flexShrink: 0,
-                  transformStyle: 'preserve-3d',
-                  backfaceVisibility: 'hidden',
-                  willChange: 'transform, opacity',
-                  // ✅ Scroll snap para efecto táctil
-                  scrollSnapAlign: 'start',
-                  scrollSnapStop: 'normal',
-                }}
-              >
-                <ServiceCard 
-                  service={service} 
-                  forceGuestFavorite={forceGuestFavorite}
-                  initialIsFavorite={service.isFavorite ?? false}
-                />
-              </motion.div>
-            );
-          }), [services, scrollProgress, forceGuestFavorite])}
+          {services.map((service) => (
+            <div key={service.id} className="flex-shrink-0 scroll-smooth" style={{ scrollSnapAlign: 'start' }}>
+              <ServiceCard
+                service={service}
+                forceGuestFavorite={forceGuestFavorite}
+                initialIsFavorite={service.isFavorite ?? false}
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Scroll buttons - Solo en desktop */}
         {canScrollLeft && (
           <button
+            type="button"
             onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all z-10 items-center justify-center"
+            className="hidden md:flex absolute left-2 lg:left-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-gray-200 hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
             style={{ 
-              width: '28px', 
-              height: '28px',
+              width: '36px', 
+              height: '36px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
             }}
             aria-label="Scroll left"
@@ -815,8 +712,8 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               style={{
                 display: 'block',
                 fill: 'none',
-                height: '12px',
-                width: '12px',
+                height: '14px',
+                width: '14px',
                 stroke: 'currentColor',
                 strokeWidth: '4',
                 overflow: 'visible',
@@ -830,11 +727,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         )}
         {canScrollRight && (
           <button
+            type="button"
             onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all z-10 items-center justify-center"
+            className="hidden md:flex absolute right-2 lg:right-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-gray-200 hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
             style={{ 
-              width: '28px', 
-              height: '28px',
+              width: '36px', 
+              height: '36px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
             }}
             aria-label="Scroll right"
@@ -848,8 +746,8 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               style={{
                 display: 'block',
                 fill: 'none',
-                height: '12px',
-                width: '12px',
+                height: '14px',
+                width: '14px',
                 stroke: 'currentColor',
                 strokeWidth: '4',
                 overflow: 'visible',
@@ -908,70 +806,23 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     _enabled: true, // ✅ Siempre habilitado, no hay que esperar geolocalización
   }), [categoryId, countryCode]);
 
-  // ✅ isFetching se actualiza inmediatamente cuando cambia categoryId (query key cambia)
   const { data: sections, isLoading, error, isFetching } = useHomepageWallQuery(queryParams);
 
-  // ✅ CRÍTICO: Todos los hooks deben estar ANTES de los early returns
-  // ✅ Memoizar función de mapeo para evitar recrearla en cada render
-  const mapServiceToDetail = useMemo(() => {
-    return (service: SearchServiceHomepageDto): SearchServiceDetailDto => {
-      return {
-      id: service.Id,
-      categoryId: service.CategoryId,
-      serviceTypeId: service.ServiceTypeId,
-      serviceTypeName: service.ServiceTypeName,
-      serviceTypeDescription: service.ServiceTypeDescription, // ✅ NUEVO: Descripción del tipo de servicio
-      price: service.Price,
-      imageUrls: service.ImageUrls || [],
-      categoryName: service.CategoryName,
-      completedSearches: service.CompletedSearches,
-      averageRating: service.AverageRating,
-      isFavorite: service.IsFavorite ?? false, // ✅ NUEVO: Mapear IsFavorite del backend
-      expert: service.Expert ? {
-        id: service.Expert.Id,
-        profilePictureUrl: service.Expert.ProfilePictureUrl,
-        description: '',
-        latitude: '',
-        longitude: '',
-        user: {
-          id: service.Expert.Id,
-          name: service.Expert.Name,
-          email: '',
-        },
-        reviews: [],
-        country: service.Expert.Country,
-        city: service.Expert.City || null, // ✅ NUEVO: Mapear City del backend
-        // ✅ NUEVO: Mapear Availability del backend a currentAvailability
-        currentAvailability: service.Expert.Availability ? {
-          id: 0, // No disponible en homepage DTO
-          daysOfWeek: service.Expert.Availability.DaysOfWeek || [],
-          startTime: service.Expert.Availability.StartTime || '',
-          endTime: service.Expert.Availability.EndTime || '',
-          effectiveFrom: undefined, // No disponible en homepage DTO
-        } : undefined,
-      } : undefined,
-      requiresAppointment: false, // No disponible en homepage DTO
-      conditions: '',
-      durationInHours: 0,
-      createdAt: '',
-      isActive: true,
-      selectedDeliverableTypes: [],
-    };
-    };
-  }, []);
-
-  // ✅ Memoizar función de filtrado para evitar recrearla en cada render
   const filterServices = useMemo(() => {
     return (services: SearchServiceHomepageDto[]): SearchServiceDetailDto[] => {
       let filtered = services;
-      
+
       if (serviceTypeId) {
-        filtered = services.filter(service => service.ServiceTypeId === serviceTypeId);
+        filtered = services.filter((service) => {
+          const raw = service as SearchServiceHomepageDto & Record<string, unknown>;
+          const id = raw.ServiceTypeId ?? (raw as Record<string, unknown>).serviceTypeId;
+          return Number(id) === serviceTypeId;
+        });
       }
-      
-      return filtered.map(mapServiceToDetail);
+
+      return filtered.map(mapHomepageServiceToDetail);
     };
-  }, [serviceTypeId, mapServiceToDetail]);
+  }, [serviceTypeId]);
 
   // ✅ OPTIMIZADO PARA MÁXIMA FLUIDEZ: Animaciones ultra-rápidas y coordinadas
   const sectionVariants = useMemo(() => ({
@@ -986,102 +837,88 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     },
   }), []);
 
-  // ✅ CRÍTICO: Memoizar el renderizado de secciones ANTES de los early returns
-  // Esto evita violar las reglas de hooks cuando hay early returns
-  const renderedSections = useMemo(() => {
-    if (!sections || sections.length === 0) {
-      return [];
-    }
-    
-    return sections.map((section: HomepageSection, index: number) => {
-      // ✅ NO usar useMemo dentro de map - usar función normal (ya está memoizada en filterServices)
-      const filteredServices = filterServices(section.services);
-      
-      // Solo renderizar si hay servicios después del filtrado
-      if (filteredServices.length === 0) {
-        return null;
-      }
-      
-      // ✅ Calcular si es la última sección
-      const isLastSection = index === sections.length - 1;
-      const subtitle = section.categoryName && section.country 
-        ? `${section.pagination.totalCount} servicios en ${section.country}` 
-        : undefined;
-      
-      return (
-        <motion.div
-          key={`section-${index}-${section.title}`} // ✅ Key más estable
-          variants={sectionVariants}
-          className={index > 0 ? 'mt-6 md:mt-8 lg:mt-10' : ''}
-        >
-          <HorizontalScrollSection
-            title={section.title} // ✅ Título ya viene formateado del backend
-            subtitle={subtitle}
-            services={filteredServices}
-            forceGuestFavorite={index === 1} // Marcar la segunda sección como "Featured"
-            isLastSection={isLastSection} // ✅ Pasar si es la última sección
-          />
-        </motion.div>
-      );
-    });
-  }, [sections, filterServices, sectionVariants]);
+  const buildRenderedSections = useCallback(
+    (data: HomepageSection[] | undefined, keyPrefix: string) => {
+      if (!data?.length) return [];
+      return data
+        .map((section: HomepageSection, index: number) => {
+          const filteredServices = filterServices(section.services);
+          if (filteredServices.length === 0) return null;
+          const isLastSection = index === data.length - 1;
+          const subtitle =
+            section.categoryName && section.country
+              ? `${section.pagination.totalCount} servicios en ${section.country}`
+              : undefined;
+          return (
+            <motion.div
+              key={`${keyPrefix}-section-${index}-${section.title}`}
+              variants={sectionVariants}
+              className={index > 0 ? 'mt-5 md:mt-6' : ''}
+            >
+              <HorizontalScrollSection
+                title={section.title}
+                subtitle={subtitle}
+                services={filteredServices}
+                forceGuestFavorite={index === 1}
+                isLastSection={isLastSection}
+              />
+            </motion.div>
+          );
+        })
+        .filter(Boolean);
+    },
+    [filterServices, sectionVariants]
+  );
 
-  // ✅ Ahora sí, los early returns después de todos los hooks
-  // ✅ Mostrar skeleton inmediatamente si está cargando o haciendo fetch (isFetching se actualiza al cambiar categoryId)
-  if (isLoading || isFetching) {
+  const renderedSections = useMemo(
+    () => buildRenderedSections(sections, 'main'),
+    [sections, buildRenderedSections]
+  );
+
+  const hasVisibleServices = renderedSections.length > 0;
+
+  const fallbackCategoryId = categoryId === COCHES_CATEGORY_ID ? INMOBILIARIA_CATEGORY_ID : COCHES_CATEGORY_ID;
+  const fallbackParams = useMemo(
+    () => ({
+      categoryId: fallbackCategoryId,
+      latitude: null as string | null,
+      longitude: null as string | null,
+      countryCode,
+      locationRange: 50,
+      nearbyPage: 1,
+      nearbyPageSize: 20,
+      popularPage: 1,
+      popularPageSize: 20,
+      _enabled: !isLoading && !!sections && !hasVisibleServices && categoryId !== fallbackCategoryId,
+    }),
+    [fallbackCategoryId, countryCode, isLoading, sections, hasVisibleServices, categoryId]
+  );
+
+  const { data: fallbackSections, isLoading: fallbackLoading } = useHomepageWallQuery(fallbackParams);
+
+  const fallbackRendered = useMemo(
+    () => buildRenderedSections(fallbackSections, 'fallback'),
+    [fallbackSections, buildRenderedSections]
+  );
+
+  const showFullSkeleton = isLoading && !sections;
+
+  if (showFullSkeleton) {
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12">
-            {/* ✅ Skeleton para secciones */}
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
+            <div className="hidden md:block mb-8">
+              <Skeleton height={12} width={80} borderRadius={4} className="mb-2" />
+              <Skeleton height={32} width={280} borderRadius={8} />
+            </div>
             <div className="space-y-8 md:space-y-12 lg:space-y-14">
-              {/* Primera sección skeleton */}
-              <div>
-                <div className="mb-4">
-                  <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
-                  <Skeleton height={16} width={128} borderRadius={4} />
-                </div>
-                <div
-                  className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 lg:gap-5"
-                  style={{
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                    willChange: 'scroll-position',
-                    contain: 'layout style paint',
-                  }}
-                >
-                  {[...Array(5)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px]">
-                      <Skeleton height={160} className="w-full aspect-square mb-2" borderRadius={20} />
-                      <Skeleton height={16} width="100%" borderRadius={4} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Segunda sección skeleton */}
-              <div>
-                <div className="mb-4">
-                  <Skeleton height={24} width={192} borderRadius={4} className="mb-2" />
-                  <Skeleton height={16} width={128} borderRadius={4} />
-                </div>
-                <div
-                  className="flex overflow-x-auto scrollbar-hide gap-3 md:gap-4 lg:gap-5"
-                  style={{
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                    willChange: 'scroll-position',
-                    contain: 'layout style paint',
-                  }}
-                >
-                  {[...Array(5)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0 w-[160px] md:w-[220px] lg:w-[260px]">
-                      <Skeleton height={160} className="w-full aspect-square mb-2" borderRadius={20} />
-                      <Skeleton height={16} width="100%" borderRadius={4} />
-                    </div>
-                  ))}
-                </div>
+              <div className="flex overflow-x-auto gap-4 pb-4">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="flex-shrink-0 w-[160px] md:w-[184px]">
+                    <Skeleton height={138} className="w-full mb-2" borderRadius={12} />
+                    <Skeleton height={16} width="100%" borderRadius={4} />
+                  </div>
+                ))}
               </div>
             </div>
         </div>
@@ -1108,6 +945,93 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     );
   }
 
+  if (!hasVisibleServices) {
+    if (fallbackLoading) {
+      return (
+        <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-6">
+            <div className="flex overflow-x-auto gap-4 pb-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="shrink-0 w-[160px] md:w-[184px]">
+                  <Skeleton height={138} className="w-full mb-2" borderRadius={12} />
+                  <Skeleton height={14} width="90%" borderRadius={4} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </SkeletonTheme>
+      );
+    }
+
+    if (fallbackRendered.length > 0) {
+      return (
+        <motion.div
+          key={`homepage-wall-fallback-${categoryId}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative"
+        >
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-6 md:pt-8">
+            <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <p className="text-sm text-[#717171]">
+                No hay expertos en esta categoría todavía. Mira estos de{' '}
+                <span className="text-[#222222] font-medium">
+                  {fallbackCategoryId === COCHES_CATEGORY_ID ? 'Coches' : 'Inmobiliaria'}
+                </span>
+                :
+              </p>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => dispatchHomepagePickCategory(COCHES_CATEGORY_ID, 'Coches')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-[#ebebeb] bg-[#fafafa] hover:bg-white transition-colors"
+                >
+                  Coches
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dispatchHomepagePickCategory(INMOBILIARIA_CATEGORY_ID, 'Inmobiliaria')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-[#ebebeb] bg-[#fafafa] hover:bg-white transition-colors"
+                >
+                  Inmobiliaria
+                </button>
+              </div>
+            </div>
+            {fallbackRendered}
+          </div>
+          <motion.div className="mt-6 md:mt-8 w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10" variants={sectionVariants}>
+            <Footer />
+          </motion.div>
+        </motion.div>
+      );
+    }
+
+    return (
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-16 md:py-20 text-center">
+        <h3 className="text-lg font-medium text-[#222222]">Aún no hay expertos aquí</h3>
+        <p className="mt-2 text-[#717171] text-sm max-w-md mx-auto">
+          Prueba Coches o Inmobiliaria, donde suele haber más revisores activos.
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => dispatchHomepagePickCategory(COCHES_CATEGORY_ID, 'Coches')}
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-[#FF385C] hover:bg-[#E31C5F]"
+          >
+            Ver coches
+          </button>
+          <button
+            type="button"
+            onClick={() => dispatchHomepagePickCategory(INMOBILIARIA_CATEGORY_ID, 'Inmobiliaria')}
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-[#222222] border border-[#dddddd] bg-white hover:shadow-sm"
+          >
+            Ver inmobiliaria
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"
@@ -1117,30 +1041,31 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.01, // ✅ Mínimo stagger para entrada coordinada
+            staggerChildren: 0.01,
             delayChildren: 0,
-            // ✅ Transición ultra-rápida para cambio de categoría fluido
-            duration: 0.1, // ✅ Ultra-rápido para cambio instantáneo
+            duration: 0.1,
             ease: [0.4, 0.0, 0.2, 1],
           },
         },
       }}
-      key={`homepage-wall-${categoryId}`} // ✅ Key basada en categoryId para transición limpia y rápida
-      style={{
-        // ✅ Evitar layout shifts - Altura mínima estable
-        minHeight: '400px',
-        // ✅ Estructura estable para transición suave
-        position: 'relative',
-        willChange: 'contents',
-        contain: 'layout style paint',
-      }}
+      key={`homepage-wall-${categoryId}`}
+      className="relative"
     >
-      <div className="w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12">
+        {isFetching && sections && (
+          <div className="hidden md:block absolute top-0 right-6 lg:right-8 z-10">
+            <span className="text-xs text-zinc-400">Actualizando…</span>
+          </div>
+        )}
+        <div
+          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-4 transition-opacity duration-200 ${
+            isFetching && sections ? 'opacity-70' : 'opacity-100'
+          }`}
+        >
           {renderedSections}
       </div>
       
       {/* Footer */}
-      <motion.div className="mt-8 lg:mt-12 w-full max-w-7xl mx-auto px-6 md:px-8 lg:px-12" variants={sectionVariants}>
+      <motion.div className="mt-6 md:mt-8 w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10" variants={sectionVariants}>
         <Footer />
       </motion.div>
     </motion.div>

@@ -1,17 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, FolderTree, ArrowLeft, Filter, ChevronUp, Menu, Globe } from 'lucide-react';
+import { Search, ChevronDown, FolderTree, Filter, ChevronUp, Heart, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { useLoadScript } from '@react-google-maps/api';
-import { GoogleSignInButton } from './GoogleSignInButton';
-import { Button } from './ui/button';
-import { Avatar, AvatarFallback } from './ui/avatar';
-import logoImg from '../media/logoi.png';
 
 const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 // Importar imágenes directamente desde src/media para que Vite las procese
@@ -71,13 +67,18 @@ import { Separator } from './ui/separator';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { MapPageSkeleton } from './ui/map-page-skeleton';
+import {
+  HOMEPAGE_PICK_CATEGORY,
+  type HomepagePickCategoryDetail,
+} from '../utils/homepageCategoryPick';
+import { HomepageDesktopKayak } from './HomepageDesktopKayak';
 
 const CATEGORIES = {
-  COCHES: 1,
-  MOTOS: 2,
+  COCHES: 5,
+  MOTOS: 6,
   INMOBILIARIA: 3,
   CAMARAS: 4,
-  FONTANERIA: 5,
+  FONTANERIA: 12,
 } as const;
 
 interface AirbnbSearchBarProps {
@@ -130,7 +131,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const [adUrl, setAdUrl] = useState('');
   const [activeField, setActiveField] = useState<string | null>(null);
   const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
   
@@ -141,15 +141,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     }
   }, [isMobileSearchOpen, isMobile]);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'coches' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
+  const [activeTab, setActiveTab] = useState<'coches' | 'motos' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [imageCacheKey, setImageCacheKey] = useState(Date.now());
   const [waveKey, setWaveKey] = useState(0); // ✅ Para forzar re-render del efecto onda
-  const formRef = useRef<HTMLFormElement>(null);
   const serviceTypeDropdownRef = useRef<HTMLDivElement>(null);
-  const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const categoriesContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -189,11 +187,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     position: st.Position || st.position,
   }));
 
-  const normalizedCategories = categories.map((cat: any) => ({
-    id: cat.Id || cat.id,
-    name: cat.Name || cat.name,
-    isActive: cat.IsActive ?? cat.isActive ?? true,
-  }));
+  const normalizedCategories = categories.map((cat: any) => {
+    const parentId = cat.ParentId ?? cat.parentId ?? null;
+    return {
+      id: cat.Id || cat.id,
+      name: cat.Name || cat.name,
+      isActive: cat.IsActive ?? cat.isActive ?? true,
+      parentId,
+      isParent: cat.IsParent ?? cat.isParent ?? parentId == null,
+    };
+  });
 
   // Buscar selecciones actuales en los datos normalizados
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
@@ -213,24 +216,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             setAdUrl(params.adUrl);
           }
           
-          // Determinar el tab activo basado en la categoría
+          // Tabs móvil (coches / inmobiliaria / más)
           if (params.categoryId === CATEGORIES.COCHES) {
             setActiveTab('coches');
+          } else if (params.categoryId === CATEGORIES.MOTOS) {
+            setActiveTab('motos');
           } else if (params.categoryId === CATEGORIES.INMOBILIARIA) {
             setActiveTab('inmobiliaria');
+            setDrawerCategoryReplacement(null);
           } else {
-            // Para otras categorías, usar el drawer
             setActiveTab('inmobiliaria');
-            // Buscar la categoría en la lista para obtener su nombre e imagen
-            const category = normalizedCategories.find(c => c.id === params.categoryId);
-            if (category) {
-              const categoryImage = getCategoryImage(category.name) || getImageWithCache('casapng.png', imageCacheKey);
-              setDrawerCategoryReplacement({
-                id: params.categoryId,
-                name: category.name,
-                image: categoryImage
-              });
-            }
+            setCategoryId(CATEGORIES.INMOBILIARIA);
           }
           
           // Abrir el modal móvil automáticamente
@@ -292,16 +288,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       // Solo cerrar si el dropdown está abierto y el clic es fuera
       if (isServiceTypeOpen && serviceTypeDropdownRef.current && !serviceTypeDropdownRef.current.contains(event.target as Node)) {
         setIsServiceTypeOpen(false);
-      }
-      if (isCategoryOpen && categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
-        setIsCategoryOpen(false);
+        setActiveField(null);
       }
     };
 
     // Usar click en vez de mousedown para evitar conflictos
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [isServiceTypeOpen, isCategoryOpen]);
+  }, [isServiceTypeOpen]);
   
   // Eliminado: No establecer categoría por defecto
   // useEffect(() => {
@@ -332,15 +326,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     }
   }, [isNavigating, location.pathname]);
 
+  // Filtro automático en homepage al cambiar categoría / tipo de servicio
+  useEffect(() => {
+    if (!onSearch || categoryId == null) return;
+    onSearch({ serviceTypeId, categoryId, adUrl });
+  }, [categoryId, serviceTypeId, adUrl, onSearch]);
+
   const handleSearch = () => {
-    if (onSearch) {
-      onSearch({
-        serviceTypeId,
-        categoryId,
-        adUrl,
-      });
-    }
-    
     if (serviceTypeId && categoryId) {
       // ✅ Activar estado de navegación para mostrar skeletons INMEDIATAMENTE
       setIsNavigating(true);
@@ -353,10 +345,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       
       // ✅ Navegar directamente sin pasar por homepage
       navigate(`/crear-busqueda?${params.toString()}`, { replace: true });
+    } else if (categoryId) {
+      setIsNavigating(true);
+      const params = new URLSearchParams();
+      params.append('categoryId', categoryId.toString());
+      if (serviceTypeId) params.append('serviceTypeId', serviceTypeId.toString());
+      if (adUrl) params.append('adUrl', adUrl);
+      navigate(`/crear-busqueda?${params.toString()}`, { replace: true });
     }
   };
 
-  const handleTabClick = useCallback((tab: 'coches' | 'inmobiliaria', categoryIdValue: number) => {
+  const handleTabClick = useCallback((tab: 'coches' | 'motos' | 'inmobiliaria', categoryIdValue: number) => {
     // ✅ Cambios instantáneos y coordinados
     setActiveTab(tab);
     setCategoryId(categoryIdValue);
@@ -366,16 +365,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     if (tab === 'inmobiliaria' && categoryIdValue === CATEGORIES.INMOBILIARIA) {
       setDrawerCategoryReplacement(null);
     }
-    
-    // ✅ Llamar onSearch de forma síncrona para respuesta inmediata
-    if (onSearch) {
-      onSearch({
-        serviceTypeId,
-        categoryId: categoryIdValue,
-        adUrl,
-      });
-    }
-  }, [serviceTypeId, adUrl, onSearch]);
+  }, []);
 
   const getCategoryImage = (categoryName: string): string | null => {
     const nameLower = categoryName.toLowerCase();
@@ -387,28 +377,106 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     return null;
   };
 
+  const isBarActive = !!activeField || isServiceTypeOpen;
+
   const handleDrawerCategoryClick = (categoryIdValue: number, categoryName: string) => {
     const categoryImage = getCategoryImage(categoryName) || getImageWithCache('casapng.png', imageCacheKey);
-    
-    setDrawerCategoryReplacement({
-      id: categoryIdValue,
-      name: categoryName,
-      image: categoryImage
-    });
-    
-    setActiveTab('inmobiliaria');
+
+    if (categoryIdValue === CATEGORIES.COCHES) {
+      setActiveTab('coches');
+      setDrawerCategoryReplacement(null);
+    } else if (categoryIdValue === CATEGORIES.INMOBILIARIA) {
+      setActiveTab('inmobiliaria');
+      setDrawerCategoryReplacement(null);
+    } else {
+      setActiveTab('drawer');
+      setDrawerCategoryReplacement({
+        id: categoryIdValue,
+        name: categoryName,
+        image: categoryImage,
+      });
+    }
+
     setCategoryId(categoryIdValue);
     setIsDrawerOpen(false);
     setCategorySearchQuery('');
-    
-    if (onSearch) {
-      onSearch({
-        serviceTypeId,
-        categoryId: categoryIdValue,
-        adUrl,
-      });
-    }
   };
+
+  useEffect(() => {
+    const onPick = (e: Event) => {
+      const { categoryId: id, categoryName } = (e as CustomEvent<HomepagePickCategoryDetail>).detail;
+      if (id === CATEGORIES.COCHES) {
+        handleTabClick('coches', id);
+      } else if (id === CATEGORIES.MOTOS) {
+        handleTabClick('motos', id);
+      } else if (id === CATEGORIES.INMOBILIARIA) {
+        handleTabClick('inmobiliaria', id);
+      } else if (categoryName) {
+        handleDrawerCategoryClick(id, categoryName);
+      }
+    };
+    window.addEventListener(HOMEPAGE_PICK_CATEGORY, onPick);
+    return () => window.removeEventListener(HOMEPAGE_PICK_CATEGORY, onPick);
+  }, [handleTabClick]);
+
+  /** Solo categorías padre (como SearchCreationPage) — evita Electrodomésticos + subcategorías duplicadas */
+  const parentCategories = useMemo(() => {
+    const list = normalizedCategories.filter((c) => {
+      if (!c.isActive) return false;
+      return c.isParent !== undefined ? c.isParent : c.parentId == null;
+    });
+    const priority = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes('coche') || n.includes('vehículo')) return 0;
+      if (n.includes('inmobiliaria') || n.includes('inmueble')) return 1;
+      return 2;
+    };
+    return [...list].sort(
+      (a, b) => priority(a.name) - priority(b.name) || a.name.localeCompare(b.name, 'es')
+    );
+  }, [normalizedCategories]);
+
+  /** Categorías del modal "Más" (padres, sin Coches/Inmobiliaria de los tabs) */
+  const categoriesForDrawerModal = useMemo(
+    () =>
+      parentCategories.filter(
+        (c) => c.id !== CATEGORIES.COCHES && c.id !== CATEGORIES.INMOBILIARIA
+      ),
+    [parentCategories]
+  );
+
+  const desktopCategoryTabs = useMemo(
+    () =>
+      [
+        {
+          key: 'coches' as const,
+          label: 'Coches',
+          icon: getImageWithCache('cochepng.png', imageCacheKey),
+          onClick: () => handleTabClick('coches', CATEGORIES.COCHES),
+          isActive: activeTab === 'coches',
+        },
+        {
+          key: 'motos' as const,
+          label: 'Motos',
+          icon: getImageWithCache('motopng.png', imageCacheKey),
+          onClick: () => handleTabClick('motos', CATEGORIES.MOTOS),
+          isActive: activeTab === 'motos',
+        },
+        {
+          key: 'inmobiliaria' as const,
+          label: 'Inmobiliaria',
+          icon: getImageWithCache('casapng.png', imageCacheKey),
+          onClick: () => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA),
+          isActive: activeTab === 'inmobiliaria',
+        },
+      ] as const,
+    [
+      activeTab,
+      imageCacheKey,
+      handleTabClick,
+    ]
+  );
+
 
   // Radix Popover maneja el cierre automáticamente, no necesitamos handleClickOutside
 
@@ -417,520 +485,58 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {/* ✅ Overlay de transición con skeletons */}
       {isNavigating && <MapPageSkeleton />}
       
-      <header className="sticky top-0 z-50 bg-[#fbfbfb] border-b border-gray-200">
-      {/* Desktop */}
-      <div className="hidden md:block max-w-7xl mx-auto px-4 lg:px-8 py-3 relative">
-        {/* Barra superior: logo + navegación + auth (reemplaza App header en homepage) */}
-        <div className="flex items-center justify-between h-14 mb-3">
+      {/* Desktop — barra fina + bloque Kayak */}
+      <header className="sticky top-0 z-50 hidden md:block bg-white">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 h-12 flex items-center justify-between">
           <a
             href="/"
             onClick={(e) => { e.preventDefault(); navigate('/'); }}
             className="flex items-center shrink-0"
           >
-            <img src={logoImg} alt="Inspecciono" className="h-8 w-auto object-contain" />
+            <span
+              className="inline-flex items-center justify-center h-8 px-3.5 rounded-md bg-[#FF385C]/10 text-[#222] font-semibold text-[11px] tracking-[0.2em]"
+              aria-label="Inspecciono"
+            >
+              INSPECCIONO
+            </span>
           </a>
-
-          <nav className="hidden lg:flex items-center gap-6 mx-6">
-            <button
-              type="button"
-              onClick={() => document.querySelector('[data-services-section]')?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
-            >
-              Servicios
-            </button>
-            <button
-              type="button"
-              onClick={() => isAuthenticated ? navigate('/busquedas') : navigate('/crear-busqueda')}
-              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
-            >
-              Mis revisiones
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/como-funciona')}
-              className="text-sm font-medium text-gray-700 hover:text-gray-900 bg-transparent border-none cursor-pointer"
-            >
-              Cómo funciona
-            </button>
-          </nav>
-
-          <div className="flex items-center gap-3 ml-auto">
-            {!isExpert && (
-            <Button
-              variant="ghost"
-              className="hidden lg:flex text-sm font-medium text-gray-700 hover:text-gray-900 rounded-full px-4 py-2"
-              onClick={() => navigate('/become-expert')}
-            >
-              Hazte revisor
-            </Button>
-            )}
-            <Button variant="ghost" size="icon" className="hidden lg:flex h-10 w-10 rounded-full hover:bg-gray-100">
-              <Globe className="w-5 h-5 text-gray-700" />
-            </Button>
+          <div className="flex items-center gap-2">
             {userIsAdmin && (
               <button
                 type="button"
                 onClick={() => navigate('/admin')}
-                className="text-sm font-semibold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 bg-white border border-red-400"
+                className="text-xs font-semibold text-red-600 px-2.5 py-1 rounded-md border border-red-300 hover:bg-red-50"
               >
                 Admin
               </button>
             )}
-            {isAuthenticated ? (
-              <>
-                <Button
-                  variant="ghost"
-                  className="hidden xl:flex text-sm font-medium text-gray-700"
-                  onClick={() => signOut()}
-                >
-                  Cerrar sesión
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-10 rounded-full px-2 border border-gray-300 hover:shadow-md flex items-center gap-2"
-                  onClick={() => navigate('/busquedas')}
-                >
-                  <Menu className="w-4 h-4 text-gray-700" />
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white text-xs">
-                      {(user as any)?.name?.[0]?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="hidden sm:flex">
-                  <GoogleSignInButton variant="compact" />
-                </div>
-                <Button
-                  className="bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium px-4 py-2 rounded-lg"
-                  onClick={() => navigate('/crear-busqueda')}
-                >
-                  Probar gratis
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Categorías encima de la barra de búsqueda - Solo Desktop */}
-        <div className="flex items-center justify-center mb-3 max-w-[850px] mx-auto">
-          <div className="flex items-center gap-8">
-            <motion.button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'coches'}
-              onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              onMouseEnter={() => setHoveredTab('coches')}
-              onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer ${
-                activeTab === 'coches' ? 'category-tab-active' : ''
-              }`}
-              key={`coches-${waveKey}`}
-              whileTap={{ scale: 0.95 }}
-            >
-              <AnimatePresence mode="wait">
-                {activeTab === 'coches' && (
-                  <motion.div
-                    key="wave"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-              <img 
-                key={`coche-${imageCacheKey}`}
-                src={getImageWithCache('cochepng.png', imageCacheKey)} 
-                alt="Coche" 
-                className="w-6 h-6 object-contain relative z-10" 
-                style={{ margin: '0' }}
-              />
-              <span 
-                className="whitespace-nowrap relative z-10"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '10px',
-                  fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
-                }}
-              >
-                Coches
-              </span>
-              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
-                activeTab === 'coches' ? 'scale-x-100' : 'scale-x-0'
-              }`} />
-            </motion.button>
-
-            <motion.button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'inmobiliaria'}
-              onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
-              onMouseEnter={() => setHoveredTab('inmobiliaria')}
-              onMouseLeave={() => setHoveredTab(null)}
-              className={`flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer ${
-                activeTab === 'inmobiliaria' ? 'category-tab-active' : ''
-              }`}
-              key={`inmobiliaria-${waveKey}`}
-              whileTap={{ scale: 0.95 }}
-            >
-              <AnimatePresence mode="wait">
-                {activeTab === 'inmobiliaria' && (
-                  <motion.div
-                    key="wave"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-              <img
-                key={`casa-${imageCacheKey}`}
-                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
-                alt={drawerCategoryReplacement?.name || "Casa"}
-                className="w-6 h-6 object-contain relative z-10"
-                style={{ margin: '0' }}
-              />
-              <span 
-                className="whitespace-nowrap relative z-10"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '10px',
-                  fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
-                }}
-              >
-                {drawerCategoryReplacement?.name || 'Inmobiliaria'}
-              </span>
-              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform relative z-10 ${
-                activeTab === 'inmobiliaria' || hoveredTab === 'inmobiliaria' ? 'scale-x-100' : 'scale-x-0'
-              }`} />
-            </motion.button>
-
             <button
               type="button"
-              role="tab"
-              aria-selected={activeTab === 'drawer'}
-              onClick={() => setIsDrawerOpen(true)}
-              onMouseEnter={() => setHoveredTab('services')}
-              onMouseLeave={() => setHoveredTab(null)}
-              className="flex items-center gap-0 py-2 relative bg-transparent border-none cursor-pointer"
+              aria-label="Favoritos"
+              className="h-8 w-8 rounded-full border border-[#e5e7eb] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
             >
-              <div className="flex items-center justify-center gap-1 w-6 h-6">
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-              </div>
-              <span 
-                className="whitespace-nowrap"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '10px',
-                  fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
-                }}
-              >
-                Más
-              </span>
-              <span className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 origin-left transition-transform ${
-                activeTab === 'drawer' || hoveredTab === 'services' ? 'scale-x-100' : 'scale-x-0'
-              }`} />
+              <Heart className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+              onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
+              className="h-8 w-8 rounded-full border border-[#d1d5db] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
+            >
+              <User className="w-4 h-4" />
             </button>
           </div>
         </div>
-        
-        <form
-          ref={formRef}
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSearch();
-          }}
-          className="flex items-center justify-center w-full gap-4 max-w-[850px] mx-auto"
-        >
-          {/* Botones a la izquierda */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Aquí podríamos poner botones adicionales si es necesario */}
-          </div>
+      </header>
 
-          {/* Search Bar Container - Exact Airbnb style */}
-          <div
-            className={`flex items-center bg-white border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-all overflow-visible flex-1 ${
-              activeField ? 'shadow-md' : ''
-            }`}
-            style={{
-              height: '66px',
-              maxWidth: '850px',
-              width: '100%',
-              minWidth: '300px',
-            }}
-          >
-            {/* Service Type - Tipo de Servicio */}
-            <div ref={serviceTypeDropdownRef} className="relative flex-1">
-              <button
-                type="button"
-                className={`w-full px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors text-left ${
-                  activeField === 'serviceType' || isServiceTypeOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
-                } ${activeField === 'serviceType' ? 'rounded-l-full' : ''}`}
-                style={{ minHeight: '66px', minWidth: '120px' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsServiceTypeOpen(!isServiceTypeOpen);
-                  setIsCategoryOpen(false);
-                  setActiveField('serviceType');
-                }}
-              >
-                <div className="flex flex-col justify-center h-full">
-                  <span
-                    className="text-xs font-semibold text-gray-900 mb-1 block"
-                    style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
-                  >
-                    Tipo de servicio
-                  </span>
-                  <div
-                    className="text-sm truncate flex items-center gap-1"
-                    style={{ 
-                      fontSize: '14px', 
-                      lineHeight: '18px',
-                      color: selectedServiceType ? '#222222' : '#717171',
-                      fontWeight: selectedServiceType ? 600 : 400,
-                    }}
-                  >
-                    {selectedServiceType ? selectedServiceType.name : 'Selecciona tipo'}
-                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isServiceTypeOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </div>
-              </button>
-              
-              {/* Dropdown de tipos de servicio */}
-              {isServiceTypeOpen && (
-                <div 
-                  className="absolute top-full left-0 mt-2 w-[300px] bg-white border border-gray-200 shadow-2xl rounded-xl"
-                  style={{ zIndex: 99999 }}
-                >
-                  <div className="max-h-[300px] overflow-y-auto py-2">
-                    {serviceTypesLoading ? (
-                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                        <div className="p-2 space-y-2">
-                          {[...Array(3)].map((_, index) => (
-                            <Skeleton key={index} height={48} borderRadius={8} />
-                          ))}
-                        </div>
-                      </SkeletonTheme>
-                    ) : normalizedServiceTypes.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-gray-500">No hay tipos disponibles</div>
-                    ) : (
-                      normalizedServiceTypes.map((serviceType) => (
-                        <button
-                          key={serviceType.id}
-                          type="button"
-                          onClick={() => {
-                            const newCategoryId = categoryId || CATEGORIES.COCHES;
-                            setServiceTypeId(serviceType.id);
-                            setIsServiceTypeOpen(false);
-                            if (onSearch) {
-                              onSearch({
-                                serviceTypeId: serviceType.id,
-                                categoryId: newCategoryId,
-                                adUrl,
-                              });
-                            }
-                          }}
-                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${
-                            serviceTypeId === serviceType.id ? 'bg-gray-100' : ''
-                          }`}
-                        >
-                          <div className="font-medium text-sm text-gray-900">{serviceType.name}</div>
-                          {serviceType.description && (
-                            <div className="text-xs text-gray-500 mt-1">{serviceType.description}</div>
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Category - Categoría */}
-            <div ref={categoryDropdownRef} className="relative flex-1">
-              <button
-                type="button"
-                className={`w-full px-4 sm:px-6 py-3 border-r border-gray-300 cursor-pointer transition-colors text-left ${
-                  activeField === 'category' || isCategoryOpen ? 'bg-gray-50' : 'hover:bg-gray-50'
-                }`}
-                style={{ minHeight: '66px', minWidth: '120px' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsCategoryOpen(!isCategoryOpen);
-                  setIsServiceTypeOpen(false);
-                  setActiveField('category');
-                }}
-              >
-                <div className="flex flex-col justify-center h-full">
-                  <span
-                    className="text-xs font-semibold text-gray-900 mb-1 block"
-                    style={{ 
-                      fontSize: '12px', 
-                      lineHeight: '16px', 
-                      fontWeight: 600,
-                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
-                    }}
-                  >
-                    Categoría
-                  </span>
-                  <div
-                    className="text-sm truncate flex items-center gap-1"
-                    style={{ 
-                      fontSize: '14px', 
-                      lineHeight: '18px',
-                      color: selectedCategory ? '#222222' : '#717171',
-                      fontWeight: selectedCategory ? 600 : 400,
-                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
-                    }}
-                  >
-                    {selectedCategory ? selectedCategory.name : 'Selecciona categoría'}
-                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </div>
-              </button>
-              
-              {/* Dropdown de categorías */}
-              {isCategoryOpen && (
-                <div 
-                  className="absolute top-full left-0 mt-2 w-[300px] bg-white border border-gray-200 shadow-2xl rounded-xl"
-                  style={{ zIndex: 99999 }}
-                >
-                  <div className="max-h-[300px] overflow-y-auto py-2">
-                    {categoriesLoading ? (
-                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                        <div className="p-2 space-y-2">
-                          {[...Array(3)].map((_, index) => (
-                            <Skeleton key={index} height={80} width={80} borderRadius={12} />
-                          ))}
-                        </div>
-                      </SkeletonTheme>
-                    ) : normalizedCategories.length === 0 ? (
-                      <div 
-                        className="p-4 text-center text-sm text-gray-500"
-                        style={{
-                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
-                        }}
-                      >
-                        No hay categorías disponibles
-                      </div>
-                    ) : (
-                      normalizedCategories
-                        .filter(cat => cat.isActive)
-                        .map((category) => (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => {
-                              setCategoryId(category.id);
-                              setIsCategoryOpen(false);
-                              if (onSearch) {
-                                onSearch({
-                                  serviceTypeId,
-                                  categoryId: category.id,
-                                  adUrl,
-                                });
-                              }
-                            }}
-                            className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${
-                              categoryId === category.id ? 'bg-gray-100' : ''
-                            }`}
-                          >
-                            <div 
-                              className="font-medium text-sm text-gray-900"
-                              style={{
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif'
-                              }}
-                            >
-                              {category.name}
-                            </div>
-                          </button>
-                        ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Ad URL - URL del Anuncio (Opcional) */}
-            <div
-              className={`flex-1 px-4 sm:px-6 py-3 cursor-pointer transition-colors ${
-                activeField === 'adUrl' ? 'bg-gray-50' : 'hover:bg-gray-50'
-              } ${activeField === 'adUrl' ? 'rounded-r-full' : ''}`}
-              onClick={() => setActiveField('adUrl')}
-              style={{ minHeight: '66px', minWidth: '120px' }}
-            >
-              <div className="flex flex-col justify-center h-full">
-                <label
-                  className="text-xs font-semibold text-gray-900 mb-1 flex items-center gap-1"
-                  style={{ fontSize: '12px', lineHeight: '16px', fontWeight: 600 }}
-                >
-                  URL del anuncio
-                  <span className="text-gray-400 font-normal">(opcional)</span>
-                </label>
-                {activeField === 'adUrl' ? (
-                  <input
-                    type="text"
-                    placeholder="Pega cualquier texto aquí..."
-                    value={adUrl}
-                    onChange={(e) => setAdUrl(e.target.value)}
-                    className="text-sm text-gray-600 placeholder-gray-400 bg-transparent border-none outline-none w-full"
-                    style={{ fontSize: '14px', lineHeight: '18px' }}
-                    autoFocus
-                  />
-                ) : (
-                  <div
-                    className="text-sm text-gray-500 truncate"
-                    style={{ fontSize: '14px', lineHeight: '18px' }}
-                  >
-                    {adUrl || 'Pega la URL aquí'}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search Button */}
-            <button
-              type="submit"
-              className="ml-2 mr-2 p-3 bg-[#FF385C] hover:bg-[#E61E4D] rounded-full text-white transition-colors flex items-center justify-center flex-shrink-0"
-              style={{ width: '48px', height: '48px', minWidth: '48px' }}
-              aria-label="Search"
-            >
-              <Search className="w-4 h-4" strokeWidth={2.5} />
-            </button>
-          </div>
-
-          {/* Botones a la derecha */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Aquí podríamos poner botones adicionales si es necesario */}
-          </div>
-        </form>
-      </div>
+      <HomepageDesktopKayak
+        categoryTabs={desktopCategoryTabs}
+        categoryId={categoryId ?? CATEGORIES.INMOBILIARIA}
+      />
 
       {/* Mobile */}
-      <div className="md:hidden relative">
-        <div className="px-5 pt-4 pb-0">
+      <header className="sticky top-0 z-50 md:hidden bg-white border-b border-[#ebebeb] relative">
+        <div className="px-4 pt-4 pb-2">
           <div
             onClick={() => setIsMobileSearchOpen(true)}
             className="w-full bg-white border border-gray-200 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
@@ -1002,7 +608,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <div className="relative w-full" role="tablist">
           {/* Contenedor de tabs con flex */}
           <motion.div 
-            className="flex w-full px-5 pt-1.5"
+            className="flex w-full px-4 pt-2 pb-2"
             initial="hidden"
             animate="visible"
             variants={{
@@ -1076,12 +682,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </span>
             </motion.button>
 
-            {/* Tab 2: Inmobiliaria */}
+            {/* Tab 2: Motos */}
             <motion.button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'inmobiliaria'}
-              onClick={() => handleTabClick('inmobiliaria', drawerCategoryReplacement?.id || CATEGORIES.INMOBILIARIA)}
+              aria-selected={activeTab === 'motos'}
+              onClick={() => handleTabClick('motos', CATEGORIES.MOTOS)}
               className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
               variants={{
                 hidden: { opacity: 0, scale: 0.8, y: 20 },
@@ -1094,6 +700,67 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     stiffness: 300,
                     damping: 20,
                     delay: 0.1,
+                  }
+                }
+              }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <AnimatePresence mode="wait">
+                {activeTab === 'motos' && (
+                  <motion.div
+                    key="wave-mobile-motos"
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+              <img
+                key={`moto-mobile-${imageCacheKey}`}
+                src={getImageWithCache('motopng.png', imageCacheKey)}
+                alt="Moto"
+                className="w-16 h-16 object-contain mb-0"
+                style={{ margin: '0' }}
+              />
+              <span 
+                className="text-center"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '10px',
+                  fontWeight: 400,
+                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  color: 'rgb(106, 106, 106)',
+                  marginTop: '0px',
+                }}
+              >
+                Motos
+              </span>
+            </motion.button>
+
+            {/* Tab 3: Inmobiliaria */}
+            <motion.button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'inmobiliaria'}
+              onClick={() => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA)}
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
+              variants={{
+                hidden: { opacity: 0, scale: 0.8, y: 20 },
+                visible: { 
+                  opacity: 1, 
+                  scale: 1, 
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                    delay: 0.2,
                   }
                 }
               }}
@@ -1117,8 +784,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </AnimatePresence>
               <img
                 key={`casa-mobile-${imageCacheKey}`}
-                src={drawerCategoryReplacement?.image || getImageWithCache('casapng.png', imageCacheKey)}
-                alt={drawerCategoryReplacement?.name || "Casa"}
+                src={getImageWithCache('casapng.png', imageCacheKey)}
+                alt="Casa"
                 className="w-16 h-16 object-contain mb-0"
                 style={{ margin: '0' }}
               />
@@ -1133,66 +800,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   marginTop: '0px',
                 }}
               >
-                {drawerCategoryReplacement?.name || 'Inmobiliaria'}
-              </span>
-            </motion.button>
-
-            {/* Tab 3: Más */}
-            <motion.button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'drawer'}
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
-              variants={{
-                hidden: { opacity: 0, scale: 0.8, y: 20 },
-                visible: { 
-                  opacity: 1, 
-                  scale: 1, 
-                  y: 0,
-                  transition: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                    delay: 0.2,
-                  }
-                }
-              }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <AnimatePresence mode="wait">
-                {activeTab === 'drawer' && (
-                  <motion.div
-                    key="wave-mobile-mas"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-              <div className="flex items-center justify-center gap-1.5 w-16 h-16">
-                <div className="w-2 h-2 rounded-full bg-gray-900" />
-                <div className="w-2 h-2 rounded-full bg-gray-900" />
-                <div className="w-2 h-2 rounded-full bg-gray-900" />
-              </div>
-              <span 
-                className="text-center"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '10px',
-                  fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
-                  marginTop: '0px',
-                }}
-              >
-                Más
+                Inmobiliaria
               </span>
             </motion.button>
           </motion.div>
@@ -1205,12 +813,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               className="absolute bottom-0 left-0 h-[2px] bg-gray-900 transition-transform duration-300 ease-out"
               style={{
                 width: '33.3333%',
-                transform: `translateX(${activeTab === 'coches' ? '0%' : activeTab === 'inmobiliaria' ? '100%' : '200%'})`,
+                transform: `translateX(${activeTab === 'coches' ? '0%' : activeTab === 'motos' ? '100%' : '200%'})`,
               }}
             />
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Modal Mobile */}
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
@@ -1933,16 +1541,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </SkeletonTheme>
             ) : (
               <div className="flex flex-col pb-4">
-                {normalizedCategories
+                {categoriesForDrawerModal
                   .filter(cat => {
-                    // ✅ Mostrar todas las categorías, incluyendo Coches e Inmobiliaria
                     if (categorySearchQuery.trim()) {
                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                     }
                     return true;
                   })
-                  .filter(cat => cat.isActive)
-                  .map((category, index, array) => {
+                  .map((category) => {
                     const categoryImage = getCategoryImage(category.name);
                     const isSelected = categoryId === category.id;
                     
@@ -2071,7 +1677,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           />
         </div>
       )}
-    </header>
     </>
   );
 }, (prevProps, nextProps) => {
