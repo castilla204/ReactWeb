@@ -226,7 +226,8 @@ function BecomeExpertPage() {
         if (isLoaded && searchInputRef.current && !autocomplete) {
             const autoCompleteInstance = new google.maps.places.Autocomplete(searchInputRef.current, {
                 types: ['address'],
-                componentRestrictions: { country: 'es' },
+                // Sin componentRestrictions: el marketplace es global, los expertos
+                // pueden estar en cualquier país (no solo España).
                 fields: ['formatted_address', 'geometry', 'name']
             });
 
