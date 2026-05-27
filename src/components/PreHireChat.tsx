@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getSupabaseClient, updateSupabaseAuth } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { API_CONFIG } from '../config/api';
-import { sendMessage } from '../services/chatService';
+import { sendMessage, markMessageAsRead, notifyTyping } from '../services/chatService';
+import { isAdmin } from '../utils/admin';
+import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { AlertCircle, CheckCheck, Loader2, MessageCircle, RefreshCw, Send, Wifi, WifiOff, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
@@ -16,6 +19,8 @@ interface PreHireChatProps {
   serviceId: number;
   token: string;
   userId: number;
+  /** Abre la conversación concreta (experto con varios clientes en el mismo servicio) */
+  conversationId?: number;
   onClose?: () => void;
   onConnectionChange?: (isConnected: boolean) => void;
 }
@@ -60,6 +65,52 @@ function formatMessageTime(value: string) {
   });
 }
 
+function normalizeBroadcastMessage(messageData: Record<string, unknown>, expectedConversationId: number): Message | null {
+  const msgConversationId = Number(messageData.ConversationId ?? messageData.conversationId);
+  if (!msgConversationId || msgConversationId !== expectedConversationId) return null;
+
+  return {
+    id: Number(messageData.Id ?? messageData.id),
+    conversationId: msgConversationId,
+    senderId: normalizeSenderId(messageData.SenderId ?? messageData.senderId),
+    content: String(messageData.Content ?? messageData.content ?? ''),
+    sentAt: String(messageData.SentAt ?? messageData.sentAt ?? new Date().toISOString()),
+    isRead: Boolean(messageData.IsRead ?? messageData.isRead ?? false),
+    senderName: String(messageData.SenderName ?? messageData.senderName ?? '[Usuario]'),
+    locationLatitude: (messageData.LocationLatitude ?? messageData.locationLatitude ?? null) as string | null,
+    locationLongitude: (messageData.LocationLongitude ?? messageData.locationLongitude ?? null) as string | null,
+    attachmentUrls: (messageData.AttachmentUrls ?? messageData.attachmentUrls ?? []) as string[],
+  };
+}
+
+function mergeIncomingMessage(prev: Message[], messageDto: Message): Message[] {
+  const existingIndex = prev.findIndex((m) => m.id === messageDto.id);
+  if (existingIndex !== -1) {
+    if (prev[existingIndex].isOptimistic) {
+      const updated = [...prev];
+      updated[existingIndex] = { ...messageDto, isOptimistic: false };
+      return sortMessagesByDate(updated);
+    }
+    return prev;
+  }
+
+  const optimisticIndex = prev.findIndex(
+    (m) =>
+      m.isOptimistic &&
+      m.content === messageDto.content &&
+      normalizeSenderId(m.senderId) === normalizeSenderId(messageDto.senderId) &&
+      Math.abs(new Date(m.sentAt).getTime() - new Date(messageDto.sentAt).getTime()) < 5000
+  );
+
+  if (optimisticIndex !== -1) {
+    const updated = [...prev];
+    updated[optimisticIndex] = { ...messageDto, isOptimistic: false };
+    return sortMessagesByDate(updated);
+  }
+
+  return sortMessagesByDate([...prev, messageDto]);
+}
+
 function formatMessageDay(value: string) {
   const date = new Date(value);
   const today = new Date();
@@ -76,46 +127,33 @@ function formatMessageDay(value: string) {
   });
 }
 
-export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionChange }: PreHireChatProps) => {
+export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversationId, onClose, onConnectionChange }: PreHireChatProps) => {
   const { user } = useAuth();
+  const userId = userIdProp > 0 ? userIdProp : getUserId(user as { id?: number; Id?: number });
+  const userIsAdmin = isAdmin(user?.email);
   const [inputValue, setInputValue] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [typingUserIds, setTypingUserIds] = useState<number[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const pendingChannelRef = useRef<RealtimeChannel | null>(null);
+  const isTearingDownRef = useRef(false);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingClearTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const typingNotifyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(false);
+  const markedReadIdsRef = useRef<Set<number>>(new Set());
   const messagesRef = useRef<Message[]>([]);
+  const refetchRef = useRef<() => void>(() => undefined);
   const API_URL = API_CONFIG.baseUrl;
-  
-  // ✅ Obtener cliente Supabase autenticado
-  const supabase = getSupabaseClient(token);
-  
-  // ✅ Actualizar autenticación cuando cambie el token
-  useEffect(() => {
-    if (token) {
-      console.log('🔑 [PreHireChat] Actualizando autenticación Supabase con token');
-      updateSupabaseAuth(token);
-      
-      // ✅ CRÍTICO: Esperar un momento para que la autenticación se establezca antes de suscribirse
-      // Verificar que Supabase tiene el token
-      supabase.auth.getSession().then(({ data, error }) => {
-        if (error) {
-          console.error('❌ [PreHireChat] Error obteniendo sesión:', error);
-        } else {
-          console.log('✅ [PreHireChat] Sesión Supabase:', data.session ? 'Activa' : 'Inactiva');
-          if (data.session) {
-            console.log('🔑 [PreHireChat] Token Supabase (primeros 20 chars):', data.session.access_token?.substring(0, 20));
-            console.log('🔑 [PreHireChat] Token coincide con el esperado:', data.session.access_token?.substring(0, 20) === token.substring(0, 20));
-          } else {
-            console.warn('⚠️ [PreHireChat] No hay sesión activa en Supabase, los eventos de Realtime pueden no funcionar');
-          }
-        }
-      });
-    }
-  }, [token, supabase]);
-  
+
+  const supabase = getSupabaseClient();
+
   // Mantener ref actualizado con los mensajes
   useEffect(() => {
     messagesRef.current = messages;
@@ -123,10 +161,11 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
 
   // Obtener o crear conversación previa
   const { data: conversation, isLoading, isFetching, error: conversationError, refetch } = useQuery<Conversation>({
-    queryKey: ['pre-hire-conversation', serviceId],
+    queryKey: ['pre-hire-conversation', serviceId, conversationId],
     queryFn: async () => {
+      const conversationParam = conversationId ? `&conversationId=${conversationId}` : '';
       const response = await fetchWithTimeout(
-        `${API_URL}/api/Chat/conversation-by-service?searchServiceId=${serviceId}`,
+        `${API_URL}/api/Chat/conversation-by-service?searchServiceId=${serviceId}${conversationParam}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -156,7 +195,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
         messages: (data.Messages || data.messages || []).map((msg: any) => ({
           id: msg.Id || msg.id,
           conversationId: msg.ConversationId || msg.conversationId,
-          senderId: msg.SenderId ?? msg.senderId ?? null,
+          senderId: normalizeSenderId(msg.SenderId ?? msg.senderId),
           content: msg.Content || msg.content || '',
           sentAt: msg.SentAt || msg.sentAt,
           isRead: msg.IsRead ?? msg.isRead ?? false,
@@ -170,6 +209,48 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
     enabled: !!serviceId && !!token,
     retry: 2
   });
+
+  refetchRef.current = refetch;
+
+  const hasAccess =
+    !!conversation &&
+    userId > 0 &&
+    (userIsAdmin ||
+      (conversation.clientId != null && userId === conversation.clientId) ||
+      (conversation.expertId != null && userId === conversation.expertId));
+
+  const otherParticipantId =
+    conversation?.clientId === userId ? conversation?.expertId : conversation?.clientId;
+
+  const notifyTypingState = useCallback(
+    (isTyping: boolean) => {
+      if (!conversation?.id || !token) return;
+
+      if (typingNotifyTimeoutRef.current) {
+        clearTimeout(typingNotifyTimeoutRef.current);
+        typingNotifyTimeoutRef.current = null;
+      }
+
+      const send = (typing: boolean) => {
+        void notifyTyping({ ConversationId: conversation.id, IsTyping: typing }, token);
+      };
+
+      if (isTyping) {
+        if (!lastTypingSentRef.current) {
+          lastTypingSentRef.current = true;
+          send(true);
+        }
+        typingNotifyTimeoutRef.current = setTimeout(() => {
+          lastTypingSentRef.current = false;
+          send(false);
+        }, 2000);
+      } else if (lastTypingSentRef.current) {
+        lastTypingSentRef.current = false;
+        send(false);
+      }
+    },
+    [conversation?.id, token]
+  );
 
   // Inicializar mensajes desde la conversación
   useEffect(() => {
@@ -188,351 +269,190 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
     setLiveAnnouncement(`${author}: ${lastMessage.content}`);
   }, [messages, userId]);
 
-  // ✅ NOTA: handleNewMessage ahora se define dentro del useEffect para capturar conversation.id actual
-
-  // ✅ Suscribirse a nuevos mensajes con Supabase Realtime
+  // Supabase Realtime (mismo canal y eventos que useChat post-contratación)
   useEffect(() => {
-    if (!conversation?.id || !token) {
-      console.warn('⚠️ [PreHireChat] No conversationId o token, no se puede conectar');
-      return;
-    }
+    if (!conversation?.id || !token || !hasAccess) return;
 
-    // ✅ CRÍTICO: Definir handleNewMessage dentro del useEffect para capturar conversation.id actual
-    const handleNewMessage = (messageData: any) => {
-      console.log('🔍 [PreHireChat] handleNewMessage llamado con:', messageData);
-      
-      // ✅ Verificar que es para esta conversación (usar conversation.id directamente)
-      const msgConversationId = messageData.ConversationId || messageData.conversationId;
-      console.log('🔍 [PreHireChat] ConversationId del mensaje:', msgConversationId);
-      console.log('🔍 [PreHireChat] ConversationId esperado:', conversation.id);
-      
-      if (msgConversationId !== conversation.id) {
-        console.warn('⚠️ [PreHireChat] Mensaje de otra conversación, ignorando');
-        return;
+    const convId = conversation.id;
+    let cancelled = false;
+    let retryCount = 0;
+    const maxRetries = 8;
+    const client = supabase;
+    const channelName = `conversation:${convId}`;
+
+    const teardownChannel = async (ch: RealtimeChannel | null) => {
+      if (!ch) return;
+      isTearingDownRef.current = true;
+      try {
+        await client.removeChannel(ch);
+      } finally {
+        isTearingDownRef.current = false;
       }
-      
-      console.log('✅ [PreHireChat] Mensaje es para esta conversación, procesando...');
-      
-      // ✅ Crear objeto MessageDto (leer en PascalCase como envía el backend)
-      const newMessage = messageData;
-      
-      // ✅ Obtener nombre del sender desde la conversación
-      let senderName = '[Usuario]';
-      if (newMessage.SenderId || newMessage.senderId) {
-        const senderId = newMessage.SenderId || newMessage.senderId;
-        // Determinar si es cliente o experto basándose en la conversación
-        if (conversation.clientId && conversation.clientId === senderId) {
-          // Es el cliente - intentar obtener nombre desde mensajes existentes o usar placeholder
-          const existingClientMessage = messagesRef.current.find(m => m.senderId === conversation.clientId);
-          senderName = existingClientMessage?.senderName || 'Cliente';
-        } else if (conversation.expertId && conversation.expertId === senderId) {
-          // Es el experto - intentar obtener nombre desde mensajes existentes o usar placeholder
-          const existingExpertMessage = messagesRef.current.find(m => m.senderId === conversation.expertId);
-          senderName = existingExpertMessage?.senderName || 'Experto';
-        } else {
-          // No coincide con cliente ni experto, usar placeholder
-          senderName = '[Usuario]';
-        }
-        
-        // Si no encontramos el nombre en mensajes existentes, intentar obtenerlo desde la API
-        if (senderName === 'Cliente' || senderName === 'Experto' || senderName === '[Usuario]') {
-          // Intentar obtener el nombre real desde la API
-          (async () => {
-            try {
-              const userResponse = await fetchWithTimeout(
-                `${API_URL}/api/Users/${senderId}`,
-                {
-                  headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                  }
-                },
-                CHAT_FETCH_TIMEOUT_MS
-              );
-              
-              if (userResponse.ok) {
-                const userData = await userResponse.json();
-                senderName = userData.Name || userData.name || senderName;
-              }
-            } catch (error) {
-              console.error('[PreHireChat] Error obteniendo info del sender:', error);
-              // Mantener el nombre por defecto
-            }
-          })();
-        }
-      }
-
-      // ✅ Crear objeto MessageDto (leer en PascalCase como envía el backend)
-      const messageDto: Message = {
-        id: newMessage.Id || newMessage.id,
-        conversationId: msgConversationId,
-        senderId: newMessage.SenderId ?? newMessage.senderId ?? null,
-        content: newMessage.Content || newMessage.content || '',
-        sentAt: newMessage.SentAt || newMessage.sentAt,
-        isRead: newMessage.IsRead ?? newMessage.isRead ?? false,
-        senderName: newMessage.SenderName || newMessage.senderName || senderName,
-        locationLatitude: newMessage.LocationLatitude ?? newMessage.locationLatitude ?? null,
-        locationLongitude: newMessage.LocationLongitude ?? newMessage.locationLongitude ?? null,
-        attachmentUrls: newMessage.AttachmentUrls || newMessage.attachmentUrls || []
-      };
-      
-      // ✅ Agregar mensaje al estado (evitar duplicados y reemplazar optimísticos)
-      setMessages(prev => {
-        // Verificar si el mensaje ya existe (por ID)
-        const existingIndex = prev.findIndex(m => m.id === messageDto.id);
-        
-        if (existingIndex !== -1) {
-          console.log('⚠️ [PreHireChat] Mensaje duplicado detectado:', messageDto.id);
-          // ✅ Si existe pero es optimístico, reemplazarlo con el real
-          if (prev[existingIndex].isOptimistic) {
-            console.log('🔄 [PreHireChat] Reemplazando mensaje optimístico con mensaje real desde Supabase');
-            const updated = [...prev];
-            updated[existingIndex] = messageDto; // Reemplazar con el mensaje real
-            return sortMessagesByDate(updated);
-          }
-          console.log('⚠️ [PreHireChat] Mensaje duplicado ignorado (ya existe y no es optimístico):', messageDto.id);
-          return prev; // Ya existe y no es optimístico, no hacer nada
-        }
-
-        // ✅ Buscar mensaje optimístico por contenido y senderId para reemplazarlo
-        const optimisticIndex = prev.findIndex(m => 
-          m.isOptimistic && 
-          m.content === messageDto.content && 
-          m.senderId === messageDto.senderId &&
-          Math.abs(new Date(m.sentAt).getTime() - new Date(messageDto.sentAt).getTime()) < 5000 // Dentro de 5 segundos
-        );
-
-        if (optimisticIndex !== -1) {
-          console.log('🔄 [PreHireChat] Reemplazando mensaje optimístico con mensaje real desde Supabase (por contenido)');
-          const updated = [...prev];
-          updated[optimisticIndex] = messageDto; // Reemplazar con el mensaje real
-          return sortMessagesByDate(updated);
-        }
-
-        // ✅ Agregar nuevo mensaje y ordenar por fecha
-        const updated = sortMessagesByDate([...prev, messageDto]);
-
-        console.log('✅ [PreHireChat] Mensaje agregado. Total mensajes:', updated.length);
-        return updated;
-      });
     };
 
-    console.log('🔌 [PreHireChat] ===== INICIANDO SUSCRIPCIÓN REALTIME =====');
-    console.log('🔌 [PreHireChat] Conectando a Supabase Realtime con autenticación para conversación:', conversation.id);
-    console.log('🔑 [PreHireChat] Token disponible:', !!token);
-    console.log('🔑 [PreHireChat] Token (primeros 20 chars):', token?.substring(0, 20));
-    
-    // ✅ CRÍTICO: Asegurar que Supabase tiene el token ANTES de suscribirse
-    // Esperar a que la sesión se establezca antes de crear el canal
-    const setupSubscription = async () => {
-      // Actualizar autenticación primero
-      updateSupabaseAuth(token);
-      
-      // Esperar un momento para que la sesión se establezca
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Verificar que Supabase tiene el token
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('❌ [PreHireChat] Error en sesión Supabase antes de suscribirse:', sessionError);
+    const scheduleRetry = () => {
+      if (cancelled || retryCount >= maxRetries) {
+        setIsReconnecting(false);
         return;
       }
-      
-      // ✅ IMPORTANTE: Con JWT personalizados, getSession() puede no funcionar
-      // pero el token se pasa directamente en realtime.params.access_token
-      // Por lo tanto, continuamos aunque no haya sesión en auth.getSession()
-      if (!sessionData.session) {
-        console.warn('⚠️ [PreHireChat] No hay sesión en auth.getSession(), pero el token se pasa en realtime.params');
-        console.warn('⚠️ [PreHireChat] Esto es normal con JWT personalizados. Los broadcasts funcionarán, pero postgres_changes puede requerir RLS configurado.');
-      } else {
-        console.log('✅ [PreHireChat] Sesión Supabase confirmada antes de suscribirse: Activa');
-        console.log('🔑 [PreHireChat] Token en sesión Supabase (primeros 20 chars):', sessionData.session.access_token?.substring(0, 20));
-      }
+      retryCount += 1;
+      setIsReconnecting(true);
+      const delay = Math.min(2000 * retryCount, 15000);
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        if (!cancelled) void subscribe();
+      }, delay);
+    };
 
-      // ✅ IMPORTANTE: El canal debe ser "conversation:{id}" para coincidir con el backend
-      const channelName = `conversation:${conversation.id}`;
-      console.log(`📡 [PreHireChat] Nombre del canal: ${channelName}`);
-    
-    const channel = supabase
-      .channel(channelName)
-      
-      // ⚠️ TEMPORALMENTE DESHABILITADO: postgres_changes causa error "mismatch between server and client bindings"
-      // Esto ocurre porque el JWT personalizado no es válido para RLS de Supabase
-      // Usaremos solo broadcast que es más confiable con JWT personalizados
-      /*
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'Messages',
-          filter: `ConversationId=eq.${conversation.id}`
-        },
-        async (payload) => {
-          console.log('📨 [PreHireChat] ===== EVENTO RECIBIDO (postgres_changes) =====');
-          console.log('📨 [PreHireChat] Tipo:', payload.eventType);
-          console.log('📨 [PreHireChat] Payload completo:', JSON.stringify(payload, null, 2));
-          console.log('📨 [PreHireChat] Nuevo mensaje:', payload.new);
-          console.log('📨 [PreHireChat] ConversationId del payload:', payload.new?.ConversationId);
-          console.log('📨 [PreHireChat] ConversationId esperado:', conversation.id);
-          console.log('📨 [PreHireChat] ¿Coinciden?', payload.new?.ConversationId === conversation.id);
-          
-          handleNewMessage(payload.new);
-        }
-      )
-      */
-      
-      // ✅ SUSCRIPCIÓN 1: broadcast (recibe broadcasts del backend) - MÁS CONFIABLE Y NO REQUIERE RLS
-      .on(
-        'broadcast',
-        { event: 'new_message' },
-        ({ payload }) => {
-          console.log('📨 [PreHireChat] ===== EVENTO RECIBIDO (broadcast) =====');
-          console.log('📨 [PreHireChat] Payload completo:', JSON.stringify(payload, null, 2));
-          console.log('📨 [PreHireChat] Mensaje recibido vía broadcast:', payload);
-          console.log('📨 [PreHireChat] SenderId del broadcast:', payload?.SenderId || payload?.senderId);
-          console.log('📨 [PreHireChat] Current userId:', userId);
-          console.log('📨 [PreHireChat] ¿Es mensaje propio?', (payload?.SenderId || payload?.senderId) === userId);
-          console.log('📨 [PreHireChat] ConversationId del broadcast:', payload?.ConversationId || payload?.conversationId);
-          console.log('📨 [PreHireChat] ConversationId esperado:', conversation.id);
-          
-          // ✅ El backend envía el mensaje completo en el payload
-          // IMPORTANTE: NO filtrar mensajes propios aquí - handleNewMessage ya maneja duplicados
-          handleNewMessage(payload);
-        }
-      )
-      
-      // ✅ SUSCRIPCIÓN 2: Escuchar TODOS los broadcasts para debug (incluye cualquier evento)
-      .on(
-        'broadcast',
-        { event: '*' },
-        ({ event, payload }) => {
-          console.log('🔍 [PreHireChat] ===== BROADCAST RECIBIDO (cualquier evento) =====');
-          console.log('🔍 [PreHireChat] Evento:', event);
-          console.log('🔍 [PreHireChat] Payload completo:', JSON.stringify(payload, null, 2));
-          console.log('🔍 [PreHireChat] Tipo de payload:', typeof payload);
-          console.log('🔍 [PreHireChat] ¿Tiene Id?', 'Id' in payload || 'id' in payload);
-          console.log('🔍 [PreHireChat] ¿Tiene ConversationId?', 'ConversationId' in payload || 'conversationId' in payload);
-          
-          // Listener de diagnóstico: el procesamiento real lo hace el listener new_message.
-        }
-      )
-      
-      // ⚠️ TEMPORALMENTE DESHABILITADO: postgres_changes causa error "mismatch between server and client bindings"
-      // Usaremos solo broadcast para UPDATE y DELETE también
-      /*
-      // ✅ SUSCRIPCIÓN 3: Mensajes actualizados (UPDATE)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Messages',
-          filter: `ConversationId=eq.${conversation.id}`
-        },
-        (payload) => {
-          console.log('🔄 [PreHireChat] Mensaje actualizado:', payload);
-          
-          const updatedMessage = payload.new as any;
-          
-          // ✅ Actualizar mensaje en el estado
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === updatedMessage.Id
-                ? {
-                    ...msg,
-                    isRead: updatedMessage.IsRead || msg.isRead,
-                    content: updatedMessage.Content || msg.content,
-                    // Actualizar otros campos si es necesario
-                  }
-                : msg
-            )
+    const subscribe = async () => {
+      if (cancelled) return;
+
+      const existing = pendingChannelRef.current ?? channelRef.current;
+      await teardownChannel(existing);
+      pendingChannelRef.current = null;
+      channelRef.current = null;
+
+      const channel = client
+        .channel(channelName)
+        .on('broadcast', { event: 'new_message' }, ({ payload }) => {
+          const messageDto = normalizeBroadcastMessage(
+            payload as Record<string, unknown>,
+            convId
           );
-        }
-      )
+          if (!messageDto) return;
+          setMessages((prev) => mergeIncomingMessage(prev, messageDto));
+        })
+        .on('broadcast', { event: 'message_updated' }, ({ payload }) => {
+          const messageDto = normalizeBroadcastMessage(
+            payload as Record<string, unknown>,
+            convId
+          );
+          if (!messageDto) return;
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === messageDto.id ? { ...msg, ...messageDto } : msg))
+          );
+        })
+        .on('broadcast', { event: 'message_read' }, ({ payload }) => {
+          const p = payload as { messageId?: number; MessageId?: number };
+          const messageId = p.messageId ?? p.MessageId;
+          if (!messageId) return;
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === messageId ? { ...msg, isRead: true } : msg))
+          );
+        })
+        .on('broadcast', { event: 'typing' }, ({ payload }) => {
+          const p = payload as {
+            userId?: number | string;
+            UserId?: number | string;
+            isTyping?: boolean;
+            IsTyping?: boolean;
+          };
+          const typingUserId = Number(p.userId ?? p.UserId ?? 0);
+          const isTyping = p.isTyping ?? p.IsTyping ?? false;
+          if (!typingUserId || typingUserId === userId) return;
 
-      // ✅ SUSCRIPCIÓN 4: Mensajes eliminados (DELETE)
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'Messages',
-          filter: `ConversationId=eq.${conversation.id}`
-        },
-        (payload) => {
-          console.log('🗑️ [PreHireChat] Mensaje eliminado:', payload);
-          
-          const deletedMessage = payload.old as any;
-          
-          // ✅ Remover mensaje del estado
-          setMessages(prev => prev.filter(msg => msg.id !== deletedMessage.Id));
-        }
-      )
-      */
+          const existingTimeout = typingClearTimeoutsRef.current.get(typingUserId);
+          if (existingTimeout) clearTimeout(existingTimeout);
 
-      // ✅ Suscribirse al canal
-      .subscribe((status, err) => {
-        console.log('📡 [PreHireChat] ===== ESTADO DE SUSCRIPCIÓN =====');
-        console.log(`📡 [PreHireChat] Estado: ${status}`);
-        if (err) {
-          console.error('❌ [PreHireChat] Error:', err);
-        }
-        
-        const connected = status === 'SUBSCRIBED';
-        setIsConnected(connected);
-        
-        // Notificar cambio de conexión al componente padre
-        if (onConnectionChange) {
-          onConnectionChange(connected);
-        }
-        
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [PreHireChat] Conectado a Supabase Realtime');
-          console.log(`✅ [PreHireChat] Escuchando en canal: ${channelName}`);
-          console.log('✅ [PreHireChat] Listo para recibir broadcasts (postgres_changes deshabilitado)');
-          console.log('🧪 [PreHireChat] Canal suscrito correctamente. Esperando broadcasts del backend...');
-          console.log('🧪 [PreHireChat] IMPORTANTE: El backend DEBE emitir broadcasts en el canal:', channelName);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [PreHireChat] Error en el canal. Verifica autenticación.');
-          // Verificar autenticación cuando hay error
-          supabase.auth.getSession().then(({ data, error }) => {
-            console.log('🔑 [PreHireChat] Verificación de sesión después del error:');
-            console.log('🔑 [PreHireChat] Sesión:', data.session ? 'Activa' : 'Inactiva');
-            console.log('🔑 [PreHireChat] Error:', error);
-          });
-          // Notificar desconexión
-          if (onConnectionChange) {
-            onConnectionChange(false);
+          if (isTyping) {
+            setTypingUserIds((prev) =>
+              prev.some((id) => Number(id) === typingUserId) ? prev : [...prev, typingUserId]
+            );
+            const timeout = setTimeout(() => {
+              setTypingUserIds((prev) => prev.filter((id) => Number(id) !== typingUserId));
+              typingClearTimeoutsRef.current.delete(typingUserId);
+            }, 4000);
+            typingClearTimeoutsRef.current.set(typingUserId, timeout);
+          } else {
+            setTypingUserIds((prev) => prev.filter((id) => Number(id) !== typingUserId));
           }
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ [PreHireChat] Timeout. Verifica conexión y CSP.');
-          // Notificar desconexión
-          if (onConnectionChange) {
-            onConnectionChange(false);
-          }
-        }
-      });
+        })
+        .subscribe((status, err) => {
+          if (cancelled) return;
 
-      channelRef.current = channel;
+          const connected = status === 'SUBSCRIBED';
+          setIsConnected(connected);
+          setIsReconnecting(false);
+          onConnectionChange?.(connected);
+
+          if (status === 'SUBSCRIBED') {
+            retryCount = 0;
+            channelRef.current = channel;
+            pendingChannelRef.current = null;
+            void refetchRef.current();
+          } else if (err) {
+            console.error('[PreHireChat] Error en canal Realtime:', err);
+          }
+
+          if (
+            (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') &&
+            !isTearingDownRef.current
+          ) {
+            setIsConnected(false);
+            onConnectionChange?.(false);
+            scheduleRetry();
+          }
+        });
+
+      pendingChannelRef.current = channel;
     };
-    
-    // ✅ Llamar a la función de configuración
-    setupSubscription().catch(err => {
-      console.error('❌ [PreHireChat] Error en setupSubscription:', err);
-    });
 
-    // ✅ Limpiar suscripción al desmontar el componente
+    void subscribe();
+
     return () => {
-      console.log('🔌 [PreHireChat] Desconectando de Supabase Realtime');
-      if (channelRef.current) {
-        console.log('🔌 [PreHireChat] Removiendo canal:', channelRef.current.topic);
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+      cancelled = true;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
       }
+      typingClearTimeoutsRef.current.forEach((t) => clearTimeout(t));
+      typingClearTimeoutsRef.current.clear();
+      const ch = pendingChannelRef.current ?? channelRef.current;
+      pendingChannelRef.current = null;
+      channelRef.current = null;
+      if (ch) void teardownChannel(ch);
+      setIsConnected(false);
+      setIsReconnecting(false);
+      setTypingUserIds([]);
+      onConnectionChange?.(false);
     };
-  }, [conversation?.id, token, supabase, userId, conversation?.clientId, conversation?.expertId]); // ✅ Remover handleNewMessage de las dependencias
+  }, [conversation?.id, token, userId, hasAccess, onConnectionChange, supabase]);
+
+  // Polling si Realtime no está conectado
+  useEffect(() => {
+    if (!conversation?.id || !hasAccess || isConnected) return;
+    const interval = setInterval(() => {
+      void refetchRef.current();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [conversation?.id, hasAccess, isConnected]);
+
+  // Marcar mensajes entrantes como leídos (no en vista admin: no debe afectar al cliente/experto)
+  useEffect(() => {
+    if (!conversation?.id || !token || !hasAccess || userIsAdmin) return;
+
+    const unread = messages.filter(
+      (msg) =>
+        !msg.isRead &&
+        !msg.isOptimistic &&
+        msg.senderId != null &&
+        !isMessageFromUser(msg.senderId, userId) &&
+        !markedReadIdsRef.current.has(msg.id)
+    );
+
+    unread.forEach((msg) => {
+      markedReadIdsRef.current.add(msg.id);
+      void markMessageAsRead(msg.id, token).catch(() => {
+        markedReadIdsRef.current.delete(msg.id);
+      });
+    });
+  }, [messages, conversation?.id, token, userId, hasAccess, userIsAdmin]);
+
+  useEffect(() => {
+    if (conversation?.id) {
+      markedReadIdsRef.current.clear();
+    }
+  }, [conversation?.id]);
 
   // Scroll automático al final
   useEffect(() => {
@@ -558,7 +478,9 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
       return {
         id: response.Id || response.id,
         conversationId: response.ConversationId || response.conversationId,
-        senderId: response.SenderId ?? response.senderId ?? null,
+        senderId:
+          normalizeSenderId(response.SenderId ?? response.senderId) ??
+          (userId > 0 ? userId : null),
         content: response.Content || response.content || '',
         sentAt: response.SentAt || response.sentAt,
         isRead: response.IsRead ?? response.isRead ?? false,
@@ -585,42 +507,23 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
         isOptimistic: true // ✅ Flag para identificar mensajes optimísticos
       };
 
-      console.log('🚀 [PreHireChat] Agregando mensaje optimístico:', optimisticMessage);
-
-      setMessages(prev => {
-        const updated = sortMessagesByDate([...prev, optimisticMessage]);
-        console.log('✅ [PreHireChat] Mensaje optimístico agregado. Total mensajes:', updated.length);
-        return updated;
-      });
+      setMessages((prev) => sortMessagesByDate([...prev, optimisticMessage]));
 
       setInputValue(''); // Limpiar input inmediatamente
 
       return { optimisticMessage };
     },
     onSuccess: (data, variables) => {
-      console.log('✅ [PreHireChat] Mensaje enviado exitosamente:', data);
-      
-      // ✅ Reemplazar mensaje optimístico con el real inmediatamente
-      setMessages(prev => {
-        const updated = prev.map(msg => {
-          // Buscar mensaje optimístico por contenido y senderId
+      setMessages((prev) => {
+        const updated = prev.map((msg) => {
           if (msg.isOptimistic && msg.content === variables && msg.senderId === userId) {
-            console.log('🔄 [PreHireChat] Reemplazando mensaje optimístico con respuesta del servidor');
-            // Reemplazar con el mensaje real del servidor
-            return {
-              ...data,
-              isOptimistic: false
-            };
+            return { ...data, isOptimistic: false };
           }
           return msg;
         });
-        
-        // Si no se encontró el mensaje optimístico, agregar el real
-        if (!updated.some(m => m.id === data.id)) {
-          console.log('📨 [PreHireChat] Agregando mensaje real (no se encontró optimístico)');
-          updated.push(data);
+        if (!updated.some((m) => m.id === data.id)) {
+          updated.push({ ...data, isOptimistic: false });
         }
-        
         return sortMessagesByDate(updated);
       });
     },
@@ -630,10 +533,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
       
       // ✅ Remover mensaje optimístico en caso de error
       if (context?.optimisticMessage) {
-        console.log('🗑️ [PreHireChat] Removiendo mensaje optimístico debido a error');
-        setMessages(prev => 
-          prev.filter(msg => msg.id !== context.optimisticMessage.id)
-        );
+        setMessages((prev) => prev.filter((msg) => msg.id !== context.optimisticMessage.id));
       }
       
       // ✅ Restaurar el input
@@ -681,6 +581,8 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
   }
 
   if (conversationError || !conversation) {
+    const needsConversationId =
+      conversationError?.message?.includes('conversationId is required') ?? false;
     return (
       <div className="flex h-full items-center justify-center bg-white p-6">
         <Alert variant="destructive" className="max-w-lg">
@@ -688,7 +590,9 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           <AlertTitle>No se pudo cargar la conversación</AlertTitle>
           <AlertDescription className="mt-2 space-y-3">
             <p>
-              Revisa tu conexión o vuelve a intentarlo. Si el problema continúa, abre el servicio desde su ficha.
+              {needsConversationId
+                ? 'Como experto, abre el chat desde el panel de mensajes previos a contratar (cada cliente tiene su propia conversación).'
+                : 'Revisa tu conexión o vuelve a intentarlo. Si el problema continúa, abre el servicio desde su ficha.'}
             </p>
             <Button
               type="button"
@@ -703,6 +607,14 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
             </Button>
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex h-full items-center justify-center bg-white p-6 text-center text-gray-600">
+        <p>No tienes acceso a esta conversación privada.</p>
       </div>
     );
   }
@@ -751,12 +663,24 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
                     </div>
                 </div>
             )}
+      {typingUserIds.some((id) => Number(id) === Number(otherParticipantId)) && (
+        <div className="mx-4 mt-2 text-xs text-gray-500 italic px-1">La otra persona está escribiendo…</div>
+      )}
+
+      {userIsAdmin && (
+        <p className="mx-4 mt-2 text-[11px] text-amber-800 bg-amber-50 rounded-md px-2 py-1">
+          Vista de administrador: los mensajes no se marcarán como leídos para el cliente ni el experto.
+        </p>
+      )}
+
       <div className={`mx-4 mt-3 flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs ${isConnected ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-amber-100 bg-amber-50 text-amber-800'}`}>
         {isConnected ? <Wifi className="h-4 w-4" aria-hidden="true" /> : <WifiOff className="h-4 w-4" aria-hidden="true" />}
         <span>
           {isConnected
-            ? 'Chat en tiempo real activo. Recibirás las respuestas al instante.'
-            : 'Conectando con el chat en tiempo real. Puedes escribir, pero el envío se habilitará al reconectar.'}
+            ? 'Chat privado en tiempo real.'
+            : isReconnecting
+              ? 'Reconectando… Los mensajes se sincronizan cada pocos segundos.'
+              : 'Sin conexión en vivo. Puedes enviar mensajes; se entregarán por la API.'}
         </span>
       </div>
 
@@ -785,7 +709,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
           </div>
         ) : (
           messages.map((message, index) => {
-            const isOwnMessage = message.senderId === userId;
+            const isOwnMessage = isMessageFromUser(message.senderId, userId);
             const previousMessage = messages[index - 1];
             const showDaySeparator = !previousMessage ||
               new Date(previousMessage.sentAt).toDateString() !== new Date(message.sentAt).toDateString();
@@ -869,9 +793,13 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
         <div className="flex items-end gap-2">
         <Textarea
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            notifyTypingState(e.target.value.trim().length > 0);
+          }}
+          onBlur={() => notifyTypingState(false)}
           onKeyDown={handleKeyDown}
-          placeholder={!isConnected ? "Conectando..." : "Escribe tu mensaje..."}
+          placeholder="Escribe tu mensaje..."
           disabled={sendMessageMutation.isPending}
           aria-label="Escribe tu mensaje"
           aria-describedby="chat-input-help"
@@ -884,7 +812,7 @@ export const PreHireChat = ({ serviceId, token, userId, onClose, onConnectionCha
         <Button
           type="button"
           onClick={handleSend}
-          disabled={!inputValue.trim() || sendMessageMutation.isPending || !isConnected}
+          disabled={!inputValue.trim() || sendMessageMutation.isPending}
           className="h-11 w-11 rounded-full p-0 shadow-sm"
           aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
         >

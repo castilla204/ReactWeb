@@ -21,8 +21,8 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
 
   // Obtener conversaciones pre-contratación
-  const { data: conversations, isLoading, error, refetch } = useQuery<PreHireConversationSummaryDto[]>({
-    queryKey: ['expert-pre-hire-conversations'],
+  const { data: conversations, isLoading, isError, error, refetch, isFetched } = useQuery<PreHireConversationSummaryDto[]>({
+    queryKey: ['expert-pre-hire-conversations', userId],
     queryFn: async () => {
       const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.chat.preHireConversations}`, {
         headers: {
@@ -66,7 +66,8 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
       }));
     },
     enabled: !!token && !!userId,
-    refetchInterval: 30000, // Refrescar cada 30 segundos
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     retry: 2
   });
 
@@ -97,7 +98,7 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
   };
 
   const handleOpenChat = (conversationId: number, searchServiceId: number) => {
-    navigate(`/chat-pre-contratacion/${searchServiceId}`);
+    navigate(`/chat-pre-contratacion/${searchServiceId}?conversationId=${conversationId}`);
   };
 
   if (isLoading) {
@@ -109,7 +110,7 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
     );
   }
 
-  if (error) {
+  if (isError && !conversations?.length) {
     return (
       <Card className="m-4">
         <CardContent className="pt-6">
@@ -128,7 +129,17 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
     );
   }
 
-  if (!conversations || conversations.length === 0) {
+  if (!token || !userId) {
+    return (
+      <Card className="m-4">
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          <p>Inicia sesión para ver tus conversaciones previas a la contratación.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isFetched && (!conversations || conversations.length === 0)) {
     return (
       <Card className="m-4">
         <CardContent className="pt-6">

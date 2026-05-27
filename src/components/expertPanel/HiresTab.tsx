@@ -237,7 +237,7 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                                 </span>
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-foreground">D {hire.client?.name || 'Cliente desconocido'}</span>
+                                                <span className="text-sm font-medium text-foreground">{hire.client?.name || 'Cliente desconocido'}</span>
                                                 {hire.unreadMessagesCount > 0 && (
                                                     <div className="flex items-center gap-1 mt-0.5">
                                                         <MessageCircle className="w-3 h-3 text-primary" />

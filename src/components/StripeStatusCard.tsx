@@ -1,11 +1,12 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, Clock, XCircle, UserX, Loader2, Settings, RefreshCw, MessageCircle, HelpCircle } from 'lucide-react';
-import { useExpertStripeStatus } from '../hooks/useExpertStripeStatus';
+import type { ExpertStripeStatusResult } from '../hooks/useExpertStripeStatus';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { ErrorDisplay } from './ErrorDisplay';
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from './ui/empty';
 
 interface StripeStatusCardProps {
+    stripe: ExpertStripeStatusResult;
     onSetupStripe?: () => void;
     onAccessDashboard?: () => void;
     onContactSupport?: () => void;
@@ -127,13 +128,14 @@ const getButtonClass = (action: string) => {
 };
 
 export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
+    stripe,
     onSetupStripe,
     onAccessDashboard,
     onContactSupport,
     className = '',
     isLoadingOnboarding = false
 }) => {
-    const { status, loading, error, refetch, syncStatus, statusInfo, isPolling } = useExpertStripeStatus();
+    const { status, loading, error, refetch, syncStatus, statusInfo, isPolling } = stripe;
     
     console.log('StripeStatusCard render:', { 
         status: status?.stripeStatus, 

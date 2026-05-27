@@ -104,6 +104,7 @@ export const API_CONFIG = {
         },
         notifications: {
             list: `${API_PATH}/Notification`,
+            adminList: `${API_PATH}/Notification/admin`,
             create: `${API_PATH}/Notification`,
             delete: (id: string) => `${API_PATH}/Notification/${id}`,
             markAsRead: (id: string) => `${API_PATH}/Notification/${id}/read`,
@@ -145,6 +146,8 @@ export const API_CONFIG = {
             myConversations: `${API_PATH}/Chat/my-conversations`,  // ✅ NUEVO: Todas las conversaciones del cliente (pre y post contratación)
             message: `${API_PATH}/chat/message`,
             markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
+            typing: `${API_PATH}/chat/typing`,
+            conversationById: (conversationId: number) => `${API_PATH}/chat/conversation/${conversationId}`,
             ws: `${API_PATH}/chat/ws`,
             deliverable: (searchHireId: number) => `${API_PATH}/Chat/deliverable/${searchHireId}`,
         },

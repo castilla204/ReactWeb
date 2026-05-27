@@ -109,9 +109,11 @@ export function useExpertProfile() {
             console.log('Profile updated successfully:', updatedProfile);
             
             // ✅ Validar que expertProfile existe antes de acceder a sus propiedades
-            if (updatedProfile?.expertProfile) {
-                console.log('Updated Stripe Status:', updatedProfile.expertProfile.stripeStatus);
-                console.log('Updated Stripe Status Details:', updatedProfile.expertProfile.stripeStatusDetails);
+            const expertProfile =
+                updatedProfile?.expertProfile ??
+                (updatedProfile as { ExpertProfile?: typeof updatedProfile.expertProfile })?.ExpertProfile;
+            if (expertProfile) {
+                console.log('Updated Stripe Status:', expertProfile.stripeStatus ?? (expertProfile as { StripeStatus?: unknown }).StripeStatus);
             } else {
                 console.warn('⚠️ useExpertProfile: expertProfile is missing in response:', updatedProfile);
             }

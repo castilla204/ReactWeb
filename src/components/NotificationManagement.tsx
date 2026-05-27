@@ -1,20 +1,63 @@
 import React, { useState } from 'react';
 import { Bell, Info, AlertTriangle, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useApi } from '../hooks/useApi';
 import { ErrorDisplay } from './ErrorDisplay';
 import { Pagination } from './Pagination';
+import {
+  useAdminNotificationList,
+  ADMIN_NOTIFICATIONS_QUERY_KEY,
+} from '../hooks/useNotifications';
+import { API_CONFIG } from '../config/api';
 
-interface Notification {
-  id: string;
+function buildCreatePayload(data: {
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  url?: string;
-  imageUrl?: string;
-  read: boolean;
-  createdAt: string;
-  readAt: string | null;
+  type: string;
+  url: string;
+  imageUrl: string;
+  userId: string;
+}) {
+  const userIdStr = data.userId.trim();
+  let userId: number | null = null;
+  if (userIdStr) {
+    const parsed = parseInt(userIdStr, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error('El ID de usuario debe ser un número válido');
+    }
+    userId = parsed;
+  }
+
+  return {
+    Title: data.title.trim(),
+    Message: data.message.trim(),
+    Type: data.type,
+    UserId: userId,
+    Url: data.url.trim() || null,
+    ImageUrl: data.imageUrl.trim() || null,
+  };
+}
+
+function formatNotificationDate(createdAt: string) {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('es-ES');
+}
+
+function getIcon(type: string) {
+  switch (type) {
+    case 'info':
+      return <Info className="w-5 h-5 text-blue-500" />;
+    case 'success':
+      return <CheckCircle className="w-5 h-5 text-green-500" />;
+    case 'warning':
+      return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+    case 'error':
+      return <AlertCircle className="w-5 h-5 text-red-500" />;
+    default:
+      return <Bell className="w-5 h-5 text-gray-500" />;
+  }
 }
 
 const NotificationManagement: React.FC = () => {
@@ -28,185 +71,152 @@ const NotificationManagement: React.FC = () => {
     type: 'info' as const,
     url: '',
     imageUrl: '',
-    userId: ''
+    userId: '',
   });
 
-  const notificationsQuery = useQuery({
-    queryKey: ['notifications', page, pageSize],
-    queryFn: async () => {
-      const response = await fetchApi<any>(`/api/Notification?page=${page}&pageSize=${pageSize}`);
-      // Manejar respuesta paginada o no paginada
-      if (response.notifications && response.pagination) {
-        return {
-          notifications: response.notifications as Notification[],
-          pagination: response.pagination
-        };
-      } else if (Array.isArray(response)) {
-        // Si el backend retorna un array directamente, crear paginación simulada
-        const totalCount = response.length;
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return {
-          notifications: response.slice((page - 1) * pageSize, page * pageSize) as Notification[],
-          pagination: {
-            page,
-            pageSize,
-            totalCount,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1
-          }
-        };
-      } else {
-        // Si viene en otro formato, intentar extraer los datos
-        const notifications = response.notifications || response.data || [];
-        const totalCount = response.pagination?.totalCount || notifications.length;
-        const totalPages = response.pagination?.totalPages || Math.ceil(totalCount / pageSize);
-        return {
-          notifications: Array.isArray(notifications) ? notifications : [],
-          pagination: response.pagination || {
-            page,
-            pageSize,
-            totalCount,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPreviousPage: page > 1
-          }
-        };
-      }
-    },
-  });
+  const notificationsQuery = useAdminNotificationList(page, pageSize);
 
   const createNotificationMutation = useMutation({
-    mutationFn: (data: typeof newNotification) =>
-      fetchApi('/api/Notification', {
+    mutationFn: async (data: typeof newNotification) => {
+      const payload = buildCreatePayload(data);
+      return fetchApi(API_CONFIG.endpoints.notifications.create, {
         method: 'POST',
-        body: JSON.stringify({
-          ...data,
-          userId: data.userId || null,
-        }),
-      }),
+        body: JSON.stringify(payload),
+      });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: [ADMIN_NOTIFICATIONS_QUERY_KEY] });
       setNewNotification({
         title: '',
         message: '',
         type: 'info',
         url: '',
         imageUrl: '',
-        userId: ''
+        userId: '',
       });
+      toast.success('Notificación enviada correctamente');
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'No se pudo enviar la notificación';
+      toast.error(message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createNotificationMutation.mutate(newNotification);
-  };
-
-  const getIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'info':
-        return <Info className="w-5 h-5 text-blue-500" />;
-      case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
-      case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
+    try {
+      buildCreatePayload(newNotification);
+      createNotificationMutation.mutate(newNotification);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Datos inválidos');
     }
   };
 
+  const notifications = notificationsQuery.data?.notifications ?? [];
+  const pagination = notificationsQuery.data?.pagination;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center space-x-3">
         <Bell className="w-8 h-8 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Panel de Administración</h1>
-          <p className="text-gray-600">Gestionar notificaciones del sistema</p>
+          <h1 className="text-2xl font-bold text-gray-900">Notificaciones</h1>
+          <p className="text-gray-600">
+            Envía avisos a un usuario concreto o difusión (sin ID de usuario)
+          </p>
         </div>
       </div>
 
-      {/* Formulario de Nueva Notificación */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Send New Notification</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Nueva notificación</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
               <input
                 type="text"
                 value={newNotification.title}
-                onChange={(e) => setNewNotification({ ...newNotification, title: e.target.value })}
+                onChange={(e) =>
+                  setNewNotification({ ...newNotification, title: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
               <select
                 value={newNotification.type}
-                onChange={(e) => setNewNotification({ ...newNotification, type: e.target.value as any })}
+                onChange={(e) =>
+                  setNewNotification({
+                    ...newNotification,
+                    type: e.target.value as typeof newNotification.type,
+                  })
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="info">Info</option>
-                <option value="success">Success</option>
-                <option value="warning">Warning</option>
+                <option value="success">Éxito</option>
+                <option value="warning">Aviso</option>
                 <option value="error">Error</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Message
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
             <textarea
               value={newNotification.message}
-              onChange={(e) => setNewNotification({ ...newNotification, message: e.target.value })}
+              onChange={(e) =>
+                setNewNotification({ ...newNotification, message: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={3}
               required
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                User ID (optional)
+                ID usuario (opcional)
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={newNotification.userId}
-                onChange={(e) => setNewNotification({ ...newNotification, userId: e.target.value })}
-                placeholder="Leave empty for broadcast"
+                onChange={(e) =>
+                  setNewNotification({ ...newNotification, userId: e.target.value })
+                }
+                placeholder="Vacío = difusión admin"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Con ID: solo ese usuario la ve en su campana. Sin ID: difusión (visible en este
+                panel; los usuarios no la reciben en su lista).
+              </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL (optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">URL (opcional)</label>
               <input
                 type="url"
                 value={newNotification.url}
-                onChange={(e) => setNewNotification({ ...newNotification, url: e.target.value })}
+                onChange={(e) =>
+                  setNewNotification({ ...newNotification, url: e.target.value })
+                }
                 placeholder="https://..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image URL (optional)
+                URL imagen (opcional)
               </label>
               <input
                 type="url"
                 value={newNotification.imageUrl}
-                onChange={(e) => setNewNotification({ ...newNotification, imageUrl: e.target.value })}
+                onChange={(e) =>
+                  setNewNotification({ ...newNotification, imageUrl: e.target.value })
+                }
                 placeholder="https://..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -217,49 +227,72 @@ const NotificationManagement: React.FC = () => {
             disabled={createNotificationMutation.isPending}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {createNotificationMutation.isPending ? 'Sending...' : 'Send Notification'}
+            {createNotificationMutation.isPending ? 'Enviando...' : 'Enviar notificación'}
           </button>
         </form>
       </div>
 
-      {/* Historial de Notificaciones */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Notification History</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Historial del sistema</h2>
         <div className="space-y-4">
           {notificationsQuery.isLoading ? (
-            <div className="text-center text-gray-500">Loading notifications...</div>
+            <div className="text-center text-gray-500 py-8">Cargando notificaciones...</div>
           ) : notificationsQuery.error ? (
             <ErrorDisplay
-              message={notificationsQuery.error instanceof Error ? notificationsQuery.error.message : 'Error loading notifications'}
+              message={(() => {
+                const err = notificationsQuery.error as { message?: string; status?: number };
+                const status = err?.status;
+                const base =
+                  err?.message ||
+                  (notificationsQuery.error instanceof Error
+                    ? notificationsQuery.error.message
+                    : 'Error al cargar notificaciones');
+                if (status === 405) {
+                  return `${base} (405). Reinicia la API para cargar GET /Notification/admin.`;
+                }
+                if (status === 401 || status === 403) {
+                  return `${base}. Comprueba que tu usuario tenga rol Admin.`;
+                }
+                return base;
+              })()}
+              onRetry={() => notificationsQuery.refetch()}
+              retryLabel="Reintentar"
               fullScreen={false}
               noBackground={true}
               compact={true}
             />
-          ) : (notificationsQuery.data?.notifications || []).length === 0 ? (
-            <div className="text-center text-gray-500">No notifications</div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No hay notificaciones registradas</div>
           ) : (
-            (notificationsQuery.data?.notifications || []).map((notification) => (
+            notifications.map((notification) => (
               <div
-                key={notification.id}
-                className={`relative bg-white rounded-xl p-4 border transition-colors ${notification.read
+                key={notification.id || `${notification.title}-${notification.createdAt}`}
+                className={`relative bg-white rounded-xl p-4 border transition-colors ${
+                  notification.read
                     ? 'border-gray-200'
                     : 'border-blue-200 bg-blue-50'
-                  }`}
+                }`}
               >
                 <div className="flex items-start gap-3">
                   {getIcon(notification.type)}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900">
-                      {notification.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {notification.message}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {notification.title || 'Sin título'}
+                      </h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {notification.userId != null
+                          ? `Usuario #${notification.userId}`
+                          : 'Difusión'}
+                      </span>
+                      <span className="text-xs text-gray-400">{notification.type}</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{notification.message}</p>
                     {notification.imageUrl && (
                       <img
                         src={notification.imageUrl}
                         alt=""
-                        className="mt-2 rounded-lg w-full h-32 object-cover"
+                        className="mt-2 rounded-lg w-full max-w-xs h-32 object-cover"
                       />
                     )}
                     {notification.url && (
@@ -274,9 +307,9 @@ const NotificationManagement: React.FC = () => {
                       </a>
                     )}
                     <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
-                      <span>{new Date(notification.createdAt).toLocaleString()}</span>
+                      <span>{formatNotificationDate(notification.createdAt)}</span>
                       {notification.read && (
-                        <span className="text-green-600">✓ Read</span>
+                        <span className="text-green-600">Leída</span>
                       )}
                     </div>
                   </div>
@@ -285,16 +318,16 @@ const NotificationManagement: React.FC = () => {
             ))
           )}
         </div>
-        {/* Paginación - Mostrar siempre si hay datos */}
-        {notificationsQuery.data && (notificationsQuery.data.notifications?.length > 0 || notificationsQuery.data.pagination) && (
+
+        {pagination && (notifications.length > 0 || pagination.totalCount > 0) && (
           <div className="mt-6">
             <Pagination
-              page={notificationsQuery.data.pagination?.page || page}
-              pageSize={notificationsQuery.data.pagination?.pageSize || pageSize}
-              totalCount={notificationsQuery.data.pagination?.totalCount || notificationsQuery.data.notifications?.length || 0}
-              totalPages={notificationsQuery.data.pagination?.totalPages || 1}
-              hasNextPage={notificationsQuery.data.pagination?.hasNextPage || false}
-              hasPreviousPage={notificationsQuery.data.pagination?.hasPreviousPage || page > 1}
+              page={pagination.page}
+              pageSize={pagination.pageSize}
+              totalCount={pagination.totalCount}
+              totalPages={pagination.totalPages}
+              hasNextPage={pagination.hasNextPage}
+              hasPreviousPage={pagination.hasPreviousPage}
               onPageChange={(newPage) => {
                 setPage(newPage);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

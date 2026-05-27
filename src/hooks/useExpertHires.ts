@@ -62,12 +62,18 @@ interface ExpertHire {
     };
 }
 
-export const useExpertHires = (page: number = 1, pageSize: number = 20) => {
+export const useExpertHires = (
+    page: number = 1,
+    pageSize: number = 20,
+    options?: { enabled?: boolean }
+) => {
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
+    const enabled = options?.enabled ?? true;
 
     const hiresQuery = useQuery({
         queryKey: ['expertHires', page, pageSize],
+        enabled,
         queryFn: async () => {
             const rawResponse = await fetchApi<any>(`${API_CONFIG.endpoints.expert.hires.listAsExpert}?page=${page}&pageSize=${pageSize}`);
             

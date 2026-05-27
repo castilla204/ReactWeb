@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock } from 'lucide-react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
@@ -8,7 +10,6 @@ import {
     DrawerContent,
     DrawerHeader,
     DrawerTitle,
-    DrawerClose,
 } from '../ui/drawer';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
@@ -102,12 +103,8 @@ export function ProfileEditForm({
 }: ProfileEditFormProps) {
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // ✅ Validar que profile existe antes de usarlo
-    if (!profile) {
-        console.error('❌ ProfileEditForm: profile is undefined or null');
-        return null;
-    }
+    const prevShowEditFormRef = useRef(false);
+    const localPreviewBlobRef = useRef<string | null>(null);
 
     const [formData, setFormData] = useState({
         description: profile?.description || '',
@@ -158,118 +155,76 @@ export function ProfileEditForm({
     const [circle, setCircle] = useState<google.maps.Circle | null>(null);
     
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '__REDACTED_GOOGLE_API_KEY__',
         libraries
     });
 
     useEffect(() => {
-        if (showEditForm && profile) {
-            console.log('🔍 ProfileEditForm: Loading profile data:', profile);
-            console.log('🔍 ProfileEditForm: profile.profilePictureUrl:', profile.profilePictureUrl);
-            console.log('🔍 ProfileEditForm: (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
-            
-            setFormData({
-                description: profile.description || '',
-                latitude: profile.latitude?.toString() || '',
-                longitude: profile.longitude?.toString() || '',
-            });
-            setProfilePicture(null);
-            setFormErrors({});
-            
-            // ✅ CRÍTICO: Actualizar previewUrl inmediatamente cuando se abre el formulario
-            // ✅ PRIORIZAR ProfilePictureUrl (PascalCase) del nivel superior, NO de user
-            const profileImageUrl = (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || null;
-            console.log('🔍 ProfileEditForm: Setting previewUrl on form open:', profileImageUrl);
-            console.log('🔍 ProfileEditForm: (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
-            console.log('🔍 ProfileEditForm: profile.profilePictureUrl:', profile.profilePictureUrl);
-            setPreviewUrl(profileImageUrl);
-            
-            // ✅ CRÍTICO: Actualizar disponibilidad con transformación correcta
-            const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
-                daysOfWeek: (() => {
-                    // Manejar tanto camelCase como PascalCase
-                    const days = profile.currentAvailability?.daysOfWeek ?? 
-                                (profile.currentAvailability as any)?.DaysOfWeek ?? 
-                                [];
-                    console.log('🔍 ProfileEditForm: Loading daysOfWeek from profile:', days);
-                    console.log('🔍 ProfileEditForm: profile.currentAvailability:', profile.currentAvailability);
-                    return Array.isArray(days) ? days : [];
-                })(),
-                startTime: formatTimeFromTimeSpan(
-                    profile.currentAvailability.startTime ?? 
-                    (profile.currentAvailability as any)?.StartTime ?? 
-                    ''
-                ),
-                endTime: formatTimeFromTimeSpan(
-                    profile.currentAvailability.endTime ?? 
-                    (profile.currentAvailability as any)?.EndTime ?? 
-                    ''
-                ),
-            } : {
-                daysOfWeek: [],
-                startTime: '09:00',
-                endTime: '18:00',
-            };
-            console.log('🔍 ProfileEditForm: Setting availability:', newAvailability);
-            setAvailability(newAvailability);
-            
-            // Actualizar la ubicación seleccionada en el mapa
-            const newLocation = (profile.latitude && profile.longitude) 
-                ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
-                : defaultCenter;
-                
-            setSelectedLocation(newLocation);
-            
-            // Actualizar el círculo si ya existe
-            if (circle) {
-                circle.setCenter(newLocation);
-            }
-        }
-    }, [showEditForm, profile]);
+        const justOpened = showEditForm && !prevShowEditFormRef.current;
+        prevShowEditFormRef.current = showEditForm;
 
-    // ✅ CRÍTICO: Actualizar previewUrl cuando cambia profile.profilePictureUrl (después de actualizar el perfil)
-    // ✅ Este useEffect se ejecuta cuando el profile cambia o cuando no hay un archivo nuevo seleccionado
-    useEffect(() => {
-        if (profile) {
-            // ✅ IMPORTANTE: Usar ProfilePictureUrl del objeto principal, NO del objeto User
-            // ✅ PRIORIZAR ProfilePictureUrl (PascalCase) del nivel superior
-            const profileImageUrl = (profile as any)?.ProfilePictureUrl || 
-                                  profile.profilePictureUrl || 
-                                  null;
-            console.log('🔍 ProfileEditForm (useEffect): Full profile object:', JSON.stringify(profile, null, 2));
-            console.log('🔍 ProfileEditForm (useEffect): profile.profilePictureUrl:', profile.profilePictureUrl);
-            console.log('🔍 ProfileEditForm (useEffect): (profile as any)?.ProfilePictureUrl:', (profile as any)?.ProfilePictureUrl);
-            console.log('🔍 ProfileEditForm (useEffect): (profile as any)?.profilePictureUrl:', (profile as any)?.profilePictureUrl);
-            console.log('🔍 ProfileEditForm (useEffect): profilePicture (new file):', profilePicture);
-            console.log('🔍 ProfileEditForm (useEffect): Current previewUrl:', previewUrl);
-            console.log('🔍 ProfileEditForm (useEffect): Final profileImageUrl:', profileImageUrl);
-            
-            // Solo actualizar si no hay un archivo nuevo seleccionado
-            if (!profilePicture) {
-                if (profileImageUrl && profileImageUrl.trim() !== '') {
-                    console.log('✅ ProfileEditForm: Setting previewUrl from profile:', profileImageUrl);
-                    setPreviewUrl(profileImageUrl);
-                } else {
-                    console.log('⚠️ ProfileEditForm: No profile image found, clearing previewUrl');
-                    setPreviewUrl(null);
-                }
-            } else {
-                console.log('📁 ProfileEditForm: New file selected, keeping previewUrl from file');
-            }
-        } else {
-            console.log('⚠️ ProfileEditForm (useEffect): profile is null/undefined');
+        if (!showEditForm || !profile || !justOpened) {
+            return;
         }
-    }, [profile, profile?.profilePictureUrl, (profile as any)?.ProfilePictureUrl, profilePicture, previewUrl]);
 
-    // Prevenir scroll del body cuando el drawer está abierto
+        setFormData({
+            description: profile.description || '',
+            latitude: profile.latitude?.toString() || '',
+            longitude: profile.longitude?.toString() || '',
+        });
+        setProfilePicture(null);
+        setFormErrors({});
+
+        const profileImageUrl = (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || null;
+        setPreviewUrl(profileImageUrl);
+
+        const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
+            daysOfWeek: (() => {
+                const days = profile.currentAvailability?.daysOfWeek ??
+                    (profile.currentAvailability as any)?.DaysOfWeek ??
+                    [];
+                return Array.isArray(days) ? days : [];
+            })(),
+            startTime: formatTimeFromTimeSpan(
+                profile.currentAvailability.startTime ??
+                (profile.currentAvailability as any)?.StartTime ??
+                ''
+            ),
+            endTime: formatTimeFromTimeSpan(
+                profile.currentAvailability.endTime ??
+                (profile.currentAvailability as any)?.EndTime ??
+                ''
+            ),
+        } : {
+            daysOfWeek: [],
+            startTime: '09:00',
+            endTime: '18:00',
+        };
+        setAvailability(newAvailability);
+
+        const newLocation = (profile.latitude && profile.longitude)
+            ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
+            : defaultCenter;
+
+        setSelectedLocation(newLocation);
+
+        if (circle) {
+            circle.setCenter(newLocation);
+        }
+    }, [showEditForm, profile?.id]);
+
+    useBodyScrollLock(showEditForm);
+
     useEffect(() => {
         if (showEditForm) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
+            document.body.dataset.drawerOpen = 'profile';
+        } else if (document.body.dataset.drawerOpen === 'profile') {
+            delete document.body.dataset.drawerOpen;
         }
         return () => {
-            document.body.style.overflow = '';
+            if (document.body.dataset.drawerOpen === 'profile') {
+                delete document.body.dataset.drawerOpen;
+            }
         };
     }, [showEditForm]);
 
@@ -302,17 +257,20 @@ export function ProfileEditForm({
             }
         }
 
-        // Validar disponibilidad solo si hay días seleccionados
-        if (availability.daysOfWeek.length > 0) {
-            if (!availability.startTime || !availability.endTime) {
-                errors.availability = 'Debes especificar hora de inicio y fin';
+        if (availability.daysOfWeek.length === 0) {
+            errors.availability = 'Selecciona al menos un día de disponibilidad';
+        } else if (!availability.startTime || !availability.endTime) {
+            errors.availability = 'Debes especificar hora de inicio y fin';
+        } else {
+            const [startH, startM] = availability.startTime.split(':').map(Number);
+            const [endH, endM] = availability.endTime.split(':').map(Number);
+
+            if (Number.isNaN(startH) || Number.isNaN(endH)) {
+                errors.availability = 'Horario de disponibilidad no válido';
             } else {
-                const [startH, startM] = availability.startTime.split(':').map(Number);
-                const [endH, endM] = availability.endTime.split(':').map(Number);
-                
                 const startMinutes = startH * 60 + startM;
                 const endMinutes = endH * 60 + endM;
-                
+
                 if (startMinutes >= endMinutes) {
                     errors.availability = 'La hora de inicio debe ser anterior a la hora de fin';
                 }
@@ -337,10 +295,23 @@ export function ProfileEditForm({
             return;
         }
 
+        if (localPreviewBlobRef.current) {
+            URL.revokeObjectURL(localPreviewBlobRef.current);
+        }
+        const blobUrl = URL.createObjectURL(file);
+        localPreviewBlobRef.current = blobUrl;
         setProfilePicture(file);
-        setPreviewUrl(URL.createObjectURL(file));
+        setPreviewUrl(blobUrl);
         setFormErrors(prev => ({ ...prev, profilePicture: '' }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
+
+    const openFilePicker = useCallback(() => {
+        markFilePickerOpening();
+        fileInputRef.current?.click();
+    }, []);
 
     const removeImage = () => {
         setProfilePicture(null);
@@ -397,7 +368,7 @@ export function ProfileEditForm({
 
         try {
             // Incluir disponibilidad solo si hay días seleccionados
-            const availabilityData = availability.daysOfWeek.length > 0 ? availability : undefined;
+            const availabilityData = availability;
             
             console.log('🔍 ProfileEditForm: Submitting with availability:', availabilityData);
             console.log('🔍 ProfileEditForm: daysOfWeek to send:', availabilityData?.daysOfWeek);
@@ -481,18 +452,38 @@ export function ProfileEditForm({
         });
     };
 
+    if (!profile) {
+        return null;
+    }
+
     return (
-        <Drawer open={showEditForm} onOpenChange={setShowEditForm}>
-            <DrawerContent className="max-h-[96vh] flex flex-col md:max-h-[90vh] md:h-[90vh]">
+        <Drawer
+            open={showEditForm}
+            onOpenChange={(open) => {
+                if (open && !showEditForm) {
+                    setShowEditForm(true);
+                }
+            }}
+            dismissible={false}
+            repositionInputs={false}
+            shouldScaleBackground={false}
+        >
+            <DrawerContent
+                className="max-h-[96vh] flex flex-col md:max-h-[90vh] md:h-[90vh]"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
+                onFocusOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
                 <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh] md:max-h-[90vh] md:h-[90vh]">
                     <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <DrawerTitle className="text-lg sm:text-xl font-semibold">Editar Perfil de Experto</DrawerTitle>
-                            <DrawerClose asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </DrawerClose>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowEditForm(false)}>
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
                     </DrawerHeader>
                     {/* Contenido: móvil en columna única con scroll, desktop en dos columnas sin scroll */}
@@ -552,7 +543,7 @@ export function ProfileEditForm({
                                             type="button"
                                                     variant="outline"
                                                     size="sm"
-                                            onClick={() => fileInputRef.current?.click()}
+                                            onClick={openFilePicker}
                                         >
                                                     <Upload className="w-4 h-4 mr-2" />
                                             Cambiar
@@ -575,6 +566,10 @@ export function ProfileEditForm({
                                         type="file"
                                         accept="image/jpeg,image/png,image/jpg"
                                         onChange={handleImageSelect}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            markFilePickerOpening();
+                                        }}
                                         className="hidden"
                                     />
                                 </div>

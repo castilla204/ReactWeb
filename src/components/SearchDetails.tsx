@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
-import { useChat } from '../hooks/useChat';
+import { getUserId } from '../utils/userId';
 import Chat from './Chat';
+import { MobileDetailsSheet } from './chat/MobileDetailsSheet';
 import { ReviewModal, DisputeModal } from './Modals';
 import { ExpertResponseModal } from './ExpertResponseModal';
 import { useSearchActions } from '../hooks/useSearchActions';
@@ -143,7 +143,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [fileValidation, setFileValidation] = useState<{canSubmit: boolean, message: string} | null>(null);
     const [showTrackOrder, setShowTrackOrder] = useState(false);
     const lastSearchHireId = useRef<number | null>(null);
-    const [activeTab, setActiveTab] = useState<'chat' | 'details'>('chat');
+    const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
 
     // Estado para el sistema de citas
     const [showAppointmentForm, setShowAppointmentForm] = useState(false);
@@ -160,45 +160,60 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
     const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
-    // Prevent body scroll completely - no scroll on main page EVER
+    // Bloquear scroll + altura real del viewport en móvil (evita hueco inferior)
     useEffect(() => {
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
         const originalWidth = document.body.style.width;
         const originalHeight = document.body.style.height;
-        
-        // Always prevent body scroll
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
-        document.body.style.height = '100vh';
-            
-            // Scroll chat to bottom when switching to chat tab - multiple attempts for reliability
-        if (activeTab === 'chat' || !activeTab) {
-            const scrollToBottom = () => {
-                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-                const messagesEnd = document.querySelector('[data-chat-messages]')?.lastElementChild as HTMLElement;
-                if (messagesEnd) {
-                    messagesEnd.scrollIntoView({ behavior: 'auto', block: 'end' });
-                }
-            };
-            
-            // Try multiple times to ensure it works
-            setTimeout(scrollToBottom, 100);
-            setTimeout(scrollToBottom, 250);
-            setTimeout(scrollToBottom, 400);
+        const originalTop = document.body.style.top;
+        const originalLeft = document.body.style.left;
+
+        const setViewportHeight = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        setViewportHeight();
+
+        const handleResize = () => {
+            setTimeout(setViewportHeight, 100);
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize);
         }
 
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+        document.body.style.top = '0';
+        document.body.style.left = '0';
+
+        const html = document.documentElement;
+        const originalHtmlOverflow = html.style.overflow;
+        html.style.overflow = 'hidden';
+
         return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+                window.visualViewport.removeEventListener('scroll', handleResize);
+            }
             document.body.style.overflow = originalOverflow || '';
             document.body.style.position = originalPosition || '';
             document.body.style.width = originalWidth || '';
             document.body.style.height = originalHeight || '';
+            document.body.style.top = originalTop || '';
+            document.body.style.left = originalLeft || '';
+            html.style.overflow = originalHtmlOverflow || '';
         };
-    }, [activeTab]);
+    }, []);
 
     const { user } = useAuth();
 
@@ -247,8 +262,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     console.log('[SearchDetails] expertInfo:', expertInfo);
     console.log('[SearchDetails] user:', user);
 
-    // ? HOOKS PARA ACCIONES
-    const { uploadDeliverable, isUploadingDeliverable } = useChat(searchId, searchHireId);
+    // ? HOOKS PARA ACCIONES (chat: un solo useChat dentro de <Chat />)
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
         useSearchActions();
     
@@ -763,33 +777,32 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }
     }, [needsAppointment, appointment, search?.searchHire?.createdAt]);
 
-    const userId = Number(user?.id) || 0;
-    // ✅ Cuando search es null, no podemos obtener clientId (cliente eliminado)
-    // ✅ También intentar obtener clientId de searchHire.client si está disponible
+    const userId = getUserId(user);
     const clientId = Number(
-        search?.userId ?? 
-        search?.searchHire?.client?.id ?? 
+        search?.user?.id ??
+        search?.userId ??
+        search?.searchHire?.client?.id ??
         0
     );
-    // ✅ Cuando search es null, obtener expertId de expertProfile, expertInfo o searchHire
-    const expertId = Number(
-        search?.searchHire?.expert?.id ?? 
+    const expertUserId = Number(
+        search?.searchHire?.expert?.id ??
         expertInfo?.id ??
-        expertProfile?.id ?? 
+        expertProfile?.user?.id ??
         0
     );
 
-    const isExpert = userId === expertId || 
-                     (search?.searchHire?.expert?.id && userId === Number(search.searchHire.expert.id)) ||
-                     (expertInfo?.id && userId === Number(expertInfo.id)) ||
-                     (expertProfile?.id && userId === Number(expertProfile.id));
+    const isExpert =
+        expertUserId > 0 &&
+        (userId === expertUserId ||
+            (search?.searchHire?.expert?.id != null && userId === Number(search.searchHire.expert.id)) ||
+            (expertInfo?.id != null && userId === Number(expertInfo.id)) ||
+            (expertProfile?.user?.id != null && userId === Number(expertProfile.user.id)));
     const isClient = clientId > 0
         ? userId === clientId
-        : !isExpert && !isAdmin && !!user;
+        : isExpert
+            ? false
+            : !isAdmin && !!user;
     const userRole = isClient ? 'client' : 'expert';
-    
-    // Debug: Verificar isExpert
-    console.log('[SearchDetails] isExpert:', isExpert);
     
     // ✅ CORRECTO: Usar datos del experto del nivel superior, NO de user.profilePictureUrl (que siempre es null)
     const expertData = isExpert && user ? {
@@ -835,24 +848,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // El backend validará los permisos reales cuando se intente acceder a la conversación
     const hasValidSearchHire = !!search?.searchHire?.id || !!searchHireId;
     // ✅ Si tenemos searchHireId y usuario autenticado, mostrar el chat (el backend validará permisos)
-    const canViewChat = hasValidSearchHire && !!user;
-    
-    // ✅ DEBUG: Log para verificar por qué no se muestra el chat
-    console.log('[SearchDetails] Chat visibility check:', {
-        isClient,
-        isExpert,
-        isAdmin,
-        hasSearchHireId: !!search?.searchHire?.id,
-        hasSearchHireIdParam: !!searchHireId,
-        hasValidSearchHire,
-        canViewChat,
-        userId,
-        expertId,
-        clientId,
-        searchIsNull: search === null,
-        expertInfo: expertInfo?.id,
-        expertProfile: expertProfile?.id
-    });
+    const canViewChat =
+        hasValidSearchHire && !!user && (isAdmin || isClient || isExpert);
 
     // ✅ Usar categoría del endpoint details-complete
     const categoryName = category?.name || 'Unknown Category';
@@ -995,11 +992,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         isSearchHireFinalized,
         userId,
         clientId,
-        expertId
+        expertUserId
     });
 
-    // ✅ Función para verificar si se puede proponer una cita (compatibilidad con código existente)
-    const canProposeAppointment = () => {
+    // UI: si el flujo actual permite mostrar/enviar "proponer cita" (no confundir con hireStatuses.canProposeAppointment)
+    const shouldAllowProposeAppointmentAction = () => {
         if (isSearchHireFinalized) return false;
         return appointmentButtons.showPropose;
     };
@@ -1090,7 +1087,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         try {
             setAppointmentFormError(null); // Limpiar errores previos
             if (appointmentData) {
-                if (!canProposeAppointment()) {
+                if (!shouldAllowProposeAppointmentAction()) {
                     const currentHireStatus = search?.searchHire?.status;
                     const currentAppointmentStatus = appointment?.status;
                     
@@ -1203,7 +1200,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     }
 
     return (
-        <div className="bg-gray-50 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 64px)', maxHeight: 'calc(100vh - 64px)', minHeight: 'calc(100vh - 64px)', margin: 0, padding: 0 }}>
+        <div className="fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)]">
             {/* Header - Minimalista y limpio */}
             <header className="hidden lg:flex bg-white border-b border-gray-200 flex-shrink-0 z-50" style={{ margin: 0 }}>
                 <div className="px-6 py-4 w-full">
@@ -1300,76 +1297,36 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 {/* Chat Section - Izquierda en desktop, tabs en móvil - Más grande */}
                 {canViewChat && (
                     <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col flex-shrink-0 min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0, padding: 0 }}>
-                        {/* Tabs - Solo en móvil - Minimalista */}
-                        <Tabs value={activeTab || 'chat'} onValueChange={(value: string) => setActiveTab(value as 'chat' | 'details')} className="w-full flex flex-col flex-1 min-h-0" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            <div className="bg-white sticky top-0 z-40 lg:hidden flex-shrink-0 border-b border-gray-200">
-                                <TabsList className="w-full grid grid-cols-2 h-12 bg-transparent p-0 gap-0 border-none">
-                                    <TabsTrigger 
-                                        value="chat" 
-                                        className="flex items-center justify-center gap-2 font-normal transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-200"
-                                        style={{
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            fontSize: '15px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                        }}
-                                    >
-                                        <MessageCircle className="w-4 h-4" strokeWidth={2} />
-                                        Chat
-                                    </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="details" 
-                                        className="flex items-center justify-center gap-2 font-normal transition-all duration-200 relative border-b-2 border-transparent data-[state=active]:text-gray-900 data-[state=active]:border-gray-900 data-[state=inactive]:text-gray-500 data-[state=inactive]:hover:text-gray-700 data-[state=inactive]:hover:border-gray-200"
-                                        style={{
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            fontSize: '15px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                        }}
-                                    >
-                                        <List className="w-4 h-4" strokeWidth={2} />
-                                        Detalles
-                                    </TabsTrigger>
-                                </TabsList>
+                        <div className="w-full flex flex-col flex-1 min-h-0 h-full">
+                            <div className="flex-1 w-full overflow-hidden flex flex-col bg-white min-h-0 h-full">
+                                <Chat
+                                    searchId={searchHireId ? null : searchId}
+                                    searchHireId={searchHireId}
+                                    isExpert={!!isExpert}
+                                    hireClientUserId={clientId > 0 ? clientId : null}
+                                    hireExpertUserId={expertUserId > 0 ? expertUserId : null}
+                                    expertData={{
+                                        name: expertData?.name,
+                                        profilePictureUrl: expertData?.profilePictureUrl,
+                                    }}
+                                    isDetailsOpen={mobileDetailsOpen}
+                                    onOpenDetails={() => setMobileDetailsOpen((v) => !v)}
+                                    onBack={onBack || (() => navigate('/busquedas'))}
+                                />
                             </div>
 
-                            {/* Chat Content - Visible siempre en desktop, solo en tab chat en móvil - Con scroll interno */}
-                            {(activeTab === 'chat' || !activeTab) && (
-                                <TabsContent value="chat" className="mt-0 flex-1 flex flex-col min-h-0 overflow-hidden p-0 m-0 h-full">
-                                    <div className="flex-1 w-full overflow-hidden flex flex-col bg-white min-h-0 h-full">
-                                    <Chat 
-                                        searchId={searchId} 
-                                        searchHireId={searchHireId}
-                                        isExpert={!!isExpert} 
-                                        expertData={{
-                                            name: expertData?.name, 
-                                            profilePictureUrl: expertData?.profilePictureUrl 
-                                        }}
-                                    />
-                                </div>
-                            </TabsContent>
-                            )}
-                                    
-                            {/* Details Content - Solo visible en móvil (en desktop está en la columna derecha) - Con scroll interno */}
-                            {activeTab === 'details' && (
-                                <div className="mt-0 flex-1 flex flex-col lg:hidden min-h-0 overflow-hidden">
-                                <div className="flex-1 flex flex-col bg-background min-h-0 overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6" style={{ paddingBottom: '0.5rem' }}>
-                                {/* Service Info - Minimalista */}
+                            <MobileDetailsSheet
+                                open={mobileDetailsOpen}
+                                onOpenChange={setMobileDetailsOpen}
+                                title="Detalles del servicio"
+                                subtitle={searchHireStatusInfo?.displayName}
+                            >
+                                <div className="space-y-6 pb-24">
+                                {/* Service Info */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 
-                                            className="text-base font-semibold text-gray-900"
-                                            style={{
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                fontSize: '16px',
-                                                lineHeight: '20px',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Servicio
-                                        </h3>
-                                        <div className="flex items-center gap-2">
+                                    {/* Estado — solo badges, sin título de sección */}
+                                    {(searchHireStatusInfo || (appointment && appointmentStatusInfo)) && (
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             {searchHireStatusInfo && (
                                                 <StatusBadge statusInfo={searchHireStatusInfo} />
                                             )}
@@ -1377,7 +1334,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <StatusBadge statusInfo={appointmentStatusInfo} />
                                             )}
                                         </div>
-                                    </div>
+                                    )}
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-gray-900">
                                             <Tag className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -1967,11 +1924,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     </div>
                                     </>
                                 )}
-                                    </div>
-                                    
-                                    {/* ✅ Botones de acción fijos en móvil - Según la guía */}
+
+                                    {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 px-5 py-4 space-y-3 shadow-lg">
+                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-gray-200 bg-white px-5 py-4 space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
                                                 <div className="space-y-2 pb-2 border-b border-gray-200">
@@ -2282,25 +2238,23 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </div>
                                     )}
                                 </div>
-                                </div>
-                            )}
-                        </Tabs>
+                            </MobileDetailsSheet>
+                        </div>
                     </div>
                 )}
 
-                {/* Sidebar - Info + Acciones - Derecha en desktop, oculto en móvil (usa tabs) - Con scroll interno */}
+                {/* Sidebar - Info + Acciones - Derecha en desktop - Con scroll interno */}
                 <aside className="hidden lg:flex lg:flex-col lg:w-[30%] xl:w-[25%] bg-white lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden min-h-0" style={{ margin: 0 }}>
                     <ScrollArea className="flex-1 min-h-0">
                         <div className="p-4 space-y-4" style={{ padding: '1rem' }}>
                             
                             {/* Resumen del Servicio - Minimalista */}
                                 <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-gray-900">Información del Servicio</h3>
-                                    {searchHireStatusInfo && (
+                                {searchHireStatusInfo && (
+                                    <div className="flex">
                                         <StatusBadge status={searchHireStatusInfo} />
-                                    )}
-                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
                                         <Tag className="w-3.5 h-3.5 text-gray-500" />
@@ -2731,10 +2685,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 )}
                             </div>
 
-                            {/* Cliente - Minimalista */}
+                            {/* Cliente */}
                             {search?.user && (
                                 <div className="space-y-2 border-t border-gray-200/60 pt-4">
-                                    <h3 className="text-sm font-semibold text-gray-900">Cliente</h3>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
                                             <AvatarImage 
@@ -2753,10 +2706,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 </div>
                             )}
 
-                            {/* Experto - Minimalista */}
+                            {/* Experto */}
                         {expertData && (
                                 <div className="space-y-2 border-t border-gray-200/60 pt-4">
-                                    <h3 className="text-sm font-semibold text-gray-900">Experto</h3>
                                     <div className="flex items-center gap-3">
                                             <Avatar className="h-9 w-9">
                                                 <AvatarImage 

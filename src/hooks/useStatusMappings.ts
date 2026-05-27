@@ -340,12 +340,12 @@ export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
     await loadAllData();
   };
 
-  // Auto-refresh cada 30 segundos para mantener datos actualizados
+  // Auto-refresh (pausado si la pestaña no está visible)
   useEffect(() => {
     const interval = setInterval(async () => {
-      console.log('🔄 Auto-refresh de datos de mapeos...');
+      if (document.hidden) return;
       await loadAllData();
-    }, 30000); // 30 segundos
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [page, pageSize]);

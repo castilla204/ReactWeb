@@ -86,7 +86,7 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
       id: 'transactions',
       label: 'Transacciones',
       icon: DollarSign,
-      onClick: () => handleNavigate('/transactions'),
+      onClick: () => handleNavigate('/transacciones'),
       show: true,
     },
     {

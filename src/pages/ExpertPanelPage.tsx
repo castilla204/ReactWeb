@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -32,6 +32,7 @@ import { RoleChecker, UserRole } from '../utils/roleChecker';
 import { getAuthToken } from '../lib/auth';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
+import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
@@ -122,6 +123,9 @@ export function ExpertPanelPage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    // ✅ Espejo síncrono de selectedImages para handlers con useCallback estable: permite
+    // leer el conteo más reciente sin recrear el callback ni depender del timing del updater.
+    const selectedImagesRef = useRef<File[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [formData, setFormData] = useState({
         categoryId: '',
@@ -152,6 +156,10 @@ export function ExpertPanelPage() {
     const [hiresPageSize, setHiresPageSize] = useState(20);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const formResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const showServiceFormRef = useRef(false);
+    const existingImagesCountRef = useRef(0);
+    const editingServiceRef = useRef<Service | null>(null);
 
     const {
         profile,
@@ -175,9 +183,15 @@ export function ExpertPanelPage() {
         expertProfileId: profile?.id
     });
 
-    const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(hiresPage, hiresPageSize);
+    const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(
+        hiresPage,
+        hiresPageSize,
+        { enabled: activeTab === 'hires' }
+    );
 
-    const { status: stripeStatus, loading: isLoadingStripeStatus } = useExpertStripeStatus();
+    const stripeHook = useExpertStripeStatus();
+    const { status: stripeStatus, loading: isLoadingStripeStatus, error: stripeStatusError, refetch: refetchStripeStatus } = stripeHook;
+    const { data: notificationUnreadCount = 0 } = useUnreadNotificationCount();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
@@ -214,7 +228,7 @@ export function ExpertPanelPage() {
             // Actualizar el perfil local
             if (profile) {
                 // Refrescar el perfil para obtener el estado actualizado
-                fetchProfile();
+                fetchProfile(true, { silent: true });
             }
             
             // Mostrar notificación de éxito
@@ -307,8 +321,35 @@ export function ExpertPanelPage() {
     }, [user?.role, profile, isLoadingProfile, profileError]);
 
     useEffect(() => {
+        selectedImagesRef.current = selectedImages;
         console.log('selectedImages changed:', selectedImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
     }, [selectedImages]);
+
+    useEffect(() => {
+        showServiceFormRef.current = showServiceForm;
+        if (showServiceForm) {
+            if (formResetTimeoutRef.current) {
+                clearTimeout(formResetTimeoutRef.current);
+                formResetTimeoutRef.current = null;
+            }
+        }
+    }, [showServiceForm]);
+
+    useEffect(() => {
+        existingImagesCountRef.current = existingImages.length;
+    }, [existingImages]);
+
+    useEffect(() => {
+        editingServiceRef.current = editingService;
+    }, [editingService]);
+
+    useEffect(() => {
+        return () => {
+            if (formResetTimeoutRef.current) {
+                clearTimeout(formResetTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         console.log('Hires data:', hires);
@@ -371,68 +412,18 @@ export function ExpertPanelPage() {
         return Object.keys(errors).length === 0;
     };
 
-    const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        console.log('Selected files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
-        if (files.length === 0) {
-            console.warn('No files selected in handleImageSelect');
-            setFormErrors(prev => ({ ...prev, images: 'No se seleccionaron archivos' }));
-            return;
-        }
-
-        // Limit total number of images
-        const maxImages = 10;
-        const currentImageCount = selectedImages.length;
-        const availableSlots = maxImages - currentImageCount;
-        
-        if (files.length > availableSlots) {
-            setFormErrors(prev => ({ ...prev, images: `Solo puedes subir ${availableSlots} imágenes más (máximo ${maxImages} total)` }));
-            return;
-        }
-
-        const validFiles = files.filter(file => {
-            console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
-            const isValidType = [
-                'image/jpeg',    // JPG files are reported as image/jpeg
-                'image/png', 
-                'image/webp', 
-                'image/gif', 
-                'image/bmp', 
-                'image/svg+xml'
-            ].includes(file.type);
-            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB - allows very high quality photos
-            
-            if (!isValidType) {
-                console.error(`Invalid file type: ${file.type} for file: ${file.name}`);
-                setFormErrors(prev => ({ ...prev, images: `Tipo de archivo no válido: ${file.type}. Solo se permiten JPG, PNG, WebP, GIF, BMP o SVG` }));
-            }
-            if (!isValidSize) {
-                setFormErrors(prev => ({ ...prev, images: 'Las imágenes no pueden superar los 10MB' }));
-            }
-            return isValidType && isValidSize;
-        });
-
-        if (validFiles.length === 0) {
-            console.warn('No valid files after filtering');
-            setFormErrors(prev => ({ ...prev, images: 'Ninguna imagen válida seleccionada' }));
-            return;
-        }
-
-        setSelectedImages(prev => {
-            const newImages = [...prev, ...validFiles];
-            console.log('Updated selectedImages:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
-            return newImages;
-        });
-        setFormErrors(prev => ({ ...prev, images: '' }));
-    }, []);
-
-    const removeImage = useCallback((index: number) => {
-        setSelectedImages(prev => {
-            const newImages = prev.filter((_, i) => i !== index);
-            console.log('Images after removal:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
-            return newImages;
-        });
-    }, []);
+    const isValidImageFile = (file: File) => {
+        const mimeOk = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+            'image/bmp',
+            'image/svg+xml',
+        ].includes(file.type);
+        const extOk = /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(file.name);
+        return mimeOk || (!file.type && extOk) || extOk;
+    };
 
     const resetForm = () => {
         setFormData({
@@ -453,6 +444,93 @@ export function ExpertPanelPage() {
         setFormErrors({});
         setEditingService(null);
     };
+
+    const scheduleFormReset = useCallback(() => {
+        if (formResetTimeoutRef.current) {
+            clearTimeout(formResetTimeoutRef.current);
+        }
+        formResetTimeoutRef.current = setTimeout(() => {
+            formResetTimeoutRef.current = null;
+            if (!showServiceFormRef.current) {
+                resetForm();
+            }
+        }, 600);
+    }, []);
+
+    const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputEl = e.target;
+        const files = Array.from(inputEl.files || []);
+        // ✅ Resetear el value del input para que volver a elegir el MISMO archivo dispare
+        // de nuevo el onChange. No afecta a las imágenes ya añadidas (viven en estado React).
+        inputEl.value = '';
+
+        console.log('Selected files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+        if (files.length === 0) {
+            return;
+        }
+
+        // Validación de tipo/tamaño (pura, no depende del estado actual).
+        let typeError = false;
+        let sizeError = false;
+        const validFiles = files.filter(file => {
+            console.log(`File: ${file.name}, Type: ${file.type}, Size: ${file.size}`);
+            const isValidType = isValidImageFile(file);
+            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB - allows very high quality photos
+
+            if (!isValidType) {
+                console.error(`Invalid file type: ${file.type} for file: ${file.name}`);
+                typeError = true;
+            }
+            if (!isValidSize) {
+                sizeError = true;
+            }
+            return isValidType && isValidSize;
+        });
+
+        if (validFiles.length === 0) {
+            console.warn('No valid files after filtering');
+            const message = typeError
+                ? 'Tipo de archivo no válido. Solo se permiten JPG, PNG, WebP, GIF, BMP o SVG'
+                : sizeError
+                    ? 'Las imágenes no pueden superar los 10MB'
+                    : 'Ninguna imagen válida seleccionada';
+            setFormErrors(prev => ({ ...prev, images: message }));
+            return;
+        }
+
+        // ✅ FIX (closure obsoleta): el límite de 10 imágenes se calcula con el conteo MÁS
+        // RECIENTE leído del ref síncrono (no de `selectedImages` capturada por useCallback([])),
+        // y el alta se hace con un updater funcional sobre `prev`. Ambos quedan siempre
+        // alineados con el estado actual.
+        const maxImages = 10;
+        const existingCount = editingServiceRef.current ? existingImagesCountRef.current : 0;
+        const availableSlots = Math.max(
+            0,
+            maxImages - selectedImagesRef.current.length - existingCount
+        );
+        const filesToAdd = validFiles.slice(0, availableSlots);
+        const truncated = filesToAdd.length < validFiles.length;
+
+        if (filesToAdd.length > 0) {
+            setSelectedImages(prev => {
+                const newImages = [...prev, ...filesToAdd];
+                console.log('Updated selectedImages:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+                return newImages;
+            });
+        }
+        setFormErrors(prev => ({
+            ...prev,
+            images: truncated ? `Sólo puedes subir un máximo de ${maxImages} imágenes` : '',
+        }));
+    }, []);
+
+    const removeImage = useCallback((index: number) => {
+        setSelectedImages(prev => {
+            const newImages = prev.filter((_, i) => i !== index);
+            console.log('Images after removal:', newImages.map(f => ({ name: f.name, size: f.size, type: f.type })));
+            return newImages;
+        });
+    }, []);
 
     const handleEditService = (service: Service) => {
         console.log('🔍 handleEditService called with service:', service);
@@ -635,11 +713,7 @@ export function ExpertPanelPage() {
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
-            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
-            setTimeout(() => {
-                resetForm();
-            }, 600);
+            scheduleFormReset();
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -723,11 +797,7 @@ export function ExpertPanelPage() {
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
             setShowServiceForm(false);
-            // Esperar a que la animación del Drawer termine completamente antes de resetear el estado
-            // Usar 600ms para asegurar que el Portal se desmonte completamente y evitar errores de removeChild
-            setTimeout(() => {
-                resetForm();
-            }, 600);
+            scheduleFormReset();
 
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
@@ -827,15 +897,7 @@ export function ExpertPanelPage() {
         if (hireId) {
             const hire = hires.find((h: Hire) => h.id === hireId);
             if (hire) {
-                // ✅ Usar searchHireId directamente - funciona aunque Search sea null
-                if (hire.searchId) {
-                    // Si hay searchId, usar la ruta normal con searchHireId como query param
-                    navigate(`/detalles/${hire.searchId}?searchHireId=${hireId}`);
-            } else {
-                    // Si no hay searchId (cliente eliminado), usar solo searchHireId
-                    // Necesitamos una ruta alternativa o usar searchId=0 con searchHireId
-                    navigate(`/detalles/0?searchHireId=${hireId}`);
-                }
+                navigate(`/searchhire/${hireId}`);
             } else {
                 console.error('Hire not found:', hireId);
                 window.dispatchEvent(new CustomEvent('showNotification', {
@@ -868,7 +930,7 @@ export function ExpertPanelPage() {
 
     useEffect(() => {
         services.forEach(service => {
-            if (!currentImageIndex[service.id]) {
+            if (currentImageIndex[service.id] === undefined) {
                 setCurrentImageIndex(prev => ({ ...prev, [service.id]: 0 }));
             }
         });
@@ -898,7 +960,7 @@ export function ExpertPanelPage() {
         );
     }
 
-    if (isLoadingProfile) {
+    if (isLoadingProfile && !profile) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -952,11 +1014,31 @@ export function ExpertPanelPage() {
     });
 
     // ✅ Mostrar spinner mientras se carga el estado de Stripe
-    if (isLoadingStripeStatus) {
+    if (isLoadingStripeStatus && stripeStatus === null) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
+        );
+    }
+
+    if (!isLoadingStripeStatus && stripeStatus === null) {
+        return (
+            <ErrorDisplay
+                message={stripeStatusError || 'No se pudo verificar el estado de tu cuenta de pagos. Comprueba tu conexión e inténtalo de nuevo.'}
+                onRetry={() => refetchStripeStatus()}
+                retryLabel="Reintentar"
+            />
+        );
+    }
+
+    if (!profile) {
+        return (
+            <ErrorDisplay
+                message="No se encontró tu perfil de experto. Si acabas de registrarte, espera unos segundos e inténtalo de nuevo."
+                onRetry={() => fetchProfile(true)}
+                retryLabel="Recargar perfil"
+            />
         );
     }
 
@@ -994,6 +1076,7 @@ export function ExpertPanelPage() {
 
                             <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
                             <StripeStatusCard
+                            stripe={stripeHook}
                             isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
                             onSetupStripe={async () => {
                                 console.log('ExpertPanelPage: onSetupStripe called');
@@ -1004,9 +1087,9 @@ export function ExpertPanelPage() {
                                     if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
                                         await restartAndStartOnboarding();
                                     } else {
-                                        // Para NotRequested, Pending (onboardingCompleted=false), y Deauthorized
-                                    await startOnboarding();
+                                        await startOnboarding();
                                     }
+                                    setIsStripeLoading(false);
                                 } catch (error: any) {
                                     setIsStripeLoading(false);
                                     console.error('Error starting Stripe onboarding:', error);
@@ -1022,6 +1105,7 @@ export function ExpertPanelPage() {
                                 setIsStripeLoading(true);
                                 try {
                                     await openAccountLink();
+                                    setIsStripeLoading(false);
                                 } catch (error) {
                                     setIsStripeLoading(false);
                                     console.error('Error opening account link:', error);
@@ -1209,7 +1293,7 @@ export function ExpertPanelPage() {
                                                 </div>
                                 <div className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent">
                                     <span className="text-sm">Contrataciones</span>
-                                    <Badge variant="secondary">{hires.length}</Badge>
+                                    <Badge variant="secondary">{hiresPagination?.totalCount ?? hires.length}</Badge>
                                         </div>
                                 <div className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent">
                                     <span className="text-sm">Activos</span>
@@ -1246,7 +1330,24 @@ export function ExpertPanelPage() {
                             <h1 className="text-lg font-semibold">
                                 {activeTab === 'services' ? 'Servicios' : activeTab === 'hires' ? 'Contrataciones' : 'Mensajes sin contratación'}
                             </h1>
-                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative"
+                            onClick={() => {
+                                const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
+                                if (open) open();
+                            }}
+                            aria-label="Notificaciones"
+                        >
+                            <Bell className="w-5 h-5" />
+                            {notificationUnreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                    {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                                </span>
+                            )}
+                        </Button>
                         <Button
                             variant="ghost"
                             size="sm"
@@ -1374,7 +1475,7 @@ export function ExpertPanelPage() {
                                         <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     </CardHeader>
                                     <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                                        <div className="text-lg sm:text-2xl font-bold">{hires.length}</div>
+                                        <div className="text-lg sm:text-2xl font-bold">{hiresPagination?.totalCount ?? hires.length}</div>
                                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
                                             Total de contrataciones recibidas
                                         </p>
@@ -1388,7 +1489,7 @@ export function ExpertPanelPage() {
                                     <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
                                         <div className="text-lg sm:text-2xl font-bold">{activeHires.length}</div>
                                         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                                            Contrataciones en curso
+                                            Activas en la página actual
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -1454,11 +1555,7 @@ export function ExpertPanelPage() {
                         showServiceForm={showServiceForm}
                         setShowServiceForm={(value) => {
                             if (!value) {
-                                // Esperar a que el drawer se cierre completamente antes de resetear
-                                // para evitar errores de removeChild cuando React intenta desmontar el Portal
-                                setTimeout(() => {
-                                    resetForm();
-                                }, 600);
+                                scheduleFormReset();
                             }
                             setShowServiceForm(value);
                         }}
@@ -1490,15 +1587,13 @@ export function ExpertPanelPage() {
                         <ProfileEditForm
                             showEditForm={showProfileEditForm}
                             setShowEditForm={(value) => {
-                                if (value) {
-                                    // ✅ CRÍTICO: Recargar el perfil cuando se abre el formulario para obtener datos actualizados
-                                    console.log('🔍 ExpertPanelPage: Opening profile edit form, refreshing profile...');
-                                    fetchProfile(true); // Forzar recarga sin usar cache
+                                if (value && !showProfileEditForm) {
+                                    fetchProfile(true, { silent: true });
                                 }
                                 setShowProfileEditForm(value);
                             }}
                             profile={profile as any}
-                            onProfileUpdated={fetchProfile}
+                            onProfileUpdated={() => fetchProfile(true, { silent: true })}
                         />
                     )}
             </div>
