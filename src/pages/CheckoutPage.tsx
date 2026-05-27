@@ -262,6 +262,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
     }
 
     const finalPrice = service.price || 0;
+    // 🔧 FIX D10: el precio del servicio es INCLUSIVO de IVA (igual que SearchForm.tsx y el cargo real de
+    // Stripe, que NO fija TaxBehavior en EUR -> inclusive). Total = precio; base = precio/1.21; IVA = total-base.
+    // Antes esta página mostraba finalPrice*1.21 (sobre-cotizaba 21% y contradecía el cargo real).
+    const finalTotal = finalPrice;
+    const finalBase = finalPrice / 1.21;
+    const finalTax = finalPrice - finalBase;
     const finalRating = service.averageRating || 0;
     const finalReviews = service.reviewsCount || 0;
     const finalImages = service.imageUrls || [];
@@ -383,26 +389,26 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
                                             <div className="flex items-baseline gap-1">
                                                 <span className="text-lg font-semibold text-gray-900" style={{ fontSize: '18px', lineHeight: '24px' }}>
-                                                    {formatPrice(finalPrice * 1.21)}&nbsp;€
+                                                    {formatPrice(finalTotal)}&nbsp;€
                                                 </span>
                                             </div>
                                         </div>
-                                        
-                                        {/* Desglose del precio */}
+
+                                        {/* Desglose del precio (IVA incluido) */}
                                         {showPriceDetails && (
                                             <div className="mt-3 space-y-2 pb-3">
                                                 <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                                    <span>Precio del servicio</span>
-                                                    <span>{formatPrice(finalPrice)}&nbsp;€</span>
+                                                    <span>Base imponible</span>
+                                                    <span>{formatPrice(finalBase)}&nbsp;€</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
                                                     <span>IVA (21%)</span>
-                                                    <span>{formatPrice(finalPrice * 0.21)}&nbsp;€</span>
+                                                    <span>{formatPrice(finalTax)}&nbsp;€</span>
                                                 </div>
                                                 <div className="h-px bg-gray-200 my-2"></div>
                                                 <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
                                                     <span>Total</span>
-                                                    <span>{formatPrice(finalPrice * 1.21)}&nbsp;€</span>
+                                                    <span>{formatPrice(finalTotal)}&nbsp;€</span>
                                                 </div>
                                             </div>
                                         )}
@@ -615,26 +621,26 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
                                 <div className="flex items-baseline gap-1">
                                     <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                                        {formatPrice(finalPrice * 1.21)} €
+                                        {formatPrice(finalTotal)} €
                                     </span>
                                 </div>
                             </div>
-                            
-                            {/* Desglose del precio móvil */}
+
+                            {/* Desglose del precio móvil (IVA incluido) */}
                             {showPriceDetails && (
                                 <div className="mt-3 space-y-2 pb-3">
                                     <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                        <span>Precio del servicio</span>
-                                        <span>{formatPrice(finalPrice)} €</span>
+                                        <span>Base imponible</span>
+                                        <span>{formatPrice(finalBase)} €</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
                                         <span>IVA (21%)</span>
-                                        <span>{formatPrice(finalPrice * 0.21)} €</span>
+                                        <span>{formatPrice(finalTax)} €</span>
                                     </div>
                                     <div className="h-px bg-gray-200 my-2"></div>
                                     <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
                                         <span>Total</span>
-                                        <span>{formatPrice(finalPrice * 1.21)} €</span>
+                                        <span>{formatPrice(finalTotal)} €</span>
                                     </div>
                                 </div>
                             )}

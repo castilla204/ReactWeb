@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { MapPin, FileText, Clock, AlertCircle, CalendarIcon, Globe } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { fromZonedTime } from 'date-fns-tz';
 import { ProposeAppointmentDto } from '../types/appointment';
 import AppointmentMap from './AppointmentMap';
 import {
@@ -145,7 +146,12 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     const newErrors: string[] = [];
     
     if (formData.proposedDate && formData.proposedTime) {
-      const appointmentDateTime = new Date(`${formData.proposedDate}T${formData.proposedTime}`);
+      // 🔧 FIX D12: validar las 24h con el huso del EXPERTO (no el del navegador). fromZonedTime interpreta
+      // "fecha+hora" en effectiveServiceTimezone y devuelve el epoch UTC correcto, igual que el backend.
+      // Fallback al navegador si no hay huso (no rompe el caso mismo-huso).
+      const appointmentDateTime = effectiveServiceTimezone
+        ? fromZonedTime(`${formData.proposedDate}T${formData.proposedTime}`, effectiveServiceTimezone)
+        : new Date(`${formData.proposedDate}T${formData.proposedTime}`);
       const now = new Date();
       const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       
@@ -247,7 +253,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   const validateDateTime = (date: string, time: string) => {
-    const appointmentDateTime = new Date(`${date}T${time}`);
+    // 🔧 FIX D12: validar las 24h con el huso del EXPERTO (no el del navegador). Fallback al navegador si no hay huso.
+    const appointmentDateTime = effectiveServiceTimezone
+      ? fromZonedTime(`${date}T${time}`, effectiveServiceTimezone)
+      : new Date(`${date}T${time}`);
     const now = new Date();
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     
