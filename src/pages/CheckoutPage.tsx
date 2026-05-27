@@ -262,12 +262,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
     }
 
     const finalPrice = service.price || 0;
-    // 🔧 FIX D10: el precio del servicio es INCLUSIVO de IVA (igual que SearchForm.tsx y el cargo real de
-    // Stripe, que NO fija TaxBehavior en EUR -> inclusive). Total = precio; base = precio/1.21; IVA = total-base.
-    // Antes esta página mostraba finalPrice*1.21 (sobre-cotizaba 21% y contradecía el cargo real).
+    // 🔧 FIX G2: el precio es INCLUSIVO de impuestos (lo que cobra Stripe). El TIPO de IVA depende del país de
+    // facturación del COMPRADOR, que Stripe Tax determina DENTRO del Checkout (tras pedir la dirección) — es
+    // DESCONOCIDO en esta página (pre-redirect). Antes mostrábamos un desglose con /1.21 (21% fijo) que es falso
+    // fuera de ES. Solución honesta: mostrar solo el TOTAL; el desglose base/IVA real va en la factura post-pago.
     const finalTotal = finalPrice;
-    const finalBase = finalPrice / 1.21;
-    const finalTax = finalPrice - finalBase;
     const finalRating = service.averageRating || 0;
     const finalReviews = service.reviewsCount || 0;
     const finalImages = service.imageUrls || [];
@@ -394,22 +393,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             </div>
                                         </div>
 
-                                        {/* Desglose del precio (IVA incluido) */}
+                                        {/* Desglose: impuestos incluidos. El TIPO de IVA depende del país del comprador
+                                            (lo calcula Stripe en el pago) → aquí no afirmamos un % concreto. */}
                                         {showPriceDetails && (
                                             <div className="mt-3 space-y-2 pb-3">
-                                                <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                                    <span>Base imponible</span>
-                                                    <span>{formatPrice(finalBase)}&nbsp;€</span>
-                                                </div>
-                                                <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                                    <span>IVA (21%)</span>
-                                                    <span>{formatPrice(finalTax)}&nbsp;€</span>
-                                                </div>
-                                                <div className="h-px bg-gray-200 my-2"></div>
                                                 <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
                                                     <span>Total</span>
                                                     <span>{formatPrice(finalTotal)}&nbsp;€</span>
                                                 </div>
+                                                <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
                                             </div>
                                         )}
                                         
@@ -626,22 +618,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 </div>
                             </div>
 
-                            {/* Desglose del precio móvil (IVA incluido) */}
+                            {/* Desglose móvil: impuestos incluidos, sin afirmar un % de IVA (depende del país del comprador). */}
                             {showPriceDetails && (
                                 <div className="mt-3 space-y-2 pb-3">
-                                    <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                        <span>Base imponible</span>
-                                        <span>{formatPrice(finalBase)} €</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm text-gray-700" style={{ fontSize: '14px', lineHeight: '18px' }}>
-                                        <span>IVA (21%)</span>
-                                        <span>{formatPrice(finalTax)} €</span>
-                                    </div>
-                                    <div className="h-px bg-gray-200 my-2"></div>
                                     <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
                                         <span>Total</span>
                                         <span>{formatPrice(finalTotal)} €</span>
                                     </div>
+                                    <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
                                 </div>
                             )}
                             
