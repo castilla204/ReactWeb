@@ -411,10 +411,23 @@ export function useServices({
                 // Crear un error personalizado con información adicional
                 const error = new Error(errorData.message || `Failed to create service: ${response.statusText}`) as any;
                 // Si es un error 400 con información de servicio existente (combinación categoría + tipo)
-                if (response.status === 400 && errorData.existingServiceId && errorData.categoryName && errorData.serviceTypeName) {
-                    error.existingServiceId = errorData.existingServiceId;
-                    error.categoryName = errorData.categoryName;
-                    error.serviceTypeName = errorData.serviceTypeName;
+                const categoryName =
+                    errorData.categoryName ||
+                    errorData.CategoryName ||
+                    errorData.parentCategoryName ||
+                    errorData.ParentCategoryName ||
+                    errorData.existingCategoryName ||
+                    errorData.ExistingCategoryName;
+                const serviceTypeName =
+                    errorData.serviceTypeName ||
+                    errorData.ServiceTypeName;
+                const existingServiceId =
+                    errorData.existingServiceId ??
+                    errorData.ExistingServiceId;
+                if (response.status === 400 && existingServiceId && categoryName && serviceTypeName) {
+                    error.existingServiceId = existingServiceId;
+                    error.categoryName = categoryName;
+                    error.serviceTypeName = serviceTypeName;
                     error.isDuplicateComboError = true;
                 }
                 throw error;

@@ -94,7 +94,7 @@ const HomePage: React.FC = () => {
           <WelcomePopup />
         </Suspense>
 
-        <div className="relative z-[1] bg-[#f5f5f5] shadow-[0_6px_20px_0_rgba(0,0,0,0.15)]">
+        <div className="relative bg-[#f5f5f5] shadow-[0_6px_20px_0_rgba(0,0,0,0.15)]">
           <motion.div variants={itemVariants} initial="hidden" animate="visible">
             <Suspense fallback={null}>
               <AirbnbSearchBar onSearch={handleSearch} />

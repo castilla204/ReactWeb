@@ -132,6 +132,7 @@ const DrawerContent = React.forwardRef<
           }
           contentRef.current = node;
         }}
+        translate="no"
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[16px] border-0 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]",
           "focus:outline-none",

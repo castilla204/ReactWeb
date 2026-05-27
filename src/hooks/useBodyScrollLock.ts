@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { isFilePickerActive, extendFilePickerGuardIfDrawerOpen } from '../utils/filePickerGuard';
 
 /**
  * Hook para manejar el bloqueo del scroll del body de forma segura
@@ -62,10 +63,14 @@ export function useBodyScrollSafety() {
     useEffect(() => {
         // Función para restaurar el body
         const restoreBody = () => {
-            // NO limpiar overlays - React los gestiona automáticamente
-            // Solo verificar si el body está bloqueado sin razón aparente
+            // No tocar el scroll mientras un drawer de formulario está abierto o el file picker del SO
+            if (document.body.dataset.drawerOpen) {
+                return;
+            }
+            if (isFilePickerActive()) {
+                return;
+            }
 
-            // Verificar si el body está bloqueado sin razón aparente
             const hasOpenModals = document.querySelectorAll(
                 '[role="dialog"][data-state="open"]:not([aria-hidden="true"]), ' +
                 '[data-vaul-drawer][data-state="open"]:not([aria-hidden="true"])'
@@ -124,6 +129,10 @@ export function useBodyScrollSafety() {
                               target.style.cursor === 'pointer' ||
                               window.getComputedStyle(target).cursor === 'pointer';
             
+            if (document.body.dataset.drawerOpen || isFilePickerActive()) {
+                return;
+            }
+
             if (isClickable) {
                 // Verificar si hay overlays invisibles bloqueando
                 const blockingOverlays = document.elementsFromPoint(e.clientX, e.clientY);
@@ -179,8 +188,20 @@ export function useBodyScrollSafety() {
         // Restaurar periódicamente (cada 2 segundos)
         const restoreInterval = setInterval(restoreBody, 2000);
 
-        // También restaurar cuando la página recibe foco
-        window.addEventListener('focus', restoreBody);
+        // Tras cerrar el diálogo nativo de archivos, esperar a que Vaul estabilice data-state
+        const handleWindowFocus = () => {
+            extendFilePickerGuardIfDrawerOpen();
+            if (document.body.dataset.drawerOpen || isFilePickerActive()) {
+                return;
+            }
+            setTimeout(() => {
+                if (document.body.dataset.drawerOpen || isFilePickerActive()) {
+                    return;
+                }
+                restoreBody();
+            }, 400);
+        };
+        window.addEventListener('focus', handleWindowFocus);
         
         // Detectar clicks bloqueados (con timeout más corto - 50ms)
         let clickTimeout: NodeJS.Timeout | null = null;
@@ -194,7 +215,7 @@ export function useBodyScrollSafety() {
         return () => {
             clearInterval(cleanupInterval);
             clearInterval(restoreInterval);
-            window.removeEventListener('focus', restoreBody);
+            window.removeEventListener('focus', handleWindowFocus);
             document.removeEventListener('click', clickHandler, true);
             if (clickTimeout) clearTimeout(clickTimeout);
             // Asegurar restauración final y limpieza

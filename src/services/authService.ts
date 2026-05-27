@@ -119,6 +119,14 @@ class AuthService {
 
         // Guardar también en el formato antiguo para compatibilidad
         localStorage.setItem('authToken', accessToken);
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+                new CustomEvent('auth:token-updated', {
+                    detail: accessToken,
+                })
+            );
+        }
     }
 
     getAccessToken(): string | null {
@@ -436,6 +444,14 @@ class AuthService {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+                new CustomEvent('auth:token-updated', {
+                    detail: null,
+                })
+            );
+        }
 
         if (this.refreshTimeout) {
             clearTimeout(this.refreshTimeout);

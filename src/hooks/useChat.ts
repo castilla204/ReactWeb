@@ -4,10 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { showToast } from '../lib/toast';
-import { getAuthToken } from '../lib/auth';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
+import { isAdmin } from '../utils/admin';
+import { getUserId, normalizeSenderId } from '../utils/userId';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import type { DBMessage, LegacyMessage, LegacyConversation, Deliverable } from '../types/chat.types';
+import type { DBMessage, LegacyMessage, LegacyConversation, Deliverable, PresenceState } from '../types/chat.types';
 
 interface Message {
     id: number;
@@ -37,20 +38,59 @@ interface Conversation {
     $ref?: string;
 }
 
+function readDeliverableUrls(item: unknown): string[] {
+    if (!item || typeof item !== 'object') return [];
+    const raw = item as Record<string, unknown>;
+    const urls = raw.DeliverableUrls ?? raw.deliverableUrls;
+    return Array.isArray(urls) ? (urls as string[]) : [];
+}
+
+function normalizeDeliverableFromApi(raw: unknown, fallbackSearchHireId: number): Deliverable {
+    const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+    return {
+        searchHireId: Number(o.SearchHireId ?? o.searchHireId ?? fallbackSearchHireId),
+        deliverableUrls: readDeliverableUrls(o),
+        createdAt: String(o.CreatedAt ?? o.createdAt ?? new Date().toISOString()),
+    };
+}
+
 export const useChat = (searchId: number | null = null, searchHireId?: number) => {
     const { user } = useAuth();
+    // El usuario puede venir con `id` o `Id` (backend). Normalizamos a número una vez.
+    const currentUserId = getUserId(user as { id?: number; Id?: number });
+    const userIsAdmin = isAdmin(
+        (user as { email?: string; Email?: string })?.email ??
+            (user as { Email?: string })?.Email
+    );
     const { fetchApi } = useApi();
     const queryClient = useQueryClient();
     const [newMessage, setNewMessage] = useState('');
     const [isConnected, setIsConnected] = useState(false);
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const [typingUserIds, setTypingUserIds] = useState<number[]>([]);
+    const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
+    const [lastSeenByUserId, setLastSeenByUserId] = useState<Record<number, string>>({});
     const channelRef = useRef<RealtimeChannel | null>(null);
+    const pendingChannelRef = useRef<RealtimeChannel | null>(null);
+    const isTearingDownRef = useRef(false);
     const failedMessageIds = useRef<Set<number>>(new Set());
+    const markedReadIdsRef = useRef<Set<number>>(new Set());
     const lastDeliverableFetch = useRef<number>(0);
     const lastSearchHireId = useRef<number | null>(null);
+    const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isConnectedRef = useRef(false);
+    const subscribedConversationIdRef = useRef<number | null>(null);
+    const typingClearTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+    const typingNotifyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastTypingSentRef = useRef(false);
+    const refetchConversationRef = useRef<() => void>(() => undefined);
+    const refetchDeliverablesRef = useRef<() => void>(() => undefined);
 
-    // Validate API_CONFIG.endpoints.chat.deliverable
     useEffect(() => {
-        console.log('[Supabase Chat] Validating API_CONFIG.endpoints.chat.deliverable:', API_CONFIG.endpoints.chat.deliverable);
+        isConnectedRef.current = isConnected;
+    }, [isConnected]);
+
+    useEffect(() => {
         if (!API_CONFIG.endpoints.chat.deliverable) {
             console.error('[Supabase Chat] API_CONFIG.endpoints.chat.deliverable is undefined');
             showToast('error', 'Error de configuración: Endpoint de entregables no definido. Contacta al soporte.', 5000);
@@ -71,19 +111,15 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 ? API_CONFIG.endpoints.chat.conversationBySearchHire(searchHireId!)
                 : `${API_CONFIG.endpoints.chat.conversation}?searchId=${searchId}`;
             
-            console.log(`[Supabase Chat] Fetching conversation for ${useSearchHireEndpoint ? 'searchHireId' : 'searchId'}:`, identifier);
-            console.log(`[Supabase Chat] Endpoint:`, endpoint);
             try {
-                // ✅ Obtener respuesta cruda (puede venir en PascalCase)
                 const rawResponse = await fetchApi<any>(endpoint);
-                console.log('[Supabase Chat] Fetched conversation (raw):', rawResponse);
                 
                 // ✅ Normalizar respuesta de PascalCase a camelCase
                 const messagesArray = rawResponse.Messages ?? rawResponse.messages ?? [];
                 const normalizedMessages = messagesArray.map((msg: any) => ({
                     id: msg.Id ?? msg.id,
                     conversationId: msg.ConversationId ?? msg.conversationId,
-                    senderId: msg.SenderId ?? msg.senderId,
+                    senderId: normalizeSenderId(msg.SenderId ?? msg.senderId),
                     content: msg.Content ?? msg.content ?? '',
                     sentAt: msg.SentAt ?? msg.sentAt,
                     isRead: msg.IsRead ?? msg.isRead ?? false,
@@ -109,10 +145,6 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     })),
                 };
                 
-                console.log('[Supabase Chat] Normalized conversation:', normalizedConversation);
-                console.log('[Supabase Chat] Conversation searchHireId:', normalizedConversation.searchHireId);
-                console.log('[Supabase Chat] Messages count:', normalizedConversation.messages.length);
-                
                 return normalizedConversation;
             } catch (err: any) {
                 console.error('[Supabase Chat] Fetch conversation error:', err.message, err.response || err);
@@ -124,13 +156,15 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         enabled: !!user && (!!searchHireId || !!searchId),
         retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401') && !err.message.includes('Search hire not found'),
+        refetchInterval: () => (isConnectedRef.current ? false : 5000),
     });
+
+    refetchConversationRef.current = refetch;
 
     // Fetch deliverables
     const { data: deliverables, refetch: refetchDeliverables, isLoading: deliverablesLoading, error: deliverablesError } = useQuery<Deliverable, Error>({
         queryKey: ['deliverables', conversation?.searchHireId],
         queryFn: async () => {
-            console.log('[Supabase Chat] Fetching deliverables for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
                 console.error('[Supabase Chat] SearchHireId not available for fetching deliverables');
                 throw new Error('SearchHireId not available');
@@ -140,31 +174,25 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 throw new Error('Deliverable endpoint not configured');
             }
             const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
-            console.log('[Supabase Chat] Deliverable endpoint:', deliverableEndpoint);
             try {
                 const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint);
-                console.log('[Supabase Chat] Raw API response for deliverables:', JSON.stringify(response));
                 
                 if (response.deliverables !== undefined) {
-                    console.log('[Supabase Chat] API returned deliverables array format:', response.deliverables);
+                    const list = Array.isArray(response.deliverables) ? response.deliverables : [];
                     return {
                         searchHireId: conversation!.searchHireId,
-                        deliverableUrls: Array.isArray(response.deliverables) ? 
-                            response.deliverables.map(d => d.deliverableUrls || []).flat() : [],
+                        deliverableUrls: list.flatMap((d) => readDeliverableUrls(d)),
                         createdAt: new Date().toISOString(),
                     };
                 }
-                
+
                 if (response.deliverable) {
-                    console.log('[Supabase Chat] API returned deliverable object format:', response.deliverable);
-                    return {
-                        searchHireId: response.deliverable.searchHireId,
-                        deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
-                        createdAt: response.deliverable.createdAt,
-                    };
+                    return normalizeDeliverableFromApi(
+                        response.deliverable,
+                        conversation!.searchHireId
+                    );
                 }
                 
-                console.log('[Supabase Chat] Unexpected API response format, returning empty deliverables');
                 return {
                     searchHireId: conversation!.searchHireId,
                     deliverableUrls: [],
@@ -173,7 +201,6 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             } catch (err: any) {
                 console.error('[Supabase Chat] Error fetching deliverables:', err.message, err.response || err);
                 if (err.response?.status === 404) {
-                    console.log('[Supabase Chat] No deliverables found (404), returning empty array');
                     return { 
                         searchHireId: conversation!.searchHireId, 
                         deliverableUrls: [], 
@@ -185,7 +212,6 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         enabled: !!conversation?.searchHireId && !!API_CONFIG.endpoints.chat.deliverable,
         retry: (failureCount, err) => {
-            console.log(`[Supabase Chat] Deliverables query retry attempt ${failureCount}, error:`, err.message);
             const noRetryConditions = [
                 '401',
                 'SearchHireId not available',
@@ -199,6 +225,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         gcTime: 5 * 60 * 1000,
     });
 
+    refetchDeliverablesRef.current = refetchDeliverables;
+
     // ==========================================
     // 🔄 SUPABASE REALTIME CONNECTION
     // ==========================================
@@ -206,20 +234,10 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     // Convertir mensaje de DB a formato de la aplicación
     const convertDbMessageToMessage = useCallback((dbMessage: any): Message => {
         // ✅ Normalizar senderId de PascalCase a camelCase
-        const senderId = dbMessage.SenderId ?? dbMessage.senderId ?? null;
-        
-        console.log('[useChat] Converting DB message to Message:', {
-            rawSenderId: dbMessage.SenderId ?? dbMessage.senderId,
-            normalizedSenderId: senderId,
-            userId: user?.id,
-            messageId: dbMessage.Id ?? dbMessage.id,
-            hasContent: !!dbMessage.Content || !!dbMessage.content
-        });
-        
         return {
             id: dbMessage.Id ?? dbMessage.id,
             conversationId: dbMessage.ConversationId ?? dbMessage.conversationId,
-            senderId: senderId,
+            senderId: normalizeSenderId(dbMessage.SenderId ?? dbMessage.senderId),
             content: dbMessage.Content ?? dbMessage.content ?? '',
             sentAt: dbMessage.SentAt ?? dbMessage.sentAt,
             isRead: dbMessage.IsRead ?? dbMessage.isRead ?? false,
@@ -228,128 +246,330 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             locationLongitude: dbMessage.LocationLongitude ?? dbMessage.locationLongitude ?? null,
             attachmentUrls: dbMessage.AttachmentUrls ?? dbMessage.attachmentUrls ?? []
         };
-    }, [user?.id]);
+    }, []);
 
-    // Conectar a Supabase Realtime
-    const connectSupabase = useCallback(async () => {
-        if (!user || !conversation?.id) {
-            console.log('[Supabase Chat] Skipping Supabase connection:', {
-                userExists: !!user,
-                conversationId: conversation?.id,
+    const patchConversationCache = useCallback(
+        (updater: (prev: Conversation) => Conversation) => {
+            const keys: (string | number | undefined)[][] = [];
+            if (useSearchHireEndpoint && searchHireId) {
+                keys.push(['conversation', 'searchHire', searchHireId]);
+            }
+            if (searchId) {
+                keys.push(['conversation', searchId]);
+            }
+            keys.forEach((queryKey) => {
+                queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
+                    if (!prev) return prev;
+                    return updater(prev);
+                });
             });
-            return;
-        }
+        },
+        [queryClient, searchHireId, searchId, useSearchHireEndpoint]
+    );
 
-        // Limpiar conexión anterior si existe
-        if (channelRef.current) {
-            console.log('[Supabase Chat] Removing existing channel');
-            await supabase.removeChannel(channelRef.current);
-            channelRef.current = null;
-        }
+    const scrollChatToBottom = useCallback(() => {
+        requestAnimationFrame(() => {
+            const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement | null;
+            if (chatContainer) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+    }, []);
 
-        const channelName = `conversation:${conversation.id}`;
-        console.log(`📡 [Supabase Chat] Conectando al canal ${channelName}`);
-
-        const applyMessageToCache = (messageData: any, mode: 'add' | 'update') => {
+    const applyMessageToCache = useCallback(
+        (messageData: any, mode: 'add' | 'update') => {
+            if (!conversation?.id) return;
             const msgConversationId = messageData.ConversationId ?? messageData.conversationId;
-            if (msgConversationId !== conversation.id) return;
+            if (msgConversationId != null && msgConversationId !== conversation.id) return;
 
             const normalizedMsg = convertDbMessageToMessage(messageData);
 
-            const updateQueryData = (queryKey: (string | number | undefined)[]) => {
-                queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
-                    if (!prev) {
-                        return conversation ? { ...conversation, messages: [normalizedMsg] } : undefined;
-                    }
-                    if (mode === 'add') {
-                        if (prev.messages.some((m) => m.id === normalizedMsg.id)) return prev;
-                        return {
-                            ...prev,
-                            messages: [...prev.messages, normalizedMsg].sort(
-                                (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-                            ),
-                        };
-                    }
+            patchConversationCache((prev) => {
+                if (mode === 'add') {
+                    if (prev.messages.some((m) => m.id === normalizedMsg.id)) return prev;
                     return {
                         ...prev,
-                        messages: prev.messages.map((msg) =>
-                            msg.id === normalizedMsg.id ? { ...msg, ...normalizedMsg } : msg
+                        messages: [...prev.messages, normalizedMsg].sort(
+                            (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
                         ),
                     };
-                });
-            };
-
-            if (useSearchHireEndpoint && searchHireId) {
-                updateQueryData(['conversation', 'searchHire', searchHireId]);
-            }
-            if (searchId) {
-                updateQueryData(['conversation', searchId]);
-            }
-
-            if (mode === 'add') {
-                setTimeout(() => {
-                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                    if (chatContainer) {
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-                    }
-                }, 100);
-            }
-        };
-
-        const channel = supabase
-            .channel(channelName)
-            .on(
-                'broadcast',
-                { event: 'new_message' },
-                ({ payload }) => {
-                    console.log('📩 [Supabase Chat] Mensaje recibido vía broadcast:', payload);
-                    applyMessageToCache(payload, 'add');
                 }
-            )
-            .on(
-                'broadcast',
-                { event: 'message_updated' },
-                ({ payload }) => {
-                    console.log('✏️ [Supabase Chat] Mensaje actualizado vía broadcast:', payload);
-                    applyMessageToCache(payload, 'update');
-                }
-            )
-            .subscribe((status) => {
-                console.log(`📡 [Supabase Chat] Estado de suscripción: ${status}`);
-                if (status === 'SUBSCRIBED') {
-                    setIsConnected(true);
-                    console.log('✅ [Supabase Chat] Conectado exitosamente');
-                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    setIsConnected(false);
-                    console.error('❌ [Supabase Chat] Error de conexión');
-                    // Reintentar conexión después de 3 segundos
-                    setTimeout(() => {
-                        if (!channelRef.current || channelRef.current.state !== 'joined') {
-                            connectSupabase();
-                        }
-                    }, 3000);
-                }
+                return {
+                    ...prev,
+                    messages: prev.messages.map((msg) =>
+                        msg.id === normalizedMsg.id ? { ...msg, ...normalizedMsg } : msg
+                    ),
+                };
             });
 
-        channelRef.current = channel;
-    }, [user?.id, conversation?.id, searchId, searchHireId, queryClient, convertDbMessageToMessage, useSearchHireEndpoint]);
+            if (mode === 'add') {
+                scrollChatToBottom();
+            }
+        },
+        [conversation?.id, convertDbMessageToMessage, patchConversationCache, scrollChatToBottom]
+    );
 
-    // Efecto para conectar a Supabase cuando hay conversación
+    const applyMessageReadToCache = useCallback(
+        (payload: { messageId?: number; MessageId?: number; conversationId?: number; ConversationId?: number }) => {
+            const messageId = payload.messageId ?? payload.MessageId;
+            const convId = payload.conversationId ?? payload.ConversationId;
+            if (!messageId || (convId != null && conversation?.id != null && convId !== conversation.id)) {
+                return;
+            }
+            patchConversationCache((prev) => ({
+                ...prev,
+                messages: prev.messages.map((msg) =>
+                    msg.id === messageId ? { ...msg, isRead: true } : msg
+                ),
+            }));
+        },
+        [conversation?.id, patchConversationCache]
+    );
+
+    const applyMessageToCacheRef = useRef(applyMessageToCache);
+    applyMessageToCacheRef.current = applyMessageToCache;
+    const applyMessageReadToCacheRef = useRef(applyMessageReadToCache);
+    applyMessageReadToCacheRef.current = applyMessageReadToCache;
+
+    // Realtime: broadcast con anon key del proyecto Supabase activo (sin JWT .NET)
     useEffect(() => {
-        if (conversation?.id && user?.id) {
-            console.log('[Supabase Chat] Initiating Supabase connection for conversation:', conversation.id);
-            connectSupabase();
+        const conversationId = conversation?.id;
+        if (!conversationId || currentUserId <= 0) {
+            return;
         }
 
-        return () => {
-            if (channelRef.current) {
-                console.log('[Supabase Chat] Cleaning up Supabase connection');
-                supabase.removeChannel(channelRef.current);
-                channelRef.current = null;
-                setIsConnected(false);
+        let cancelled = false;
+        let retryCount = 0;
+        const maxRetries = 8;
+        const client = getSupabaseClient();
+        const channelName = `conversation:${conversationId}`;
+
+        const teardownChannel = async (ch: RealtimeChannel | null) => {
+            if (!ch) return;
+            isTearingDownRef.current = true;
+            try {
+                await client.removeChannel(ch);
+            } finally {
+                isTearingDownRef.current = false;
             }
         };
-    }, [conversation?.id, user?.id, connectSupabase]);
+
+        const scheduleRetry = () => {
+            if (cancelled || retryCount >= maxRetries) {
+                setIsReconnecting(false);
+                return;
+            }
+            retryCount += 1;
+            setIsReconnecting(true);
+            const delay = Math.min(2000 * retryCount, 15000);
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+            }
+            retryTimeoutRef.current = setTimeout(() => {
+                if (!cancelled) {
+                    void subscribe();
+                }
+            }, delay);
+        };
+
+        const subscribe = async () => {
+            if (cancelled) return;
+
+            const existing = pendingChannelRef.current ?? channelRef.current;
+            await teardownChannel(existing);
+            pendingChannelRef.current = null;
+            channelRef.current = null;
+            subscribedConversationIdRef.current = null;
+
+            const syncPresenceFromChannel = (ch: RealtimeChannel) => {
+                const state = ch.presenceState();
+                const users: number[] = [];
+                Object.values(state).forEach((presences) => {
+                    (presences as PresenceState[]).forEach((presence) => {
+                        const uid = Number(presence.user_id);
+                        if (uid > 0 && !users.includes(uid)) {
+                            users.push(uid);
+                        }
+                    });
+                });
+                setOnlineUserIds(users);
+            };
+
+            const channel = client
+                .channel(channelName, {
+                    config: { presence: { key: String(currentUserId) } },
+                })
+                .on('presence', { event: 'sync' }, () => {
+                    syncPresenceFromChannel(channel);
+                })
+                .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+                    (leftPresences as PresenceState[]).forEach((presence) => {
+                        const uid = Number(presence.user_id);
+                        if (!uid || uid === currentUserId) return;
+                        setLastSeenByUserId((prev) => ({
+                            ...prev,
+                            [uid]: new Date().toISOString(),
+                        }));
+                        setOnlineUserIds((prev) => prev.filter((id) => Number(id) !== uid));
+                    });
+                })
+                .on('broadcast', { event: 'new_message' }, ({ payload }) => {
+                    applyMessageToCacheRef.current(payload, 'add');
+                })
+                .on('broadcast', { event: 'message_read' }, ({ payload }) => {
+                    applyMessageReadToCacheRef.current(
+                        payload as { messageId?: number; MessageId?: number }
+                    );
+                })
+                .on('broadcast', { event: 'message_updated' }, ({ payload }) => {
+                    applyMessageToCacheRef.current(payload, 'update');
+                })
+                .on('broadcast', { event: 'deliverable_uploaded' }, () => {
+                    void refetchDeliverablesRef.current();
+                })
+                .on('broadcast', { event: 'typing' }, ({ payload }) => {
+                    const p = payload as {
+                        userId?: number | string;
+                        UserId?: number | string;
+                        isTyping?: boolean;
+                        IsTyping?: boolean;
+                    };
+                    const typingUserId = Number(p.userId ?? p.UserId ?? 0);
+                    const isTyping = p.isTyping ?? p.IsTyping ?? false;
+                    if (!typingUserId || typingUserId === currentUserId) return;
+
+                    const existingTimeout = typingClearTimeoutsRef.current.get(typingUserId);
+                    if (existingTimeout) clearTimeout(existingTimeout);
+
+                    if (isTyping) {
+                        setTypingUserIds((prev) =>
+                            prev.some((id) => Number(id) === typingUserId)
+                                ? prev
+                                : [...prev, typingUserId]
+                        );
+                        const timeout = setTimeout(() => {
+                            setTypingUserIds((prev) =>
+                                prev.filter((id) => Number(id) !== typingUserId)
+                            );
+                            typingClearTimeoutsRef.current.delete(typingUserId);
+                        }, 4000);
+                        typingClearTimeoutsRef.current.set(typingUserId, timeout);
+                    } else {
+                        setTypingUserIds((prev) =>
+                            prev.filter((id) => Number(id) !== typingUserId)
+                        );
+                    }
+                })
+                .subscribe(async (status) => {
+                    if (cancelled) return;
+
+                    if (status === 'SUBSCRIBED') {
+                        setIsConnected(true);
+                        setIsReconnecting(false);
+                        retryCount = 0;
+                        channelRef.current = channel;
+                        pendingChannelRef.current = null;
+                        subscribedConversationIdRef.current = conversationId;
+                        try {
+                            await channel.track({
+                                user_id: currentUserId,
+                                online_at: new Date().toISOString(),
+                            });
+                            syncPresenceFromChannel(channel);
+                        } catch (e) {
+                            console.error('[Supabase Chat] Error registrando presencia:', e);
+                        }
+                        void refetchConversationRef.current();
+                    } else if (
+                        (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') &&
+                        !isTearingDownRef.current
+                    ) {
+                        console.error(`[Supabase Chat] ${channelName} → ${status}`);
+                        setIsConnected(false);
+                        channelRef.current = null;
+                        pendingChannelRef.current = null;
+                        subscribedConversationIdRef.current = null;
+                        scheduleRetry();
+                    } else if (status === 'CLOSED' && !cancelled && !isTearingDownRef.current) {
+                        setIsConnected(false);
+                        isConnectedRef.current = false;
+                        scheduleRetry();
+                    }
+                });
+
+            pendingChannelRef.current = channel;
+        };
+
+        void subscribe();
+
+        return () => {
+            cancelled = true;
+            subscribedConversationIdRef.current = null;
+
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+                retryTimeoutRef.current = null;
+            }
+
+            typingClearTimeoutsRef.current.forEach((t) => clearTimeout(t));
+            typingClearTimeoutsRef.current.clear();
+
+            const ch = pendingChannelRef.current ?? channelRef.current;
+            pendingChannelRef.current = null;
+            channelRef.current = null;
+            if (ch) {
+                void ch.untrack().finally(() => teardownChannel(ch));
+            }
+            setIsConnected(false);
+            setIsReconnecting(false);
+            setTypingUserIds([]);
+            setOnlineUserIds([]);
+        };
+    }, [conversation?.id, currentUserId]);
+
+    const notifyTyping = useCallback(
+        (isTyping: boolean) => {
+            if (!conversation?.id) return;
+
+            if (typingNotifyTimeoutRef.current) {
+                clearTimeout(typingNotifyTimeoutRef.current);
+                typingNotifyTimeoutRef.current = null;
+            }
+
+            const send = () => {
+                fetchApi<void>(API_CONFIG.endpoints.chat.typing, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conversationId: conversation.id,
+                        isTyping,
+                    }),
+                }).catch(() => undefined);
+            };
+
+            if (isTyping) {
+                if (!lastTypingSentRef.current) {
+                    lastTypingSentRef.current = true;
+                    send();
+                }
+                typingNotifyTimeoutRef.current = setTimeout(() => {
+                    lastTypingSentRef.current = false;
+                    fetchApi<void>(API_CONFIG.endpoints.chat.typing, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            conversationId: conversation.id,
+                            isTyping: false,
+                        }),
+                    }).catch(() => undefined);
+                }, 2000);
+            } else if (lastTypingSentRef.current) {
+                lastTypingSentRef.current = false;
+                send();
+            }
+        },
+        [conversation?.id, fetchApi]
+    );
 
     // ==========================================
     // MUTATIONS
@@ -388,18 +608,12 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             safeFiles.forEach((file) => {
                 formData.append('Attachments', file, file.name);
             });
-            const formDataEntries: { [key: string]: any } = {};
-            formData.forEach((value, key) => {
-                formDataEntries[key] = value instanceof File ? { name: value.name, type: value.type, size: value.size } : value;
-            });
-            console.log('[Supabase Chat] Sending message with FormData:', formDataEntries);
             try {
                 const rawResponse = await fetchApi<any>(API_CONFIG.endpoints.chat.message, {
                     method: 'POST',
                     body: formData,
                 });
-                console.log('[Supabase Chat] Message sent, raw response:', rawResponse);
-                
+
                 // ✅ Normalizar respuesta de PascalCase a camelCase
                 const normalizedMessage: Message = {
                     id: rawResponse.Id ?? rawResponse.id,
@@ -413,15 +627,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     locationLongitude: rawResponse.LocationLongitude ?? rawResponse.locationLongitude ?? null,
                     attachmentUrls: rawResponse.AttachmentUrls ?? rawResponse.attachmentUrls ?? []
                 };
-                
-                console.log('[Supabase Chat] Normalized message:', normalizedMessage);
-                console.log('[Supabase Chat] Message senderId check:', {
-                    rawSenderId: rawResponse.SenderId ?? rawResponse.senderId,
-                    normalizedSenderId: normalizedMessage.senderId,
-                    userId: user?.id,
-                    match: String(normalizedMessage.senderId) === String(user?.id)
-                });
-                
+
                 return { ...normalizedMessage, conversation: undefined };
             } catch (err: any) {
                 console.error('[Supabase Chat] Message send error:', err.message, err.response || err);
@@ -435,14 +641,11 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             }
         },
         onSuccess: (message) => {
-            console.log('[Supabase Chat] Message sent successfully:', message);
-            
             // El mensaje llegará por Supabase Realtime, pero lo agregamos inmediatamente
             // para mejor UX (optimistic update)
             const updateQueryData = (queryKey: any[]) => {
                 queryClient.setQueryData(queryKey, (prev: Conversation | undefined) => {
                     if (!prev && conversation) {
-                        console.log('[Supabase Chat] No previous conversation, using current conversation');
                         return { ...conversation, messages: [message] };
                     }
                     if (!prev) {
@@ -472,13 +675,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             setNewMessage('');
             showToast('success', 'Mensaje enviado con éxito.', 3000);
             
-            // Scroll al final
-            setTimeout(() => {
-                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-            }, 100);
+            scrollChatToBottom();
         },
         onError: (error: any, variables, context) => {
             console.error('[Supabase Chat] Failed to send message:', error.message, error, { variables, context });
@@ -491,7 +688,6 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
     const uploadDeliverableMutation = useMutation({
         mutationFn: async (files: File[]) => {
-            console.log('[Supabase Chat] Initiating deliverable upload for searchHireId:', conversation?.searchHireId);
             if (!conversation?.searchHireId) {
                 console.error('[Supabase Chat] Cannot upload deliverable: searchHireId not available', { conversation });
                 throw new Error('SearchHireId not available');
@@ -510,31 +706,27 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 formData.append('Files', file, file.name);
             });
             const deliverableEndpoint = API_CONFIG.endpoints.chat.deliverable(conversation.searchHireId);
-            console.log(`[Supabase Chat] Uploading deliverable to: ${deliverableEndpoint}`);
             try {
                 const response = await fetchApi<{ message: string; deliverable?: Deliverable; deliverables?: any[] }>(deliverableEndpoint, {
                     method: 'POST',
                     body: formData,
                 });
-                console.log('[Supabase Chat] Deliverable uploaded, response:', response);
-                
                 if (response.deliverable) {
-                    return {
-                        searchHireId: response.deliverable.searchHireId,
-                        deliverableUrls: Array.isArray(response.deliverable.deliverableUrls) ? response.deliverable.deliverableUrls : [],
-                        createdAt: response.deliverable.createdAt,
-                    };
+                    return normalizeDeliverableFromApi(
+                        response.deliverable,
+                        conversation!.searchHireId
+                    );
                 }
-                
+
                 if (response.deliverables !== undefined) {
+                    const list = Array.isArray(response.deliverables) ? response.deliverables : [];
                     return {
                         searchHireId: conversation!.searchHireId,
-                        deliverableUrls: Array.isArray(response.deliverables) ? 
-                            response.deliverables.map(d => d.deliverableUrls || []).flat() : [],
+                        deliverableUrls: list.flatMap((d) => readDeliverableUrls(d)),
                         createdAt: new Date().toISOString(),
                     };
                 }
-                
+
                 throw new Error('Unexpected response format from upload');
             } catch (err: any) {
                 console.error('[Supabase Chat] Deliverable upload error:', err.message, err.response || err);
@@ -548,7 +740,6 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             }
         },
         onSuccess: (deliverable) => {
-            console.log('[Supabase Chat] Deliverable uploaded successfully:', deliverable);
             queryClient.invalidateQueries({ queryKey: ['deliverables', conversation?.searchHireId] });
             queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
             queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
@@ -574,27 +765,17 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 method: 'PUT',
             }),
         onSuccess: (_, messageId) => {
-            console.log('[Supabase Chat] ✅ Successfully marked message as read:', messageId);
-            const conversationQueryKey = useSearchHireEndpoint 
-                ? ['conversation', 'searchHire', searchHireId]
-                : ['conversation', searchId];
-            queryClient.setQueryData(conversationQueryKey, (prev: Conversation | undefined) => {
-                if (!prev) return prev;
-                const message = prev.messages.find(m => m.id === messageId);
-                if (message && message.isRead) {
-                    return prev;
-                }
-                return {
-                    ...prev,
-                    messages: prev.messages.map((msg) =>
-                        msg.id === messageId ? { ...msg, isRead: true } : msg
-                    ),
-                };
-            });
+            patchConversationCache((prev) => ({
+                ...prev,
+                messages: prev.messages.map((msg) =>
+                    msg.id === messageId ? { ...msg, isRead: true } : msg
+                ),
+            }));
             failedMessageIds.current.delete(messageId);
         },
         onError: (error: any, messageId) => {
             console.error('[Supabase Chat] Failed to mark message as read:', error.message, { messageId });
+            markedReadIdsRef.current.delete(messageId);
             failedMessageIds.current.add(messageId);
             showToast('error', 'No se pudo marcar algunos mensajes como leídos. Por favor, intenta de nuevo más tarde.', 5000);
         },
@@ -603,8 +784,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     // ✅ Limpiar mensajes fallidos cuando cambia la conversación
     useEffect(() => {
         if (conversation?.id) {
-            console.log('[Supabase Chat] Conversation changed, clearing failed message IDs');
             failedMessageIds.current.clear();
+            markedReadIdsRef.current.clear();
         }
     }, [conversation?.id]);
 
@@ -613,47 +794,35 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         ?.filter(
             (msg) => 
                 !msg.isRead && 
-                msg.senderId !== user?.id && 
+                normalizeSenderId(msg.senderId) !== currentUserId && 
                 !failedMessageIds.current.has(msg.id)
         )
         .map(msg => msg.id) || [];
 
+    const unreadKey = unreadMessageIds.join(',');
+
     useEffect(() => {
-        if (unreadMessageIds.length > 0) {
-            console.log('[Supabase Chat] Marking unread messages:', unreadMessageIds);
-            unreadMessageIds.forEach((messageId) => {
-                markAsReadMutation.mutate(messageId);
-            });
-        }
-    }, [unreadMessageIds.length]);
+        if (!unreadKey || userIsAdmin) return;
+        unreadMessageIds.forEach((messageId) => {
+            if (markedReadIdsRef.current.has(messageId)) return;
+            markedReadIdsRef.current.add(messageId);
+            markAsReadMutation.mutate(messageId);
+        });
+    }, [unreadKey, userIsAdmin]);
 
     // Refetch deliverables when searchHireId changes
     useEffect(() => {
         if (conversation?.searchHireId && lastSearchHireId.current !== conversation.searchHireId) {
-            console.log('[Supabase Chat] searchHireId changed, refetching deliverables');
             lastSearchHireId.current = conversation.searchHireId;
             lastDeliverableFetch.current = Date.now();
         }
     }, [conversation?.searchHireId]);
 
-    // Debug deliverables cache
-    useEffect(() => {
-        console.log('[Supabase Chat] Current deliverables cache state:', {
-            deliverables,
-            searchHireId: conversation?.searchHireId,
-            deliverableUrls: deliverables?.deliverableUrls,
-            isLoading: deliverablesLoading,
-            error: deliverablesError?.message,
-        });
-    }, [deliverables, deliverablesLoading, deliverablesError, conversation?.searchHireId]);
-
-    const memoizedRefetchDeliverables = useCallback(() => {
-        console.log('[Supabase Chat] Manual refetch of deliverables requested');
-        return refetchDeliverables();
-    }, [refetchDeliverables]);
+    const memoizedRefetchDeliverables = useCallback(() => refetchDeliverables(), [refetchDeliverables]);
 
     return {
         conversation,
+        conversationLoading: loading,
         loading: loading || deliverablesLoading,
         error: error?.message || deliverablesError?.message || null,
         newMessage,
@@ -670,7 +839,12 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         uploadDeliverable: uploadDeliverableMutation.mutate,
         refetchDeliverables: memoizedRefetchDeliverables,
         isUploadingDeliverable: uploadDeliverableMutation.isPending,
-        // ✅ Nuevo: Estado de conexión Supabase
         isConnected,
+        isReconnecting,
+        typingUserIds,
+        onlineUserIds,
+        lastSeenByUserId,
+        notifyTyping,
+        refetchConversation: refetch,
     };
 };

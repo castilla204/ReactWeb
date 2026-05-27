@@ -3,7 +3,7 @@ import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell,
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { NotificationCenter } from './components/NotificationCenter';
-import { useNotifications } from './hooks/useNotifications';
+import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
 // import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -160,6 +160,11 @@ const AppContent: React.FC = () => {
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
     const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
+    const hideGlobalHeaderPaths = isHomePage
+        || location.pathname === '/expert-panel'
+        || location.pathname === '/become-expert'
+        || location.pathname.startsWith('/complete-onboarding')
+        || location.pathname.startsWith('/refresh-onboarding');
     const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
     const [isInFormStep, setIsInFormStep] = useState(false);
     
@@ -190,7 +195,7 @@ const AppContent: React.FC = () => {
     const shouldHideHeaderOnMobile = isSearchCreationPage && isInFormStep;
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const { unreadCount } = useNotifications();
+    const { data: unreadCount = 0 } = useUnreadNotificationCount();
 
     // Listen for notification events
     useEffect(() => {
@@ -225,6 +230,10 @@ const AppContent: React.FC = () => {
             console.log('✅ App.tsx - AccountSettingsModal abierto');
         };
 
+        (window as any).openNotificationCenter = () => {
+            setShowNotifications(true);
+        };
+
         // También mantener el listener de eventos por si acaso
         const handleOpenSidebar = (event: Event) => {
             setSidebarOpen(true);
@@ -242,6 +251,7 @@ const AppContent: React.FC = () => {
             window.removeEventListener('openAccountSettings', handleOpenAccountSettings);
             delete (window as any).openSidebar;
             delete (window as any).openAccountSettings;
+            delete (window as any).openNotificationCenter;
         };
     }, []);
 
@@ -263,7 +273,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
             {/* Header estilo Memorae - Oculto en móvil */}
-            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || isHomePage ? '!hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
+            <header className={`h-16 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? '!hidden' : ''}`} style={{ backgroundColor: '#fbfbfb' }}>
                     <div className="max-w-7xl mx-auto h-full px-4 lg:px-8 flex items-center justify-between">
                         {/* Logo estilo Memorae */}
                         <div className="flex items-center gap-3">
@@ -319,16 +329,19 @@ const AppContent: React.FC = () => {
                                 variant="ghost"
                                 className="text-sm font-medium text-gray-700 hover:text-gray-900 h-auto px-0 py-0"
                                 onClick={() => {
-                                    // TODO: Implementar funcionalidad de favoritos
                                     if (isAuthenticated) {
-                                        // Por ahora mantener notificaciones, pero cambiar a favoritos cuando esté implementado
                                         setShowNotifications(true);
                                     } else {
-                                        handleRequireAuth('Ver tus favoritos');
+                                        handleRequireAuth('Ver notificaciones');
                                     }
                                 }}
                             >
-                                Favoritos
+                                Notificaciones
+                                {unreadCount > 0 && (
+                                    <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </span>
+                                )}
                             </Button>
                             <button
                                 onClick={() => navigate('/como-funciona')}
@@ -372,6 +385,23 @@ const AppContent: React.FC = () => {
                                 <Globe className="w-5 h-5 text-gray-700" />
                             </Button>
 
+                            {isAuthenticated && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="hidden md:flex h-10 w-10 rounded-full hover:bg-gray-100 relative"
+                                    onClick={() => setShowNotifications(true)}
+                                    aria-label="Notificaciones"
+                                >
+                                    <Bell className="w-5 h-5 text-gray-700" />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        </span>
+                                    )}
+                                </Button>
+                            )}
+
                             {isAuthenticated ? (
                                 <>
                                     <Button
@@ -403,6 +433,15 @@ const AppContent: React.FC = () => {
                                                 </div>
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator />
+                                            {isExpert && (
+                                            <DropdownMenuItem
+                                                onClick={() => navigate('/expert-panel')}
+                                                className="text-sm font-normal cursor-pointer"
+                                            >
+                                                <Briefcase className="w-4 h-4 mr-2" />
+                                                Panel de Experto
+                                            </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem
                                                 onClick={() => navigate('/transacciones')}
                                                 className="text-sm font-normal cursor-pointer"
