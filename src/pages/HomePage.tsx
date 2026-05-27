@@ -1,9 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useCategories } from '../contexts/CategoryContext';
-import { useServiceTypes } from '../hooks/useServiceTypes';
-
 const HomepageWall = lazy(() => import('../components/HomepageWall').then(module => ({ default: module.HomepageWall })));
 const AirbnbSearchBar = lazy(() => import('../components/AirbnbSearchBar').then(module => ({ default: module.AirbnbSearchBar })));
 const MobileBottomBar = lazy(() => import('../components/MobileBottomBar').then(module => ({ default: module.MobileBottomBar })));
@@ -36,9 +33,6 @@ const itemVariants = {
 
 const HomePage: React.FC = () => {
   const location = useLocation();
-  const { categories, loading: categoriesLoading } = useCategories();
-  const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
-
   useEffect(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -85,7 +79,7 @@ const HomePage: React.FC = () => {
   return (
     <>
       <motion.div
-        className="min-h-screen bg-white pb-[calc(65px+max(11px,env(safe-area-inset-bottom)))] md:pb-0"
+        className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-white pb-[calc(65px+max(11px,env(safe-area-inset-bottom)))] md:pb-0"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -94,20 +88,35 @@ const HomePage: React.FC = () => {
           <WelcomePopup />
         </Suspense>
 
-        <div className="relative bg-[#f5f5f5] shadow-[0_6px_20px_0_rgba(0,0,0,0.15)]">
-          <motion.div variants={itemVariants} initial="hidden" animate="visible">
-            <Suspense fallback={null}>
-              <AirbnbSearchBar onSearch={handleSearch} />
-            </Suspense>
-          </motion.div>
-        </div>
+        <motion.div variants={itemVariants} initial="hidden" animate="visible">
+          <Suspense fallback={null}>
+            <AirbnbSearchBar onSearch={handleSearch} />
+          </Suspense>
+        </motion.div>
 
         <motion.div
-          className="pt-3 md:pt-8 lg:pt-10"
+          className="pt-0 md:pb-0"
           variants={itemVariants}
         >
-          <div className="md:pt-2 lg:pt-4" data-services-section>
-            <Suspense fallback={null}>
+          <div
+            data-services-section
+            className="md:block md:pt-4 md:pb-6 bg-white"
+            id="servicios-grid"
+          >
+            <Suspense
+              fallback={
+                <div className="hidden md:block max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-8">
+                  <div className="animate-pulse flex gap-4 overflow-hidden">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="shrink-0 w-[240px]">
+                        <div className="aspect-square rounded-[20px] bg-gray-200" />
+                        <div className="h-4 bg-gray-200 rounded mt-2 w-3/4" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              }
+            >
               <HomepageWall
                 countryCode={countryCode}
                 serviceTypeId={searchFilters.serviceTypeId}

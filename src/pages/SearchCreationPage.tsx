@@ -59,6 +59,9 @@ const SearchCreationPage: React.FC = () => {
         const searchParams = new URLSearchParams(window.location.search);
         const serviceTypeIdParam = searchParams.get('serviceTypeId');
         const categoryIdParam = searchParams.get('categoryId');
+        const stepParam = searchParams.get('step');
+        // Si nos piden explícitamente mapa, empezar en paso 1
+        if (stepParam === 'map') return 1;
         // Si hay ambos parámetros, empezar en paso 1
         return (serviceTypeIdParam && categoryIdParam) ? 1 : 0;
     });
@@ -196,8 +199,10 @@ const SearchCreationPage: React.FC = () => {
             }
         }
         
-        // Si hay serviceTypeId o categoryId (sin serviceId), establecerlos en searchParameters y ir al paso 1 (mapa)
+        // Si hay serviceTypeId o categoryId (sin serviceId), establecerlos en searchParameters
+        // y, si viene step=map, forzar paso 1 (mapa)
         if ((serviceTypeIdParam || categoryIdParam) && !serviceIdParam) {
+            const stepParam = searchParams.get('step');
             let hasChanges = false;
             if (serviceTypeIdParam) {
                 const serviceTypeId = parseInt(serviceTypeIdParam, 10);
@@ -223,8 +228,20 @@ const SearchCreationPage: React.FC = () => {
                     });
                 }
             }
+
+            // Si se abre directamente el mapa sin serviceTypeId, usar revisión presencial por defecto.
+            if (stepParam === 'map' && !serviceTypeIdParam) {
+                setSearchParameters(prev => {
+                    if (prev.serviceTypeId !== 1) {
+                        hasChanges = true;
+                        return { ...prev, serviceTypeId: 1 };
+                    }
+                    return prev;
+                });
+            }
             // Si hay serviceTypeId Y categoryId, ir directamente al paso 1 (mapa)
-            if (serviceTypeIdParam && categoryIdParam) {
+            // o si la URL pide explícitamente step=map
+            if ((serviceTypeIdParam && categoryIdParam) || stepParam === 'map') {
                 setCurrentStep(1);
             }
         }
