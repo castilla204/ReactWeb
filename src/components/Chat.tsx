@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2 } from 'lucide-react';
+import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -17,9 +18,50 @@ interface ChatProps {
         profilePictureUrl?: string;
     };
     searchHireId?: number;
+    /** IDs de participantes desde details-complete (fuente de verdad del hire) */
+    hireClientUserId?: number | null;
+    hireExpertUserId?: number | null;
+    /** Callback para abrir el panel de detalles en móvil */
+    onOpenDetails?: () => void;
+    /** Para animar la flecha (móvil) */
+    isDetailsOpen?: boolean;
+    /** Volver / salir del chat */
+    onBack?: () => void;
 }
 
 const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
+
+function formatLastSeen(iso: string): string {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    if (Number.isNaN(diffMs) || diffMs < 0) return 'hace un momento';
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'hace un momento';
+    if (mins < 60) return `hace ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `hace ${hours} h`;
+    const days = Math.floor(hours / 24);
+    return `hace ${days} d`;
+}
+
+type PeerPresenceStatus =
+    | { kind: 'typing' }
+    | { kind: 'online' }
+    | { kind: 'lastSeen'; label: string }
+    | null;
+
+function TypingDots({ className = '' }: { className?: string }) {
+    return (
+        <span className={`inline-flex items-center gap-0.5 ${className}`} aria-hidden>
+            {[0, 120, 240].map((delay) => (
+                <span
+                    key={delay}
+                    className="h-1.5 w-1.5 rounded-full bg-current opacity-70 animate-bounce"
+                    style={{ animationDelay: `${delay}ms` }}
+                />
+            ))}
+        </span>
+    );
+}
 
 const mapStyles = [
     {
@@ -199,12 +241,59 @@ const getStatusDisplay = (statusValue: string): StatusDisplay => {
     };
 };
 
-const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireId }) => {
+const Chat: React.FC<ChatProps> = ({
+    searchId,
+    isExpert,
+    expertData,
+    searchHireId,
+    hireClientUserId,
+    hireExpertUserId,
+    onOpenDetails,
+    isDetailsOpen,
+    onBack,
+}) => {
     const { user } = useAuth();
-    const { conversation, loading, error, newMessage, setNewMessage, sendMessage, isSending } = useChat(
-        searchId,
-        searchHireId
-    );
+    const {
+        conversation,
+        loading,
+        error,
+        newMessage,
+        setNewMessage,
+        sendMessage,
+        isSending,
+        conversationLoading,
+        isReconnecting,
+        typingUserIds,
+        onlineUserIds,
+        lastSeenByUserId,
+        notifyTyping,
+    } = useChat(searchId, searchHireId);
+
+    const userId = getUserId(user);
+    const conversationClientId =
+        conversation?.clientId != null ? Number(conversation.clientId) : null;
+    const conversationExpertId =
+        conversation?.expertId != null ? Number(conversation.expertId) : null;
+    const hireClientId =
+        hireClientUserId != null && hireClientUserId > 0 ? Number(hireClientUserId) : null;
+    const hireExpertId =
+        hireExpertUserId != null && hireExpertUserId > 0 ? Number(hireExpertUserId) : null;
+    // IDs de conversación tienen prioridad (coinciden con JWT del broadcast typing)
+    const expertId = conversationExpertId ?? hireExpertId;
+    const clientParticipantId = conversationClientId ?? hireClientId;
+    const isClient =
+        (conversationClientId != null && userId === conversationClientId) ||
+        (hireClientId != null && userId === hireClientId);
+    const userIsAdmin = isAdmin(user?.email ?? (user as { Email?: string })?.Email);
+    const hasAccess =
+        userId > 0 &&
+        (userIsAdmin ||
+            (conversationClientId != null && userId === conversationClientId) ||
+            (conversationExpertId != null && userId === conversationExpertId) ||
+            (hireClientId != null && userId === hireClientId) ||
+            (hireExpertId != null && userId === hireExpertId) ||
+            (isExpert && hireExpertId != null && userId === hireExpertId));
+    const isChatLoading = conversationLoading ?? loading;
     
     // State for image modal
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -215,19 +304,59 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     const [isMapModalOpen, setIsMapModalOpen] = useState(false);
     const [selectedMapLocation, setSelectedMapLocation] = useState(defaultCenter);
     const [messageSent, setMessageSent] = useState(false);
+    const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
         libraries,
     });
 
-    console.log('[09:15 CEST] Chat component render:', { searchId, isExpert, userId: user?.id, conversationId: conversation?.id });
+    const otherParticipantId = isClient
+        ? Number(expertId ?? 0)
+        : Number(clientParticipantId ?? 0);
+
+    /** Coincide userId de typing/presencia con el otro participante (tolerante a hire vs conversation) */
+    const isOtherParticipant = useCallback(
+        (participantUserId: number) => {
+            const pid = Number(participantUserId);
+            if (!pid || pid === userId) return false;
+            if (otherParticipantId > 0 && pid === otherParticipantId) return true;
+            if (isClient && conversationExpertId && pid === conversationExpertId) return true;
+            if (!isClient && conversationClientId && pid === conversationClientId) return true;
+            return false;
+        },
+        [otherParticipantId, userId, isClient, conversationExpertId, conversationClientId]
+    );
+
+    const otherParticipantName = useMemo(() => {
+        if (isClient) {
+            return expertData?.name || 'Experto';
+        }
+        const clientMsg = conversation?.messages?.find(
+            (m) => m.senderId != null && Number(m.senderId) === Number(otherParticipantId)
+        );
+        return clientMsg?.senderName || 'Cliente';
+    }, [isClient, expertData?.name, conversation?.messages, otherParticipantId]);
+
+    const peerPresenceStatus = useMemo((): PeerPresenceStatus => {
+        const otherTyping = typingUserIds.some((id) => isOtherParticipant(id));
+        if (otherTyping) return { kind: 'typing' };
+        const otherOnline = onlineUserIds.some((id) => isOtherParticipant(id));
+        if (otherOnline) return { kind: 'online' };
+        const lastSeenEntry = Object.entries(lastSeenByUserId).find(([uid]) =>
+            isOtherParticipant(Number(uid))
+        );
+        if (lastSeenEntry) {
+            return { kind: 'lastSeen', label: `Activo ${formatLastSeen(lastSeenEntry[1])}` };
+        }
+        return null;
+    }, [typingUserIds, onlineUserIds, lastSeenByUserId, isOtherParticipant]);
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
         if (conversation?.messages && conversation.messages.length > lastMessageCount.current) {
             // Use requestAnimationFrame for better performance
             requestAnimationFrame(() => {
-                const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
                 if (chatContainer) {
                     // Only scroll if user is near bottom (within 200px)
                     const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 200;
@@ -236,7 +365,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                     }
                 }
                 if (messagesEndRef.current) {
-                    const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                    const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
                     if (chatContainer) {
                         const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 200;
                         if (isNearBottom) {
@@ -253,7 +382,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     useEffect(() => {
         if (conversation?.messages && messagesEndRef.current && !loading) {
             // Check if chat container is visible before scrolling
-            const chatContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+            const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
             if (!chatContainer) return;
             
             // Check if container is visible (not hidden by tab switching)
@@ -265,7 +394,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             // Use a single timeout to avoid multiple scrolls
             const scrollToBottom = () => {
                 // Check again if container is still visible
-                const currentContainer = document.querySelector('[data-chat-messages]')?.parentElement as HTMLElement;
+                const currentContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
                 if (!currentContainer) return;
                 
                 const currentRect = currentContainer.getBoundingClientRect();
@@ -298,7 +427,6 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
             const isValidSize = file.size <= maxMessageFileSize;
             return isValidType && isValidSize;
         });
-        console.log('[09:15 CEST] Selected message files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
         if (validFiles.length > 0) {
             showToast('success', `Archivos seleccionados: ${validFiles.map((f) => f.name).join(', ')}`, 3000);
         }
@@ -348,18 +476,7 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
 
     const handleSendMessage = () => {
         if (newMessage.trim() || selectedFiles.length > 0 || location) {
-            console.log('[09:15 CEST] Sending message with files and location:', {
-                files: selectedFiles.map((f) => ({ name: f.name, size: f.size })),
-                location,
-            });
-            const formDataEntries: { [key: string]: any } = {
-                ConversationId: conversation?.id,
-                Content: newMessage.trim() || undefined,
-                LocationLatitude: location?.latitude,
-                LocationLongitude: location?.longitude,
-                Attachments: selectedFiles.map((f) => ({ name: f.name, type: f.type, size: f.size })),
-            };
-            console.log('[09:15 CEST] FormData before sending:', formDataEntries);
+            notifyTyping(false);
             sendMessage({
                 content: newMessage,
                 location,
@@ -379,25 +496,13 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     const getAvatarInitials = (senderId: string | number | null) => {
         // ✅ Manejar caso cuando senderId es null (usuario eliminado)
         if (senderId === null || senderId === undefined) {
-            console.log('[Chat] getAvatarInitials: senderId is null/undefined, returning ?');
             return '?';
         }
-        
+
         const senderIdStr = String(senderId);
-        const userIdStr = String(user?.id ?? '');
+        const userIdStr = String(userId);
         const expertIdStr = String(expertId ?? '');
-        
-        console.log('[Chat] getAvatarInitials:', {
-            senderId,
-            senderIdStr,
-            userId: user?.id,
-            userIdStr,
-            expertId,
-            expertIdStr,
-            isOwn: senderIdStr === userIdStr,
-            isExpert: senderIdStr === expertIdStr
-        });
-        
+
         if (senderIdStr === userIdStr) {
             return user?.name?.charAt(0)?.toUpperCase() || 'Y';
         }
@@ -432,27 +537,13 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
     const getAvatarImage = (senderId: string | number | null) => {
         // ✅ Manejar caso cuando senderId es null (usuario eliminado)
         if (senderId === null || senderId === undefined) {
-            console.log('[Chat] getAvatarImage: senderId is null/undefined, returning undefined');
             return undefined;
         }
-        
+
         const senderIdStr = String(senderId);
-        const userIdStr = String(user?.id ?? '');
+        const userIdStr = String(userId);
         const expertIdStr = String(expertId ?? '');
-        
-        console.log('[Chat] getAvatarImage:', {
-            senderId,
-            senderIdStr,
-            userId: user?.id,
-            userIdStr,
-            expertId,
-            expertIdStr,
-            isOwn: senderIdStr === userIdStr,
-            isExpert: senderIdStr === expertIdStr,
-            userProfilePicture: user?.profilePictureUrl,
-            expertProfilePicture: expertData?.profilePictureUrl
-        });
-        
+
         if (senderIdStr === userIdStr) {
             return user?.profilePictureUrl;
         }
@@ -481,51 +572,43 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
         return url.split('/').pop() || 'archivo';
     };
 
-    // Convert IDs to numbers for comparison to handle string/number type mismatches
-    const userId = Number(user?.id);
-    // ✅ Manejar casos cuando clientId o expertId son null (usuarios eliminados)
-    const clientId = conversation?.clientId ? Number(conversation.clientId) : null;
-    const expertId = conversation?.expertId ? Number(conversation.expertId) : null;
-    
-    // Check if user is admin
-    const userIsAdmin = isAdmin(user?.email);
-    
-    // ✅ Manejar casos cuando clientId o expertId son null (usuarios eliminados)
-    // User has access if they are the client, expert, or admin
-    const hasAccess = (clientId !== null && userId === clientId) || 
-                      (expertId !== null && userId === expertId) || 
-                      userIsAdmin;
-    
-    // Debug: Log access control information
-    console.log('[Chat] Access control debug:', {
-        user: user ? { id: user.id, email: user.email, role: user.role } : null,
-        loading,
-        conversation: conversation ? {
-            id: conversation.id,
-            clientId: conversation.clientId,
-            expertId: conversation.expertId,
-            searchHireId: conversation.searchHireId
-        } : null,
-        userId,
-        clientId,
-        expertId,
-        isAdmin: userIsAdmin,
-        hasAccess,
-        userIdType: typeof user?.id,
-        clientIdType: typeof conversation?.clientId,
-        expertIdType: typeof conversation?.expertId,
-        userEmail: user?.email
-    });
-
-    if (!user || loading || !conversation || !hasAccess) {
+    if (!user) {
         return (
             <div className="flex items-center justify-center h-full text-gray-500">
-                {loading ? 'Cargando chat...' : 'No tienes acceso a este chat.'}
+                Inicia sesión para ver el chat.
             </div>
         );
     }
 
-    const isClient = userId === clientId;
+    if (isChatLoading) {
+        return (
+            <div className="flex items-center justify-center h-full text-gray-500">
+                Cargando chat...
+            </div>
+        );
+    }
+
+    if (error && !conversation) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 px-4 text-center">
+                <p>No se pudo cargar el chat.</p>
+                <p className="text-xs text-gray-400">{error}</p>
+            </div>
+        );
+    }
+
+    if (!conversation || !hasAccess) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-1 px-4 text-center">
+                <p>No tienes acceso a este chat.</p>
+                {!hasAccess && conversation && (
+                    <p className="text-xs text-gray-400">
+                        Tu cuenta (ID {userId}) no coincide con cliente ni experto de esta contratación.
+                    </p>
+                )}
+            </div>
+        );
+    }
 
     // Group messages by sender and proximity in time
     const groupedMessages = conversation.messages?.reduce((groups: any[], message: any, index: number) => {
@@ -536,10 +619,12 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
 
         // ✅ Group if same sender and within 5 minutes
         // Manejar casos cuando senderId es null (usuario eliminado)
-        const sameSender = previousMessage && 
-            ((previousMessage.senderId === null && message.senderId === null) ||
-             (previousMessage.senderId !== null && message.senderId !== null && 
-              previousMessage.senderId === message.senderId));
+        const prevSid = normalizeSenderId(previousMessage?.senderId);
+        const currSid = normalizeSenderId(message.senderId);
+        const sameSender =
+            previousMessage &&
+            ((prevSid === null && currSid === null) ||
+                (prevSid !== null && currSid !== null && prevSid === currSid));
         
         if (sameSender && timeDiff < 5 * 60 * 1000) {
             groups[groups.length - 1].messages.push(message);
@@ -548,123 +633,170 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                 senderId: message.senderId,
                 messages: [message],
                 timestamp: message.sentAt,
-                isOwn: message.senderId !== null && message.senderId === user?.id
+                isOwn: isMessageFromUser(message.senderId, userId)
             });
         }
         return groups;
     }, []) || [];
 
+    const otherAvatarSrc = otherParticipantId > 0 ? getAvatarImage(otherParticipantId) : null;
+
     return (
-        <div className="flex flex-col h-full bg-white">
-            {/* Lista de mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex min-h-0 flex-1 flex-col h-full bg-[#e8ecf1]">
+            {/* Cabecera */}
+            <div className="shrink-0 border-b border-white/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                    {onBack && (
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            aria-label="Volver y salir del chat"
+                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
+                        >
+                            <ArrowLeft className="h-5 w-5 text-gray-700" />
+                        </button>
+                    )}
+                    <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
+                        <AvatarImage src={otherAvatarSrc || undefined} alt={otherParticipantName} />
+                        <AvatarFallback className="bg-gradient-to-br from-gray-700 to-gray-900 text-sm font-medium text-white">
+                            {otherParticipantName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-[15px] font-semibold text-gray-900">
+                            {otherParticipantName}
+                        </p>
+                        {peerPresenceStatus?.kind === 'typing' && (
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-primary">
+                                <TypingDots className="text-primary" />
+                                <span>está escribiendo</span>
+                            </p>
+                        )}
+                        {peerPresenceStatus?.kind === 'online' && (
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-600">
+                                <span
+                                    className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 ring-2 ring-emerald-500/25 animate-pulse"
+                                    aria-hidden
+                                />
+                                <span>En línea</span>
+                            </p>
+                        )}
+                        {peerPresenceStatus?.kind === 'lastSeen' && (
+                            <p className="mt-0.5 text-xs text-gray-500">{peerPresenceStatus.label}</p>
+                        )}
+                        {!peerPresenceStatus && !isReconnecting && (
+                            <p className="mt-0.5 text-xs text-gray-400">Mensajes privados</p>
+                        )}
+                    </div>
+                    {isReconnecting && (
+                        <span
+                            className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-800"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            Reconectando…
+                        </span>
+                    )}
+                </div>
+                {userIsAdmin && (
+                    <p className="mt-2.5 rounded-lg border border-amber-100 bg-amber-50/90 px-2.5 py-1.5 text-[11px] text-amber-900">
+                        Vista de administrador: puedes leer el chat; los mensajes no se marcarán como leídos.
+                    </p>
+                )}
+            </div>
+
+            {/* Mensajes */}
+            <div
+                data-chat-messages
+                className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-5"
+                style={{
+                    WebkitOverflowScrolling: 'touch',
+                    backgroundImage:
+                        'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)',
+                    backgroundSize: '20px 20px',
+                    backgroundColor: '#e8ecf1',
+                }}
+                role="log"
+                aria-live="polite"
+            >
                 {groupedMessages && groupedMessages.length > 0 ? (
                     groupedMessages.flatMap((group) =>
                         group.messages.map((message: any, msgIndex: number) => {
+                            const isFirstInGroup = msgIndex === 0;
+                            const isLastInGroup = msgIndex === group.messages.length - 1;
                                     const isStatusMessage = message.content && isAppointmentStatusChangeMessage(message.content);
                                     
-                                    // Si es mensaje de estado, renderizar de forma especial sin avatar
+                                    // Mensajes de estado → pill centrado minimalista
                                     if (isStatusMessage) {
                                         const statusValue = extractStatusValue(message.content);
                                         const display = statusValue ? getStatusDisplay(statusValue) : null;
                                         if (!display) return null;
-                                        
                                         return (
-                                            <div key={message.id} className="w-full flex justify-center my-2">
-                                                <div className={`w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[65%] rounded-lg border ${display.borderColor} ${display.bgColor} shadow-sm overflow-hidden`}>
-                                                    {/* Header con icono, mensaje e info */}
-                                                    <div className="flex items-start gap-2 px-3 py-2">
-                                                        <div className={`${display.color} flex-shrink-0 mt-0.5`}>
-                                                            {display.icon}
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                                <p className={`text-sm font-medium ${display.color}`}>
-                                                                    {display.message}
-                                                                </p>
-                                                            </div>
-                                                            {/* Timestamp */}
-                                                            <div className={`text-xs ${display.color} opacity-60`}>
-                                                                {(() => {
-                                                                    const date = new Date(message.sentAt);
-                                                                    return isNaN(date.getTime()) 
-                                                                        ? 'Ahora'
-                                                                        : date.toLocaleTimeString('es-ES', {
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit'
-                                                                        });
-                                                                })()}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Accordion con información adicional */}
-                                                    {display.description && (
-                                                        <div className="px-3 pb-2">
-                                                            <Accordion type="single" collapsible className="w-full">
-                                                                <AccordionItem value="status-info" className="border-none">
-                                                                    <AccordionTrigger className={`py-1 hover:no-underline ${display.color} opacity-70 hover:opacity-100`}>
-                                                                        <div className="flex items-center gap-1.5 text-xs">
-                                                                            <Info className="w-3 h-3" />
-                                                                            <span>Más información</span>
-                                                                        </div>
-                                                                    </AccordionTrigger>
-                                                                    <AccordionContent className="pt-0.5 pb-0">
-                                                                        <p className={`text-xs ${display.color} opacity-80 leading-relaxed`}>
-                                                                            {display.description}
-                                                                        </p>
-                                                                    </AccordionContent>
-                                                                </AccordionItem>
-                                                            </Accordion>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div key={message.id} className="flex justify-center my-3">
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${display.bgColor} ${display.color} border ${display.borderColor}`}>
+                                                    {display.icon}
+                                                    {display.message}
+                                                </span>
                                             </div>
                                         );
                                     }
                                     
                                     // Mensaje normal con avatar - Estilo igual a PreHireChat
-                                    const isOwnMessage = group.isOwn;
+                                    const isOwnMessage =
+                                        isMessageFromUser(message.senderId, userId) || group.isOwn;
                                     
                                     return (
                                         <div
                                             key={message.id}
-                                            className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[70%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
+                                            className={`chat-message-enter mb-0.5 flex gap-2 sm:gap-2.5 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[88%] sm:max-w-[80%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'} ${isFirstInGroup ? 'mt-3' : ''}`}
                                         >
-                                            {/* ✅ Foto de perfil */}
                                             {!isOwnMessage && (
-                                            <Avatar className="w-8 h-8 flex-shrink-0">
-                                                <AvatarImage 
-                                                    src={getAvatarImage(group.senderId) || undefined} 
-                                                        alt={message.senderName || 'Usuario'}
-                                                />
-                                                    <AvatarFallback className="bg-gray-900 text-white text-xs">
-                                                    {getAvatarInitials(group.senderId)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        )}
-                                            
-                                            <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                                                {!isOwnMessage && (
-                                                    <span className="text-xs font-semibold text-gray-600">{message.senderName || 'Usuario'}</span>
+                                                <div className="w-8 shrink-0">
+                                                    {isFirstInGroup ? (
+                                                        <Avatar className="h-8 w-8">
+                                                            <AvatarImage
+                                                                src={getAvatarImage(group.senderId) || undefined}
+                                                                alt={message.senderName || 'Usuario'}
+                                                            />
+                                                            <AvatarFallback className="bg-gray-800 text-white text-xs">
+                                                                {getAvatarInitials(group.senderId)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                    ) : (
+                                                        <span className="block h-8 w-8" aria-hidden />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div
+                                                className={`flex min-w-0 flex-col gap-0.5 ${isOwnMessage ? 'items-end' : 'items-start'}`}
+                                            >
+                                                {!isOwnMessage && isFirstInGroup && (
+                                                    <span className="mb-0.5 px-1 text-[11px] font-medium text-gray-500">
+                                                        {message.senderName || 'Usuario'}
+                                                    </span>
                                                 )}
-                                            {message.content && (
+                                                {message.content && (
                                                     <div
-                                                        className={`px-3 py-2 rounded-2xl ${
+                                                        className={`px-3.5 py-2.5 text-sm shadow-md transition-shadow ${
                                                             isOwnMessage
-                                                                ? 'bg-primary text-white rounded-tr-sm'
-                                                                : 'bg-gray-100 text-gray-900 rounded-tl-sm'
+                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/20'
+                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-white/80 bg-white text-gray-900 shadow-black/5'
                                                         }`}
                                                     >
-                                                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                                            </div>
-                                        )}
-                                                <span className="text-xs text-gray-500">
-                                                    {new Date(message.sentAt).toLocaleTimeString('es-ES', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </span>
+                                                        <p className="whitespace-pre-wrap break-words leading-relaxed">
+                                                            {message.content}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {isLastInGroup && (
+                                                    <span className="px-1 text-[10px] tabular-nums text-gray-400">
+                                                        {new Date(message.sentAt).toLocaleTimeString('es-ES', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        })}
+                                                    </span>
+                                                )}
                                                 
                                                 {/* Adjuntos */}
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
@@ -685,45 +817,139 @@ const Chat: React.FC<ChatProps> = ({ searchId, isExpert, expertData, searchHireI
                                 })
                         )
                     ) : (
-                        <div className="flex items-center justify-center h-full">
-                            <p className="text-gray-500 text-center">
-                                No hay mensajes aún. ¡Empieza la conversación!
+                        <div className="flex min-h-[min(280px,50vh)] flex-1 flex-col items-center justify-center px-6 py-8">
+                            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md">
+                                <MessageSquare className="h-7 w-7 text-gray-400" strokeWidth={1.5} />
+                            </div>
+                            <p className="text-center text-sm font-medium text-gray-700">
+                                Aún no hay mensajes
                             </p>
-                                            </div>
-                                        )}
+                            <p className="mt-1 max-w-[240px] text-center text-xs leading-relaxed text-gray-500">
+                                Escribe abajo para coordinar el servicio con {otherParticipantName}.
+                            </p>
+                        </div>
+                    )}
                 <div ref={messagesEndRef} />
-                                    </div>
+            </div>
+
+            {/* Indicador de escritura sobre el input (patrón WhatsApp / iMessage) */}
+            {peerPresenceStatus?.kind === 'typing' && (
+                <div
+                    className="flex shrink-0 items-center gap-2 border-t border-gray-100 bg-white/95 px-4 py-2 backdrop-blur-sm"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <TypingDots className="text-gray-500" />
+                    <span className="text-xs text-gray-600">
+                        <span className="font-medium text-gray-800">{otherParticipantName}</span>
+                        {' '}
+                        está escribiendo
+                    </span>
+                </div>
+            )}
 
             {/* Input */}
-            <div className="flex gap-2 p-4 border-t border-gray-200 bg-white rounded-b-lg relative z-10">
-                <input
-                    type="text"
-                                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                            if (newMessage.trim() || selectedFiles.length > 0 || location) {
-                                            handleSendMessage();
+            <div className="relative z-10 shrink-0 border-t border-gray-200/80 bg-white/95 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md sm:pt-4 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] lg:pb-0">
+                <div className="flex items-end gap-2 px-3 sm:px-4">
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            setNewMessage(value);
+                            if (typingDebounceRef.current) {
+                                clearTimeout(typingDebounceRef.current);
                             }
-                                        }
-                                    }}
-                    placeholder={isSending ? "Enviando..." : "Escribe tu mensaje..."}
-                                    disabled={isSending}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    style={{ pointerEvents: 'auto' }}
-                />
-                                        <Button
-                                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() && selectedFiles.length === 0 && !location || isSending}
-                    className="rounded-full px-6"
+                            typingDebounceRef.current = setTimeout(() => {
+                                notifyTyping(value.trim().length > 0);
+                            }, 400);
+                        }}
+                        onBlur={() => notifyTyping(false)}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if (newMessage.trim() || selectedFiles.length > 0 || location) {
+                                    handleSendMessage();
+                                }
+                            }
+                        }}
+                        placeholder={isSending ? 'Enviando…' : 'Mensaje…'}
+                        disabled={isSending}
+                        className="flex-1 rounded-2xl border border-gray-200/90 bg-gray-50/90 px-4 py-3 text-sm shadow-inner transition-all placeholder:text-gray-400 focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                    <Button
+                        onClick={handleSendMessage}
+                        disabled={
+                            (!newMessage.trim() && selectedFiles.length === 0 && !location) || isSending
+                        }
+                        className="h-11 w-11 shrink-0 rounded-full p-0 shadow-md shadow-primary/25 transition-transform hover:scale-[1.03] active:scale-95"
+                        size="icon"
+                        aria-label="Enviar mensaje"
+                    >
+                        {isSending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Send className="h-4 w-4" />
+                        )}
+                    </Button>
+                </div>
+
+                {/* Botón de detalles — solo en móvil, debajo del input */}
+                {onOpenDetails && (
+                    <div className="flex justify-center pt-1.5 pb-0 lg:hidden">
+                        <button
+                            type="button"
+                            onClick={onOpenDetails}
+                            aria-label={isDetailsOpen ? 'Ocultar detalles' : 'Ver detalles del servicio'}
+                            aria-expanded={!!isDetailsOpen}
+                            className="group flex flex-col items-center gap-0.5 rounded-full px-1 py-1 outline-none transition-all duration-200 active:scale-[0.99]"
+                        >
+                            <div
+                                className={[
+                                    'flex items-center gap-1.5',
+                                    'text-gray-400 transition-colors duration-200',
+                                    isDetailsOpen ? 'text-primary' : 'group-hover:text-primary',
+                                ].join(' ')}
+                            >
+                                <div
+                                    className={[
+                                        'h-px bg-gray-300 transition-all duration-200 group-hover:bg-primary/50',
+                                        isDetailsOpen ? 'w-10' : 'w-8',
+                                    ].join(' ')}
+                                />
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={1.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={[
+                                        'h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5',
+                                        isDetailsOpen ? 'rotate-180' : '',
+                                    ].join(' ')}
                                 >
-                                    {isSending ? (
-                        'Enviando...'
-                                    ) : (
-                        <Send className="w-4 h-4" />
-                                    )}
-                                </Button>
+                                    <polyline points="18 15 12 9 6 15" />
+                                </svg>
+                                <div
+                                    className={[
+                                        'h-px bg-gray-300 transition-all duration-200 group-hover:bg-primary/50',
+                                        isDetailsOpen ? 'w-10' : 'w-8',
+                                    ].join(' ')}
+                                />
+                            </div>
+                            <span
+                                className={[
+                                    'text-[10px] tracking-wide transition-colors duration-200',
+                                    isDetailsOpen ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                                ].join(' ')}
+                            >
+                                {isDetailsOpen ? 'Ocultar' : 'Detalles'}
+                            </span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Map Modal */}

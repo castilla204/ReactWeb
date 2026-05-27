@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types/auth';
 import { getAuthToken, getUserData, removeAuthToken, setAuthToken } from '../lib/auth';
+import { updateSupabaseAuth } from '../lib/supabase';
 import { authService } from '../services/authService';
 
 interface AuthContextType {
@@ -98,6 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 setUser(storedUserData);
                 setIsAuthenticated(true);
+                const activeToken = authService.getAccessToken();
+                if (activeToken) {
+                    updateSupabaseAuth(activeToken);
+                }
             } catch (error: any) {
                 console.error('❌ [AuthContext] Error al restaurar sesión:', error);
                 // Error al restaurar sesión - limpiar y continuar
@@ -143,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newToken && newUser) {
             // ✅ CRÍTICO: Pasar tanto el token como el usuario para que se guarden ambos
             setAuthToken(newToken, newUser);
+            updateSupabaseAuth(newToken);
             setIsAuthenticated(true);
             console.log('✅ [AuthContext] Usuario y token guardados en localStorage');
         } else {

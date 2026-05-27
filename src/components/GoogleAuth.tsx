@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
 import { mfaService } from '../services/mfaService';
 import { RoleChecker } from '../utils/roleChecker';
+import { getUserId } from '../utils/userId';
 import { MFAVerify } from './MFAVerify';
 import { useNavigate } from 'react-router-dom';
 
@@ -53,9 +54,10 @@ export function GoogleAuth() {
                 throw new Error('Authentication failed');
             }
 
-            // Guardar usuario
-            setUser(result.user);
-            localStorage.setItem('userData', JSON.stringify(result.user));
+            const uid = getUserId(result.user);
+            const normalizedUser = { ...result.user, id: uid, Id: uid };
+            setUser(normalizedUser);
+            localStorage.setItem('userData', JSON.stringify(normalizedUser));
 
             // Verificar rol del usuario
             const token = authService.getAccessToken();

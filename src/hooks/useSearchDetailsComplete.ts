@@ -63,9 +63,6 @@ export const useSearchDetailsComplete = (
       
       const endpoint = API_CONFIG.endpoints.expert.hires.detailsComplete(finalSearchHireId);
       
-      console.log(`[useSearchDetailsComplete] Fetching data for searchHireId: ${finalSearchHireId}`);
-      console.log(`[useSearchDetailsComplete] Endpoint: ${endpoint}`);
-      
       const rawResponse = await fetchApi<any>(endpoint);
       
       // ✅ DEBUG: Verificar si hay algún problema con la respuesta
@@ -73,11 +70,6 @@ export const useSearchDetailsComplete = (
         console.error(`[useSearchDetailsComplete] No response received for searchHireId: ${finalSearchHireId}`);
         throw new Error('No response received from API');
       }
-      
-      console.log(`[useSearchDetailsComplete] Raw response keys:`, Object.keys(rawResponse));
-      console.log(`[useSearchDetailsComplete] Raw response Search:`, rawResponse.Search ?? rawResponse.search);
-      console.log(`[useSearchDetailsComplete] Raw response SearchHire:`, rawResponse.Search?.SearchHire ?? rawResponse.search?.searchHire);
-      console.log(`[useSearchDetailsComplete] Raw response Appointment:`, rawResponse.Appointment ?? rawResponse.appointment);
       
       // ✅ Normalizar respuesta de PascalCase a camelCase
       const normalizeUser = (user: any) => {
@@ -232,10 +224,6 @@ export const useSearchDetailsComplete = (
               expiredAt: timer.ExpiredAt ?? timer.expiredAt ?? null,
               createdAt: timer.CreatedAt ?? timer.createdAt ?? '',
             };
-            console.log('[useSearchDetailsComplete] Normalizing timer:', {
-              raw: { TimerType: timer.TimerType, IsExpired: timer.IsExpired },
-              normalized: normalizedTimer
-            });
             return normalizedTimer;
           }),
           // ✅ Información de ubicación del experto
@@ -330,61 +318,6 @@ export const useSearchDetailsComplete = (
       if (!normalizedResponse.search) {
         console.warn(`[useSearchDetailsComplete] No search data in response for searchHireId: ${finalSearchHireId} - esto puede ser normal si el cliente borró su cuenta`);
         // No lanzamos error, permitimos que search sea null
-      }
-      
-      // ✅ Log para debugging cuando search es null
-      if (!normalizedResponse.search) {
-        console.log(`[useSearchDetailsComplete] Search is null (cliente probablemente eliminado), pero tenemos otros datos:`, {
-          hasAppointment: !!normalizedResponse.appointment,
-          hasDeliverables: normalizedResponse.deliverables?.length > 0,
-          hasDisputes: normalizedResponse.disputes?.length > 0,
-          hasExpertProfile: !!normalizedResponse.expertProfile
-        });
-      }
-      
-      console.log(`[useSearchDetailsComplete] Normalized data:`, normalizedResponse);
-      
-      // ✅ DEBUG: Verificar específicamente el estado del searchHire y appointment
-      if (normalizedResponse?.search?.searchHire) {
-        console.log(`[useSearchDetailsComplete] SearchHire DEBUG:`, {
-          searchHireId: normalizedResponse.search.searchHire.id,
-          status: normalizedResponse.search.searchHire.status,
-          statusInfo: normalizedResponse.search.searchHire.statusInfo,
-          hasClient: !!normalizedResponse.search.searchHire.client,
-          clientId: normalizedResponse.search.searchHire.client?.id,
-          hasExpert: !!normalizedResponse.search.searchHire.expert,
-          expertId: normalizedResponse.search.searchHire.expert?.id,
-          hasService: !!normalizedResponse.search.searchHire.service,
-          serviceRequiresAppointment: normalizedResponse.search.searchHire.service?.requiresAppointment
-        });
-      }
-      
-      if (normalizedResponse?.appointment) {
-        console.log(`[useSearchDetailsComplete] Appointment DEBUG:`, {
-          appointmentId: normalizedResponse.appointment.id,
-          status: normalizedResponse.appointment.status,
-          statusInfo: normalizedResponse.appointment.statusInfo,
-          hasProposedDate: !!normalizedResponse.appointment.proposedDate,
-          hasProposedTime: !!normalizedResponse.appointment.proposedTime,
-          timersCount: normalizedResponse.appointment.timers?.length ?? 0,
-          timers: normalizedResponse.appointment.timers?.map((t: any) => ({
-            type: t.timerType,
-            isExpired: t.isExpired,
-            hasEndTime: !!t.endTime
-          }))
-        });
-      } else {
-        console.log(`[useSearchDetailsComplete] No appointment found`);
-      }
-      
-      if (!normalizedResponse?.search?.searchHire) {
-        console.log(`[useSearchDetailsComplete] No searchHire data found for searchHireId: ${finalSearchHireId}`);
-        console.log(`[useSearchDetailsComplete] Search data structure:`, {
-          hasSearch: !!normalizedResponse.search,
-          searchId: normalizedResponse.search?.id,
-          searchTitle: normalizedResponse.search?.title,
-          searchHire: normalizedResponse.search?.searchHire
-        });
       }
       
       return normalizedResponse;

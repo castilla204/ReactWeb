@@ -448,7 +448,9 @@ export const useExpertStripeStatus = () => {
         
         try {
             isFetchingRef.current = true;
-            setLoading(true);
+            if (!statusRef.current) {
+                setLoading(true);
+            }
             setError(null);
             const statusData = await getExpertStatus();
             
@@ -601,6 +603,9 @@ export const useExpertStripeStatus = () => {
     // para no mostrar el estado previo al onboarding ni un estado caduco por la cache.
     useEffect(() => {
         const revalidate = () => {
+            if (document.body.dataset.drawerOpen) {
+                return;
+            }
             if (document.visibilityState === 'visible') {
                 fetchStatus(true);
             }
@@ -672,16 +677,9 @@ export const useExpertStripeStatus = () => {
 };
 
 // Función de validación para usar antes de crear servicios
-export const validateBeforeCreatingService = async (cachedStatus?: ExpertStatusResponse | null): Promise<boolean> => {
+export const validateBeforeCreatingService = async (_cachedStatus?: ExpertStatusResponse | null): Promise<boolean> => {
     try {
-        let status: ExpertStatusResponse;
-        
-        // Usar status en cache si está disponible y es reciente (menos de 2 minutos)
-        if (cachedStatus) {
-            status = cachedStatus;
-        } else {
-            status = await getExpertStatus();
-        }
+        const status = await getExpertStatus();
         
         if (!status.canCreateServices) {
             const statusInfo = getStatusInfo(
@@ -762,3 +760,5 @@ export const handleStripeServiceError = (error: any) => {
         }));
     }
 };
+
+export type ExpertStripeStatusResult = ReturnType<typeof useExpertStripeStatus>;

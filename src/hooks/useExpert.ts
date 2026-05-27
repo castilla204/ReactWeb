@@ -53,7 +53,10 @@ export function useExpert() {
     const lastFetchRef = useRef<{ [key: string]: number }>({});
     const CACHE_DURATION = 60000; // ✅ Aumentado a 60 segundos para evitar llamadas repetidas
 
-    const fetchProfile = useCallback(async (force = false) => {
+    const fetchProfile = useCallback(async (
+        force = false,
+        options?: { silent?: boolean }
+    ) => {
         if (!user) {
             console.log('No user, cannot fetch profile');
             return;
@@ -68,7 +71,9 @@ export function useExpert() {
             return;
         }
 
-        setIsLoadingProfile(true);
+        if (!options?.silent) {
+            setIsLoadingProfile(true);
+        }
         setProfileError(null);
         try {
             const token = getAuthToken();
@@ -153,7 +158,9 @@ export function useExpert() {
             console.error('Error fetching profile:', error);
             setProfileError(error);
         } finally {
-            setIsLoadingProfile(false);
+            if (!options?.silent) {
+                setIsLoadingProfile(false);
+            }
         }
     }, [user, signOut, CACHE_DURATION]);
 
@@ -412,27 +419,39 @@ export function useExpert() {
                 throw new Error(`Failed to check onboarding status: ${response.statusText}`);
             }
 
-            const statusData: OnboardingStatusResponse = await response.json();
-            console.log('Onboarding status received:', statusData);
-            
-            // Actualizar el perfil con la información más reciente del backend
+            const raw = await response.json();
+            const statusData = raw as OnboardingStatusResponse & Record<string, unknown>;
+            const stripeAccountId = (statusData.stripeAccountId ?? raw.StripeAccountId) as string | null | undefined;
+            const onboardingCompleted = Boolean(statusData.onboardingCompleted ?? raw.OnboardingCompleted);
+            const canAccessStripe = Boolean(statusData.canAccessStripe ?? raw.CanAccessStripe);
+            const stripeStatus = (statusData.stripeStatus ?? raw.StripeStatus) as ExpertProfile['stripeStatus'];
+            const stripeStatusDetails = (statusData.stripeStatusDetails ?? raw.StripeStatusDetails) as string | null | undefined;
+            const hasPendingOnboarding = Boolean(statusData.hasPendingOnboarding ?? raw.HasPendingOnboarding);
+            console.log('Onboarding status received:', { stripeAccountId, onboardingCompleted, stripeStatus });
+
             setProfile(prev => {
                 if (!prev) return null;
-                
+
                 return {
                     ...prev,
-                    stripeAccountId: statusData.stripeAccountId,
-                    onboardingCompleted: statusData.onboardingCompleted,
-                    canAccessStripe: statusData.canAccessStripe,
-                    stripeStatus: statusData.stripeStatus,
-                    stripeStatusDetails: statusData.stripeStatusDetails,
-                    // Mapear los campos del backend a la estructura del frontend
-                    pendingStripeAccountId: statusData.hasPendingOnboarding ? prev.pendingStripeAccountId : null
+                    stripeAccountId: stripeAccountId ?? prev.stripeAccountId,
+                    onboardingCompleted,
+                    canAccessStripe,
+                    stripeStatus: stripeStatus ?? prev.stripeStatus,
+                    stripeStatusDetails: stripeStatusDetails ?? prev.stripeStatusDetails,
+                    pendingStripeAccountId: hasPendingOnboarding ? (stripeAccountId ?? prev.pendingStripeAccountId) : null,
                 };
             });
             
             lastFetchRef.current[cacheKey] = now;
-            return statusData;
+            return {
+                stripeAccountId: stripeAccountId ?? null,
+                onboardingCompleted,
+                canAccessStripe,
+                stripeStatus: stripeStatus as OnboardingStatusResponse['stripeStatus'],
+                stripeStatusDetails: stripeStatusDetails ?? null,
+                hasPendingOnboarding,
+            } as OnboardingStatusResponse;
         } catch (error) {
             console.error('Error checking onboarding status:', error);
             throw error;
@@ -512,25 +531,31 @@ export function useExpert() {
                 throw new Error(`Failed to sync Stripe status: ${response.statusText}`);
             }
 
-            const syncedStatus = await response.json();
-            console.log('Estado sincronizado:', syncedStatus);
-            
-            // Actualizar el perfil con la información sincronizada
+            const raw = await response.json();
+            const syncedStatus = raw as Record<string, unknown>;
+            const stripeAccountId = (syncedStatus.stripeAccountId ?? raw.StripeAccountId) as string | null | undefined;
+            const onboardingCompleted = Boolean(syncedStatus.onboardingCompleted ?? raw.OnboardingCompleted);
+            const canAccessStripe = Boolean(syncedStatus.canAccessStripe ?? raw.CanAccessStripe);
+            const stripeStatus = (syncedStatus.stripeStatus ?? raw.StripeStatus) as ExpertProfile['stripeStatus'];
+            const stripeStatusDetails = (syncedStatus.stripeStatusDetails ?? raw.StripeStatusDetails) as string | null | undefined;
+            const hasPendingOnboarding = Boolean(syncedStatus.hasPendingOnboarding ?? raw.HasPendingOnboarding);
+            console.log('Estado sincronizado:', { stripeAccountId, onboardingCompleted, stripeStatus });
+
             setProfile(prev => {
                 if (!prev) return null;
-                
+
                 return {
                     ...prev,
-                    stripeAccountId: syncedStatus.stripeAccountId,
-                    onboardingCompleted: syncedStatus.onboardingCompleted,
-                    canAccessStripe: syncedStatus.canAccessStripe,
-                    stripeStatus: syncedStatus.stripeStatus,
-                    stripeStatusDetails: syncedStatus.stripeStatusDetails,
-                    pendingStripeAccountId: syncedStatus.hasPendingOnboarding ? prev.pendingStripeAccountId : null
+                    stripeAccountId: stripeAccountId ?? prev.stripeAccountId,
+                    onboardingCompleted,
+                    canAccessStripe,
+                    stripeStatus: stripeStatus ?? prev.stripeStatus,
+                    stripeStatusDetails: stripeStatusDetails ?? prev.stripeStatusDetails,
+                    pendingStripeAccountId: hasPendingOnboarding ? (stripeAccountId ?? prev.pendingStripeAccountId) : null,
                 };
             });
-            
-            return syncedStatus;
+
+            return raw;
         } catch (error) {
             console.error('Error syncing Stripe status:', error);
             throw error;
@@ -665,7 +690,7 @@ export function useExpert() {
         restartOnboarding,
         isRestartingOnboarding,
         syncStripeStatus,
-        fetchProfile: () => fetchProfile(true), // Forzar refresh
+        fetchProfile,
         fetchSearches: () => fetchSearches(true), // Forzar refresh
         fetchServiceTypes: () => fetchServiceTypes(true), // Forzar refresh
     };

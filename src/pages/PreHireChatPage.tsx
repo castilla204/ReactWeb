@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
 import { useApi } from '../hooks/useApi';
@@ -25,6 +25,9 @@ import AppointmentMap from '../components/AppointmentMap';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
+    const [searchParams] = useSearchParams();
+    const conversationIdParam = searchParams.get('conversationId');
+    const conversationId = conversationIdParam ? parseInt(conversationIdParam, 10) : undefined;
     const navigate = useNavigate();
     const { isAuthenticated, user, updateUser } = useAuth();
     const { fetchApi } = useApi();
@@ -849,6 +852,7 @@ export function PreHireChatPage() {
                         serviceId={serviceIdNumber}
                         token={token}
                         userId={userId}
+                        conversationId={conversationId && conversationId > 0 ? conversationId : undefined}
                         onConnectionChange={setIsChatConnected}
                     />
                 </div>

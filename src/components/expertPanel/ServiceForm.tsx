@@ -7,7 +7,6 @@ import {
     DrawerContent,
     DrawerHeader,
     DrawerTitle,
-    DrawerClose,
 } from '../ui/drawer';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
@@ -15,6 +14,7 @@ import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '../ui/empty';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { markFilePickerOpening } from '../../utils/filePickerGuard';
 
 // Componente para mostrar imagen de categoría
 const CategoryImage: React.FC<{ categoryName: string; size?: 'sm' | 'md' }> = ({ categoryName, size = 'sm' }) => {
@@ -109,7 +109,9 @@ export function ServiceForm({
     showServiceForm,
     setShowServiceForm,
     selectedImages,
-    setSelectedImages,
+    // setSelectedImages se mantiene en el contrato de props (el padre lo sigue pasando),
+    // pero el formulario ya no muta selectedImages directamente: las altas/bajas pasan por
+    // handleImageSelect/removeImage y el reseteo lo controla el padre tras un cierre intencionado.
     formErrors,
     setFormErrors,
     formData,
@@ -133,6 +135,13 @@ export function ServiceForm({
     setImagesToDelete: propSetImagesToDelete,
 }: ServiceFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // ✅ FIX ARQUITECTÓNICO (no es un hack de timing):
+    // El Drawer se renderiza con `dismissible={false}` (ver más abajo). Eso hace que vaul
+    // IGNORE por completo cualquier intento de cierre que no venga del prop `open` controlado:
+    // clic fuera, Escape y —sobre todo— la pérdida de foco cuando se abre el selector de
+    // archivos nativo del SO. Por eso ya no hace falta el antiguo flag `isPickingFileRef`
+    // ni el listener de `window 'focus'`: el cierre espurio simplemente no puede ocurrir,
+    // así que `selectedImages` nunca se borra al elegir una foto.
     const { deliverableTypes, isLoading: isLoadingDeliverableTypes, error: deliverableTypesError } = useDeliverableTypes();
     
     // Log adicional para debuggear
@@ -473,6 +482,19 @@ export function ServiceForm({
         return getCurrentExistingImages().length + selectedImages.length;
     };
 
+    // ✅ FIX (fuga de memoria + parpadeo): generar UNA sola object URL por File en lugar de
+    // llamar a URL.createObjectURL en cada render. Se recalcula sólo cuando cambia la lista
+    // de archivos y se revocan las URLs anteriores; el cleanup revoca todo al desmontar.
+    const newImagePreviews = useMemo(
+        () => selectedImages.map(file => URL.createObjectURL(file)),
+        [selectedImages]
+    );
+    useEffect(() => {
+        return () => {
+            newImagePreviews.forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [newImagePreviews]);
+
     // Función para renderizar el contenido del formulario (reutilizable)
     const renderFormContent = () => (
         <>
@@ -758,7 +780,14 @@ export function ServiceForm({
                     <Label>Imágenes</Label>
                     <div
                         className="cursor-pointer"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={(e) => {
+                            // ✅ FIX: Evitar re-entrancia. El <input> es descendiente de este div,
+                            // por lo que el .click() programático vuelve a burbujear hasta aquí.
+                            // Ignorar los clics que ya provienen del propio input.
+                            if (e.target === fileInputRef.current) return;
+                            markFilePickerOpening();
+                            fileInputRef.current?.click();
+                        }}
                     >
                         <Empty className="py-8">
                             <EmptyHeader>
@@ -766,7 +795,7 @@ export function ServiceForm({
                                     <Upload className="w-8 h-8 text-muted-foreground" />
                                 </EmptyMedia>
                                 <EmptyTitle>Haz clic para subir imágenes</EmptyTitle>
-                                <EmptyDescription>PNG o JPG (máx. 5MB)</EmptyDescription>
+                                <EmptyDescription>PNG o JPG (máx. 10MB). Se guardan al pulsar Crear/Actualizar.</EmptyDescription>
                             </EmptyHeader>
                         </Empty>
                         <input
@@ -774,6 +803,10 @@ export function ServiceForm({
                             type="file"
                             accept="image/jpeg,image/png"
                             multiple
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                markFilePickerOpening();
+                            }}
                             onChange={handleImageSelect}
                             className="hidden"
                             ref={fileInputRef}
@@ -850,13 +883,19 @@ export function ServiceForm({
                                 })()}
                                 
                                 {/* Imágenes nuevas */}
-                                {selectedImages.map((image, index) => (
+                                {selectedImages.map((_image, index) => (
                                     <div key={`new-${index}`} className="relative group">
                                         <img
-                                            src={URL.createObjectURL(image)}
+                                            src={newImagePreviews[index]}
                                             alt={`Nueva imagen ${index + 1}`}
                                             className="w-full h-24 object-cover rounded-md border border-border shadow-sm group-hover:shadow-md transition-shadow"
                                         />
+                                        {/* Círculo de subida: overlay mientras se sube la imagen al guardar */}
+                                        {(editingService ? isUpdatingService : isCreatingService) && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                                <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                            </div>
+                                        )}
                                         <Button
                                             type="button"
                                             variant="destructive"
@@ -979,8 +1018,20 @@ export function ServiceForm({
         </>
     );
 
-    // Prevenir scroll del body cuando el drawer está abierto usando el hook seguro
     useBodyScrollLock(showServiceForm);
+
+    useEffect(() => {
+        if (showServiceForm) {
+            document.body.dataset.drawerOpen = 'service';
+        } else if (document.body.dataset.drawerOpen === 'service') {
+            delete document.body.dataset.drawerOpen;
+        }
+        return () => {
+            if (document.body.dataset.drawerOpen === 'service') {
+                delete document.body.dataset.drawerOpen;
+            }
+        };
+    }, [showServiceForm]);
 
     // Estado para rastrear si el drawer está cerrando (para evitar cambios de key durante el cierre)
     const [isClosing, setIsClosing] = React.useState(false);
@@ -999,57 +1050,75 @@ export function ServiceForm({
         }
     }, [editingService, showServiceForm, isClosing]);
 
-    // Manejar el cierre del Drawer de forma controlada
-    const handleDrawerOpenChange = (open: boolean) => {
-        if (!open) {
-            // Marcar que está cerrando y mantener la key actual
-            setIsClosing(true);
-            setShowServiceForm(false);
-            // Esperar a que la animación termine antes de permitir cambios de key
-            setTimeout(() => {
-                setIsClosing(false);
-                // Actualizar la key después de que el drawer se haya cerrado completamente
-                drawerKeyRef.current = getDrawerKey();
-            }, 350); // Tiempo de animación del drawer + margen de seguridad
-        } else {
+    // ✅ Cierre EXPLÍCITO del Drawer (único camino de cierre permitido).
+    // Como el Drawer es `dismissible={false}`, vaul ignora cualquier cierre que no
+    // controlemos nosotros vía el prop `open`. Por tanto, los botones Cancelar / X / submit
+    // deben llamar a esta función para cerrar de verdad. El reseteo de estado (incluido
+    // selectedImages) se delega al wrapper de setShowServiceForm en el componente padre,
+    // que sólo resetea tras un cierre intencionado.
+    const closeDrawer = () => {
+        setIsClosing(true);
+        setShowServiceForm(false);
+        // Esperar a que la animación de salida termine antes de permitir cambios de key.
+        setTimeout(() => {
             setIsClosing(false);
-            // Actualizar la key cuando se abre
+            drawerKeyRef.current = getDrawerKey();
+        }, 350); // Tiempo de animación del drawer + margen de seguridad
+    };
+
+    // Handler para onOpenChange de vaul. Con dismissible={false} vaul NO lo invoca para
+    // cierres espurios (foco/outside/Escape); aun así lo dejamos para abrir y como red de
+    // seguridad. Nunca cerramos aquí de forma implícita.
+    const handleDrawerOpenChange = (open: boolean) => {
+        if (open && !showServiceForm) {
+            setIsClosing(false);
             drawerKeyRef.current = getDrawerKey();
             setShowServiceForm(true);
         }
+        // open === false: ignorado a propósito. El cierre real pasa por closeDrawer().
     };
 
     return (
-        <Drawer 
-            open={showServiceForm} 
+        <Drawer
+            open={showServiceForm}
             onOpenChange={handleDrawerOpenChange}
+            dismissible={false}
+            repositionInputs={false}
+            shouldScaleBackground={false}
         >
-            <DrawerContent className="max-h-[96vh] flex flex-col h-[96vh]">
+            <DrawerContent
+                className="max-h-[96vh] flex flex-col h-[96vh]"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                // ✅ Cinturón y tirantes: aunque dismissible={false} ya bloquea estos cierres,
+                // prevenimos explícitamente los eventos de cierre de Radix por si alguno se
+                // disparase (p. ej. el blur al abrir el diálogo de archivos del SO).
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
+                onFocusOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
                 <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh]">
                     <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <DrawerTitle className="text-lg sm:text-xl font-semibold">
                                 {editingService ? 'Editar Servicio' : 'Nuevo Servicio de Búsqueda'}
                             </DrawerTitle>
-                            <DrawerClose asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </DrawerClose>
+                            {/* ✅ Con dismissible={false}, DrawerClose (DialogPrimitive.Close)
+                                quedaría ignorado por vaul. Cerramos explícitamente. */}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={closeDrawer}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
                     </DrawerHeader>
                     {/* Contenido scrollable */}
                     <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
-                        {/* ✅ DEBUG: Mostrar estado de datos cuando el formulario está abierto */}
-                        {showServiceForm && (
-                            <div className="mb-4 p-3 bg-muted/50 rounded-md text-xs space-y-1 border border-dashed">
-                                <div><strong>Estado de datos:</strong></div>
-                                <div>Categorías: {normalizedCategories.length} {categoriesLoading ? '(cargando...)' : ''}</div>
-                                <div>Tipos de servicio: {serviceTypes?.length || 0} {isLoadingServiceTypes ? '(cargando...)' : ''}</div>
-                                <div>Tipos de entregables: {deliverableTypes?.length || 0} {isLoadingDeliverableTypes ? '(cargando...)' : ''}</div>
-                                <div>Categorías padre: {parentCategories.length}</div>
-                            </div>
-                        )}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                             {renderFormContent()}
                         </div>
@@ -1063,11 +1132,13 @@ export function ServiceForm({
                             type="button"
                             variant="outline"
                             onClick={() => {
-                                setShowServiceForm(false);
-                                setSelectedImages([]);
+                                // Cierre intencionado: el wrapper de setShowServiceForm en el
+                                // padre se encarga de resetear el formulario (incluidas las
+                                // imágenes) tras la animación de cierre.
                                 if (fileInputRef.current) {
                                     fileInputRef.current.value = '';
                                 }
+                                closeDrawer();
                             }}
                             className="flex-1 md:flex-none md:w-auto"
                         >

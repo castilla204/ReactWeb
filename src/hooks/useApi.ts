@@ -142,17 +142,32 @@ export const useApi = () => {
             }
 
             if (!response.ok) {
-                let error;
+                let error: Record<string, unknown>;
                 try {
-                    error = responseText ? JSON.parse(responseText) : { message: `Request failed with status ${response.status}` };
+                    error = responseText
+                        ? (JSON.parse(responseText) as Record<string, unknown>)
+                        : { message: `Request failed with status ${response.status}` };
                 } catch {
                     error = { message: responseText || `Request failed with status ${response.status}` };
                 }
-                
+                error.status = response.status;
+                if (!error.message) {
+                    error.message = `Request failed with status ${response.status}`;
+                }
+
+                if (endpoint.includes('/Notification')) {
+                    console.error('[useApi] Notification API error:', {
+                        status: response.status,
+                        url,
+                        method: fetchConfig.method || 'GET',
+                        error,
+                    });
+                }
+
                 if (endpoint.includes('GetServiceByHireId')) {
                     console.error('[useApi] GetServiceByHireId error:', error);
                 }
-                
+
                 if (endpoint.includes('appointment-status-configs')) {
                     console.error('[useApi] Appointment Config error:', error);
                 }

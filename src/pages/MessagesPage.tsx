@@ -114,7 +114,7 @@ export function MessagesPage() {
             // Ruta: /chat-pre-contratacion/{searchServiceId}
             // Endpoint: GET /api/Chat/conversation-by-service?searchServiceId={id}
             // Componente: PreHireChat (solo chat, sin tabs)
-            navigate(`/chat-pre-contratacion/${conversation.searchServiceId}`);
+            navigate(`/chat-pre-contratacion/${conversation.searchServiceId}?conversationId=${conversation.conversationId || conversation.ConversationId}`);
         } else if (conversation.conversationType === 'post-hire' && conversation.searchHireId) {
             // ✅ Chat Post-Contratación
             // Ruta: /searchhire/{searchHireId} (usa searchHireId directamente, no searchId)

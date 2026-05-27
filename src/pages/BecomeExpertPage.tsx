@@ -94,7 +94,12 @@ function BecomeExpertPage() {
     const { formData, previewUrl, isSubmitting, error, handleFileChange, handleMapClick, handleSubmit, setFormData } = useBecomeExpert();
     const { user } = useAuth();
     const { startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
-    const isAlreadyExpert = user?.role === 'Expert';
+    const isAlreadyExpert =
+        user?.role === 'Expert' ||
+        user?.Role === 'Expert' ||
+        user?.role === 'expert' ||
+        user?.Role === 'EXPERT' ||
+        Number(user?.role) === 1;
     // Si ya eres experto pero no completaste Stripe, NO mostramos el formulario (daría "ya eres experto"):
     // comprobamos el estado y, si ya está completo, vamos al panel; si no, mostramos el botón de reanudar pagos.
     useEffect(() => {
@@ -107,7 +112,7 @@ function BecomeExpertPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAlreadyExpert]);
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM',
         libraries
     });
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
@@ -267,11 +272,17 @@ function BecomeExpertPage() {
             case 1:
                 return !!formData.profilePicture;
             case 2:
-                return formData.description.length >= 50;
+                return formData.description.trim().length >= 50;
             case 3:
                 return !!(formData.latitude && formData.longitude);
-            case 4:
-                return true; // Disponibilidad es opcional
+            case 4: {
+                if (availability.daysOfWeek.length === 0) return false;
+                if (!availability.startTime || !availability.endTime) return false;
+                const [startH, startM] = availability.startTime.split(':').map(Number);
+                const [endH, endM] = availability.endTime.split(':').map(Number);
+                if (Number.isNaN(startH) || Number.isNaN(endH)) return false;
+                return startH * 60 + startM < endH * 60 + endM;
+            }
             case 5:
                 return acceptTerms;
             default:
@@ -578,7 +589,7 @@ function BecomeExpertPage() {
                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                 }}
                             >
-                                Define los días y horarios en los que estarás disponible (opcional)
+                                Define los días y horarios en los que estarás disponible (obligatorio)
                             </div>
                                 </div>
                         <div className="space-y-4">
