@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
-import heroExpertImg from '../media/hero-expert-cutout.png';
+import { HeroExpertCutout } from './HeroExpertCutout';
 
 const ExpertsAreaMap = lazy(() =>
   import('./ExpertsAreaMap').then((m) => ({ default: m.default ?? m.ExpertsAreaMap })),
@@ -260,7 +260,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
       </div>
 
       <aside
-        className="absolute inset-y-0 left-0 z-10 pointer-events-none"
+        className="absolute inset-y-0 left-0 z-10 pointer-events-none overflow-hidden"
         style={panelShellStyle}
       >
         <HeroPanelJoy />
@@ -269,28 +269,18 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
           className="absolute inset-0 pointer-events-none"
           style={{ background: `${PANEL_SIDE_LINES}, ${PANEL_WARM_GLOW}, ${PANEL_TOP_GLOW}` }}
         />
-        <div className="relative flex h-full w-full items-center">
-          <div
-            className="pointer-events-auto flex items-end gap-3 lg:gap-5"
-            style={{
-              paddingLeft: contentInset,
-              paddingRight: '1.5rem',
-            }}
-          >
-            <div
-              className="flex shrink-0 items-end w-[115px] md:w-[135px] lg:w-[160px]"
-              aria-hidden
-            >
-              <img
-                src={heroExpertImg}
-                alt=""
-                className="max-h-[210px] md:max-h-[235px] lg:max-h-[265px] w-full object-contain object-bottom"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </div>
+        <div
+          className="relative grid h-full w-full items-center"
+          style={{
+            paddingLeft: contentInset,
+            paddingRight: '1.5rem',
+            gridTemplateColumns: 'auto minmax(0, 1fr)',
+            columnGap: '0.75rem',
+          }}
+        >
+          <HeroExpertCutout wrapperClassName="self-end" />
 
-            <div className="flex min-w-0 flex-col justify-center py-4 lg:py-5 max-w-[560px]">
+          <div className="pointer-events-auto flex min-w-0 flex-col justify-center py-4 lg:py-5 max-w-[560px] self-center">
               <h1 className="hp-hero-title-lg">
                 Antes de comprar,
                 <span className="block text-[#0066CC]">que lo revise un experto</span>
@@ -340,7 +330,6 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                 <ArrowRight className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
-          </div>
         </div>
       </aside>
     </section>
