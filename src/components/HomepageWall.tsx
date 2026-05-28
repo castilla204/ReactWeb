@@ -8,60 +8,31 @@ import { Star, ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
-import { showToast } from '../lib/toast';
+import { homepageToast } from '../lib/toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpCardText, hpType } from '../constants/homepageTypography';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const COCHES_CATEGORY_ID = 5;
 const INMOBILIARIA_CATEGORY_ID = 3;
 
-// ✅ OPTIMIZADO: Debounce para resize events y memoización
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 768;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    const checkMobile = () => {
-      // ✅ Debounce para evitar demasiadas actualizaciones
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        setIsMobile(window.innerWidth < 768);
-      }, 150); // 150ms debounce
-    };
-    
-    window.addEventListener('resize', checkMobile, { passive: true });
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
-
-  return isMobile;
-};
-
 interface ServiceCardProps {
   service: SearchServiceDetailDto;
   forceGuestFavorite?: boolean;
-  initialIsFavorite?: boolean; // Estado inicial desde el backend (IsFavorite)
+  initialIsFavorite?: boolean;
+  isMobile: boolean;
+  isAuthenticated: boolean;
+  onOpenService: (serviceId: number) => void;
+  onToggleFavorite: (serviceId: number) => Promise<{ isFavorite: boolean; message: string } | null>;
 }
 
 // ✅ Memoizar ServiceCard para evitar re-renders innecesarios
-export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false }) => {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const { toggleFavoriteAsync } = useServiceFavorites();
-  // ✅ Usar isFavorite del servicio directamente (viene del backend) o el estado inicial como fallback
+export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false, isMobile, isAuthenticated, onOpenService, onToggleFavorite }) => {
   const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
   const [imageIndex, setImageIndex] = useState(0);
   const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
-  const isMobile = useIsMobile();
 
   // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
   const imageUrls = useMemo(() => service.imageUrls || [], [service.imageUrls]);
@@ -77,28 +48,25 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   }, [service.isFavorite, initialIsFavorite]);
 
   const handleCardClick = useCallback(() => {
-    // Navegar a la página de detalle del servicio primero
-    navigate(`/service/${service.id}`);
-  }, [navigate, service.id]);
+    onOpenService(service.id);
+  }, [onOpenService, service.id]);
 
   const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    if (!isAuthenticated) {
-      showToast('info', 'Inicia sesión para guardar favoritos', 3000);
-      return;
-    }
 
     try {
-      const result = await toggleFavoriteAsync(service.id);
-      setIsFavorite(result.isFavorite);
-      showToast('success', result.message, 2000);
-    } catch (error: any) {
+      const result = await onToggleFavorite(service.id);
+      if (result) {
+        setIsFavorite(result.isFavorite);
+        homepageToast.favoriteUpdated(result.message);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error al actualizar favorito';
       console.error('Error al actualizar favorito:', error);
-      showToast('error', error.message || 'Error al actualizar favorito', 3000);
+      homepageToast.error(message, 3000);
     }
-  }, [isAuthenticated, toggleFavoriteAsync, service.id]);
+  }, [onToggleFavorite, service.id]);
 
   const handleImageNavigation = useCallback((e: React.MouseEvent, direction: 'prev' | 'next') => {
     e.stopPropagation();
@@ -172,33 +140,21 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       className="block flex-shrink-0 w-[160px] md:w-[184px]"
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
-      <motion.div 
-        className="relative cursor-pointer group w-full"
-        style={{
-          // ✅ Optimizaciones máximas para fluidez
-          willChange: 'transform',
-          contain: 'layout style paint',
-          // ✅ GPU acceleration
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-        }}
-        whileHover={isMobile ? { scale: 1.05, y: -4 } : { y: -3 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      <motion.div
+        className={`relative cursor-pointer group w-full${isMobile ? ' active:scale-[0.98]' : ''}`}
+        style={{ contain: 'layout style paint' }}
+        whileHover={isMobile ? undefined : { y: -3 }}
+        whileTap={isMobile ? undefined : { scale: 0.98 }}
+        transition={isMobile ? undefined : { type: 'spring', stiffness: 400, damping: 25 }}
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
           className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl md:shadow-[0_2px_14px_rgba(15,23,42,0.07)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300 md:ring-1 md:ring-black/[0.04]"
-          style={{ 
+          style={{
             aspectRatio: isMobile ? '1' : '4 / 3',
             borderRadius: isMobile ? '20px' : '12px',
             width: '100%',
-            // ✅ Optimizaciones máximas para fluidez
-            willChange: 'transform',
             contain: 'layout style paint',
-            // ✅ GPU acceleration
-            transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden',
           }}
         >
           {imageUrls.length > 0 ? (
@@ -209,14 +165,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   src={imageUrls[imageIndex]}
                   alt={service.serviceTypeName}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  style={{ 
+                  style={{
                     display: 'block',
-                    willChange: 'transform', // ✅ Optimización para animaciones
-                    contentVisibility: 'auto', // ✅ Lazy rendering del navegador
+                    contentVisibility: 'auto',
                   }}
-                  loading="lazy" // ✅ Lazy loading nativo
-                  decoding="async" // ✅ Decodificación asíncrona
-                  fetchPriority="low" // ✅ Prioridad baja para imágenes no críticas
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                 />
               </div>
               
@@ -238,7 +193,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       paddingLeft: '8px',
                       paddingRight: '8px',
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(4px)',
+                      background: '#ffffff',
                       borderRadius: '8px',
                       boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
                       whiteSpace: 'nowrap',
@@ -412,6 +367,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                                       src={service.expert.profilePictureUrl}
                                       alt={service.expert.user?.name || 'Experto'}
                                       className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      decoding="async"
                                     />
                                   ) : (
                                     <div 
@@ -534,7 +491,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
     prevProps.service.id === nextProps.service.id &&
     prevProps.service.isFavorite === nextProps.service.isFavorite &&
     prevProps.forceGuestFavorite === nextProps.forceGuestFavorite &&
-    prevProps.initialIsFavorite === nextProps.initialIsFavorite
+    prevProps.initialIsFavorite === nextProps.initialIsFavorite &&
+    prevProps.isMobile === nextProps.isMobile &&
+    prevProps.isAuthenticated === nextProps.isAuthenticated
   );
 });
 
@@ -544,6 +503,10 @@ interface HorizontalScrollSectionProps {
   services: SearchServiceDetailDto[];
   forceGuestFavorite?: boolean;
   isLastSection?: boolean;
+  isMobile: boolean;
+  isAuthenticated: boolean;
+  onOpenService: (serviceId: number) => void;
+  onToggleFavorite: (serviceId: number) => Promise<{ isFavorite: boolean; message: string } | null>;
 }
 
 // ✅ Memoizar HorizontalScrollSection para evitar re-renders innecesarios
@@ -552,9 +515,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   subtitle,
   services,
   forceGuestFavorite = false,
-  isLastSection = false, // ✅ Solo la última sección tendrá margen inferior
+  isLastSection = false,
+  isMobile,
+  isAuthenticated,
+  onOpenService,
+  onToggleFavorite,
 }) => {
-  const isMobile = useIsMobile();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -569,6 +535,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
     checkScroll();
     const scrollElement = scrollRef.current;
     if (scrollElement) {
@@ -598,7 +565,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         scrollElement.removeEventListener('scroll', throttledCheckScroll);
       };
     }
-  }, [checkScroll]);
+  }, [checkScroll, isMobile]);
 
   const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -618,11 +585,9 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   return (
     <div 
       className={isLastSection ? "" : ""} // ✅ Sin margen inferior adicional
-      style={{ 
-        marginBottom: isLastSection ? '0px' : '0px', // ✅ Sin margen inferior - el footer ya tiene su margen
-        // ✅ Optimizaciones para webview
-        willChange: 'contents',
+      style={{
         contain: 'layout style paint',
+        contentVisibility: 'auto',
       }}
     >
       {/* Header sección */}
@@ -662,17 +627,15 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           className="flex overflow-x-auto scrollbar-hide pb-3 md:pb-0 md:px-0 md:pr-0 gap-4 md:gap-3"
           style={{
             WebkitOverflowScrolling: 'touch',
-            scrollBehavior: 'smooth',
+            scrollBehavior: 'auto',
             scrollSnapType: 'x mandatory',
             scrollPaddingLeft: '0px',
             scrollPaddingRight: '0px',
             overscrollBehaviorX: 'contain',
-            willChange: 'scroll-position',
             contain: 'layout style paint',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
-          onScroll={checkScroll}
         >
           {services.map((service) => (
             <div key={service.id} className="flex-shrink-0 scroll-smooth" style={{ scrollSnapAlign: 'start' }}>
@@ -680,6 +643,10 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                 service={service}
                 forceGuestFavorite={forceGuestFavorite}
                 initialIsFavorite={service.isFavorite ?? false}
+                isMobile={isMobile}
+                isAuthenticated={isAuthenticated}
+                onOpenService={onOpenService}
+                onToggleFavorite={onToggleFavorite}
               />
             </div>
           ))}
@@ -766,7 +733,10 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       service.id === nextProps.services[index]?.id &&
       service.isFavorite === nextProps.services[index]?.isFavorite
     ) &&
-    prevProps.forceGuestFavorite === nextProps.forceGuestFavorite
+    prevProps.forceGuestFavorite === nextProps.forceGuestFavorite &&
+    prevProps.isLastSection === nextProps.isLastSection &&
+    prevProps.isMobile === nextProps.isMobile &&
+    prevProps.isAuthenticated === nextProps.isAuthenticated
   );
 });
 
@@ -788,6 +758,30 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   longitude: longitudeProp = null,
   animateOnMount = true,
 }) => {
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toggleFavoriteAsync } = useServiceFavorites();
+
+  const handleOpenService = useCallback(
+    (serviceId: number) => {
+      navigate(`/service/${serviceId}`);
+    },
+    [navigate],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (serviceId: number) => {
+      if (!isAuthenticated) {
+        homepageToast.loginRequired();
+        return null;
+      }
+      const result = await toggleFavoriteAsync(serviceId);
+      return { isFavorite: result.isFavorite, message: result.message };
+    },
+    [isAuthenticated, toggleFavoriteAsync],
+  );
+
   // ✅ OPTIMIZADO: El backend ahora devuelve la ubicación por IP
   // No necesitamos solicitar permisos de geolocalización del navegador
   // Pasamos null para lat/long y el backend detecta automáticamente la ubicación por IP.
@@ -864,13 +858,17 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
                 services={filteredServices}
                 forceGuestFavorite={index === 1}
                 isLastSection={isLastSection}
+                isMobile={isMobile}
+                isAuthenticated={isAuthenticated}
+                onOpenService={handleOpenService}
+                onToggleFavorite={handleToggleFavorite}
               />
             </motion.div>
           );
         })
         .filter(Boolean);
     },
-    [filterServices, sectionVariants]
+    [filterServices, sectionVariants, isMobile, isAuthenticated, handleOpenService, handleToggleFavorite]
   );
 
   const renderedSections = useMemo(
@@ -892,9 +890,22 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
       nearbyPageSize: 20,
       popularPage: 1,
       popularPageSize: 20,
-      _enabled: !isLoading && !!sections && !hasVisibleServices && categoryId !== fallbackCategoryId,
+      _enabled:
+        !serviceTypeId &&
+        !isLoading &&
+        !!sections &&
+        !hasVisibleServices &&
+        categoryId !== fallbackCategoryId,
     }),
-    [fallbackCategoryId, countryCode, isLoading, sections, hasVisibleServices, categoryId]
+    [
+      fallbackCategoryId,
+      countryCode,
+      isLoading,
+      sections,
+      hasVisibleServices,
+      categoryId,
+      serviceTypeId,
+    ]
   );
 
   const { data: fallbackSections, isLoading: fallbackLoading } = useHomepageWallQuery(fallbackParams);

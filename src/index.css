@@ -148,6 +148,20 @@
     }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    [data-homepage-hero],
+    [data-services-section] {
+        scroll-behavior: auto;
+    }
+
+    [data-homepage-hero] *,
+    [data-services-section] * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 @layer base {
     html {
         @apply bg-background text-foreground;
@@ -790,19 +804,54 @@ img[alt*="country"],
     color: #717171;
 }
 
-/* Sonner Toast Notifications - Estilo clásico y simple */
-[data-sonner-toaster] {
-    --width: 320px;
-    --border-radius: 8px;
+/* Sonner — alineado con homepage (Manrope, #0066CC, cards wall) */
+[data-sonner-toaster].hp-toaster {
+    --width: 360px;
+    --border-radius: 16px;
+    font-family: Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
 }
 
-[data-sonner-toast] {
-    animation: toast-in 0.3s ease-out;
+@media (min-width: 768px) {
+    [data-sonner-toaster].hp-toaster {
+        --offset-top: 24px;
+        --offset-right: 24px;
+    }
+}
+
+[data-sonner-toast].hp-toast {
+    position: relative;
+    overflow: hidden;
+    animation: hp-toast-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     transform-origin: top right;
+    background: #ffffff !important;
+    border: 1px solid #ebebeb !important;
+    color: #222222 !important;
+    box-shadow: 0 2px 14px rgba(15, 23, 42, 0.07) !important;
+    border-radius: 16px !important;
 }
 
-[data-sonner-toast][data-styled="true"] {
-    /* Sin backdrop-filter para estilo clásico */
+[data-sonner-toast].hp-toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, #0066CC 0%, rgba(0, 102, 204, 0.22) 100%);
+    pointer-events: none;
+}
+
+[data-sonner-toast].hp-toast--error::before {
+    background: linear-gradient(180deg, #DC2626 0%, rgba(220, 38, 38, 0.22) 100%);
+}
+
+[data-sonner-toast].hp-toast--warning::before {
+    background: linear-gradient(180deg, #D97706 0%, rgba(217, 119, 6, 0.22) 100%);
+}
+
+[data-sonner-toast].hp-toast--info {
+    background: #f5f9fd !important;
 }
 
 [data-sonner-toast][data-swipe="move"] {
@@ -815,95 +864,104 @@ img[alt*="country"],
 }
 
 [data-sonner-toast][data-swipe="end"] {
-    animation: toast-out 0.3s ease-in forwards;
+    animation: hp-toast-out 0.25s ease-in forwards;
 }
 
-@keyframes toast-in {
+@keyframes hp-toast-in {
     from {
-        transform: translateX(calc(100% + 20px));
+        transform: translateX(calc(100% + 16px)) scale(0.98);
         opacity: 0;
     }
     to {
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
         opacity: 1;
     }
 }
 
-@keyframes toast-out {
+@keyframes hp-toast-out {
     from {
         transform: translateX(0);
         opacity: 1;
     }
     to {
-        transform: translateX(calc(100% + 20px));
+        transform: translateX(calc(100% + 16px));
         opacity: 0;
     }
 }
 
-/* Ocultar iconos en las notificaciones - solo texto */
-[data-sonner-toast] [data-icon] {
-    display: none !important;
+@media (prefers-reduced-motion: reduce) {
+    [data-sonner-toast].hp-toast {
+        animation: hp-toast-in-reduced 0.15s ease-out;
+    }
+    @keyframes hp-toast-in-reduced {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
 }
 
-/* Botón de cerrar simple */
+[data-sonner-toast].hp-toast [data-icon] {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: #E8F2FC;
+    color: #0066CC;
+}
+
+[data-sonner-toast].hp-toast--error [data-icon] {
+    background: #FEF2F2;
+    color: #DC2626;
+}
+
+[data-sonner-toast].hp-toast--warning [data-icon] {
+    background: #FFFBEB;
+    color: #D97706;
+}
+
 [data-sonner-toast] [data-close-button] {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    transition: all 0.15s ease;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: none !important;
+    background: transparent !important;
+    color: #737373 !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    top: 10px;
+    right: 10px;
+    left: auto !important;
 }
 
 [data-sonner-toast] [data-close-button]:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: #f5f5f5 !important;
+    color: #222222 !important;
 }
 
-/* Título y descripción - estilo clásico */
 [data-sonner-toast] [data-title] {
-    font-weight: 500;
-    line-height: 1.5;
+    font-weight: 600;
     font-size: 14px;
+    line-height: 20px;
+    letter-spacing: -0.01em;
+    color: #222222;
 }
 
 [data-sonner-toast] [data-description] {
-    margin-top: 4px;
-    line-height: 1.5;
-    font-size: 13px;
-    color: #6b7280;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #6a6a6a;
 }
 
-/* Hover sutil - sin transformaciones exageradas */
-[data-sonner-toast]:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.2s ease;
+[data-sonner-toast].hp-toast:hover {
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.13) !important;
+    transition: box-shadow 0.3s ease-out;
 }
 
-/* Espaciado interno simple */
 [data-sonner-toast] [data-content] {
-    padding: 12px 16px;
-    gap: 8px;
-}
-
-/* Fondos sólidos y bordes definidos - sin gradientes ni transparencias */
-[data-sonner-toast][data-type="success"] {
-    background: #ffffff !important;
-    border: 1px solid #86efac !important;
-    color: #166534 !important;
-}
-
-[data-sonner-toast][data-type="error"] {
-    background: #ffffff !important;
-    border: 1px solid #fca5a5 !important;
-    color: #991b1b !important;
-}
-
-[data-sonner-toast][data-type="info"] {
-    background: #ffffff !important;
-    border: 1px solid #93c5fd !important;
-    color: #1e40af !important;
-}
-
-[data-sonner-toast][data-type="warning"] {
-    background: #ffffff !important;
-    border: 1px solid #fcd34d !important;
-    color: #92400e !important;
+    padding: 0 4px 0 8px;
+    gap: 12px;
+    align-items: flex-start;
 }

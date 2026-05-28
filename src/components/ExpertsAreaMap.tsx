@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from 'lucide-react';
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 /**
  * Mapa con perspectiva sutil (MapLibre) + tiles Carto/OSM.
@@ -152,6 +155,19 @@ const MIN_LANDING_ZOOM = 2.8;
 const toHeroLandingZoom = (zoom: number) =>
   Math.max(MIN_LANDING_ZOOM, zoom - LANDING_ZOOM_PULLBACK);
 
+/** Tras el vuelo: mercator pinta bien los tiles Carto; globe a zoom regional solo muestra contornos. */
+const applyRegionalProjection = (map: maplibregl.Map) => {
+  try {
+    if (map.getProjection().type !== 'mercator') {
+      map.setProjection({ type: 'mercator' });
+    }
+  } catch (err) {
+    console.warn('[ExpertsAreaMap] Proyección mercator:', err);
+  }
+  map.resize();
+  map.triggerRepaint();
+};
+
 export interface MapLandingTarget {
   center: [number, number];
   zoom: number;
@@ -269,9 +285,35 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
     const flyToLanding = (targetMap: maplibregl.Map, center: [number, number], zoom: number) => {
       applyOverlayPadding();
+      const landingZoom = toHeroLandingZoom(zoom);
+      const finishIntro = () => {
+        if (cancelled || mapRef.current !== targetMap) return;
+        applyRegionalProjection(targetMap);
+        targetMap.once('idle', () => {
+          if (!cancelled && mapRef.current === targetMap) {
+            targetMap.triggerRepaint();
+          }
+        });
+        setIntroComplete(true);
+      };
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches;
+
+      if (prefersReducedMotion) {
+        targetMap.jumpTo({
+          center,
+          zoom: landingZoom,
+          pitch: HERO_CAMERA.pitch,
+          bearing: HERO_CAMERA.bearing,
+        });
+        finishIntro();
+        return;
+      }
+
       targetMap.flyTo({
         center,
-        zoom: toHeroLandingZoom(zoom),
+        zoom: landingZoom,
         pitch: HERO_CAMERA.pitch,
         bearing: HERO_CAMERA.bearing,
         duration: LANDING_FLY_MS,
@@ -280,9 +322,6 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         essential: true,
       });
 
-      const finishIntro = () => {
-        if (!cancelled) setIntroComplete(true);
-      };
       const safetyTimer = window.setTimeout(finishIntro, LANDING_FLY_MS + 600);
       targetMap.once('moveend', () => {
         window.clearTimeout(safetyTimer);
@@ -340,9 +379,13 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       }
     };
 
+    let resizeDebounceId: ReturnType<typeof setTimeout> | null = null;
     const scheduleResize = () => {
-      resizeMap();
-      requestAnimationFrame(resizeMap);
+      if (resizeDebounceId) clearTimeout(resizeDebounceId);
+      resizeDebounceId = setTimeout(() => {
+        resizeMap();
+        resizeDebounceId = null;
+      }, 120);
     };
 
     const initMap = () => {
@@ -392,6 +435,11 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         applyOverlayPadding();
         setMapReady(true);
         tryScheduleLanding();
+        map.once('idle', () => {
+          if (!cancelled && mapRef.current === map) {
+            map.triggerRepaint();
+          }
+        });
       };
 
       map.once('style.load', onStyleReady);
@@ -425,8 +473,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       }
     });
     ro.observe(wrapper);
-    ro.observe(el);
-    window.addEventListener('resize', scheduleResize);
+    window.addEventListener('resize', scheduleResize, { passive: true });
 
     tryInit();
 
@@ -435,6 +482,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       tryScheduleLandingRef.current = null;
       if (landingTimerRef.current) clearTimeout(landingTimerRef.current);
       landingStartedRef.current = false;
+      if (resizeDebounceId) clearTimeout(resizeDebounceId);
       ro?.disconnect();
       window.removeEventListener('resize', scheduleResize);
       markersRef.current.forEach((m) => m.remove());
@@ -455,6 +503,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     try {
       if (!map.getSource('ne-coastline')) {
         addGlobalOutlineLayers(map);
+        map.triggerRepaint();
       }
       outlinesLoadedRef.current = true;
     } catch (err) {
@@ -466,38 +515,44 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current.clear();
+    if (markersRef.current.size === 0) {
+      CITY_EXPERTS.forEach((city) => {
+        const el = document.createElement('div');
+        if (onCityClick) {
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleCityClick(city);
+          });
+        }
+        el.addEventListener('mouseenter', () => setHovered(city.name));
+        el.addEventListener('mouseleave', () =>
+          setHovered((h) => (h === city.name ? null : h)),
+        );
 
+        const marker = new maplibregl.Marker({
+          element: el,
+          anchor: 'center',
+          opacityWhenCovered: 0,
+        })
+          .setLngLat([city.lng, city.lat])
+          .addTo(map);
+
+        markersRef.current.set(city.name, marker);
+      });
+    }
+  }, [handleCityClick, mapReady, onCityClick]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    const clickable = Boolean(onCityClick);
     CITY_EXPERTS.forEach((city) => {
-      const selected = Boolean(onCityClick) && selectedCity === city.name;
+      const marker = markersRef.current.get(city.name);
+      if (!marker) return;
+      const selected = clickable && selectedCity === city.name;
       const isHovered = hovered === city.name;
-      const clickable = Boolean(onCityClick);
-
-      const el = document.createElement('div');
-      el.innerHTML = markerHtml(city, selected, isHovered, clickable);
-      if (onCityClick) {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handleCityClick(city);
-        });
-      }
-      el.addEventListener('mouseenter', () => setHovered(city.name));
-      el.addEventListener('mouseleave', () =>
-        setHovered((h) => (h === city.name ? null : h)),
-      );
-
-      const marker = new maplibregl.Marker({
-        element: el,
-        anchor: 'center',
-        opacityWhenCovered: 0,
-      })
-        .setLngLat([city.lng, city.lat])
-        .addTo(map);
-
-      markersRef.current.set(city.name, marker);
+      marker.getElement().innerHTML = markerHtml(city, selected, isHovered, clickable);
     });
-  }, [hovered, selectedCity, handleCityClick, mapReady, onCityClick]);
+  }, [hovered, selectedCity, mapReady, onCityClick]);
 
   return (
     <div

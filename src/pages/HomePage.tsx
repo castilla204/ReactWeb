@@ -1,22 +1,38 @@
 import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
 import { HomepageMobileHero } from '../components/HomepageMobileHero';
-import { HomepageWall } from '../components/HomepageWall';
-import DesktopLanding from '../components/DesktopLanding';
-import { useHomepageWallQuery, prefetchHomepageWall } from '../hooks/useHomepageWall';
+import { prefetchHomepageWall } from '../hooks/useHomepageWall';
+import { useIsMobile } from '../hooks/useIsMobile';
+import {
+  HomePageSearchBarSkeleton,
+  HomePageSearchBarDesktopSkeleton,
+} from '../components/homepage/HomePageSearchBarSkeleton';
+import { HomePageWallSkeleton } from '../components/homepage/HomePageWallSkeleton';
 
+const WELCOME_POPUP_KEY = 'welcome-popup-shown';
+
+const AirbnbSearchBar = lazy(() =>
+  import('../components/AirbnbSearchBar').then((m) => ({ default: m.AirbnbSearchBar })),
+);
+const HomepageWall = lazy(() =>
+  import('../components/HomepageWall').then((m) => ({ default: m.HomepageWall })),
+);
 const WelcomePopup = lazy(() =>
   import('../components/WelcomePopup').then((m) => ({ default: m.WelcomePopup })),
 );
 const MobileBottomBar = lazy(() =>
   import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
 );
+const DesktopLanding = lazy(() => import('../components/DesktopLanding'));
 
 const HomePage: React.FC = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+  const [showWelcomePopup] = useState(
+    () => typeof localStorage !== 'undefined' && !localStorage.getItem(WELCOME_POPUP_KEY),
+  );
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,8 +78,6 @@ const HomePage: React.FC = () => {
     void prefetchHomepageWall(queryClient, wallParams);
   }, [queryClient, wallParams]);
 
-  useHomepageWallQuery(wallParams);
-
   const handleSearch = useCallback(
     (searchData: {
       serviceTypeId: number | null;
@@ -88,14 +102,24 @@ const HomePage: React.FC = () => {
     [],
   );
 
+  const searchBarFallback = isMobile ? (
+    <HomePageSearchBarSkeleton />
+  ) : (
+    <HomePageSearchBarDesktopSkeleton />
+  );
+
   return (
     <>
       <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">
-        <Suspense fallback={null}>
-          <WelcomePopup />
-        </Suspense>
+        {showWelcomePopup && (
+          <Suspense fallback={null}>
+            <WelcomePopup />
+          </Suspense>
+        )}
 
-        <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
+        <Suspense fallback={searchBarFallback}>
+          <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
+        </Suspense>
 
         <HomepageMobileHero />
 
@@ -105,21 +129,29 @@ const HomePage: React.FC = () => {
             id="servicios-grid"
             className="relative z-20 bg-white md:-mt-5 rounded-t-[1.25rem] md:rounded-t-[1.75rem] pt-4 md:pt-8 md:pb-10 shadow-[0_-4px_24px_rgba(15,23,42,0.06)]"
           >
-            <HomepageWall
-              countryCode={countryCode}
-              serviceTypeId={searchFilters.serviceTypeId}
-              categoryId={searchFilters.categoryId}
-              animateOnMount={false}
-            />
+            <Suspense fallback={<HomePageWallSkeleton />}>
+              <HomepageWall
+                countryCode={countryCode}
+                serviceTypeId={searchFilters.serviceTypeId}
+                categoryId={searchFilters.categoryId}
+                animateOnMount={false}
+              />
+            </Suspense>
           </div>
         </div>
 
-        <DesktopLanding />
+        {!isMobile && (
+          <Suspense fallback={null}>
+            <DesktopLanding />
+          </Suspense>
+        )}
       </div>
 
-      <Suspense fallback={null}>
-        <MobileBottomBar />
-      </Suspense>
+      {isMobile && (
+        <Suspense fallback={null}>
+          <MobileBottomBar />
+        </Suspense>
+      )}
     </>
   );
 };
