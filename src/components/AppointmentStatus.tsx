@@ -402,7 +402,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 )}
                 {appointment.lastRejectionAt && (
                   <p className="text-xs text-red-600">
-                    Último rechazo: {new Date(appointment.lastRejectionAt).toLocaleString('es-ES')}
+                    {/* 🛡️ N28: timeZoneName:short añade abreviatura (CET/EST/etc.) para que
+                        clientes en otras zonas vean el contexto sin confundirse con su hora local. */}
+                    Último rechazo: {new Date(appointment.lastRejectionAt).toLocaleString('es-ES', { timeZoneName: 'short' })}
                   </p>
                 )}
               </div>

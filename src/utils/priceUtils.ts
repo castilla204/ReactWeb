@@ -70,6 +70,15 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
  * @param amount - Cantidad a formatear
  * @returns String formateado (ej: "€110.00")
  */
+// 🛡️ N25 TODO arquitectural: i18n. Hardcodear locale='es-ES' + currency='EUR' es correcto
+// MIENTRAS la plataforma sirva solo a España. Cuando se internacionalice (clientes en otros
+// países de la whitelist EEA+US+CA+GB+CH), implementar:
+//  - react-i18next (o similar) para textos UI.
+//  - Hook useLocale() que devuelva el locale del usuario (Accept-Language, preferencia perfil).
+//  - Hook useCurrency() para EUR/CHF/GBP/USD según país del cliente.
+//  - Cambiar firma a formatCurrency(amount, locale?, currency?).
+// Por ahora el currency es fijo EUR (la plataforma cobra siempre en EUR vía Stripe — ver N2
+// descartado en ronda 2: decisión de diseño correcta porque Stripe convierte automático al pagar).
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
