@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, FolderTree, Filter, ChevronUp, Heart, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -68,7 +68,9 @@ import {
   HOMEPAGE_PICK_CATEGORY,
   type HomepagePickCategoryDetail,
 } from '../utils/homepageCategoryPick';
-import { HomepageDesktopKayak } from './HomepageDesktopKayak';
+const HomepageDesktopKayak = lazy(() =>
+  import('./HomepageDesktopKayak').then((m) => ({ default: m.HomepageDesktopKayak })),
+);
 import {
   HP_FONT,
   HP_COLOR,
@@ -106,16 +108,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   
   // ✅ PRERENDERIZAR MAPA: Cargar Google Maps API en móvil para que esté listo cuando navegue
   // ✅ OPTIMIZADO: Solo cargar cuando realmente se necesita (móvil y cuando el modal está abierto)
-  const [isMobile, setIsMobile] = React.useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+  const isMobile = useIsMobile();
+
+  const openMobileSearch = useCallback(() => {
+    setIsMobileSearchOpen(true);
   }, []);
   
   const userEmail = (user as any)?.Email || user?.email;
@@ -178,24 +174,31 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   let selectedServiceType: { id: number; name: string } | undefined;
   let selectedCategory: { id: number; name: string } | undefined;
 
-  // Normalizar datos - el backend devuelve PascalCase, convertimos a camelCase
-  const normalizedServiceTypes = serviceTypes.map((st: any) => ({
-    id: st.Id || st.id,
-    name: st.Name || st.name,
-    description: st.Description || st.description,
-    position: st.Position || st.position,
-  }));
+  const normalizedServiceTypes = useMemo(
+    () =>
+      serviceTypes.map((st: { Id?: number; id?: number; Name?: string; name?: string; Description?: string; description?: string; Position?: number; position?: number }) => ({
+        id: st.Id || st.id,
+        name: st.Name || st.name,
+        description: st.Description || st.description,
+        position: st.Position || st.position,
+      })),
+    [serviceTypes],
+  );
 
-  const normalizedCategories = categories.map((cat: any) => {
-    const parentId = cat.ParentId ?? cat.parentId ?? null;
-    return {
-      id: cat.Id || cat.id,
-      name: cat.Name || cat.name,
-      isActive: cat.IsActive ?? cat.isActive ?? true,
-      parentId,
-      isParent: cat.IsParent ?? cat.isParent ?? parentId == null,
-    };
-  });
+  const normalizedCategories = useMemo(
+    () =>
+      categories.map((cat: { Id?: number; id?: number; Name?: string; name?: string; IsActive?: boolean; isActive?: boolean; ParentId?: number | null; parentId?: number | null; IsParent?: boolean; isParent?: boolean }) => {
+        const parentId = cat.ParentId ?? cat.parentId ?? null;
+        return {
+          id: cat.Id || cat.id,
+          name: cat.Name || cat.name,
+          isActive: cat.IsActive ?? cat.isActive ?? true,
+          parentId,
+          isParent: cat.IsParent ?? cat.isParent ?? parentId == null,
+        };
+      }),
+    [categories],
+  );
 
   // Buscar selecciones actuales en los datos normalizados
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
@@ -231,7 +234,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           // Abrir el modal móvil automáticamente
           const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
           if (isMobileViewport) {
-            setIsMobileSearchOpen(true);
+            openMobileSearch();
             // ✅ Desplegar automáticamente el acordeón de tipo de servicio
             setExpandedAccordion('type');
           }
@@ -254,32 +257,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       }
     }
   }, [normalizedCategories, imageCacheKey, onSearch]);
-
-  // Forzar sombreado siempre en el contenedor de categorías - se ejecuta en cada render
-  useEffect(() => {
-    const forceShadow = () => {
-      if (categoriesContainerRef.current) {
-        const shadow = expandedAccordion === 'where' 
-          ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
-          : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)';
-        // Aplicar directamente al estilo, sobrescribiendo cualquier otra regla
-        categoriesContainerRef.current.style.boxShadow = shadow;
-        categoriesContainerRef.current.style.setProperty('box-shadow', shadow, 'important');
-      }
-    };
-    
-    // Ejecutar inmediatamente y también después del render
-    forceShadow();
-    const rafId = requestAnimationFrame(() => {
-      forceShadow();
-      // También después de un pequeño delay adicional
-      setTimeout(forceShadow, 10);
-    });
-    
-    return () => {
-      cancelAnimationFrame(rafId);
-    };
-  });
 
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
@@ -486,10 +463,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       
       {/* Desktop — barra fina */}
       <header
-        className="sticky top-0 z-50 hidden md:block border-b border-[#dbe8f5]/80 backdrop-blur-sm"
+        className="sticky top-0 z-50 hidden md:block border-b border-[#dbe8f5]/80"
         style={{
           background:
-            'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, rgba(250,250,250,0.97) 100%)',
+            'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, #fafafa 100%)',
         }}
       >
         <div className="w-full h-12 flex items-center justify-between px-6 md:px-8 lg:px-10 xl:px-14">
@@ -524,17 +501,28 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         </div>
       </header>
 
-      <HomepageDesktopKayak
-        categoryTabs={desktopCategoryTabs}
-        categoryId={categoryId ?? CATEGORIES.INMOBILIARIA}
-        countryCode={countryCode}
-      />
+      {!isMobile && (
+        <Suspense
+          fallback={
+            <div
+              className="hidden md:block h-[400px] lg:h-[480px] bg-[#dce9f2]"
+              aria-hidden
+            />
+          }
+        >
+          <HomepageDesktopKayak
+            categoryTabs={desktopCategoryTabs}
+            categoryId={categoryId ?? CATEGORIES.INMOBILIARIA}
+            countryCode={countryCode}
+          />
+        </Suspense>
+      )}
 
       {/* Mobile */}
       <header className="sticky top-0 z-50 md:hidden bg-white border-b border-[#ebebeb] relative">
         <div className="px-4 pt-4 pb-2">
           <div
-            onClick={() => setIsMobileSearchOpen(true)}
+            onClick={openMobileSearch}
             className="w-full bg-white border border-gray-200 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
             
             style={{
@@ -590,7 +578,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                setIsMobileSearchOpen(true);
+                openMobileSearch();
               }}
               className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-[#0066CC] hover:bg-[#005bb5] transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Filtros"
@@ -603,67 +591,22 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         {/* Tabs Mobile - Estructura como Airbnb */}
         <div className="relative w-full" role="tablist">
           {/* Contenedor de tabs con flex */}
-          <motion.div 
-            className="flex w-full px-4 pt-2 pb-2"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.1,
-                  delayChildren: 0.2,
-                }
-              }
-            }}
-          >
-            {/* Tab 1: Coches */}
-            <motion.button
+          <div className="flex w-full px-4 pt-2 pb-2">
+            <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'coches'}
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
-              variants={{
-                hidden: { opacity: 0, scale: 0.8, y: 20 },
-                visible: { 
-                  opacity: 1, 
-                  scale: 1, 
-                  y: 0,
-                  transition: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                  }
-                }
-              }}
-              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
-              <AnimatePresence mode="wait">
-                {activeTab === 'coches' && (
-                  <motion.div
-                    key="wave-mobile-coches"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-              <img 
-                key={`coche-mobile-${imageCacheKey}`}
-                src={getImageWithCache('cochepng.png', imageCacheKey)} 
-                alt="Coche" 
-                className="w-16 h-16 object-contain mb-0" 
-                style={{ margin: '0' }}
+              <img
+                src={getImageWithCache('cochepng.png', imageCacheKey)}
+                alt="Coche"
+                className="w-16 h-16 object-contain mb-0"
+                width={64}
+                height={64}
               />
-              <span 
+              <span
                 className="text-center"
                 style={{
                   fontSize: '14px',
@@ -671,60 +614,27 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: HP_FONT,
                   color: HP_COLOR.muted,
-                  marginTop: '0px',
                 }}
               >
                 Coches
               </span>
-            </motion.button>
+            </button>
 
-            {/* Tab 2: Motos */}
-            <motion.button
+            <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'motos'}
               onClick={() => handleTabClick('motos', CATEGORIES.MOTOS)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
-              variants={{
-                hidden: { opacity: 0, scale: 0.8, y: 20 },
-                visible: { 
-                  opacity: 1, 
-                  scale: 1, 
-                  y: 0,
-                  transition: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                    delay: 0.1,
-                  }
-                }
-              }}
-              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
-              <AnimatePresence mode="wait">
-                {activeTab === 'motos' && (
-                  <motion.div
-                    key="wave-mobile-motos"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
               <img
-                key={`moto-mobile-${imageCacheKey}`}
                 src={getImageWithCache('motopng.png', imageCacheKey)}
                 alt="Moto"
                 className="w-16 h-16 object-contain mb-0"
-                style={{ margin: '0' }}
+                width={64}
+                height={64}
               />
-              <span 
+              <span
                 className="text-center"
                 style={{
                   fontSize: '14px',
@@ -732,60 +642,27 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: HP_FONT,
                   color: HP_COLOR.muted,
-                  marginTop: '0px',
                 }}
               >
                 Motos
               </span>
-            </motion.button>
+            </button>
 
-            {/* Tab 3: Inmobiliaria */}
-            <motion.button
+            <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'inmobiliaria'}
               onClick={() => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative"
-              variants={{
-                hidden: { opacity: 0, scale: 0.8, y: 20 },
-                visible: { 
-                  opacity: 1, 
-                  scale: 1, 
-                  y: 0,
-                  transition: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                    delay: 0.2,
-                  }
-                }
-              }}
-              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
-              <AnimatePresence mode="wait">
-                {activeTab === 'inmobiliaria' && (
-                  <motion.div
-                    key="wave-mobile-inmobiliaria"
-                    className="absolute inset-0 rounded-full"
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
-                    style={{
-                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-              </AnimatePresence>
               <img
-                key={`casa-mobile-${imageCacheKey}`}
                 src={getImageWithCache('casapng.png', imageCacheKey)}
                 alt="Casa"
                 className="w-16 h-16 object-contain mb-0"
-                style={{ margin: '0' }}
+                width={64}
+                height={64}
               />
-              <span 
+              <span
                 className="text-center"
                 style={{
                   fontSize: '14px',
@@ -793,13 +670,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontWeight: 400,
                   fontFamily: HP_FONT,
                   color: HP_COLOR.muted,
-                  marginTop: '0px',
                 }}
               >
                 Inmobiliaria
               </span>
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
 
           {/* Indicador/Subrayado - Exactamente al ras del borde inferior del contenedor */}
           <div 
@@ -868,60 +744,97 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 className={`border-0 flex flex-col ${
                   (expandedAccordion === 'where' || isMobile)
                     ? 'fixed inset-0 z-[60] rounded-none'
-                    : 'bg-white rounded-2xl'
+                    : 'bg-white rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.18),0_4px_8px_rgba(0,0,0,0.12)]'
+                } ${
+                  expandedAccordion === 'where' && !isMobile
+                    ? 'shadow-[0_8px_24px_rgba(0,0,0,0.15),0_4px_8px_rgba(0,0,0,0.12)]'
+                    : ''
                 }`}
                 style={{
                   background: (expandedAccordion === 'where' || isMobile) ? HP_PANEL_GRADIENT : '#ffffff',
                   height: (expandedAccordion === 'where' || isMobile) ? '100vh' : 'auto',
                   minHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '280px',
                   maxHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '320px',
-                  boxShadow: (expandedAccordion === 'where' || isMobile)
-                    ? 'none'
-                    : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)',
-                  transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 {/* ✅ En móvil: Siempre mostrar desplegado, sin modo colapsado */}
                 {(expandedAccordion === 'where' || isMobile) ? (
                   <>
-                    {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
-                    <div className={`px-4 pt-16 border-b border-gray-200 ${isMobile ? 'pb-3' : 'pb-4'}`}>
+                    {isMobile && (
+                      <div
+                        className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between"
+                        style={{ top: 'max(1rem, env(safe-area-inset-top, 0px))' }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate('/');
+                            setIsMobileSearchOpen(false);
+                          }}
+                          className={hpIconButtonClass}
+                          aria-label="Volver a inicio"
+                        >
+                          <ChevronUp className="h-4 w-4" style={{ strokeWidth: 2.5 }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsMobileSearchOpen(false)}
+                          className={hpIconButtonClass}
+                          aria-label="Cerrar"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 32 32"
+                            aria-hidden="true"
+                            role="presentation"
+                            focusable="false"
+                            className="h-4 w-4"
+                            style={{ display: 'block', fill: 'none', stroke: 'currentColor', strokeWidth: 2.25, overflow: 'visible' }}
+                          >
+                            <path d="m6 6 20 20M26 6 6 26" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    <div
+                      className={`px-4 border-b border-[#e8e8e8]/90 ${isMobile ? 'pb-3 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3rem)]' : 'pb-4 pt-6'}`}
+                    >
                       <div className={`flex items-center justify-between ${isMobile ? '' : 'mb-4'}`}>
                         <h2
                           tabIndex={-1}
-                          className="relative inline-block"
-                          style={{
-                            ...hpType.modalTitle,
-                            color: HP_COLOR.secondary,
-                            fontFeatureSettings: '"liga" 1, "kern" 1',
-                            WebkitFontSmoothing: 'antialiased',
-                            MozOsxFontSmoothing: 'grayscale',
-                          }}
+                          className={`relative inline-block ${isMobile ? 'hp-section-title' : ''}`}
+                          style={
+                            isMobile
+                              ? {
+                                  fontFeatureSettings: '"liga" 1, "kern" 1',
+                                  WebkitFontSmoothing: 'antialiased',
+                                  MozOsxFontSmoothing: 'grayscale',
+                                }
+                              : {
+                                  ...hpType.modalTitle,
+                                  color: HP_COLOR.secondary,
+                                  fontFeatureSettings: '"liga" 1, "kern" 1',
+                                  WebkitFontSmoothing: 'antialiased',
+                                  MozOsxFontSmoothing: 'grayscale',
+                                }
+                          }
                         >
                           ¿Qué revisamos?
                           <span aria-hidden style={hpTitleUnderlineBarStyle} />
                         </h2>
-                        {/* ✅ En móvil: Botón ChevronUp para volver al home, en desktop: botón para colapsar */}
-                        {isMobile ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigate('/');
-                              setIsMobileSearchOpen(false);
-                            }}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
-                            aria-label="Volver a inicio"
-                          >
-                            <ChevronUp className="w-5 h-5 text-gray-900" style={{ strokeWidth: 2.5 }} />
-                          </button>
-                        ) : (
+                        {isMobile && (
+                          <p className="hp-eyebrow mt-2 max-w-[85%]">Elige una categoría</p>
+                        )}
+                        {!isMobile && (
                           <button
                             type="button"
                             onClick={() => setExpandedAccordion(null)}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-50 transition-colors border border-gray-200 shadow-sm"
+                            className={hpIconButtonClass}
                             aria-label="Comprimir categorías"
                           >
-                            <ChevronDown className="w-5 h-5 text-gray-900 rotate-180" style={{ strokeWidth: 2.5 }} />
+                            <ChevronDown className="h-4 w-4 rotate-180" style={{ strokeWidth: 2.5 }} />
                           </button>
                         )}
                       </div>
@@ -979,18 +892,25 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     </div>
 
                     {/* Contenido expandido al 100% */}
-                    <div className="flex-1 overflow-y-auto px-4 py-4">
+                    <div
+                      className="flex-1 overflow-y-auto px-4 py-4"
+                      style={{
+                        paddingBottom: isMobile
+                          ? 'max(1rem, env(safe-area-inset-bottom, 0px))'
+                          : undefined,
+                      }}
+                    >
                       <div>
                         {categoriesLoading ? (
                           <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-3">
                               {[...Array(4)].map((_, index) => (
-                                <Skeleton key={index} height={80} width={80} borderRadius={12} />
+                                <Skeleton key={index} height={72} borderRadius={12} />
                               ))}
                             </div>
                           </SkeletonTheme>
                         ) : (
-                    <div>
+                    <div className="flex flex-col gap-3">
                               {normalizedCategories
                                 .filter(cat => cat.isActive)
                                 .filter(cat => {
@@ -1033,10 +953,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                   });
                                 }
                               }}
-                                    className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-300 ease-out border-0 animate-fade-in ${
+                                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 ease-out border animate-fade-in ${
                                       categoryId === category.id 
-                                        ? 'bg-gray-900 text-white shadow-md' 
-                                        : 'hover:bg-gray-50 shadow-sm'
+                                        ? 'border-[#005bb5]/40 bg-[#0066CC] text-white shadow-md shadow-[#0066CC]/20' 
+                                        : 'border-[#ebebeb]/90 bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white active:bg-white'
                                     }`}
                                     style={{
                                       animationDelay: `${Math.min(index * 50, 300)}ms`,
@@ -1051,31 +971,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                         />
                                       ) : (
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                  categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
+                                  categoryId === category.id ? 'bg-white/20' : 'bg-white'
                                 }`}>
-                                  <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
+                                  <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-[#737373]'}`} />
                                         </div>
                                       )}
                               <div>
-                                    <div 
-                                      className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
-                                      style={{ 
-                                        fontSize: '14px',
-                                        lineHeight: '18px',
-                                        fontWeight: 600,
-                                        fontFamily: HP_FONT,
-                                        color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
+                                    <div
+                                      style={{
+                                        ...hpCardText.title,
+                                        color: categoryId === category.id ? '#ffffff' : HP_COLOR.secondary,
                                       }}
                                     >
                                   {category.name}
                                 </div>
-                                      <div 
-                                        style={{ 
-                                          fontSize: '14px',
-                                          lineHeight: '18px',
-                                          fontWeight: 400,
-                                          fontFamily: HP_FONT,
-                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
+                                      <div
+                                        style={{
+                                          ...hpType.body,
+                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.85)' : HP_COLOR.muted,
                                         }}
                                       >
                                   Explorar servicios
@@ -1092,14 +1005,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 }
                                 return true;
                               }).length === 0 && (
-                              <div 
-                                className="text-center py-4 text-gray-500"
-                                style={{ 
-                                  fontSize: '14px',
-                                  lineHeight: '18px',
-                                  fontWeight: 400,
-                                  fontFamily: HP_FONT 
-                                }}
+                              <div
+                                className="text-center py-4"
+                                style={{ ...hpType.body, color: HP_COLOR.muted }}
                               >
                           No se encontraron categorías
                             </div>
@@ -1483,8 +1391,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       >
         <div className="flex flex-col h-full pt-2" style={{ height: '100%', overflow: 'hidden' }}>
           {/* Header mejorado con tipografía Airbnb - Estilo más sutil y moderno */}
-          <div className="px-4 pt-2 pb-3 border-b border-gray-200 flex-shrink-0">
-            <h2 className="mb-0" style={{ ...hpType.drawerTitle, color: HP_COLOR.secondary }}>
+          <div className="px-4 pt-2 pb-3 border-b border-[#e8e8e8]/90 flex-shrink-0">
+            <h2 className="mb-0 hp-section-title">
               Más Categorías
             </h2>
           </div>
@@ -1498,7 +1406,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 placeholder="Buscar categorías..."
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:bg-white transition-all border border-[#ebebeb]/80"
                 style={{
                   fontSize: '14px',
                   lineHeight: '18px',
@@ -1511,7 +1419,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           
           {/* Lista de categorías mejorada - Scroll habilitado */}
           <div 
-            className="flex-1 overflow-y-auto px-2" 
+            className="flex-1 overflow-y-auto px-4" 
             style={{ 
               minHeight: 0, 
               maxHeight: '100%',
@@ -1546,8 +1454,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         key={category.id}
                         type="button"
                         onClick={() => handleDrawerCategoryClick(category.id, category.name)}
-                        className={`flex items-center gap-4 px-4 py-4 transition-colors w-full rounded-lg ${
-                          isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'
+                        className={`flex items-center gap-4 px-4 py-4 transition-colors w-full rounded-xl border ${
+                          isSelected
+                            ? 'border-[#0066CC]/30 bg-[#0066CC]/8'
+                            : 'border-transparent hover:bg-[#f9fafb]'
                         }`}
                       >
                         {categoryImage ? (
@@ -1563,34 +1473,20 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         )}
                         
                         <div className="flex-1 text-left min-w-0">
-                          <h3 
-                            className="font-medium leading-tight mb-0.5"
-                            style={{
-                              fontSize: '16px',
-                              lineHeight: '20px',
-                              fontWeight: 600,
-                              fontFamily: HP_FONT,
-                              color: 'rgb(34, 34, 34)',
-                            }}
+                          <h3
+                            className="leading-tight mb-0.5"
+                            style={{ ...hpCardText.title }}
                           >
                             {category.name}
                           </h3>
-                          <p 
-                            style={{
-                              fontSize: '14px',
-                              lineHeight: '18px',
-                              fontWeight: 400,
-                              fontFamily: HP_FONT,
-                              color: HP_COLOR.muted,
-                            }}
-                          >
+                          <p style={{ ...hpType.body, color: HP_COLOR.muted }}>
                             Explorar servicios
                           </p>
                         </div>
                         
                         {isSelected && (
                           <div className="flex-shrink-0">
-                            <div className="w-2 h-2 bg-gray-900 rounded-full" />
+                            <div className="w-2 h-2 rounded-full bg-[#0066CC]" />
                           </div>
                         )}
                       </button>

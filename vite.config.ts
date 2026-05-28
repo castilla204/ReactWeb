@@ -173,13 +173,19 @@ export default defineConfig({
                     // Al consolidar todo en un solo chunk, eliminamos la circularidad
                     manualChunks: (id) => {
                         if (id.includes('node_modules')) {
-                            // ✅ NO separar Google Maps (dejar que Vite lo maneje automáticamente)
                             if (id.includes('@react-google-maps') || id.includes('google')) {
                                 return undefined;
                             }
-                            
-                            // ✅ TODO lo demás va a un solo chunk 'vendor' para evitar dependencias circulares
-                            // Esto incluye React, React-DOM, y todas las demás librerías
+                            if (
+                                id.includes('maplibre-gl') ||
+                                id.includes('@mapbox') ||
+                                id.includes('@maplibre')
+                            ) {
+                                return 'map-hero';
+                            }
+                            if (id.includes('framer-motion')) {
+                                return 'framer';
+                            }
                             return 'vendor';
                         }
                     },

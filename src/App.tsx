@@ -34,40 +34,16 @@ import { Separator } from './components/ui/separator';
 import { Badge } from './components/ui/badge';
 import { isAdmin } from './utils/admin';
 
-import SearchesPage from './pages/SearchesPage';
-import SearchCreationPage from './pages/SearchCreationPage';
 import Background from './components/Background';
-import { BecomeExpertPage } from './pages/BecomeExpertPage';
-import { ExpertPanelPage } from './pages/ExpertPanelPage';
-import { StripeOnboardingReturnPage } from './pages/StripeOnboardingReturnPage';
-import { SearchResultsPage } from './pages/SearchResultsPage';
-import TransactionsPage from './pages/TransactionsPage';
-import HomePage from './pages/HomePage';
-import ServiceDetailPage from './pages/ServiceDetailPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { PreHireChatPage } from './pages/PreHireChatPage';
-import { MessagesPage } from './pages/MessagesPage';
-import QuienesSomosPage from './pages/QuienesSomosPage';
-import ComoFuncionaPage from './pages/ComoFuncionaPage';
-import FAQPage from './pages/FAQPage';
-import { FavoritesPage } from './pages/FavoritesPage';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import { AdminLayout } from './components/layout/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminConfigPage from './pages/admin/AdminConfigPage';
-import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
-import AdminMappingsPage from './pages/admin/AdminMappingsPage';
-import { UserManagement } from './components/UserManagement';
-import NotificationManagement from './components/NotificationManagement';
-import { DisputePanel } from './components/DisputePanel';
-import HangfirePanel from './components/HangfirePanel';
-import SearchDetails from './components/SearchDetails';
+import { RouteSuspense } from './components/RouteSuspense';
+import * as LazyPages from './routes/lazyPages';
 import { GoogleAuth } from './components/GoogleAuth';
 import { GoogleSignInButton } from './components/GoogleSignInButton';
 import { setupRateLimitHandler } from './services/rateLimitHandler';
 import { authService } from './services/authService';
 import { setupErrorInterceptor } from './services/errorInterceptor';
-import { MFASetupPage } from './pages/MFASetupPage';
 import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA';
 import { UserRole } from './utils/roleChecker';
 import CountryFlag from './components/CountryFlag';
@@ -84,10 +60,12 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
     
     return (
-        <SearchDetails 
-            onBack={() => navigate(-1)} 
-            isAdmin={isAdmin} 
-        />
+        <RouteSuspense>
+            <LazyPages.SearchDetails
+                onBack={() => navigate(-1)}
+                isAdmin={isAdmin}
+            />
+        </RouteSuspense>
     );
 };
 
@@ -103,11 +81,13 @@ const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     }
     
     return (
-        <SearchDetails 
-            onBack={() => navigate(-1)} 
-            isAdmin={isAdmin}
-            searchHireId={searchHireId}
-        />
+        <RouteSuspense>
+            <LazyPages.SearchDetails
+                onBack={() => navigate(-1)}
+                isAdmin={isAdmin}
+                searchHireId={searchHireId}
+            />
+        </RouteSuspense>
     );
 };
 
@@ -517,45 +497,44 @@ const AppContent: React.FC = () => {
                                 path="/mfa/setup-required" 
                                 element={
                                     <ProtectedRoute>
-                                        <MFASetupPage />
+                                        <RouteSuspense>
+                                            <LazyPages.MFASetupPage />
+                                        </RouteSuspense>
                                     </ProtectedRoute>
                                 } 
                             />
                             
                             {/* Rutas protegidas con MFA */}
-                            <Route path="/busquedas" element={<ProtectedRouteWithMFA><SearchesPage /></ProtectedRouteWithMFA>} />
+                            <Route path="/busquedas" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchesPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/busquedas/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
-                            {/* ✅ Ruta específica para searchHireId (post-contratación) */}
                             <Route path="/searchhire/:id" element={<ProtectedRouteWithMFA><SearchDetailsByHireWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
-                            <Route path="/detalles/:id" element={<ProtectedRouteWithMFA><SearchResultsPage /></ProtectedRouteWithMFA>} />
-                            {/* Admin Routes */}
+                            <Route path="/detalles/:id" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchResultsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
-                                <Route index element={<AdminDashboard />} />
-                                <Route path="users" element={<UserManagement onBack={() => window.location.href = '/'} />} />
-                                <Route path="config/*" element={<AdminConfigPage />} />
-                                <Route path="categories" element={<AdminCategoriesPage />} />
-                                <Route path="mappings" element={<AdminMappingsPage />} />
-                                <Route path="notifications" element={<NotificationManagement />} />
-                                <Route path="disputes" element={<DisputePanel />} />
-                                <Route path="hangfire" element={<HangfirePanel />} />
+                                <Route index element={<RouteSuspense><LazyPages.AdminDashboard /></RouteSuspense>} />
+                                <Route path="users" element={<RouteSuspense><LazyPages.UserManagement onBack={() => window.location.href = '/'} /></RouteSuspense>} />
+                                <Route path="config/*" element={<RouteSuspense><LazyPages.AdminConfigPage /></RouteSuspense>} />
+                                <Route path="categories" element={<RouteSuspense><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
+                                <Route path="mappings" element={<RouteSuspense><LazyPages.AdminMappingsPage /></RouteSuspense>} />
+                                <Route path="notifications" element={<RouteSuspense><LazyPages.NotificationManagement /></RouteSuspense>} />
+                                <Route path="disputes" element={<RouteSuspense><LazyPages.DisputePanel /></RouteSuspense>} />
+                                <Route path="hangfire" element={<RouteSuspense><LazyPages.HangfirePanel /></RouteSuspense>} />
                             </Route>
-                            <Route path="/become-expert" element={<ProtectedRoute><BecomeExpertPage /></ProtectedRoute>} />
-                            <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><ExpertPanelPage /></ProtectedRouteWithMFA>} />
-                            {/* Retorno de Stripe Connect onboarding (return_url / refresh_url). Antes estas rutas no existían → 404. */}
-                            <Route path="/complete-onboarding" element={<ProtectedRoute><StripeOnboardingReturnPage /></ProtectedRoute>} />
-                            <Route path="/refresh-onboarding" element={<ProtectedRoute><StripeOnboardingReturnPage /></ProtectedRoute>} />
-                            <Route path="/transacciones" element={<ProtectedRouteWithMFA><TransactionsPage /></ProtectedRouteWithMFA>} />
-                            <Route path="/service/:serviceId" element={<ServiceDetailPage />} />
-                            <Route path="/checkout/:serviceId" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-                            <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><PreHireChatPage /></ProtectedRoute>} />
-                            <Route path="/mis-mensajes" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                            <Route path="/crear-busqueda" element={<SearchCreationPage />} />
-                            <Route path="/quienes-somos" element={<QuienesSomosPage />} />
-                            <Route path="/como-funciona" element={<ComoFuncionaPage />} />
-                            <Route path="/faq" element={<FAQPage />} />
-                            <Route path="/favoritos" element={<FavoritesPage />} />
-                            <Route path="/explorar" element={<HomePage />} />
-                            <Route path="/" element={<HomePage />} />
+                            <Route path="/become-expert" element={<ProtectedRoute><RouteSuspense><LazyPages.BecomeExpertPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/complete-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/refresh-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/transacciones" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/service/:serviceId" element={<RouteSuspense><LazyPages.ServiceDetailPage /></RouteSuspense>} />
+                            <Route path="/checkout/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.CheckoutPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/mis-mensajes" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/crear-busqueda" element={<RouteSuspense><LazyPages.SearchCreationPage /></RouteSuspense>} />
+                            <Route path="/quienes-somos" element={<RouteSuspense><LazyPages.QuienesSomosPage /></RouteSuspense>} />
+                            <Route path="/como-funciona" element={<RouteSuspense><LazyPages.ComoFuncionaPage /></RouteSuspense>} />
+                            <Route path="/faq" element={<RouteSuspense><LazyPages.FAQPage /></RouteSuspense>} />
+                            <Route path="/favoritos" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
+                            <Route path="/explorar" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
+                            <Route path="/" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
                             
                             {/* Ruta 404 - debe ir al final */}
                             <Route path="*" element={<NotFoundPage />} />
