@@ -46,7 +46,7 @@ export const HomepageMobileHero: React.FC = () => {
       {expanded && (
         <HeroExpertCutout
           wrapperClassName="absolute bottom-0 right-3 z-[1]"
-          className="h-[148px] origin-bottom translate-y-[20%]"
+          preset="mobile"
         />
       )}
       <div

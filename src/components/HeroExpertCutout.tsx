@@ -1,6 +1,14 @@
 import React from 'react';
-import heroExpertImg from '../media/hero-expert-cutout.png';
+import heroExpertImg from '../media/hero-expert-transparent.png';
 import { cn } from '../lib/utils';
+
+const PRESETS = {
+  compact: 'h-[152px] translate-y-[22%]',
+  mobile: 'h-[148px] translate-y-[20%]',
+  /** PNG recortado + espejo en asset (sin scaleX → no recorte lateral) */
+  'desktop-hero':
+    'h-[400px] md:h-[480px] lg:h-[600px] xl:h-[620px] origin-bottom translate-y-[20%] md:translate-y-[22%] lg:translate-y-[24%] xl:translate-y-[24%]',
+} as const;
 
 /**
  * Experto anclado al borde inferior de la sección hero.
@@ -10,7 +18,8 @@ import { cn } from '../lib/utils';
 export const HeroExpertCutout: React.FC<{
   className?: string;
   wrapperClassName?: string;
-}> = ({ className, wrapperClassName }) => (
+  preset?: keyof typeof PRESETS;
+}> = ({ className, wrapperClassName, preset = 'compact' }) => (
   <div
     className={cn('pointer-events-none shrink-0 self-end leading-[0]', wrapperClassName)}
     aria-hidden
@@ -20,9 +29,8 @@ export const HeroExpertCutout: React.FC<{
       alt=""
       className={cn(
         'block w-auto max-w-none select-none',
-        'h-[152px] md:h-[248px] lg:h-[292px]',
-        /* Empuja piernas bajo el borde inferior del hero */
-        'origin-bottom translate-y-[22%] md:translate-y-[26%] lg:translate-y-[28%]',
+        'origin-bottom',
+        PRESETS[preset],
         className,
       )}
       fetchPriority="high"
