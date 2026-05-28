@@ -7,9 +7,6 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { useLoadScript } from '@react-google-maps/api';
-
-const libraries: ('drawing' | 'geometry' | 'places')[] = ['drawing', 'geometry', 'places'];
 // Importar imágenes directamente desde src/media para que Vite las procese
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
@@ -72,6 +69,15 @@ import {
   type HomepagePickCategoryDetail,
 } from '../utils/homepageCategoryPick';
 import { HomepageDesktopKayak } from './HomepageDesktopKayak';
+import {
+  HP_FONT,
+  HP_COLOR,
+  HP_PANEL_GRADIENT,
+  hpType,
+  hpCardText,
+  hpTitleUnderlineBarStyle,
+  hpIconButtonClass,
+} from '../constants/homepageTypography';
 
 const CATEGORIES = {
   COCHES: 5,
@@ -87,9 +93,10 @@ interface AirbnbSearchBarProps {
     categoryId: number | null;
     adUrl: string;
   }) => void;
+  countryCode?: string;
 }
 
-export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onSearch }) => {
+export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onSearch, countryCode = 'ES' }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated, signOut } = useAuth();
   // ✅ OPTIMIZADO: useServiceTypes y useCategories ya tienen cache, no hay problema en llamarlos aquí
@@ -110,14 +117,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-  // ✅ Solo cargar Google Maps cuando es móvil Y el modal está abierto (o está a punto de abrirse)
-  const { isLoaded: isMapPreloaded } = useLoadScript({
-    googleMapsApiKey: "AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM",
-    libraries,
-    // ✅ Solo cargar en móvil para prerenderizar
-    // En desktop no es necesario porque el mapa se carga después
-  });
   
   const userEmail = (user as any)?.Email || user?.email;
   const userRole = (user as any)?.Role || user?.role;
@@ -485,21 +484,24 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {/* ✅ Overlay de transición con skeletons */}
       {isNavigating && <MapPageSkeleton />}
       
-      {/* Desktop — barra fina + bloque Kayak */}
-      <header className="sticky top-0 z-50 hidden md:block bg-white">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 h-12 flex items-center justify-between">
-          <a
-            href="/"
-            onClick={(e) => { e.preventDefault(); navigate('/'); }}
-            className="flex items-center shrink-0"
+      {/* Desktop — barra fina */}
+      <header
+        className="sticky top-0 z-50 hidden md:block border-b border-[#dbe8f5]/80 backdrop-blur-sm"
+        style={{
+          background:
+            'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, rgba(250,250,250,0.97) 100%)',
+        }}
+      >
+        <div className="w-full h-12 flex items-center justify-between px-6 md:px-8 lg:px-10 xl:px-14">
+          <button
+            type="button"
+            onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
+            className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] hover:border-[#222222] hover:bg-[#f9fafb] transition-colors"
           >
-            <span
-              className="inline-flex items-center justify-center h-8 px-3.5 rounded-md bg-[#FF385C]/10 text-[#222] font-semibold text-[11px] tracking-[0.2em]"
-              aria-label="Inspecciono"
-            >
-              INSPECCIONO
-            </span>
-          </a>
+            <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
+            {isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+          </button>
+
           <div className="flex items-center gap-2">
             {userIsAdmin && (
               <button
@@ -513,17 +515,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             <button
               type="button"
               aria-label="Favoritos"
+              onClick={() => navigate('/favoritos')}
               className="h-8 w-8 rounded-full border border-[#e5e7eb] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
             >
               <Heart className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
-              onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
-              className="h-8 w-8 rounded-full border border-[#d1d5db] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
-            >
-              <User className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -532,6 +527,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       <HomepageDesktopKayak
         categoryTabs={desktopCategoryTabs}
         categoryId={categoryId ?? CATEGORIES.INMOBILIARIA}
+        countryCode={countryCode}
       />
 
       {/* Mobile */}
@@ -560,7 +556,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontSize: '14px',
                   lineHeight: '18px',
                   fontWeight: 500,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  fontFamily: HP_FONT,
                   color: 'rgb(34, 34, 34)',
                 }}
               >
@@ -572,8 +568,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontSize: '12px',
                   lineHeight: '16px',
                   fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
+                  fontFamily: HP_FONT,
+                  color: HP_COLOR.muted,
                 }}
               >
                 <span className="truncate">
@@ -590,13 +586,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </div>
             </div>
             
-            {/* Botón circular rosa con ícono de filtro - Posicionado absoluto a la derecha */}
+            {/* Botón circular con ícono de filtro - Posicionado absoluto a la derecha */}
             <div
               onClick={(e) => {
                 e.stopPropagation();
                 setIsMobileSearchOpen(true);
               }}
-              className="absolute right-3 flex-shrink-0 w-10 h-10 rounded-full bg-pink-500 hover:bg-pink-600 transition-colors flex items-center justify-center cursor-pointer"
+              className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-[#0066CC] hover:bg-[#005bb5] transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Filtros"
             >
               <Filter className="w-5 h-5 text-white" />
@@ -654,7 +650,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                     style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
                       pointerEvents: 'none',
                     }}
                   />
@@ -671,10 +667,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 className="text-center"
                 style={{
                   fontSize: '14px',
-                  lineHeight: '10px',
+                  lineHeight: '18px',
                   fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
+                  fontFamily: HP_FONT,
+                  color: HP_COLOR.muted,
                   marginTop: '0px',
                 }}
               >
@@ -715,7 +711,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                     style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
                       pointerEvents: 'none',
                     }}
                   />
@@ -732,10 +728,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 className="text-center"
                 style={{
                   fontSize: '14px',
-                  lineHeight: '10px',
+                  lineHeight: '18px',
                   fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
+                  fontFamily: HP_FONT,
+                  color: HP_COLOR.muted,
                   marginTop: '0px',
                 }}
               >
@@ -776,7 +772,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.6, ease: 'easeOut' }}
                     style={{
-                      background: 'radial-gradient(circle, rgba(34, 34, 34, 0.15) 0%, transparent 70%)',
+                      background: 'radial-gradient(circle, rgba(0, 102, 204, 0.18) 0%, transparent 70%)',
                       pointerEvents: 'none',
                     }}
                   />
@@ -793,10 +789,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 className="text-center"
                 style={{
                   fontSize: '14px',
-                  lineHeight: '10px',
+                  lineHeight: '18px',
                   fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
+                  fontFamily: HP_FONT,
+                  color: HP_COLOR.muted,
                   marginTop: '0px',
                 }}
               >
@@ -810,7 +806,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             className="absolute bottom-0 left-0 right-0 h-[2px] pointer-events-none"
           >
             <div 
-              className="absolute bottom-0 left-0 h-[2px] bg-gray-900 transition-transform duration-300 ease-out"
+              className="absolute bottom-0 left-0 h-[2px] bg-[#0066CC] transition-transform duration-300 ease-out"
               style={{
                 width: '33.3333%',
                 transform: `translateX(${activeTab === 'coches' ? '0%' : activeTab === 'motos' ? '100%' : '200%'})`,
@@ -824,12 +820,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
         <>
           <div 
-            className="md:hidden fixed inset-0 z-50 bg-gray-50 flex flex-col pb-4"
+            className="md:hidden fixed inset-0 z-50 flex flex-col"
             style={{
-              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.12), 0 -2px 8px rgba(0, 0, 0, 0.08)'
+              background: isMobile ? HP_PANEL_GRADIENT : '#f9fafb',
+              boxShadow: isMobile ? undefined : '0 4px 24px rgba(15, 23, 42, 0.08)',
             }}
           >
-            {/* Botones de navegación arriba - ChevronUp a la izquierda, cerrar a la derecha */}
+            {!isMobile && (
             <div className="absolute top-4 left-4 right-4 z-[60] flex items-center justify-between">
               <button
                 type="button"
@@ -837,24 +834,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   navigate('/');
                   setIsMobileSearchOpen(false);
                 }}
-                className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 active:scale-95"
+                className={hpIconButtonClass}
                 aria-label="Volver a inicio"
-                style={{
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)'
-                }}
               >
-                <ChevronUp className="w-5 h-5 text-gray-900" style={{ strokeWidth: 2.5 }} />
+                <ChevronUp className="h-4 w-4" style={{ strokeWidth: 2.5 }} />
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setIsMobileSearchOpen(false);
-                }}
-                className="w-10 h-10 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 active:scale-95"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className={hpIconButtonClass}
                 aria-label="Cerrar"
-                style={{
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)'
-                }}
               >
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -862,27 +851,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   aria-hidden="true" 
                   role="presentation" 
                   focusable="false"
-                  style={{ display: 'block', fill: 'none', height: '18px', width: '18px', stroke: 'currentcolor', strokeWidth: 2.5, overflow: 'visible', color: '#222222' }}
+                  className="h-4 w-4"
+                  style={{ display: 'block', fill: 'none', stroke: 'currentColor', strokeWidth: 2.25, overflow: 'visible' }}
                 >
                   <path d="m6 6 20 20M26 6 6 26"></path>
                 </svg>
               </button>
             </div>
+            )}
 
             <div className="flex-1 overflow-y-auto">
-              <div className="pt-20 px-4 pb-6 space-y-4">
-              {/* Categorías - Div más alto con categorías visibles */}
+              <div className={isMobile ? 'h-full' : 'pt-20 px-4 pb-6 space-y-4'}>
+              {/* Categorías */}
               <div 
                 ref={categoriesContainerRef}
-                className={`bg-white border-0 rounded-2xl flex flex-col ${
-                  (expandedAccordion === 'where' || isMobile) ? 'fixed inset-0 z-[60] rounded-none' : ''
+                className={`border-0 flex flex-col ${
+                  (expandedAccordion === 'where' || isMobile)
+                    ? 'fixed inset-0 z-[60] rounded-none'
+                    : 'bg-white rounded-2xl'
                 }`}
                 style={{
+                  background: (expandedAccordion === 'where' || isMobile) ? HP_PANEL_GRADIENT : '#ffffff',
                   height: (expandedAccordion === 'where' || isMobile) ? '100vh' : 'auto',
                   minHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '280px',
                   maxHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '320px',
                   boxShadow: (expandedAccordion === 'where' || isMobile)
-                    ? '0 8px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.12)'
+                    ? 'none'
                     : '0 8px 20px rgba(0, 0, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.12)',
                   transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
@@ -891,23 +885,21 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {(expandedAccordion === 'where' || isMobile) ? (
                   <>
                     {/* Header con título y buscador cuando está expandido - Estilo Airbnb */}
-                    <div className="px-4 pt-16 pb-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 
+                    <div className={`px-4 pt-16 border-b border-gray-200 ${isMobile ? 'pb-3' : 'pb-4'}`}>
+                      <div className={`flex items-center justify-between ${isMobile ? '' : 'mb-4'}`}>
+                        <h2
                           tabIndex={-1}
+                          className="relative inline-block"
                           style={{
-                            fontSize: '22px',
-                            lineHeight: '26px',
-                            fontWeight: 700,
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            color: 'rgb(34, 34, 34)',
-                            letterSpacing: '-0.01em',
+                            ...hpType.modalTitle,
+                            color: HP_COLOR.secondary,
                             fontFeatureSettings: '"liga" 1, "kern" 1',
                             WebkitFontSmoothing: 'antialiased',
                             MozOsxFontSmoothing: 'grayscale',
                           }}
                         >
                           ¿Qué revisamos?
+                          <span aria-hidden style={hpTitleUnderlineBarStyle} />
                         </h2>
                         {/* ✅ En móvil: Botón ChevronUp para volver al home, en desktop: botón para colapsar */}
                         {isMobile ? (
@@ -933,47 +925,57 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                           </button>
                         )}
                       </div>
-                      <form role="search" className="w-full">
-                        <label 
-                          htmlFor="categories-search-input"
-                          className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
-                          style={{ 
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
-                          }}
-                        >
-                          <div className="flex items-center justify-center mr-3">
-                            <svg 
-                              viewBox="0 0 32 32" 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              aria-hidden="true" 
-                              role="presentation" 
-                              focusable="false"
-                              style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
-                            >
-                              <path d="m20.666 20.666 10 10"></path>
-                              <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                            </svg>
-                          </div>
-                          <input 
-                            id="categories-search-input"
-                            type="search"
-                            placeholder="Buscar destinos"
-                            value={categorySearchQuery}
-                            onChange={(e) => setCategorySearchQuery(e.target.value)}
-                            className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
-                            style={{ 
-                              fontSize: '14px',
-                              lineHeight: '18px',
-                              fontWeight: 400,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                      {!isMobile && (
+                        <form role="search" className="w-full">
+                          <label
+                            htmlFor="categories-search-input"
+                            className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
+                            style={{
+                              fontFamily: HP_FONT,
                             }}
-                            autoComplete="off"
-                            autoCorrect="off"
-                            spellCheck="false"
-                            aria-label="Buscar destinos"
-                          />
-                        </label>
-                      </form>
+                          >
+                            <div className="flex items-center justify-center mr-3">
+                              <svg
+                                viewBox="0 0 32 32"
+                                xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden="true"
+                                role="presentation"
+                                focusable="false"
+                                style={{
+                                  display: 'block',
+                                  fill: 'none',
+                                  height: '16px',
+                                  width: '16px',
+                                  stroke: 'currentcolor',
+                                  strokeWidth: 4,
+                                  overflow: 'visible',
+                                }}
+                              >
+                                <path d="m20.666 20.666 10 10"></path>
+                                <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
+                              </svg>
+                            </div>
+                            <input
+                              id="categories-search-input"
+                              type="search"
+                              placeholder="Buscar destinos"
+                              value={categorySearchQuery}
+                              onChange={(e) => setCategorySearchQuery(e.target.value)}
+                              className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                              style={{
+                                fontSize: '14px',
+                                lineHeight: '18px',
+                                fontWeight: 400,
+                                fontFamily: HP_FONT,
+                              }}
+                              autoComplete="off"
+                              autoCorrect="off"
+                              spellCheck="false"
+                              aria-label="Buscar destinos"
+                            />
+                          </label>
+                        </form>
+                      )}
                     </div>
 
                     {/* Contenido expandido al 100% */}
@@ -1061,7 +1063,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                         fontSize: '14px',
                                         lineHeight: '18px',
                                         fontWeight: 600,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontFamily: HP_FONT,
                                         color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
                                       }}
                                     >
@@ -1072,7 +1074,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                           fontSize: '14px',
                                           lineHeight: '18px',
                                           fontWeight: 400,
-                                          fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                          fontFamily: HP_FONT,
                                           color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
                                         }}
                                       >
@@ -1096,7 +1098,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                   fontSize: '14px',
                                   lineHeight: '18px',
                                   fontWeight: 400,
-                                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                  fontFamily: HP_FONT 
                                 }}
                               >
                           No se encontraron categorías
@@ -1114,22 +1116,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       <>
                         {/* Header fijo con título y buscador - Estilo Airbnb */}
                         <div className="px-4 pt-6 pb-4 border-b border-gray-200">
-                          <h2 
+                          <h2
                             tabIndex={-1}
-                            className="mb-4"
+                            className="relative mb-4 inline-block"
                             style={{
-                              fontSize: '22px',
-                              lineHeight: '26px',
-                              fontWeight: 700,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                              color: 'rgb(34, 34, 34)',
-                              letterSpacing: '-0.01em',
+                              ...hpType.modalTitle,
+                              color: HP_COLOR.secondary,
                               fontFeatureSettings: '"liga" 1, "kern" 1',
                               WebkitFontSmoothing: 'antialiased',
                               MozOsxFontSmoothing: 'grayscale',
                             }}
                           >
                             ¿Qué revisamos?
+                            <span aria-hidden style={hpTitleUnderlineBarStyle} />
                           </h2>
                           
                           {/* Buscador fijo fuera del scroll */}
@@ -1138,7 +1137,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               htmlFor="categories-search-input-collapsed"
                               className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
                               style={{ 
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                fontFamily: HP_FONT 
                               }}
                             >
                               <div className="flex items-center justify-center mr-3">
@@ -1165,7 +1164,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                   fontSize: '14px',
                                   lineHeight: '18px',
                                   fontWeight: 400,
-                                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                  fontFamily: HP_FONT 
                                 }}
                                 autoComplete="off"
                                 autoCorrect="off"
@@ -1241,7 +1240,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                               fontSize: '14px',
                                               lineHeight: '18px',
                                               fontWeight: 500,
-                                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                              fontFamily: HP_FONT,
                                               color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
                                             }}
                                           >
@@ -1252,7 +1251,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                               fontSize: '14px',
                                               lineHeight: '18px',
                                               fontWeight: 400,
-                                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                              fontFamily: HP_FONT,
                                               color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
                                             }}
                                           >
@@ -1276,7 +1275,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                       fontSize: '14px',
                                       lineHeight: '18px',
                                       fontWeight: 400,
-                                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                                      fontFamily: HP_FONT 
                                     }}
                                   >
                                     No se encontraron categorías
@@ -1321,7 +1320,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         fontSize: '12px',
                         lineHeight: '16px',
                         fontWeight: 600,
-                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                        fontFamily: HP_FONT 
                       }}
                     >
                       Tipo de servicio
@@ -1332,7 +1331,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         fontSize: '14px',
                         lineHeight: '18px',
                         fontWeight: 400,
-                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif' 
+                        fontFamily: HP_FONT 
                       }}
                     >
                       {selectedServiceType?.name || 'Añade tipo'}
@@ -1484,24 +1483,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       >
         <div className="flex flex-col h-full pt-2" style={{ height: '100%', overflow: 'hidden' }}>
           {/* Header mejorado con tipografía Airbnb - Estilo más sutil y moderno */}
-          <div className="px-6 pt-2 pb-3 border-b border-gray-200 flex-shrink-0">
-            <h2 
-              className="mb-0"
-              style={{
-                fontSize: '20px',
-                lineHeight: '24px',
-                fontWeight: 500,
-                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                color: 'rgb(34, 34, 34)',
-                letterSpacing: '-0.015em',
-              }}
-            >
+          <div className="px-4 pt-2 pb-3 border-b border-gray-200 flex-shrink-0">
+            <h2 className="mb-0" style={{ ...hpType.drawerTitle, color: HP_COLOR.secondary }}>
               Más Categorías
             </h2>
           </div>
 
           {/* Barra de búsqueda mejorada */}
-          <div className="px-6 pt-3 pb-3 flex-shrink-0">
+          <div className="px-4 pt-3 pb-3 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
@@ -1514,7 +1503,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   fontSize: '14px',
                   lineHeight: '18px',
                   fontWeight: 400,
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                  fontFamily: HP_FONT,
                 }}
               />
             </div>
@@ -1580,7 +1569,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               fontSize: '16px',
                               lineHeight: '20px',
                               fontWeight: 600,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                              fontFamily: HP_FONT,
                               color: 'rgb(34, 34, 34)',
                             }}
                           >
@@ -1591,8 +1580,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               fontSize: '14px',
                               lineHeight: '18px',
                               fontWeight: 400,
-                              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                              color: 'rgb(106, 106, 106)',
+                              fontFamily: HP_FONT,
+                              color: HP_COLOR.muted,
                             }}
                           >
                             Explorar servicios
@@ -1624,7 +1613,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         fontSize: '14px',
                         lineHeight: '18px',
                         fontWeight: 400,
-                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                        fontFamily: HP_FONT,
                         color: 'rgb(113, 113, 113)',
                       }}
                     >
@@ -1640,46 +1629,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         </div>
       </ResponsiveModal>
       
-      {/* ✅ PRERENDERIZAR MAPA: Inicializar mapa oculto en móvil para que el script ya esté cargado */}
-      {isMobile && isMapPreloaded && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            top: '-9999px', 
-            left: '-9999px', 
-            width: '1px', 
-            height: '1px', 
-            opacity: 0, 
-            pointerEvents: 'none',
-            zIndex: -1 
-          }}
-          aria-hidden="true"
-        >
-          {/* ✅ Inicializar el mapa oculto para que Google Maps API ya esté lista */}
-          <div 
-            id="preload-map-container"
-            style={{ width: '1px', height: '1px' }}
-            ref={(node) => {
-              if (node && isMapPreloaded && typeof window !== 'undefined' && window.google?.maps) {
-                // ✅ Crear instancia del mapa oculta para prerenderizar
-                try {
-                  new window.google.maps.Map(node, {
-                    zoom: 10,
-                    center: { lat: 40.4168, lng: -3.7038 }, // Madrid por defecto
-                    disableDefaultUI: true,
-                    gestureHandling: 'none',
-                  });
-                } catch (e) {
-                  // Ignorar errores de inicialización
-                }
-              }
-            }}
-          />
-        </div>
-      )}
     </>
   );
-}, (prevProps, nextProps) => {
-  // ✅ Comparación personalizada: solo re-renderizar si onSearch cambia
-  return prevProps.onSearch === nextProps.onSearch;
-});
+}, (prevProps, nextProps) =>
+  prevProps.onSearch === nextProps.onSearch &&
+  prevProps.countryCode === nextProps.countryCode);

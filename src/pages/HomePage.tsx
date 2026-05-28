@@ -1,38 +1,23 @@
-import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-const HomepageWall = lazy(() => import('../components/HomepageWall').then(module => ({ default: module.HomepageWall })));
-const AirbnbSearchBar = lazy(() => import('../components/AirbnbSearchBar').then(module => ({ default: module.AirbnbSearchBar })));
-const MobileBottomBar = lazy(() => import('../components/MobileBottomBar').then(module => ({ default: module.MobileBottomBar })));
-const WelcomePopup = lazy(() => import('../components/WelcomePopup').then(module => ({ default: module.WelcomePopup })));
+import { useQueryClient } from '@tanstack/react-query';
+import { AirbnbSearchBar } from '../components/AirbnbSearchBar';
+import { HomepageMobileHero } from '../components/HomepageMobileHero';
+import { HomepageWall } from '../components/HomepageWall';
+import DesktopLanding from '../components/DesktopLanding';
+import { useHomepageWallQuery, prefetchHomepageWall } from '../hooks/useHomepageWall';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.08,
-      staggerChildren: 0.005,
-      ease: [0.4, 0.0, 0.2, 1],
-      when: 'beforeChildren',
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 3 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.12,
-      ease: [0.4, 0.0, 0.2, 1],
-    },
-  },
-};
+const WelcomePopup = lazy(() =>
+  import('../components/WelcomePopup').then((m) => ({ default: m.WelcomePopup })),
+);
+const MobileBottomBar = lazy(() =>
+  import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+);
 
 const HomePage: React.FC = () => {
   const location = useLocation();
+  const queryClient = useQueryClient();
+
   useEffect(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -57,75 +42,80 @@ const HomePage: React.FC = () => {
     adUrl: '',
   });
 
-  const handleSearch = useCallback((searchData: {
-    serviceTypeId: number | null;
-    categoryId: number | null;
-    adUrl: string;
-  }) => {
-    setSearchFilters(prev => {
-      const newCategoryId = searchData.categoryId || 3;
-      if (prev.serviceTypeId === searchData.serviceTypeId &&
+  const wallParams = useMemo(
+    () => ({
+      categoryId: searchFilters.categoryId,
+      latitude: null as string | null,
+      longitude: null as string | null,
+      countryCode,
+      locationRange: 50,
+      nearbyPage: 1,
+      nearbyPageSize: 20,
+      popularPage: 1,
+      popularPageSize: 20,
+      _enabled: true,
+    }),
+    [searchFilters.categoryId, countryCode],
+  );
+
+  useLayoutEffect(() => {
+    void prefetchHomepageWall(queryClient, wallParams);
+  }, [queryClient, wallParams]);
+
+  useHomepageWallQuery(wallParams);
+
+  const handleSearch = useCallback(
+    (searchData: {
+      serviceTypeId: number | null;
+      categoryId: number | null;
+      adUrl: string;
+    }) => {
+      setSearchFilters((prev) => {
+        const newCategoryId = searchData.categoryId || 3;
+        if (
+          prev.serviceTypeId === searchData.serviceTypeId &&
           prev.categoryId === newCategoryId &&
-          prev.adUrl === searchData.adUrl) {
-        return prev;
-      }
-      return {
-        ...searchData,
-        categoryId: newCategoryId,
-      };
-    });
-  }, []);
+          prev.adUrl === searchData.adUrl
+        ) {
+          return prev;
+        }
+        return {
+          ...searchData,
+          categoryId: newCategoryId,
+        };
+      });
+    },
+    [],
+  );
 
   return (
     <>
-      <motion.div
-        className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-white pb-[calc(65px+max(11px,env(safe-area-inset-bottom)))] md:pb-0"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">
         <Suspense fallback={null}>
           <WelcomePopup />
         </Suspense>
 
-        <motion.div variants={itemVariants} initial="hidden" animate="visible">
-          <Suspense fallback={null}>
-            <AirbnbSearchBar onSearch={handleSearch} />
-          </Suspense>
-        </motion.div>
+        <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
 
-        <motion.div
-          className="pt-0 md:pb-0"
-          variants={itemVariants}
-        >
+        <HomepageMobileHero />
+
+        <div className="pt-0 md:pb-0">
           <div
             data-services-section
-            className="md:block md:pt-4 md:pb-6 bg-white"
             id="servicios-grid"
+            className="relative z-20 bg-white md:-mt-5 rounded-t-[1.25rem] md:rounded-t-[1.75rem] pt-4 md:pt-8 md:pb-10 shadow-[0_-4px_24px_rgba(15,23,42,0.06)]"
           >
-            <Suspense
-              fallback={
-                <div className="hidden md:block max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-8">
-                  <div className="animate-pulse flex gap-4 overflow-hidden">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="shrink-0 w-[240px]">
-                        <div className="aspect-square rounded-[20px] bg-gray-200" />
-                        <div className="h-4 bg-gray-200 rounded mt-2 w-3/4" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              }
-            >
-              <HomepageWall
-                countryCode={countryCode}
-                serviceTypeId={searchFilters.serviceTypeId}
-                categoryId={searchFilters.categoryId}
-              />
-            </Suspense>
+            <HomepageWall
+              countryCode={countryCode}
+              serviceTypeId={searchFilters.serviceTypeId}
+              categoryId={searchFilters.categoryId}
+              animateOnMount={false}
+            />
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+
+        <DesktopLanding />
+      </div>
 
       <Suspense fallback={null}>
         <MobileBottomBar />

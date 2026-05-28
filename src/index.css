@@ -122,6 +122,32 @@
     }
 }
 
+@layer components {
+    .hp-hero-title {
+        @apply font-display font-semibold leading-[1.08] tracking-[-0.03em] text-[#1c1c1c];
+    }
+
+    .hp-hero-title-lg {
+        @apply font-display text-[1.85rem] font-semibold leading-[1.1] tracking-[-0.035em] text-[#1c1c1c] lg:text-[2.45rem];
+    }
+
+    .hp-hero-body {
+        @apply text-sm leading-snug text-[#6a6a6a];
+    }
+
+    .hp-section-title {
+        @apply font-display text-[1.375rem] md:text-[1.45rem] font-semibold text-[#1c1c1c] m-0 tracking-[-0.02em];
+    }
+
+    .hp-section-subtitle {
+        @apply mt-1 text-sm text-[#6a6a6a];
+    }
+
+    .hp-eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0066CC];
+    }
+}
+
 @layer base {
     html {
         @apply bg-background text-foreground;

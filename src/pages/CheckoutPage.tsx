@@ -408,7 +408,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         <button 
                                             type="button"
                                             onClick={() => setShowPriceDetails(!showPriceDetails)}
-                                            className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                            className="text-sm font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"
                                             style={{ fontSize: '14px', lineHeight: '18px' }}
                                         >
                                             {showPriceDetails ? 'Ocultar' : 'Detalles'}
@@ -424,7 +424,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             Si cancelas antes de que el experto comience la revisión, recibirás un reembolso completo.{' '}
                                             <button 
                                                 type="button"
-                                                className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                                className="text-sm font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"
                                                 style={{ fontSize: '14px', lineHeight: '18px' }}
                                             >
                                                 Política&nbsp;entera
@@ -501,7 +501,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 left: '24px',
                                 right: '24px',
                                 height: '3px',
-                                background: 'linear-gradient(to right, #e61e4d, #e31c5f, #d70466)',
+                                background: 'linear-gradient(to right, #0066CC, #005bb5, #004a99)',
                                 borderRadius: '2px',
                                 opacity: 0.8,
                             }}
@@ -632,7 +632,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             <button 
                                 type="button"
                                 onClick={() => setShowPriceDetails(!showPriceDetails)}
-                                className="text-sm font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                className="text-sm font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"
                                 style={{
                                     fontSize: '14px',
                                     lineHeight: '18px',
@@ -652,7 +652,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 Si cancelas antes de que el experto comience la revisión, recibirás un reembolso completo.{' '}
                                 <button 
                                     type="button"
-                                    className="text-base font-semibold text-gray-900 underline decoration-gray-300 underline-offset-2 hover:no-underline transition-all"
+                                    className="text-base font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"
                                     style={{ fontSize: '16px', lineHeight: '20px' }}
                                 >
                                     Política entera
