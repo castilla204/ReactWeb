@@ -185,7 +185,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                         createdAt: new Date().toISOString(),
                     };
                 }
-
+                
                 if (response.deliverable) {
                     return normalizeDeliverableFromApi(
                         response.deliverable,
@@ -287,20 +287,20 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             patchConversationCache((prev) => {
                 if (mode === 'add') {
                     if (prev.messages.some((m) => m.id === normalizedMsg.id)) return prev;
-                    return {
-                        ...prev,
+                            return {
+                                ...prev,
                         messages: [...prev.messages, normalizedMsg].sort(
                             (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
                         ),
                     };
                 }
-                return {
-                    ...prev,
-                    messages: prev.messages.map((msg) =>
+                            return {
+                                ...prev,
+                                messages: prev.messages.map((msg) =>
                         msg.id === normalizedMsg.id ? { ...msg, ...normalizedMsg } : msg
-                    ),
-                };
-            });
+                                ),
+                            };
+                        });
 
             if (mode === 'add') {
                 scrollChatToBottom();
@@ -463,8 +463,8 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                 .subscribe(async (status) => {
                     if (cancelled) return;
 
-                    if (status === 'SUBSCRIBED') {
-                        setIsConnected(true);
+                if (status === 'SUBSCRIBED') {
+                    setIsConnected(true);
                         setIsReconnecting(false);
                         retryCount = 0;
                         channelRef.current = channel;
@@ -516,7 +516,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
             const ch = pendingChannelRef.current ?? channelRef.current;
             pendingChannelRef.current = null;
-            channelRef.current = null;
+                channelRef.current = null;
             if (ch) {
                 void ch.untrack().finally(() => teardownChannel(ch));
             }
@@ -613,7 +613,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     method: 'POST',
                     body: formData,
                 });
-
+                
                 // ✅ Normalizar respuesta de PascalCase a camelCase
                 const normalizedMessage: Message = {
                     id: rawResponse.Id ?? rawResponse.id,
@@ -627,7 +627,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     locationLongitude: rawResponse.LocationLongitude ?? rawResponse.locationLongitude ?? null,
                     attachmentUrls: rawResponse.AttachmentUrls ?? rawResponse.attachmentUrls ?? []
                 };
-
+                
                 return { ...normalizedMessage, conversation: undefined };
             } catch (err: any) {
                 console.error('[Supabase Chat] Message send error:', err.message, err.response || err);
@@ -717,7 +717,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                         conversation!.searchHireId
                     );
                 }
-
+                
                 if (response.deliverables !== undefined) {
                     const list = Array.isArray(response.deliverables) ? response.deliverables : [];
                     return {
@@ -726,7 +726,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                         createdAt: new Date().toISOString(),
                     };
                 }
-
+                
                 throw new Error('Unexpected response format from upload');
             } catch (err: any) {
                 console.error('[Supabase Chat] Deliverable upload error:', err.message, err.response || err);
@@ -766,10 +766,10 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
             }),
         onSuccess: (_, messageId) => {
             patchConversationCache((prev) => ({
-                ...prev,
-                messages: prev.messages.map((msg) =>
-                    msg.id === messageId ? { ...msg, isRead: true } : msg
-                ),
+                    ...prev,
+                    messages: prev.messages.map((msg) =>
+                        msg.id === messageId ? { ...msg, isRead: true } : msg
+                    ),
             }));
             failedMessageIds.current.delete(messageId);
         },
@@ -803,11 +803,11 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
 
     useEffect(() => {
         if (!unreadKey || userIsAdmin) return;
-        unreadMessageIds.forEach((messageId) => {
+            unreadMessageIds.forEach((messageId) => {
             if (markedReadIdsRef.current.has(messageId)) return;
             markedReadIdsRef.current.add(messageId);
-            markAsReadMutation.mutate(messageId);
-        });
+                markAsReadMutation.mutate(messageId);
+            });
     }, [unreadKey, userIsAdmin]);
 
     // Refetch deliverables when searchHireId changes

@@ -6,8 +6,11 @@ import { RoleChecker } from '../utils/roleChecker';
 import { getUserId } from '../utils/userId';
 import { MFAVerify } from './MFAVerify';
 import { useNavigate } from 'react-router-dom';
-
-// Google SVG Icon Component
+import {
+  ensureGoogleIdentityReady,
+  logGoogleOriginHintOnce,
+  renderGoogleButton,
+} from '../lib/googleIdentity';
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -16,20 +19,6 @@ const GoogleIcon = () => (
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
     </svg>
 );
-
-declare global {
-    interface Window {
-        google?: {
-            accounts: {
-                id: {
-                    initialize: (config: any) => void;
-                    renderButton: (element: HTMLElement, config: any) => void;
-                    prompt: () => void;
-                };
-            };
-        };
-    }
-}
 
 export function GoogleAuth() {
     const [error, setError] = useState<string | null>(null);
@@ -230,154 +219,58 @@ export function GoogleAuth() {
     }, []);
 
     useEffect(() => {
-        // Solo inicializar si el componente está montado y visible
         if (!isVisible) {
             return;
         }
 
-        const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-        let initializationAttempts = 0;
-        const maxAttempts = 10; // Reducir intentos
-        let timeoutId: NodeJS.Timeout;
-        let intervalId: NodeJS.Timeout;
+        let cancelled = false;
 
-        const initializeGoogleAuth = () => {
-            try {
-                if (!window.google?.accounts?.id) {
-                    throw new Error('Google SDK not loaded');
-                }
+        const mountButton = async () => {
+            const buttonElement = document.getElementById('googleButton');
+            if (!buttonElement) return;
 
-                console.log('[GoogleAuth] Initializing Google Auth...');
-                
-                // ✅ BEST PRACTICE: Suprimir advertencias de COOP y rate limit conocidas (no afectan funcionalidad)
-                // Estas advertencias son esperadas con Google OAuth y no bloquean la autenticación
-                const originalWarn = console.warn;
-                const suppressKnownWarnings = (...args: any[]) => {
-                    const message = args[0]?.toString() || '';
-                    // Filtrar advertencias conocidas que no afectan la funcionalidad
-                    if (message.includes('Cross-Origin-Opener-Policy') || 
-                        message.includes('window.postMessage') ||
-                        message.includes('[Rate Limit]')) {
-                        // Solo loguear en desarrollo como debug, no como warning
-                        if (import.meta.env.DEV) {
-                            console.debug('[GoogleAuth] Suppressed warning (expected, non-blocking):', ...args);
-                        }
-                        return;
-                    }
-                    originalWarn.apply(console, args);
-                };
-                console.warn = suppressKnownWarnings;
-                
-                // ⚠️ NO llamar a cancel() aquí - cancela TODOS los botones de Google en la página
-                // incluyendo los de otros componentes como MobileBottomBar
-                
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: handleCredentialResponse,
-                    auto_select: false,
-                    cancel_on_tap_outside: false,
-                    use_fedcm_for_prompt: false, // Disable FedCM for better compatibility
-                    // ✅ BEST PRACTICE: Configuración para reducir advertencias COOP
-                    itp_support: true // Soporte para Intelligent Tracking Prevention
-                });
-                
-                // Restaurar console.warn después de la inicialización (más tiempo para capturar todos los warnings)
-                setTimeout(() => {
-                    console.warn = originalWarn;
-                }, 5000);
+            const ready = await ensureGoogleIdentityReady();
+            if (cancelled) return;
 
-                const buttonElement = document.getElementById('googleButton');
-                if (buttonElement) {
-                    // Clear any existing content first
-                    buttonElement.innerHTML = '';
-                    
-                    window.google.accounts.id.renderButton(buttonElement, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: 'medium',
-                        text: 'signin_with',
-                        width: 250
-                    });
-
-                    // Wait longer for the button to render and verify it's clickable
-                    setTimeout(() => {
-                        const renderedButton = buttonElement.querySelector('div[role="button"]');
-                        if (renderedButton) {
-                            // Additional check to ensure button is truly ready
-                            const isClickable = renderedButton.getAttribute('aria-disabled') !== 'true';
-                            if (isClickable) {
-                                setIsReady(true);
-                                setIsLoading(false);
-                                console.log('Google Auth initialized successfully and ready');
-                            } else {
-                                throw new Error('Button rendered but not clickable');
-                            }
-                        } else {
-                            throw new Error('Button not rendered properly');
-                        }
-                    }, 300); // Increased wait time
-                } else {
-                    throw new Error('Button element not found');
-                }
-            } catch (error) {
-                console.error('Failed to initialize Google Auth:', error);
-                setIsReady(false);
-                
-                // Retry initialization with exponential backoff
-                if (initializationAttempts < maxAttempts) {
-                    initializationAttempts++;
-                    const delay = Math.min(300 + (initializationAttempts * 200), 3000); // Better backoff
-                    console.log(`Retrying Google Auth initialization in ${delay}ms (attempt ${initializationAttempts}/${maxAttempts})`);
-                    timeoutId = setTimeout(initializeGoogleAuth, delay);
-                } else {
-                    setIsLoading(false);
-                    setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
-                }
+            if (!ready) {
+                logGoogleOriginHintOnce();
+                setIsLoading(false);
+                setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
+                return;
             }
-        };
 
-        // More robust SDK loading detection
-        const waitForGoogleSDK = () => {
-            const checkSDK = () => {
-                if (window.google?.accounts?.id) {
-                    console.log('Google SDK detected, initializing...');
-                    clearInterval(intervalId);
-                    // Small delay to ensure SDK is fully ready
-                    setTimeout(initializeGoogleAuth, 100);
-                } else if (initializationAttempts >= maxAttempts) {
-                    clearInterval(intervalId);
+            renderGoogleButton(buttonElement, {
+                type: 'standard',
+                theme: 'outline',
+                size: 'medium',
+                text: 'signin_with',
+                width: 250,
+            });
+
+            window.setTimeout(() => {
+                if (cancelled) return;
+                const renderedButton = buttonElement.querySelector('div[role="button"]');
+                const clickable = renderedButton?.getAttribute('aria-disabled') !== 'true';
+                if (renderedButton && clickable) {
+                    setIsReady(true);
+                    setIsLoading(false);
+                    setError(null);
+                } else {
+                    setIsReady(false);
                     setIsLoading(false);
                     setError('No se pudo cargar Google Sign-In. Intenta recargar la página.');
-                } else {
-                    initializationAttempts++;
-                    console.log(`Waiting for Google SDK... (attempt ${initializationAttempts}/${maxAttempts})`);
                 }
-            };
-
-            // Check immediately
-            checkSDK();
-            
-            // Then check every 200ms
-            intervalId = setInterval(checkSDK, 200);
+            }, 300);
         };
 
-        // Reset attempts counter
-        initializationAttempts = 0;
-        
-        // Start waiting for SDK
-        waitForGoogleSDK();
+        void mountButton();
 
         return () => {
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
+            cancelled = true;
             setIsReady(false);
             setIsLoading(true);
         };
-    }, [handleCredentialResponse, isVisible]);
+    }, [isVisible]);
 
     const handleGoogleSignIn = () => {
         if (!isReady) {

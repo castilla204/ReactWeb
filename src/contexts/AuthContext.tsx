@@ -33,7 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const refreshToken = authService.getRefreshToken();
 
                 if (!accessToken || !refreshToken) {
-                    console.log('⚠️ [AuthContext] No hay tokens en localStorage');
+                    if (import.meta.env.DEV) {
+                        console.debug('[AuthContext] No hay tokens en localStorage');
+                    }
                     setUser(null);
                     setIsAuthenticated(false);
                     setIsLoading(false);

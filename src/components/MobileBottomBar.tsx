@@ -8,26 +8,20 @@ import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 import { UserRole, RoleChecker } from '../utils/roleChecker';
+import {
+  ensureGoogleIdentityReady,
+  logGoogleOriginHintOnce,
+  renderGoogleButton,
+} from '../lib/googleIdentity';
+import { HP_COLOR, hpType } from '../constants/homepageTypography';
 
-// Declaración de tipos para Google Sign-In
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          prompt: () => void;
-          cancel: () => void;
-        };
-      };
-    };
-  }
-}
+const tabLabelStyle = (active: boolean): React.CSSProperties => ({
+  ...hpType.tabBarLabel,
+  color: active ? HP_COLOR.brand : HP_COLOR.muted,
+});
 
 // ID único para este componente para evitar conflictos
 const MOBILE_GOOGLE_BUTTON_ID = 'mobile-bottom-bar-google-btn';
-const GOOGLE_CLIENT_ID = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
 
 export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
@@ -38,201 +32,59 @@ export const MobileBottomBar: React.FC = () => {
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const googleLoginButtonRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
 
-  // ✅ Handler para cuando Google Login es exitoso
-  const handleGoogleCredential = useCallback(async (response: any) => {
-    try {
-      console.log('🔐 [MobileBottomBar] Credencial recibida de Google');
-      
-      if (!response.credential) {
-        throw new Error('No credential received from Google');
-      }
+  const mountGoogleButton = useCallback(async () => {
+    if (isAuthenticated || isInitializingRef.current) return false;
 
-      // ✅ Enviar el JWT credential al backend
-      const result = await authService.googleAuth(response.credential);
-      
-      if (!result.success) {
-        throw new Error('Authentication failed');
-      }
-
-      const token = authService.getAccessToken();
-      if (result.user && token) {
-        // Verificar MFA si es necesario
-        const { RoleChecker } = await import('../utils/roleChecker');
-        const userRole = RoleChecker.getUserRole(token);
-        const requiresMfa = RoleChecker.requiresMfa(userRole);
-        
-        let shouldNavigate = true;
-        
-        if (requiresMfa) {
-          const { mfaService } = await import('../services/mfaService');
-          try {
-            const mfaStatus = await mfaService.getMFAStatus();
-            if (mfaStatus.isEnabled) {
-              shouldNavigate = false;
-              updateUser(result.user, token, () => {
-                navigate('/mfa/verify', { state: { returnTo: null } });
-              });
-              return;
-            }
-          } catch (error) {
-            console.error('Error checking MFA status:', error);
-          }
-        }
-        
-        if (shouldNavigate) {
-          updateUser(result.user, token, () => {
-            console.log('✅ [MobileBottomBar] Autenticación exitosa');
-            // No mostrar notificación de bienvenida
-          });
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ [MobileBottomBar] Error durante autenticación:', error);
-      const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-      toast.error(errorMessage, { duration: 5000 });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  }, [navigate, updateUser]);
-
-  // ✅ Inicializar Google Sign-In de forma independiente
-  const initializeGoogleButton = useCallback(() => {
-    if (isAuthenticated || isInitializingRef.current) return;
-    
     const buttonContainer = googleLoginButtonRef.current;
-    if (!buttonContainer || !window.google?.accounts?.id) {
-      console.log('⏳ [MobileBottomBar] Esperando SDK de Google...');
-      return false;
-    }
+    if (!buttonContainer) return false;
 
     isInitializingRef.current = true;
-    console.log('🔄 [MobileBottomBar] Inicializando Google Sign-In...');
 
-    try {
-      // Limpiar el contenedor
-      buttonContainer.innerHTML = '';
-
-      // Inicializar con nuestro propio callback
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        use_fedcm_for_prompt: false,
-        itp_support: true,
-      });
-
-      // Renderizar el botón
-      window.google.accounts.id.renderButton(buttonContainer, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        text: 'signin_with',
-      });
-
-      // Verificar que el botón se renderizó
-      setTimeout(() => {
-        const renderedButton = buttonContainer.querySelector('div[role="button"]');
-        if (renderedButton) {
-          console.log('✅ [MobileBottomBar] Botón de Google renderizado correctamente');
-          setIsGoogleReady(true);
-        } else {
-          console.warn('⚠️ [MobileBottomBar] Botón no renderizado, reintentando...');
-          setIsGoogleReady(false);
-        }
-        isInitializingRef.current = false;
-      }, 200);
-
-      return true;
-    } catch (error) {
-      console.error('❌ [MobileBottomBar] Error inicializando Google:', error);
+    const ready = await ensureGoogleIdentityReady();
+    if (!ready) {
+      logGoogleOriginHintOnce();
       isInitializingRef.current = false;
       return false;
     }
-  }, [isAuthenticated, handleGoogleCredential]);
 
-  // ✅ Efecto para inicializar y mantener el botón de Google
+    renderGoogleButton(buttonContainer, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'signin_with',
+    });
+
+    window.setTimeout(() => {
+      const renderedButton = buttonContainer.querySelector('div[role="button"]');
+      setIsGoogleReady(!!renderedButton);
+      isInitializingRef.current = false;
+    }, 200);
+
+    return true;
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (isAuthenticated) {
       setIsGoogleReady(false);
       return;
     }
 
-    // Función para verificar si el botón sigue funcionando
-    const checkAndReinitialize = () => {
-      const button = googleLoginButtonRef.current?.querySelector('div[role="button"]');
-      if (!button) {
-        console.log('🔄 [MobileBottomBar] Botón de Google no encontrado, reinicializando...');
-        setIsGoogleReady(false);
-        initializeGoogleButton();
-      }
-    };
+    void mountGoogleButton();
+  }, [isAuthenticated, mountGoogleButton]);
 
-    // Esperar a que el SDK esté listo
-    const waitForSDK = () => {
-      if (window.google?.accounts?.id) {
-        console.log('✅ [MobileBottomBar] SDK de Google detectado');
-        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-        initializeGoogleButton();
-        
-        // Verificar periódicamente que el botón siga funcionando
-        // (otros componentes pueden llamar a cancel())
-        checkIntervalRef.current = setInterval(checkAndReinitialize, 2000);
-      }
-    };
-
-    // Verificar inmediatamente y luego cada 300ms
-    waitForSDK();
-    const sdkInterval = setInterval(() => {
-      if (window.google?.accounts?.id) {
-        clearInterval(sdkInterval);
-        waitForSDK();
-      }
-    }, 300);
-
-    // Timeout después de 10 segundos
-    initTimeoutRef.current = setTimeout(() => {
-      clearInterval(sdkInterval);
-      if (!isGoogleReady) {
-        console.error('❌ [MobileBottomBar] Timeout esperando SDK de Google');
-      }
-    }, 10000);
-
-    return () => {
-      clearInterval(sdkInterval);
-      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, [isAuthenticated, initializeGoogleButton, isGoogleReady]);
-
-  // ✅ Función para hacer click en el botón de Google
-  // IMPORTANTE: Reinicializa el callback antes de hacer click para evitar que 
-  // otros componentes (GoogleAuth, GoogleSignInButton) hayan sobrescrito nuestro callback
-  const triggerGoogleSignIn = useCallback(() => {
-    // Primero, re-registrar nuestro callback para asegurarnos de que sea el activo
-    if (window.google?.accounts?.id) {
-      console.log('🔄 [MobileBottomBar] Re-registrando callback antes del click');
-      try {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleCredential,
-          auto_select: false,
-          cancel_on_tap_outside: false,
-          use_fedcm_for_prompt: false,
-          itp_support: true,
-        });
-      } catch (e) {
-        console.warn('⚠️ [MobileBottomBar] Error al re-registrar callback:', e);
-      }
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsGoogleLoading(false);
     }
+  }, [isAuthenticated]);
 
-    const googleButton = googleLoginButtonRef.current?.querySelector('div[role="button"]') as HTMLElement;
-    
+  const triggerGoogleSignIn = useCallback(() => {
+    const googleButton = googleLoginButtonRef.current?.querySelector(
+      'div[role="button"]',
+    ) as HTMLElement | null;
+
     if (googleButton) {
       console.log('🔘 [MobileBottomBar] Haciendo click en botón de Google');
       
@@ -277,7 +129,7 @@ export const MobileBottomBar: React.FC = () => {
     }
     
     return false;
-  }, [handleGoogleCredential]);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -516,7 +368,7 @@ export const MobileBottomBar: React.FC = () => {
             background: 'transparent',
             padding: 0,
             margin: 0,
-            color: exploreActive ? '#ec4899' : '#717171',
+            color: exploreActive ? '#0066CC' : '#717171',
             cursor: exploreActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -546,7 +398,7 @@ export const MobileBottomBar: React.FC = () => {
                 fill: 'none',
                 height: '24px',
                 width: '24px',
-                stroke: exploreActive ? '#ec4899' : '#717171',
+                stroke: exploreActive ? '#0066CC' : '#717171',
                 strokeWidth: '2.66667',
                 overflow: 'visible',
               }}
@@ -557,14 +409,7 @@ export const MobileBottomBar: React.FC = () => {
             </div>
           </div>
           {/* div._1sg9eagp - Texto */}
-          <div style={{
-            fontSize: '10px',
-            lineHeight: '12px',
-            fontWeight: 600,
-            color: exploreActive ? '#ec4899' : '#717171',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            letterSpacing: '0',
-          }}>
+          <div style={tabLabelStyle(exploreActive)}>
             Explorar
           </div>
         </button>
@@ -588,7 +433,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: wishlistsActive ? '#ec4899' : '#717171',
+            color: wishlistsActive ? '#0066CC' : '#717171',
             cursor: wishlistsActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -618,7 +463,7 @@ export const MobileBottomBar: React.FC = () => {
                   fill: 'none',
                   height: '24px',
                   width: '24px',
-                  stroke: wishlistsActive ? '#ec4899' : '#717171',
+                  stroke: wishlistsActive ? '#0066CC' : '#717171',
                   strokeWidth: '2',
                   overflow: 'visible',
                 }}
@@ -628,14 +473,7 @@ export const MobileBottomBar: React.FC = () => {
             </div>
           </div>
           {/* div._1xhupxb - Texto */}
-          <div style={{
-            fontSize: '10px',
-            lineHeight: '12px',
-            fontWeight: 600,
-            color: wishlistsActive ? '#ec4899' : '#717171',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            letterSpacing: '0',
-          }}>
+          <div style={tabLabelStyle(wishlistsActive)}>
             Favoritos
           </div>
         </button>
@@ -660,7 +498,7 @@ export const MobileBottomBar: React.FC = () => {
               border: 'none',
               background: 'transparent',
               padding: 0,
-              color: messagesActive ? '#ec4899' : '#717171',
+              color: messagesActive ? '#0066CC' : '#717171',
               cursor: messagesActive ? 'default' : 'pointer',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
@@ -681,19 +519,12 @@ export const MobileBottomBar: React.FC = () => {
                   size={24}
                   strokeWidth={2}
                   style={{
-                    color: messagesActive ? '#ec4899' : '#717171',
+                    color: messagesActive ? '#0066CC' : '#717171',
                   }}
                 />
               </div>
             </div>
-            <div style={{
-              fontSize: '10px',
-              lineHeight: '12px',
-              fontWeight: 600,
-              color: messagesActive ? '#ec4899' : '#717171',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-              letterSpacing: '0',
-            }}>
+            <div style={tabLabelStyle(messagesActive)}>
               Mis mensajes
             </div>
           </button>
@@ -719,7 +550,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: profileActive ? '#ec4899' : '#717171',
+            color: profileActive ? '#0066CC' : '#717171',
             cursor: profileActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -783,7 +614,7 @@ export const MobileBottomBar: React.FC = () => {
                     fill: 'none',
                     height: '24px',
                     width: '24px',
-                    stroke: profileActive ? '#ec4899' : '#717171',
+                    stroke: profileActive ? '#0066CC' : '#717171',
                     strokeWidth: '2',
                     overflow: 'visible',
                   }}
@@ -797,14 +628,7 @@ export const MobileBottomBar: React.FC = () => {
             </div>
           </div>
           {/* div._1xhupxb - Texto */}
-          <div style={{
-            fontSize: '10px',
-            lineHeight: '12px',
-            fontWeight: 600,
-            color: profileActive ? '#ec4899' : '#717171',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            letterSpacing: '0',
-          }}>
+          <div style={tabLabelStyle(profileActive)}>
             {isAuthenticated ? 'Perfil' : (isGoogleLoading ? 'Cargando...' : 'Iniciar sesión')}
           </div>
         </button>

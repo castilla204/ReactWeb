@@ -1,5 +1,6 @@
 import { API_CONFIG } from '../config/api';
 import { jwtDecode } from 'jwt-decode';
+import { isExternalMapTileUrl } from '../utils/mapTileUrls';
 
 interface TokenPair {
     accessToken: string;
@@ -261,10 +262,11 @@ class AuthService {
             ];
             const urlString = typeof url === 'string' ? url : url.toString();
             const isPublic = publicEndpoints.some(endpoint => urlString.includes(endpoint));
+            const isMapTile = isExternalMapTileUrl(urlString);
 
-            // Agregar token solo si NO es un endpoint público
+            // Agregar token solo si NO es un endpoint público ni un tile de mapa externo
             const token = self.getAccessToken();
-            if (token && !isPublic) {
+            if (token && !isPublic && !isMapTile) {
                 const headers = new Headers(fetchOptions.headers);
                 if (!headers.has('Authorization')) {
                     headers.set('Authorization', `Bearer ${token}`);

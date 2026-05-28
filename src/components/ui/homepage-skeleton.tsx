@@ -11,7 +11,7 @@ export function HomepageSkeleton() {
           position: 'relative',
           overflow: 'hidden',
           // ✅ Asegurar que el bottom bar siempre esté presente
-          paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))',
+          paddingBottom: '65px',
         }}
       >
         {/* ✅ Bottom Bar skeleton - SIEMPRE PRESENTE EN MÓVIL (elemento estático) */}
@@ -84,7 +84,7 @@ export function HomepageSkeleton() {
           className="pt-3 md:pt-10 md:pb-0" 
           style={{ 
             paddingTop: '12px', 
-            paddingBottom: 'calc(65px + max(11px, env(safe-area-inset-bottom)))',
+            paddingBottom: '0px',
             // ✅ Altura mínima estable para evitar shifts
             // En móvil: 100vh - 65px (bottom bar), en desktop: 100vh - 120px (header) - 65px (bottom bar)
             minHeight: 'calc(100vh - 65px)',
@@ -98,7 +98,7 @@ export function HomepageSkeleton() {
                   <div style={{ minHeight: '240px' }}>
                     {/* Título y subtítulo - Altura fija */}
                     <div 
-                      className="mb-4 px-6 md:px-0" 
+                      className="mb-4 px-4 md:px-0" 
                       style={{ 
                         minHeight: '48px',
                         marginBottom: '16px',
@@ -109,7 +109,7 @@ export function HomepageSkeleton() {
                     </div>
                     {/* Cards horizontales - Altura fija del contenedor */}
                     <div 
-                      className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                      className="flex overflow-x-auto scrollbar-hide gap-3 px-4 md:px-0" 
                       style={{ 
                         scrollbarWidth: 'none', 
                         msOverflowStyle: 'none',
@@ -155,7 +155,7 @@ export function HomepageSkeleton() {
                   {/* Segunda sección - Estructura exacta */}
                   <div style={{ minHeight: '240px' }}>
                     <div 
-                      className="mb-4 px-6 md:px-0" 
+                      className="mb-4 px-4 md:px-0" 
                       style={{ 
                         minHeight: '48px',
                         marginBottom: '16px',
@@ -165,7 +165,7 @@ export function HomepageSkeleton() {
                       <Skeleton height={16} width={128} borderRadius={4} />
                     </div>
                     <div 
-                      className="flex overflow-x-auto scrollbar-hide gap-3 px-6 md:px-0" 
+                      className="flex overflow-x-auto scrollbar-hide gap-3 px-4 md:px-0" 
                       style={{ 
                         scrollbarWidth: 'none', 
                         msOverflowStyle: 'none',
