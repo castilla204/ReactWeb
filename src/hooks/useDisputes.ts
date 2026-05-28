@@ -283,6 +283,10 @@ export const useDisputes = () => {
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
       queryClient.invalidateQueries({ queryKey: ['disputes', 'by-search-hire'] });
       queryClient.invalidateQueries({ queryKey: ['searches'] });
+      // 🛡️ R20 FIX: invalidar también las queries del hire details — sin esto la respuesta del
+      // experto no se refleja en SearchDetails (estado "expert_responded" queda stale).
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire'] });
+      queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
     },
   });
 
