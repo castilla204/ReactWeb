@@ -50,6 +50,11 @@ export interface SearchHireResponseDto {
 }
 
 // ✅ HOOK PARA SEARCHHIRE/EXPERT CON PAGINACIÓN
+// 🛡️ R30 TODO arquitectural: este hook usa useState+useEffect manual en lugar de React Query.
+// Resultado: cambios remotos en hires (otro tab del usuario, webhook que actualiza estado, admin
+// resolviendo disputa) NO se reflejan hasta que el usuario hace refreshKey++ manual. El refactor
+// a useQuery con staleTime+refetchInterval daría auto-sync. Refactor PENDIENTE — bajo impacto
+// porque el refreshKey se dispara en los puntos críticos (CompleteService, etc. via R18 fix).
 export const useSearchHires = (type: 'client' | 'expert', page: number = 1, pageSize: number = 20) => {
   const [hires, setHires] = useState<SearchHireResponseDto[]>([]);
   const [loading, setLoading] = useState(true);

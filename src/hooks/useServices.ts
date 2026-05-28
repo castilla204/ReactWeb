@@ -127,8 +127,10 @@ export function useServices({
         enabled: expertProfileId ? !!expertProfileId : ((categoryId ?? 0) > 0 && (serviceTypeId ?? 0) > 0 && !!latitude && !!longitude && (locationRange ?? 0) > 0),
         staleTime: 30000, // ✅ Cache por 30 segundos para evitar llamadas repetidas
         gcTime: 60000, // ✅ Mantener en caché por 60 segundos
-        refetchOnWindowFocus: false, // ✅ No refetch al cambiar de ventana
-        refetchOnMount: false, // ✅ No refetch al montar si hay datos en caché
+        refetchOnWindowFocus: true, // 🛡️ R31: refetch al volver al tab (servicios pueden cambiar)
+        refetchOnMount: 'always', // 🛡️ R31: refetch al montar si stale
+        refetchInterval: 60000, // 🛡️ R31: auto-refresh background cada 60s para no servir datos stale indefinidos
+        refetchIntervalInBackground: false, // pausar cuando el tab no está activo (ahorra recursos)
         queryFn: async () => {
             const token = getAuthToken();
             
