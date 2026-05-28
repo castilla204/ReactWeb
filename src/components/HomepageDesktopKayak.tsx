@@ -28,8 +28,8 @@ const PANEL_SHARE = '52%';
 /** Ancho del fade en píxeles (zona de transición panel → mapa) */
 const FADE_WIDTH_PX = 132;
 
-/** Padding izquierdo del mapa (centra el globo en la zona visible) — menor = mapa más a la izquierda */
-const MAP_OVERLAY_PADDING = 0.46;
+/** Padding izquierdo del mapa — menor = marcador más hacia la izquierda de la zona visible */
+const MAP_OVERLAY_PADDING = 0.26;
 
 /**
  * Líneas de fondo editoriales — meridianos/latitudes sutiles en la zona del mapa.
@@ -237,12 +237,14 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
     navigate(`/crear-busqueda?categoryId=${categoryId}&serviceTypeId=1&step=map`);
   };
 
-  const contentInset = 'max(1rem, calc((100vw - 1280px) / 2 + 2.5rem))';
+  /** Personaje más pegado al borde; texto alineado con grid 1280px */
+  const expertLeft = 'max(0.25rem, calc((100vw - 1280px) / 2 - 0.25rem))';
+  const textBlockLeft = `calc(${expertLeft} + clamp(13.5rem, 21vw, 17rem))`;
 
   return (
     <section
       data-homepage-hero
-      className="relative hidden md:block h-[400px] lg:h-[480px] overflow-hidden border-b border-[#e8e8e8]/80 bg-[#dce9f2]"
+      className="relative hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] overflow-hidden border-b border-[#e8e8e8]/80 bg-[#dce9f2]"
     >
       <div className="absolute inset-0 z-[1]">
         <Suspense fallback={null}>
@@ -260,7 +262,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
       </div>
 
       <aside
-        className="absolute inset-y-0 left-0 z-10 pointer-events-none overflow-hidden"
+        className="absolute inset-y-0 left-0 z-10 pointer-events-none overflow-x-visible overflow-y-hidden"
         style={panelShellStyle}
       >
         <HeroPanelJoy />
@@ -269,18 +271,19 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
           className="absolute inset-0 pointer-events-none"
           style={{ background: `${PANEL_SIDE_LINES}, ${PANEL_WARM_GLOW}, ${PANEL_TOP_GLOW}` }}
         />
-        <div
-          className="relative grid h-full w-full items-center"
-          style={{
-            paddingLeft: contentInset,
-            paddingRight: '1.5rem',
-            gridTemplateColumns: 'auto minmax(0, 1fr)',
-            columnGap: '0.75rem',
-          }}
-        >
-          <HeroExpertCutout wrapperClassName="self-end" />
+        <div className="relative z-10 h-full w-full overflow-visible">
+          <div
+            className="pointer-events-none absolute bottom-0 z-[6]"
+            style={{ left: expertLeft }}
+          >
+            <HeroExpertCutout preset="desktop-hero" />
+          </div>
 
-          <div className="pointer-events-auto flex min-w-0 flex-col justify-center py-4 lg:py-5 max-w-[560px] self-center">
+          <div
+            className="flex h-full items-center"
+            style={{ paddingLeft: textBlockLeft, paddingRight: '1.25rem' }}
+          >
+            <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
               <h1 className="hp-hero-title-lg">
                 Antes de comprar,
                 <span className="block text-[#0066CC]">que lo revise un experto</span>
@@ -330,6 +333,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                 <ArrowRight className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-x-0.5" />
               </button>
             </div>
+          </div>
         </div>
       </aside>
     </section>

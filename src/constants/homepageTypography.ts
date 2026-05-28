@@ -105,6 +105,18 @@ export const hpType = {
   },
 } as const;
 
+/** Mismos márgenes que HomepageWall */
+export const SD_PAGE_INNER_MAX_CLASS =
+  'mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-10';
+
+/** Contenido + barra lateral reserva */
+export const SD_PAGE_GRID_CLASS =
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12';
+
+/** CTA principal ficha servicio (mismo azul que homepage) */
+export const HP_SERVICE_CTA_CLASS =
+  'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-[#0066CC] text-white text-base font-semibold shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
+
 export const hpCardText = {
   title: {
     ...hpType.bodyMedium,
