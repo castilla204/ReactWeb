@@ -1,4 +1,5 @@
 ﻿import { useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDisputes } from './useDisputes';
 import { useApi } from './useApi';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ export function useSearchActions() {
     const { createDispute, resolveDispute } = useDisputes();
     const { fetchApi } = useApi();
     const navigate = useNavigate();
+    const queryClient = useQueryClient(); // 🛡️ R18: invalidar cache tras mutaciones
 
     const addNotification = (type: NotificationType, message: string, duration?: number) => {
         showToast(type, message, duration);
@@ -66,6 +68,10 @@ export function useSearchActions() {
                     ResolveInFavorOfClient: !favorExpert,
                 }),
             });
+            // 🛡️ R18 FIX: invalidar queries de hire/search para que la UI refleje el nuevo estado
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', searchHireId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+            queryClient.invalidateQueries({ queryKey: ['searchHires'] });
             addNotification('success', '✅ Búsqueda finalizada exitosamente');
             onSuccess();
         } catch (error) {
@@ -86,6 +92,10 @@ export function useSearchActions() {
                     ClientApproved: true,
                 }),
             });
+            // 🛡️ R18 FIX: invalidar queries de hire/search para que la UI refleje completion
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', searchHireId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+            queryClient.invalidateQueries({ queryKey: ['searchHires'] });
             addNotification('success', '✅ Servicio completado exitosamente');
             onSuccess();
         } catch (error) {

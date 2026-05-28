@@ -1,4 +1,4 @@
-﻿import { useMutation, useQuery } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from './useApi';
 
 interface CreateReviewRequest {
@@ -21,6 +21,7 @@ interface ReviewResponse {
 
 export const useReview = () => {
     const { fetchApi } = useApi();
+    const queryClient = useQueryClient(); // 🛡️ R19: invalidar cache tras crear review
 
     const createReviewMutation = useMutation({
         mutationFn: async ({ searchHireId, score, description, images }: CreateReviewRequest) => {
@@ -52,7 +53,12 @@ export const useReview = () => {
 
             return response.review as ReviewResponse;
         },
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
+            // 🛡️ R19 FIX: invalidar queries de hire/expert para que la review aparezca al instante
+            const { searchHireId } = variables;
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsCompleteByHire', searchHireId] });
+            queryClient.invalidateQueries({ queryKey: ['searchDetailsComplete'] });
+            queryClient.invalidateQueries({ queryKey: ['expertReviews'] });
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
