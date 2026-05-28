@@ -170,7 +170,7 @@ const ServiceDetailPage: React.FC = () => {
           <p className="text-red-600 mb-4">{error || 'Servicio no encontrado'}</p>
           <button
             onClick={handleBack}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+            className="rounded-full bg-[#0066CC] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#005bb5]"
           >
             Volver
           </button>

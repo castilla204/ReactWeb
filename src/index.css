@@ -146,6 +146,52 @@
     .hp-eyebrow {
         @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0066CC];
     }
+
+    /* Ficha servicio — minimalista */
+    .service-detail-page {
+        @apply font-display text-[#1c1c1c] bg-white;
+    }
+
+    .service-detail-desktop {
+        @apply bg-white text-[#1c1c1c];
+    }
+
+    .sd-page-title {
+        @apply font-display text-xl font-semibold tracking-[-0.02em] text-[#1c1c1c] md:text-[1.65rem];
+    }
+
+    .sd-section-label {
+        @apply text-xs font-semibold uppercase tracking-[0.08em] text-[#6a6a6a] mb-2;
+    }
+
+    .sd-body {
+        @apply text-sm leading-relaxed text-[#444444];
+    }
+
+    .sd-btn-primary {
+        @apply inline-flex items-center justify-center h-11 px-8 min-w-[140px] shrink-0 rounded-md bg-[#0066CC] text-white text-sm font-semibold transition-colors hover:bg-[#005bb5] disabled:opacity-60 disabled:cursor-wait;
+    }
+
+    .sd-icon-btn {
+        @apply inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#e8e8e8] bg-white text-[#444] transition-colors hover:border-[#ccc] hover:text-[#1c1c1c];
+    }
+
+    .sd-btn-secondary {
+        @apply inline-flex h-9 items-center gap-2 rounded-md border border-[#e8e8e8] bg-white px-3 text-sm font-medium text-[#1c1c1c] transition-colors hover:bg-[#fafafa];
+    }
+
+    .sd-aside-card {
+        @apply rounded-lg border border-[#e8e8e8] bg-[#fafafa] p-5;
+    }
+
+    .sd-tab {
+        @apply flex-1 py-3 text-center text-base transition-colors border-b-2 border-transparent text-[#6a6a6a] font-normal;
+    }
+
+    .sd-tab[data-active='true'] {
+        @apply font-semibold text-[#1c1c1c] border-[#0066CC];
+    }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

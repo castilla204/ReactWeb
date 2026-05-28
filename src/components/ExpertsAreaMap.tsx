@@ -140,7 +140,7 @@ const GLOBE_INTRO = {
 /** Vista regional tras el vuelo desde el globo (fallback España) */
 const HERO_CAMERA = {
   center: [-4.0, 39.6] as [number, number],
-  zoom: 4.35,
+  zoom: 4.1,
   pitch: 28,
   bearing: 0,
   maxPitch: 60,
@@ -148,9 +148,9 @@ const HERO_CAMERA = {
 
 const GLOBE_HOLD_MS = 100;
 const LANDING_FLY_MS = 1400;
-/** Menos zoom = cámara más lejos al aterrizar */
-const LANDING_ZOOM_PULLBACK = 1.35;
-const MIN_LANDING_ZOOM = 2.8;
+/** Menos zoom = cámara más lejos al aterrizar (valor final de la transición) */
+const LANDING_ZOOM_PULLBACK = 2.55;
+const MIN_LANDING_ZOOM = 2.05;
 
 const toHeroLandingZoom = (zoom: number) =>
   Math.max(MIN_LANDING_ZOOM, zoom - LANDING_ZOOM_PULLBACK);

@@ -4,7 +4,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 export function ServiceDetailSkeleton() {
   return (
     <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#fafafa]">
         {/* Versión Móvil */}
         <div className="lg:hidden">
           {/* Botones flotantes skeleton */}
@@ -90,11 +90,11 @@ export function ServiceDetailSkeleton() {
 
         {/* Versión Desktop */}
         <div className="hidden lg:block">
-          <div className="max-w-[1760px] mx-auto px-8 py-8">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-10 py-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
               {/* Columna izquierda - Imágenes */}
               <div>
-                <Skeleton height={500} width="100%" borderRadius={12} />
+                <Skeleton height={260} width="100%" borderRadius={16} />
               </div>
 
               {/* Columna derecha - Contenido */}

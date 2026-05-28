@@ -144,6 +144,7 @@ const AppContent: React.FC = () => {
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
     const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
     const hideGlobalHeaderPaths = isHomePage
+        || location.pathname.startsWith('/service/')
         || location.pathname === '/expert-panel'
         || location.pathname === '/become-expert'
         || location.pathname.startsWith('/complete-onboarding')
@@ -268,7 +269,7 @@ const AppContent: React.FC = () => {
                             className="flex items-center shrink-0"
                         >
                             <span
-                                className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-[#FF385C]/10 text-[#222] font-semibold text-[11px] tracking-[0.18em]"
+                                className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-[#0066CC]/10 text-[#222] font-semibold text-[11px] tracking-[0.18em]"
                                 aria-label="Inspecciono"
                             >
                                 INSPECCIONO
