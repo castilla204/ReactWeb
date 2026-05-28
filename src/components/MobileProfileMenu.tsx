@@ -47,8 +47,10 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   
   const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
   
-  // Debug log
-  console.log('[MobileProfileMenu] User role check:', { userRole, isExpert, user });
+  // Debug log (solo si se activa explícitamente)
+  if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_PROFILE === 'true') {
+    console.debug('[MobileProfileMenu] User role check:', { userRole, isExpert, user });
+  }
 
   if (!isOpen) return null;
 

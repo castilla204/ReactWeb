@@ -75,6 +75,7 @@ import CountrySelector from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
+import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
 import { ScrollToTop } from './components/ScrollToTop';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import logoImg from './media/logoi.png';
@@ -115,15 +116,17 @@ const AppContent: React.FC = () => {
     const navigate = useNavigate();
     const { user, isAuthenticated, signOut } = useAuth();
     
-    // ✅ Debug: Log de la ruta actual para verificar que no se está redirigiendo incorrectamente
+    // Debug de ruta (opt-in en desarrollo)
     useEffect(() => {
-        console.log('[AppContent] Current route:', location.pathname, {
-            isAuthenticated,
-            hasUser: !!user,
-            search: location.search,
-            state: location.state
-        });
-    }, [location.pathname, isAuthenticated, user]);
+        if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_ROUTES === 'true') {
+            console.debug('[AppContent] Current route:', location.pathname, {
+                isAuthenticated,
+                hasUser: !!user,
+                search: location.search,
+                state: location.state,
+            });
+        }
+    }, [location.pathname, location.search, location.state, isAuthenticated, user]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAccountSettings, setShowAccountSettings] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState<string>('ES');
@@ -272,6 +275,7 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
+            <GoogleIdentityBootstrap />
             {/* Header estilo Memorae - Oculto en móvil */}
             <header className={`h-12 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? '!hidden' : ''}`} style={{ backgroundColor: '#ffffff' }}>
                     <div className="w-full h-full px-4 lg:px-6 flex items-center justify-between">

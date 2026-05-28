@@ -6,8 +6,12 @@ import { nativeAuthService } from '../services/nativeAuthService';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-
-// Google SVG Icon Component
+import {
+  ensureGoogleIdentityReady,
+  logGoogleOriginHintOnce,
+  renderGoogleButton,
+  subscribeGoogleAuthSuccess,
+} from '../lib/googleIdentity';
 const GoogleIcon = () => (
     <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -16,21 +20,6 @@ const GoogleIcon = () => (
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
     </svg>
 );
-
-// Declaración de tipos para Google Sign-In
-declare global {
-    interface Window {
-        google?: {
-            accounts: {
-                id: {
-                    initialize: (config: any) => void;
-                    renderButton: (element: HTMLElement, config: any) => void;
-                    prompt: () => void;
-                };
-            };
-        };
-    }
-}
 
 interface GoogleSignInButtonProps {
     className?: string;
@@ -49,179 +38,49 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
     const isNative = Capacitor.isNativePlatform();
 
     useEffect(() => {
-        // Si es nativo, no necesitamos inicializar Google web
         if (isNative) {
             setIsReady(true);
             return;
         }
-        
-        // Inicializar Google Auth cuando el componente se monta
-        const initGoogleAuth = () => {
-            if (window.google?.accounts?.id && buttonRef.current) {
-                const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-                
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response: any) => {
-                        try {
-                            setIsAuthenticating(true);
-                            setAuthStep('Verificando credenciales de Google...');
-                            console.log('🔐 [GoogleSignIn] Paso 1: Credencial recibida de Google');
-                            
-                            if (!response.credential) {
-                                throw new Error('No credential received from Google');
-                            }
 
-                            setAuthStep('Autenticando con el servidor...');
-                            console.log('🔐 [GoogleSignIn] Paso 2: Enviando credencial al backend');
-                            const result = await authService.googleAuth(response.credential);
-                            
-                            if (!result.success) {
-                                throw new Error('Authentication failed');
-                            }
-                            console.log('✅ [GoogleSignIn] Paso 3: Autenticación exitosa');
+        let cancelled = false;
 
-                            setAuthStep('Obteniendo información del usuario...');
-                            // Obtener el token después de la autenticación
-                            const token = authService.getAccessToken();
-                            
-                            setAuthStep('Configurando sesión...');
-                            console.log('🔐 [GoogleSignIn] Paso 4: Actualizando contexto de usuario');
-                            // Actualizar usuario y token usando updateUser del contexto
-                            // Esto asegura que tanto el usuario como el token se guarden correctamente
-                            updateUser(result.user, token, () => {
-                                // Callback después de actualizar usuario y token
-                                console.log('✅ [GoogleSignIn] Paso 5: Usuario y token actualizados');
-                            });
-                            
-                            // Verificar MFA solo si es necesario (optimización)
-                            if (token) {
-                                setAuthStep('Verificando seguridad...');
-                                console.log('🔐 [GoogleSignIn] Paso 6: Verificando MFA si es necesario');
-                                // Verificar MFA de forma más eficiente
-                                const { RoleChecker } = await import('../utils/roleChecker');
-                                const userRole = RoleChecker.getUserRole(token);
-                                const requiresMfa = RoleChecker.requiresMfa(userRole);
-                                
-                                if (requiresMfa) {
-                                    // Solo verificar MFA si el rol lo requiere
-                                    const { mfaService } = await import('../services/mfaService');
-                                    try {
-                                        const mfaStatus = await mfaService.getMFAStatus();
-                                        if (mfaStatus.isEnabled && !mfaStatus.isVerified) {
-                                            setAuthStep('Redirigiendo a verificación MFA...');
-                                            navigate('/mfa/verify', { state: { returnTo: null } });
-                                            return;
-                                        }
-                                    } catch (error) {
-                                        console.error('Error checking MFA status:', error);
-                                        // Continuar con el flujo normal si hay error en MFA
-                                    }
-                                }
-                            }
-                            
-                            setAuthStep('¡Inicio de sesión exitoso!');
-                            console.log('✅ [GoogleSignIn] Paso 7: Proceso completado');
-                            // No mostrar notificación de bienvenida
-                            
-                            // Llamar callback si existe
-                            if (onSuccess) {
-                                onSuccess();
-                            }
-                            // No redirigir automáticamente después del login
-                            // El usuario puede hacer clic en "Mis revisiones" si quiere ir a /busquedas
-                        } catch (error: any) {
-                            console.error('❌ [GoogleSignIn] Error durante autenticación:', error);
-                            const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-                            toast.error(errorMessage, { duration: 5000 });
-                            setAuthStep('');
-                        } finally {
-                            setIsAuthenticating(false);
-                        }
-                    },
-                    auto_select: false,
-                    cancel_on_tap_outside: false,
-                });
+        const mountButton = async () => {
+            if (!buttonRef.current) return;
 
-                // Limpiar el contenedor antes de renderizar
-                if (buttonRef.current) {
-                    buttonRef.current.innerHTML = '';
-                    
-                    // Renderizar el botón nativo de Google (igual que en el paso 2)
-                    window.google.accounts.id.renderButton(buttonRef.current, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: variant === 'compact' ? 'medium' : 'large',
-                        text: 'signin_with',
-                        // No pasar width si es 100%, Google Sign-In no lo acepta
-                        width: variant === 'compact' ? undefined : undefined,
-                    });
+            const ready = await ensureGoogleIdentityReady();
+            if (cancelled || !buttonRef.current) return;
 
-                    // Esperar a que el botón se renderice (reducido de 300ms a 100ms)
-                    setTimeout(() => {
-                        const renderedButton = buttonRef.current?.querySelector('div[role="button"]');
-                        if (renderedButton) {
-                            setIsReady(true);
-                        } else {
-                            // Reintentar una vez más si no está listo
-                            setTimeout(() => {
-                                const retryButton = buttonRef.current?.querySelector('div[role="button"]');
-                                if (retryButton) {
-                                    setIsReady(true);
-                                }
-                            }, 200);
-                        }
-                    }, 100);
-                }
-            } else {
-                // Reintentar después de un delay
-                setTimeout(initGoogleAuth, 500);
+            if (!ready) {
+                logGoogleOriginHintOnce();
+                return;
             }
+
+            renderGoogleButton(buttonRef.current, {
+                type: 'standard',
+                theme: 'outline',
+                size: variant === 'compact' ? 'medium' : 'large',
+                text: 'signin_with',
+            });
+
+            window.setTimeout(() => {
+                if (cancelled) return;
+                const renderedButton = buttonRef.current?.querySelector('div[role="button"]');
+                setIsReady(!!renderedButton);
+            }, 150);
         };
 
-        // Cargar script de Google si no está cargado
-        let checkInterval: NodeJS.Timeout | null = null;
-        let retryTimeout: NodeJS.Timeout | null = null;
-        
-        if (!window.google?.accounts?.id) {
-            // Verificar si el script ya está en el DOM
-            const existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
-            if (!existingScript) {
-                const script = document.createElement('script');
-                script.src = 'https://accounts.google.com/gsi/client';
-                script.async = true;
-                script.defer = true;
-                script.onload = () => {
-                    setTimeout(initGoogleAuth, 100);
-                };
-                script.onerror = () => {
-                    console.error('Failed to load Google Sign-In script');
-                };
-                document.head.appendChild(script);
-            } else {
-                // Script ya existe, esperar a que cargue
-                checkInterval = setInterval(() => {
-                    if (window.google?.accounts?.id) {
-                        if (checkInterval) clearInterval(checkInterval);
-                        initGoogleAuth();
-                    }
-                }, 100);
-                
-                // Timeout después de 10 segundos
-                setTimeout(() => {
-                    if (checkInterval) clearInterval(checkInterval);
-                }, 10000);
-            }
-        } else {
-            // Script ya está cargado, inicializar directamente
-            initGoogleAuth();
-        }
+        void mountButton();
+
+        const unsubscribeSuccess = subscribeGoogleAuthSuccess(() => {
+            onSuccess?.();
+        });
 
         return () => {
-            if (checkInterval) clearInterval(checkInterval);
-            if (retryTimeout) clearTimeout(retryTimeout);
+            cancelled = true;
+            unsubscribeSuccess();
         };
-    }, [updateUser, navigate, onSuccess, variant, isNative]);
+    }, [variant, isNative, onSuccess]);
 
     // Función para autenticación nativa
     const handleNativeSignIn = async () => {

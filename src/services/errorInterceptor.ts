@@ -4,6 +4,7 @@
  */
 
 import { toast } from 'sonner';
+import { isExternalMapTileUrl } from '../utils/mapTileUrls';
 
 interface ErrorResponse {
     status: number;
@@ -203,11 +204,17 @@ export function setupErrorInterceptor(): void {
 
             return response;
         } catch (error) {
+            const isMapTile = isExternalMapTileUrl(urlString);
+
             // ✅ MEJOR PRÁCTICA: Manejar errores de red (API caída, sin conexión)
             // Estos errores son críticos y deben notificarse siempre
-            if (error instanceof TypeError && error.message.includes('fetch')) {
+            if (
+                !isMapTile &&
+                error instanceof TypeError &&
+                error.message.includes('fetch')
+            ) {
                 await handleNetworkError(error, urlString);
-            } else if (error instanceof Error && isNetworkErrorType(error)) {
+            } else if (!isMapTile && error instanceof Error && isNetworkErrorType(error)) {
                 await handleNetworkError(error, urlString);
             }
 

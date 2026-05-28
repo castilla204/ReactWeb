@@ -6,13 +6,13 @@ import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
 import { Star, ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Footer } from './Footer';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { hpCardText, hpType } from '../constants/homepageTypography';
 
 const COCHES_CATEGORY_ID = 5;
 const INMOBILIARIA_CATEGORY_ID = 3;
@@ -182,13 +182,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
         }}
-        whileHover={isMobile ? { scale: 1.05, y: -4 } : { scale: 1.02 }}
+        whileHover={isMobile ? { scale: 1.05, y: -4 } : { y: -3 }}
         whileTap={{ scale: 0.98 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
-          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl"
+          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl md:shadow-[0_2px_14px_rgba(15,23,42,0.07)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300 md:ring-1 md:ring-black/[0.04]"
           style={{ 
             aspectRatio: isMobile ? '1' : '4 / 3',
             borderRadius: isMobile ? '20px' : '12px',
@@ -269,14 +269,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       />
                     </div>
                     <span
-                      style={{
-                        fontSize: '10px',
-                        lineHeight: '12px',
-                        fontWeight: 400,
-                        color: '#000000',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                        letterSpacing: '0',
-                      }}
+                      style={hpType.badge}
                       aria-label="Mejor valorado"
                     >
                       Mejor valorado
@@ -290,12 +283,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       <span
                         aria-hidden="true"
                         style={{
-                          fontSize: '10px',
-                          lineHeight: '12px',
-                          fontWeight: 400,
-                          color: '#000000',
-                          fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                          letterSpacing: '0',
+                          ...hpType.badge,
                           position: 'absolute',
                           visibility: 'hidden',
                           pointerEvents: 'none',
@@ -455,11 +443,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
             className="overflow-hidden"
             style={{
               marginBottom: '0px',
-              fontSize: '14px',
-              lineHeight: '20.02px',
-              fontWeight: 500,
-              color: 'rgb(34, 34, 34)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+              ...hpCardText.title,
               textAlign: 'left',
             }}
           >
@@ -471,11 +455,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
             className="flex items-center overflow-hidden"
             style={{
               marginBottom: '0px',
-              fontSize: '12px',
-              lineHeight: '16px',
-              fontWeight: 400,
-              color: 'rgb(106, 106, 106)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+              ...hpCardText.meta,
               textAlign: 'left',
             }}
           >
@@ -495,11 +475,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
             className="flex items-center overflow-hidden"
             style={{
               marginBottom: '0px',
-              fontSize: '12px',
-              lineHeight: '16px',
-              fontWeight: 400,
-              color: 'rgb(106, 106, 106)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+              ...hpCardText.meta,
               textAlign: 'left',
             }}
           >
@@ -650,33 +626,51 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header sección */}
-      <div className="mb-2 md:mb-2.5 px-4 md:px-0">
-        <h2 className="text-lg md:text-xl font-medium text-[#222222] m-0 tracking-tight">
-          {title.replace(' >', '')}
-        </h2>
-        {subtitle && (
-          <p className="mt-1 text-sm text-[#717171]">{subtitle}</p>
-        )}
+      <div className="mb-3 md:mb-5 md:px-0">
+        <div className="flex items-start gap-3">
+          <span
+            className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-[#0066CC] to-[#0066CC]/25"
+            aria-hidden
+          />
+          <div className="min-w-0">
+            <h2 className="hp-section-title">
+              {title.replace(' >', '')}
+            </h2>
+            {subtitle && (
+              <p className="hp-section-subtitle">{subtitle}</p>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Tablón horizontal — igual que móvil */}
+      {/* Tablón horizontal */}
       <div className="relative group/scroll md:w-[min(100%,calc(6*184px+60px))] md:overflow-hidden">
+        {canScrollLeft && (
+          <div
+            className="hidden md:block absolute left-0 top-0 bottom-3 w-10 z-[5] pointer-events-none bg-gradient-to-r from-white via-white/80 to-transparent"
+            aria-hidden
+          />
+        )}
+        {canScrollRight && (
+          <div
+            className="hidden md:block absolute right-0 top-0 bottom-3 w-10 z-[5] pointer-events-none bg-gradient-to-l from-white via-white/80 to-transparent"
+            aria-hidden
+          />
+        )}
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-hide pb-3 md:pb-0 px-4 md:px-0 md:pr-0 gap-4 md:gap-3"
+          className="flex overflow-x-auto scrollbar-hide pb-3 md:pb-0 md:px-0 md:pr-0 gap-4 md:gap-3"
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollBehavior: 'smooth',
             scrollSnapType: 'x mandatory',
-            scrollPaddingLeft: isMobile ? '16px' : '0px',
-            scrollPaddingRight: isMobile ? '16px' : '0px',
-            overscrollBehaviorX: 'contain', // Evita bounce del body
+            scrollPaddingLeft: '0px',
+            scrollPaddingRight: '0px',
+            overscrollBehaviorX: 'contain',
             willChange: 'scroll-position',
             contain: 'layout style paint',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
-            // ✅ Perspectiva 3D para efecto parallax
-            perspective: '1000px',
           }}
           onScroll={checkScroll}
         >
@@ -779,24 +773,33 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
 interface HomepageWallProps {
   countryCode?: string;
   serviceTypeId?: number | null;
-  categoryId: number; // ✅ OBLIGATORIO: ID de la categoría
+  categoryId: number;
+  latitude?: string | null;
+  longitude?: string | null;
+  /** false = sin fade-in al montar (homepage desktop sincronizada) */
+  animateOnMount?: boolean;
 }
 
-export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({ 
+export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   countryCode = 'ES',
   serviceTypeId,
   categoryId,
+  latitude: latitudeProp = null,
+  longitude: longitudeProp = null,
+  animateOnMount = true,
 }) => {
   // ✅ OPTIMIZADO: El backend ahora devuelve la ubicación por IP
   // No necesitamos solicitar permisos de geolocalización del navegador
-  // Pasamos null para lat/long y el backend detecta automáticamente la ubicación por IP
-  
+  // Pasamos null para lat/long y el backend detecta automáticamente la ubicación por IP.
+  // EXCEPCIÓN: si el padre nos pasa latitude/longitude (p.ej. al clicar una ciudad en
+  // el mapa de España del hero), priorizamos esas coords sobre la IP del backend.
+
   // ✅ CRÍTICO: Todos los hooks deben estar ANTES de cualquier return condicional
   // Memoizar los parámetros de la query para evitar re-renderizados innecesarios
   const queryParams = useMemo(() => ({
     categoryId,
-    latitude: null, // ✅ Backend detecta ubicación por IP automáticamente
-    longitude: null, // ✅ Backend detecta ubicación por IP automáticamente
+    latitude: latitudeProp,
+    longitude: longitudeProp,
     countryCode,
     locationRange: 50,
     nearbyPage: 1,
@@ -804,7 +807,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     popularPage: 1,
     popularPageSize: 20,
     _enabled: true, // ✅ Siempre habilitado, no hay que esperar geolocalización
-  }), [categoryId, countryCode]);
+  }), [categoryId, countryCode, latitudeProp, longitudeProp]);
 
   const { data: sections, isLoading, error, isFetching } = useHomepageWallQuery(queryParams);
 
@@ -853,7 +856,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
             <motion.div
               key={`${keyPrefix}-section-${index}-${section.title}`}
               variants={sectionVariants}
-              className={index > 0 ? 'mt-5 md:mt-6' : ''}
+              className={index > 0 ? 'mt-8 md:mt-10' : ''}
             >
               <HorizontalScrollSection
                 title={section.title}
@@ -971,7 +974,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           animate={{ opacity: 1 }}
           className="relative"
         >
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-6 md:pt-8">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-8">
             <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-sm text-[#717171]">
                 No hay expertos en esta categoría todavía. Mira estos de{' '}
@@ -999,9 +1002,6 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
             </div>
             {fallbackRendered}
           </div>
-          <motion.div className="mt-6 md:mt-8 w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10" variants={sectionVariants}>
-            <Footer />
-          </motion.div>
         </motion.div>
       );
     }
@@ -1034,16 +1034,16 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
 
   return (
     <motion.div
-      initial="hidden"
+      initial={animateOnMount ? 'hidden' : false}
       animate="visible"
       variants={{
         hidden: { opacity: 0 },
         visible: {
           opacity: 1,
           transition: {
-            staggerChildren: 0.01,
+            staggerChildren: animateOnMount ? 0.01 : 0,
             delayChildren: 0,
-            duration: 0.1,
+            duration: animateOnMount ? 0.1 : 0,
             ease: [0.4, 0.0, 0.2, 1],
           },
         },
@@ -1053,21 +1053,16 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     >
         {isFetching && sections && (
           <div className="hidden md:block absolute top-0 right-6 lg:right-8 z-10">
-            <span className="text-xs text-zinc-400">Actualizando…</span>
+            <span className="text-xs text-[#6a6a6a]">Actualizando…</span>
           </div>
         )}
         <div
-          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-4 transition-opacity duration-200 ${
+          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-8 transition-opacity duration-200 ${
             isFetching && sections ? 'opacity-70' : 'opacity-100'
           }`}
         >
           {renderedSections}
       </div>
-      
-      {/* Footer */}
-      <motion.div className="mt-6 md:mt-8 w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10" variants={sectionVariants}>
-        <Footer />
-      </motion.div>
     </motion.div>
   );
 }, (prevProps, nextProps) => {
@@ -1075,10 +1070,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (prevProps.categoryId !== nextProps.categoryId) {
     return false; // ✅ Re-renderizar inmediatamente para cambio fluido
   }
-  
+
   // ✅ Comparación normal para otros cambios
   return (
     prevProps.countryCode === nextProps.countryCode &&
-    prevProps.serviceTypeId === nextProps.serviceTypeId
+    prevProps.serviceTypeId === nextProps.serviceTypeId &&
+    prevProps.latitude === nextProps.latitude &&
+    prevProps.longitude === nextProps.longitude
   );
 });
