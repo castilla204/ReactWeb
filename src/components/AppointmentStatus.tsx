@@ -220,7 +220,22 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           {getStatusIcon(appointment.status)}
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Cita #{appointment.id}</h3>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800`}>
+            {/* 🛡️ Round 15 — R10 FIX: Tailwind JIT PURGA clases dinámicas tipo
+                `bg-${statusColor}-100` (no las encuentra en el scan estático del fuente)
+                → el badge se renderizaba SIN fondo ni color. Mapeo estático garantiza
+                que las clases existan en el bundle final. */}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                statusColor === 'green' ? 'bg-green-100 text-green-800' :
+                statusColor === 'red' ? 'bg-red-100 text-red-800' :
+                statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                statusColor === 'orange' ? 'bg-orange-100 text-orange-800' :
+                statusColor === 'blue' ? 'bg-blue-100 text-blue-800' :
+                statusColor === 'purple' ? 'bg-purple-100 text-purple-800' :
+                statusColor === 'amber' ? 'bg-amber-100 text-amber-800' :
+                statusColor === 'emerald' ? 'bg-emerald-100 text-emerald-800' :
+                statusColor === 'rose' ? 'bg-rose-100 text-rose-800' :
+                'bg-gray-100 text-gray-800'
+            }`}>
               {statusText}
             </span>
           </div>
