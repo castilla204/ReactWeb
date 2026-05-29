@@ -306,7 +306,8 @@ const Chat: React.FC<ChatProps> = ({
     const [messageSent, setMessageSent] = useState(false);
     const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
+        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
         libraries,
     });
 
