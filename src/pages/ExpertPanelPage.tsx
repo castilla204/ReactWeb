@@ -41,6 +41,7 @@ import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
+import { useStripeLoginLink } from '../hooks/useStripeLoginLink';
 import { useVacationMode } from '../hooks/useVacationMode';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
@@ -194,6 +195,8 @@ export function ExpertPanelPage() {
     const { data: notificationUnreadCount = 0 } = useUnreadNotificationCount();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
+    // 🛡️ Round 12 — D1: Express Dashboard real para experto aprobado.
+    const { openLoginLink, isLoading: isLoginLinkLoading } = useStripeLoginLink();
     const { toggleVacationMode, isToggling } = useVacationMode();
     
     // Estado para mostrar overlay de carga de Stripe
@@ -1102,28 +1105,50 @@ export function ExpertPanelPage() {
                                 }
                             }}
                             onAccessDashboard={async () => {
+                                // 🛡️ Round 12 — D1: si la cuenta está APPROVED, abrir el Express
+                                // Dashboard REAL (LoginLink) en lugar del onboarding (AccountLink).
+                                // El Dashboard es donde el experto ve payouts, balance, transactions
+                                // y puede ajustar cuenta bancaria / payout schedule.
+                                const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+                                                   && stripeStatus?.onboardingCompleted === true;
                                 setIsStripeLoading(true);
                                 try {
-                                    await openAccountLink();
+                                    if (isApprovedNow) {
+                                        await openLoginLink();
+                                    } else {
+                                        await openAccountLink();
+                                    }
                                     setIsStripeLoading(false);
                                 } catch (error) {
                                     setIsStripeLoading(false);
-                                    console.error('Error opening account link:', error);
+                                    console.error('Error opening dashboard/account link:', error);
                                     window.dispatchEvent(new CustomEvent('showNotification', {
                                         detail: {
                                             type: 'error',
-                                            message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                            message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
                                         },
                                     }));
                                 }
                             }}
                             onContactSupport={() => {
-                                window.dispatchEvent(new CustomEvent('showNotification', {
-                                    detail: {
-                                        type: 'info',
-                                        message: 'Contacta soporte en info@inspecciono.io',
-                                    },
-                                }));
+                                // 🛡️ Round 12 — D8 FIX: abrir cliente de email con contexto pre-llenado
+                                // para que el experto no tenga que copiar el email manualmente.
+                                // El subject/body ayuda al admin a identificar al usuario sin pedir info.
+                                const expertId = user?.id ?? (user as any)?.Id ?? 'N/A';
+                                const accountId = stripeStatus?.stripeAccountId || 'N/A';
+                                const subject = encodeURIComponent('Cuenta Stripe — necesito ayuda');
+                                const body = encodeURIComponent(
+                                    `Hola equipo de Inspecciono,\n\n` +
+                                    `Necesito ayuda con mi cuenta de pagos.\n\n` +
+                                    `Mi identificador: ${expertId}\n` +
+                                    `Mi cuenta Stripe: ${accountId}\n\n` +
+                                    `Describe tu problema aquí:\n\n`
+                                );
+                                window.open(
+                                    `mailto:info@inspecciono.io?subject=${subject}&body=${body}`,
+                                    '_blank',
+                                    'noopener,noreferrer'
+                                );
                             }}
                         />
                             </div>
@@ -1251,12 +1276,27 @@ export function ExpertPanelPage() {
                         <Separator />
 
                         {/* Estado de Pagos compacto */}
+                        {/* 🛡️ Round 12 — D4 FIX: badge condicional sobre stripeStatus en lugar de hardcoded "Activo".
+                            Antes el experto en estado Restricted/PendingVerification/RequirementsPastDue veía
+                            "Activo" verde aquí mientras el resto de la UI le bloqueaba operaciones. */}
                         <div className="px-2 space-y-2">
                             <div className="flex items-center justify-between p-2">
                                 <span className="text-xs text-muted-foreground">Estado de Pagos</span>
-                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                                    Activo
-                                </Badge>
+                                {(() => {
+                                    const s = stripeStatus?.stripeStatus;
+                                    const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                    const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                   || s === STRIPE_STATUS.REQUIREMENTS_DUE
+                                                   || s === STRIPE_STATUS.RESTRICTED_SOON
+                                                   || s === STRIPE_STATUS.ACTION_REQUIRED;
+                                    if (isOk) {
+                                        return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">Activo</Badge>;
+                                    }
+                                    if (isWarning) {
+                                        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Atención requerida</Badge>;
+                                    }
+                                    return <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">Bloqueado</Badge>;
+                                })()}
                                     </div>
                             <Button
                                 variant="outline"
@@ -1368,15 +1408,36 @@ export function ExpertPanelPage() {
                             {/* Estado de pagos y perfil en una fila */}
                             <div className="grid grid-cols-2 gap-3">
                                 {/* Estado de pagos compacto con Card */}
+                                {/* 🛡️ Round 12 — D4 FIX: badge condicional sobre stripeStatus (móvil). */}
                                 <Card>
                                     <CardContent className="p-3 space-y-2">
-                                        <div className="flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-1.5 py-0">
-                                                Activo
-                                            </Badge>
-                                    </div>
-                                        <p className="text-xs text-slate-500">Cuenta verificada</p>
+                                        {(() => {
+                                            const s = stripeStatus?.stripeStatus;
+                                            const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                            const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                           || s === STRIPE_STATUS.REQUIREMENTS_DUE
+                                                           || s === STRIPE_STATUS.RESTRICTED_SOON
+                                                           || s === STRIPE_STATUS.ACTION_REQUIRED;
+                                            const dotClass = isOk ? 'bg-emerald-500' : isWarning ? 'bg-amber-500' : 'bg-rose-500';
+                                            const badgeClass = isOk
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                : isWarning
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    : 'bg-rose-50 text-rose-700 border-rose-200';
+                                            const label = isOk ? 'Activo' : isWarning ? 'Atención' : 'Bloqueado';
+                                            const subtitle = isOk ? 'Cuenta verificada' : isWarning ? 'Revisa tu cuenta Stripe' : 'No puedes cobrar';
+                                            return (
+                                                <>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className={`w-1.5 h-1.5 ${dotClass} rounded-full`}></div>
+                                                        <Badge variant="outline" className={`${badgeClass} text-xs px-1.5 py-0`}>
+                                                            {label}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500">{subtitle}</p>
+                                                </>
+                                            );
+                                        })()}
                                 <button
                                     onClick={async () => {
                                         try {
@@ -1417,9 +1478,26 @@ export function ExpertPanelPage() {
                                         )}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
-                                                    <Badge variant="outline" className="mt-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 text-xs px-1.5 py-0">
-                                                        ✓
-                                                    </Badge>
+                                                    {/* 🛡️ Round 12 — D4 FIX: badge ✓ solo si APPROVED; ⏳ si warning; ⚠ si bloqueado */}
+                                                    {(() => {
+                                                        const s = stripeStatus?.stripeStatus;
+                                                        const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                                        const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                                       || s === STRIPE_STATUS.REQUIREMENTS_DUE
+                                                                       || s === STRIPE_STATUS.RESTRICTED_SOON
+                                                                       || s === STRIPE_STATUS.ACTION_REQUIRED;
+                                                        const cls = isOk
+                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                            : isWarning
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                : 'bg-rose-50 text-rose-700 border-rose-200';
+                                                        const symbol = isOk ? '✓' : isWarning ? '⏳' : '⚠';
+                                                        return (
+                                                            <Badge variant="outline" className={`mt-0.5 ${cls} text-xs px-1.5 py-0`}>
+                                                                {symbol}
+                                                            </Badge>
+                                                        );
+                                                    })()}
                                         </div>
                                     </div>
                                             <p className="text-xs text-slate-500 line-clamp-1">{profile.description}</p>
