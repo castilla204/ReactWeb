@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle, XCircle, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { useAppointmentStatuses, getAppointmentStatusText, getAppointmentStatusColor, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
 import { useMoneyDistributionConfig, calculateMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
+import { formatPriceNumber } from '../utils/priceUtils';
 
 interface DynamicAppointmentStatusProps {
   appointment: {
@@ -105,26 +106,26 @@ const DynamicAppointmentStatus: React.FC<DynamicAppointmentStatusProps> = ({ app
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Cliente:</span>
               <span className="text-sm font-medium text-green-600">
-                €{moneyDistribution.client.toFixed(2)} ({moneyConfig.clientPercentage}%)
+                €{formatPriceNumber(moneyDistribution.client)} ({moneyConfig.clientPercentage}%)
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Experto:</span>
               <span className="text-sm font-medium text-blue-600">
-                €{moneyDistribution.expert.toFixed(2)} ({moneyConfig.expertPercentage}%)
+                €{formatPriceNumber(moneyDistribution.expert)} ({moneyConfig.expertPercentage}%)
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Plataforma:</span>
               <span className="text-sm font-medium text-gray-600">
-                €{moneyDistribution.platform.toFixed(2)} ({moneyConfig.platformPercentage}%)
+                €{formatPriceNumber(moneyDistribution.platform)} ({moneyConfig.platformPercentage}%)
               </span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between items-center font-medium">
                 <span className="text-sm text-gray-900">Total:</span>
                 <span className="text-sm text-gray-900">
-                  €{appointment.amount.toFixed(2)}
+                  €{formatPriceNumber(appointment.amount)}
                 </span>
               </div>
             </div>

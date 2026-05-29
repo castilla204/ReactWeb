@@ -9,6 +9,7 @@ import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Service } from '../hooks/useServices';
 import { useSearch } from '../hooks/useSearch.hooks';
+import { formatPriceNumber } from '../utils/priceUtils';
 
 interface CheckoutPageProps {}
 
@@ -58,18 +59,24 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                 const url = API_CONFIG.endpoints.expert.services.get(id);
                 const rawService = await fetchApi<any>(url);
-                
-                console.log('🔵 CheckoutPage - Servicio obtenido (raw):', rawService);
-                
+
+                // 🛡️ Round 10 — P-A FIX: logs sólo en dev. En prod exponían IDs de servicio
+                // y URLs Stripe en la consola del navegador (visible en DevTools del usuario).
+                if (import.meta.env.DEV) {
+                    console.log('🔵 CheckoutPage - Servicio obtenido (raw):', rawService);
+                }
+
                 if (rawService) {
                     // Transformar PascalCase a camelCase (igual que en ServiceDetailPage.tsx)
                     const transformService = (service: any): Service => {
                         try {
                             const expert = service.Expert || service.expert;
                             const expertUser = expert?.User || expert?.user;
-                            
-                            console.log('🔵 CheckoutPage - Expert raw:', expert);
-                            console.log('🔵 CheckoutPage - ExpertUser raw:', expertUser);
+
+                            if (import.meta.env.DEV) {
+                                console.log('🔵 CheckoutPage - Expert raw:', expert);
+                                console.log('🔵 CheckoutPage - ExpertUser raw:', expertUser);
+                            }
                             
                             return {
                                 id: service.Id || service.id,
@@ -122,7 +129,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         }
                     };
                     const transformedService = transformService(rawService);
-                    console.log('✅ CheckoutPage - Servicio transformado:', transformedService);
+                    if (import.meta.env.DEV) {
+                        console.log('✅ CheckoutPage - Servicio transformado:', transformedService);
+                    }
                     setService(transformedService);
                 } else {
                     showToast('error', 'Servicio no encontrado');
@@ -141,12 +150,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serviceId, isAuthenticated]);
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('es-ES', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(price);
-    };
+    // 🛡️ Round 10 — P-B FIX: delegar a helper central NaN-safe en lugar de reimplementar.
+    // El componente sigue concatenando "&nbsp;€" aparte (por el non-breaking space), así que
+    // usamos formatPriceNumber (sin símbolo) en lugar de formatCurrency.
+    const formatPrice = (price: number) => formatPriceNumber(price);
 
     const handlePayment = async () => {
         if (!service) {
@@ -167,7 +174,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
         setIsSubmitting(true);
 
         try {
-            console.log('🔵 Creando búsqueda con contratación para servicio:', service.id);
+            // 🛡️ Round 10 — P-A FIX: log sólo en dev (en prod expone IDs y URLs Stripe).
+            if (import.meta.env.DEV) {
+                console.log('🔵 Creando búsqueda con contratación para servicio:', service.id);
+            }
             
             // Truncate text to prevent metadata size issues (Stripe has 500 char limit)
             const truncateForMetadata = (text: string, maxLength: number = 200) => {
@@ -211,10 +221,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 parameters: parameterData,
             });
 
-            console.log('🔵 Respuesta del createSearchWithHire:', response);
+            if (import.meta.env.DEV) {
+                console.log('🔵 Respuesta del createSearchWithHire:', response);
+            }
 
             if (response?.url) {
-                console.log('🔵 Redirigiendo a Stripe:', response.url);
+                if (import.meta.env.DEV) {
+                    console.log('🔵 Redirigiendo a Stripe:', response.url);
+                }
                 // Guardar estado pendiente (igual que en SearchForm.tsx)
                 sessionStorage.setItem('pendingHire', JSON.stringify({
                     serviceId: service.id,

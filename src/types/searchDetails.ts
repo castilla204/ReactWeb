@@ -166,6 +166,19 @@ export interface SearchHireDto {
    * Ejemplo: €19.09 (IVA del 21%)
    */
   taxAmount?: number;
+
+  // 🛡️ Round 10 — P-C FIX (V8 snapshots): porcentajes congelados al momento de crear
+  // la hire. Si el admin cambia las % en StatusConfigurations DESPUÉS de la contratación,
+  // estos snapshots preservan el reparto pactado para esta hire específica.
+  //
+  // Si están poblados (no null), tienen prioridad sobre la config dinámica del estado actual.
+  // Si son null (hires creadas pre-V8), caer a la config dinámica vía useMoneyDistributionConfig.
+  /** Porcentaje del cliente congelado al crear la hire. Null en hires pre-V8. */
+  clientPercentageSnapshot?: number | null;
+  /** Porcentaje del experto congelado al crear la hire. Null en hires pre-V8. */
+  expertPercentageSnapshot?: number | null;
+  /** Porcentaje de la plataforma congelado al crear la hire. Null en hires pre-V8. */
+  platformPercentageSnapshot?: number | null;
 }
 
 export interface CategoryDto {
