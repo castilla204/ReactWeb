@@ -20,6 +20,7 @@ import { useExpertReport } from '../hooks/useExpertReport';
 import { CancellationInfoCard } from './CancellationInfoCard';
 import { AccountDeletionInfo } from './AccountDeletionInfo';
 import { formatAppointmentForDisplay, getStoredTimezone } from '../utils/dateService';
+import { formatPriceNumber } from '../utils/priceUtils';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -613,7 +614,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           
           <div className="text-sm">
             <span className="text-gray-500">Monto:</span>
-            <span className="ml-2 font-medium text-green-600">€{appointment.amount.toFixed(2)}</span>
+            <span className="ml-2 font-medium text-green-600">€{formatPriceNumber(appointment.amount)}</span>
           </div>
         </div>
           </div>
@@ -654,7 +655,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-green-800">Cliente (reembolso)</span>
                 </div>
                 <span className="text-sm font-bold text-green-700">
-                  €{moneyDistribution.client.toFixed(2)}
+                  €{formatPriceNumber(moneyDistribution.client)}
                 </span>
               </div>
             )}
@@ -665,7 +666,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-blue-800">Experto</span>
                 </div>
                 <span className="text-sm font-bold text-blue-700">
-                  €{moneyDistribution.expert.toFixed(2)}
+                  €{formatPriceNumber(moneyDistribution.expert)}
                 </span>
               </div>
             )}
@@ -676,7 +677,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-gray-800">Plataforma</span>
                 </div>
                 <span className="text-sm font-bold text-gray-700">
-                  €{moneyDistribution.platform.toFixed(2)}
+                  €{formatPriceNumber(moneyDistribution.platform)}
                 </span>
               </div>
             )}

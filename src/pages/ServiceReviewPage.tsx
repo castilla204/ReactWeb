@@ -36,6 +36,7 @@ import { useNavigate } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
 import { getCountryName } from '../utils/countries';
+import { formatPriceNumber } from '../utils/priceUtils';
 import AppointmentMap from '../components/AppointmentMap';
 import { PreHireChat } from '../components/PreHireChat';
 import { SD_PAGE_GRID_CLASS, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
@@ -357,12 +358,10 @@ export function ServiceReviewPage({
 
     const serviceTypeName = serviceTypes.find(st => st.id === (finalService?.serviceTypeId || serviceTypeId))?.name || 'Servicio';
 
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('es-ES', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        }).format(price);
-    };
+    // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
+    // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
+    // muestran el mismo precio del mismo servicio con el mismo formato (16,50 €).
+    const formatPrice = (price: number) => formatPriceNumber(price);
 
     // Google Icon Component
     const GoogleIcon = () => (
