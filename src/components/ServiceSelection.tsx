@@ -62,7 +62,8 @@ export function ServiceSelection({
     
     // Google Maps configuration
     const { isLoaded } = useLoadScript({
-        googleMapsApiKey: "__REDACTED_GOOGLE_API_KEY__",
+        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
         libraries
     });
 
