@@ -198,7 +198,7 @@ jobs:
 
     steps:
       - name: Checkout k8s-configs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: castilla204/k8s-configs
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
