@@ -53,6 +53,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
 import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
 import { ScrollToTop } from './components/ScrollToTop';
+import { CookieBanner } from './components/CookieBanner';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import logoImg from './media/logoi.png';
 
@@ -547,6 +548,17 @@ const AppContent: React.FC = () => {
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                 <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
                 <Toaster />
+
+                {/* 🍪 Round 9 — A9 FIX: LSSI-CE Spain exige consentimiento previo al uso de cookies
+                    no esenciales. El componente existía pero nunca se renderizaba (sanción hasta €91k).
+                    Se monta globalmente; se auto-oculta si el usuario ya marcó preferencia en localStorage. */}
+                <CookieBanner
+                    cookiePolicyUrl="/privacy-policy.html"
+                    onAccept={(pref) => {
+                        // Emitir evento para que otros componentes puedan reaccionar (gate analytics, maps, etc.)
+                        window.dispatchEvent(new CustomEvent('cookieConsentChanged', { detail: { preference: pref } }));
+                    }}
+                />
         </div>
     );
 };
