@@ -120,7 +120,8 @@ function BecomeExpertPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAlreadyExpert]);
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM',
+        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
         libraries
     });
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
