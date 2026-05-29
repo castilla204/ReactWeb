@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Star, Shield, Check, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // 🛡️ T8 FIX: flag síncrono para cerrar la microventana entre el check y setIsSubmitting.
+    // setState es asíncrono (batching de React) → si el usuario hace doble click muy rápido,
+    // ambos handlers pueden leer isSubmitting=false y entrar al try. El useRef es síncrono:
+    // isSubmittingRef.current=true se aplica INMEDIATAMENTE, bloqueando el segundo handler.
+    const isSubmittingRef = useRef(false);
     const [showPriceDetails, setShowPriceDetails] = useState(true);
     
     // Datos del servicio
@@ -149,11 +154,16 @@ export function CheckoutPage({}: CheckoutPageProps) {
             return;
         }
 
-        if (createSearchWithHire.isPending || isSubmitting) {
+        // 🛡️ T8 FIX: check ATÓMICO con useRef ANTES de cualquier setState. El check
+        // anterior `isSubmitting` (state) tenía microventana 100-200ms entre lectura y
+        // setIsSubmitting(true) durante la cual un doble click rápido pasaba ambos
+        // requests → 2 sesiones Stripe + 2 hires duplicados. Ref + state combinados:
+        // ref bloquea inmediato, state mantiene el UI disabled.
+        if (isSubmittingRef.current || createSearchWithHire.isPending) {
             showToast('error', 'Error: Procesando solicitud. Por favor, espera.');
             return;
         }
-
+        isSubmittingRef.current = true;
         setIsSubmitting(true);
 
         try {
@@ -216,20 +226,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
             } else {
                 console.error('❌ No se recibió URL en la respuesta:', response);
                 showToast('error', 'Error al crear la sesión de pago. Por favor, intenta de nuevo.');
+                isSubmittingRef.current = false; // 🛡️ T8: reset ref para permitir reintento
                 setIsSubmitting(false);
             }
         } catch (error: any) {
             console.error('❌ Error al procesar el pago:', error);
             const errorMessage = error?.response?.data?.message || error?.message || 'Error al procesar el pago. Por favor, intenta de nuevo.';
-            
+
             // Detectar error de experto que intenta crear contrataciones (igual que en SearchForm.tsx)
-            if (errorMessage.includes('expertos no pueden') || 
+            if (errorMessage.includes('expertos no pueden') ||
                 errorMessage.includes('experto') && errorMessage.includes('contrataciones') ||
                 errorMessage.includes('Debes usar una cuenta distinta')) {
                 showToast('error', 'Los expertos no pueden crear contrataciones. Debes usar una cuenta distinta (no registrada como experto) para contratar servicios.', 8000);
             } else {
             showToast('error', errorMessage);
             }
+            isSubmittingRef.current = false; // 🛡️ T8: reset ref para permitir reintento
             setIsSubmitting(false);
         }
     };
