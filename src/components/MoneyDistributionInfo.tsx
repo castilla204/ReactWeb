@@ -9,6 +9,15 @@ interface MoneyDistributionInfoProps {
   isLoading?: boolean;
   error?: string | null;
   className?: string;
+  // 🛡️ Round 10 — P-C FIX (V8 snapshots): si la SearchHire tiene snapshots de %
+  // congelados al momento de crearla, tienen prioridad sobre la config dinámica
+  // del estado actual. Esto preserva el reparto pactado aunque admin cambie las %
+  // después. Si los 3 son null/undefined, caer a la config dinámica de siempre.
+  snapshots?: {
+    clientPercentage?: number | null;
+    expertPercentage?: number | null;
+    platformPercentage?: number | null;
+  } | null;
 }
 
 const getStatusInfo = (status: string, statuses: any[] | undefined) => {
@@ -53,12 +62,30 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
   status,
   isLoading = false,
   error = null,
-  className = ''
+  className = '',
+  snapshots = null,
 }) => {
   // ✅ HOOK DINÁMICO PARA ESTADOS
   const { data: statuses } = useAppointmentStatuses();
   const statusInfo = getStatusInfo(status, statuses);
   const IconComponent = statusInfo.icon;
+
+  // 🛡️ Round 10 — P-C FIX: derivar los % a mostrar. Snapshots tienen prioridad si
+  // están poblados (V8+). Si son null (hires pre-V8), caer a la config dinámica.
+  const hasSnapshots = snapshots != null &&
+    (snapshots.clientPercentage != null ||
+     snapshots.expertPercentage != null ||
+     snapshots.platformPercentage != null);
+
+  const effectiveClientPct = hasSnapshots
+    ? String(snapshots?.clientPercentage ?? 0)
+    : (config?.clientPercentage ?? '0');
+  const effectiveExpertPct = hasSnapshots
+    ? String(snapshots?.expertPercentage ?? 0)
+    : (config?.expertPercentage ?? '0');
+  const effectivePlatformPct = hasSnapshots
+    ? String(snapshots?.platformPercentage ?? 0)
+    : (config?.platformPercentage ?? '0');
 
   // ✅ VERIFICACIÓN ADICIONAL: No mostrar si no debería mostrar distribución
   if (!shouldShowMoneyDistribution(config, status, statuses)) {
@@ -106,47 +133,53 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
             {statusInfo.description}
           </p>
           
+          {/* 🛡️ Round 10 — P-C FIX: usar effectiveXxxPct (snapshots > config). */}
+          {hasSnapshots && (
+            <p className="text-[10px] text-gray-500 italic mb-2">
+              Reparto pactado al momento de contratar (no se ve afectado por cambios posteriores)
+            </p>
+          )}
           <div className="space-y-2">
-            {parseFloat(config.clientPercentage) > 0 && (
+            {parseFloat(effectiveClientPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-xs font-medium text-gray-700">Cliente</span>
                 </div>
                 <span className="text-xs font-bold text-green-600">
-                  {config.clientPercentage}%
+                  {effectiveClientPct}%
                 </span>
               </div>
             )}
-            
-            {parseFloat(config.expertPercentage) > 0 && (
+
+            {parseFloat(effectiveExpertPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   <span className="text-xs font-medium text-gray-700">Experto</span>
                 </div>
                 <span className="text-xs font-bold text-blue-600">
-                  {config.expertPercentage}%
+                  {effectiveExpertPct}%
                 </span>
               </div>
             )}
-            
-            {parseFloat(config.platformPercentage) > 0 && (
+
+            {parseFloat(effectivePlatformPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                   <span className="text-xs font-medium text-gray-700">Plataforma</span>
                 </div>
                 <span className="text-xs font-bold text-gray-600">
-                  {config.platformPercentage}%
+                  {effectivePlatformPct}%
                 </span>
               </div>
             )}
           </div>
-          
+
           <div className="mt-3 p-2 bg-white rounded border border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              <strong>Total:</strong> {(parseFloat(config.clientPercentage) + parseFloat(config.expertPercentage) + parseFloat(config.platformPercentage)).toFixed(1)}%
+              <strong>Total:</strong> {(parseFloat(effectiveClientPct) + parseFloat(effectiveExpertPct) + parseFloat(effectivePlatformPct)).toFixed(1)}%
             </p>
           </div>
         </div>

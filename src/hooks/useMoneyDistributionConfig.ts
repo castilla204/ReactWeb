@@ -37,28 +37,47 @@ export const useMoneyDistributionConfig = (
 };
 
 // Utilidad para calcular la distribución de dinero
+//
+// 🛡️ Round 10 — P-D FIX: aritmética en céntimos enteros para alinear con backend.
+// Antes: `amount * (percent / 100)` con IEEE 754 daba 16.30 * 0.30 = 4.890000000001
+// (visible al sumar y comparar). Ahora trabajamos con centavos (long-equivalent en JS,
+// seguro hasta 2^53 céntimos = €90 billones) y redondeamos al final con Math.round —
+// equivalente al `Math.Round(x, 2, AwayFromZero)` del backend para valores no-negativos.
 export const calculateMoneyDistribution = (
-  amount: number, 
+  amount: number,
   config: MoneyDistributionConfig | null
 ): { client: number; expert: number; platform: number } => {
   if (!config) {
     return { client: 0, expert: 0, platform: 0 };
   }
-  
+
   // Si es un estado intermedio sin distribución, devolver 0
   if (config.source === 'no_distribution_required') {
     return { client: 0, expert: 0, platform: 0 };
   }
-  
-  // Convertir strings a números y calcular
-  const clientPercentage = parseFloat(config.clientPercentage) || 0;
-  const expertPercentage = parseFloat(config.expertPercentage) || 0;
-  const platformPercentage = parseFloat(config.platformPercentage) || 0;
-  
+
+  // Coerción defensiva (parseFloat puede devolver NaN si llegan datos corruptos)
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const clientPercentage = parseFloat(config.clientPercentage);
+  const expertPercentage = parseFloat(config.expertPercentage);
+  const platformPercentage = parseFloat(config.platformPercentage);
+
+  const clientPct = Number.isFinite(clientPercentage) ? clientPercentage : 0;
+  const expertPct = Number.isFinite(expertPercentage) ? expertPercentage : 0;
+  const platformPct = Number.isFinite(platformPercentage) ? platformPercentage : 0;
+
+  // Trabajar en céntimos enteros: amountCents = round(amount * 100)
+  const amountCents = Math.round(safeAmount * 100);
+
+  // Para cada parte: round((amountCents * pct) / 100) — sigue siendo entero
+  const clientCents = Math.round((amountCents * clientPct) / 100);
+  const expertCents = Math.round((amountCents * expertPct) / 100);
+  const platformCents = Math.round((amountCents * platformPct) / 100);
+
   return {
-    client: amount * (clientPercentage / 100),
-    expert: amount * (expertPercentage / 100),
-    platform: amount * (platformPercentage / 100),
+    client: clientCents / 100,
+    expert: expertCents / 100,
+    platform: platformCents / 100,
   };
 };
 
