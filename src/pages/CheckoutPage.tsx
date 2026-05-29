@@ -161,6 +161,19 @@ export function CheckoutPage({}: CheckoutPageProps) {
             return;
         }
 
+        // 🛡️ Round 14 — Q14-S5 FIX: gate sobre stripeStatus del experto ANTES de iniciar
+        // checkout. Si el experto cayó a Disabled/Restricted/Rejected/Deauthorized entre la
+        // carga de la página y este clic, el backend va a rechazar igual — pero mostramos un
+        // mensaje claro al cliente en lugar de un error genérico HTTP.
+        // ApprovedStatuses incluye PendingVerification porque el backend live-check decide
+        // si la cuenta puede operar realmente.
+        const expertStripeStatus = service.expert?.stripeStatus;
+        const allowedStatuses = ['Approved', 'PendingVerification'];
+        if (expertStripeStatus && !allowedStatuses.includes(expertStripeStatus)) {
+            showToast('error', 'Este experto no está disponible para nuevas contrataciones en este momento. Inténtalo más tarde o contacta con soporte.');
+            return;
+        }
+
         // 🛡️ T8 FIX: check ATÓMICO con useRef ANTES de cualquier setState. El check
         // anterior `isSubmitting` (state) tenía microventana 100-200ms entre lectura y
         // setIsSubmitting(true) durante la cual un doble click rápido pasaba ambos
