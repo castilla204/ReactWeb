@@ -56,8 +56,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const isDraggingRef = useRef(false);
   const lastBoundsKeyRef = useRef<string>('');
 
-  // API Key (usa variable de entorno en producción)
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '__REDACTED_GOOGLE_API_KEY__';
+  // 🛡️ SECURITY: usa SOLO env var. Antes había fallback hardcoded a una key
+  // filtrada en git history → exponía la key vieja en builds aunque rotase. Si el
+  // env var no está, el componente fallará con error claro de Google Maps en lugar
+  // de usar key insegura. Asegura que VITE_GOOGLE_MAPS_API_KEY está en Render env.
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
   // Map ID requerido para AdvancedMarker - usar DEMO_MAP_ID si no está configurado
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 
