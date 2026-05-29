@@ -155,7 +155,8 @@ export function ProfileEditForm({
     const [circle, setCircle] = useState<google.maps.Circle | null>(null);
     
     const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBNEdqihExcXPnWw_TJgHFzsPXS7BIazyM',
+        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
         libraries
     });
 
