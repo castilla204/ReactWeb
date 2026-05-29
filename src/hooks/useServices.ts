@@ -40,6 +40,15 @@ export interface Service {
         profilePictureUrl: string;
         description: string;
         stripeAccountId?: string;
+        // 🛡️ Round 14 — Q14-S5 FIX: incluir stripeStatus + onboardingCompleted en el modelo
+        // del frontend para que CheckoutPage pueda gate visualmente cuando el experto cae a
+        // Disabled/Restricted/Deauthorized entre la carga de la página y el clic "Contratar".
+        // Backend ya bloquea internamente, pero el frontend mostraba el botón habilitado → mala UX.
+        // Valores Stripe: "NotRequested" | "Pending" | "Approved" | "Rejected" | "Disabled" |
+        //                 "Restricted" | "RequirementsPastDue" | "PendingVerification" |
+        //                 "Deauthorized" | "ActionRequired" | "RestrictedSoon" | "RequirementsDue"
+        stripeStatus?: string;
+        onboardingCompleted?: boolean;
         createdAt: string;
         user: {
             name: string;
@@ -259,6 +268,23 @@ export function useServices({
                         profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
                         description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
                         stripeAccountId: (service.Expert || service.expert).StripeAccountId || (service.Expert || service.expert).stripeAccountId,
+                        // 🛡️ Round 14 — Q14-S5: mapear status para gate en CheckoutPage.
+                        // El backend lo devuelve como enum int (StripeStatus) en algunos endpoints
+                        // y como string en otros. Convertir int → string usando el mismo orden del enum
+                        // en NewApi/DataLayer/Models/PostGresModels/ExpertProfile.cs.
+                        stripeStatus: (() => {
+                            const e = service.Expert || service.expert;
+                            const raw = e.StripeStatus ?? e.stripeStatus;
+                            if (typeof raw === 'string') return raw;
+                            if (typeof raw === 'number') {
+                                const map = ['NotRequested', 'Pending', 'Approved', 'Rejected', 'Disabled',
+                                             'Restricted', 'RequirementsPastDue', 'PendingVerification',
+                                             'Deauthorized', 'ActionRequired', 'RestrictedSoon', 'RequirementsDue'];
+                                return map[raw] ?? 'Unknown';
+                            }
+                            return undefined;
+                        })(),
+                        onboardingCompleted: (service.Expert || service.expert).OnboardingCompleted ?? (service.Expert || service.expert).onboardingCompleted,
                         createdAt: (service.Expert || service.expert).CreatedAt || (service.Expert || service.expert).createdAt,
                         user: {
                             name: ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.Name || ((service.Expert || service.expert).User || (service.Expert || service.expert).user)?.name,
