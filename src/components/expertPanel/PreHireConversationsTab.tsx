@@ -10,6 +10,7 @@ import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
 import { PreHireConversationSummaryDto } from '../../types/chat.types';
 import { Loader2 } from 'lucide-react';
+import { formatPriceNumber } from '../../utils/priceUtils';
 
 interface PreHireConversationsTabProps {
   token: string;
@@ -71,12 +72,9 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
     retry: 2
   });
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(price);
-  };
+  // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
+  // Antes: inline con minFractionDigits=0 inconsistente con resto de la app (siempre usa 2).
+  const formatPrice = (price: number) => formatPriceNumber(price);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

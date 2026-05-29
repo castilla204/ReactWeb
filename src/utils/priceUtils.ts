@@ -28,6 +28,28 @@ export interface PriceDisplayInfo {
 }
 
 /**
+ * 🛡️ Round 10 — P-A FIX: coerción segura a número finito.
+ *
+ * Si llega NaN, Infinity, null, undefined, string no-parseable o un objeto raro
+ * desde el backend (decimal serializado como string, campo ausente, etc.), devolvemos
+ * `fallback` (0 por defecto). Sin esto, `Intl.NumberFormat.format(NaN)` devuelve la
+ * cadena literal "NaN €" en es-ES — peor que un 0,00 €.
+ */
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  if (value == null) return fallback;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === 'string') {
+    // Aceptar tanto "16.50" como "16,50" (locale español del backend si llegara)
+    const normalized = value.trim().replace(',', '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+/**
  * Obtiene el precio a mostrar en la UI
  * @param priceInfo - Objeto con información de precios (SearchHireDto, SearchHireResponseDto, etc.)
  * @returns Objeto con precio total, base y tax (si disponible)
@@ -39,16 +61,18 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
       base: 0,
       tax: 0,
       hasTaxInfo: false,
-      formattedTotal: '€0.00',
+      formattedTotal: formatCurrency(0),
       formattedBase: null,
       formattedTax: null,
     };
   }
 
-  // Obtener valores (soporta tanto camelCase como PascalCase)
-  const total = priceInfo.amount ?? priceInfo.Amount ?? 0;
-  const base = priceInfo.baseAmount ?? priceInfo.BaseAmount ?? null;
-  const tax = priceInfo.taxAmount ?? priceInfo.TaxAmount ?? null;
+  // Obtener valores (soporta tanto camelCase como PascalCase) con coerción segura
+  const total = toFiniteNumber(priceInfo.amount ?? priceInfo.Amount);
+  const baseRaw = priceInfo.baseAmount ?? priceInfo.BaseAmount;
+  const taxRaw = priceInfo.taxAmount ?? priceInfo.TaxAmount;
+  const base = baseRaw != null ? toFiniteNumber(baseRaw) : null;
+  const tax = taxRaw != null ? toFiniteNumber(taxRaw) : null;
 
   // Si hay información de tax, mostrar desglose
   const hasTaxInfo = base != null && tax != null && tax > 0;
@@ -67,8 +91,8 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
 
 /**
  * Formatea un número como moneda en euros
- * @param amount - Cantidad a formatear
- * @returns String formateado (ej: "€110.00")
+ * @param amount - Cantidad a formatear (acepta number, string o null/undefined; se hace coerción segura)
+ * @returns String formateado (ej: "16,50 €" en es-ES). Devuelve "0,00 €" si el valor no es un número finito.
  */
 // 🛡️ N25 TODO arquitectural: i18n. Hardcodear locale='es-ES' + currency='EUR' es correcto
 // MIENTRAS la plataforma sirva solo a España. Cuando se internacionalice (clientes en otros
@@ -79,13 +103,42 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
 //  - Cambiar firma a formatCurrency(amount, locale?, currency?).
 // Por ahora el currency es fijo EUR (la plataforma cobra siempre en EUR vía Stripe — ver N2
 // descartado en ronda 2: decisión de diseño correcta porque Stripe convierte automático al pagar).
-export function formatCurrency(amount: number): string {
+//
+// 🛡️ Round 10 — P-A FIX: ahora acepta unknown y hace coerción defensiva.
+export function formatCurrency(amount: unknown): string {
+  const safe = toFiniteNumber(amount);
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(safe);
+}
+
+/**
+ * 🛡️ Round 10 — P-B FIX: helper para reemplazar `${amount.toFixed(2)} €` inline.
+ *
+ * Distinto de formatCurrency: este devuelve SOLO el número con coma decimal
+ * española y 2 decimales fijos, SIN símbolo de moneda. Útil cuando el diseño
+ * pone el "€" como elemento separado (icono, span con color, etc.).
+ *
+ * Centraliza la coerción NaN-safe y el locale "es-ES" para que ningún componente
+ * tenga que reimplementar `.toFixed(2)` (que usa locale "en-US" por defecto y rompe).
+ *
+ * Ejemplos:
+ *   formatPriceNumber(16.5)       → "16,50"
+ *   formatPriceNumber(16.999)     → "17,00"
+ *   formatPriceNumber(NaN)        → "0,00"
+ *   formatPriceNumber(null)       → "0,00"
+ *   formatPriceNumber("16.50")    → "16,50"
+ */
+export function formatPriceNumber(amount: unknown): string {
+  const safe = toFiniteNumber(amount);
+  return new Intl.NumberFormat('es-ES', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(safe);
 }
 
 /**
@@ -98,17 +151,21 @@ export function validatePriceConsistency(priceInfo: PriceInfo | null | undefined
 
   const baseAmount = priceInfo.baseAmount ?? priceInfo.BaseAmount;
   const taxAmount = priceInfo.taxAmount ?? priceInfo.TaxAmount;
-  const amount = priceInfo.amount ?? priceInfo.Amount ?? 0;
+  const amountRaw = priceInfo.amount ?? priceInfo.Amount;
 
   // Si no hay información de tax, no validar
   if (baseAmount == null || taxAmount == null) {
     return true;
   }
 
-  const calculatedTotal = baseAmount + taxAmount;
-  const difference = Math.abs(calculatedTotal - amount);
+  // 🛡️ Round 10 — P-A FIX: coerción segura antes de operar
+  const baseSafe = toFiniteNumber(baseAmount);
+  const taxSafe = toFiniteNumber(taxAmount);
+  const amountSafe = toFiniteNumber(amountRaw);
+
+  const calculatedTotal = baseSafe + taxSafe;
+  const difference = Math.abs(calculatedTotal - amountSafe);
 
   // Permitir pequeñas diferencias por redondeo (ej: 0.01€)
   return difference < 0.02;
 }
-
