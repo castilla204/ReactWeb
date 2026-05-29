@@ -101,6 +101,9 @@ export const API_CONFIG = {
             syncStripeStatus: `${API_PATH}/Subscription/sync-stripe-status`,
             expertStatus: `${API_PATH}/Subscription/expert-status`,
             createAccountLink: `${API_PATH}/Subscription/create-account-link`,
+            // 🛡️ Round 12 — D1: Express Dashboard login link (vista payouts/balance/transactions).
+            // Distinto de createAccountLink que abre onboarding KYC.
+            createLoginLink: `${API_PATH}/Subscription/create-login-link`,
         },
         notifications: {
             list: `${API_PATH}/Notification`,
