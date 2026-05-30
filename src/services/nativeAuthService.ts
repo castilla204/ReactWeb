@@ -307,30 +307,34 @@ class NativeAuthService {
                 throw new Error('Apple Sign In is not available on this device');
             }
 
+            // 🛡️ Round 16: nonce literal (no hashear cliente — Apple lo envía sin hash en el JWT).
+            // Si quieres hashear con SHA256, debes hacerlo aquí y enviar el hash, pero asegurar que
+            // el backend espere el MISMO valor que Apple devuelve en el claim 'nonce'.
+            const nonce = this.generateNonce();
+
             // Realizar login
             const result = await (SignInWithApple as any).authorize({
                 clientId: 'com.inspecciono.app',
                 redirectURI: 'https://inspecciono.com/auth/apple/callback',
                 scopes: 'email name',
                 state: 'apple-signin-state',
-                nonce: this.generateNonce(),
+                nonce,
             }) as any;
 
             if (!result || !result.identityToken) {
                 throw new Error('No token received from Apple');
             }
 
-            // Decodificar el token para obtener información del usuario
-            const tokenPayload = this.decodeJWT(result.identityToken);
-            const email = result.email || tokenPayload.email || '';
-            const name = result.fullName
+            // 🛡️ Round 16: fullName solo viene en el PRIMER login con Apple (decisión de Apple).
+            // Si no viene, el backend ya tiene fallback "Usuario Apple".
+            const fullName = result.fullName
                 ? `${result.fullName.givenName || ''} ${result.fullName.familyName || ''}`.trim()
-                : tokenPayload.email?.split('@')[0] || '';
+                : '';
 
             // ✅ Usar capacitorFetch para evitar CORS en Capacitor
             const { capacitorFetch } = await import('../utils/capacitorFetch');
-            
-            // Enviar al backend
+
+            // 🛡️ Round 16: payload alineado con AppleAuthRequestDto (identityToken + authorizationCode + nonce + fullName).
             const response = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.appleAuth}`, {
                 method: 'POST',
                 headers: {
@@ -340,9 +344,8 @@ class NativeAuthService {
                 body: JSON.stringify({
                     identityToken: result.identityToken,
                     authorizationCode: result.authorizationCode || '',
-                    email: email,
-                    name: name,
-                    appleId: tokenPayload.sub || '',
+                    nonce,
+                    fullName,
                 }),
             });
 
