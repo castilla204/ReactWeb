@@ -2,74 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import circularDependencyPlugin from 'vite-plugin-circular-dependency';
 
-// ✅ Plugin para corregir problemas de scope y módulos en React 19
-const fixReactProductionScope = () => {
-    return {
-        name: 'fix-react-production-scope',
-        enforce: 'post', // Ejecutar después de otros plugins de transformación
-        renderChunk(code: string, chunk: any) {
-            // Modificar el chunk de vendor que contiene React (ahora todo está en un solo chunk)
-            if (chunk.fileName && chunk.fileName.includes('vendor')) {
-                let fixedCode = code;
-                
-                // ✅ Corregir error "Cannot set properties of undefined (setting 'Activity')"
-                fixedCode = fixedCode.replace(
-                    /react_production\.Activity\s*=/g,
-                    '(react_production || (react_production = {})).Activity ='
-                );
-                
-                // ✅ CRÍTICO: Corregir objetos locales que tienen .exports (react.exports, jsxRuntime.exports, etc.)
-                // Estos objetos pueden ser undefined cuando se intenta asignar a su propiedad exports
-                // Patrón: objeto.exports = value (donde objeto puede ser react, jsxRuntime, reactDom, client, etc.)
-                fixedCode = fixedCode.replace(
-                    /(\w+)\.exports\s*=/g,
-                    (match, objName) => {
-                        // Solo corregir si el objeto es uno de los conocidos que Rollup genera
-                        const knownObjects = ['react', 'jsxRuntime', 'reactDom', 'client', 'reactDomClient'];
-                        if (knownObjects.includes(objName)) {
-                            return `(${objName} || (${objName} = { exports: {} })).exports =`;
-                        }
-                        return match; // No modificar si no es un objeto conocido
-                    }
-                );
-                
-                // ✅ Corregir error "Cannot set properties of undefined (setting 'exports')" - objeto global exports
-                // IMPORTANTE: Solo capturar exports. cuando es el objeto principal (no cuando es parte de otra propiedad)
-                // Usar lookbehind negativo para evitar capturar cuando exports viene después de un punto
-                fixedCode = fixedCode.replace(
-                    /(?<!\.)(\bexports\.)(\w+)\s*=/g,
-                    (match, prefix, prop) => {
-                        return `((typeof exports !== 'undefined' ? exports : (typeof module !== 'undefined' && module.exports ? module.exports : (exports = {})))).${prop} =`;
-                    }
-                );
-                
-                // También corregir exports = ... (asignación directa)
-                fixedCode = fixedCode.replace(
-                    /(?<!\.)(\bexports\s*=\s*)([^;]+)/g,
-                    (match, prefix, value) => {
-                        return `(typeof exports !== 'undefined' ? exports : (typeof module !== 'undefined' && module.exports ? module.exports : (exports = {}))) = ${value}`;
-                    }
-                );
-                
-                return {
-                    code: fixedCode,
-                    map: null,
-                };
-            }
-            return null;
-        },
-    };
-};
-
-// ✅ Plugin eliminado: Ya no es necesario porque todo está en un solo chunk 'vendor'
-// La dependencia circular se elimina al consolidar todo en un solo chunk
-
 export default defineConfig({
     base: './', // ✅ Rutas relativas para Capacitor Android
     plugins: [
         react(),
-        // ✅ Corregir problema de scope con react_production en React 19
-        fixReactProductionScope(),
         // ✅ Detectar dependencias circulares que pueden causar errores TDZ
         circularDependencyPlugin({
             exclude: /node_modules/,
