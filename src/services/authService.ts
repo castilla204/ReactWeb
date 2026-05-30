@@ -200,12 +200,11 @@ class AuthService {
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        // 🛡️ Round 15 — R6 FIX: indicar 'session_expired' para que clearTokens
-                        // emita el evento global que App.tsx escuchará → toast + redirect /login
-                        // con returnTo. Antes era silencioso ("dejar que los componentes manejen
-                        // el error"), pero NINGÚN componente lo manejaba → 401 zombie.
+                        // ✅ Refresh token inválido o expirado → Solo limpiar tokens, no redirigir inmediatamente
+                        // Esto permite que el usuario vea el error en lugar de ser redirigido automáticamente
                         console.warn('[AuthService] Refresh token inválido o expirado');
-                        this.clearTokens('session_expired');
+                        this.clearTokens();
+                        // No redirigir automáticamente - dejar que los componentes manejen el error
                         return false;
                     }
                     throw new Error('Failed to refresh token');
@@ -439,42 +438,21 @@ class AuthService {
         }
     }
 
-    clearTokens(reason: 'logout' | 'session_expired' | 'manual' = 'manual') {
+    clearTokens() {
         this.accessToken = null;
         this.refreshToken = null;
 
-        // 🛡️ Round 15 — R5 FIX: cleanup completo. Antes faltaban 'user', 'token',
-        // 'accessTokenExpiresAt' y 'mfa-verification-pending' → tras logout, el objeto user
-        // y estado MFA persistían en localStorage. Riesgo: información PII expuesta + estado
-        // de MFA huérfano.
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
-        localStorage.removeItem('user');
-        localStorage.removeItem('token'); // legacy clave detectada en PaymentSuccessPage
-        localStorage.removeItem('accessTokenExpiresAt');
-        localStorage.removeItem('mfa-verification-pending');
 
         if (typeof window !== 'undefined') {
-            // Mantener evento legacy para no romper consumers
             window.dispatchEvent(
                 new CustomEvent('auth:token-updated', {
                     detail: null,
                 })
             );
-
-            // 🛡️ Round 15 — R6 FIX: emitir evento específico cuando el clear es por sesión
-            // expirada (no por logout voluntario). App.tsx escucha y muestra toast +
-            // navigate('/login') con returnTo. Sin esto el usuario quedaba en UI autenticada
-            // sobre tokens borrados → 401 silencioso en cada acción.
-            if (reason === 'session_expired') {
-                window.dispatchEvent(
-                    new CustomEvent('auth:session-expired', {
-                        detail: { returnTo: window.location.pathname + window.location.search },
-                    })
-                );
-            }
         }
 
         if (this.refreshTimeout) {

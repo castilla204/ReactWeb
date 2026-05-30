@@ -520,7 +520,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
       {/* Mobile */}
       <header className="sticky top-0 z-50 md:hidden bg-white border-b border-[#ebebeb] relative">
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-4 pt-3.5 pb-1">
           <div
             onClick={openMobileSearch}
             className="w-full bg-white border border-gray-200 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
@@ -548,7 +548,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   color: 'rgb(34, 34, 34)',
                 }}
               >
-                ¿Qué servicio buscas?
+                ¿Qué revisamos?
               </span>
               <div 
                 className="flex items-center gap-1"
@@ -591,13 +591,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         {/* Tabs Mobile - Estructura como Airbnb */}
         <div className="relative w-full" role="tablist">
           {/* Contenedor de tabs con flex */}
-          <div className="flex w-full px-4 pt-2 pb-2">
+          <div className="flex w-full px-4 pt-1 pb-1">
             <button
               type="button"
               role="tab"
               aria-selected={activeTab === 'coches'}
               onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
               <img
                 src={getImageWithCache('cochepng.png', imageCacheKey)}
@@ -625,7 +625,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               role="tab"
               aria-selected={activeTab === 'motos'}
               onClick={() => handleTabClick('motos', CATEGORIES.MOTOS)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
               <img
                 src={getImageWithCache('motopng.png', imageCacheKey)}
@@ -653,7 +653,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               role="tab"
               aria-selected={activeTab === 'inmobiliaria'}
               onClick={() => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA)}
-              className="flex-1 flex flex-col items-center justify-center py-1.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
+              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
             >
               <img
                 src={getImageWithCache('casapng.png', imageCacheKey)}

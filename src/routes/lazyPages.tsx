@@ -18,8 +18,6 @@ function lazyNamed<T extends Record<string, ComponentType<unknown>>>(
 }
 
 export const HomePage = lazyDefault(() => import('../pages/HomePage'));
-// 🛡️ Round 15 — R5 FIX: LoginPage real para que navigate('/login') no caiga en 404.
-export const LoginPage = lazyDefault(() => import('../pages/LoginPage'));
 export const SearchCreationPage = lazyDefault(() => import('../pages/SearchCreationPage'));
 export const SearchesPage = lazyDefault(() => import('../pages/SearchesPage'));
 export const BecomeExpertPage = lazyDefault(() => import('../pages/BecomeExpertPage'));

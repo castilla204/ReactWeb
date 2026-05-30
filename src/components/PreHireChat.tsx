@@ -151,9 +151,9 @@ export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversation
   const messagesRef = useRef<Message[]>([]);
   const refetchRef = useRef<() => void>(() => undefined);
   const API_URL = API_CONFIG.baseUrl;
-
+  
   const supabase = getSupabaseClient();
-
+  
   // Mantener ref actualizado con los mensajes
   useEffect(() => {
     messagesRef.current = messages;
@@ -313,7 +313,7 @@ export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversation
       channelRef.current = null;
 
       const channel = client
-        .channel(channelName)
+      .channel(channelName)
         .on('broadcast', { event: 'new_message' }, ({ payload }) => {
           const messageDto = normalizeBroadcastMessage(
             payload as Record<string, unknown>,
@@ -367,15 +367,15 @@ export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversation
             setTypingUserIds((prev) => prev.filter((id) => Number(id) !== typingUserId));
           }
         })
-        .subscribe((status, err) => {
+      .subscribe((status, err) => {
           if (cancelled) return;
-
-          const connected = status === 'SUBSCRIBED';
-          setIsConnected(connected);
+        
+        const connected = status === 'SUBSCRIBED';
+        setIsConnected(connected);
           setIsReconnecting(false);
           onConnectionChange?.(connected);
-
-          if (status === 'SUBSCRIBED') {
+        
+        if (status === 'SUBSCRIBED') {
             retryCount = 0;
             channelRef.current = channel;
             pendingChannelRef.current = null;
@@ -727,31 +727,31 @@ export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversation
                   className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[86%] sm:max-w-[72%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
                   aria-label={`${isOwnMessage ? 'Tú' : message.senderName} a las ${formatMessageTime(message.sentAt)}`}
                 >
-                  {!isOwnMessage && (
+                {!isOwnMessage && (
                     <Avatar className="w-8 h-8 flex-shrink-0 shadow-sm">
-                      <AvatarImage 
-                        src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
-                        alt={message.senderName}
-                      />
-                      <AvatarFallback className="bg-gray-900 text-white text-xs">
-                        {message.senderName?.charAt(0) || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <AvatarImage 
+                      src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
+                      alt={message.senderName}
+                    />
+                    <AvatarFallback className="bg-gray-900 text-white text-xs">
+                      {message.senderName?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                
+                <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                  {!isOwnMessage && (
+                    <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
                   )}
-                  
-                  <div className={`flex flex-col gap-1 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                    {!isOwnMessage && (
-                      <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
-                    )}
-                    <div
+                  <div
                       className={`px-4 py-2.5 rounded-3xl shadow-sm ${
-                        isOwnMessage
+                      isOwnMessage
                           ? 'bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] text-white rounded-tr-md'
                           : 'bg-gray-100 text-gray-900 rounded-tl-md'
                       } ${message.isOptimistic ? 'opacity-75' : ''}`}
                     >
                       <p className="text-sm leading-6 whitespace-pre-wrap break-words">{message.content}</p>
-                    </div>
+                  </div>
                     <span className="flex items-center gap-1 text-xs text-gray-500">
                       {formatMessageTime(message.sentAt)}
                       {isOwnMessage && (
@@ -760,21 +760,21 @@ export const PreHireChat = ({ serviceId, token, userId: userIdProp, conversation
                           {!message.isOptimistic && <CheckCheck className="h-3.5 w-3.5" aria-hidden="true" />}
                         </>
                       )}
-                    </span>
-                    
-                    {message.attachmentUrls && message.attachmentUrls.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {message.attachmentUrls.map((url, idx) => (
-                          <img
-                            key={idx}
-                            src={url}
-                            alt={`Adjunto ${idx + 1}`}
+                  </span>
+                  
+                  {message.attachmentUrls && message.attachmentUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {message.attachmentUrls.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`Adjunto ${idx + 1}`}
                             className="max-w-[220px] max-h-[220px] rounded-2xl object-cover shadow-sm"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
                 </article>
               </div>
             );

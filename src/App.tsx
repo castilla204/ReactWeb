@@ -112,38 +112,14 @@ const AppContent: React.FC = () => {
     const [showAccountSettings, setShowAccountSettings] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState<string>('ES');
 
-    // 🛡️ Round 15 — R6 FIX: handler global de sesión expirada.
-    // authService.clearTokens('session_expired') emite este evento cuando el refresh
-    // token expira. Antes era ignorado → usuario en limbo (UI autenticada sobre
-    // tokens borrados, 401 silencioso en cada acción). Ahora:
-    //  1. Toast claro al usuario.
-    //  2. Navigate a /login con returnTo = URL actual.
-    useEffect(() => {
-        const handleSessionExpired = (event: Event) => {
-            const detail = (event as CustomEvent<{ returnTo?: string }>).detail;
-            toast.error('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
-            // Solo redirigir si no estamos ya en una ruta pública sin auth
-            const currentPath = window.location.pathname;
-            const publicPaths = ['/login', '/', '/privacy-policy.html', '/terms.html', '/status'];
-            if (!publicPaths.includes(currentPath)) {
-                navigate('/login', {
-                    state: { from: { pathname: detail?.returnTo ?? currentPath } },
-                    replace: true,
-                });
-            }
-        };
-        window.addEventListener('auth:session-expired', handleSessionExpired);
-        return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
-    }, [navigate]);
-
     // Inicializar servicios de seguridad
     useEffect(() => {
         // 1. Inicializar authService (esto configura el interceptor de tokens)
         // authService ya se inicializa automáticamente en su constructor
-
+        
         // 2. Configurar rate limiting (debe ir después del authService)
         setupRateLimitHandler();
-
+        
         // 3. Configurar interceptor de errores HTTP (debe ir después de rateLimitHandler)
         setupErrorInterceptor();
         
@@ -516,8 +492,6 @@ const AppContent: React.FC = () => {
                             <Route path="/status" element={<StatusPage />} />
                             <Route path="/success" element={<PaymentSuccessPage />} />
                             <Route path="/cancel" element={<PaymentCancelPage />} />
-                            {/* 🛡️ Round 15 — R5 FIX: ruta /login real. Antes navigate('/login') iba a 404. */}
-                            <Route path="/login" element={<RouteSuspense><LazyPages.LoginPage /></RouteSuspense>} />
                             <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
                             
                             {/* Rutas de MFA */}
