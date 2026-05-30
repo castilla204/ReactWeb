@@ -5,6 +5,7 @@ import { useCategories } from '../contexts/CategoryContext';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { LoginModal } from './LoginModal';
 import {
     Drawer,
     DrawerContent,
@@ -145,6 +146,9 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
+    // 🛡️ Round 16: modal de auth (email/password + OAuth Google/Apple).
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [loginModalInitialTab, setLoginModalInitialTab] = useState<'login' | 'register'>('login');
     
     // Cerrar dropdowns al hacer clic fuera
     useEffect(() => {
@@ -306,10 +310,19 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 </button>
                     </div>
                     
-                    {/* Botón secundario Google */}
+                    {/* 🛡️ Round 16: Botón "Iniciar sesión" → abre el LoginModal (Google + Apple + email/password). */}
                                 {!isAuthenticated && (
-                            <div className="w-full">
-                            <GoogleSignInButton />
+                            <div className="w-full space-y-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setLoginModalInitialTab('login');
+                                                setIsLoginModalOpen(true);
+                                            }}
+                                            className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/30 hover:border-white/50 backdrop-blur-sm font-semibold py-3 px-6 rounded-lg transition-all duration-200 active:scale-[0.98]"
+                                        >
+                                            Iniciar sesión o crear cuenta
+                                        </button>
                                     </div>
                                 )}
                     </div>
@@ -1473,6 +1486,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 }
                 
             `}</style>
+
+            {/* 🛡️ Round 16: Modal de autenticación (Google + Apple + email/password + OTP). */}
+            <LoginModal
+                open={isLoginModalOpen}
+                onOpenChange={setIsLoginModalOpen}
+                initialTab={loginModalInitialTab}
+                onSuccess={() => {
+                    // AuthContext.updateUser ya disparó isAuthenticated → la UI re-renderiza sola.
+                }}
+            />
         </div>
     );
 };

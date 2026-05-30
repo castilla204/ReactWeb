@@ -20,12 +20,20 @@ export const API_CONFIG = {
     endpoints: {
         auth: {
             googleAuth: `${API_PATH}/User/google-auth`,
-            appleAuth: `${API_PATH}/User/apple-auth`,
+            // 🛡️ Round 16: Apple OAuth ahora vive bajo /api/Auth (mismo controller que email/password).
+            appleAuth: `${API_PATH}/Auth/apple-auth`,
             sendVerification: `${API_PATH}/User/send-verification`,
             verifyCode: `${API_PATH}/User/verify-code`,
             refreshToken: `${API_PATH}/auth/refresh-token`,
             logout: `${API_PATH}/auth/logout`,
             revokeAll: `${API_PATH}/auth/revoke-all`,
+            // 🛡️ Round 16: nuevos endpoints email/password + OTP.
+            register: `${API_PATH}/Auth/register`,
+            verifyEmail: `${API_PATH}/Auth/verify-email`,
+            resendOtp: `${API_PATH}/Auth/resend-otp`,
+            loginPassword: `${API_PATH}/Auth/login-password`,
+            forgotPassword: `${API_PATH}/Auth/forgot-password`,
+            resetPassword: `${API_PATH}/Auth/reset-password`,
         },
         mfa: {
             setup: `${API_PATH}/auth/mfa/setup`,
