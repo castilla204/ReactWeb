@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { HP_PANEL_GRADIENT } from '../constants/homepageTypography';
 import { HeroExpertCutout } from './HeroExpertCutout';
 
@@ -45,8 +45,9 @@ export const HomepageMobileHero: React.FC = () => {
     >
       {expanded && (
         <HeroExpertCutout
-          wrapperClassName="absolute bottom-0 right-3 z-[1]"
+          wrapperClassName="absolute bottom-0 right-3 min-[390px]:right-4 z-[1]"
           preset="mobile"
+          className="min-[390px]:!h-[158px]"
         />
       )}
       <div
@@ -76,26 +77,28 @@ export const HomepageMobileHero: React.FC = () => {
           }`}
         >
           <div className="overflow-hidden min-h-0">
-            <div className="relative min-h-[148px] px-4 pt-4 pb-0">
-              <button
-                type="button"
-                onClick={() => setExpanded(false)}
-                className="absolute top-4 right-4 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb]/80 bg-white/90 text-[#666666] transition-colors active:bg-white"
-                aria-label="Plegar presentación"
-              >
-                <X className="h-4 w-4" strokeWidth={2.25} />
-              </button>
-
-              <div className="relative z-[1] pb-4 pr-[108px]">
-                <h1 className="hp-hero-title text-[1.45rem]">
+            <div className="relative px-4 pt-3 pb-2">
+              <div className="relative z-[1] pr-[100px] min-[390px]:pr-[112px]">
+                <h1 className="hp-hero-title text-[1.35rem] min-[390px]:text-[1.45rem] leading-[1.12]">
                   Antes de comprar,
                   <span className="block text-[#0066CC]">que lo revise un experto</span>
                 </h1>
-                <p className="hp-hero-body mt-2">
+                <p className="hp-hero-body mt-1.5 text-[13px] min-[390px]:text-sm leading-snug">
                   Informe con fotos y vídeo. Precio cerrado y pago retenido hasta recibirlo.
                 </p>
               </div>
 
+              <div className="relative z-20 -mt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(false)}
+                  className="flex min-h-8 min-w-10 items-center justify-center p-1 transition-opacity active:opacity-70"
+                  aria-expanded={true}
+                  aria-label="Contraer presentación"
+                >
+                  <ChevronUp className="h-3.5 w-3.5 shrink-0 text-[#666666]/80" strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
