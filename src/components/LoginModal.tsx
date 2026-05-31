@@ -45,6 +45,12 @@ interface OtpContext {
     expiresAt: string;
     email: string; // para mostrar al usuario "Te enviamos un código a x@y.com"
     origin: 'register' | 'reset' | 'login-unverified';
+    /**
+     * True cuando el backend detectó que el email ya existe con cuenta OAuth (Google/Apple)
+     * y estamos vinculando una nueva contraseña a esa cuenta existente.
+     * Se setea desde RegisterForm cuando data.linkedAccount === true.
+     */
+    isLinking?: boolean;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -84,7 +90,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             description={
                 step === 'social'
                     ? 'Accede con Google, Apple o tu correo.'
-                    : step === 'forgot-email' ? 'Te enviaremos un código para restablecer tu contraseña.'
+                    : step === 'forgot-email' ? 'Te enviaremos un código para restablecer o añadir tu contraseña.'
                     : `Te hemos enviado un código a ${otpCtx?.email ?? ''}`
             }
             mobileBreakpoint={768}
@@ -102,9 +108,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             transition={{ duration: 0.2 }}
                         >
                             <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')} className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-5">
-                                    <TabsTrigger value="login">Inicia sesión</TabsTrigger>
-                                    <TabsTrigger value="register">Crea tu cuenta</TabsTrigger>
+                                <TabsList className="grid w-full grid-cols-2 mb-5 h-11 bg-gray-100 p-1 rounded-full">
+                                    <TabsTrigger
+                                        value="login"
+                                        className="rounded-full transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
+                                    >
+                                        Inicia sesión
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="register"
+                                        className="rounded-full transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
+                                    >
+                                        Crea tu cuenta
+                                    </TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="login" className="space-y-4">
@@ -216,9 +232,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 // ─── Subcomponentes ──────────────────────────────────────────────────────────────
 
 const Separator: React.FC = () => (
-    <div className="relative my-3 flex items-center">
+    <div className="relative my-4 flex items-center">
         <span className="flex-grow border-t border-gray-200" />
-        <span className="mx-3 text-[11px] uppercase tracking-wider text-gray-400">o</span>
+        <span className="mx-4 text-[11px] uppercase tracking-widest font-medium text-gray-400">
+            o continúa con
+        </span>
         <span className="flex-grow border-t border-gray-200" />
     </div>
 );
@@ -309,7 +327,7 @@ const LoginForm: React.FC<{
                     placeholder="Correo electrónico"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
+                    className={INPUT_REBRAND}
                 />
             </Field>
             <Field icon={<Lock className="w-4 h-4" />}>
@@ -320,12 +338,12 @@ const LoginForm: React.FC<{
                     placeholder="Contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-10"
+                    className={`${INPUT_REBRAND} pr-10`}
                 />
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -341,16 +359,20 @@ const LoginForm: React.FC<{
                     ¿Olvidaste tu contraseña?
                 </button>
             </div>
-            <Button type="submit" disabled={busy || !email || !password} className="w-full h-11">
+            <Button type="submit" disabled={busy || !email || !password} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Entrando…</> : 'Inicia sesión'}
             </Button>
+            {/* Hint para usuarios OAuth-only: les recordamos usar los botones sociales. */}
+            <p className="text-xs text-gray-500 text-center pt-1">
+                ¿Te registraste con Google o Apple? Pulsa el botón de arriba.
+            </p>
         </form>
     );
 };
 
 // ── Registro con email + password ──
 const RegisterForm: React.FC<{
-    onCodeSent: (ctx: { verificationToken: string; expiresAt: string; email: string }) => void;
+    onCodeSent: (ctx: { verificationToken: string; expiresAt: string; email: string; isLinking?: boolean }) => void;
 }> = ({ onCodeSent }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -380,11 +402,19 @@ const RegisterForm: React.FC<{
                 toast.error(data?.message ?? 'No se pudo crear la cuenta.');
                 return;
             }
-            toast.success(data?.message ?? 'Código enviado a tu correo.');
+            // Account-linking flow: el backend detectó que el email ya existe con cuenta OAuth.
+            // Mostramos toast diferenciado y propagamos isLinking al OTP context.
+            const isLinking = data?.linkedAccount === true;
+            if (isLinking) {
+                toast.info('Tu cuenta ya existe con Google/Apple. Te enviamos un código para añadir tu contraseña.');
+            } else {
+                toast.success(data?.message ?? 'Código enviado a tu correo.');
+            }
             onCodeSent({
                 verificationToken: data.verificationToken,
                 expiresAt: data.expiresAt,
                 email: email.trim(),
+                isLinking,
             });
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red. Inténtalo de nuevo.');
@@ -405,7 +435,7 @@ const RegisterForm: React.FC<{
                     placeholder="Nombre completo"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="pl-9"
+                    className={INPUT_REBRAND}
                 />
             </Field>
             <Field icon={<Mail className="w-4 h-4" />}>
@@ -416,7 +446,7 @@ const RegisterForm: React.FC<{
                     placeholder="Correo electrónico"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
+                    className={INPUT_REBRAND}
                 />
             </Field>
             <Field icon={<Lock className="w-4 h-4" />}>
@@ -429,12 +459,12 @@ const RegisterForm: React.FC<{
                     placeholder="Contraseña (mín. 8 caracteres)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-10"
+                    className={`${INPUT_REBRAND} pr-10`}
                 />
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -442,11 +472,11 @@ const RegisterForm: React.FC<{
                 </button>
             </Field>
             {strengthHint && (
-                <p className={`text-[11px] -mt-1.5 ml-1 ${strengthHint.cls}`}>
+                <p className={`text-[11px] -mt-1.5 ml-3 ${strengthHint.cls}`}>
                     {strengthHint.label}
                 </p>
             )}
-            <Button type="submit" disabled={busy || !name || !email || !password} className="w-full h-11">
+            <Button type="submit" disabled={busy || !name || !email || !password} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Crear cuenta'}
             </Button>
         </form>
@@ -497,7 +527,13 @@ const OtpForm: React.FC<{
                 authService.setTokens(accessToken, refreshToken);
                 authService.scheduleTokenRefresh();
                 updateUser(data.user, accessToken);
-                toast.success('¡Cuenta verificada!');
+                // accountAction nos dice si fue link de password a OAuth o cuenta nueva.
+                if (data.accountAction === 'password_linked') {
+                    toast.success('¡Contraseña añadida a tu cuenta!');
+                } else {
+                    // account_created (default) o cualquier otro valor → toast genérico.
+                    toast.success('¡Cuenta verificada!');
+                }
                 onSuccess();
                 return;
             }
@@ -538,6 +574,9 @@ const OtpForm: React.FC<{
         }
     };
 
+    // Subtitle especial cuando estamos vinculando una nueva contraseña a una cuenta OAuth existente.
+    const showLinkingSubtitle = ctx.isLinking === true && ctx.origin === 'register';
+
     return (
         <div className="space-y-5 text-center">
             <div className="flex justify-center">
@@ -548,6 +587,11 @@ const OtpForm: React.FC<{
             <p className="text-sm text-gray-600">
                 Introduce el código de 6 dígitos que enviamos a <strong className="text-gray-900">{ctx.email}</strong>.
             </p>
+            {showLinkingSubtitle && (
+                <p className="text-sm text-blue-600 -mt-2">
+                    Vinculando tu nueva contraseña a tu cuenta de Google/Apple existente.
+                </p>
+            )}
             <div className="flex justify-center">
                 <InputOTP
                     maxLength={6}
@@ -563,13 +607,13 @@ const OtpForm: React.FC<{
                             <InputOTPSlot
                                 key={i}
                                 index={i}
-                                className="w-11 h-12 text-lg font-semibold border-gray-300 rounded-md first:rounded-l-md last:rounded-r-md"
+                                className={OTP_SLOT}
                             />
                         ))}
                     </InputOTPGroup>
                 </InputOTP>
             </div>
-            <Button onClick={() => submit()} disabled={busy || code.length !== 6} className="w-full h-11">
+            <Button onClick={() => submit()} disabled={busy || code.length !== 6} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando…</> : 'Verificar'}
             </Button>
             <div className="text-sm text-gray-500">
@@ -624,7 +668,7 @@ const ForgotPasswordForm: React.FC<{
     return (
         <form onSubmit={onSubmit} className="space-y-3">
             <p className="text-sm text-gray-600 mb-2">
-                Indícanos el correo de tu cuenta y te enviaremos un código de 6 dígitos para restablecer la contraseña.
+                Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
             <Field icon={<Mail className="w-4 h-4" />}>
                 <Input
@@ -634,10 +678,10 @@ const ForgotPasswordForm: React.FC<{
                     placeholder="Correo electrónico"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
+                    className={INPUT_REBRAND}
                 />
             </Field>
-            <Button type="submit" disabled={busy || !email} className="w-full h-11">
+            <Button type="submit" disabled={busy || !email} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Enviar código'}
             </Button>
         </form>
@@ -732,7 +776,7 @@ const ResetPasswordForm: React.FC<{
                             <InputOTPSlot
                                 key={i}
                                 index={i}
-                                className="w-11 h-12 text-lg font-semibold border-gray-300 rounded-md first:rounded-l-md last:rounded-r-md"
+                                className={OTP_SLOT}
                             />
                         ))}
                     </InputOTPGroup>
@@ -748,19 +792,19 @@ const ResetPasswordForm: React.FC<{
                     placeholder="Nueva contraseña (mín. 8)"
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
-                    className="pl-9 pr-10"
+                    className={`${INPUT_REBRAND} pr-10`}
                 />
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
             </Field>
-            <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className="w-full h-11">
+            <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Restableciendo…</> : 'Restablecer contraseña'}
             </Button>
             <div className="text-sm text-gray-500 text-center">
@@ -781,9 +825,21 @@ const ResetPasswordForm: React.FC<{
 // Helper: input con icono prepended.
 const Field: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
     <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">{icon}</span>
         {children}
     </div>
 );
+
+/** Clases compartidas para todos los Input del modal — pill estilo HomePresentation. */
+const INPUT_REBRAND =
+    'pl-10 h-11 rounded-full bg-gray-50 focus:bg-white border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all';
+
+/** Clases compartidas para los botones primarios (submit) — gradient cyan→blue→indigo. */
+const PRIMARY_BTN =
+    'w-full h-11 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all';
+
+/** Clases compartidas para los slots OTP. */
+const OTP_SLOT =
+    'w-12 h-14 text-xl font-bold border-gray-200 rounded-xl shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20';
 
 export default LoginModal;
