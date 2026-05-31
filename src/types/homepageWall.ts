@@ -32,6 +32,8 @@ export interface SearchServiceHomepageDto {
   ServiceTypeName: string;
   ServiceTypeDescription?: string; // ✅ NUEVO: Descripción del tipo de servicio
   Price: number;
+  /** Round 24: currency original del precio (ISO 4217). Default 'EUR'. */
+  Currency?: string;
   ImageUrls: string[];  // URLs firmadas, listas para usar
   Expert: {
     Id: number;
@@ -56,6 +58,9 @@ export interface SearchServiceDetailDto {
   serviceTypeCategoryId?: number;
   requiresAppointment: boolean;
   price: number;
+  /** Round 24: currency original del precio (ISO 4217). Default 'EUR'. */
+  priceCurrency?: string;
+  currency?: string;
   conditions: string;
   durationInHours: number;
   createdAt: string;

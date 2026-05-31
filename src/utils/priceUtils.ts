@@ -132,9 +132,9 @@ export function formatCurrency(amount: unknown): string {
  *   formatPriceNumber(null)       → "0,00"
  *   formatPriceNumber("16.50")    → "16,50"
  */
-export function formatPriceNumber(amount: unknown): string {
+export function formatPriceNumber(amount: unknown, locale?: string | null): string {
   const safe = toFiniteNumber(amount);
-  return new Intl.NumberFormat('es-ES', {
+  return new Intl.NumberFormat(locale || 'es-ES', {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

@@ -10,6 +10,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { Service } from '../hooks/useServices';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { formatPriceNumber } from '../utils/priceUtils';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface CheckoutPageProps {}
 
@@ -20,6 +21,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const { isAuthenticated } = useAuth();
     const { fetchApi } = useApi();
     const { createSearchWithHire } = useSearch();
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
     
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
@@ -89,6 +91,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
                                 requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
                                 price: service.Price ?? service.price ?? 0,
+                                priceCurrency: service.Currency || service.currency || service.PriceCurrency || service.priceCurrency || 'EUR',
                                 conditions: service.Conditions || service.conditions || '',
                                 durationInHours: service.DurationInHours ?? service.durationInHours,
                                 createdAt: service.CreatedAt || service.createdAt,
@@ -153,7 +156,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // 🛡️ Round 10 — P-B FIX: delegar a helper central NaN-safe en lugar de reimplementar.
     // El componente sigue concatenando "&nbsp;€" aparte (por el non-breaking space), así que
     // usamos formatPriceNumber (sin símbolo) en lugar de formatCurrency.
+    // Round 24: helper legacy mantenido para casos donde solo necesitamos el número.
     const formatPrice = (price: number) => formatPriceNumber(price);
+
+    // Round 24: helper para mostrar precio con conversión. Backend cobra siempre en EUR
+    // (chargeCurrency = EUR), pero mostramos el equivalente en la moneda preferida del usuario.
+    const sourceCurrency = service?.priceCurrency || 'EUR';
+    const formatPriceDisplay = (amount: number) => formatPriceWithSource(amount, sourceCurrency, preferredCurrency);
 
     const handlePayment = async () => {
         if (!service) {
@@ -421,30 +430,55 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                                     <div className="h-px bg-gray-200" style={{ marginTop: '16px', marginBottom: '16px' }}></div>
 
-                                    {/* Precio total - Estilo Airbnb con desglose IVA */}
+                                    {/* Precio total - Estilo Airbnb con desglose IVA. Round 24: conversión multi-moneda. */}
                                     <div className="mb-6">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-lg font-semibold text-gray-900" style={{ fontSize: '18px', lineHeight: '24px' }}>
-                                                    {formatPrice(finalTotal)}&nbsp;€
-                                                </span>
-                                            </div>
-                                        </div>
+                                        {(() => {
+                                            const priceInfo = formatPriceDisplay(finalTotal);
+                                            return (
+                                                <>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
+                                                        <div className="flex items-baseline gap-1">
+                                                            <span className="text-lg font-semibold text-gray-900" style={{ fontSize: '18px', lineHeight: '24px' }}>
+                                                                {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                                            </span>
+                                                        </div>
+                                                    </div>
 
-                                        {/* Desglose: impuestos incluidos. El TIPO de IVA depende del país del comprador
-                                            (lo calcula Stripe en el pago) → aquí no afirmamos un % concreto. */}
-                                        {showPriceDetails && (
-                                            <div className="mt-3 space-y-2 pb-3">
-                                                <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                                                    <span>Total</span>
-                                                    <span>{formatPrice(finalTotal)}&nbsp;€</span>
-                                                </div>
-                                                <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
-                                            </div>
-                                        )}
-                                        
-                                        <button 
+                                                    {priceInfo.wasConverted && (
+                                                        <div className="text-xs text-gray-500 text-right" style={{ fontSize: '12px', lineHeight: '16px' }}>
+                                                            ({priceInfo.sourceFormatted} — cargo final)
+                                                        </div>
+                                                    )}
+
+                                                    {/* Desglose: impuestos incluidos. El TIPO de IVA depende del país del comprador
+                                                        (lo calcula Stripe en el pago) → aquí no afirmamos un % concreto. */}
+                                                    {showPriceDetails && (
+                                                        <div className="mt-3 space-y-2 pb-3">
+                                                            <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                                                <span>Total</span>
+                                                                <span>{priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}</span>
+                                                            </div>
+                                                            {priceInfo.wasConverted && (
+                                                                <div className="flex justify-between text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>
+                                                                    <span>Cargo real ({sourceCurrency})</span>
+                                                                    <span>{priceInfo.sourceFormatted}</span>
+                                                                </div>
+                                                            )}
+                                                            <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
+                                                            <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                                                <p className="text-xs text-gray-700" style={{ fontSize: '11px', lineHeight: '14px' }}>
+                                                                    <strong>Aviso de conversión bancaria:</strong> El cargo final lo realiza Stripe en {sourceCurrency}.
+                                                                    Tu banco puede aplicar tasas de cambio y comisiones distintas, por lo que el importe cobrado puede variar ligeramente de la estimación mostrada.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+
+                                        <button
                                             type="button"
                                             onClick={() => setShowPriceDetails(!showPriceDetails)}
                                             className="text-sm font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"
@@ -646,29 +680,54 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         {/* Separador entre secciones */}
                         <div className="h-px bg-gray-200" style={{ marginTop: '12px', marginBottom: '12px', height: '1px' }}></div>
 
-                        {/* Precio total con desglose IVA */}
+                        {/* Precio total con desglose IVA. Round 24: conversión multi-moneda. */}
                         <div style={{ marginBottom: '0px' }}>
-                            <div className="flex items-center justify-between" style={{ paddingTop: '0px', paddingBottom: '12px' }}>
-                                <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                                        {formatPrice(finalTotal)} €
-                                    </span>
-                                </div>
-                            </div>
+                            {(() => {
+                                const priceInfo = formatPriceDisplay(finalTotal);
+                                return (
+                                    <>
+                                        <div className="flex items-center justify-between" style={{ paddingTop: '0px', paddingBottom: '12px' }}>
+                                            <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>Precio total</span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                                    {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                                </span>
+                                            </div>
+                                        </div>
 
-                            {/* Desglose móvil: impuestos incluidos, sin afirmar un % de IVA (depende del país del comprador). */}
-                            {showPriceDetails && (
-                                <div className="mt-3 space-y-2 pb-3">
-                                    <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
-                                        <span>Total</span>
-                                        <span>{formatPrice(finalTotal)} €</span>
-                                    </div>
-                                    <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
-                                </div>
-                            )}
-                            
-                            <button 
+                                        {priceInfo.wasConverted && (
+                                            <div className="text-xs text-gray-500 text-right" style={{ fontSize: '12px', lineHeight: '16px', paddingBottom: '8px' }}>
+                                                ({priceInfo.sourceFormatted} — cargo final)
+                                            </div>
+                                        )}
+
+                                        {/* Desglose móvil: impuestos incluidos, sin afirmar un % de IVA (depende del país del comprador). */}
+                                        {showPriceDetails && (
+                                            <div className="mt-3 space-y-2 pb-3">
+                                                <div className="flex justify-between text-base font-semibold text-gray-900" style={{ fontSize: '16px', lineHeight: '20px' }}>
+                                                    <span>Total</span>
+                                                    <span>{priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}</span>
+                                                </div>
+                                                {priceInfo.wasConverted && (
+                                                    <div className="flex justify-between text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>
+                                                        <span>Cargo real ({sourceCurrency})</span>
+                                                        <span>{priceInfo.sourceFormatted}</span>
+                                                    </div>
+                                                )}
+                                                <p className="text-xs text-gray-500" style={{ fontSize: '12px', lineHeight: '16px' }}>Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.</p>
+                                                <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                                    <p className="text-xs text-gray-700" style={{ fontSize: '11px', lineHeight: '14px' }}>
+                                                        <strong>Aviso de conversión bancaria:</strong> El cargo final lo realiza Stripe en {sourceCurrency}.
+                                                        Tu banco puede aplicar tasas de cambio y comisiones distintas, por lo que el importe cobrado puede variar ligeramente de la estimación mostrada.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            <button
                                 type="button"
                                 onClick={() => setShowPriceDetails(!showPriceDetails)}
                                 className="text-sm font-semibold text-gray-900 underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all"

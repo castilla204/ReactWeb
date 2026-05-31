@@ -40,6 +40,36 @@ const DEFAULT_RATES: Record<string, number> = {
     CAD: 1.48,
 };
 
+/**
+ * Resultado de formatPriceWithSource: provee la cadena formateada lista para mostrar
+ * Y los campos brutos por si el componente necesita renderizarlos diferente.
+ *
+ * Reglas de formato:
+ *   - Mismo currency: "£100" (sin paréntesis)
+ *   - Convertido: "≈ €115 EUR (£100 GBP)"
+ *   - Tasa no disponible: "£100 GBP (conversion unavailable)"
+ */
+export interface PriceWithSourceResult {
+    /** Cadena lista para mostrar (con "≈" y "(source)" si aplica). */
+    display: string;
+    /** Cadena solo del precio convertido (ej "€115 EUR") — sin "≈" ni paréntesis. */
+    converted: string;
+    /** Cadena solo del precio original (ej "£100 GBP"). */
+    sourceFormatted: string;
+    /** Importe convertido en mayor unidad (€/£/etc.). */
+    convertedAmount: number;
+    /** Importe original en mayor unidad. */
+    sourceAmount: number;
+    /** Currency code que se está mostrando. */
+    displayCurrency: string;
+    /** Currency code original. */
+    sourceCurrency: string;
+    /** True si hubo conversión (currencies distintas y rate válida). */
+    wasConverted: boolean;
+    /** True si la rate de destino no estaba disponible y se mostró el source en su lugar. */
+    rateUnavailable: boolean;
+}
+
 interface CurrencyContextType {
     currencies: Currency[];
     rates: Record<string, number>; // rate FROM base (EUR) TO each currency
@@ -48,6 +78,21 @@ interface CurrencyContextType {
     setPreferredCurrency: (code: string) => void;
     convert: (amount: number, fromCurrency: string, toCurrency?: string) => number;
     formatPrice: (amountInCents: number, currencyCode?: string) => string;
+    /**
+     * Formatea un precio mostrando el original entre paréntesis si hubo conversión.
+     * @param amount Importe en MAYOR unidad (€/£), NO en cents.
+     * @param sourceCurrency Currency original del precio (ej "EUR" si viene del backend).
+     * @param targetCurrency Currency en la que mostrar; default = preferredCurrency.
+     */
+    formatPriceWithSource: (
+        amount: number,
+        sourceCurrency?: string,
+        targetCurrency?: string,
+    ) => PriceWithSourceResult;
+    /** True si la rate del currency dado está disponible (>0). */
+    hasRate: (currencyCode: string) => boolean;
+    /** Timestamp (ms) en el que se cargaron las rates con éxito; null si nunca. */
+    ratesFetchedAt: number | null;
     loading: boolean;
     error: string | null;
 }
@@ -101,38 +146,59 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const [preferredCurrency, setPreferredCurrencyState] = useState<string>(readStoredCurrency);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [ratesFetchedAt, setRatesFetchedAt] = useState<number | null>(null);
 
     // Fetch /api/currencies en el mount para obtener la lista oficial y las tasas en vivo.
+    // Round 24: retry exponencial (3 intentos, 2s→4s→8s) + sanitización de rates 0/null.
     useEffect(() => {
         let cancelled = false;
 
-        const load = async () => {
+        const sanitizeRates = (raw: Record<string, unknown>): Record<string, number> => {
+            const clean: Record<string, number> = { EUR: 1 };
+            for (const [code, val] of Object.entries(raw)) {
+                const n = typeof val === 'number' ? val : Number(val);
+                if (Number.isFinite(n) && n > 0) {
+                    clean[code] = n;
+                } else {
+                    console.warn(`[CurrencyContext] Skipping invalid rate for ${code}:`, val);
+                }
+            }
+            return clean;
+        };
+
+        const attempt = async (i: number): Promise<void> => {
             try {
-                setLoading(true);
                 setError(null);
                 const response = await fetch(`${API_CONFIG.baseUrl}/api/currencies`);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (cancelled) return;
                 if (Array.isArray(data?.currencies) && data.currencies.length > 0) {
                     setCurrencies(data.currencies);
                 }
                 if (data?.rates && typeof data.rates === 'object') {
-                    setRates(data.rates);
+                    setRates(sanitizeRates(data.rates as Record<string, unknown>));
                 }
+                setRatesFetchedAt(Date.now());
             } catch (err) {
                 if (cancelled) return;
                 const message = err instanceof Error ? err.message : 'Unknown error';
-                console.warn('[CurrencyContext] Failed to load /api/currencies, using defaults:', message);
-                setError(message);
-            } finally {
-                if (!cancelled) setLoading(false);
+                if (i < 2) {
+                    const delay = 2000 * Math.pow(2, i); // 2s, 4s, 8s
+                    console.warn(`[CurrencyContext] /api/currencies attempt ${i + 1} failed (${message}), retrying in ${delay}ms`);
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                    if (!cancelled) await attempt(i + 1);
+                } else {
+                    console.warn('[CurrencyContext] Failed to load /api/currencies after retries, using defaults:', message);
+                    setError(message);
+                }
             }
         };
 
-        load();
+        setLoading(true);
+        attempt(0).finally(() => {
+            if (!cancelled) setLoading(false);
+        });
         return () => {
             cancelled = true;
         };
@@ -160,6 +226,13 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
             });
         }
     }, []);
+
+    const hasRate = useCallback((currencyCode: string): boolean => {
+        if (!currencyCode) return false;
+        if (currencyCode === BASE_CURRENCY) return true;
+        const r = rates[currencyCode];
+        return typeof r === 'number' && Number.isFinite(r) && r > 0;
+    }, [rates]);
 
     const convert = useCallback((
         amount: number,
@@ -192,6 +265,64 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
     }, [currencies, preferredCurrency]);
 
+    const formatPriceWithSource = useCallback((
+        amount: number,
+        sourceCurrency: string = BASE_CURRENCY,
+        targetCurrency: string = preferredCurrency,
+    ): PriceWithSourceResult => {
+        const safeAmount = Number.isFinite(amount) ? amount : 0;
+        const source = sourceCurrency || BASE_CURRENCY;
+        const target = targetCurrency || preferredCurrency || BASE_CURRENCY;
+
+        // Caso 1: misma moneda → sin paréntesis
+        if (source === target) {
+            const formatted = formatPrice(safeAmount * 100, target);
+            return {
+                display: formatted,
+                converted: formatted,
+                sourceFormatted: formatted,
+                convertedAmount: safeAmount,
+                sourceAmount: safeAmount,
+                displayCurrency: target,
+                sourceCurrency: source,
+                wasConverted: false,
+                rateUnavailable: false,
+            };
+        }
+
+        const sourceFormatted = formatPrice(safeAmount * 100, source);
+
+        // Caso 2: rate de destino no disponible → mostrar solo el source con aviso
+        if (!hasRate(target)) {
+            return {
+                display: `${sourceFormatted} (conversion unavailable)`,
+                converted: sourceFormatted,
+                sourceFormatted,
+                convertedAmount: safeAmount,
+                sourceAmount: safeAmount,
+                displayCurrency: source,
+                sourceCurrency: source,
+                wasConverted: false,
+                rateUnavailable: true,
+            };
+        }
+
+        // Caso 3: conversión normal → "≈ €115 EUR (£100 GBP)"
+        const convertedAmount = convert(safeAmount, source, target);
+        const convertedFormatted = formatPrice(convertedAmount * 100, target);
+        return {
+            display: `≈ ${convertedFormatted} ${target} (${sourceFormatted} ${source})`,
+            converted: `${convertedFormatted} ${target}`,
+            sourceFormatted: `${sourceFormatted} ${source}`,
+            convertedAmount,
+            sourceAmount: safeAmount,
+            displayCurrency: target,
+            sourceCurrency: source,
+            wasConverted: true,
+            rateUnavailable: false,
+        };
+    }, [convert, formatPrice, hasRate, preferredCurrency]);
+
     const value = useMemo<CurrencyContextType>(() => ({
         currencies,
         rates,
@@ -200,9 +331,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         setPreferredCurrency,
         convert,
         formatPrice,
+        formatPriceWithSource,
+        hasRate,
+        ratesFetchedAt,
         loading,
         error,
-    }), [currencies, rates, preferredCurrency, setPreferredCurrency, convert, formatPrice, loading, error]);
+    }), [currencies, rates, preferredCurrency, setPreferredCurrency, convert, formatPrice, formatPriceWithSource, hasRate, ratesFetchedAt, loading, error]);
 
     return (
         <CurrencyContext.Provider value={value}>
