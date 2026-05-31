@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { CategoryProvider } from './contexts/CategoryContext'
+import { CurrencyProvider } from './contexts/CurrencyContext'
 import { MfaVerificationProvider } from './contexts/MfaVerificationContext'
 import { useBodyScrollSafety } from './hooks/useBodyScrollLock'
 import { getFriendlyErrorMessage, isNetworkError } from './hooks/useErrorHandler'
@@ -175,9 +176,11 @@ createRoot(rootElement, {
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <CategoryProvider>
-                        <MfaVerificationProvider>
-                            <AppWithSafety />
-                        </MfaVerificationProvider>
+                        <CurrencyProvider>
+                            <MfaVerificationProvider>
+                                <AppWithSafety />
+                            </MfaVerificationProvider>
+                        </CurrencyProvider>
                     </CategoryProvider>
                 </AuthProvider>
                 {/* ✅ ReactQueryDevtools solo en desarrollo - completamente excluido del build de producción */}

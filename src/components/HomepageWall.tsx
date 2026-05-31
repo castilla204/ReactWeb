@@ -137,7 +137,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
         e.preventDefault();
         handleCardClick();
       }}
-      className="block flex-shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]"
+      className="block flex-shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]"
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <motion.div
@@ -624,7 +624,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         )}
         <div
           ref={scrollRef}
-          className={`flex overflow-x-auto scrollbar-hide md:pb-0 md:px-0 md:pr-0 gap-4 min-[390px]:gap-[18px] md:gap-3 ${
+          className={`flex overflow-x-auto scrollbar-hide md:pb-0 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
             isLastSection ? 'pb-0' : 'pb-1.5 md:pb-0'
           }`}
           style={{
@@ -853,7 +853,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               key={`${keyPrefix}-section-${index}-${section.title}`}
               variants={sectionVariants}
               className={[
-                index === 0 ? 'pt-1 min-[390px]:pt-2' : '',
+                index === 0 ? 'pt-1 min-[428px]:pt-2' : '',
                 index > 0 ? 'mt-5 md:mt-10' : '',
               ]
                 .filter(Boolean)
@@ -938,7 +938,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
             <div className="space-y-6 md:space-y-12 lg:space-y-14">
               <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
                 {[...Array(6)].map((_, index) => (
-                  <div key={index} className="flex-shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]">
+                  <div key={index} className="flex-shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]">
                     <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
                     <Skeleton height={16} width="100%" borderRadius={4} />
                   </div>
@@ -976,7 +976,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1">
             <div className="flex overflow-x-auto gap-4 pb-0">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]">
+                <div key={i} className="shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]">
                   <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
                   <Skeleton height={14} width="90%" borderRadius={4} />
                 </div>

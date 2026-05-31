@@ -127,7 +127,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           description={description}
         >
           <div
-            className="min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]"
+            className="h-auto min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]"
             style={{
               maxHeight: bodyMaxHeight,
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
