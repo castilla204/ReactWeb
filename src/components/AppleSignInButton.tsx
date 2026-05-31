@@ -14,8 +14,8 @@ interface AppleSignInButtonProps {
 }
 
 // Apple SVG Icon Component
-const AppleIcon = () => (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+const AppleIcon = ({ compact }: { compact?: boolean }) => (
+    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
     </svg>
 );
@@ -123,8 +123,14 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
     const isWebOrUnavailable = !isNative || isAvailable === false;
     const showAsDisabled = isWebOrUnavailable;
 
-    const compactClasses = 'h-9 px-4 text-sm font-medium text-white bg-black dark:bg-gray-900 hover:bg-gray-800 dark:hover:bg-gray-800 rounded-lg transition-all duration-200 border border-gray-800 dark:border-gray-700 hover:border-gray-700 dark:hover:border-gray-600 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
-    const defaultClasses = 'w-full bg-black text-white font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-900 hover:bg-gray-900 active:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const compactEnabledClasses =
+        'h-10 w-full text-sm font-medium text-white bg-[#222222] border border-[#222222] rounded-lg hover:bg-black active:bg-[#111111] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    const compactDisabledClasses =
+        'h-10 w-full text-sm font-medium text-[#717171] bg-[#f7f7f7] border border-[#ebebeb] rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed';
+    const defaultEnabledClasses =
+        'w-full h-11 text-sm font-medium text-white bg-[#222222] border border-[#222222] rounded-lg hover:bg-black active:bg-[#111111] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    const defaultDisabledClasses =
+        'w-full h-11 text-sm font-medium text-[#717171] bg-[#f7f7f7] border border-[#ebebeb] rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed';
 
     return (
         <button
@@ -132,7 +138,15 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
             disabled={isAuthenticating || isAvailable === null || showAsDisabled}
             title={showAsDisabled ? 'Próximamente disponible en web — usa la app de iPhone/Mac' : undefined}
             aria-label={showAsDisabled ? 'Inicia sesión con Apple (próximamente disponible en web)' : 'Inicia sesión con Apple'}
-            className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''} ${showAsDisabled ? 'cursor-not-allowed' : ''}`}
+            className={`${
+                variant === 'compact'
+                    ? showAsDisabled
+                        ? compactDisabledClasses
+                        : compactEnabledClasses
+                    : showAsDisabled
+                      ? defaultDisabledClasses
+                      : defaultEnabledClasses
+            } ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
         >
             {isAuthenticating ? (
                 <>
@@ -145,10 +159,10 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
                 </>
             ) : (
                 <>
-                    <AppleIcon />
+                    <AppleIcon compact={variant === 'compact'} />
                     <span>Apple</span>
                     {showAsDisabled && (
-                        <span className="ml-1 text-[10px] font-normal text-white/60 uppercase tracking-wider">Próx.</span>
+                        <span className="text-[10px] font-normal uppercase tracking-wide text-[#b0b0b0]">Próx.</span>
                     )}
                 </>
             )}
