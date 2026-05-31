@@ -22,10 +22,16 @@ export const HP_PANEL_GRADIENT =
   'linear-gradient(155deg, #dceaf8 0%, #e5f0fa 28%, #f5f9fd 52%, #fff9f2 82%, #fafafa 100%)';
 
 /**
- * Breakpoint Tailwind `min-[390px]` — entre iPhone SE (375) y XR/Plus (≥414).
- * Base compacta por debajo; un poco más grande en pantallas anchas de móvil.
+ * `min-[390px]` — hero + tabs de categoría un poco más grandes (XR 414, 12/13 390).
+ * Por debajo: SE (375), S10e (~360) → compacto.
  */
-export const HP_MOBILE_WIDE = 'min-[390px]:' as const;
+export const HP_MOBILE_MEDIUM = 'min-[390px]:' as const;
+
+/**
+ * `min-[428px]` — solo cards de servicios en Plus / Pro Max.
+ * XR y SE comparten el mismo ancho de card (160px).
+ */
+export const HP_MOBILE_WIDE = 'min-[428px]:' as const;
 
 /** Botón icono flotante (hero, modal categorías) */
 export const hpIconButtonClass =

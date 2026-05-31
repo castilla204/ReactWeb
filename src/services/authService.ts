@@ -256,6 +256,7 @@ class AuthService {
             // Los endpoints públicos no necesitan autenticación y agregar token puede causar delays
             const publicEndpoints = [
                 '/api/Categories',
+                '/api/Currencies',
                 '/api/ServiceType/public',
                 '/api/SearchService/homepage-wall',
                 '/health',
