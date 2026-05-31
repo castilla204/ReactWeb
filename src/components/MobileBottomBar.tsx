@@ -2,10 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
+import { LoginModal } from './LoginModal';
 import { authService } from '../services/authService';
-import { nativeAuthService } from '../services/nativeAuthService';
-import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 import { UserRole, RoleChecker } from '../utils/roleChecker';
 import {
@@ -26,12 +24,11 @@ const MOBILE_GOOGLE_BUTTON_ID = 'mobile-bottom-bar-google-btn';
 export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user, updateUser } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const googleLoginButtonRef = useRef<HTMLDivElement>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializingRef = useRef(false);
 
   const mountGoogleButton = useCallback(async () => {
@@ -73,63 +70,6 @@ export const MobileBottomBar: React.FC = () => {
 
     void mountGoogleButton();
   }, [isAuthenticated, mountGoogleButton]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsGoogleLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const triggerGoogleSignIn = useCallback(() => {
-    const googleButton = googleLoginButtonRef.current?.querySelector(
-      'div[role="button"]',
-    ) as HTMLElement | null;
-
-    if (googleButton) {
-      console.log('🔘 [MobileBottomBar] Haciendo click en botón de Google');
-      
-      // Crear y dispatchar eventos para máxima compatibilidad
-      const events = ['mousedown', 'mouseup', 'click'];
-      events.forEach(eventType => {
-        const event = new MouseEvent(eventType, {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-        googleButton.dispatchEvent(event);
-      });
-      
-      // También hacer clic directo
-      googleButton.click();
-      
-      // Para móvil, intentar eventos táctiles
-      if ('ontouchstart' in window) {
-        try {
-          const touchEvents = ['touchstart', 'touchend'];
-          touchEvents.forEach(eventType => {
-            const touchEvent = new TouchEvent(eventType, {
-              bubbles: true,
-              cancelable: true
-            });
-            googleButton.dispatchEvent(touchEvent);
-          });
-        } catch (e) {
-          // TouchEvent puede no estar disponible
-        }
-      }
-      
-      return true;
-    }
-    
-    // Fallback: usar prompt directamente
-    if (window.google?.accounts?.id?.prompt) {
-      console.log('🔘 [MobileBottomBar] Usando Google prompt como fallback');
-      window.google.accounts.id.prompt();
-      return true;
-    }
-    
-    return false;
-  }, []);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -207,114 +147,16 @@ export const MobileBottomBar: React.FC = () => {
     }
   };
 
-  const handleLoginClick = async (e: React.MouseEvent | React.TouchEvent) => {
+  const handleLoginClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (isAuthenticated) {
       // ✅ Si está autenticado, abrir el menú de perfil móvil
       setShowProfileMenu(true);
     } else {
-      // ✅ Evitar múltiples clicks mientras se carga
-      if (isGoogleLoading) {
-        console.log('⏳ [MobileBottomBar] Ya se está cargando Google...');
-        return;
-      }
-
-      console.log('🔘 [MobileBottomBar] Iniciando sesión con Google...');
-      setIsGoogleLoading(true);
-
-      // ✅ En Capacitor, usar autenticación nativa
-      if (Capacitor.isNativePlatform()) {
-        try {
-          console.log('📱 [MobileBottomBar] Usando autenticación nativa de Google');
-          const result = await nativeAuthService.signInWithGoogle();
-          
-          if (result.success) {
-            const token = authService.getAccessToken();
-            if (result.user && token) {
-              // Verificar MFA si es necesario
-              const { RoleChecker } = await import('../utils/roleChecker');
-              const userRole = RoleChecker.getUserRole(token);
-              const requiresMfa = RoleChecker.requiresMfa(userRole);
-              
-              let shouldNavigate = true;
-              
-              if (requiresMfa) {
-                const { mfaService } = await import('../services/mfaService');
-                try {
-                  const mfaStatus = await mfaService.getMFAStatus();
-                  if (mfaStatus.isEnabled) {
-                    shouldNavigate = false;
-                    updateUser(result.user, token, () => {
-                      navigate('/mfa/verify', { state: { returnTo: null } });
-                    });
-                    return;
-                  }
-                } catch (error) {
-                  console.error('Error checking MFA status:', error);
-                }
-              }
-              
-              if (shouldNavigate) {
-                updateUser(result.user, token, () => {
-                  console.log('✅ [MobileBottomBar] Autenticación exitosa');
-                });
-              }
-            }
-          }
-        } catch (error: any) {
-          console.error('❌ [MobileBottomBar] Error en autenticación nativa:', error);
-          
-          // Mensaje de error más descriptivo para el error 28444
-          let errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-          
-          if (errorMessage.includes('28444') || errorMessage.includes('Developer console is not set up correctly')) {
-            errorMessage = 'Error de configuración de Google. Verifica que el SHA-1 esté configurado correctamente en Google Cloud Console. Consulta SOLUCION_ERROR_28444_GOOGLE_SIGNIN.md para más detalles.';
-          }
-          
-          toast.error(errorMessage, { 
-            duration: 8000,
-            description: 'Si el problema persiste, verifica la configuración en Google Cloud Console.'
-          });
-        } finally {
-          setIsGoogleLoading(false);
-        }
-        return;
-      }
-
-      // ✅ En web, usar SDK de Google
-      // Intentar hacer click en el botón de Google
-      if (isGoogleReady && triggerGoogleSignIn()) {
-        // El loading se resetea en handleGoogleCredential
-        return;
-      }
-
-      // Si no está listo, reinicializar y reintentar
-      console.log('⚠️ [MobileBottomBar] Botón no listo, reinicializando...');
-      initializeGoogleButton();
-      
-      // Reintentar después de un delay
-      let attempts = 0;
-      const maxAttempts = 10;
-      
-      const retryClick = () => {
-        attempts++;
-        if (triggerGoogleSignIn()) {
-          setIsGoogleLoading(false);
-          return;
-        }
-        
-        if (attempts >= maxAttempts) {
-          setIsGoogleLoading(false);
-          toast.error('Error al cargar Google Sign-In. Recarga la página e intenta de nuevo.', { duration: 4000 });
-          return;
-        }
-        
-        retryTimeoutRef.current = setTimeout(retryClick, 300 + (attempts * 100));
-      };
-      
-      retryTimeoutRef.current = setTimeout(retryClick, 500);
+      // ✅ Abrir el modal de login unificado
+      setIsLoginModalOpen(true);
     }
   };
   
@@ -629,7 +471,7 @@ export const MobileBottomBar: React.FC = () => {
           </div>
           {/* div._1xhupxb - Texto */}
           <div style={tabLabelStyle(profileActive)}>
-            {isAuthenticated ? 'Perfil' : (isGoogleLoading ? 'Cargando...' : 'Iniciar sesión')}
+            {isAuthenticated ? 'Perfil' : 'Iniciar sesión'}
           </div>
         </button>
       </div>
@@ -660,13 +502,13 @@ export const MobileBottomBar: React.FC = () => {
       
       {/* ✅ Contenedor para el botón de Google - Renderizado por window.google.accounts.id */}
       {!isAuthenticated && (
-        <div 
+        <div
           ref={googleLoginButtonRef}
           id={MOBILE_GOOGLE_BUTTON_ID}
-          style={{ 
-            position: 'absolute', 
-            opacity: 0, 
-            pointerEvents: 'none', 
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            pointerEvents: 'none',
             zIndex: -1,
             width: '1px',
             height: '1px',
@@ -674,6 +516,14 @@ export const MobileBottomBar: React.FC = () => {
           }}
         />
       )}
+
+      {/* ✅ Modal de login unificado */}
+      <LoginModal
+        open={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+        initialTab="login"
+        onSuccess={() => setIsLoginModalOpen(false)}
+      />
     </nav>
   );
 };
