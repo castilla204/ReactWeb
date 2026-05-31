@@ -11,17 +11,23 @@ maplibregl.setWorkerUrl(maplibreWorkerUrl);
  * Contornos globales de tierra/costa (Natural Earth) — app mundial, no solo España.
  */
 
-/** Paleta clara — agua suave, costas en azul marca */
+/** Paleta clara — agua suave, costas en azul marca (alineada con Carto Voyager) */
 const MAP_THEME = {
   sky: '#dce9f2',
+  land: '#ebe8e3',
   brand: '#0066CC',
   coastLine: '#0066CC',
   coastHalo: '#ffffff',
   border: '#d1c4c6',
 } as const;
 
-/** Natural Earth 50m — más precisión costera que 110m (~2 MB, dominio público) */
+/**
+ * Natural Earth — el relleno de tierra NO puede depender solo de tiles raster:
+ * en proyección globe + zoom regional los tiles Carto a menudo no pintan y solo quedan las líneas.
+ */
 const NE_GEO = {
+  /** 110m: carga más rápida; capa fill bajo los tiles */
+  land: '/geo/ne_110m_land.geojson',
   coastline: '/geo/ne_50m_coastline.geojson',
   borders: '/geo/ne_50m_admin_0_boundary_lines_land.geojson',
 } as const;
@@ -31,7 +37,28 @@ const LINE_LAYOUT: maplibregl.LineLayerSpecification['layout'] = {
   'line-join': 'round',
 };
 
+/** Relleno de masas terrestres (siempre visible aunque fallen o no pinten los tiles). */
+function ensureLandFillLayer(map: maplibregl.Map): void {
+  if (map.getSource('ne-land')) return;
+
+  map.addSource('ne-land', { type: 'geojson', data: NE_GEO.land });
+  map.addLayer(
+    {
+      id: 'land-fill',
+      type: 'fill',
+      source: 'ne-land',
+      paint: {
+        'fill-color': MAP_THEME.land,
+        'fill-opacity': 1,
+      },
+    },
+    'carto',
+  );
+}
+
 function addGlobalOutlineLayers(map: maplibregl.Map): void {
+  if (map.getSource('ne-coastline')) return;
+
   map.addSource('ne-coastline', { type: 'geojson', data: NE_GEO.coastline });
   map.addSource('ne-borders', { type: 'geojson', data: NE_GEO.borders });
 
@@ -155,7 +182,7 @@ const MIN_LANDING_ZOOM = 2.05;
 const toHeroLandingZoom = (zoom: number) =>
   Math.max(MIN_LANDING_ZOOM, zoom - LANDING_ZOOM_PULLBACK);
 
-/** Tras el vuelo: mercator pinta bien los tiles Carto; globe a zoom regional solo muestra contornos. */
+/** Mercator: los tiles raster Carto no se pintan bien en globe a zoom regional. */
 const applyRegionalProjection = (map: maplibregl.Map) => {
   try {
     if (map.getProjection().type !== 'mercator') {
@@ -165,6 +192,23 @@ const applyRegionalProjection = (map: maplibregl.Map) => {
     console.warn('[ExpertsAreaMap] Proyección mercator:', err);
   }
   map.resize();
+  map.triggerRepaint();
+};
+
+const repaintWhenTilesReady = (map: maplibregl.Map, onDone?: () => void) => {
+  let frames = 0;
+  const tick = () => {
+    map.triggerRepaint();
+    frames += 1;
+    if (frames < 3) {
+      requestAnimationFrame(tick);
+    } else {
+      onDone?.();
+    }
+  };
+  map.once('idle', () => {
+    tick();
+  });
   map.triggerRepaint();
 };
 
@@ -230,6 +274,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const landFillLoadedRef = useRef(false);
   const outlinesLoadedRef = useRef(false);
   const landingStartedRef = useRef(false);
   const landingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -289,16 +334,20 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       const finishIntro = () => {
         if (cancelled || mapRef.current !== targetMap) return;
         applyRegionalProjection(targetMap);
-        targetMap.once('idle', () => {
-          if (!cancelled && mapRef.current === targetMap) {
-            targetMap.triggerRepaint();
-          }
-        });
-        setIntroComplete(true);
+        let completed = false;
+        const complete = () => {
+          if (completed || cancelled || mapRef.current !== targetMap) return;
+          completed = true;
+          setIntroComplete(true);
+        };
+        repaintWhenTilesReady(targetMap, complete);
+        window.setTimeout(complete, 900);
       };
       const prefersReducedMotion = window.matchMedia(
         '(prefers-reduced-motion: reduce)',
       ).matches;
+
+      applyRegionalProjection(targetMap);
 
       if (prefersReducedMotion) {
         targetMap.jumpTo({
@@ -433,13 +482,16 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         onStyleReady();
         scheduleResize();
         applyOverlayPadding();
+        try {
+          ensureLandFillLayer(map);
+          landFillLoadedRef.current = true;
+          map.triggerRepaint();
+        } catch (err) {
+          console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
+        }
         setMapReady(true);
         tryScheduleLanding();
-        map.once('idle', () => {
-          if (!cancelled && mapRef.current === map) {
-            map.triggerRepaint();
-          }
-        });
+        repaintWhenTilesReady(map);
       };
 
       map.once('style.load', onStyleReady);
@@ -491,21 +543,33 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       mapRef.current = null;
       setMapReady(false);
       setIntroComplete(false);
+      landFillLoadedRef.current = false;
       outlinesLoadedRef.current = false;
     };
   }, [overlayPaddingRatio]);
 
-  // Contornos Natural Earth (~2 MB) — tras el vuelo para no bloquear el arranque
+  // Relleno tierra en cuanto el estilo está listo (no esperar al vuelo)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || landFillLoadedRef.current) return;
+    try {
+      ensureLandFillLayer(map);
+      landFillLoadedRef.current = true;
+      map.triggerRepaint();
+    } catch (err) {
+      console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
+    }
+  }, [mapReady]);
+
+  // Contornos costeros — tras mercator para alinear con tiles
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !introComplete || outlinesLoadedRef.current) return;
 
     try {
-      if (!map.getSource('ne-coastline')) {
-        addGlobalOutlineLayers(map);
-        map.triggerRepaint();
-      }
+      addGlobalOutlineLayers(map);
       outlinesLoadedRef.current = true;
+      repaintWhenTilesReady(map);
     } catch (err) {
       console.error('[ExpertsAreaMap] No se pudieron cargar contornos globales:', err);
     }
