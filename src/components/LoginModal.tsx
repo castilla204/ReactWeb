@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
 import { API_CONFIG } from '../config/api';
@@ -242,12 +241,14 @@ const Separator: React.FC = () => (
 );
 
 const SocialButtonsRow: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-    const isNative = Capacitor.isNativePlatform();
+    // 🎨 Round 19: Google + Apple en MISMA LÍNEA (grid 2-col).
+    // AppleSignInButton ahora SIEMPRE renderiza — disabled con tag "Próx." en web/Android
+    // (hasta completar Apple Developer setup: Service ID + .p8 key), habilitado en iOS/macOS.
+    // Así el usuario ve que la opción existe y entiende que estará disponible pronto.
     return (
-        <div className="space-y-2.5">
-            <GoogleSignInButton variant="default" onSuccess={onSuccess} />
-            {/* AppleSignInButton se auto-oculta en web (isAvailable=false). Solo aparece en iOS/macOS. */}
-            {isNative && <AppleSignInButton variant="default" onSuccess={onSuccess} />}
+        <div className="grid grid-cols-2 gap-2.5">
+            <GoogleSignInButton variant="default" onSuccess={onSuccess} label="Google" />
+            <AppleSignInButton variant="default" onSuccess={onSuccess} />
         </div>
     );
 };
