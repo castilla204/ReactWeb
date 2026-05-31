@@ -28,6 +28,7 @@ import CountryFlag from './CountryFlag';
 import CountrySelector from './CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
+import { useCurrency } from '../contexts/CurrencyContext';
 import Autocomplete from 'react-google-autocomplete';
 
 // libraries ya no es necesario - MapContainer lo maneja internamente
@@ -116,8 +117,25 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
         }
     };
     
-    // Precio del servicio
-    const price = service.price ? `€${Math.round(service.price)}` : 'Consultar';
+    // Precio del servicio. Round 24: conversión a moneda preferida del usuario.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
+    const priceData = (() => {
+        if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
+        const src = service.priceCurrency || service.currency || service.Currency || 'EUR';
+        const info = formatPriceWithSource(service.price, src, preferredCurrency);
+        if (!info.wasConverted) {
+            const symbol = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+            return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
+        }
+        const tSym = preferredCurrency === 'USD' ? '$' : preferredCurrency === 'GBP' ? '£' : preferredCurrency === 'CHF' ? 'CHF ' : preferredCurrency === 'CAD' ? 'C$' : '€';
+        const sSym = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+        return {
+            display: `≈ ${tSym}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
+            wasConverted: true,
+            sourceFormatted: `(${sSym}${Math.round(service.price)} ${src})`,
+        };
+    })();
+    const price = priceData.display;
     
     // Horario de disponibilidad (formato compacto como en homepage)
     const formatAvailability = () => {
@@ -552,6 +570,11 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 }}
                             >
                                 {price}
+                                {priceData.wasConverted && (
+                                    <span style={{ marginLeft: 4, fontSize: '0.85em', color: '#6B7280', fontWeight: 400 }}>
+                                        {priceData.sourceFormatted}
+                                    </span>
+                                )}
                             </span>
                             <span
                                 style={{
@@ -951,6 +974,11 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                             }}
                         >
                             {price}
+                            {priceData.wasConverted && (
+                                <span style={{ marginLeft: 4, fontSize: '0.85em', color: '#6B7280', fontWeight: 400 }}>
+                                    {priceData.sourceFormatted}
+                                </span>
+                            )}
                         </span>
                         <span
                             style={{
