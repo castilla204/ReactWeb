@@ -113,19 +113,26 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
         }
     };
 
-    // No mostrar el botón si no está disponible
-    if (isAvailable === false || (!isNative && isAvailable === null)) {
-        return null;
-    }
+    // 🛡️ Round 19: Apple Sign In NO está completamente configurado en web (requiere
+    // Apple Developer Service ID + DKIM + .p8 key — pendiente). En vez de OCULTAR el
+    // botón, lo mostramos DISABLED con tooltip "Próximamente" para que el usuario sepa
+    // que existe la opción y pueda elegir Google/email mientras se completa la config.
+    //
+    // - En iOS/macOS nativo (Capacitor): funciona normal (Apple SDK nativo).
+    // - En web/Android: disabled hasta que Apple Developer esté configurado.
+    const isWebOrUnavailable = !isNative || isAvailable === false;
+    const showAsDisabled = isWebOrUnavailable;
 
     const compactClasses = 'h-9 px-4 text-sm font-medium text-white bg-black dark:bg-gray-900 hover:bg-gray-800 dark:hover:bg-gray-800 rounded-lg transition-all duration-200 border border-gray-800 dark:border-gray-700 hover:border-gray-700 dark:hover:border-gray-600 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
     const defaultClasses = 'w-full bg-black text-white font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-900 hover:bg-gray-900 active:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
     return (
         <button
-            onClick={handleAppleSignIn}
-            disabled={isAuthenticating || isAvailable === null}
-            className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
+            onClick={showAsDisabled ? undefined : handleAppleSignIn}
+            disabled={isAuthenticating || isAvailable === null || showAsDisabled}
+            title={showAsDisabled ? 'Próximamente disponible en web — usa la app de iPhone/Mac' : undefined}
+            aria-label={showAsDisabled ? 'Inicia sesión con Apple (próximamente disponible en web)' : 'Inicia sesión con Apple'}
+            className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''} ${showAsDisabled ? 'cursor-not-allowed' : ''}`}
         >
             {isAuthenticating ? (
                 <>
@@ -139,7 +146,10 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
             ) : (
                 <>
                     <AppleIcon />
-                    <span>Continuar con Apple</span>
+                    <span>Apple</span>
+                    {showAsDisabled && (
+                        <span className="ml-1 text-[10px] font-normal text-white/60 uppercase tracking-wider">Próx.</span>
+                    )}
                 </>
             )}
             <style>{`
