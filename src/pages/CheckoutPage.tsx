@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Star, Shield, Check, X } from 'lucide-react';
+import { ArrowLeft, Star, Shield, Check, X, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
@@ -11,6 +11,7 @@ import { Service } from '../hooks/useServices';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 
 interface CheckoutPageProps {}
 
@@ -505,6 +506,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         </div>
                                     </div>
 
+                                    {/* 🛡️ Round 25 — TZ disclosure: el horario del servicio se almacena en la zona
+                                        del experto, NO en la del cliente. Sin etiqueta inline, un cliente en Madrid
+                                        viendo "10:00" de un experto en Mexico City asume su hora local (sería 18:00
+                                        Madrid en realidad). Mostramos el timezone friendly antes del CTA de pago. */}
+                                    {(() => {
+                                        const expertTz = service.expert?.timezone;
+                                        const tzLabel = formatTimezoneFriendly(expertTz);
+                                        if (!tzLabel) return null;
+                                        return (
+                                            <div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
+                                                <Globe className="w-4 h-4 flex-shrink-0 text-gray-500" />
+                                                <span>Horario: {tzLabel}</span>
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* Botón de reserva - Estilo Airbnb */}
                                     <button
                                         onClick={handlePayment}
@@ -764,6 +781,18 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 {/* Footer fijo móvil */}
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
                     <div className="px-6" style={{ paddingTop: '12px', paddingBottom: '16px' }}>
+                        {/* 🛡️ Round 25 — mismo disclosure de TZ que en desktop, justo encima del CTA. */}
+                        {(() => {
+                            const expertTz = service.expert?.timezone;
+                            const tzLabel = formatTimezoneFriendly(expertTz);
+                            if (!tzLabel) return null;
+                            return (
+                                <div className="mb-2 flex items-center justify-center gap-2 text-xs text-gray-600">
+                                    <Globe className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" />
+                                    <span>Horario: {tzLabel}</span>
+                                </div>
+                            );
+                        })()}
                         <button
                             onClick={handlePayment}
                             disabled={isSubmitting}

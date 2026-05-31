@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 // Importar imágenes directamente desde src/media para que Vite las procese
 import { LoginModal } from './LoginModal';
+import { CurrencySelector } from './CurrencySelector';
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
 import motorcycleImg from '../media/motorcycle.png';
@@ -497,6 +498,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 Admin
               </button>
             )}
+            <CurrencySelector variant="compact" />
             <button
               type="button"
               aria-label="Favoritos"
@@ -513,7 +515,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <Suspense
           fallback={
             <div
-              className="hidden md:block h-[400px] lg:h-[480px] bg-[#dce9f2]"
+              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-[#e8f0f7] animate-pulse"
               aria-hidden
             />
           }

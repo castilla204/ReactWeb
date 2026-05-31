@@ -615,7 +615,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header sección */}
-      <div className="mb-2 md:mb-5 md:px-0">
+      <div className="mb-2 md:mb-3 md:px-0">
         <div className="flex items-start gap-3">
           <span
             className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-[#0066CC] to-[#0066CC]/25"
@@ -632,24 +632,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         </div>
       </div>
 
-      {/* Tablón horizontal */}
-      <div className="relative group/scroll md:w-[min(100%,calc(6*184px+60px))] md:overflow-hidden">
-        {canScrollLeft && (
-          <div
-            className="hidden md:block absolute left-0 top-0 bottom-3 w-10 z-[5] pointer-events-none bg-gradient-to-r from-white via-white/80 to-transparent"
-            aria-hidden
-          />
-        )}
-        {canScrollRight && (
-          <div
-            className="hidden md:block absolute right-0 top-0 bottom-3 w-10 z-[5] pointer-events-none bg-gradient-to-l from-white via-white/80 to-transparent"
-            aria-hidden
-          />
-        )}
+      {/* Tablón horizontal — ancho completo; sin degradé lateral */}
+      <div className="relative group/scroll w-full">
         <div
           ref={scrollRef}
-          className={`flex overflow-x-auto scrollbar-hide md:pb-0 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
-            isLastSection ? 'pb-0' : 'pb-1.5 md:pb-0'
+          className={`flex overflow-x-auto scrollbar-hide md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
+            isLastSection ? 'pb-0 md:pb-3' : 'pb-1.5 md:pb-3'
           }`}
           style={{
             WebkitOverflowScrolling: 'touch',
@@ -877,8 +865,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               key={`${keyPrefix}-section-${index}-${section.title}`}
               variants={sectionVariants}
               className={[
-                index === 0 ? 'pt-1 min-[428px]:pt-2' : '',
-                index > 0 ? 'mt-5 md:mt-10' : '',
+                index === 0 ? 'pt-1 min-[428px]:pt-2 md:pt-0' : '',
+                index > 0 ? 'mt-5 md:mt-8' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -951,8 +939,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (showFullSkeleton) {
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1 md:pb-0">
-            <div className="mb-2 md:mb-5 md:hidden">
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+            <div className="mb-2 md:mb-3 md:hidden">
               <Skeleton height={28} width={220} borderRadius={8} />
             </div>
             <div className="hidden md:block mb-5">
@@ -997,7 +985,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     if (fallbackLoading) {
       return (
         <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1">
+          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1">
             <div className="flex overflow-x-auto gap-4 pb-0">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]">
@@ -1019,7 +1007,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           animate={{ opacity: 1 }}
           className="relative"
         >
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0">
             <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-3 md:py-4 mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-sm text-[#717171]">
                 No hay expertos en esta categoría todavía. Mira estos de{' '}
@@ -1102,7 +1090,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           </div>
         )}
         <div
-          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1 md:pb-0 transition-opacity duration-200 ${
+          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0 transition-opacity duration-200 ${
             isFetching && sections ? 'opacity-70' : 'opacity-100'
           }`}
         >
