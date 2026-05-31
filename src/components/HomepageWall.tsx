@@ -14,6 +14,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpCardText, hpType } from '../constants/homepageTypography';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const COCHES_CATEGORY_ID = 5;
 const INMOBILIARIA_CATEGORY_ID = 3;
@@ -33,6 +34,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
   const [imageIndex, setImageIndex] = useState(0);
   const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
+  const { formatPriceWithSource, preferredCurrency } = useCurrency();
 
   // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
   const imageUrls = useMemo(() => service.imageUrls || [], [service.imageUrls]);
@@ -84,11 +86,26 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   );
 
   // ✅ Información real del servicio para la segunda línea: Precio · Horario
-  // Precio del servicio
-  const price = useMemo(() => 
-    service.price ? `€${Math.round(service.price)}` : 'Consultar',
-    [service.price]
-  );
+  // Precio del servicio. Round 24: usa CurrencyContext para conversión.
+  const priceData = useMemo(() => {
+    if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
+    const source = service.priceCurrency || service.currency || 'EUR';
+    const info = formatPriceWithSource(service.price, source, preferredCurrency);
+    if (!info.wasConverted) {
+      // Mismo currency: redondear como antes para mantener el estilo compacto
+      const symbol = source === 'USD' ? '$' : source === 'GBP' ? '£' : '€';
+      return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
+    }
+    // Convertido: mostrar el converted redondeado y el source en paréntesis
+    const targetSymbol = preferredCurrency === 'USD' ? '$' : preferredCurrency === 'GBP' ? '£' : preferredCurrency === 'CHF' ? 'CHF ' : preferredCurrency === 'CAD' ? 'C$' : '€';
+    const sourceSymbol = source === 'USD' ? '$' : source === 'GBP' ? '£' : source === 'CHF' ? 'CHF ' : source === 'CAD' ? 'C$' : '€';
+    return {
+      display: `≈ ${targetSymbol}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
+      wasConverted: true,
+      sourceFormatted: `(${sourceSymbol}${Math.round(service.price)} ${source})`,
+    };
+  }, [service.price, service.priceCurrency, service.currency, formatPriceWithSource, preferredCurrency]);
+  const price = priceData.display;
   
   // Horario de disponibilidad (formato compacto para que quepa)
   const formatAvailability = useCallback(() => {
