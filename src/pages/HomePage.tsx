@@ -127,7 +127,7 @@ const HomePage: React.FC = () => {
           <div
             data-services-section
             id="servicios-grid"
-            className="relative z-20 bg-white md:-mt-5 rounded-t-[1.25rem] md:rounded-t-[1.75rem] pt-3.5 md:pt-8 md:pb-10 shadow-[0_-4px_24px_rgba(15,23,42,0.06)]"
+            className="relative z-20 bg-white -mt-1.5 md:-mt-5 pt-3 md:pt-8 pb-1 md:pb-10 shadow-[0_-4px_24px_rgba(15,23,42,0.06)]"
           >
             <Suspense fallback={<HomePageWallSkeleton />}>
               <HomepageWall
