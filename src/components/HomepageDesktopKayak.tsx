@@ -217,6 +217,25 @@ const HeroPanelJoy: React.FC = () => (
   </div>
 );
 
+/** Placeholder mientras carga el chunk MapLibre (evita hueco gris vacío). */
+const HeroMapLoadingPlaceholder: React.FC = () => (
+  <div
+    className="absolute inset-0 bg-[#e8f0f7] overflow-hidden"
+    aria-hidden
+  >
+    <div
+      className="absolute inset-0 opacity-60 animate-pulse"
+      style={{
+        background:
+          'radial-gradient(ellipse 80% 70% at 72% 45%, rgba(0,102,204,0.12) 0%, transparent 55%), linear-gradient(135deg, #dceaf8 0%, #f5f9fd 45%, #fafafa 100%)',
+      }}
+    />
+    <div className="absolute inset-0 pointer-events-none opacity-40">
+      <HeroDecorativeLines />
+    </div>
+  </div>
+);
+
 const panelShellStyle: React.CSSProperties = {
   width: `calc(${PANEL_SHARE} + ${FADE_WIDTH_PX}px)`,
   background: PANEL_GRADIENT,
@@ -247,7 +266,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
       className="relative hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] overflow-hidden border-b border-[#e8e8e8]/80 bg-[#dce9f2]"
     >
       <div className="absolute inset-0 z-[1]">
-        <Suspense fallback={null}>
+        <Suspense fallback={<HeroMapLoadingPlaceholder />}>
           <ExpertsAreaMap
             className="h-full w-full"
             overlayPaddingRatio={MAP_OVERLAY_PADDING}
