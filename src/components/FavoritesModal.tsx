@@ -3,6 +3,7 @@ import { X, Heart, ExternalLink, Star } from 'lucide-react';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface FavoritesModalProps {
     onClose: () => void;
@@ -13,6 +14,7 @@ export const FavoritesModal: FC<FavoritesModalProps> = ({ onClose }) => {
     const { getUserFavorites, toggleFavoriteAsync } = useServiceFavorites();
     const { data: favoritesResponse, isLoading, error } = getUserFavorites(1, 20);
     const favorites = favoritesResponse?.data || [];
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
 
     if (isLoading) {
         return (
@@ -100,7 +102,20 @@ export const FavoritesModal: FC<FavoritesModalProps> = ({ onClose }) => {
                                                 <span>{service.averageRating?.toFixed(1) || 'N/A'}</span>
                                             </div>
                                             <div className="text-white font-semibold">
-                                                €{Math.round(service.price)}
+                                                {(() => {
+                                                    // Round 24: conversión de currency.
+                                                    const src = (service as any).priceCurrency || (service as any).currency || 'EUR';
+                                                    const info = formatPriceWithSource(service.price, src, preferredCurrency);
+                                                    if (!info.wasConverted) {
+                                                        return info.display;
+                                                    }
+                                                    return (
+                                                        <>
+                                                            <span>≈ {info.converted}</span>
+                                                            <span className="text-xs text-gray-400 ml-1">({info.sourceFormatted})</span>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
 

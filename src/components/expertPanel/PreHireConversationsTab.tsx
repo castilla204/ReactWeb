@@ -11,6 +11,7 @@ import { getAuthToken } from '../../lib/auth';
 import { PreHireConversationSummaryDto } from '../../types/chat.types';
 import { Loader2 } from 'lucide-react';
 import { formatPriceNumber } from '../../utils/priceUtils';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface PreHireConversationsTabProps {
   token: string;
@@ -75,6 +76,20 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
   // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
   // Antes: inline con minFractionDigits=0 inconsistente con resto de la app (siempre usa 2).
   const formatPrice = (price: number) => formatPriceNumber(price);
+
+  // Round 24: conversion source→preferred currency. Conversations no traen currency,
+  // asumimos EUR (charge default) y mostramos en preferred si distinto.
+  const { formatPriceWithSource, preferredCurrency } = useCurrency();
+  const renderServicePrice = (price: number) => {
+    const info = formatPriceWithSource(price, 'EUR', preferredCurrency);
+    if (!info.wasConverted) return info.display;
+    return (
+      <>
+        ≈ {info.converted}
+        <span className="ml-1 text-xs text-gray-500">({info.sourceFormatted})</span>
+      </>
+    );
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -222,7 +237,7 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-gray-400" />
                       <span className="text-sm font-semibold text-gray-900">
-                        {formatPrice(conv.ServicePrice)}€
+                        {renderServicePrice(conv.ServicePrice)}
                       </span>
                     </div>
                     
