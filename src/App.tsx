@@ -49,6 +49,7 @@ import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA
 import { UserRole } from './utils/roleChecker';
 import CountryFlag from './components/CountryFlag';
 import CountrySelector from './components/CountrySelector';
+import { CurrencySelector } from './components/CurrencySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { StatusPage } from './pages/StatusPage';
@@ -313,6 +314,7 @@ const AppContent: React.FC = () => {
                                     Admin
                                 </button>
                             )}
+                            <CurrencySelector variant="compact" />
                             <button
                                 type="button"
                                 aria-label="Favoritos"
