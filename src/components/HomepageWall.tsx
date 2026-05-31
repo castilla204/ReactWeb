@@ -469,7 +469,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                 </span>
               </span>
               <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-              <span>{price}</span>
+              <span>
+                {price}
+                {priceData.wasConverted && (
+                  <span style={{ marginLeft: '4px', fontSize: '0.85em', color: '#6B7280' }}>
+                    {priceData.sourceFormatted}
+                  </span>
+                )}
+              </span>
             </div>
           </div>
         </div>
