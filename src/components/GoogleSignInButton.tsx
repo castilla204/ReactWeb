@@ -25,9 +25,11 @@ interface GoogleSignInButtonProps {
     className?: string;
     variant?: 'default' | 'compact';
     onSuccess?: () => void;
+    /** Round 19: texto opcional del botón. Default "Iniciar Sesión" (legacy). Usar "Google" en grids 2-col. */
+    label?: string;
 }
 
-export const GoogleSignInButton = ({ className = '', variant = 'default', onSuccess }: GoogleSignInButtonProps) => {
+export const GoogleSignInButton = ({ className = '', variant = 'default', onSuccess, label = 'Iniciar Sesión' }: GoogleSignInButtonProps) => {
     const [isReady, setIsReady] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
@@ -229,7 +231,7 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                 ) : (
                     <>
                         <GoogleIcon />
-                        <span>Iniciar Sesión</span>
+                        <span>{label}</span>
                     </>
                 )}
             </button>
