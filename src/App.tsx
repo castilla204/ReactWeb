@@ -36,6 +36,7 @@ import { isAdmin } from './utils/admin';
 
 import Background from './components/Background';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
+import { LoginModal } from './components/LoginModal';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { RouteSuspense } from './components/RouteSuspense';
 import * as LazyPages from './routes/lazyPages';
@@ -110,6 +111,7 @@ const AppContent: React.FC = () => {
     }, [location.pathname, location.search, location.state, isAuthenticated, user]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAccountSettings, setShowAccountSettings] = useState(false);
+    const [isHeaderLoginModalOpen, setIsHeaderLoginModalOpen] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState<string>('ES');
 
     // 🛡️ Round 15 — R6 FIX: handler global de sesión expirada.
@@ -322,7 +324,13 @@ const AppContent: React.FC = () => {
                             <button
                                 type="button"
                                 aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
-                                onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
+                                onClick={() => {
+                                    if (isAuthenticated) {
+                                        navigate('/busquedas');
+                                    } else {
+                                        setIsHeaderLoginModalOpen(true);
+                                    }
+                                }}
                                 className="h-8 w-8 rounded-full border border-[#d1d5db] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
                             >
                                 <User className="w-4 h-4" />
@@ -573,6 +581,12 @@ const AppContent: React.FC = () => {
 
                 <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
                 <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
+                <LoginModal
+                    open={isHeaderLoginModalOpen}
+                    onOpenChange={setIsHeaderLoginModalOpen}
+                    initialTab="login"
+                    onSuccess={() => setIsHeaderLoginModalOpen(false)}
+                />
                 <Toaster />
 
                 {/* 🍪 Round 9 — A9 FIX: LSSI-CE Spain exige consentimiento previo al uso de cookies

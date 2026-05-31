@@ -6,7 +6,7 @@ import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { PreHireChat } from '../components/PreHireChat';
-import { ArrowLeft, MoreVertical, MapPin, MessageCircle, Star, Clock, Heart, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, MapPin, Star, Clock, Heart, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import {
@@ -22,6 +22,7 @@ import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
 import AppointmentMap from '../components/AppointmentMap';
+import { LoginModal } from '../components/LoginModal';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
@@ -29,7 +30,7 @@ export function PreHireChatPage() {
     const conversationIdParam = searchParams.get('conversationId');
     const conversationId = conversationIdParam ? parseInt(conversationIdParam, 10) : undefined;
     const navigate = useNavigate();
-    const { isAuthenticated, user, updateUser } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const { fetchApi } = useApi();
     
     const serviceIdNumber = parsePositiveIntegerParam(serviceId) ?? 0;
@@ -39,13 +40,9 @@ export function PreHireChatPage() {
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
     const [showLoginDialog, setShowLoginDialog] = useState(false);
-    const [isGoogleReady, setIsGoogleReady] = useState(false);
-    const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const [authStep, setAuthStep] = useState<string>('');
     const [isChatConnected, setIsChatConnected] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [showMapPreview, setShowMapPreview] = useState(false);
-    const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
     
     // ✅ Bloquear scroll del body y usar altura dinámica del viewport en móviles
     useEffect(() => {
@@ -127,130 +124,19 @@ export function PreHireChatPage() {
     const isLoadingRef = useRef(false);
     const loadedServiceIdRef = useRef<number | null>(null);
     
-    // Google Icon Component
-    const GoogleIcon = () => (
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-        </svg>
-    );
-    
-    // Inicializar Google Sign-In
+    // Redirigir después del login si hay una ruta guardada
     useEffect(() => {
-        const initGoogleSignIn = () => {
-            if (window.google?.accounts?.id) {
-                const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-                
-                window.google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response: any) => {
-                        try {
-                            setIsAuthenticating(true);
-                            setAuthStep('Verificando credenciales...');
-                            
-                            if (!response.credential) {
-                                throw new Error('No credential received from Google');
-                            }
-                            
-                            setAuthStep('Autenticando con el servidor...');
-                            const result = await authService.googleAuth(response.credential);
-                            
-                            if (!result.success) {
-                                throw new Error('Authentication failed');
-                            }
-                            
-                            setAuthStep('Configurando sesión...');
-                            const token = authService.getAccessToken();
-                            if (result.user && token) {
-                                updateUser(result.user, token, () => {
-                                    setAuthStep('Redirigiendo...');
-                                    setShowLoginDialog(false);
-                                    
-                                    // Redirigir según la ruta guardada
-                                    setTimeout(() => {
-                                        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-                                        if (redirectPath) {
-                                            sessionStorage.removeItem('redirectAfterLogin');
-                                            navigate(redirectPath, { replace: true });
-                                        }
-                                    }, 500);
-                                });
-                            } else {
-                                throw new Error('No token received after authentication');
-                            }
-                        } catch (error: any) {
-                            console.error('Error en Google Auth:', error);
-                            showToast('error', error.message || 'Error al iniciar sesión');
-                            setAuthStep('');
-                        } finally {
-                            setIsAuthenticating(false);
-                        }
-                    },
-                });
-                
-                // Renderizar en Login Dialog
-                if (googleButtonRefLoginDialog.current) {
-                    window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'signin_with',
-                        width: '100%',
-                    });
-                }
-                
-                setIsGoogleReady(true);
-            } else {
-                setTimeout(initGoogleSignIn, 100);
-            }
-        };
-        
-        // Cargar script de Google si no está cargado
-        if (!window.google?.accounts?.id) {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = () => {
-                setTimeout(initGoogleSignIn, 100);
-            };
-            document.head.appendChild(script);
-        } else {
-            initGoogleSignIn();
-        }
-    }, []);
-    
-    // Renderizar botón de Google cuando se abre el diálogo de login
-    useEffect(() => {
-        if (showLoginDialog && window.google?.accounts?.id && googleButtonRefLoginDialog.current) {
-            googleButtonRefLoginDialog.current.innerHTML = '';
-            
-            window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
-                type: 'standard',
-                theme: 'outline',
-                size: 'large',
-                text: 'signin_with',
-                width: '100%',
-            });
-        }
-    }, [showLoginDialog]);
-    
-    const handleGoogleSignIn = () => {
-        if (showLoginDialog && googleButtonRefLoginDialog.current) {
-            const googleButton = googleButtonRefLoginDialog.current.querySelector('div[role="button"]') as HTMLElement;
-            if (googleButton) {
-                googleButton.click();
-                return;
+        if (isAuthenticated) {
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+            if (redirectPath) {
+                sessionStorage.removeItem('redirectAfterLogin');
+                setTimeout(() => {
+                    navigate(redirectPath, { replace: true });
+                }, 100);
             }
         }
-        
-        if (window.google?.accounts?.id?.prompt) {
-            window.google.accounts.id.prompt();
-        }
-    };
-    
+    }, [isAuthenticated, navigate]);
+
     // Cargar información del servicio
     useEffect(() => {
         const loadService = async () => {
@@ -882,47 +768,16 @@ export function PreHireChatPage() {
                 </DialogContent>
             </Dialog>
             
-            {/* Dialog para Login cuando el usuario no está autenticado */}
-            <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-                <DialogContent className="max-w-md">
-                    <div className="flex flex-col items-center gap-6 p-6">
-                        <div className="text-center">
-                            <MessageCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                Inicia sesión para continuar
-                            </h2>
-                            <p className="text-gray-600">
-                                Necesitas iniciar sesión para contratar el servicio o guardar favoritos.
-                            </p>
-                        </div>
-                        
-                        <div className="w-full">
-                            {/* Hidden Google button */}
-                            <div ref={googleButtonRefLoginDialog} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                            
-                            {/* Custom button */}
-                            <button
-                                onClick={handleGoogleSignIn}
-                                disabled={!isGoogleReady || isAuthenticating}
-                                type="button"
-                                className={`relative w-full h-12 px-6 bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white text-[16px] font-semibold transition-all duration-200 overflow-hidden rounded-lg flex items-center justify-center gap-3 ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
-                            >
-                                {isAuthenticating ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                        <span>{authStep || 'Iniciando sesión...'}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <GoogleIcon />
-                                        <span>Iniciar sesión con Google</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Modal de Login unificado cuando el usuario no está autenticado */}
+            <LoginModal
+                open={showLoginDialog}
+                onOpenChange={setShowLoginDialog}
+                initialTab="login"
+                onSuccess={() => {
+                    setShowLoginDialog(false);
+                    // El useEffect de isAuthenticated se encarga de la redirección a redirectAfterLogin.
+                }}
+            />
         </div>
     );
 }
