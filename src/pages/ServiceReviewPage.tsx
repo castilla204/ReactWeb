@@ -43,6 +43,7 @@ import { SD_PAGE_GRID_CLASS, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepa
 import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
 import { ServiceDetailReviewsSection } from '../components/serviceDetail/ServiceDetailReviewsSection';
 import { ServiceDetailHowItWorks } from '../components/serviceDetail/ServiceDetailHowItWorks';
+import { LoginModal } from '../components/LoginModal';
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -125,6 +126,7 @@ export function ServiceReviewPage({
             navigate(`/chat-pre-contratacion/${serviceId}`);
         } else {
             // Usuario no autenticado: abrir login
+            sessionStorage.setItem('loginFromChat', 'true');
             setShowLoginDialog(true);
         }
     };
@@ -363,22 +365,11 @@ export function ServiceReviewPage({
     // muestran el mismo precio del mismo servicio con el mismo formato (16,50 €).
     const formatPrice = (price: number) => formatPriceNumber(price);
 
-    // Google Icon Component
-    const GoogleIcon = () => (
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-        </svg>
-    );
-
     const [isGoogleReady, setIsGoogleReady] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
     const googleButtonRefMobile = useRef<HTMLDivElement>(null);
     const googleButtonRefDesktop = useRef<HTMLDivElement>(null);
-    const googleButtonRefLoginDialog = useRef<HTMLDivElement>(null);
 
     // Inicializar Google Sign-In
     useEffect(() => {
@@ -490,17 +481,6 @@ export function ServiceReviewPage({
                         width: '100%',
                     });
                 }
-                
-                // Renderizar en Login Dialog
-                if (googleButtonRefLoginDialog.current) {
-                    window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'signin_with',
-                        width: '100%',
-                    });
-                }
 
                 setIsGoogleReady(true);
             } else {
@@ -523,35 +503,7 @@ export function ServiceReviewPage({
         }
     }, []);
     
-    // Renderizar botón de Google cuando se abre el diálogo de login
-    useEffect(() => {
-        if (showLoginDialog && window.google?.accounts?.id && googleButtonRefLoginDialog.current) {
-            const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-            
-            // Limpiar el contenedor
-            googleButtonRefLoginDialog.current.innerHTML = '';
-            
-            // Renderizar el botón
-            window.google.accounts.id.renderButton(googleButtonRefLoginDialog.current, {
-                type: 'standard',
-                theme: 'outline',
-                size: 'large',
-                text: 'signin_with',
-                width: '100%',
-            });
-        }
-    }, [showLoginDialog]);
-
     const handleGoogleSignIn = () => {
-        // Intentar login dialog primero si está abierto
-        if (showLoginDialog && googleButtonRefLoginDialog.current) {
-            const googleButton = googleButtonRefLoginDialog.current.querySelector('div[role="button"]') as HTMLElement;
-            if (googleButton) {
-                googleButton.click();
-                return;
-            }
-        }
-        
         // Intentar desktop primero, si es visible
         const containerDesktop = googleButtonRefDesktop.current;
         if (containerDesktop && containerDesktop.offsetParent !== null) {
@@ -2349,50 +2301,16 @@ export function ServiceReviewPage({
                 }
             `}</style>
             
-            {/* Dialog para Login cuando el usuario no está autenticado */}
-            <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-                <DialogContent className="max-w-md">
-                    <div className="flex flex-col items-center gap-6 p-6">
-                        <div className="text-center">
-                            <MessageCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                Inicia sesión para chatear
-                            </h2>
-                            <p className="text-gray-600">
-                                Necesitas iniciar sesión para poder chatear con el experto antes de contratar el servicio.
-                            </p>
-                        </div>
-                        
-                        <div className="w-full">
-                            {/* Hidden Google button */}
-                            <div ref={googleButtonRefLoginDialog} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                            
-                            {/* Custom button */}
-                            <button
-                                onClick={() => {
-                                    sessionStorage.setItem('loginFromChat', 'true');
-                                    handleGoogleSignIn();
-                                }}
-                                disabled={!isGoogleReady || isAuthenticating}
-                                type="button"
-                                className={`sd-btn-primary w-full rounded-xl ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
-                            >
-                                {isAuthenticating ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                        <span>{authStep || 'Iniciando sesión...'}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <GoogleIcon />
-                                        <span>Iniciar sesión con Google</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Modal de Login unificado cuando el usuario no está autenticado */}
+            <LoginModal
+                open={showLoginDialog}
+                onOpenChange={setShowLoginDialog}
+                initialTab="login"
+                onSuccess={() => {
+                    setShowLoginDialog(false);
+                    // Existing post-login navigation should already trigger via AuthContext useEffect.
+                }}
+            />
         </div>
         
         {/* Modal para ampliar foto del experto */}
