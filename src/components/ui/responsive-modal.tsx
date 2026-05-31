@@ -145,7 +145,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "overflow-hidden p-0 md:max-h-[500px] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden",
+          "overflow-hidden p-0 md:max-h-[640px] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden",
           className, 
           dialogClassName
         )}
@@ -171,7 +171,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             {description && <DialogDescription className="mt-0.5 text-sm text-muted-foreground">{description}</DialogDescription>}
           </DialogHeader>
         )}
-        <div className="flex flex-col" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
+        <div className="flex flex-col overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, maxHeight: 'calc(80vh - 80px)' }}>
           {children}
         </div>
       </DialogContent>

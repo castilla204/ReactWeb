@@ -704,6 +704,20 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                 Revisa tu compra antes de pagar, para que no te estafen. Expertos certificados verifican cada detalle por ti.
                             </p>
                             
+                            {/* 🛡️ Round 17: Botón "Iniciar sesión" desktop → abre el LoginModal (Google + Apple + email/password). */}
+                            {!isAuthenticated && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setLoginModalInitialTab('login');
+                                        setIsLoginModalOpen(true);
+                                    }}
+                                    className="text-white/80 hover:text-white text-sm font-medium underline underline-offset-4 transition-colors self-start"
+                                >
+                                    ¿Ya tienes cuenta? Inicia sesión
+                                </button>
+                            )}
+
                             {/* Buscador estilo Airbnb - Desktop */}
                             <div className="mt-6 relative z-50" style={{ overflow: 'visible' }}>
                                 <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-2xl border border-white/30 flex items-center hover:shadow-3xl hover:bg-white transition-all relative z-50" style={{ overflow: 'visible' }}>
