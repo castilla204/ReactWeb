@@ -22,6 +22,7 @@ import { AccountDeletionInfo } from './AccountDeletionInfo';
 import { formatAppointmentForDisplay, getStoredTimezone } from '../utils/dateService';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -583,6 +584,24 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
         const formattedDate = formatAppointmentForDisplay(appointment);
         // ✅ CORRECTO: Usar timezone del appointment (del experto), no del navegador del usuario
         const appointmentTimezone = appointment.timezone || appointment.userTimezone || 'UTC';
+
+        // 🛡️ Round 25 — TZ inline disclosure:
+        // El campo `proposedTimeLocal` representa la hora EN LA ZONA DEL PROPONENTE
+        // (el experto). Si el cliente está mirando esto desde otro timezone, la cifra
+        // "10:00" puede leerse como 10:00 de su propia zona — error caro (puede
+        // perder la cita o llegar 8h tarde). Mostramos la etiqueta inline solo cuando
+        // las zonas difieren para no añadir ruido al caso común.
+        let viewerTz = 'UTC';
+        try {
+          viewerTz = Intl.DateTimeFormat().resolvedOptions().timeZone || getStoredTimezone() || 'UTC';
+        } catch {
+          viewerTz = getStoredTimezone() || 'UTC';
+        }
+        const tzDiffers = appointmentTimezone && viewerTz && appointmentTimezone !== viewerTz;
+        const friendlyTzLabel = formatTimezoneFriendly(appointmentTimezone);
+        // Para el inline al lado de la hora queremos solo la ciudad, sin "(UTC±X)" repetido.
+        const friendlyCityOnly = friendlyTzLabel.replace(/\s*\([^)]*\)\s*$/, '');
+
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
@@ -592,18 +611,23 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   {formattedDate.fullDateTime}
                 </span>
               </div>
-              
+
               <div className="flex items-center space-x-2 text-gray-600">
                 <Clock className="w-4 h-4" />
                 <span className="text-sm">
                   {formattedDate.time}
+                  {tzDiffers && friendlyCityOnly && (
+                    <span className="ml-1 text-xs text-orange-700 font-medium">
+                      (hora de {friendlyCityOnly})
+                    </span>
+                  )}
                 </span>
               </div>
-              
+
               {/* ✅ Mostrar zona horaria del experto (no del navegador del usuario) */}
               <div className="flex items-center space-x-2 text-gray-500 text-xs">
                 <Globe className="w-3 h-3" />
-                <span>Zona horaria: {appointmentTimezone}</span>
+                <span>Zona horaria: {friendlyTzLabel || appointmentTimezone}</span>
               </div>
               
               <div className="flex items-start space-x-2 text-gray-600">
