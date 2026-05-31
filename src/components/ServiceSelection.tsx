@@ -17,6 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from './ui/dialog';
 import CountryFlag from './CountryFlag';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const libraries: ("geometry" | "places")[] = ['geometry', 'places'];
 
@@ -42,6 +43,15 @@ export function ServiceSelection({
     const navigate = useNavigate();
     const { categories } = useCategories();
     const { serviceTypes } = useServiceTypes();
+    // Round 24: convert prices to user's preferred currency.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
+    const renderServicePriceLine = (svc: any) => {
+        if (!svc?.price) return '€72 por servicio';
+        const src = svc.priceCurrency || svc.currency || 'EUR';
+        const info = formatPriceWithSource(svc.price, src, preferredCurrency);
+        if (!info.wasConverted) return `${info.display} por servicio`;
+        return `≈ ${info.converted} (${info.sourceFormatted}) por servicio`;
+    };
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [detailServiceId, setDetailServiceId] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -574,7 +584,7 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                      {/* Email/Price - Smaller, lighter, centered */}
                                                      <div className="text-center mb-2">
                                                          <p className="text-xs text-slate-700 font-medium">
-                                                             {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
+                                                             {service.expert?.user?.email || renderServicePriceLine(service)}
                                                          </p>
                                                          {service.price && (
                                                              <p className="text-[10px] text-slate-500 mt-0.5">
@@ -1083,7 +1093,7 @@ const truncateTextMobile = (text: string, maxLength: number = 80): string => {
                                                     </h3>
                                                     
                                                     <p className="text-xs text-slate-700 text-center mb-2 font-medium">
-                                                        {service.expert?.user?.email || `${service.price ? `€${service.price}` : '€72'} por servicio`}
+                                                        {service.expert?.user?.email || renderServicePriceLine(service)}
                                                     </p>
 
                                                     {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}

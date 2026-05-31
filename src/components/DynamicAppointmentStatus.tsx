@@ -3,6 +3,7 @@ import { CheckCircle, XCircle, Clock, Calendar, AlertCircle } from 'lucide-react
 import { useAppointmentStatuses, getAppointmentStatusText, getAppointmentStatusColor, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
 import { useMoneyDistributionConfig, calculateMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
 import { formatPriceNumber } from '../utils/priceUtils';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface DynamicAppointmentStatusProps {
   appointment: {
@@ -11,6 +12,8 @@ interface DynamicAppointmentStatusProps {
     amount: number;
     categoryId?: number;
     serviceTypeCategoryId?: number;
+    chargeCurrency?: string;
+    sourceCurrency?: string;
   };
 }
 
@@ -21,6 +24,20 @@ const DynamicAppointmentStatus: React.FC<DynamicAppointmentStatusProps> = ({ app
     appointment.categoryId,
     appointment.serviceTypeCategoryId
   );
+
+  // Round 24: render con conversion source→preferred currency.
+  const { formatPriceWithSource, preferredCurrency } = useCurrency();
+  const chargeCurrency = appointment.chargeCurrency || appointment.sourceCurrency || 'EUR';
+  const renderMoney = (eurAmount: number) => {
+    const info = formatPriceWithSource(eurAmount, chargeCurrency, preferredCurrency);
+    if (!info.wasConverted) return info.display;
+    return (
+      <>
+        ≈ {info.converted}
+        <span className="ml-1 text-xs text-gray-500">({info.sourceFormatted})</span>
+      </>
+    );
+  };
 
   if (statusesLoading || moneyLoading) {
     return (
@@ -106,26 +123,26 @@ const DynamicAppointmentStatus: React.FC<DynamicAppointmentStatusProps> = ({ app
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Cliente:</span>
               <span className="text-sm font-medium text-green-600">
-                €{formatPriceNumber(moneyDistribution.client)} ({moneyConfig.clientPercentage}%)
+                {renderMoney(moneyDistribution.client)} ({moneyConfig.clientPercentage}%)
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Experto:</span>
               <span className="text-sm font-medium text-blue-600">
-                €{formatPriceNumber(moneyDistribution.expert)} ({moneyConfig.expertPercentage}%)
+                {renderMoney(moneyDistribution.expert)} ({moneyConfig.expertPercentage}%)
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Plataforma:</span>
               <span className="text-sm font-medium text-gray-600">
-                €{formatPriceNumber(moneyDistribution.platform)} ({moneyConfig.platformPercentage}%)
+                {renderMoney(moneyDistribution.platform)} ({moneyConfig.platformPercentage}%)
               </span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between items-center font-medium">
                 <span className="text-sm text-gray-900">Total:</span>
                 <span className="text-sm text-gray-900">
-                  €{formatPriceNumber(appointment.amount)}
+                  {renderMoney(appointment.amount)}
                 </span>
               </div>
             </div>

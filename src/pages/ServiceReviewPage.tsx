@@ -38,6 +38,7 @@ import { authService } from '../services/authService';
 import { getCountryName } from '../utils/countries';
 import { formatPriceNumber } from '../utils/priceUtils';
 import AppointmentMap from '../components/AppointmentMap';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import { SD_PAGE_GRID_CLASS, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
@@ -364,6 +365,20 @@ export function ServiceReviewPage({
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
     // muestran el mismo precio del mismo servicio con el mismo formato (16,50 €).
     const formatPrice = (price: number) => formatPriceNumber(price);
+
+    // Round 24: conversion to preferred currency. Service price source default 'EUR'.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
+    const servicePriceCurrency = (finalService as any)?.priceCurrency || (finalService as any)?.currency || 'EUR';
+    const renderServicePrice = (amount: number) => {
+        const info = formatPriceWithSource(amount, servicePriceCurrency, preferredCurrency);
+        if (!info.wasConverted) return <span>{info.display}</span>;
+        return (
+            <>
+                <span>≈ {info.converted}</span>
+                <span className="ml-1 text-xs text-gray-500">({info.sourceFormatted})</span>
+            </>
+        );
+    };
 
     const [isGoogleReady, setIsGoogleReady] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -1747,16 +1762,16 @@ export function ServiceReviewPage({
                     <div className="px-5 py-4">
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                                <button 
+                                <button
                                     type="button"
                                     className="text-left flex flex-col"
                                 >
-                                    <div className="flex items-baseline gap-1">
-                                        <span 
-                                            className="text-[16px] font-semibold text-gray-900 leading-[1.5]" 
-                                            aria-label={`${formatPrice(finalPrice)} € el servicio`}
+                                    <div className="flex items-baseline gap-1 flex-wrap">
+                                        <span
+                                            className="text-[16px] font-semibold text-gray-900 leading-[1.5]"
+                                            aria-label={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
                                         >
-                                            {formatPrice(finalPrice)} €
+                                            {renderServicePrice(finalPrice)}
                                         </span>
                                     </div>
                                     <span className="text-[15px] text-gray-600 font-normal leading-[1.4]">el servicio</span>
@@ -1958,7 +1973,7 @@ export function ServiceReviewPage({
                             <div className="sd-aside-card space-y-4">
                                 <div>
                                     <p className="text-2xl font-semibold tracking-tight text-[#1c1c1c]">
-                                        {formatPrice(finalPrice)} €
+                                        {renderServicePrice(finalPrice)}
                                     </p>
                                     <p className="text-sm text-[#6a6a6a]">por servicio</p>
                                 </div>
@@ -2022,15 +2037,15 @@ export function ServiceReviewPage({
                         <div className="flex items-center justify-between gap-6">
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-col">
-                                    <div className="flex items-baseline gap-1">
-                                        <span 
-                                            className="text-[20px] font-bold leading-[1.5]" 
+                                    <div className="flex items-baseline gap-1 flex-wrap">
+                                        <span
+                                            className="text-[20px] font-bold leading-[1.5]"
                                             style={{
                                                 color: '#0066CC',
                                             }}
-                                            aria-label={`${formatPrice(finalPrice)} € el servicio`}
+                                            aria-label={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
                                         >
-                                            {formatPrice(finalPrice)} €
+                                            {renderServicePrice(finalPrice)}
                                         </span>
                                     </div>
                                     <span className="text-[14px] text-gray-600 font-medium leading-[1.4]">el servicio</span>

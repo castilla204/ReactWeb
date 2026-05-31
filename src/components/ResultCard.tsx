@@ -4,6 +4,7 @@ import { useSearch } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { NotificationType } from './Notification';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface ResultCardProps {
     result: {
@@ -12,6 +13,8 @@ interface ResultCardProps {
         title: string;
         category: string;
         price: number;
+        /** Round 24: currency original del scrape (ISO 4217). Default 'EUR'. */
+        priceCurrency?: string;
         url: string;
     };
     searchId: number;
@@ -23,6 +26,8 @@ export function ResultCard({ result, searchId, setNotifications }: ResultCardPro
     const { addToFiltered, removeFromFiltered, getFilteredResults } = useSearch();
     const { user } = useAuth();
     const navigate = useNavigate();
+    // Round 24: convert to user's preferred currency.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
     const isAdmin = user?.email === 'dcastillaa@gmail.com';
     const filteredResults = getFilteredResults(searchId);
     const filteredResult = filteredResults.data?.find((fr) => fr.ad.id === result.id);
@@ -59,11 +64,9 @@ export function ResultCard({ result, searchId, setNotifications }: ResultCardPro
         navigate(`/ad/${result.id}`);
     };
 
-    const priceFormatter = new Intl.NumberFormat('es-ES', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-    });
+    // Round 24: usar formatPriceWithSource del context para convertir según moneda preferida.
+    const sourceCurrency = result.priceCurrency || 'EUR';
+    const priceInfo = formatPriceWithSource(result.price, sourceCurrency, preferredCurrency);
 
     return (
         <div className="bg-white/95 backdrop-blur-xl rounded-xl overflow-hidden border border-blue-100 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 group flex flex-col h-full">
@@ -128,10 +131,13 @@ export function ResultCard({ result, searchId, setNotifications }: ResultCardPro
                     </div>
                 </div>
                 <div className="flex items-center justify-between mt-auto">
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex items-baseline gap-1 flex-wrap">
                         <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                            {priceFormatter.format(result.price)}
+                            {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
                         </span>
+                        {priceInfo.wasConverted && (
+                            <span className="text-xs text-gray-500">({priceInfo.sourceFormatted})</span>
+                        )}
                         <span className="text-xs text-gray-500">/day</span>
                     </div>
                     <a
