@@ -17,6 +17,8 @@ export function mapHomepageServiceToDetail(
     serviceTypeName: String(s.ServiceTypeName ?? s.serviceTypeName ?? ''),
     serviceTypeDescription: (s.ServiceTypeDescription ?? s.serviceTypeDescription) as string | undefined,
     price: Number(s.Price ?? s.price ?? 0),
+    priceCurrency: String((s.Currency ?? s.currency ?? s.PriceCurrency ?? s.priceCurrency ?? 'EUR') as string),
+    currency: String((s.Currency ?? s.currency ?? 'EUR') as string),
     imageUrls: (s.ImageUrls ?? s.imageUrls ?? []) as string[],
     categoryName: String(s.CategoryName ?? s.categoryName ?? ''),
     completedSearches: Number(s.CompletedSearches ?? s.completedSearches ?? 0),

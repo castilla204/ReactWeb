@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import { Service } from '../../hooks/useServiceLoader';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface ServiceMarkerProps {
   service: Service;
@@ -19,8 +20,18 @@ export const ServiceMarker: React.FC<ServiceMarkerProps> = ({
   onClick,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-
-  const priceText = service.price > 0 ? `€${Math.round(service.price)}` : 'Consultar';
+  // Round 24: convertir a moneda preferida del usuario.
+  const { convert, preferredCurrency, hasRate } = useCurrency();
+  const sourceCurrency = (service as any).priceCurrency || (service as any).currency || 'EUR';
+  const convertedPrice = (service.price > 0 && hasRate(preferredCurrency))
+    ? convert(service.price, sourceCurrency, preferredCurrency)
+    : service.price;
+  const displaySymbol = preferredCurrency === 'USD' ? '$'
+    : preferredCurrency === 'GBP' ? '£'
+    : preferredCurrency === 'CHF' ? 'CHF '
+    : preferredCurrency === 'CAD' ? 'C$'
+    : '€';
+  const priceText = service.price > 0 ? `${displaySymbol}${Math.round(convertedPrice)}` : 'Consultar';
 
   // Colores según estado
   const backgroundColor = isSelected ? '#000000' : isHovered ? '#f7f7f7' : '#ffffff';

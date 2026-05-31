@@ -21,6 +21,7 @@ import { CancellationInfoCard } from './CancellationInfoCard';
 import { AccountDeletionInfo } from './AccountDeletionInfo';
 import { formatAppointmentForDisplay, getStoredTimezone } from '../utils/dateService';
 import { formatPriceNumber } from '../utils/priceUtils';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface AppointmentStatusProps {
   appointment: Appointment;
@@ -35,6 +36,22 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
 }) => {
   const isLocked = useAppointmentLock(appointment);
   const { activeTimer, timeRemaining, formatTimeRemaining } = useAppointmentTimers(appointment);
+
+  // Round 24: helper para mostrar importes en EUR (charge currency) + conversion a preferred.
+  const { formatPriceWithSource, preferredCurrency } = useCurrency();
+  const chargeCurrency = (appointment as any).chargeCurrency || (appointment as any).sourceCurrency || 'EUR';
+  const renderMoney = (eurAmount: number, classNamePrimary?: string, classNameSource?: string) => {
+    const info = formatPriceWithSource(eurAmount, chargeCurrency, preferredCurrency);
+    if (!info.wasConverted) {
+      return <span className={classNamePrimary}>{info.display}</span>;
+    }
+    return (
+      <span className={classNamePrimary}>
+        ≈ {info.converted}
+        <span className={classNameSource ?? 'ml-1 text-xs text-gray-500'}>({info.sourceFormatted})</span>
+      </span>
+    );
+  };
   
   // ✅ USAR HOOKS DINÁMICOS
   const { data: statuses } = useAppointmentStatuses();
@@ -629,7 +646,9 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           
           <div className="text-sm">
             <span className="text-gray-500">Monto:</span>
-            <span className="ml-2 font-medium text-green-600">€{formatPriceNumber(appointment.amount)}</span>
+            <span className="ml-2 font-medium text-green-600">
+              {renderMoney(Number(appointment.amount) || 0)}
+            </span>
           </div>
         </div>
           </div>
@@ -670,7 +689,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-green-800">Cliente (reembolso)</span>
                 </div>
                 <span className="text-sm font-bold text-green-700">
-                  €{formatPriceNumber(moneyDistribution.client)}
+                  {renderMoney(moneyDistribution.client, undefined, 'ml-1 text-xs text-green-600')}
                 </span>
               </div>
             )}
@@ -681,7 +700,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-blue-800">Experto</span>
                 </div>
                 <span className="text-sm font-bold text-blue-700">
-                  €{formatPriceNumber(moneyDistribution.expert)}
+                  {renderMoney(moneyDistribution.expert, undefined, 'ml-1 text-xs text-blue-600')}
                 </span>
               </div>
             )}
@@ -692,7 +711,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                   <span className="text-sm font-medium text-gray-800">Plataforma</span>
                 </div>
                 <span className="text-sm font-bold text-gray-700">
-                  €{formatPriceNumber(moneyDistribution.platform)}
+                  {renderMoney(moneyDistribution.platform, undefined, 'ml-1 text-xs text-gray-500')}
                 </span>
               </div>
             )}

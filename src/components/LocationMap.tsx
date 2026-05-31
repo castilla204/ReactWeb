@@ -6,6 +6,7 @@ import { MapExpert } from '../hooks/useMapExperts';
 import { Service } from '../hooks/useServices';
 import CountrySelector from './CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 // Paleta de colores estilo Airbnb - Verde claro para tierra, azul claro para agua
 const mapStyles = [
@@ -125,6 +126,8 @@ export function LocationMap({
     const isDraggingRef = useRef<boolean>(false);
     const prevBoundsRef = useRef<string>(''); // ✅ PROFESIONAL: Bounds serializados para comparación
     const mapLoadedRef = useRef<boolean>(false);
+    // Round 24: convert prices in markers to user's preferred currency.
+    const { convert, preferredCurrency, hasRate } = useCurrency();
     // ✅ PROFESIONAL: Clustering preparado para futura implementación (cuando haya >100 marcadores)
     // const clustererRef = useRef<MarkerClusterer | null>(null);
 
@@ -561,8 +564,24 @@ export function LocationMap({
                 ? (matchingService.id || (matchingService as any).Id)
                 : expert.id;
             
-            const priceInEuros = Math.round(priceValue);
-            const priceText = priceInEuros > 0 ? `${priceInEuros} €` : 'Consultar';
+            // Round 24: convertir a moneda preferida del usuario, mostrar símbolo apropiado.
+            // El mapa solo permite mostrar UN número compacto en cada marcador — mostramos
+            // el converted con su símbolo; el sidebar/detalle muestra ambos en paréntesis.
+            const sourceCurrency = (matchingService as any)?.priceCurrency
+                || (matchingService as any)?.currency
+                || (matchingService as any)?.Currency
+                || (expert as any).priceCurrency
+                || 'EUR';
+            const convertedValue = (priceValue > 0 && hasRate(preferredCurrency))
+                ? convert(priceValue, sourceCurrency, preferredCurrency)
+                : priceValue;
+            const displaySymbol = preferredCurrency === 'USD' ? '$'
+                : preferredCurrency === 'GBP' ? '£'
+                : preferredCurrency === 'CHF' ? 'CHF '
+                : preferredCurrency === 'CAD' ? 'C$'
+                : '€';
+            const priceInDisplay = Math.round(convertedValue);
+            const priceText = priceInDisplay > 0 ? `${displaySymbol}${priceInDisplay}` : 'Consultar';
             const isSelected = selectedService === serviceId;
             
             // El matchingService ya debería estar asignado arriba (con fallback si es necesario)
