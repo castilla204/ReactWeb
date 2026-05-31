@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { Suspense, useEffect, lazy } from 'react';
+import { useLocation } from 'react-router-dom';
 import { SearchDashboard } from '../components/SearchDashboard';
+import { useIsMobile } from '../hooks/useIsMobile';
+
+const MobileBottomBar = lazy(() =>
+    import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+);
 
 const SearchesPage: React.FC = () => {
-    const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useIsMobile();
 
-    // Posicionar arriba cuando se carga o se vuelve a la página (sin scroll)
     useEffect(() => {
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
@@ -14,7 +18,14 @@ const SearchesPage: React.FC = () => {
     }, [location.pathname]);
 
     return (
-        <SearchDashboard />
+        <>
+            <SearchDashboard />
+            {isMobile && (
+                <Suspense fallback={null}>
+                    <MobileBottomBar />
+                </Suspense>
+            )}
+        </>
     );
 };
 
