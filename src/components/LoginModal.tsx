@@ -134,15 +134,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       : `Código enviado a ${otpCtx?.email ?? ''}`
             }
             mobileBreakpoint={768}
-            snapPoints={[1]}
-            drawerMaxHeight="calc(100dvh - env(safe-area-inset-bottom, 0px) - 2.75rem)"
             className="max-w-md md:max-h-[600px]"
-            drawerClassName="!max-h-[100dvh]"
+            drawerClassName="!h-auto"
+            drawerMaxHeight="min(92dvh, calc(100dvh - env(safe-area-inset-bottom, 0px) - 2.75rem))"
             dialogClassName="md:!max-w-[460px] lg:!max-w-[460px] rounded-xl border-[#ebebeb] shadow-[0_12px_48px_rgba(0,0,0,0.14)]"
             dialogHeaderClassName="border-[#ebebeb] bg-white px-5 pb-2.5 pt-4"
         >
-            <div className="relative w-full md:mx-auto md:max-w-[440px]">
-                <div className="px-4 pb-24 pt-1 max-md:pb-28 md:px-5 md:pt-3 md:pb-5">
+            <div className="w-full md:mx-auto md:max-w-[440px]">
+                <div className="px-4 pt-1 md:px-5 md:pt-3 md:pb-5">
                 <AnimatePresence mode="wait" initial={false}>
                     {step === 'social' && (
                         <motion.div
@@ -266,10 +265,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </motion.div>
                     )}
                 </AnimatePresence>
-                </div>
                 {step === 'social' && (
                     <AuthModalFooter isExpert={isExpert} onExpertAction={handleExpertSignupClick} />
                 )}
+                </div>
             </div>
         </ResponsiveModal>
     );
@@ -297,26 +296,14 @@ const AuthModalFooter: React.FC<{
     );
 
     return (
-        <div className="sticky bottom-0 z-20 -mx-4 border-t border-[#ebebeb] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-12px_24px_12px_rgba(255,255,255,0.92)] md:static md:z-auto md:mx-0 md:mt-3 md:border-0 md:px-0 md:pb-0 md:pt-0 md:shadow-none">
-            {/* Móvil: legal arriba, CTA experto pegado al borde inferior del sheet */}
-            <div className="md:hidden">
-                <p className="text-center text-[10px] leading-relaxed text-[#9ca3af]">{legalLinks}</p>
-                <button
-                    type="button"
-                    onClick={onExpertAction}
-                    className="mt-2 flex w-full min-h-[44px] items-center justify-center rounded-lg text-[13px] font-semibold text-[#0066CC] transition-colors hover:bg-[#f0f7ff] active:bg-[#e6f0ff]"
-                >
-                    {expertLabel}
-                </button>
-            </div>
-            {/* Desktop: una línea */}
-            <p className="hidden text-center text-[10px] leading-relaxed text-[#9ca3af] md:block">
+        <div className="mt-3 border-t border-[#ebebeb] pt-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:mt-3 md:border-0 md:pb-0 md:pt-0">
+            <p className="text-center text-[10px] leading-relaxed text-[#9ca3af]">
                 {legalLinks}
                 <span aria-hidden> · </span>
                 <button
                     type="button"
                     onClick={onExpertAction}
-                    className="font-medium text-[#0066CC] hover:text-[#005bb5] hover:underline underline-offset-2"
+                    className="font-semibold text-[#0066CC] hover:text-[#005bb5] hover:underline underline-offset-2"
                 >
                     {expertLabel}
                 </button>
