@@ -70,7 +70,7 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     paint: {
       'line-color': MAP_THEME.coastHalo,
       'line-width': ['interpolate', ['linear'], ['zoom'], 3, 3.5, 5, 5, 7, 6.5, 9, 8],
-      'line-opacity': 0.9,
+      'line-opacity': 1,
     },
   });
 
@@ -82,7 +82,7 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     paint: {
       'line-color': MAP_THEME.coastLine,
       'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.6, 5, 2.2, 7, 3, 9, 3.8],
-      'line-opacity': 0.88,
+      'line-opacity': 0.95,
     },
   });
 
@@ -94,7 +94,7 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     paint: {
       'line-color': MAP_THEME.border,
       'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 5, 0.85, 7, 1.2, 9, 1.6],
-      'line-opacity': 0.35,
+      'line-opacity': 0.52,
     },
   });
 }
@@ -175,6 +175,8 @@ const HERO_CAMERA = {
 
 const GLOBE_HOLD_MS = 100;
 const LANDING_FLY_MS = 1400;
+/** Si IP no marca resolved a tiempo, forzar vuelo igual (evita quedarse en globo sin zoom). */
+const IP_RESOLVE_FALLBACK_MS = 450;
 /** Menos zoom = cámara más lejos al aterrizar (valor final de la transición) */
 const LANDING_ZOOM_PULLBACK = 2.55;
 const MIN_LANDING_ZOOM = 2.05;
@@ -284,6 +286,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
   const [mapReady, setMapReady] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const [detectedCountryCode, setDetectedCountryCode] = useState<string | null>(null);
 
@@ -331,9 +334,19 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     const flyToLanding = (targetMap: maplibregl.Map, center: [number, number], zoom: number) => {
       applyOverlayPadding();
       const landingZoom = toHeroLandingZoom(zoom);
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches;
+
       const finishIntro = () => {
         if (cancelled || mapRef.current !== targetMap) return;
         applyRegionalProjection(targetMap);
+        targetMap.jumpTo({
+          center,
+          zoom: landingZoom,
+          pitch: HERO_CAMERA.pitch,
+          bearing: HERO_CAMERA.bearing,
+        });
         let completed = false;
         const complete = () => {
           if (completed || cancelled || mapRef.current !== targetMap) return;
@@ -343,13 +356,9 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         repaintWhenTilesReady(targetMap, complete);
         window.setTimeout(complete, 900);
       };
-      const prefersReducedMotion = window.matchMedia(
-        '(prefers-reduced-motion: reduce)',
-      ).matches;
-
-      applyRegionalProjection(targetMap);
 
       if (prefersReducedMotion) {
+        applyRegionalProjection(targetMap);
         targetMap.jumpTo({
           center,
           zoom: landingZoom,
@@ -360,9 +369,11 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         return;
       }
 
+      // Animar en globe; mercator solo al terminar (evita cortar flyTo)
+      const globeFlyZoom = Math.max(GLOBE_INTRO.zoom, Math.min(landingZoom + 0.35, 3.2));
       targetMap.flyTo({
         center,
-        zoom: landingZoom,
+        zoom: globeFlyZoom,
         pitch: HERO_CAMERA.pitch,
         bearing: HERO_CAMERA.bearing,
         duration: LANDING_FLY_MS,
@@ -380,10 +391,8 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
     const runLandingIntro = () => {
       if (landingStartedRef.current || cancelled || !map) return;
-      landingStartedRef.current = true;
       if (landingTimerRef.current) clearTimeout(landingTimerRef.current);
 
-      // Esperar 1–2 frames tras activar globe para que flyTo anime bien
       let frames = 0;
       const waitGlobeRender = () => {
         if (cancelled || mapRef.current !== map || !map) return;
@@ -392,6 +401,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           requestAnimationFrame(waitGlobeRender);
           return;
         }
+        landingStartedRef.current = true;
         flyToLanding(map, landingTarget.center, landingTarget.zoom);
       };
       requestAnimationFrame(waitGlobeRender);
@@ -428,6 +438,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       }
     };
 
+    let ipFallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let resizeDebounceId: ReturnType<typeof setTimeout> | null = null;
     const scheduleResize = () => {
       if (resizeDebounceId) clearTimeout(resizeDebounceId);
@@ -491,6 +502,14 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         }
         setMapReady(true);
         tryScheduleLanding();
+        if (!ipLandingResolvedRef.current) {
+          ipFallbackTimer = window.setTimeout(() => {
+            if (!landingStartedRef.current && !cancelled && mapRef.current === map) {
+              ipLandingResolvedRef.current = true;
+              tryScheduleLanding();
+            }
+          }, IP_RESOLVE_FALLBACK_MS);
+        }
         repaintWhenTilesReady(map);
       };
 
@@ -507,13 +526,15 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     };
 
     let initAttempts = 0;
-    const maxInitAttempts = 60;
+    const maxInitAttempts = 120;
 
     const tryInit = () => {
       initMap();
       if (!mapRef.current && initAttempts < maxInitAttempts) {
         initAttempts += 1;
         requestAnimationFrame(tryInit);
+      } else if (!mapRef.current && initAttempts >= maxInitAttempts) {
+        setMapLoadFailed(true);
       }
     };
 
@@ -533,6 +554,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       cancelled = true;
       tryScheduleLandingRef.current = null;
       if (landingTimerRef.current) clearTimeout(landingTimerRef.current);
+      if (ipFallbackTimer) clearTimeout(ipFallbackTimer);
       landingStartedRef.current = false;
       if (resizeDebounceId) clearTimeout(resizeDebounceId);
       ro?.disconnect();
@@ -543,6 +565,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       mapRef.current = null;
       setMapReady(false);
       setIntroComplete(false);
+      setMapLoadFailed(false);
       landFillLoadedRef.current = false;
       outlinesLoadedRef.current = false;
     };
@@ -561,19 +584,25 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     }
   }, [mapReady]);
 
-  // Contornos costeros — tras mercator para alinear con tiles
+  // Contornos costeros — en cuanto el mapa está listo (no esperar al vuelo)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !introComplete || outlinesLoadedRef.current) return;
+    if (!map || !mapReady || outlinesLoadedRef.current) return;
 
     try {
       addGlobalOutlineLayers(map);
       outlinesLoadedRef.current = true;
-      repaintWhenTilesReady(map);
+      map.triggerRepaint();
     } catch (err) {
       console.error('[ExpertsAreaMap] No se pudieron cargar contornos globales:', err);
     }
-  }, [mapReady, introComplete]);
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !introComplete) return;
+    repaintWhenTilesReady(map);
+  }, [introComplete]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -625,6 +654,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
 
+      {/* Velo muy suave — no tapar contornos costeros */}
       <div
         className="absolute inset-0 z-[1] pointer-events-none"
         style={{
@@ -632,6 +662,14 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
             'linear-gradient(to top, rgba(255,255,255,0.12) 0%, transparent 18%)',
         }}
       />
+
+      {mapLoadFailed && (
+        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-[#e8f0f7] pointer-events-none">
+          <p className="text-xs text-[#64748b] px-4 text-center">
+            El mapa no pudo cargarse. Recarga la página o comprueba tu conexión.
+          </p>
+        </div>
+      )}
 
       {detectedCountryCode && introComplete && (
         <div className="absolute bottom-3 left-3 z-[500] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] font-medium text-[#475569] shadow-sm pointer-events-none select-none">

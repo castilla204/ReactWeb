@@ -27,6 +27,6 @@ export const HomePageSearchBarDesktopSkeleton: React.FC = () => (
       </div>
       <div className="h-14 max-w-[850px] mx-auto rounded-full bg-[#f0f0f0] animate-pulse" />
     </div>
-    <div className="h-[400px] lg:h-[480px] bg-[#dce9f2] animate-pulse" />
+    <div className="h-[400px] lg:h-[500px] xl:h-[520px] bg-[#e8f0f7] animate-pulse" />
   </div>
 );

@@ -47,6 +47,7 @@ export function useDetectedCountryFromIp() {
 
     const maxWaitTimer = window.setTimeout(() => {
       if (!cancelled) {
+        setLandingTarget((prev) => prev ?? landingFromNavigatorLanguage());
         setIsResolved(true);
         setSource('locale');
       }
