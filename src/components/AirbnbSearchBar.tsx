@@ -8,6 +8,7 @@ import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 // Importar imágenes directamente desde src/media para que Vite las procese
+import { LoginModal } from './LoginModal';
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
 import motorcycleImg from '../media/motorcycle.png';
@@ -121,6 +122,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const userIsAdmin = isAuthenticated && (isAdminByEmail || isAdminByRole);
   const isExpert = userRole === 'Expert';
   
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(CATEGORIES.INMOBILIARIA);
   const [adUrl, setAdUrl] = useState('');
@@ -472,7 +474,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <div className="w-full h-12 flex items-center justify-between px-6 md:px-8 lg:px-10 xl:px-14">
           <button
             type="button"
-            onClick={() => navigate(isAuthenticated ? '/busquedas' : '/crear-busqueda')}
+            onClick={() => {
+              if (isAuthenticated) {
+                navigate('/busquedas');
+              } else {
+                setIsLoginModalOpen(true);
+              }
+            }}
             className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] hover:border-[#222222] hover:bg-[#f9fafb] transition-colors"
           >
             <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
@@ -1524,7 +1532,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           </div>
         </div>
       </ResponsiveModal>
-      
+
+      <LoginModal
+        open={isLoginModalOpen}
+        onOpenChange={setIsLoginModalOpen}
+        initialTab="login"
+        onSuccess={() => setIsLoginModalOpen(false)}
+      />
     </>
   );
 }, (prevProps, nextProps) =>

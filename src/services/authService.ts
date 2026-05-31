@@ -259,7 +259,14 @@ class AuthService {
                 '/api/ServiceType/public',
                 '/api/SearchService/homepage-wall',
                 '/health',
-                '/warmup'
+                '/warmup',
+                '/api/Auth/register',
+                '/api/Auth/login-password',
+                '/api/Auth/forgot-password',
+                '/api/Auth/reset-password',
+                '/api/Auth/verify-email',
+                '/api/Auth/resend-otp',
+                '/api/Auth/apple-auth'
             ];
             const urlString = typeof url === 'string' ? url : url.toString();
             const isPublic = publicEndpoints.some(endpoint => urlString.includes(endpoint));

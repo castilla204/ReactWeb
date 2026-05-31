@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
 import { API_CONFIG } from '../config/api';
+import { capacitorFetch } from '../utils/capacitorFetch';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { AppleSignInButton } from './AppleSignInButton';
 import { ResponsiveModal } from './ui/responsive-modal';
@@ -250,7 +251,7 @@ const LoginForm: React.FC<{
         if (busy) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.loginPassword}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.loginPassword}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim(), password }),
@@ -369,7 +370,7 @@ const RegisterForm: React.FC<{
         if (busy) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
@@ -477,7 +478,7 @@ const OtpForm: React.FC<{
         if (busy || finalCode.length !== 6) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.verifyEmail}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.verifyEmail}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verificationToken: ctx.verificationToken, code: finalCode }),
@@ -516,7 +517,7 @@ const OtpForm: React.FC<{
         if (resending || cooldown > 0) return;
         setResending(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verificationToken: ctx.verificationToken }),
@@ -597,7 +598,7 @@ const ForgotPasswordForm: React.FC<{
         if (busy) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.forgotPassword}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.forgotPassword}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.trim() }),
@@ -667,7 +668,7 @@ const ResetPasswordForm: React.FC<{
         if (busy || code.length !== 6 || newPwd.length < 8) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resetPassword}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resetPassword}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -700,7 +701,7 @@ const ResetPasswordForm: React.FC<{
         if (resending || cooldown > 0) return;
         setResending(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
+            const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verificationToken: ctx.verificationToken }),
