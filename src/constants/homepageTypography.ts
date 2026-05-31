@@ -21,6 +21,12 @@ export const HP_COLOR = {
 export const HP_PANEL_GRADIENT =
   'linear-gradient(155deg, #dceaf8 0%, #e5f0fa 28%, #f5f9fd 52%, #fff9f2 82%, #fafafa 100%)';
 
+/**
+ * Breakpoint Tailwind `min-[390px]` — entre iPhone SE (375) y XR/Plus (≥414).
+ * Base compacta por debajo; un poco más grande en pantallas anchas de móvil.
+ */
+export const HP_MOBILE_WIDE = 'min-[390px]:' as const;
+
 /** Botón icono flotante (hero, modal categorías) */
 export const hpIconButtonClass =
   'flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb]/80 bg-white/80 text-[#666666] backdrop-blur-sm transition-colors active:bg-white';

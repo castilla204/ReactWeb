@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthToken } from '../lib/auth';
+import { RoleChecker } from '../utils/roleChecker';
 import { authService } from '../services/authService';
 import { API_CONFIG } from '../config/api';
 import { capacitorFetch } from '../utils/capacitorFetch';
@@ -58,9 +61,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     onSuccess,
     initialTab = 'login',
 }) => {
+    const navigate = useNavigate();
+    const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState<Step>('social');
     const [tab, setTab] = useState<'login' | 'register'>(initialTab);
     const [otpCtx, setOtpCtx] = useState<OtpContext | null>(null);
+    const [pendingExpertRedirect, setPendingExpertRedirect] = useState(false);
+
+    const isExpert = useMemo(() => {
+        const role = user?.Role ?? user?.role ?? user?.userRole;
+        if (role === 'Expert' || role === 'expert' || role === 'EXPERT' || role === 1) {
+            return true;
+        }
+        try {
+            const token = getAuthToken();
+            if (token) {
+                return RoleChecker.getUserRole(token) === 1;
+            }
+        } catch {
+            /* ignore */
+        }
+        return false;
+    }, [user]);
 
     // Reset al abrir/cerrar.
     useEffect(() => {
@@ -68,13 +90,30 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             setStep('social');
             setTab(initialTab);
             setOtpCtx(null);
+            setPendingExpertRedirect(false);
         }
     }, [open, initialTab]);
 
-    const handleSuccess = () => {
+    const handleSuccess = useCallback(() => {
         onOpenChange(false);
+        if (pendingExpertRedirect) {
+            setPendingExpertRedirect(false);
+            navigate(isExpert ? '/expert-panel' : '/become-expert');
+            return;
+        }
         onSuccess?.();
-    };
+    }, [onOpenChange, onSuccess, pendingExpertRedirect, navigate, isExpert]);
+
+    const handleExpertSignupClick = useCallback(() => {
+        if (isAuthenticated) {
+            onOpenChange(false);
+            navigate(isExpert ? '/expert-panel' : '/become-expert');
+            return;
+        }
+        setPendingExpertRedirect(true);
+        setTab('register');
+        toast.message('Completa el registro arriba para seguir con el alta de experto.', { duration: 3500 });
+    }, [isAuthenticated, isExpert, navigate, onOpenChange]);
 
     return (
         <ResponsiveModal
@@ -82,21 +121,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             onOpenChange={onOpenChange}
             title={
                 step === 'social'
-                    ? tab === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'
-                    : step === 'forgot-email' ? 'Recuperar contraseña'
-                    : 'Verifica tu correo'
+                    ? 'Tu cuenta'
+                    : step === 'forgot-email'
+                      ? 'Recuperar contraseña'
+                      : 'Verifica tu correo'
             }
             description={
                 step === 'social'
-                    ? 'Accede con Google, Apple o tu correo.'
-                    : step === 'forgot-email' ? 'Te enviaremos un código para restablecer o añadir tu contraseña.'
-                    : `Te hemos enviado un código a ${otpCtx?.email ?? ''}`
+                    ? undefined
+                    : step === 'forgot-email'
+                      ? 'Te enviaremos un código a tu correo.'
+                      : `Código enviado a ${otpCtx?.email ?? ''}`
             }
             mobileBreakpoint={768}
-            snapPoints={[0.95]}
-            className="max-w-md md:max-h-[640px]"
+            snapPoints={[1]}
+            drawerMaxHeight="calc(100dvh - env(safe-area-inset-bottom, 0px) - 2.75rem)"
+            className="max-w-md md:max-h-[600px]"
+            drawerClassName="!max-h-[100dvh]"
+            dialogClassName="md:!max-w-[460px] lg:!max-w-[460px] rounded-xl border-[#ebebeb] shadow-[0_12px_48px_rgba(0,0,0,0.14)]"
+            dialogHeaderClassName="border-[#ebebeb] bg-white px-5 pb-2.5 pt-4"
         >
-            <div className="flex flex-col h-full overflow-y-auto px-5 pb-6 pt-4 md:px-7 md:pb-7">
+            <div className="relative w-full md:mx-auto md:max-w-[440px]">
+                <div className="px-4 pb-24 pt-1 max-md:pb-28 md:px-5 md:pt-3 md:pb-5">
                 <AnimatePresence mode="wait" initial={false}>
                     {step === 'social' && (
                         <motion.div
@@ -106,53 +152,50 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             exit={{ opacity: 0, x: 20 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')} className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-5 h-11 bg-gray-100 p-1 rounded-full">
+                            <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')} className="flex w-full flex-col">
+                                <TabsList className="mb-3 grid h-9 w-full grid-cols-2 rounded-full bg-[#f5f5f5] p-0.5">
                                     <TabsTrigger
                                         value="login"
-                                        className="rounded-full transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
+                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
                                     >
-                                        Inicia sesión
+                                        Entrar
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="register"
-                                        className="rounded-full transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600"
+                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
                                     >
-                                        Crea tu cuenta
+                                        Registrarse
                                     </TabsTrigger>
                                 </TabsList>
 
-                                <TabsContent value="login" className="space-y-4">
-                                    <SocialButtonsRow onSuccess={handleSuccess} />
-                                    <Separator />
-                                    <LoginForm
-                                        onSuccess={handleSuccess}
-                                        onGoToForgot={() => setStep('forgot-email')}
-                                        onEmailUnverified={(ctx) => {
-                                            setOtpCtx({ ...ctx, origin: 'login-unverified' });
-                                            setStep('verify-email');
-                                        }}
-                                    />
+                                <TabsContent value="login" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="flex w-full flex-col gap-2.5">
+                                        <SocialButtonsRow onSuccess={handleSuccess} />
+                                        <Separator />
+                                        <LoginForm
+                                            onSuccess={handleSuccess}
+                                            onGoToForgot={() => setStep('forgot-email')}
+                                            onEmailUnverified={(ctx) => {
+                                                setOtpCtx({ ...ctx, origin: 'login-unverified' });
+                                                setStep('verify-email');
+                                            }}
+                                        />
+                                    </div>
                                 </TabsContent>
 
-                                <TabsContent value="register" className="space-y-4">
-                                    <SocialButtonsRow onSuccess={handleSuccess} />
-                                    <Separator />
-                                    <RegisterForm
-                                        onCodeSent={(ctx) => {
-                                            setOtpCtx({ ...ctx, origin: 'register' });
-                                            setStep('verify-email');
-                                        }}
-                                    />
+                                <TabsContent value="register" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="flex w-full flex-col gap-2.5">
+                                        <SocialButtonsRow onSuccess={handleSuccess} />
+                                        <Separator />
+                                        <RegisterForm
+                                            onCodeSent={(ctx) => {
+                                                setOtpCtx({ ...ctx, origin: 'register' });
+                                                setStep('verify-email');
+                                            }}
+                                        />
+                                    </div>
                                 </TabsContent>
                             </Tabs>
-
-                            <p className="text-[11px] text-gray-500 text-center mt-5 leading-relaxed">
-                                Al continuar aceptas nuestros{' '}
-                                <a href="/terms.html" className="underline hover:text-gray-700">Términos</a>
-                                {' '}y la{' '}
-                                <a href="/privacy-policy.html" className="underline hover:text-gray-700">Política de Privacidad</a>.
-                            </p>
                         </motion.div>
                     )}
 
@@ -223,6 +266,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </motion.div>
                     )}
                 </AnimatePresence>
+                </div>
+                {step === 'social' && (
+                    <AuthModalFooter isExpert={isExpert} onExpertAction={handleExpertSignupClick} />
+                )}
             </div>
         </ResponsiveModal>
     );
@@ -230,13 +277,59 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
 // ─── Subcomponentes ──────────────────────────────────────────────────────────────
 
+/** Pie legal + experto: fijo al fondo del drawer en móvil; una línea en desktop. */
+const AuthModalFooter: React.FC<{
+    isExpert: boolean;
+    onExpertAction: () => void;
+}> = ({ isExpert, onExpertAction }) => {
+    const expertLabel = isExpert ? 'Panel experto' : 'Alta como experto';
+
+    const legalLinks = (
+        <>
+            <a href="/terms.html" className="hover:text-[#717171] underline-offset-2 hover:underline">
+                Términos
+            </a>
+            <span aria-hidden> · </span>
+            <a href="/privacy-policy.html" className="hover:text-[#717171] underline-offset-2 hover:underline">
+                Privacidad
+            </a>
+        </>
+    );
+
+    return (
+        <div className="sticky bottom-0 z-20 -mx-4 border-t border-[#ebebeb] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-12px_24px_12px_rgba(255,255,255,0.92)] md:static md:z-auto md:mx-0 md:mt-3 md:border-0 md:px-0 md:pb-0 md:pt-0 md:shadow-none">
+            {/* Móvil: legal arriba, CTA experto pegado al borde inferior del sheet */}
+            <div className="md:hidden">
+                <p className="text-center text-[10px] leading-relaxed text-[#9ca3af]">{legalLinks}</p>
+                <button
+                    type="button"
+                    onClick={onExpertAction}
+                    className="mt-2 flex w-full min-h-[44px] items-center justify-center rounded-lg text-[13px] font-semibold text-[#0066CC] transition-colors hover:bg-[#f0f7ff] active:bg-[#e6f0ff]"
+                >
+                    {expertLabel}
+                </button>
+            </div>
+            {/* Desktop: una línea */}
+            <p className="hidden text-center text-[10px] leading-relaxed text-[#9ca3af] md:block">
+                {legalLinks}
+                <span aria-hidden> · </span>
+                <button
+                    type="button"
+                    onClick={onExpertAction}
+                    className="font-medium text-[#0066CC] hover:text-[#005bb5] hover:underline underline-offset-2"
+                >
+                    {expertLabel}
+                </button>
+            </p>
+        </div>
+    );
+};
+
 const Separator: React.FC = () => (
-    <div className="relative my-4 flex items-center">
-        <span className="flex-grow border-t border-gray-200" />
-        <span className="mx-4 text-[11px] uppercase tracking-widest font-medium text-gray-400">
-            o continúa con
-        </span>
-        <span className="flex-grow border-t border-gray-200" />
+    <div className="relative my-2 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[#ebebeb]" />
+        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-[#b0b0b0]">o</span>
+        <span className="h-px flex-1 bg-[#ebebeb]" />
     </div>
 );
 
@@ -246,9 +339,9 @@ const SocialButtonsRow: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) =>
     // (hasta completar Apple Developer setup: Service ID + .p8 key), habilitado en iOS/macOS.
     // Así el usuario ve que la opción existe y entiende que estará disponible pronto.
     return (
-        <div className="grid grid-cols-2 gap-2.5">
-            <GoogleSignInButton variant="default" onSuccess={onSuccess} label="Google" />
-            <AppleSignInButton variant="default" onSuccess={onSuccess} />
+        <div className="grid w-full max-w-full grid-cols-2 gap-2">
+            <GoogleSignInButton variant="compact" onSuccess={onSuccess} label="Google" />
+            <AppleSignInButton variant="compact" onSuccess={onSuccess} />
         </div>
     );
 };
@@ -319,7 +412,7 @@ const LoginForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-2.5">
             <Field icon={<Mail className="w-4 h-4" />}>
                 <Input
                     type="email"
@@ -361,12 +454,8 @@ const LoginForm: React.FC<{
                 </button>
             </div>
             <Button type="submit" disabled={busy || !email || !password} className={PRIMARY_BTN}>
-                {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Entrando…</> : 'Inicia sesión'}
+                {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Entrando…</> : 'Continuar'}
             </Button>
-            {/* Hint para usuarios OAuth-only: les recordamos usar los botones sociales. */}
-            <p className="text-xs text-gray-500 text-center pt-1">
-                ¿Te registraste con Google o Apple? Pulsa el botón de arriba.
-            </p>
         </form>
     );
 };
@@ -425,7 +514,7 @@ const RegisterForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-2.5">
             <Field icon={<UserIcon className="w-4 h-4" />}>
                 <Input
                     type="text"
@@ -667,7 +756,7 @@ const ForgotPasswordForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-2.5">
             <p className="text-sm text-gray-600 mb-2">
                 Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
@@ -837,7 +926,7 @@ const INPUT_REBRAND =
 
 /** Clases compartidas para los botones primarios (submit) — gradient cyan→blue→indigo. */
 const PRIMARY_BTN =
-    'w-full h-11 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all';
+    'w-full h-11 rounded-lg bg-[#0066CC] hover:bg-[#005bb5] text-white text-sm font-semibold shadow-none transition-colors';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =

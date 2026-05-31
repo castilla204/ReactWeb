@@ -14,6 +14,7 @@ interface ResponsiveModalProps {
   className?: string
   drawerClassName?: string
   dialogClassName?: string
+  dialogHeaderClassName?: string
   style?: React.CSSProperties
   drawerStyle?: React.CSSProperties
   dialogStyle?: React.CSSProperties
@@ -29,6 +30,8 @@ interface ResponsiveModalProps {
   fadeFromIndex?: number
   handleOnly?: boolean
   snapToSequentialPoint?: boolean
+  /** Altura máxima del cuerpo del drawer (p. ej. "96dvh"). Imprescindible si hay pie fijo/sticky. */
+  drawerMaxHeight?: string
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -40,6 +43,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   className,
   drawerClassName,
   dialogClassName,
+  dialogHeaderClassName,
   style,
   drawerStyle,
   dialogStyle,
@@ -55,6 +59,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   fadeFromIndex,
   handleOnly = false,
   snapToSequentialPoint = true,
+  drawerMaxHeight,
 }) => {
   const { width } = useWindowSize()
   
@@ -76,9 +81,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     const maxSnapPoint = snapPoints && snapPoints.length > 0 
       ? Math.max(...snapPoints.map(sp => typeof sp === 'number' ? sp : parseFloat(sp as string) || 0))
       : 1;
-    const maxHeightVh = `${maxSnapPoint * 100}vh`;
-    const height = drawerHeight || (snapPoints ? maxHeightVh : '350px');
-    
+    const maxHeightVh = `${maxSnapPoint * 100}dvh`;
+    const bodyMaxHeight =
+      drawerMaxHeight ??
+      (snapPoints ? `min(${maxHeightVh}, calc(100dvh - env(safe-area-inset-bottom, 0px)))` : 'min(90dvh, calc(100dvh - env(safe-area-inset-bottom, 0px)))');
+
     return (
       <Drawer 
         open={open} 
@@ -95,7 +102,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
       >
         <DrawerContent
           className={cn(
-            "rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
+            "flex min-h-0 flex-col rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
             "focus:outline-none focus-visible:outline-none",
             className, 
             drawerClassName
@@ -119,18 +126,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           title={title}
           description={description}
         >
-          <div 
-            className="flex flex-col bg-white" 
-            style={{ 
-              height: '100%', 
-              maxHeight: '100%',
-              display: 'flex', 
-              flexDirection: 'column',
-              overflow: 'hidden',
-              // ✅ Aplicar padding-top si hay margen superior para compensar
+          <div
+            className="min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]"
+            style={{
+              maxHeight: bodyMaxHeight,
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
-              // ✅ Asegurar que los hijos puedan hacer scroll
-              position: 'relative',
             }}
           >
             {children}
@@ -145,8 +145,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "overflow-hidden p-0 md:max-h-[640px] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden",
-          className, 
+          "!flex !flex-col !gap-0 overflow-hidden p-0 md:max-h-[min(90vh,640px)] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden",
+          className,
           dialogClassName
         )}
         style={{ 
@@ -159,16 +159,31 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         hideCloseButton={true}
       >
         {title && (
-          <DialogHeader className="px-4 pt-4 pb-3.5 border-b border-border flex-shrink-0 bg-muted">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
+          <DialogHeader
+            className={cn(
+              'flex-shrink-0 border-b border-border bg-muted px-4 pb-3.5 pt-4 text-left',
+              dialogHeaderClassName
+            )}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 pr-2">
+                <DialogTitle className="text-base font-semibold leading-snug">{title}</DialogTitle>
+                {description && (
+                  <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                    {description}
+                  </DialogDescription>
+                )}
+              </div>
               <DialogClose asChild>
-                <button className="p-1.5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md p-1.5 text-[#717171] opacity-80 ring-offset-background transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  aria-label="Cerrar"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </DialogClose>
             </div>
-            {description && <DialogDescription className="mt-0.5 text-sm text-muted-foreground">{description}</DialogDescription>}
           </DialogHeader>
         )}
         <div className="flex flex-col overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, maxHeight: 'calc(80vh - 80px)' }}>
