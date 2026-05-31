@@ -12,8 +12,8 @@ import {
   renderGoogleButton,
   subscribeGoogleAuthSuccess,
 } from '../lib/googleIdentity';
-const GoogleIcon = () => (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
+const GoogleIcon = ({ compact }: { compact?: boolean }) => (
+    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -194,8 +194,10 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
 
     // Para ambas variantes, usar botón personalizado que activa el botón nativo oculto
     // Esto asegura que funcione correctamente incluso cuando el componente está oculto inicialmente
-    const compactClasses = 'h-9 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 rounded-lg transition-all duration-200 border border-gray-300 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-500 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
-    const defaultClasses = 'w-full bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl text-base transition-colors border-2 border-gray-200 hover:border-gray-300 active:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    const compactClasses =
+        'h-10 w-full text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    const defaultClasses =
+        'w-full h-11 text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
 
     return (
         <div className="relative" ref={wrapperRef}>
@@ -230,8 +232,8 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                     </>
                 ) : (
                     <>
-                        <GoogleIcon />
-                        <span>{label}</span>
+                        <GoogleIcon compact={variant === 'compact'} />
+                        <span className="truncate">{label}</span>
                     </>
                 )}
             </button>

@@ -137,7 +137,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
         e.preventDefault();
         handleCardClick();
       }}
-      className="block flex-shrink-0 w-[160px] md:w-[184px]"
+      className="block flex-shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]"
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <motion.div
@@ -394,7 +394,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
         </div>
 
         {/* Información del servicio - Estructura exacta como Airbnb */}
-        <div style={{ marginTop: isMobile ? '6px' : '4px' }}>
+        <div style={{ marginTop: isMobile ? '0px' : '4px' }}>
           {/* Primera fila: Título */}
           <div
             className="overflow-hidden"
@@ -591,7 +591,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header sección */}
-      <div className="mb-3 md:mb-5 md:px-0">
+      <div className="mb-2 md:mb-5 md:px-0">
         <div className="flex items-start gap-3">
           <span
             className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-[#0066CC] to-[#0066CC]/25"
@@ -624,7 +624,9 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         )}
         <div
           ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-hide pb-3 md:pb-0 md:px-0 md:pr-0 gap-4 md:gap-3"
+          className={`flex overflow-x-auto scrollbar-hide md:pb-0 md:px-0 md:pr-0 gap-4 min-[390px]:gap-[18px] md:gap-3 ${
+            isLastSection ? 'pb-0' : 'pb-1.5 md:pb-0'
+          }`}
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollBehavior: 'auto',
@@ -850,7 +852,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
             <motion.div
               key={`${keyPrefix}-section-${index}-${section.title}`}
               variants={sectionVariants}
-              className={index > 0 ? 'mt-8 md:mt-10' : ''}
+              className={[
+                index === 0 ? 'pt-1 min-[390px]:pt-2' : '',
+                index > 0 ? 'mt-5 md:mt-10' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
               <HorizontalScrollSection
                 title={section.title}
@@ -920,16 +927,19 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (showFullSkeleton) {
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
-            <div className="hidden md:block mb-8">
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1 md:pb-0">
+            <div className="mb-2 md:mb-5 md:hidden">
+              <Skeleton height={28} width={220} borderRadius={8} />
+            </div>
+            <div className="hidden md:block mb-5">
               <Skeleton height={12} width={80} borderRadius={4} className="mb-2" />
               <Skeleton height={32} width={280} borderRadius={8} />
             </div>
-            <div className="space-y-8 md:space-y-12 lg:space-y-14">
-              <div className="flex overflow-x-auto gap-4 pb-4">
+            <div className="space-y-6 md:space-y-12 lg:space-y-14">
+              <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
                 {[...Array(6)].map((_, index) => (
-                  <div key={index} className="flex-shrink-0 w-[160px] md:w-[184px]">
-                    <Skeleton height={138} className="w-full mb-2" borderRadius={12} />
+                  <div key={index} className="flex-shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]">
+                    <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
                     <Skeleton height={16} width="100%" borderRadius={4} />
                   </div>
                 ))}
@@ -943,7 +953,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (error) {
     console.error('❌ HomepageWall - Error:', error);
     return (
-      <div className="text-center py-12">
+      <div className="w-full max-w-[1280px] mx-auto px-4 text-center py-8 md:py-12">
         <p className="text-red-600">Error al cargar servicios: {error.message}</p>
         <p className="text-gray-500 text-sm mt-2">Revisa la consola para más detalles</p>
       </div>
@@ -953,7 +963,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (!sections || sections.length === 0) {
     console.warn('⚠️ HomepageWall - No hay secciones');
     return (
-      <div className="text-center py-12">
+      <div className="w-full max-w-[1280px] mx-auto px-4 text-center py-8 md:py-12">
         <p className="text-gray-600">No hay datos disponibles</p>
       </div>
     );
@@ -963,11 +973,11 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     if (fallbackLoading) {
       return (
         <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-6">
-            <div className="flex overflow-x-auto gap-4 pb-4">
+          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1">
+            <div className="flex overflow-x-auto gap-4 pb-0">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="shrink-0 w-[160px] md:w-[184px]">
-                  <Skeleton height={138} className="w-full mb-2" borderRadius={12} />
+                <div key={i} className="shrink-0 w-[160px] min-[390px]:w-[172px] md:w-[184px]">
+                  <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
                   <Skeleton height={14} width="90%" borderRadius={4} />
                 </div>
               ))}
@@ -985,8 +995,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           animate={{ opacity: 1 }}
           className="relative"
         >
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-8">
-            <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8">
+            <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-3 md:py-4 mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-sm text-[#717171]">
                 No hay expertos en esta categoría todavía. Mira estos de{' '}
                 <span className="text-[#222222] font-medium">
@@ -1018,12 +1028,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     }
 
     return (
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-16 md:py-20 text-center">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-10 md:py-20 text-center">
         <h3 className="text-lg font-medium text-[#222222]">Aún no hay expertos aquí</h3>
         <p className="mt-2 text-[#717171] text-sm max-w-md mx-auto">
           Prueba Coches o Inmobiliaria, donde suele haber más revisores activos.
         </p>
-        <div className="mt-6 flex justify-center gap-3">
+        <div className="mt-4 md:mt-6 flex justify-center gap-3">
           <button
             type="button"
             onClick={() => dispatchHomepagePickCategory(COCHES_CATEGORY_ID, 'Coches')}
@@ -1068,7 +1078,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           </div>
         )}
         <div
-          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-4 md:pt-8 transition-opacity duration-200 ${
+          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-8 pb-1 md:pb-0 transition-opacity duration-200 ${
             isFetching && sections ? 'opacity-70' : 'opacity-100'
           }`}
         >

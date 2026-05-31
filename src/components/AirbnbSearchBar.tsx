@@ -596,106 +596,66 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           </div>
         </div>
 
-        {/* Tabs Mobile - Estructura como Airbnb */}
-        <div className="relative w-full" role="tablist">
-          {/* Contenedor de tabs con flex */}
-          <div className="flex w-full px-4 pt-1 pb-1">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'coches'}
-              onClick={() => handleTabClick('coches', CATEGORIES.COCHES)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
-            >
-              <img
-                src={getImageWithCache('cochepng.png', imageCacheKey)}
-                alt="Coche"
-                className="w-16 h-16 object-contain mb-0"
-                width={64}
-                height={64}
-              />
-              <span
-                className="text-center"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  fontWeight: 400,
-                  fontFamily: HP_FONT,
-                  color: HP_COLOR.muted,
-                }}
-              >
-                Coches
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'motos'}
-              onClick={() => handleTabClick('motos', CATEGORIES.MOTOS)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
-            >
-              <img
-                src={getImageWithCache('motopng.png', imageCacheKey)}
-                alt="Moto"
-                className="w-16 h-16 object-contain mb-0"
-                width={64}
-                height={64}
-              />
-              <span
-                className="text-center"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  fontWeight: 400,
-                  fontFamily: HP_FONT,
-                  color: HP_COLOR.muted,
-                }}
-              >
-                Motos
-              </span>
-            </button>
-
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'inmobiliaria'}
-              onClick={() => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA)}
-              className="flex-1 flex flex-col items-center justify-center py-0.5 bg-transparent border-none cursor-pointer relative active:scale-95 transition-transform"
-            >
-              <img
-                src={getImageWithCache('casapng.png', imageCacheKey)}
-                alt="Casa"
-                className="w-16 h-16 object-contain mb-0"
-                width={64}
-                height={64}
-              />
-              <span
-                className="text-center"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  fontWeight: 400,
-                  fontFamily: HP_FONT,
-                  color: HP_COLOR.muted,
-                }}
-              >
-                Inmobiliaria
-              </span>
-            </button>
-          </div>
-
-          {/* Indicador/Subrayado - Exactamente al ras del borde inferior del contenedor */}
-          <div 
-            className="absolute bottom-0 left-0 right-0 h-[2px] pointer-events-none"
-          >
-            <div 
-              className="absolute bottom-0 left-0 h-[2px] bg-[#0066CC] transition-transform duration-300 ease-out"
-              style={{
-                width: '33.3333%',
-                transform: `translateX(${activeTab === 'coches' ? '0%' : activeTab === 'motos' ? '100%' : '200%'})`,
-              }}
-            />
+        {/* Tabs Mobile — fila compacta centrada (estilo Airbnb) */}
+        <div className="w-full" role="tablist" aria-label="Categorías principales">
+          <div className="flex justify-center gap-5 min-[390px]:gap-6 px-2 pt-0 pb-0">
+            {(
+              [
+                {
+                  id: 'coches' as const,
+                  categoryId: CATEGORIES.COCHES,
+                  label: 'Coches',
+                  image: 'cochepng.png',
+                  alt: 'Coche',
+                },
+                {
+                  id: 'motos' as const,
+                  categoryId: CATEGORIES.MOTOS,
+                  label: 'Motos',
+                  image: 'motopng.png',
+                  alt: 'Moto',
+                },
+                {
+                  id: 'inmobiliaria' as const,
+                  categoryId: CATEGORIES.INMOBILIARIA,
+                  label: 'Inmobiliaria',
+                  image: 'casapng.png',
+                  alt: 'Casa',
+                },
+              ] as const
+            ).map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => handleTabClick(tab.id, tab.categoryId)}
+                  className={`flex w-[5.25rem] min-[390px]:w-24 shrink-0 flex-col items-center border-b-2 bg-transparent py-0.5 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
+                    isActive ? 'border-[#0066CC]' : 'border-transparent'
+                  }`}
+                >
+                  <img
+                    src={getImageWithCache(tab.image, imageCacheKey)}
+                    alt={tab.alt}
+                    className="mb-0 h-14 w-14 min-[390px]:h-16 min-[390px]:w-16 object-contain"
+                    width={56}
+                    height={56}
+                  />
+                  <span
+                    className="-mt-0.5 max-w-full truncate text-center text-[13px] min-[390px]:text-sm leading-tight"
+                    style={{
+                      fontWeight: isActive ? 600 : 400,
+                      fontFamily: HP_FONT,
+                      color: isActive ? 'rgb(34, 34, 34)' : HP_COLOR.muted,
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>

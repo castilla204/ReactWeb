@@ -5,9 +5,12 @@ export const HomePageSearchBarSkeleton: React.FC = () => (
   <div className="md:hidden sticky top-0 z-40 bg-white border-b border-[#ebebeb]">
     <div className="px-4 pt-3 pb-2 space-y-3">
       <div className="h-10 w-full rounded-full bg-[#f0f0f0] animate-pulse" />
-      <div className="flex gap-2">
+      <div className="flex justify-center gap-5 min-[390px]:gap-6 px-2">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-9 flex-1 rounded-full bg-[#f0f0f0] animate-pulse" />
+          <div
+            key={i}
+            className="h-[4.25rem] w-[5.25rem] min-[390px]:h-[4.75rem] min-[390px]:w-24 rounded-md bg-[#f0f0f0] animate-pulse"
+          />
         ))}
       </div>
     </div>
