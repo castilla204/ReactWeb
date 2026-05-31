@@ -35,6 +35,9 @@ export interface ServiceInfo {
   serviceTypeCategoryName: string;
   requiresAppointment: boolean;
   price: number;
+  /** Round 24: currency original del precio del servicio (ISO 4217). Default 'EUR'. */
+  priceCurrency?: string;
+  currency?: string;
   // ✅ NUEVOS CAMPOS DEL BACKEND
   expertLatitude: number | null;
   expertLongitude: number | null;
@@ -166,6 +169,15 @@ export interface SearchHireDto {
    * Ejemplo: €19.09 (IVA del 21%)
    */
   taxAmount?: number;
+
+  /**
+   * Round 24: currency en la que se realizó el cargo real al cliente (ISO 4217).
+   * Default 'EUR' para hires legacy. Para refunds/disputes mostrar SIEMPRE esta currency,
+   * nunca convertir el principal del reembolso.
+   */
+  chargeCurrency?: string;
+  /** Alias para retro-compat con backend. */
+  sourceCurrency?: string;
 
   // 🛡️ Round 10 — P-C FIX (V8 snapshots): porcentajes congelados al momento de crear
   // la hire. Si el admin cambia las % en StatusConfigurations DESPUÉS de la contratación,

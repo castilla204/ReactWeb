@@ -16,6 +16,10 @@ export interface Service {
     serviceTypeCategoryName?: string;
     requiresAppointment?: boolean;
     price: number;
+    /** Round 24: currency original del precio (ISO 4217). Default 'EUR' si el backend no lo emite. */
+    priceCurrency?: string;
+    /** Alias backend (PascalCase). */
+    currency?: string;
     conditions: string;
     durationInHours: number | null;
     createdAt: string;

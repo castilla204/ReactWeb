@@ -141,7 +141,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             dialogHeaderClassName="border-[#ebebeb] bg-white px-5 pb-2.5 pt-4"
         >
             <div className="w-full md:mx-auto md:max-w-[440px]">
-                <div className="px-4 pt-1 md:px-5 md:pt-3 md:pb-5">
+                <div
+                    className={`px-4 pt-1 md:px-5 md:pt-3 md:pb-5 ${
+                        step !== 'social'
+                            ? 'pb-5 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+                            : ''
+                    }`}
+                >
                 <AnimatePresence mode="wait" initial={false}>
                     {step === 'social' && (
                         <motion.div
@@ -743,8 +749,8 @@ const ForgotPasswordForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-2.5">
-            <p className="text-sm text-gray-600 mb-2">
+        <form onSubmit={onSubmit} className="flex flex-col">
+            <p className="mb-3 text-sm text-gray-600">
                 Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
             <Field icon={<Mail className="w-4 h-4" />}>
@@ -758,7 +764,7 @@ const ForgotPasswordForm: React.FC<{
                     className={INPUT_REBRAND}
                 />
             </Field>
-            <Button type="submit" disabled={busy || !email} className={PRIMARY_BTN}>
+            <Button type="submit" disabled={busy || !email} className={`${PRIMARY_BTN} mt-6`}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Enviar código'}
             </Button>
         </form>
