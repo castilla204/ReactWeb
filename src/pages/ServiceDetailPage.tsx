@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
+import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
 
 const ServiceDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -60,15 +61,9 @@ const ServiceDetailPage: React.FC = () => {
               completedSearches: service.CompletedSearches ?? service.completedSearches,
               averageRating: service.AverageRating ?? service.averageRating,
               isActive: service.IsActive ?? service.isActive ?? true,
-              selectedDeliverableTypes: (service.SelectedDeliverableTypes || service.selectedDeliverableTypes || []).map((dt: any) => ({
-                id: dt.Id || dt.id,
-                name: dt.Name || dt.name,
-                displayName: dt.DisplayName || dt.displayName,
-                description: dt.Description || dt.description,
-                isRequired: dt.IsRequired ?? dt.isRequired,
-                isActive: dt.IsActive ?? dt.isActive,
-                sortOrder: dt.SortOrder ?? dt.sortOrder,
-              })),
+              selectedDeliverableTypes: mapSelectedDeliverableTypes(
+                service.SelectedDeliverableTypes || service.selectedDeliverableTypes
+              ),
               expert: service.Expert || service.expert ? {
                 id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
                 profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,

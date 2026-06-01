@@ -131,14 +131,21 @@ export const SD_MOBILE_GUTTER_CLASS = 'px-4';
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
 
-/** Espacio bajo contenido móvil para footer fijo + safe area */
+/**
+ * Reserva inferior del scroll: altura barra fija (~5.75rem) + colchón + safe-area.
+ * Barra ≈ pt-4 + fila 52px + pb min 1.25rem.
+ */
 export const SD_MOBILE_SCROLL_PAD_CLASS =
-  'pb-[calc(4.5rem+max(1rem,env(safe-area-inset-bottom,0px)))]';
+  'pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))]';
 
-export const SD_MOBILE_FOOTER_INNER_CLASS =
-  'pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px)))]';
+/** Shell barra fija móvil */
+export const SD_MOBILE_FOOTER_SHELL_CLASS =
+  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.09)]';
 
-/** CTA principal ficha servicio (mismo azul que homepage) */
+/** CTA barra inferior móvil (más alto y legible que h-12 genérico) */
+export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
+
+/** CTA principal (desktop / inline) */
 export const HP_SERVICE_CTA_CLASS =
   'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-[#0066CC] text-white text-base font-semibold shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
 

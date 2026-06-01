@@ -1,5 +1,4 @@
 import React from 'react';
-import { CalendarClock, MapPin } from 'lucide-react';
 import { ServiceDetailAvailabilityWidget } from './ServiceDetailAvailabilityWidget';
 import { ServiceDetailCoverageMap } from './ServiceDetailCoverageMap';
 import {
@@ -15,7 +14,7 @@ export interface ServiceDetailBookingMetaProps {
   location?: { latitude: number; longitude: number } | null;
   rangeKm?: number;
   locationLabel?: string | null;
-  /** card = aside desktop; minimal = móvil sin caja */
+  /** card = aside desktop (plano, ancho completo); minimal = móvil */
   layout?: 'card' | 'minimal';
   coverageFirst?: boolean;
   mapVariant?: 'preview' | 'interactive';
@@ -23,6 +22,8 @@ export interface ServiceDetailBookingMetaProps {
   showAvailabilityHint?: boolean;
   className?: string;
 }
+
+const asideSectionDividerClass = 'mt-4 border-t border-[#e8e8e8] pt-4';
 
 export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> = ({
   availability,
@@ -34,7 +35,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
   layout = 'card',
   coverageFirst = false,
   mapVariant = 'preview',
-  mapClassName = 'h-[120px] w-full',
+  mapClassName,
   showAvailabilityHint = true,
   className = '',
 }) => {
@@ -44,6 +45,19 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
 
   const radius = Math.max(5, rangeKm);
   const isMinimal = layout === 'minimal';
+
+  const availabilityTimeRange =
+    hasAvailability && availability
+      ? formatAvailabilityTimeRange(availability.startTime, availability.endTime)
+      : null;
+
+  const defaultAsideMapClass =
+    'h-[128px] w-full rounded-lg border border-[#e8e8e8]';
+  const defaultMinimalMapClass =
+    'h-[100px] w-full rounded-none border-x-0 border-y border-[#ebebeb]';
+
+  const resolvedMapClassName =
+    mapClassName ?? (isMinimal ? defaultMinimalMapClass : defaultAsideMapClass);
 
   const coverageBlock = hasCoverage && location && (
     isMinimal ? (
@@ -58,23 +72,21 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           rangeKm={radius}
           variant={mapVariant}
           expandable={mapVariant === 'preview'}
-          className={mapClassName ?? 'h-[100px] w-full rounded-none border-x-0 border-y border-[#ebebeb]'}
+          className={resolvedMapClassName}
         />
       </div>
     ) : (
-      <section className="p-3.5">
-        <h3 className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-[#0066CC]" aria-hidden />
-          Zona de cobertura
-        </h3>
+      <section className="w-full">
         <p className="mb-2.5 text-xs text-[#6a6a6a]">
+          <span className="font-medium text-[#1c1c1c]">Cobertura</span>
           {locationLabel ? (
             <>
-              <span className="font-medium text-[#1c1c1c]">{locationLabel}</span>
               <span className="mx-1 text-[#d4d4d4]">·</span>
+              <span>{locationLabel}</span>
             </>
           ) : null}
-          Radio de {radius} km
+          <span className="mx-1 text-[#d4d4d4]">·</span>
+          <span>{radius} km</span>
         </p>
         <ServiceDetailCoverageMap
           latitude={location.latitude}
@@ -82,16 +94,11 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           rangeKm={radius}
           variant={mapVariant}
           expandable={mapVariant === 'preview'}
-          className={mapClassName}
+          className={resolvedMapClassName}
         />
       </section>
     )
   );
-
-  const availabilityTimeRange =
-    hasAvailability && availability
-      ? formatAvailabilityTimeRange(availability.startTime, availability.endTime)
-      : null;
 
   const availabilityBlock = hasAvailability && availability && (
     isMinimal ? (
@@ -124,25 +131,44 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
         />
       </div>
     ) : (
-      <section className="p-3.5">
-        <h3 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]">
-          <CalendarClock className="h-3.5 w-3.5 shrink-0 text-[#0066CC]" aria-hidden />
-          Disponibilidad
-        </h3>
+      <section className="w-full">
+        <div className="mb-2.5 flex items-center justify-between gap-3">
+          <p className="text-xs font-medium text-[#1c1c1c]">Disponibilidad</p>
+          <div className="flex shrink-0 items-center gap-2">
+            {availabilityTimeRange && (
+              <span className="text-xs font-semibold tabular-nums text-[#0066CC]">
+                {availabilityTimeRange}
+              </span>
+            )}
+            {isOnVacation && (
+              <span
+                className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                title="El experto está de vacaciones"
+              >
+                Vac.
+              </span>
+            )}
+          </div>
+        </div>
         <ServiceDetailAvailabilityWidget
           availability={availability}
           timezone={timezone}
           isOnVacation={isOnVacation}
           variant="sidebar"
           showHeading={false}
+          hideScheduleRow
         />
         {showAvailabilityHint && (
-          <p className="mt-2 text-[10px] leading-snug text-[#9ca3af]">
+          <p className="mt-2.5 text-[11px] leading-snug text-[#9ca3af]">
             Tras reservar eliges día y hora dentro de este horario.
           </p>
         )}
       </section>
     )
+  );
+
+  const wrapAsideSecond = (node: React.ReactNode) => (
+    <div className={asideSectionDividerClass}>{node}</div>
   );
 
   if (isMinimal) {
@@ -167,21 +193,22 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     );
   }
 
+  /* Desktop aside: sin caja gris ni divide-y; secciones al 100% como en móvil */
   return (
     <div
       role="group"
       aria-label="Información para reservar"
-      className={`overflow-hidden rounded-xl border border-[#e8e8e8] bg-[#fafafa] divide-y divide-[#e8e8e8] ${className}`.trim()}
+      className={`w-full ${className}`.trim()}
     >
       {coverageFirst ? (
         <>
           {coverageBlock}
-          {availabilityBlock}
+          {availabilityBlock ? wrapAsideSecond(availabilityBlock) : null}
         </>
       ) : (
         <>
           {availabilityBlock}
-          {coverageBlock}
+          {coverageBlock ? wrapAsideSecond(coverageBlock) : null}
         </>
       )}
     </div>
