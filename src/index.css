@@ -174,27 +174,43 @@
 
     /* Barra fija móvil: ficha servicio + checkout */
     .sd-mobile-footer-inner {
-        @apply pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))];
+        @apply py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
     }
 
     .sd-mobile-footer-row {
-        @apply flex min-h-[52px] items-center justify-between gap-4;
+        @apply flex min-h-[48px] items-center justify-between gap-2;
+    }
+
+    .sd-mobile-footer-price-line {
+        @apply flex min-w-0 items-baseline overflow-hidden whitespace-nowrap;
     }
 
     .sd-mobile-footer-price {
-        @apply text-[18px] font-semibold leading-[1.2] tracking-[-0.02em] text-[#1c1c1c];
+        @apply shrink-0 text-[17px] font-semibold leading-none tracking-[-0.02em] text-[#1c1c1c];
     }
 
-    .sd-mobile-footer-price-meta {
-        @apply mt-1 text-sm leading-snug text-[#6a6a6a];
+    .sd-mobile-footer-price-sep {
+        @apply mx-1 shrink-0 text-sm font-normal text-[#d4d4d4];
     }
 
-    .sd-mobile-footer-price-extra {
-        @apply mt-1.5 flex items-center gap-1.5 text-xs leading-snug text-[#6a6a6a];
+    .sd-mobile-footer-price-suffix {
+        @apply min-w-0 truncate text-sm font-normal text-[#6a6a6a];
     }
 
     .sd-mobile-footer-cta {
-        @apply inline-flex h-[52px] min-w-[152px] shrink-0 items-center justify-center rounded-full bg-[#0066CC] px-8 text-[17px] font-semibold leading-none text-white shadow-[0_4px_18px_rgba(0,102,204,0.24)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
+        @apply inline-flex h-[48px] min-w-[7.5rem] max-w-[42vw] shrink-0 items-center justify-center rounded-full bg-[#0066CC] px-5 text-base font-semibold leading-none text-white shadow-[0_4px_18px_rgba(0,102,204,0.24)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
+    }
+
+    @media (min-width: 380px) {
+        .sd-mobile-footer-cta {
+            min-width: 8.75rem;
+            padding-left: 1.75rem;
+            padding-right: 1.75rem;
+        }
+
+        .sd-mobile-footer-price {
+            font-size: 18px;
+        }
     }
 
     .sd-icon-btn {
@@ -203,8 +219,8 @@
 
     /* Chips entregables — banda inferior de la galería, sobre la foto */
     .sd-deliverable-guide {
-        @apply absolute inset-x-0 z-[45] flex flex-col items-start justify-end px-3 pb-3;
-        bottom: 2.75rem;
+        @apply absolute inset-x-0 z-20 flex flex-col items-start justify-end px-3 pb-3;
+        bottom: 0.75rem;
         pointer-events: none;
     }
 
@@ -216,8 +232,8 @@
     }
 
     .sd-deliverable-guide-label {
-        @apply mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        @apply mb-2 rounded-md bg-black/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white;
+        text-shadow: none;
         opacity: 0;
         animation: sd-deliverable-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }

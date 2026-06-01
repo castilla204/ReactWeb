@@ -11,8 +11,16 @@ function labelOf(dt: ServiceDeliverableType): string {
   return (dt.displayName || dt.name || '').trim();
 }
 
+export type DeliverableDetailOptions = {
+  /** Si el servicio también incluye informe PDF (para copy del modal de vídeo). */
+  hasPdf?: boolean;
+};
+
 /** Contenido mostrado al pulsar un chip de entregable. */
-export function getDeliverableDetail(dt: ServiceDeliverableType): DeliverableDetail {
+export function getDeliverableDetail(
+  dt: ServiceDeliverableType,
+  options?: DeliverableDetailOptions
+): DeliverableDetail {
   const title = labelOf(dt);
   const key = (dt.name || title).toLowerCase();
   const apiDescription = (dt.description || '').trim();
@@ -35,19 +43,22 @@ export function getDeliverableDetail(dt: ServiceDeliverableType): DeliverableDet
   }
 
   if (key.includes('video')) {
+    const videoIncludes = [
+      'Recorrido visual de las zonas revisadas',
+      'Defectos, ruidos o detalles en movimiento',
+      'Comentarios del experto durante la visita',
+      'Archivo de vídeo entregado en el chat de la reserva',
+    ];
+    if (options?.hasPdf !== false) {
+      videoIncludes.push('Complementa el informe PDF del servicio');
+    }
     return {
       title,
       description:
         apiDescription ||
         'Grabación de la revisión presencial para ver detalles que no siempre salen en fotos fijas.',
       isRequired: dt.isRequired,
-      includes: [
-        'Recorrido visual de las zonas revisadas',
-        'Defectos, ruidos o detalles en movimiento',
-        'Comentarios del experto durante la visita',
-        'Archivo de vídeo entregado en el chat de la reserva',
-        'Complementa el informe PDF del servicio',
-      ],
+      includes: videoIncludes,
     };
   }
 

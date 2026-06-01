@@ -17,7 +17,8 @@ const CANONICAL_BY_NAME: Record<
 
 function looksCorrupted(text: string): boolean {
   if (!text) return true;
-  if (/\uFFFD/.test(text) || /\?/.test(text)) return true;
+  if (/\uFFFD/.test(text)) return true;
+  if (/\?{2,}/.test(text) || /inspecci\?+/i.test(text) || /revisi\?+/i.test(text)) return true;
   if (/inspecci4n|revisi4n/i.test(text)) return true;
   if (/video de inspeccion\b/i.test(text)) return true;
   return false;
