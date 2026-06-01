@@ -1,5 +1,9 @@
-import React from 'react';
-import { Star, X } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { X } from 'lucide-react';
+import { computeReviewRatingDistribution } from '../../utils/reviewRatingDistribution';
+import { formatRatingDisplay } from '../../utils/reviewFormat';
+import { ServiceDetailReviewStars } from './ServiceDetailReviewStars';
+import { ServiceDetailReviewHistogram } from './ServiceDetailReviewHistogram';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import {
   Dialog,
@@ -27,20 +31,39 @@ interface ServiceDetailReviewsModalProps {
 function ReviewsSummaryBar({
   averageRating,
   reviewCount,
+  reviews,
 }: {
   averageRating: number;
   reviewCount: number;
+  reviews: ServiceReviewItem[];
 }) {
-  const display = averageRating.toFixed(1).replace('.', ',');
+  const display = formatRatingDisplay(averageRating);
+  const distribution = useMemo(() => computeReviewRatingDistribution(reviews), [reviews]);
+  const showBars = reviewCount >= 3;
+
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-[#ebebeb] bg-[#fafafa] px-5 py-3">
-      <span className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#1c1c1c]">
-        {display}
-      </span>
-      <Star className="h-4 w-4 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
-      <span className="text-sm text-[#6a6a6a]">
-        {reviewCount} {reviewCount === 1 ? 'opinión verificada' : 'opiniones verificadas'}
-      </span>
+    <div className="shrink-0 border-b border-[#e8e8e8] bg-[#fafafa] px-5 py-3.5">
+      <div className="flex items-start gap-4">
+        <div className="shrink-0">
+          <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#1c1c1c]">
+            {display}
+          </p>
+          <ServiceDetailReviewStars rating={averageRating} size="md" className="mt-1" />
+          <p className="mt-1 text-xs text-[#6a6a6a]">
+            {reviewCount === 1 ? '1 opinión verificada' : `${reviewCount} opiniones verificadas`}
+          </p>
+        </div>
+
+        {showBars ? (
+          <div className="min-w-0 flex-1 pt-0.5">
+            <ServiceDetailReviewHistogram
+              distribution={distribution}
+              total={reviewCount}
+              compact
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -97,10 +120,14 @@ export const ServiceDetailReviewsModal: React.FC<ServiceDetailReviewsModalProps>
         }
         drawerMaxHeight="min(90dvh, calc(100dvh - env(safe-area-inset-bottom)))"
         snapPoints={[0.9]}
-        dialogHeaderClassName="border-[#ebebeb] bg-white px-4 pb-2.5 pt-3.5"
-        dialogClassName="md:!max-w-[520px] rounded-xl border border-[#ebebeb] shadow-[0_12px_48px_rgba(0,0,0,0.14)]"
+        dialogHeaderClassName="border-[#e8e8e8] bg-white px-4 pb-2.5 pt-3.5"
+        dialogClassName="md:!max-w-[520px] rounded-xl border border-[#e8e8e8] shadow-[0_12px_48px_rgba(0,0,0,0.14)]"
       >
-        <ReviewsSummaryBar averageRating={averageRating} reviewCount={reviews.length} />
+        <ReviewsSummaryBar
+          averageRating={averageRating}
+          reviewCount={reviews.length}
+          reviews={reviews}
+        />
         <div className="px-4 pb-5 pt-2">
           <ReviewsListBody
             reviews={reviews}
@@ -144,7 +171,11 @@ export const ServiceDetailReviewsModal: React.FC<ServiceDetailReviewsModalProps>
         </header>
 
         {reviews.length > 0 ? (
-          <ReviewsSummaryBar averageRating={averageRating} reviewCount={reviews.length} />
+          <ReviewsSummaryBar
+          averageRating={averageRating}
+          reviewCount={reviews.length}
+          reviews={reviews}
+        />
         ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-6 pt-3">

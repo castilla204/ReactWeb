@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
-import { Star } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { ServiceDetailReviewStars } from './ServiceDetailReviewStars';
+import { formatReviewMonthYear } from '../../utils/reviewFormat';
+import { getReviewStarRating } from '../../utils/reviewRatingDistribution';
 
 export interface ServiceReviewItem {
   id?: number | string;
@@ -30,11 +33,6 @@ interface ServiceDetailReviewsSectionProps {
   density?: ServiceDetailReviewsDensity;
   className?: string;
 }
-
-const monthNames = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-] as const;
 
 const TRUNCATE_CHARS = { default: 280, compact: 160 } as const;
 
@@ -113,46 +111,60 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
         >
           {sortedReviews.map((review, idx) => {
             const key = review.id ?? idx;
-            const reviewDate = new Date(review.createdAt);
-            const formattedDate = `${monthNames[reviewDate.getMonth()]} ${reviewDate.getFullYear()}`;
+            const formattedDate = formatReviewMonthYear(review.createdAt);
             const reviewText = review.description || review.comment || '';
             const shouldTruncate = reviewText.length > truncateAt;
             const isExpanded = expandedReviews[key] || false;
-            const rating = review.rating || review.score || 5;
-            const starClass = isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3';
-            const itemPy = isCompact ? 'py-3 first:pt-0 last:pb-0' : 'py-5 first:pt-5';
+            const rating = getReviewStarRating(review);
+            const clientName = review.client?.name?.trim() || 'Cliente';
+            const clientInitial = clientName.charAt(0).toUpperCase();
+            const itemPy = isCompact ? 'py-3.5 first:pt-0 last:pb-0' : 'py-5 first:pt-5';
 
             return (
               <li key={key} className={itemPy}>
                 <div
                   className={
                     isCompact
-                      ? 'mb-1 flex items-center justify-between gap-2'
-                      : 'mb-2 flex flex-wrap items-center justify-between gap-2'
+                      ? 'mb-2 flex items-start gap-2.5'
+                      : 'mb-2.5 flex items-start gap-3'
                   }
                 >
-                  <span
+                  <Avatar
                     className={
                       isCompact
-                        ? 'truncate text-xs font-medium text-[#1c1c1c]'
-                        : 'text-sm font-medium text-[#1c1c1c]'
+                        ? 'h-8 w-8 shrink-0 rounded-full border border-[#ebebeb]'
+                        : 'h-9 w-9 shrink-0 rounded-full border border-[#ebebeb]'
                     }
                   >
-                    {review.client?.name || 'Cliente'}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <div className="flex gap-px" role="img" aria-label={`${rating} de 5`}>
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`${starClass} ${
-                            i < rating ? 'fill-[#1c1c1c] text-[#1c1c1c]' : 'text-[#e8e8e8]'
-                          }`}
-                          aria-hidden
-                        />
-                      ))}
+                    <AvatarImage src={review.client?.profilePictureUrl} alt="" />
+                    <AvatarFallback
+                      className={`rounded-full bg-[#f0f0f0] font-semibold text-[#1c1c1c] ${
+                        isCompact ? 'text-xs' : 'text-sm'
+                      }`}
+                    >
+                      {clientInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                      <span
+                        className={
+                          isCompact
+                            ? 'truncate text-xs font-semibold text-[#1c1c1c]'
+                            : 'text-sm font-semibold text-[#1c1c1c]'
+                        }
+                      >
+                        {clientName}
+                      </span>
+                      {formattedDate ? (
+                        <time className="shrink-0 text-[11px] text-[#6a6a6a]">{formattedDate}</time>
+                      ) : null}
                     </div>
-                    <time className="text-[11px] text-[#6a6a6a]">{formattedDate}</time>
+                    <ServiceDetailReviewStars
+                      rating={rating}
+                      size={isCompact ? 'sm' : 'md'}
+                      className="mt-1"
+                    />
                   </div>
                 </div>
                 {reviewText ? (
