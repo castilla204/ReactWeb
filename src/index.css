@@ -149,11 +149,11 @@
 
     /* Ficha servicio — minimalista */
     .service-detail-page {
-        @apply font-display text-[#1c1c1c] bg-white;
+        @apply font-display text-[#1c1c1c] bg-[#fafafa];
     }
 
     .service-detail-desktop {
-        @apply text-[#1c1c1c];
+        @apply text-[#1c1c1c] bg-[#fafafa];
     }
 
     .sd-page-title {
@@ -217,37 +217,29 @@
         @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:border-[#ccc] hover:bg-[#f9fafb] hover:text-[#1c1c1c];
     }
 
-    /* Galería móvil: puntos de paginación (sustituye contador 1/N) */
+    /* Galería móvil: puntos discretos sobre la foto */
     .sd-gallery-dots {
-        @apply absolute bottom-3 right-3 z-30 flex items-center gap-1.5 rounded-full px-2 py-1.5;
-        background: rgba(15, 23, 42, 0.28);
-        backdrop-filter: blur(6px);
-        pointer-events: auto;
+        @apply pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-1;
     }
 
     .sd-gallery-dot {
-        @apply h-1.5 w-1.5 shrink-0 rounded-full border-0 bg-white/40 p-0 transition-all duration-200;
+        @apply h-1 w-1 shrink-0 rounded-full border-0 bg-white/35 p-0 shadow-[0_0_0_0.5px_rgba(0,0,0,0.12)] transition-all duration-200;
     }
 
     .sd-gallery-dot.is-active {
-        @apply w-2 bg-white;
+        @apply scale-110 bg-white/90;
     }
 
     .sd-gallery-dot:focus-visible {
-        @apply outline outline-2 outline-offset-2 outline-white/90;
+        @apply outline outline-1 outline-offset-1 outline-white/80;
     }
 
-    /* Muchas fotos: puntos más compactos */
     .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) {
-        @apply gap-1 px-1.5 py-1;
+        @apply gap-0.5;
     }
 
     .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) .sd-gallery-dot {
-        @apply h-1 w-1;
-    }
-
-    .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) .sd-gallery-dot.is-active {
-        @apply w-1.5;
+        @apply h-[3px] w-[3px];
     }
 
     /* Chips entregables — dentro del marco de la foto (móvil) */

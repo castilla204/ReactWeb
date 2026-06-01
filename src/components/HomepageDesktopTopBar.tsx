@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, User } from 'lucide-react';
+import { ArrowLeft, Heart, HelpCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { LoginModal } from './LoginModal';
@@ -66,6 +66,15 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({ on
           )}
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/como-funciona')}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#d1d5db] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
+              aria-label="Cómo funciona Inspecciono"
+            >
+              <HelpCircle className="h-4 w-4 shrink-0" strokeWidth={2.1} />
+              <span className="hidden lg:inline">Cómo funciona</span>
+            </button>
             {userIsAdmin && (
               <button
                 type="button"
