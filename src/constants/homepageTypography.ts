@@ -123,7 +123,20 @@ export const SD_PAGE_INNER_MAX_CLASS =
 
 /** Contenido + barra lateral reserva */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 xl:gap-10';
+
+/** Gutter horizontal móvil (mismo que `px-4` de SD_PAGE_INNER_MAX_CLASS) */
+export const SD_MOBILE_GUTTER_CLASS = 'px-4';
+
+/** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
+export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
+
+/** Espacio bajo contenido móvil para footer fijo + safe area */
+export const SD_MOBILE_SCROLL_PAD_CLASS =
+  'pb-[calc(4.5rem+max(1rem,env(safe-area-inset-bottom,0px)))]';
+
+export const SD_MOBILE_FOOTER_INNER_CLASS =
+  'pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px)))]';
 
 /** CTA principal ficha servicio (mismo azul que homepage) */
 export const HP_SERVICE_CTA_CLASS =

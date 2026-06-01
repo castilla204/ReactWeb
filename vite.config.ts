@@ -64,6 +64,13 @@ export default defineConfig({
                 secure: false,
                 ws: true,
             },
+            // Tiles Carto same-origin (MapLibre + fetch interceptors → sin CORS en dev)
+            '/carto': {
+                target: 'https://a.basemaps.cartocdn.com',
+                changeOrigin: true,
+                secure: true,
+                rewrite: (path) => path.replace(/^\/carto/, ''),
+            },
         },
     },
         build: {

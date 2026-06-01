@@ -4,7 +4,7 @@
  */
 
 import { toast } from 'sonner';
-import { isExternalMapTileUrl } from '../utils/mapTileUrls';
+import { isExternalMapTileUrl, resolveFetchUrl } from '../utils/mapTileUrls';
 
 interface ErrorResponse {
     status: number;
@@ -185,7 +185,11 @@ export function setupErrorInterceptor(): void {
 
     window.fetch = async function (...args) {
         const [url, options = {}] = args;
-        const urlString = typeof url === 'string' ? url : url.toString();
+        const urlString = resolveFetchUrl(url);
+
+        if (isExternalMapTileUrl(urlString)) {
+            return originalFetch(...args);
+        }
 
         try {
             const response = await originalFetch(url, options);
