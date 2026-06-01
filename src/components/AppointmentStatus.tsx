@@ -598,7 +598,15 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
           viewerTz = getStoredTimezone() || 'UTC';
         }
         const tzDiffers = appointmentTimezone && viewerTz && appointmentTimezone !== viewerTz;
-        const friendlyTzLabel = formatTimezoneFriendly(appointmentTimezone);
+        // 🛡️ Round 27 — R27-T27-1-9 FIX: pasar la fecha del appointment para que el offset
+        // refleje el DST correcto de la fecha real (no del momento de renderizado). Cross-DST
+        // (cita en noviembre vista desde agosto) mostraba "(UTC+2)" en lugar del correcto
+        // "(UTC+1)" para Madrid → cliente ±1h off. `proposedDate` viene del backend; si está
+        // ausente o no parsea, formatTimezoneFriendly cae a new Date() (back-compat).
+        const friendlyTzLabel = formatTimezoneFriendly(
+          appointmentTimezone,
+          appointment.proposedDate ?? appointment.proposedDateLocal ?? null,
+        );
         // Para el inline al lado de la hora queremos solo la ciudad, sin "(UTC±X)" repetido.
         const friendlyCityOnly = friendlyTzLabel.replace(/\s*\([^)]*\)\s*$/, '');
 

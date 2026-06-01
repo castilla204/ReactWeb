@@ -1,35 +1,52 @@
 import React from 'react';
+import { Calendar, ClipboardCheck, Shield } from 'lucide-react';
 
 const STEPS = [
   {
     title: 'Pago en custodia',
-    body: 'Tu dinero queda retenido hasta que apruebes el informe.',
+    body: 'Tu dinero queda retenido de forma segura hasta que apruebes el informe del experto.',
+    Icon: Shield,
   },
   {
     title: 'Cita con el experto',
-    body: 'Propón fecha, hora y lugar dentro del horario y zona de cobertura.',
+    body: 'Propón fecha, hora y lugar dentro de su disponibilidad y zona de cobertura.',
+    Icon: Calendar,
   },
   {
     title: 'Inspección y entrega',
-    body: 'Recibes informe, fotos y vídeo. El pago se libera al confirmar.',
+    body: 'Recibes informe, fotos y vídeo. El pago se libera cuando confirmas que todo está correcto.',
+    Icon: ClipboardCheck,
   },
 ] as const;
 
-export const ServiceDetailHowItWorks: React.FC = () => (
-  <section className="mt-10 border-t border-[#e8e8e8] pt-8" aria-labelledby="sd-how-heading">
-    <h2 id="sd-how-heading" className="sd-page-title mb-4">
+interface ServiceDetailHowItWorksProps {
+  className?: string;
+}
+
+export const ServiceDetailHowItWorks: React.FC<ServiceDetailHowItWorksProps> = ({ className = '' }) => (
+  <section
+    className={`mt-6 pt-6 lg:mt-8 lg:pt-8 ${className}`}
+    aria-labelledby="sd-how-heading"
+  >
+    <h2 id="sd-how-heading" className="hp-section-title mb-4">
       ¿Cómo funciona?
     </h2>
-    <div className="grid gap-4 md:grid-cols-3">
+    <ol className="space-y-4">
       {STEPS.map((step, i) => (
-        <div key={step.title} className="border border-[#e8e8e8] rounded-lg bg-white p-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0066CC]">
-            Paso {i + 1}
-          </span>
-          <h3 className="mt-2 text-sm font-semibold text-[#1c1c1c]">{step.title}</h3>
-          <p className="mt-1 text-sm leading-snug text-[#6a6a6a]">{step.body}</p>
-        </div>
+        <li key={step.title} className="flex gap-3">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f0f6fc] text-[#0066CC]"
+            aria-hidden
+          >
+            <step.Icon className="h-4 w-4" strokeWidth={2} />
+          </div>
+          <div className="min-w-0 pt-0.5">
+            <p className="hp-eyebrow mb-0.5">Paso {i + 1}</p>
+            <h3 className="text-base font-semibold text-[#1c1c1c]">{step.title}</h3>
+            <p className="mt-1 text-sm leading-snug text-[#6a6a6a]">{step.body}</p>
+          </div>
+        </li>
       ))}
-    </div>
+    </ol>
   </section>
 );

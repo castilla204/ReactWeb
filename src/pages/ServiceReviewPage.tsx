@@ -37,13 +37,21 @@ import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
 import { getCountryName } from '../utils/countries';
 import { formatPriceNumber } from '../utils/priceUtils';
-import AppointmentMap from '../components/AppointmentMap';
+import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
-import { SD_PAGE_GRID_CLASS, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
+import {
+  SD_MOBILE_CAROUSEL_EDGE_CLASS,
+  SD_MOBILE_FOOTER_INNER_CLASS,
+  SD_MOBILE_GUTTER_CLASS,
+  SD_MOBILE_SCROLL_PAD_CLASS,
+  SD_PAGE_GRID_CLASS,
+  SD_PAGE_INNER_MAX_CLASS,
+} from '../constants/homepageTypography';
 import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
 import { ServiceDetailReviewsSection } from '../components/serviceDetail/ServiceDetailReviewsSection';
 import { ServiceDetailHowItWorks } from '../components/serviceDetail/ServiceDetailHowItWorks';
+import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { LoginModal } from '../components/LoginModal';
 
 interface ServiceReviewPageProps {
@@ -805,7 +813,7 @@ export function ServiceReviewPage({
                                 </div>
                             )) : (
                                 <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 flex items-center justify-center">
-                                    <div className="text-center px-6">
+                                    <div className={`text-center ${SD_MOBILE_GUTTER_CLASS}`}>
                                         <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
                                             <Image className="w-10 h-10 text-gray-400" strokeWidth={1.5} />
                                         </div>
@@ -818,9 +826,10 @@ export function ServiceReviewPage({
                     </div>
 
                     {/* Card blanco mejorado con mejor espaciado */}
-                    <div className="relative -mt-10 bg-white rounded-t-2xl pt-4 pb-36 shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]">
-                        {/* Título y ubicación centrados estilo Airbnb - Tipografía exacta */}
-                        <div className="px-5 text-center" style={{ marginBottom: '12px' }}>
+                    <div
+                        className={`relative -mt-10 bg-white rounded-t-2xl pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+                    >
+                        <div className={`${SD_MOBILE_GUTTER_CLASS} mb-3 text-center`}>
                             <h1 
                                 style={{
                                     fontSize: '22px',
@@ -836,8 +845,7 @@ export function ServiceReviewPage({
                                 {serviceTypeName} por <span style={{ textDecoration: 'underline', textDecorationColor: 'rgb(209, 213, 219)', textUnderlineOffset: '3px' }}>{finalExpertName}</span>
                             </h1>
                             
-                            {/* Ubicación y tipo centrados */}
-                            <div style={{ marginBottom: '12px' }}>
+                            <div>
                                 <h2 
                                     style={{
                                         fontSize: '14px',
@@ -862,55 +870,32 @@ export function ServiceReviewPage({
                                             ? locationParts.join(', ')
                                             : (countryName || 'España');
                                         
-                                        return `Ubicación: ${location}`;
+                                        return location;
                                     })()}
                                 </h2>
                             </div>
-                            
-                            {/* ✅ HORARIO AL PRINCIPIO - Estilo SearchDashboard */}
-                            {finalAvailability && (
-                                <div className="px-5" style={{ marginBottom: '0px' }}>
-                                    <div 
-                                        className="flex flex-wrap items-center justify-center gap-1.5"
-                                        style={{
-                                            fontSize: '13px',
-                                            lineHeight: '18px',
-                                            fontWeight: 400,
-                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                            color: 'rgb(34, 34, 34)',
-                                        }}
-                                    >
-                                        {finalAvailability.daysOfWeek?.slice(0, 7).map((day: string, idx: number) => (
-                                            <span 
-                                                key={idx} 
-                                                className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 font-medium"
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                }}
-                                            >
-                                                {formatDay(day)}
-                                            </span>
-                                        ))}
-                                        {finalAvailability.startTime && finalAvailability.endTime && (
-                                            <>
-                                                <span className="text-gray-400 mx-1">·</span>
-                                                <span className="text-gray-700 font-medium">
-                                                    {finalAvailability.startTime.substring(0, 5)} - {finalAvailability.endTime.substring(0, 5)}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
                                 </div>
+
+                            {(finalAvailability || expertLocation) && (
+                                <ServiceDetailBookingMeta
+                                    layout="minimal"
+                                    availability={finalAvailability ?? undefined}
+                                    timezone={finalService?.expert?.timezone}
+                                    isOnVacation={finalService?.expert?.isOnVacation}
+                                    location={expertLocation ?? undefined}
+                                    rangeKm={expertRange || 25}
+                                    coverageFirst
+                                    mapVariant="preview"
+                                    mapClassName="h-[100px] w-full rounded-none border-x-0 border-y border-[#ebebeb]"
+                                    showAvailabilityHint={false}
+                                    className="mb-1"
+                                />
                             )}
-                            
-                                </div>
+
                     
-                    {/* Barra de separación discreta */}
-                    <div className="border-t border-gray-200" style={{ marginTop: '0px', marginBottom: '12px' }}></div>
-                    
-                    {/* Sección "Revisor" estilo Airbnb */}
-                    <div className="px-6" style={{ marginTop: '12px', marginBottom: '12px' }}>
+                    <div className="my-3 border-t border-[#e8e8e8]" />
+
+                    <div className={`${SD_MOBILE_GUTTER_CLASS} my-3`}>
                         <div className="flex items-start gap-4">
                             <div className="relative flex-shrink-0" style={{ height: '40px', width: '40px' }}>
                                 <button
@@ -978,11 +963,9 @@ export function ServiceReviewPage({
                         </div>
                     </div>
                     
-                    {/* Barra de separación discreta */}
-                    <div className="border-t border-gray-200" style={{ marginTop: '0px', marginBottom: '12px' }}></div>
-                    
-                    {/* Tabs: Acerca del servicio y ¿Cómo funciona? */}
-                        <div className="mb-6 px-5">
+                    <div className="my-3 border-t border-[#e8e8e8]" />
+
+                        <div className={`mb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
                         <div className="flex border-b border-gray-200">
                             <button
                                 onClick={() => setActiveTab('about')}
@@ -1124,78 +1107,6 @@ export function ServiceReviewPage({
                             </>
                         )}
 
-                        {/* ✅ MAPA DE RANGO DE TRABAJO DEL EXPERTO */}
-                        {expertLocation ? (
-                                    <div className="mb-6">
-                                <h3 
-                                    style={{
-                                        fontSize: '16px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                        marginBottom: '8px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    Zona de cobertura
-                                </h3>
-                                {expertRange ? (
-                                    <p 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(113, 113, 113)',
-                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                            marginBottom: '12px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        El experto cubre un radio de {expertRange} km desde su ubicación
-                                    </p>
-                                ) : (
-                                    <p 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            color: 'rgb(113, 113, 113)',
-                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                            marginBottom: '12px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        Ubicación del experto
-                                    </p>
-                                )}
-                                        <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                    <AppointmentMap
-                                        expertLocation={expertLocation}
-                                        expertRange={expertRange || 25}
-                                        expertCountry={expertCountry}
-                                        className="w-full h-full"
-                                        disabled={true}
-                                        showSearch={false}
-                                        showCountrySelector={false}
-                                                showExpertMarker={true}
-                                        defaultZoom={9}
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                                    <div className="mb-8">
-                                <div className="rounded-xl border border-[#dbeafe] bg-[#f5f9fd] p-4">
-                                    <p className="text-sm text-[#1e40af]">
-                                        ℹ️ La información de ubicación del experto no está disponible en este momento.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
                                 {/* Información del Experto Móvil mejorada */}
                                 {showSecondaryDescription && (
                                     <div className="mb-6">
@@ -1233,7 +1144,7 @@ export function ServiceReviewPage({
                         
                         {/* Contenido del tab "¿Cómo funciona?" */}
                         {activeTab === 'how' && (
-                            <div className="pt-6 px-5">
+                            <div className="pt-6">
                                 <div className="space-y-5">
                                     {/* Paso 1 */}
                                     <div>
@@ -1506,8 +1417,9 @@ export function ServiceReviewPage({
                         {/* Reseñas (MÓVIL - MEJORADO) */}
                         {finalReviews.length > 0 ? (
                             <>
-                                <div className="h-px bg-gray-200 mb-4 mx-4" />
-                                <div className="mb-8 px-4 w-full">
+                                <div className="my-4 border-t border-[#e8e8e8]" />
+                                <div className="mb-8 w-full">
+                                    <div className={`${SD_MOBILE_GUTTER_CLASS} mb-4`}>
                                     {/* Texto de reseñas verificadas */}
                                     <div className="mb-2">
                                         <p 
@@ -1561,10 +1473,11 @@ export function ServiceReviewPage({
                                             </span>
                                         </div>
                                     </div>
+                                    </div>
                                     
                                     <div 
                                         ref={reviewsScrollRefMobile}
-                                        className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide w-full snap-x snap-mandatory"
+                                        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide w-full ${SD_MOBILE_CAROUSEL_EDGE_CLASS}`}
                                     >
                                         {finalReviews.map((review: any, idx: number) => {
                                             // Formatear fecha en formato "mes de año" como Airbnb
@@ -1587,7 +1500,7 @@ export function ServiceReviewPage({
                                             const hasImages = review.imageUrls && review.imageUrls.length > 0;
                                             
                                             return (
-                                                <div key={review.id || idx} className={`flex-shrink-0 w-[75%] max-w-[320px] snap-start ${idx === 0 ? 'ml-4' : ''} ${idx === finalReviews.length - 1 ? 'mr-4' : ''}`}>
+                                                <div key={review.id || idx} className="w-[75%] max-w-[320px] shrink-0 snap-start">
                                                     {/* Estructura mejorada para móvil - Altura fija */}
                                                     <div className={`flex flex-col bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-[380px] ${isExpanded && reviewText.length > 300 ? 'overflow-y-auto' : 'overflow-hidden'}`}>
                                                         {/* 1. Arriba: Estrellas y fecha */}
@@ -1719,7 +1632,9 @@ export function ServiceReviewPage({
                             </>
                         ) : (
                             /* ESTADO SIN RESEÑAS MÓVIL */
-                            <div className="mb-8 px-4 py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200 text-center w-full mt-6">
+                            <div
+                                className={`mb-8 mt-6 w-full rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-8 text-center ${SD_MOBILE_GUTTER_CLASS}`}
+                            >
                                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100">
                                     <Star className="w-6 h-6 text-gray-300 fill-gray-50" />
                                 </div>
@@ -1758,8 +1673,8 @@ export function ServiceReviewPage({
                 </div>
 
                 {/* Footer fijo móvil mejorado - Estilo Airbnb */}
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-safe">
-                    <div className="px-5 py-4">
+                <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-2px_14px_rgba(15,23,42,0.07)]">
+                    <div className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_FOOTER_INNER_CLASS}`}>
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                                 <button
@@ -1812,61 +1727,25 @@ export function ServiceReviewPage({
                 </div>
             </div>
 
-            {/* ========== DESKTOP — layout minimalista ========== */}
-            <div className="service-detail-desktop hidden lg:block min-h-screen">
-                <header className="sticky top-0 z-30 border-b border-[#e8e8e8] bg-white/90 backdrop-blur-md">
-                    <div className={`${SD_PAGE_INNER_MAX_CLASS} flex h-14 items-center gap-3`}>
-                        <button type="button" onClick={onBack} className="sd-icon-btn" aria-label="Volver">
-                            <ArrowLeft className="h-5 w-5" />
-                        </button>
-                        <div className="min-w-0 flex-1">
-                            <p className="sd-page-title truncate">{serviceTypeName}</p>
-                            <p className="truncate text-xs text-[#6a6a6a]">
-                                {finalExpertName}
-                                {(finalService?.expert?.city || finalService?.expert?.country) && (
-                                    <>
-                                        {' · '}
-                                        {[
-                                            finalService?.expert?.city,
-                                            finalService?.expert?.country
-                                                ? getCountryName(finalService.expert.country)
-                                                : '',
-                                        ]
-                                            .filter(Boolean)
-                                            .join(', ')}
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                        <button type="button" className="sd-icon-btn" aria-label="Compartir">
-                            <Share2 className="h-4 w-4" />
-                        </button>
-                        <button
-                            type="button"
-                            className="sd-icon-btn"
-                            aria-label="Favorito"
-                            onClick={() => setIsFavorite(!isFavorite)}
-                        >
-                            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`} />
-                        </button>
-                    </div>
-                </header>
+            {/* ========== DESKTOP — topbar homepage + grid (galería columna izquierda) ========== */}
+            <div className="service-detail-desktop hidden lg:block min-h-screen bg-[#fafafa]">
+                <HomepageDesktopTopBar onBack={onBack} />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-28 pt-6`}>
-                    <ServiceDetailDesktopGallery
-                        images={validImages}
-                        onOpen={handleImageClick}
-                        loadingImages={loadingImages}
-                        failedImages={failedImages}
-                        onImageError={handleImageError}
-                        onImageLoad={handleImageLoad}
-                        onImageLoadStart={handleImageLoadStart}
-                    />
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-6 lg:pt-8`}>
+                    <div className={`${SD_PAGE_GRID_CLASS}`}>
+                        <div className="min-w-0 space-y-6 lg:space-y-8">
+                            <ServiceDetailDesktopGallery
+                                images={validImages}
+                                onOpen={handleImageClick}
+                                loadingImages={loadingImages}
+                                failedImages={failedImages}
+                                onImageError={handleImageError}
+                                onImageLoad={handleImageLoad}
+                                onImageLoadStart={handleImageLoadStart}
+                            />
 
-                    <div className={`${SD_PAGE_GRID_CLASS} mt-8`}>
-                        <div className="min-w-0 space-y-7">
                             {/* Experto */}
-                            <div className="flex items-center gap-4 border-b border-[#e8e8e8] pb-6">
+                            <div className="flex items-center gap-4 border-b border-[#e8e8e8] pb-5">
                                 <button
                                     type="button"
                                     className="shrink-0"
@@ -1889,22 +1768,6 @@ export function ServiceReviewPage({
                                 </button>
                             </div>
 
-                            {finalAvailability && (
-                                <div>
-                                    <p className="sd-section-label">Disponibilidad</p>
-                                    <p className="sd-body">
-                                        {finalAvailability.daysOfWeek?.slice(0, 7).map(formatDay).join(' · ')}
-                                        {finalAvailability.startTime && finalAvailability.endTime && (
-                                            <>
-                                                {' · '}
-                                                {finalAvailability.startTime.substring(0, 5)}–
-                                                {finalAvailability.endTime.substring(0, 5)}
-                                            </>
-                                        )}
-                                    </p>
-                                </div>
-                            )}
-
                             {finalCompletedSearches > 0 && (
                                 <p className="text-sm text-[#0066CC] font-medium">
                                     {finalCompletedSearches} trabajos completados
@@ -1912,20 +1775,24 @@ export function ServiceReviewPage({
                             )}
 
                             <section>
-                                <p className="sd-section-label">Acerca del servicio</p>
-                                <p className="sd-body whitespace-pre-line">{finalServiceTypeDescription}</p>
+                                <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
+                                <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
+                                    {finalServiceTypeDescription}
+                                </p>
                             </section>
 
                             {finalUserConditions && (
                                 <section>
-                                    <p className="sd-section-label">Detalles del experto</p>
-                                    <p className="sd-body whitespace-pre-line">{finalUserConditions}</p>
+                                    <h2 className="hp-section-title mb-2">Detalles del experto</h2>
+                                    <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
+                                        {finalUserConditions}
+                                    </p>
                                 </section>
                             )}
 
                             {finalDeliverableTypes.length > 0 && (
                                 <section>
-                                    <p className="sd-section-label">Qué incluye</p>
+                                    <h2 className="hp-section-title mb-2">Qué incluye</h2>
                                     <ul className="mt-2 space-y-2">
                                         {finalDeliverableTypes.map((dt) => {
                                             const n = (dt.displayName || dt.name).toLowerCase();
@@ -1934,7 +1801,7 @@ export function ServiceReviewPage({
                                             else if (n.includes('imagen') || n.includes('foto')) Icon = Image;
                                             else if (n.includes('archivo')) Icon = File;
                                             return (
-                                                <li key={dt.id} className="flex items-center gap-2.5 text-sm text-[#1c1c1c]">
+                                                <li key={dt.id} className="flex items-center gap-2.5 text-sm text-[#6a6a6a]">
                                                     <Icon className="h-4 w-4 shrink-0 text-[#0066CC]" />
                                                     {dt.displayName || dt.name}
                                                 </li>
@@ -1944,46 +1811,101 @@ export function ServiceReviewPage({
                                 </section>
                             )}
 
-                            {expertLocation && (
-                                <section>
-                                    <p className="sd-section-label">Zona de cobertura</p>
-                                    <p className="sd-body mb-3">
-                                        {expertRange
-                                            ? `Radio de ${expertRange} km desde la ubicación del experto`
-                                            : 'Ubicación del experto'}
-                                    </p>
-                                    <div className="h-[220px] overflow-hidden rounded-md border border-[#e8e8e8] bg-[#f5f5f5]">
-                                        <AppointmentMap
-                                            expertLocation={expertLocation}
-                                            expertRange={expertRange || 25}
-                                            expertCountry={expertCountry}
-                                            className="h-full w-full"
-                                            disabled
-                                            showSearch={false}
-                                            showCountrySelector={false}
-                                            showExpertMarker
-                                            defaultZoom={9}
-                                        />
-                                    </div>
-                                </section>
-                            )}
+                            <ServiceDetailReviewsSection
+                              reviews={finalReviews}
+                              averageRating={finalRating}
+                              expandedReviews={expandedReviews}
+                              onToggleExpand={(key) =>
+                                setExpandedReviews((prev) => ({ ...prev, [key]: !prev[key] }))
+                              }
+                              onOpenReviewImage={(reviewKey, imgIdx) => {
+                                setReviewLightboxIndex((prev) => ({ ...prev, [reviewKey]: imgIdx }));
+                                setReviewLightboxOpen((prev) => ({ ...prev, [reviewKey]: true }));
+                              }}
+                              className="!mt-0 !border-t-0 !pt-0"
+                            />
+                            <ServiceDetailHowItWorks className="!mt-0 !pt-0" />
                         </div>
 
-                        <aside className="lg:sticky lg:top-[4.5rem] lg:self-start">
-                            <div className="sd-aside-card space-y-4">
-                                <div>
+                        <aside className="lg:sticky lg:top-12 lg:self-start">
+                            <article className="sd-aside-card flex max-h-[calc(100dvh-3rem)] flex-col overflow-y-auto">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <h1 className="font-display text-lg font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]">
+                                            {serviceTypeName}
+                                        </h1>
+                                        <p className="mt-1 text-xs text-[#6a6a6a]">
+                                            {finalExpertName}
+                                            {(finalService?.expert?.city || finalService?.expert?.country) && (
+                                                <>
+                                                    {' · '}
+                                                    {[
+                                                        finalService?.expert?.city,
+                                                        finalService?.expert?.country
+                                                            ? getCountryName(finalService.expert.country)
+                                                            : '',
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(', ')}
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <button
+                                            type="button"
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:bg-[#f9fafb]"
+                                            aria-label="Compartir"
+                                        >
+                                            <Share2 className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:bg-[#f9fafb]"
+                                            aria-label="Favorito"
+                                            onClick={() => setIsFavorite(!isFavorite)}
+                                        >
+                                            <Heart
+                                                className={`h-4 w-4 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                                <section className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
                                     <p className="text-2xl font-semibold tracking-tight text-[#1c1c1c]">
                                         {renderServicePrice(finalPrice)}
                                     </p>
                                     <p className="text-sm text-[#6a6a6a]">por servicio</p>
-                                </div>
-                                {finalRating > 0 && (
-                                    <p className="text-sm text-[#444]">
-                                        <span className="font-semibold text-[#1c1c1c]">{finalRating.toFixed(1)}</span>
-                                        {' · '}
-                                        {finalReviews.length} reseña{finalReviews.length !== 1 ? 's' : ''}
-                                    </p>
+                                    {finalRating > 0 && (
+                                        <p className="mt-1.5 flex items-center gap-1 text-sm text-[#6a6a6a]">
+                                            <Star className="h-3.5 w-3.5 fill-[#0066CC] text-[#0066CC]" aria-hidden />
+                                            <span className="font-semibold text-[#1c1c1c]">
+                                                {finalRating.toFixed(1)}
+                                            </span>
+                                            <span className="text-[#d4d4d4]" aria-hidden>
+                                                ·
+                                            </span>
+                                            <span>
+                                                {finalReviews.length} reseña
+                                                {finalReviews.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </p>
+                                    )}
+                                </section>
+
+                                {(finalAvailability || expertLocation) && (
+                                    <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+                                        <ServiceDetailBookingMeta
+                                            availability={finalAvailability ?? undefined}
+                                            timezone={finalService?.expert?.timezone}
+                                            isOnVacation={finalService?.expert?.isOnVacation}
+                                            location={expertLocation ?? undefined}
+                                            rangeKm={expertRange || 25}
+                                        />
+                                    </div>
                                 )}
+
+                                <footer className="mt-4 shrink-0 space-y-2 border-t border-[#e8e8e8] pt-4">
                                 {isAuthenticated ? (
                                     <button
                                         type="button"
@@ -2012,64 +1934,9 @@ export function ServiceReviewPage({
                                 <p className="text-xs leading-relaxed text-[#6a6a6a]">
                                     Sin cargo hasta confirmar la reserva con el experto.
                                 </p>
-                            </div>
+                                </footer>
+                            </article>
                         </aside>
-                    </div>
-
-                    <ServiceDetailReviewsSection
-                      reviews={finalReviews}
-                      averageRating={finalRating}
-                      expandedReviews={expandedReviews}
-                      onToggleExpand={(key) =>
-                        setExpandedReviews((prev) => ({ ...prev, [key]: !prev[key] }))
-                      }
-                      onOpenReviewImage={(reviewKey, imgIdx) => {
-                        setReviewLightboxIndex((prev) => ({ ...prev, [reviewKey]: imgIdx }));
-                        setReviewLightboxOpen((prev) => ({ ...prev, [reviewKey]: true }));
-                      }}
-                    />
-                    <ServiceDetailHowItWorks />
-                </div>
-                
-                {/* Barra fija desktop para contratar - Similar a móvil */}
-                <div className="hidden lg:block fixed bottom-0 left-0 right-0 z-40 border-t border-[#e8e8e8] bg-white">
-                    <div className={`${SD_PAGE_INNER_MAX_CLASS} py-3`}>
-                        <div className="flex items-center justify-between gap-6">
-                            <div className="flex-1 min-w-0">
-                                <div className="flex flex-col">
-                                    <div className="flex items-baseline gap-1 flex-wrap">
-                                        <span
-                                            className="text-[20px] font-bold leading-[1.5]"
-                                            style={{
-                                                color: '#0066CC',
-                                            }}
-                                            aria-label={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
-                                        >
-                                            {renderServicePrice(finalPrice)}
-                                        </span>
-                                    </div>
-                                    <span className="text-[14px] text-gray-600 font-medium leading-[1.4]">el servicio</span>
-                                </div>
-                            </div>
-                            {isAuthenticated ? (
-                                <button
-                                    onClick={handleReserveClick}
-                                    type="button"
-                                    className="sd-btn-primary min-w-[140px]"
-                                >
-                                    <span className="relative z-10" data-button-content="true">Reservar</span>
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleGoogleSignIn}
-                                    disabled={!isGoogleReady || isAuthenticating}
-                                    type="button"
-                                    className={`sd-btn-primary min-w-[140px] ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
-                                >
-                                    {isAuthenticating ? authStep || 'Iniciando sesión…' : 'Inicia sesión'}
-                                </button>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>

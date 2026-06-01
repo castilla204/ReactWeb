@@ -10,6 +10,7 @@ import { isAdmin } from '../utils/admin';
 // Importar imágenes directamente desde src/media para que Vite las procese
 import { LoginModal } from './LoginModal';
 import { CurrencySelector } from './CurrencySelector';
+import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
 import motorcycleImg from '../media/motorcycle.png';
@@ -464,52 +465,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {/* ✅ Overlay de transición con skeletons */}
       {isNavigating && <MapPageSkeleton />}
       
-      {/* Desktop — barra fina */}
-      <header
-        className="sticky top-0 z-50 hidden md:block border-b border-[#dbe8f5]/80"
-        style={{
-          background:
-            'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, #fafafa 100%)',
-        }}
-      >
-        <div className="w-full h-12 flex items-center justify-between px-6 md:px-8 lg:px-10 xl:px-14">
-          <button
-            type="button"
-            onClick={() => {
-              if (isAuthenticated) {
-                navigate('/busquedas');
-              } else {
-                setIsLoginModalOpen(true);
-              }
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] hover:border-[#222222] hover:bg-[#f9fafb] transition-colors"
-          >
-            <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
-            {isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
-          </button>
-
-          <div className="flex items-center gap-2">
-            {userIsAdmin && (
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="text-xs font-semibold text-red-600 px-2.5 py-1 rounded-md border border-red-300 hover:bg-red-50"
-              >
-                Admin
-              </button>
-            )}
-            <CurrencySelector variant="compact" />
-            <button
-              type="button"
-              aria-label="Favoritos"
-              onClick={() => navigate('/favoritos')}
-              className="h-8 w-8 rounded-full border border-[#e5e7eb] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
-            >
-              <Heart className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <HomepageDesktopTopBar />
 
       {!isMobile && (
         <Suspense
