@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { File, FileText, Image, Video } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { getDeliverableDetail } from '../../utils/deliverableDetailContent';
 import {
@@ -18,14 +18,6 @@ function getDeliverableLabel(dt: ServiceDeliverableType): string {
     dt.deliverableType?.name ||
     ''
   ).trim();
-}
-
-function pickIcon(label: string) {
-  const n = label.toLowerCase();
-  if (n.includes('video')) return Video;
-  if (n.includes('imagen') || n.includes('foto') || n.includes('photo')) return Image;
-  if (n.includes('archivo')) return File;
-  return FileText;
 }
 
 export function normalizeDeliverableTypes(
@@ -71,7 +63,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     <ul className={`flex flex-wrap gap-2 ${isOverlay ? '' : ''}`}>
       {visible.map((dt, idx) => {
         const label = getDeliverableLabel(dt);
-        const Icon = pickIcon(label);
         const chipClass = isOverlay ? 'sd-deliverable-chip' : 'sd-deliverable-chip-inline';
         return (
           <li key={dt.id ?? `${label}-${idx}`}>
@@ -84,7 +75,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
-              <Icon className="sd-deliverable-chip-icon" aria-hidden />
               <span>{label}</span>
             </button>
           </li>
@@ -138,10 +128,11 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
         >
           <p
             id="sd-deliverables-guide-label"
-            className="sd-deliverable-guide-label mb-1.5"
+            className="sd-deliverable-guide-label mb-1.5 inline-flex items-center gap-1"
             style={{ animationDelay: '0ms' }}
           >
-            Incluye · pulsa para ver más
+            <span>Incluye · pulsa para ver más</span>
+            <ChevronRight className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
           </p>
           {chipList}
         </div>

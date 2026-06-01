@@ -217,16 +217,94 @@
         @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:border-[#ccc] hover:bg-[#f9fafb] hover:text-[#1c1c1c];
     }
 
-    /* Chips entregables — banda inferior de la galería, sobre la foto */
+    /* Galería móvil: puntos de paginación (sustituye contador 1/N) */
+    .sd-gallery-dots {
+        @apply absolute bottom-3 right-3 z-30 flex items-center gap-1.5 rounded-full px-2 py-1.5;
+        background: rgba(15, 23, 42, 0.28);
+        backdrop-filter: blur(6px);
+        pointer-events: auto;
+    }
+
+    .sd-gallery-dot {
+        @apply h-1.5 w-1.5 shrink-0 rounded-full border-0 bg-white/40 p-0 transition-all duration-200;
+    }
+
+    .sd-gallery-dot.is-active {
+        @apply w-2 bg-white;
+    }
+
+    .sd-gallery-dot:focus-visible {
+        @apply outline outline-2 outline-offset-2 outline-white/90;
+    }
+
+    /* Muchas fotos: puntos más compactos */
+    .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) {
+        @apply gap-1 px-1.5 py-1;
+    }
+
+    .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) .sd-gallery-dot {
+        @apply h-1 w-1;
+    }
+
+    .sd-gallery-dots:has(.sd-gallery-dot:nth-child(8)) .sd-gallery-dot.is-active {
+        @apply w-1.5;
+    }
+
+    /* Chips entregables — dentro del marco de la foto (móvil) */
     .sd-deliverable-guide {
-        @apply absolute inset-x-0 z-20 flex flex-col items-start justify-end px-3 pb-3;
-        bottom: 0.75rem;
+        @apply pointer-events-none;
+    }
+
+    /* Ficha móvil: chips en la banda inferior de la foto (encima del solape -mt-10) */
+    .sd-deliverable-guide-on-image {
+        @apply absolute inset-x-0 bottom-0 z-20 flex flex-col items-start justify-end px-4;
+        /* 2.5rem = -mt-10 de la card; 0.75rem = respiro desde el borde de la foto */
+        padding-bottom: calc(2.5rem + 0.75rem);
         pointer-events: none;
     }
 
+    .sd-deliverable-guide-on-image .sd-deliverable-guide-label {
+        @apply mb-1.5 rounded-md border border-white/25 bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white backdrop-blur-[6px];
+        text-shadow: none;
+        opacity: 0;
+        animation: sd-deliverable-rise-from-sheet 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-chip {
+        @apply pointer-events-auto inline-flex items-center rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_10px_rgba(15,23,42,0.14)] backdrop-blur-[10px] saturate-150;
+        opacity: 0;
+        animation: sd-deliverable-rise-from-sheet 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes sd-deliverable-rise-from-sheet {
+        from {
+            opacity: 0;
+            transform: translateY(2.5rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sd-deliverable-chip-inline {
+        @apply inline-flex items-center rounded-full border border-[#e8e8e8]/90 bg-white/90 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-sm backdrop-blur-[8px];
+    }
+
     @media (min-width: 1024px) {
-        .sd-deliverable-guide {
-            bottom: 0;
+        .sd-deliverable-guide-on-image {
+            @apply static inset-auto flex-col justify-end px-0;
+            padding-bottom: 0;
+        }
+
+        .sd-deliverable-guide-on-image .sd-deliverable-guide-label,
+        .sd-deliverable-guide-on-image .sd-deliverable-chip {
+            animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            transform: none;
+        }
+
+        .sd-deliverable-guide:not(.sd-deliverable-guide-on-image) {
+            @apply absolute inset-x-0 bottom-0 z-20 flex flex-col items-start justify-end px-3;
             padding-bottom: 0.75rem;
         }
     }
@@ -239,23 +317,15 @@
     }
 
     .sd-deliverable-chip {
-        @apply pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-[12px] font-medium leading-none text-[#1c1c1c] shadow-[0_2px_14px_rgba(15,23,42,0.18)];
+        @apply pointer-events-auto inline-flex items-center rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_10px_rgba(15,23,42,0.14)] backdrop-blur-[10px] saturate-150;
         opacity: 0;
         animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    .sd-deliverable-chip-icon {
-        @apply h-3.5 w-3.5 shrink-0 text-[#0066CC];
-    }
-
-    .sd-deliverable-chip-inline {
-        @apply inline-flex items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-[12px] font-medium leading-none text-[#1c1c1c] shadow-sm;
     }
 
     @keyframes sd-deliverable-rise {
         from {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(1.25rem);
         }
         to {
             opacity: 1;
@@ -265,10 +335,12 @@
 
     @media (prefers-reduced-motion: reduce) {
         .sd-deliverable-guide-label,
-        .sd-deliverable-chip {
+        .sd-deliverable-chip,
+        .sd-deliverable-guide-on-image .sd-deliverable-guide-label,
+        .sd-deliverable-guide-on-image .sd-deliverable-chip {
             animation: none;
             opacity: 1;
-            transform: none;
+            transform: translateY(0);
         }
     }
 
