@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { LoginModal } from './LoginModal';
 import { authService } from '../services/authService';
-import { MessageSquare } from 'lucide-react';
+import { HelpCircle, MessageSquare } from 'lucide-react';
 import { UserRole, RoleChecker } from '../utils/roleChecker';
 import {
   ensureGoogleIdentityReady,
@@ -82,8 +82,18 @@ export const MobileBottomBar: React.FC = () => {
   const wishlistsActive = isActive('/favoritos');
   const searchesActive = isActive('/busquedas');
   const messagesActive = isActive('/mis-mensajes');
+  const howItWorksActive = isActive('/como-funciona');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
+
+  const guestTabWidth = isAuthenticated ? '80px' : '72px';
+  const guestTabMargin = isAuthenticated ? '-8px' : '-6px';
+
+  const handleHowItWorksClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/como-funciona');
+  };
 
   const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -203,7 +213,7 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: isAuthenticated ? '80px' : '99px',
+            width: guestTabWidth,
             height: '44px',
             flexShrink: 0,
             border: 'none',
@@ -268,10 +278,10 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: isAuthenticated ? '80px' : '99px',
+            width: guestTabWidth,
             height: '44px',
             flexShrink: 0,
-            marginLeft: isAuthenticated ? '-8px' : '-20px',
+            marginLeft: guestTabMargin,
             border: 'none',
             background: 'transparent',
             padding: 0,
@@ -320,6 +330,52 @@ export const MobileBottomBar: React.FC = () => {
           </div>
         </button>
 
+        {/* Cómo funciona — solo invitados */}
+        {!isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleHowItWorksClick}
+            onTouchEnd={handleHowItWorksClick}
+            aria-current={howItWorksActive ? 'page' : undefined}
+            aria-label="Cómo funciona"
+            disabled={howItWorksActive}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: guestTabWidth,
+              height: '44px',
+              flexShrink: 0,
+              marginLeft: guestTabMargin,
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              color: howItWorksActive ? '#0066CC' : '#717171',
+              cursor: howItWorksActive ? 'default' : 'pointer',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '4px',
+              }}
+            >
+              <HelpCircle
+                size={24}
+                strokeWidth={2}
+                style={{ color: howItWorksActive ? '#0066CC' : '#717171' }}
+                aria-hidden
+              />
+            </div>
+            <div style={tabLabelStyle(howItWorksActive)}>Ayuda</div>
+          </button>
+        )}
+
         {/* Mis mensajes - button (solo cuando está autenticado) */}
         {isAuthenticated && (
           <button
@@ -336,7 +392,7 @@ export const MobileBottomBar: React.FC = () => {
               width: '80px',
               height: '44px',
               flexShrink: 0,
-              marginLeft: '-8px',
+              marginLeft: guestTabMargin,
               border: 'none',
               background: 'transparent',
               padding: 0,
@@ -385,10 +441,10 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: isAuthenticated ? '80px' : '99px',
+            width: guestTabWidth,
             height: '44px',
             flexShrink: 0,
-            marginLeft: isAuthenticated ? '-8px' : '-20px',
+            marginLeft: guestTabMargin,
             border: 'none',
             background: 'transparent',
             padding: 0,

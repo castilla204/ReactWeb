@@ -13,6 +13,8 @@ const MAP_THEME = {
   sky: '#dce9f2',
   brand: '#0066CC',
   brandStroke: 'rgba(0, 102, 204, 0.5)',
+  brandFillPreview: 'rgba(0, 102, 204, 0.08)',
+  brandStrokePreview: 'rgba(0, 102, 204, 0.2)',
 } as const;
 
 function buildCartoStyle(): maplibregl.StyleSpecification {
@@ -123,8 +125,8 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
             type: 'fill',
             source: 'coverage',
             paint: {
-              'fill-color': MAP_THEME.brand,
-              'fill-opacity': isPreview ? 0.18 : 0.16,
+              'fill-color': isPreview ? MAP_THEME.brandFillPreview : MAP_THEME.brand,
+              'fill-opacity': isPreview ? 1 : 0.16,
             },
           });
           map.addLayer({
@@ -132,8 +134,8 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
             type: 'line',
             source: 'coverage',
             paint: {
-              'line-color': MAP_THEME.brandStroke,
-              'line-width': isPreview ? 2.5 : 2.5,
+              'line-color': isPreview ? MAP_THEME.brandStrokePreview : MAP_THEME.brandStroke,
+              'line-width': isPreview ? 1.25 : 2.5,
             },
           });
         } else {
@@ -141,8 +143,12 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
         }
 
         const pin = document.createElement('div');
-        const pinSize = isPreview ? 12 : 16;
-        pin.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;border-radius:50%;background:${MAP_THEME.brand};border:2.5px solid #fff;box-shadow:0 2px 10px rgba(0,102,204,0.4)"></div>`;
+        const pinSize = isPreview ? 8 : 16;
+        const pinBorder = isPreview ? '1.5px' : '2.5px';
+        const pinShadow = isPreview
+          ? '0 1px 4px rgba(0,102,204,0.2)'
+          : '0 2px 10px rgba(0,102,204,0.4)';
+        pin.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;border-radius:50%;background:${MAP_THEME.brand};border:${pinBorder} solid #fff;box-shadow:${pinShadow}"></div>`;
         markerRef.current?.remove();
         markerRef.current = new maplibregl.Marker({ element: pin, anchor: 'center' })
           .setLngLat([lng, lat])
@@ -201,9 +207,15 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative overflow-hidden bg-[#dce9f2] ${
-        isFlush ? 'border-[#ebebeb]' : 'rounded-lg border border-[#dbe8f5]'
-      } ${isPreview && !isFlush ? 'shadow-inner' : ''} ${className}`.trim()}
+      className={`relative overflow-hidden ${
+        isPreview ? 'bg-[#eef2f5]' : 'bg-[#dce9f2]'
+      } ${
+        isFlush
+          ? isPreview
+            ? 'border-0'
+            : 'border-[#ebebeb]'
+          : 'rounded-lg border border-[#dbe8f5]'
+      } ${isPreview && !isFlush ? '' : ''} ${className}`.trim()}
     >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {isPreview && (
@@ -211,7 +223,7 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background:
-              'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 35%, rgba(220,233,242,0.25) 100%)',
+              'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(238,242,245,0.15) 100%)',
           }}
           aria-hidden
         />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Globe } from 'lucide-react';
+import { ArrowLeft, Globe, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
@@ -29,8 +29,8 @@ import {
 
 interface CheckoutPageProps {}
 
-const checkoutRowLabelClass = 'text-sm font-semibold text-[#1c1c1c] leading-[18px]';
-const checkoutRowValueClass = 'text-base text-[#6a6a6a] leading-5';
+const checkoutRowLabelClass = 'text-sm font-semibold leading-[18px] text-[#1c1c1c]';
+const checkoutRowValueClass = 'text-sm leading-snug text-[#6a6a6a]';
 const checkoutCardClass =
     'overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-sm';
 const checkoutDividerClass = 'h-px bg-[#e8e8e8]';
@@ -360,6 +360,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const finalExpertName = service.expert?.user?.name || 'Experto';
     const finalServiceTypeName = service.serviceTypeName || 'Servicio';
 
+    const handleBack = () => {
+        if (serviceId) {
+            navigate(`/service/${serviceId}`);
+            return;
+        }
+        navigate(-1);
+    };
+
     return (
         <>
             {/* Versión Desktop */}
@@ -533,18 +541,28 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
             {/* Versión Móvil */}
             <div className="min-h-screen bg-[#fafafa] lg:hidden">
-                <div className={`pt-6 pb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
-                    <h1
-                        className="relative inline-block text-[26px] font-bold leading-8 tracking-[-0.01em] text-[#1c1c1c]"
-                        tabIndex={-1}
-                        style={{ fontFamily: HP_FONT }}
-                    >
-                        Finaliza tu reserva
-                        <span aria-hidden style={hpTitleUnderlineBarStyle} />
-                    </h1>
-                </div>
-
                 <div className={SD_MOBILE_SCROLL_PAD_CLASS}>
+                    <header
+                        className={`${SD_MOBILE_GUTTER_CLASS} pb-4 pt-[max(1rem,env(safe-area-inset-top,0px))]`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                className="sd-icon-btn shrink-0"
+                                aria-label="Volver"
+                            >
+                                <ArrowLeft className="h-5 w-5" aria-hidden />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                                <h1 className="sd-page-title relative inline-block text-[22px] leading-[26px]">
+                                    Finaliza tu reserva
+                                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
+                                </h1>
+                            </div>
+                        </div>
+                    </header>
+
                     <div className={`${SD_MOBILE_GUTTER_CLASS} pb-4`}>
                     <div className={`${checkoutCardClass} p-3`}>
                         <div className="mb-3">

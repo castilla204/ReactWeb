@@ -36,7 +36,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
-import { getCountryName } from '../utils/countries';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
@@ -58,7 +57,10 @@ import {
     normalizeDeliverableTypes,
 } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { ServiceDetailReviewsSection } from '../components/serviceDetail/ServiceDetailReviewsSection';
-import { ServiceDetailHowItWorks } from '../components/serviceDetail/ServiceDetailHowItWorks';
+import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
+import { ServiceDetailReviewsDesktopPreview } from '../components/serviceDetail/ServiceDetailReviewsDesktopPreview';
+import { getCountryName } from '../utils/countries';
+import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { LoginModal } from '../components/LoginModal';
 
@@ -251,19 +253,18 @@ export function ServiceReviewPage({
     const finalExpertPicture = finalService?.expert?.profilePictureUrl || expertProfilePicture;
     const finalPrice = finalService?.price || servicePrice || 0;
     
-    // ✅ PRIORIDAD DE DESCRIPCIONES (Sin texto genérico inventado)
-    // 1. serviceTypeDescription (Descripción oficial del tipo de servicio)
-    // 2. conditions (Descripción del usuario, si la oficial falla)
-    // 3. serviceDescription (Prop de fallback)
-    // Manejar tanto PascalCase como camelCase por si la transformación falla
-    const finalServiceTypeDescription = finalService?.serviceTypeDescription || (finalService as any)?.ServiceTypeDescription;
-    const finalUserConditions = finalService?.conditions || (finalService as any)?.Conditions || serviceDescription;
-    
-    // Si no hay descripción oficial, usamos la del usuario como principal
-    const displayMainDescription = finalServiceTypeDescription || finalUserConditions || '';
-    
-    // Si usamos la del usuario como principal, no la repetimos abajo
-    const showSecondaryDescription = !!finalServiceTypeDescription && !!finalUserConditions;
+    const expertCity = finalService?.expert?.city || null;
+
+    // Solo descripción del servicio (experto), sin sufijo de ciudad al final (viene del SQL de enriquecimiento)
+    const displayMainDescription = stripServiceDescriptionLocationSuffix(
+      (
+        finalService?.conditions ||
+        (finalService as any)?.Conditions ||
+        serviceDescription ||
+        ''
+      ).toString(),
+      expertCity,
+    );
 
     // ✅ DISPONIBILIDAD
     const finalAvailability = finalService?.expert?.currentAvailability;
@@ -295,15 +296,13 @@ export function ServiceReviewPage({
     const expertCountry = finalService?.expert?.country || null;
 
     const expertLocationLabel = (() => {
-        const city = finalService?.expert?.city;
-        const country = expertCountry;
-        const countryName = country ? getCountryName(country) : '';
+        const countryName = expertCountry ? getCountryName(expertCountry) : '';
         const parts: string[] = [];
-        if (city) parts.push(city);
+        if (expertCity) parts.push(expertCity);
         if (countryName) parts.push(countryName);
         return parts.length > 0 ? parts.join(', ') : countryName || '';
     })();
-    
+
     // ✅ DEBUG: Log para verificar datos de ubicación
     console.log('🗺️ ServiceReviewPage - Datos de ubicación del experto:', {
         hasFinalService: !!finalService,
@@ -330,38 +329,15 @@ export function ServiceReviewPage({
         return dayMap[day] || day.charAt(0);
     };
     
-    // Estado para "Leer más" en descripción
-    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-    const shouldTruncateDescription = (displayMainDescription || '').length > 150;
-
-    // Estado para "Leer más" en detalles del experto
-    const [isUserConditionsExpanded, setIsUserConditionsExpanded] = useState(false);
-    
     // Estado para el tab activo en móvil
-    const [activeTab, setActiveTab] = useState<'about' | 'how'>('about');
-    const shouldTruncateUserConditions = (finalUserConditions || '').length > 250; // Aprox 6 líneas
+    const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
 
     // Estado para "Mostrar más" en reviews
     const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
     // Estado para mostrar/ocultar imágenes de las reseñas
     const [reviewLightboxOpen, setReviewLightboxOpen] = useState<Record<number, boolean>>({});
     const [reviewLightboxIndex, setReviewLightboxIndex] = useState<Record<number, number>>({});
-    
-    // Refs para scroll horizontal de reseñas
-    const reviewsScrollRefMobile = useRef<HTMLDivElement>(null);
-    const reviewsScrollRefDesktop = useRef<HTMLDivElement>(null);
-    
-    // Funciones para navegar el scroll
-    const scrollReviews = (direction: 'left' | 'right', isMobile: boolean = false) => {
-        const scrollRef = isMobile ? reviewsScrollRefMobile : reviewsScrollRefDesktop;
-        if (scrollRef.current) {
-            const scrollAmount = 400; // Cantidad de scroll en píxeles
-            scrollRef.current.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
-            });
-        }
-    };
+    const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
 
     const finalRating = finalService?.averageRating || (finalService as any)?.AverageRating || 0;
     // Manejar tanto PascalCase como camelCase para reviews
@@ -829,657 +805,94 @@ export function ServiceReviewPage({
                     <div className="my-3 border-t border-[#e8e8e8]" />
 
                         <div className={`mb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
-                        <div
-                            className="flex border-b border-gray-200"
-                            role="tablist"
-                            aria-label="Información del servicio"
-                        >
-                            <button
-                                type="button"
-                                role="tab"
-                                id="sd-tab-about"
-                                aria-controls="sd-panel-about"
-                                aria-selected={activeTab === 'about'}
-                                onClick={() => setActiveTab('about')}
-                                className="flex-1 py-3 text-center relative"
-                                style={{
-                                    fontSize: '16px',
-                                        lineHeight: '20px',
-                                    fontWeight: activeTab === 'about' ? 600 : 400,
-                                    color: activeTab === 'about' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                    borderBottom: activeTab === 'about' ? '2px solid #0066CC' : '2px solid transparent',
-                                    transition: 'all 0.2s',
-                                    }}
-                                >
-                                Acerca del servicio
-                            </button>
-                                    <button
-                                type="button"
-                                role="tab"
-                                id="sd-tab-how"
-                                aria-controls="sd-panel-how"
-                                aria-selected={activeTab === 'how'}
-                                onClick={() => setActiveTab('how')}
-                                className="flex-1 py-3 text-center relative"
-                                        style={{
-                                    fontSize: '16px',
-                                            lineHeight: '20px',
-                                    fontWeight: activeTab === 'how' ? 600 : 400,
-                                    color: activeTab === 'how' ? 'rgb(34, 34, 34)' : 'rgb(113, 113, 113)',
-                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                    borderBottom: activeTab === 'how' ? '2px solid #0066CC' : '2px solid transparent',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                ¿Cómo funciona?
-                                    </button>
-                            </div>
-                        
-                        {/* Contenido del tab "Acerca del servicio" */}
-                        {activeTab === 'about' && (
-                            <div id="sd-panel-about" role="tabpanel" aria-labelledby="sd-tab-about" className="pt-6">
-                                {/* Descripción del tipo de habitación/servicio */}
-                                {finalService?.serviceTypeName && (
-                                    <div className="mb-6">
-                                <p 
-                                    style={{
-                                                fontSize: '15px',
-                                                lineHeight: '22px',
-                                        fontWeight: 400,
-                                                color: 'rgb(34, 34, 34)',
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                        margin: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                            {finalService?.serviceTypeName || 'Servicio'} con acceso a zonas comunes.
-                                </p>
-                            </div>
-                        )}
-
-                                {/* Descripción Principal Móvil mejorada - Estilo Airbnb */}
-                                {displayMainDescription && (
-                                    <div data-plugin-in-point-id="DESCRIPTION_DEFAULT" data-section-id="DESCRIPTION_DEFAULT">
-                                        <p 
-                                            className="whitespace-pre-line"
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                    padding: 0,
-                                                }}
-                                            >
-                                            {displayMainDescription}
-                                            </p>
-                                        </div>
-                                )}
-
-                                {/* Información del Experto Móvil mejorada */}
-                                {showSecondaryDescription && (
-                                    <div className="mb-6">
-                                        <h3 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                marginBottom: '8px',
-                                                marginTop: 0,
-                                                padding: 0,
-                                            }}
-                                        >
-                                            Información adicional del experto
-                                        </h3>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                padding: 0,
-                                            }}
-                                        >
-                                            {finalUserConditions}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        
-                        {/* Contenido del tab "¿Cómo funciona?" */}
-                        {activeTab === 'how' && (
-                            <div id="sd-panel-how" role="tabpanel" aria-labelledby="sd-tab-how" className="pt-6">
-                                <div className="space-y-5">
-                                    {/* Paso 1 */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: '#0066CC',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                1.
-                                            </span>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                }}
-                                            >
-                                                Pago seguro
-                                            </h4>
-                                        </div>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                paddingLeft: '20px',
-                                            }}
-                                        >
-                                            Realiza el pago y tu dinero queda protegido en custodia. Se abrirá automáticamente un chat con el experto.
-                                        </p>
-                                    </div>
-
-                                    {/* Paso 2 */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: '#0066CC',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                2.
-                                            </span>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                }}
-                                            >
-                                                Propón una cita
-                                            </h4>
-                                        </div>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                marginBottom: '8px',
-                                                paddingLeft: '20px',
-                                            }}
-                                        >
-                                            Propón fecha, hora y ubicación a través del chat. Debe cumplir:
-                                        </p>
-                                        <ul 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                paddingLeft: '40px',
-                                                listStyleType: 'disc',
-                                            }}
-                                        >
-                                            <li style={{ marginBottom: '4px' }}>Mínimo 24h de antelación</li>
-                                            <li style={{ marginBottom: '4px' }}>Dentro del horario del experto</li>
-                                            <li>Ubicación dentro del rango de cobertura</li>
-                                        </ul>
-                                    </div>
-
-                                    {/* Paso 3 */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: '#0066CC',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                3.
-                                            </span>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                }}
-                                            >
-                                                Confirmación
-                                            </h4>
-                                        </div>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                paddingLeft: '20px',
-                                            }}
-                                        >
-                                            El experto acepta o rechaza la cita. Si la rechaza, se te devuelve el dinero automáticamente.
-                                        </p>
-                                    </div>
-
-                                    {/* Paso 4 */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: '#0066CC',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                4.
-                                            </span>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                }}
-                                            >
-                                                Realización del servicio
-                                            </h4>
-                                        </div>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                paddingLeft: '20px',
-                                            }}
-                                        >
-                                            El experto realiza la inspección en la fecha y lugar acordados. Tu dinero sigue protegido.
-                                        </p>
-                                    </div>
-
-                                    {/* Paso 5 */}
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: '#0066CC',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                5.
-                                            </span>
-                                            <h4 
-                                                style={{
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                    margin: 0,
-                                                }}
-                                            >
-                                                Aprobación final
-                                            </h4>
-                                        </div>
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                paddingLeft: '20px',
-                                            }}
-                                        >
-                                            Recibe los materiales (videos, informes, documentos) y aprueba cuando todo esté correcto. Solo entonces se libera el pago.
-                                        </p>
-                                    </div>
-
-                                    {/* Badge de seguridad */}
-                                    <div 
-                                        style={{
-                                            marginTop: '24px',
-                                            padding: '16px',
-                                            backgroundColor: '#F9FAFB',
-                                            borderRadius: '12px',
-                                            border: '1px solid #E5E7EB',
-                                        }}
-                                    >
-                                        <p 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                marginBottom: '4px',
-                                            }}
-                                        >
-                                            Tu dinero siempre protegido
-                                        </p>
-                                        <p 
-                                            style={{
-                                                fontSize: '13px',
-                                                lineHeight: '18px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                            }}
-                                        >
-                                            Durante todo el proceso, tu pago permanece seguro en custodia. Solo se libera cuando apruebas el trabajo completado.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                        {/* Reseñas (MÓVIL - MEJORADO) */}
-                        {finalReviews.length > 0 ? (
-                            <>
-                                <div className="my-4 border-t border-[#e8e8e8]" />
-                                <div className="mb-8 w-full">
-                                    <div className={`${SD_MOBILE_GUTTER_CLASS} mb-4`}>
-                                    {/* Texto de reseñas verificadas */}
-                                    <div className="mb-2">
-                                        <p 
-                                            style={{
-                                                fontSize: '13px',
-                                                lineHeight: '18px',
-                                                fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                margin: 0,
-                                                padding: 0,
-                                                color: '#0066CC',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Reseñas de clientes verificados
-                                        </p>
-                                    </div>
-                                    
-                                    {/* Header de reseñas - Estilo Airbnb */}
-                                    <div className="mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Star className="w-5 h-5 fill-[#FFB800] text-[#FFB800]" />
-                                            <span 
-                                                style={{
-                                                    fontSize: '18px',
-                                                    lineHeight: '24px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                {finalRating.toFixed(1)}
-                                            </span>
-                                            <span 
-                                                style={{
-                                                    fontSize: '18px',
-                                                    color: 'rgb(34, 34, 34)',
-                                                }}
-                                            >
-                                                ·
-                                            </span>
-                                            <span 
-                                                style={{
-                                                    fontSize: '18px',
-                                                    lineHeight: '24px',
-                                                    fontWeight: 600,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                {finalReviews.length} {finalReviews.length === 1 ? 'reseña' : 'reseñas'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    </div>
-                                    
-                                    <div 
-                                        ref={reviewsScrollRefMobile}
-                                        className={`flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide w-full ${SD_MOBILE_CAROUSEL_EDGE_CLASS}`}
-                                    >
-                                        {finalReviews.map((review: any, idx: number) => {
-                                            // Formatear fecha en formato "mes de año" como Airbnb
-                                            const reviewDate = new Date(review.createdAt);
-                                            const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-                                            const formattedDate = `${monthNames[reviewDate.getMonth()]} de ${reviewDate.getFullYear()}`;
-                                            
-                                            // Calcular tiempo desde que el reviewer está en la plataforma
-                                            const reviewerCreatedAt = review.client?.createdAt ? new Date(review.client.createdAt) : null;
-                                            const now = new Date();
-                                            const reviewerMonths = reviewerCreatedAt ? Math.floor((now.getTime() - reviewerCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)) : null;
-                                            const reviewerYears = reviewerMonths ? Math.floor(reviewerMonths / 12) : null;
-                                            
-                                            const reviewText = review.description || review.comment || '';
-                                            // Calcular si el texto necesita truncarse (aproximadamente 6 líneas con line-height 1.5rem = ~200 caracteres)
-                                            const shouldTruncate = reviewText.length > 200;
-                                            const isExpanded = expandedReviews[review.id || idx] || false;
-                                            const rating = review.rating || review.score || 5;
-                                            
-                                            const hasImages = review.imageUrls && review.imageUrls.length > 0;
-                                            
-                                            return (
-                                                <div key={review.id || idx} className="w-[75%] max-w-[320px] shrink-0 snap-start">
-                                                    {/* Estructura mejorada para móvil - Altura fija */}
-                                                    <div className={`flex flex-col bg-white border border-gray-200 rounded-xl p-4 shadow-sm h-[380px] ${isExpanded && reviewText.length > 300 ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-                                                        {/* 1. Arriba: Estrellas y fecha */}
-                                                        <div className="mb-2.5 flex items-start justify-between gap-2 flex-shrink-0">
-                                                            <span role="img" aria-label={`Valoración: ${rating} estrellas`}>
-                                                                <div className="flex gap-0.5 inline-flex items-center">
-                                                                    {[...Array(5)].map((_, i) => (
-                                                                        <Star 
-                                                                            key={i} 
-                                                                            className={`w-3 h-3 flex-shrink-0 ${i < rating ? 'fill-[#FFB800] text-[#FFB800]' : 'fill-gray-200 text-gray-200'}`} 
-                                                                        />
-                                                                    ))}
-                                                                </div>
-                                                            </span>
-                                                            <span className="text-[13px] text-gray-500 leading-[1.4] text-right flex-shrink-0">{formattedDate}</span>
-                                                        </div>
-                                            
-                                                        {/* 2. Medio: Texto de la review */}
-                                                        <div className={`mb-2 flex-1 min-h-0 ${hasImages ? '' : 'mb-3'}`}>
-                                                            <div 
-                                                                style={{
-                                                                    lineHeight: '1.5rem',
-                                                                    overflow: isExpanded ? 'visible' : 'hidden',
-                                                                    textOverflow: isExpanded ? 'clip' : 'ellipsis',
-                                                                    display: isExpanded ? 'block' : '-webkit-box',
-                                                                    WebkitLineClamp: isExpanded ? 'unset' : 5,
-                                                                    WebkitBoxOrient: 'vertical' as 'vertical',
-                                                                }}
-                                                            >
-                                                                <span className="text-[15px] text-gray-700 leading-[1.5]">
-                                                                    {reviewText}
-                                                                </span>
-                                                            </div>
-                                                            {shouldTruncate && (
-                                                                <button
-                                                                    role="button"
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setExpandedReviews(prev => ({ ...prev, [review.id || idx]: !prev[review.id || idx] }));
-                                                                    }}
-                                                                    className="mt-1.5 text-[14px] font-semibold text-[#0066CC] underline hover:no-underline leading-[1.4] hover:text-[#004a99] transition-colors"
-                                                                >
-                                                                    {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                
-                                                        {/* Imágenes de la reseña - Mostrar por defecto, máximo 3 */}
-                                                        {hasImages && (
-                                                            <div className="mb-2 flex-shrink-0">
-                                                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
-                                                                    {review.imageUrls.slice(0, 3).map((img: string, imgIdx: number) => {
-                                                                        const isLast = imgIdx === 2 && review.imageUrls.length > 3;
-                                                                        const remainingCount = review.imageUrls.length - 3;
-                                                                        return (
-                                                                            <div key={imgIdx} className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                                                                                <img 
-                                                                                    src={img} 
-                                                                                    alt={`Foto reseña ${imgIdx + 1}`} 
-                                                                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                                    onClick={() => {
-                                                                                        setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: imgIdx }));
-                                                                                        setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
-                                                                                    }}
-                                                                                />
-                                                                                {isLast && (
-                                                                                    <div 
-                                                                                        className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-black/50 transition-colors"
-                                                                                        onClick={() => {
-                                                                                            setReviewLightboxIndex(prev => ({ ...prev, [review.id || idx]: 2 }));
-                                                                                            setReviewLightboxOpen(prev => ({ ...prev, [review.id || idx]: true }));
-                                                                                        }}
-                                                                                    >
-                                                                                        <span className="text-white text-sm font-bold">+{remainingCount}</span>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        
-                                                        {/* 3. Abajo: Avatar + Nombre + Antigüedad (horizontal, misma línea) */}
-                                                        <div className="flex items-center gap-2 mt-auto">
-                                                            <a href="#" className="block flex-shrink-0">
-                                                                <Avatar className="w-8 h-8">
-                                                                    <AvatarImage src={review.client?.profilePictureUrl} />
-                                                                    <AvatarFallback className="bg-gray-900 text-white font-bold text-[10px]">
-                                                                        {review.client?.name?.charAt(0) || 'U'}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                            </a>
-                                                            <div className="flex items-center gap-1 flex-wrap">
-                                                                <div className="text-sm font-semibold text-gray-900 leading-tight">
-                                                                    {review.client?.name || 'Usuario'}
-                                                                </div>
-                                                                {reviewerYears && reviewerYears > 0 ? (
-                                                                    <>
-                                                                        <span className="text-xs text-gray-500"> · </span>
-                                                                        <div className="text-sm text-gray-500 leading-tight">
-                                                                            Lleva {reviewerYears} {reviewerYears === 1 ? 'año' : 'años'} en Inspecciono
-                                                                        </div>
-                                                                    </>
-                                                                ) : reviewerMonths && reviewerMonths > 0 ? (
-                                                                    <>
-                                                                        <span className="text-xs text-gray-500"> · </span>
-                                                                        <div className="text-sm text-gray-500 leading-tight">
-                                                                            Lleva {reviewerMonths} {reviewerMonths === 1 ? 'mes' : 'meses'} en Inspecciono
-                                                                        </div>
-                                                                    </>
-                                                                ) : review.client?.location ? (
-                                                                    <>
-                                                                        <span className="text-xs text-gray-500"> · </span>
-                                                                        <div className="text-sm text-gray-500 leading-tight">
-                                                                            {review.client.location}
-                                                                        </div>
-                                                                    </>
-                                                                ) : null}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            /* ESTADO SIN RESEÑAS MÓVIL */
                             <div
-                                className={`mb-8 mt-6 w-full rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-8 text-center ${SD_MOBILE_GUTTER_CLASS}`}
+                                className="-mx-4 flex border-b border-[#e8e8e8] px-4"
+                                role="tablist"
+                                aria-label="Información del servicio"
                             >
-                                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-gray-100">
-                                    <Star className="w-6 h-6 text-gray-300 fill-gray-50" />
-                                </div>
-                                <h3 
-                                    style={{
-                                        fontSize: '16px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                        color: 'rgb(34, 34, 34)',
-                                        marginBottom: '4px',
-                                        marginTop: 0,
-                                        padding: 0,
-                                    }}
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    id="sd-tab-about"
+                                    aria-controls="sd-panel-about"
+                                    aria-selected={activeTab === 'about'}
+                                    data-active={activeTab === 'about' ? 'true' : undefined}
+                                    onClick={() => setActiveTab('about')}
+                                    className="sd-tab"
                                 >
-                                    Sin reseñas todavía
-                                </h3>
-                                <p 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                        color: 'rgb(113, 113, 113)',
-                                        maxWidth: '200px',
-                                        margin: '0 auto',
-                                        marginTop: '4px',
-                                        padding: 0,
-                                    }}
+                                    Acerca del servicio
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    id="sd-tab-reviews"
+                                    aria-controls="sd-panel-reviews"
+                                    aria-selected={activeTab === 'reviews'}
+                                    data-active={activeTab === 'reviews' ? 'true' : undefined}
+                                    onClick={() => setActiveTab('reviews')}
+                                    className="sd-tab"
                                 >
-                                    Sé el primero en probar este servicio y compartir tu experiencia.
-                                </p>
+                                    Reseñas
+                                    {finalReviews.length > 0 ? (
+                                        <span
+                                            className={`ml-1.5 tabular-nums font-normal ${
+                                                activeTab === 'reviews' ? 'text-[#6a6a6a]' : 'text-[#737373]'
+                                            }`}
+                                        >
+                                            ({finalReviews.length})
+                                        </span>
+                                    ) : null}
+                                </button>
                             </div>
-                        )}
+
+                            {activeTab === 'about' && (
+                                <div
+                                    id="sd-panel-about"
+                                    role="tabpanel"
+                                    aria-labelledby="sd-tab-about"
+                                    className="pt-6"
+                                >
+                                    {displayMainDescription ? (
+                                        <p className="whitespace-pre-line text-sm font-normal leading-relaxed text-[#6a6a6a]">
+                                            {displayMainDescription}
+                                        </p>
+                                    ) : null}
+                                </div>
+                            )}
+
+                            {activeTab === 'reviews' && (
+                                <div
+                                    id="sd-panel-reviews"
+                                    role="tabpanel"
+                                    aria-labelledby="sd-tab-reviews"
+                                    className="pt-6"
+                                >
+                                    <ServiceDetailReviewsSection
+                                        reviews={finalReviews}
+                                        averageRating={finalRating}
+                                        expandedReviews={expandedReviews}
+                                        onToggleExpand={(key) =>
+                                            setExpandedReviews((prev) => ({
+                                                ...prev,
+                                                [key]: !prev[key],
+                                            }))
+                                        }
+                                        onOpenReviewImage={(reviewKey, imageIndex) => {
+                                            setReviewLightboxIndex((prev) => ({
+                                                ...prev,
+                                                [reviewKey]: imageIndex,
+                                            }));
+                                            setReviewLightboxOpen((prev) => ({
+                                                ...prev,
+                                                [reviewKey]: true,
+                                            }));
+                                        }}
+                                        hideHeading
+                                        className="!mt-0 !border-t-0 !pt-0"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -1514,7 +927,7 @@ export function ServiceReviewPage({
 
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-6 lg:pt-8`}>
                     <div className={`${SD_PAGE_GRID_CLASS}`}>
-                        <div className="min-w-0 space-y-6 lg:space-y-8">
+                        <div className="min-w-0 space-y-5 lg:space-y-6">
                             <div className="relative">
                                 <ServiceDetailDesktopGallery
                                     images={validImages}
@@ -1571,36 +984,20 @@ export function ServiceReviewPage({
                                 </p>
                             )}
 
-                            <section>
-                                <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
-                                <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
-                                    {finalServiceTypeDescription}
-                                </p>
-                            </section>
-
-                            {finalUserConditions && (
+                            {displayMainDescription && (
                                 <section>
-                                    <h2 className="hp-section-title mb-2">Detalles del experto</h2>
+                                    <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
                                     <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
-                                        {finalUserConditions}
+                                        {displayMainDescription}
                                     </p>
                                 </section>
                             )}
 
-                            <ServiceDetailReviewsSection
+                            <ServiceDetailReviewsDesktopPreview
                               reviews={finalReviews}
                               averageRating={finalRating}
-                              expandedReviews={expandedReviews}
-                              onToggleExpand={(key) =>
-                                setExpandedReviews((prev) => ({ ...prev, [key]: !prev[key] }))
-                              }
-                              onOpenReviewImage={(reviewKey, imgIdx) => {
-                                setReviewLightboxIndex((prev) => ({ ...prev, [reviewKey]: imgIdx }));
-                                setReviewLightboxOpen((prev) => ({ ...prev, [reviewKey]: true }));
-                              }}
-                              className="!mt-0 !border-t-0 !pt-0"
+                              onShowAll={() => setReviewsModalOpen(true)}
                             />
-                            <ServiceDetailHowItWorks className="!mt-0 !pt-0" />
                         </div>
 
                         <aside className="lg:sticky lg:top-12 lg:self-start">
@@ -1612,15 +1009,10 @@ export function ServiceReviewPage({
                                         </h1>
                                         <p className="mt-1 text-xs text-[#6a6a6a]">
                                             {finalExpertName}
-                                            {(finalService?.expert?.city || finalService?.expert?.country) && (
+                                            {(expertCity || expertCountry) && (
                                                 <>
                                                     {' · '}
-                                                    {[
-                                                        finalService?.expert?.city,
-                                                        finalService?.expert?.country
-                                                            ? getCountryName(finalService.expert.country)
-                                                            : '',
-                                                    ]
+                                                    {[expertCity, expertCountry ? getCountryName(expertCountry) : '']
                                                         .filter(Boolean)
                                                         .join(', ')}
                                                 </>
@@ -1653,19 +1045,23 @@ export function ServiceReviewPage({
                                     </p>
                                     <p className="text-sm text-[#6a6a6a]">por servicio</p>
                                     {finalRating > 0 && (
-                                        <p className="mt-1.5 flex items-center gap-1 text-sm text-[#6a6a6a]">
-                                            <Star className="h-3.5 w-3.5 fill-[#0066CC] text-[#0066CC]" aria-hidden />
-                                            <span className="font-semibold text-[#1c1c1c]">
-                                                {finalRating.toFixed(1)}
+                                        <button
+                                            type="button"
+                                            onClick={() => setReviewsModalOpen(true)}
+                                            className="mt-1.5 flex w-fit items-center gap-1 text-left text-sm text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+                                        >
+                                            <Star className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
+                                            <span className="font-semibold tabular-nums text-[#1c1c1c]">
+                                                {finalRating.toFixed(1).replace('.', ',')}
                                             </span>
                                             <span className="text-[#d4d4d4]" aria-hidden>
                                                 ·
                                             </span>
-                                            <span>
+                                            <span className="underline-offset-2 hover:underline">
                                                 {finalReviews.length} reseña
                                                 {finalReviews.length !== 1 ? 's' : ''}
                                             </span>
-                                        </p>
+                                        </button>
                                     )}
                                 </section>
 
@@ -1677,6 +1073,7 @@ export function ServiceReviewPage({
                                             timezone={finalService?.expert?.timezone}
                                             isOnVacation={finalService?.expert?.isOnVacation}
                                             location={expertLocation ?? undefined}
+                                            locationLabel={expertLocationLabel || undefined}
                                             rangeKm={expertRange || 25}
                                             mapVariant="preview"
                                         />
@@ -1856,6 +1253,22 @@ export function ServiceReviewPage({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ServiceDetailReviewsModal
+                open={reviewsModalOpen}
+                onOpenChange={setReviewsModalOpen}
+                reviews={finalReviews}
+                averageRating={finalRating}
+                expertName={finalExpertName}
+                expandedReviews={expandedReviews}
+                onToggleExpand={(key) =>
+                    setExpandedReviews((prev) => ({ ...prev, [key]: !prev[key] }))
+                }
+                onOpenReviewImage={(reviewKey, imgIdx) => {
+                    setReviewLightboxIndex((prev) => ({ ...prev, [reviewKey]: imgIdx }));
+                    setReviewLightboxOpen((prev) => ({ ...prev, [reviewKey]: true }));
+                }}
+            />
 
             {/* Lightbox para imágenes de reseñas */}
             {finalReviews.map((review: any, idx: number) => {

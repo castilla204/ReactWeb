@@ -54,7 +54,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
   const defaultAsideMapClass =
     'h-[128px] w-full rounded-lg border border-[#e8e8e8]';
   const defaultMinimalMapClass =
-    'h-[100px] w-full rounded-none border-x-0 border-y border-[#ebebeb]';
+    'h-[96px] w-full rounded-none border-0';
 
   const resolvedMapClassName =
     mapClassName ?? (isMinimal ? defaultMinimalMapClass : defaultAsideMapClass);
@@ -63,7 +63,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     isMinimal ? (
       <div className="w-full">
         <div
-          className={`mb-2 ${SD_MOBILE_GUTTER_CLASS} flex min-w-0 items-center gap-3 text-xs text-[#6a6a6a]`}
+          className={`mb-1.5 ${SD_MOBILE_GUTTER_CLASS} flex min-w-0 items-center gap-2 text-[11px] leading-tight text-[#9ca3af]`}
           aria-label={
             locationLabel
               ? `Cobertura de ${radius} kilómetros en ${locationLabel}`
@@ -71,12 +71,12 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           }
         >
           <p className="shrink-0 whitespace-nowrap">
-            <span className="font-medium text-[#1c1c1c]">Cobertura</span>
+            <span className="font-normal text-[#6a6a6a]">Cobertura</span>
             <span>{` · ${radius} km`}</span>
           </p>
           {locationLabel ? (
             <span
-              className="min-w-0 flex-1 truncate text-end text-[#6a6a6a]"
+              className="min-w-0 flex-1 truncate text-end text-[#9ca3af]"
               title={locationLabel}
             >
               {locationLabel}

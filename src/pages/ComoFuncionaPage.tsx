@@ -1,348 +1,173 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Footer } from '../components/Footer';
+import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { useAuth } from '../contexts/AuthContext';
-import {
-    BookOpen,
-    Search,
-    ShieldCheck,
-    CreditCard,
-    UserPlus,
-    HelpCircle,
-    ChevronRight,
-    CheckCircle2
-} from 'lucide-react';
-import { cn } from '../lib/utils';
+import { HP_PANEL_GRADIENT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
+import { COMO_FUNCIONA_STEPS, COMO_FUNCIONA_TRUST } from '../content/comoFuncionaContent';
 
-interface Section {
-    id: string;
-    title: string;
-    icon: React.ElementType;
-    content: React.ReactNode;
-}
+const MobileBottomBar = lazy(() =>
+  import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+);
 
 const ComoFuncionaPage: React.FC = () => {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const isExpert = ((user as any)?.Role || (user as any)?.role) === 'Expert';
-    const [activeSection, setActiveSection] = useState<string>('introduction');
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-    const sections: Section[] = [
-        {
-            id: 'introduction',
-            title: 'Introducción',
-            icon: BookOpen,
-            content: (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="prose prose-slate max-w-none">
-                        <p className="text-lg leading-relaxed text-slate-600">
-                            Nuestra plataforma conecta a personas que necesitan servicios especializados con expertos verificados y confiables. Ya sea que busques verificar una compra importante, obtener asesoramiento profesional o contratar un servicio especializado, aquí encontrarás a los mejores expertos del mercado.
-                        </p>
-                        <p className="text-lg leading-relaxed text-slate-600 mt-4">
-                            En un mundo donde las transacciones online se han vuelto cada vez más comunes, la confianza y la verificación son fundamentales. Nuestra misión es garantizar que cada transacción sea segura, transparente y exitosa.
-                        </p>
-                    </div>
+  return (
+    <div className="min-h-screen bg-[#fafafa] font-display text-[#1c1c1c]">
+      <HomepageDesktopTopBar />
 
-                    <div className="bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100">
-                        <h3 className="text-indigo-900 font-semibold mb-4 flex items-center gap-2">
-                            <BookOpen className="w-5 h-5" />
-                            ¿Qué encontrarás en esta guía?
-                        </h3>
-                        <ul className="grid sm:grid-cols-2 gap-3">
-                            {[
-                                '¿Qué es nuestra plataforma?',
-                                'Cómo buscar y contratar expertos',
-                                'Proceso de verificación',
-                                'Sistema de pagos seguro',
-                                'Cómo convertirse en experto'
-                            ].map((item, i) => (
-                                <li key={i} className="flex items-center gap-2 text-indigo-700 text-sm">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'que-es-nuestra-plataforma',
-            title: '¿Qué es nuestra plataforma?',
-            icon: HelpCircle,
-            content: (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Un marketplace de confianza</h2>
-                    <p className="text-slate-600 leading-relaxed">
-                        Nuestra plataforma es un marketplace especializado que conecta a compradores con expertos verificados. Nos diferenciamos por nuestro enfoque obsesivo en la seguridad y la validación de credenciales.
-                    </p>
-
-                    <div className="grid sm:grid-cols-2 gap-4 mt-8">
-                        <div className="p-4 border border-slate-200 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all group bg-white">
-                            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                <ShieldCheck className="w-5 h-5" />
-                            </div>
-                            <h3 className="font-semibold text-slate-900 mb-2">Verificación Rigurosa</h3>
-                            <p className="text-sm text-slate-500">Validamos identidad y credenciales de cada experto manualmente.</p>
-                        </div>
-                        <div className="p-4 border border-slate-200 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all group bg-white">
-                            <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                <UserPlus className="w-5 h-5" />
-                            </div>
-                            <h3 className="font-semibold text-slate-900 mb-2">Profesionales Reales</h3>
-                            <p className="text-sm text-slate-500">Solo expertos con experiencia comprobable pueden ofrecer servicios.</p>
-                        </div>
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'como-buscar-expertos',
-            title: 'Cómo buscar expertos',
-            icon: Search,
-            content: (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="relative pl-8 border-l-2 border-slate-200 space-y-8">
-                        {[
-                            {
-                                title: 'Define tu necesidad',
-                                desc: 'Especifica qué tipo de servicio necesitas. Puedes buscar por categoría o describir tu necesidad.',
-                                step: 1
-                            },
-                            {
-                                title: 'Explora expertos',
-                                desc: 'Revisa nuestra lista de expertos verificados, sus calificaciones y reseñas.',
-                                step: 2
-                            },
-                            {
-                                title: 'Contacta y contrata',
-                                desc: 'Habla directamente con el experto y contrata el servicio de forma segura.',
-                                step: 3
-                            }
-                        ].map((step, i) => (
-                            <div key={i} className="relative">
-                                <span className="absolute -left-[41px] top-0 w-8 h-8 rounded-full bg-white border-2 border-indigo-600 flex items-center justify-center text-indigo-600 font-bold text-sm z-10">
-                                    {step.step}
-                                </span>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">{step.title}</h3>
-                                <p className="text-slate-600">{step.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                        <p className="text-sm text-slate-600 flex gap-3">
-                            <span className="shrink-0 w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">💡</span>
-                            Nuestro sistema de búsqueda avanzada te permite filtrar por ubicación, precio y disponibilidad para encontrar exactamente lo que necesitas.
-                        </p>
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'proceso-de-verificacion',
-            title: 'Proceso de verificación',
-            icon: ShieldCheck,
-            content: (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-green-50/50 border border-green-100 rounded-2xl p-6 mb-8">
-                        <h3 className="text-green-800 font-semibold mb-2">Seguridad ante todo</h3>
-                        <p className="text-green-700 text-sm">
-                            Todos los expertos deben pasar por nuestro riguroso proceso de 5 puntos antes de ser activados.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4">
-                        {[
-                            'Verificación de identidad oficial',
-                            'Validación de credenciales profesionales',
-                            'Revisión de historial y experiencia',
-                            'Verificación de antecedentes',
-                            'Evaluación continua de calidad'
-                        ].map((item, i) => (
-                            <div key={i} className="flex items-start gap-4 p-4 rounded-lg bg-white border border-slate-100 shadow-sm">
-                                <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                                <span className="text-slate-700 font-medium">{item}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'sistema-de-pagos',
-            title: 'Sistema de pagos seguro',
-            icon: CreditCard,
-            content: (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <p className="text-slate-600">
-                        Utilizamos un sistema de custodia (escrow) que protege tu dinero hasta que el servicio se completa.
-                    </p>
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
-                            <CreditCard className="w-8 h-8 mb-4 opacity-80" />
-                            <h3 className="font-bold text-lg mb-2">Pago en Custodia</h3>
-                            <p className="text-indigo-100 text-sm">Tu dinero está seguro. El experto solo recibe el pago cuando tú confirmas que el trabajo está hecho.</p>
-                        </div>
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <ShieldCheck className="w-8 h-8 mb-4 text-emerald-500" />
-                            <h3 className="font-bold text-slate-900 text-lg mb-2">Encriptación Bancaria</h3>
-                            <p className="text-slate-500 text-sm">Utilizamos los mismos estándares de seguridad (PCI DSS) que los bancos internacionales.</p>
-                        </div>
-                    </div>
-                </div>
-            )
-        },
-        {
-            id: 'como-convertirse-en-experto',
-            title: 'Ser experto',
-            icon: UserPlus,
-            content: (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="p-6 bg-slate-900 rounded-2xl text-white relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h3 className="text-2xl font-bold mb-4">Únete a nuestra red</h3>
-                            <p className="text-slate-300 mb-6">Ofrece tus servicios a miles de clientes, gestiona tu negocio y recibe pagos seguros.</p>
-                            {!isExpert && (
-                            <button
-                                onClick={() => navigate('/become-expert')}
-                                className="bg-white text-slate-900 px-6 py-2 rounded-lg font-medium hover:bg-slate-100 transition-colors inline-flex items-center gap-2"
-                            >
-                                Empezar ahora
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                            )}
-                        </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm text-slate-600">
-                        <div className="p-4 bg-slate-50 rounded-lg">
-                            <strong className="block text-slate-900 mb-1">1. Crea tu cuenta</strong>
-                            Registro simple y rápido.
-                        </div>
-                        <div className="p-4 bg-slate-50 rounded-lg">
-                            <strong className="block text-slate-900 mb-1">2. Verifícate</strong>
-                            Validamos tu perfil en 24-48 horas.
-                        </div>
-                    </div>
-                </div>
-            )
-        }
-    ];
-
-    const activeContent = sections.find(s => s.id === activeSection)?.content;
-
-    return (
-        <div className="min-h-screen bg-white flex flex-col font-sans">
-            {/* Header Section */}
-            <section className="bg-white border-b border-slate-100">
-                <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-                    <div className="max-w-3xl">
-                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 mb-6">
-                            Cómo funciona
-                        </h1>
-                        <p className="text-xl text-slate-500 leading-relaxed">
-                            Descubre cómo conectamos a personas con expertos de confianza en una plataforma segura y transparente.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* Main Content */}
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="lg:grid lg:grid-cols-[300px_1fr] lg:gap-12">
-                    {/* Navigation - Mobile (Horizontal Scroll) & Desktop (Vertical Sidebar) */}
-                    <nav className="mb-12 lg:mb-0">
-
-                        {/* Mobile Scrollable Menu */}
-                        <div className="lg:hidden -mx-4 px-4 overflow-x-auto pb-4 scrollbar-hide">
-                            <div className="flex space-x-2 w-max">
-                                {sections.map((section) => {
-                                    const Icon = section.icon;
-                                    const isActive = activeSection === section.id;
-                                    return (
-                                        <button
-                                            key={section.id}
-                                            onClick={() => setActiveSection(section.id)}
-                                            className={cn(
-                                                "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                                                isActive
-                                                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                                                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-                                            )}
-                                        >
-                                            <Icon className="w-4 h-4" />
-                                            {section.title}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Desktop Sidebar Menu */}
-                        <div className="hidden lg:block sticky top-24 space-y-1">
-                            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-4">
-                                Guía de la plataforma
-                            </h3>
-                            {sections.map((section) => {
-                                const Icon = section.icon;
-                                const isActive = activeSection === section.id;
-                                return (
-                                    <button
-                                        key={section.id}
-                                        onClick={() => setActiveSection(section.id)}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium transition-all group",
-                                            isActive
-                                                ? "bg-indigo-50 text-indigo-700 shadow-sm"
-                                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                                            isActive ? "bg-white shadow-sm" : "bg-slate-100 group-hover:bg-white"
-                                        )}>
-                                            <Icon className={cn(
-                                                "w-4 h-4 transition-colors",
-                                                isActive ? "text-indigo-600" : "text-slate-500 group-hover:text-slate-700"
-                                            )} />
-                                        </div>
-                                        {section.title}
-                                        {isActive && (
-                                            <ChevronRight className="w-4 h-4 ml-auto text-indigo-400 animate-in fade-in slide-in-from-left-2" />
-                                        )}
-                                    </button>
-                                );
-                            })}
-
-                            <div className="mt-8 px-4 pt-8 border-t border-slate-100">
-                                {!isExpert && (
-                                <button
-                                    onClick={() => navigate('/become-expert')}
-                                    className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
-                                >
-                                    Convertirse en experto
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                                )}
-                            </div>
-                        </div>
-                    </nav>
-
-                    {/* Content Section */}
-                    <div className="min-h-[500px]">
-                        <div className="bg-white rounded-3xl p-6 md:p-10 border border-slate-100 shadow-xl shadow-slate-100/50 ring-1 ring-slate-50">
-                            {activeContent}
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <Footer />
+      <header className="sticky top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm md:hidden">
+        <div className="flex h-12 items-center gap-2 px-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-[#f5f5f5]"
+            aria-label="Volver"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-base font-semibold tracking-[-0.02em]">Cómo funciona</h1>
         </div>
-    );
+      </header>
+
+      <section
+        className="border-b border-[#e8e8e8]"
+        style={{ background: HP_PANEL_GRADIENT }}
+      >
+        <div className={`${SD_PAGE_INNER_MAX_CLASS} px-4 py-8 md:px-6 md:py-12 lg:py-14`}>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0066CC]">
+            Inspecciono
+          </p>
+          <h2 className="mt-2 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-[-0.03em] text-[#1c1c1c] md:text-[2rem]">
+            Contrata revisiones con expertos verificados, con tranquilidad en cada paso
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#6a6a6a] md:text-base">
+            Ideal para comprar un coche, una vivienda o un servicio importante: alguien de confianza
+            va, revisa y te entrega un informe antes de decidir.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="sd-btn-primary min-w-0 px-5"
+            >
+              Explorar expertos
+            </button>
+            {!isAuthenticated ? (
+              <button
+                type="button"
+                onClick={() => navigate('/crear-busqueda')}
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[#1c1c1c] bg-white px-5 text-sm font-semibold text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7]"
+              >
+                Publicar una búsqueda
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <main className={`${SD_PAGE_INNER_MAX_CLASS} px-4 py-8 pb-24 md:px-6 md:py-10 md:pb-16`}>
+        <section aria-labelledby="cf-steps-heading">
+          <h2 id="cf-steps-heading" className="hp-section-title mb-2">
+            En 4 pasos
+          </h2>
+          <p className="mb-6 max-w-2xl text-sm leading-relaxed text-[#6a6a6a]">
+            Un flujo sencillo pensado para que sepas qué pasa en cada momento, sin letra pequeña.
+          </p>
+
+          <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {COMO_FUNCIONA_STEPS.map((step, index) => (
+              <li
+                key={step.title}
+                className="relative rounded-xl border border-[#e8e8e8] bg-white p-4 shadow-sm"
+              >
+                <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f6fc] text-xs font-bold text-[#0066CC]">
+                  {index + 1}
+                </span>
+                <div
+                  className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#fafafa] text-[#6a6a6a]"
+                  aria-hidden
+                >
+                  <step.Icon className="h-4 w-4" strokeWidth={2} />
+                </div>
+                <h3 className="text-sm font-semibold text-[#1c1c1c]">{step.title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-[#6a6a6a]">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="mt-10 border-t border-[#e8e8e8] pt-8" aria-labelledby="cf-trust-heading">
+          <h2 id="cf-trust-heading" className="hp-section-title mb-2">
+            Por qué confiar
+          </h2>
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {COMO_FUNCIONA_TRUST.map((item) => (
+              <li
+                key={item.title}
+                className="flex gap-3 rounded-lg border border-[#ebebeb] bg-white px-4 py-3"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fafafa] text-[#0066CC]">
+                  <item.Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#1c1c1c]">{item.title}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-[#6a6a6a]">{item.body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mt-10 rounded-xl border border-[#e8e8e8] bg-white p-5 md:p-6">
+          <h2 className="text-base font-semibold text-[#1c1c1c]">¿Eres revisor profesional?</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#6a6a6a]">
+            Publica tus servicios, define tu zona y cobra con pagos seguros cuando el cliente confirma
+            el trabajo.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/become-expert')}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0066CC] hover:underline"
+          >
+            Quiero ser experto
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </section>
+
+        <section className="mt-8 flex flex-wrap items-center gap-4 text-sm">
+          <button
+            type="button"
+            onClick={() => navigate('/faq')}
+            className="font-medium text-[#6a6a6a] underline-offset-2 hover:text-[#1c1c1c] hover:underline"
+          >
+            Preguntas frecuentes
+          </button>
+          <span className="text-[#d4d4d4]" aria-hidden>
+            ·
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="font-medium text-[#0066CC] underline-offset-2 hover:underline"
+          >
+            Volver al inicio
+          </button>
+        </section>
+      </main>
+
+      <Footer />
+
+      <div className="md:hidden">
+        <Suspense fallback={null}>
+          <MobileBottomBar />
+        </Suspense>
+      </div>
+    </div>
+  );
 };
 
 export default ComoFuncionaPage;
