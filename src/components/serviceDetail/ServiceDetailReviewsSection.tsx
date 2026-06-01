@@ -22,6 +22,8 @@ interface ServiceDetailReviewsSectionProps {
   expandedReviews: Record<string | number, boolean>;
   onToggleExpand: (key: string | number) => void;
   onOpenReviewImage?: (reviewKey: string | number, imageIndex: number) => void;
+  /** Sin borde superior si va justo después de otra sección en la misma columna */
+  className?: string;
 }
 
 const monthNames = [
@@ -35,10 +37,14 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
   expandedReviews,
   onToggleExpand,
   onOpenReviewImage,
+  className = '',
 }) => (
-  <section className="mt-10 border-t border-[#e8e8e8] pt-8" aria-labelledby="sd-reviews-heading">
-    <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
-      <h2 id="sd-reviews-heading" className="sd-page-title">
+  <section
+    className={`mt-8 border-t border-[#e8e8e8] pt-6 lg:mt-10 lg:pt-8 ${className}`}
+    aria-labelledby="sd-reviews-heading"
+  >
+    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3 md:mb-4">
+      <h2 id="sd-reviews-heading" className="hp-section-title">
         Reseñas
       </h2>
       {reviews.length > 0 && (
@@ -83,7 +89,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                   <time className="text-xs text-[#6a6a6a]">{formattedDate}</time>
                 </div>
               </div>
-              <p className={`text-sm leading-relaxed text-[#444] ${!isExpanded && shouldTruncate ? 'line-clamp-3' : ''}`}>
+              <p className={`text-sm leading-snug text-[#6a6a6a] ${!isExpanded && shouldTruncate ? 'line-clamp-3' : ''}`}>
                 {reviewText}
               </p>
               {shouldTruncate && (

@@ -3,6 +3,7 @@ import maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from 'lucide-react';
+import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -122,36 +123,33 @@ const CITY_EXPERTS: ReadonlyArray<ExpertCity> = [
 ];
 
 /** Carto Voyager limpio — colores naturales tierra/agua */
-const CARTO_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    carto: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
+function buildCartoStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      carto: {
+        type: 'raster',
+        tiles: getCartoVoyagerNoLabelsTiles(),
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
+      },
     },
-  },
-  layers: [
-    {
-      id: 'sky-bg',
-      type: 'background',
-      paint: { 'background-color': MAP_THEME.sky },
-    },
-    {
-      id: 'carto',
-      type: 'raster',
-      source: 'carto',
-      paint: { 'raster-opacity': 1 },
-    },
-  ],
-};
+    layers: [
+      {
+        id: 'sky-bg',
+        type: 'background',
+        paint: { 'background-color': MAP_THEME.sky },
+      },
+      {
+        id: 'carto',
+        type: 'raster',
+        source: 'carto',
+        paint: { 'raster-opacity': 1 },
+      },
+    ],
+  };
+}
 
 /**
  * Vista inicial: planeta completo (proyección globe).
@@ -454,8 +452,14 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
       map = new maplibregl.Map({
         container: el,
-        style: CARTO_STYLE,
+        style: buildCartoStyle(),
         center: GLOBE_INTRO.center,
+        transformRequest: (url, resourceType) => {
+          if (resourceType === 'Tile' && isExternalMapTileUrl(url)) {
+            return { url, credentials: 'omit' };
+          }
+          return { url };
+        },
         zoom: GLOBE_INTRO.zoom,
         pitch: GLOBE_INTRO.pitch,
         bearing: GLOBE_INTRO.bearing,

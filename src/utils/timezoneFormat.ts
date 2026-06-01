@@ -113,19 +113,24 @@ const cityFromTimezoneId = (timezone: string): string => {
 };
 
 /**
- * Calcula el offset UTC actual de un timezone con Intl.DateTimeFormat.
+ * Calcula el offset UTC de un timezone para un instante dado con Intl.DateTimeFormat.
  * Devuelve un string tipo "UTC+1", "UTC-6", "UTC+5:30".
  *
- * Usa la parte "shortOffset" del formato; respeta DST automáticamente
- * porque parte de `new Date()` (instante actual).
+ * Usa la parte "shortOffset" del formato; respeta DST automáticamente para `atDate`.
+ *
+ * 🛡️ Round 27 — R27-T27-1-9 FIX: antes este helper usaba `new Date()` (instante actual),
+ * lo que mostraba el offset de HOY incluso cuando la etiqueta describía una cita en otra
+ * fecha del año. Cross-DST (cliente BA + experto Madrid, cita en noviembre desde verano)
+ * mostraba "Madrid (UTC+2)" en lugar del correcto "UTC+1" → cliente se equivocaba ±1h.
+ * Ahora `atDate` es opcional; por defecto sigue siendo el instante actual (back-compat).
  */
-const computeUtcOffset = (timezone: string): string => {
+const computeUtcOffset = (timezone: string, atDate: Date = new Date()): string => {
   try {
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       timeZoneName: 'shortOffset',
     });
-    const parts = formatter.formatToParts(new Date());
+    const parts = formatter.formatToParts(atDate);
     const tzPart = parts.find((p) => p.type === 'timeZoneName');
     if (!tzPart) return 'UTC';
 
@@ -139,22 +144,37 @@ const computeUtcOffset = (timezone: string): string => {
 };
 
 /**
- * Convierte un IANA timezone ID a una etiqueta amigable con offset actual.
+ * Convierte un IANA timezone ID a una etiqueta amigable con offset.
+ *
+ * 🛡️ Round 27 — R27-T27-1-9 FIX: `atDate` opcional para que el offset refleje el
+ * DST de la FECHA DE LA CITA, no del instante de renderizado. Sin él, una cita
+ * Nov 15 16:00 Madrid mostraba "(UTC+2)" en agosto y "(UTC+1)" en diciembre.
  *
  * Ejemplos:
- *  - formatTimezoneFriendly("America/Mexico_City")  → "Ciudad de México (UTC-6)"
- *  - formatTimezoneFriendly("Europe/Madrid")        → "Madrid (UTC+1)" (UTC+2 en verano)
- *  - formatTimezoneFriendly("Asia/Kolkata")         → "Calcuta (UTC+5:30)"
- *  - formatTimezoneFriendly(null)                   → ""
- *  - formatTimezoneFriendly("Invalid/Zone")         → "Invalid Zone (UTC)"
+ *  - formatTimezoneFriendly("America/Mexico_City")               → "Ciudad de México (UTC-6)"
+ *  - formatTimezoneFriendly("Europe/Madrid", appointmentDate)    → "Madrid (UTC+1)" en noviembre
+ *  - formatTimezoneFriendly("Asia/Kolkata")                      → "Calcuta (UTC+5:30)"
+ *  - formatTimezoneFriendly(null)                                → ""
+ *  - formatTimezoneFriendly("Invalid/Zone")                      → "Invalid Zone (UTC)"
  */
-export const formatTimezoneFriendly = (timezone?: string | null): string => {
+export const formatTimezoneFriendly = (
+  timezone?: string | null,
+  atDate?: Date | string | null,
+): string => {
   if (!timezone) return '';
   const trimmed = timezone.trim();
   if (!trimmed) return '';
 
+  let resolvedDate: Date | undefined;
+  if (atDate instanceof Date) {
+    resolvedDate = Number.isNaN(atDate.getTime()) ? undefined : atDate;
+  } else if (typeof atDate === 'string' && atDate.length > 0) {
+    const parsed = new Date(atDate);
+    resolvedDate = Number.isNaN(parsed.getTime()) ? undefined : parsed;
+  }
+
   const city = CITY_LABELS[trimmed] || cityFromTimezoneId(trimmed);
-  const offset = computeUtcOffset(trimmed);
+  const offset = computeUtcOffset(trimmed, resolvedDate);
   return `${city} (${offset})`;
 };
 

@@ -1,5 +1,12 @@
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import {
+  SD_MOBILE_FOOTER_INNER_CLASS,
+  SD_MOBILE_GUTTER_CLASS,
+  SD_MOBILE_SCROLL_PAD_CLASS,
+  SD_PAGE_GRID_CLASS,
+  SD_PAGE_INNER_MAX_CLASS,
+} from '../../constants/homepageTypography';
 
 export function ServiceDetailSkeleton() {
   return (
@@ -22,9 +29,10 @@ export function ServiceDetailSkeleton() {
           </div>
 
           {/* Card blanco con contenido */}
-          <div className="relative -mt-12 bg-white rounded-t-3xl pt-6 pb-36 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-            {/* Título y ubicación */}
-            <div className="mb-4 px-5 text-center">
+          <div
+            className={`relative -mt-10 rounded-t-2xl bg-white pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+          >
+            <div className={`mb-4 text-center ${SD_MOBILE_GUTTER_CLASS}`}>
               <Skeleton height={26} width="80%" className="mx-auto mb-3" />
               <Skeleton height={20} width="60%" className="mx-auto mb-3" />
               <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
@@ -38,7 +46,7 @@ export function ServiceDetailSkeleton() {
             <div className="border-t border-gray-200 my-6"></div>
 
             {/* Sección Revisor */}
-            <div className="mb-4 px-6">
+            <div className={`mb-4 ${SD_MOBILE_GUTTER_CLASS}`}>
               <div className="flex items-start gap-4">
                 <Skeleton height={40} width={40} borderRadius="50%" />
                 <div className="flex-1">
@@ -52,7 +60,7 @@ export function ServiceDetailSkeleton() {
             <div className="border-t border-gray-200 my-6"></div>
 
             {/* Tabs skeleton */}
-            <div className="mb-6 px-5">
+            <div className={`mb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
               <div className="flex border-b border-gray-200">
                 <Skeleton height={40} width={100} className="mr-4" />
                 <Skeleton height={40} width={100} />
@@ -60,7 +68,7 @@ export function ServiceDetailSkeleton() {
             </div>
 
             {/* Contenido skeleton */}
-            <div className="pt-6 px-5">
+            <div className={`pt-6 ${SD_MOBILE_GUTTER_CLASS}`}>
               <Skeleton height={16} width="100%" className="mb-2" />
               <Skeleton height={16} width="100%" className="mb-2" />
               <Skeleton height={16} width="90%" className="mb-4" />
@@ -82,57 +90,32 @@ export function ServiceDetailSkeleton() {
             </div>
 
             {/* Botón de reserva flotante skeleton */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-              <Skeleton height={48} width="100%" borderRadius={8} />
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e8e8e8] bg-white shadow-[0_-2px_14px_rgba(15,23,42,0.07)]">
+              <div className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_FOOTER_INNER_CLASS}`}>
+                <Skeleton height={48} width="100%" borderRadius={8} />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Versión Desktop */}
-        <div className="hidden lg:block">
-          <div className="mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-10 py-8">
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_400px]">
-              {/* Columna izquierda - Imágenes */}
-              <div>
-                <Skeleton height={260} width="100%" borderRadius={16} />
-              </div>
-
-              {/* Columna derecha - Contenido */}
-              <div>
-                <Skeleton height={32} width="80%" className="mb-4" />
-                <Skeleton height={20} width="60%" className="mb-6" />
-                
-                {/* Revisor skeleton */}
-                <div className="flex items-center gap-4 mb-6">
-                  <Skeleton height={56} width={56} borderRadius="50%" />
+        {/* Versión Desktop — alineado con HomepageDesktopTopBar + grid */}
+        <div className="hidden lg:block bg-[#fafafa]">
+          <Skeleton height={48} width="100%" borderRadius={0} />
+          <div className={`${SD_PAGE_INNER_MAX_CLASS} py-6 lg:pt-8`}>
+            <div className={SD_PAGE_GRID_CLASS}>
+              <div className="space-y-6 lg:space-y-8">
+                <Skeleton height={340} width="100%" borderRadius={12} />
+                <div className="flex items-center gap-4">
+                  <Skeleton height={48} width={48} borderRadius="50%" />
                   <div className="flex-1">
-                    <Skeleton height={20} width="50%" className="mb-2" />
-                    <Skeleton height={16} width="40%" />
+                    <Skeleton height={18} width="40%" className="mb-2" />
+                    <Skeleton height={14} width="25%" />
                   </div>
                 </div>
-
-                <div className="border-t border-gray-200 my-6"></div>
-
-                {/* Descripción skeleton */}
-                <div className="mb-6">
-                  <Skeleton height={16} width="100%" className="mb-2" />
-                  <Skeleton height={16} width="100%" className="mb-2" />
-                  <Skeleton height={16} width="90%" className="mb-4" />
-                </div>
-
-                {/* Detalles skeleton */}
-                <div className="mb-6">
-                  <Skeleton height={20} width="40%" className="mb-3" />
-                  <div className="flex flex-wrap gap-2">
-                    {[...Array(4)].map((_, idx) => (
-                      <Skeleton key={idx} height={32} width={80} borderRadius={6} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Botón de reserva */}
-                <Skeleton height={48} width="100%" borderRadius={8} />
+                <Skeleton height={72} width="100%" borderRadius={8} />
+                <Skeleton height={16} width="100%" count={4} className="mb-1" />
               </div>
+              <Skeleton height={280} width="100%" borderRadius={12} />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { API_CONFIG } from '../config/api';
 import { jwtDecode } from 'jwt-decode';
-import { isExternalMapTileUrl } from '../utils/mapTileUrls';
+import { isExternalMapTileUrl, resolveFetchUrl } from '../utils/mapTileUrls';
 
 interface TokenPair {
     accessToken: string;
@@ -250,6 +250,13 @@ class AuthService {
         
         window.fetch = async function(...args) {
             const [url, options = {}] = args;
+            const urlString = resolveFetchUrl(url);
+
+            // Tiles de mapa: fetch sin tocar (evita Authorization → preflight CORS en Carto)
+            if (isExternalMapTileUrl(urlString)) {
+                return originalFetch(...args);
+            }
+
             const fetchOptions: RequestInit = { ...options };
 
             // ✅ CRÍTICO: Solo agregar token si NO es un endpoint público
@@ -269,13 +276,11 @@ class AuthService {
                 '/api/Auth/resend-otp',
                 '/api/Auth/apple-auth'
             ];
-            const urlString = typeof url === 'string' ? url : url.toString();
             const isPublic = publicEndpoints.some(endpoint => urlString.includes(endpoint));
-            const isMapTile = isExternalMapTileUrl(urlString);
 
-            // Agregar token solo si NO es un endpoint público ni un tile de mapa externo
+            // Agregar token solo si NO es un endpoint público
             const token = self.getAccessToken();
-            if (token && !isPublic && !isMapTile) {
+            if (token && !isPublic) {
                 const headers = new Headers(fetchOptions.headers);
                 if (!headers.has('Authorization')) {
                     headers.set('Authorization', `Bearer ${token}`);
