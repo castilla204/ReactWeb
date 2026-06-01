@@ -62,10 +62,27 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
   const coverageBlock = hasCoverage && location && (
     isMinimal ? (
       <div className="w-full">
-        <p className={`mb-2 ${SD_MOBILE_GUTTER_CLASS} text-xs text-[#6a6a6a]`}>
-          <span className="font-medium text-[#1c1c1c]">Cobertura</span>
-          <span>{` · ${radius} km`}</span>
-        </p>
+        <div
+          className={`mb-2 ${SD_MOBILE_GUTTER_CLASS} flex min-w-0 items-center gap-3 text-xs text-[#6a6a6a]`}
+          aria-label={
+            locationLabel
+              ? `Cobertura de ${radius} kilómetros en ${locationLabel}`
+              : `Cobertura de ${radius} kilómetros`
+          }
+        >
+          <p className="shrink-0 whitespace-nowrap">
+            <span className="font-medium text-[#1c1c1c]">Cobertura</span>
+            <span>{` · ${radius} km`}</span>
+          </p>
+          {locationLabel ? (
+            <span
+              className="min-w-0 flex-1 truncate text-end text-[#6a6a6a]"
+              title={locationLabel}
+            >
+              {locationLabel}
+            </span>
+          ) : null}
+        </div>
         <ServiceDetailCoverageMap
           latitude={location.latitude}
           longitude={location.longitude}

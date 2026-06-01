@@ -1,6 +1,7 @@
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import {
+  SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_SHELL_CLASS,
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_SCROLL_PAD_CLASS,
@@ -15,27 +16,38 @@ export function ServiceDetailSkeleton() {
         {/* Versión Móvil */}
         <div className="lg:hidden">
           {/* Botones flotantes skeleton */}
-          <div className="fixed top-4 left-4 z-50">
+          <div className={`fixed left-4 z-50 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
             <Skeleton height={40} width={40} borderRadius="50%" />
           </div>
-          <div className="fixed top-4 right-4 z-50 flex gap-2">
+          <div className={`fixed right-4 z-50 flex gap-2 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
             <Skeleton height={40} width={40} borderRadius="50%" />
             <Skeleton height={40} width={40} borderRadius="50%" />
           </div>
 
           {/* Galería de imágenes skeleton */}
-          <div className="relative w-full">
-            <Skeleton height={300} width="100%" borderRadius={0} />
+          <div className="relative z-10 w-full">
+            <Skeleton height={300} width="100%" borderRadius={0} className="aspect-[4/3] !h-auto min-h-[240px]" />
           </div>
 
           {/* Card blanco con contenido */}
           <div
-            className={`relative -mt-10 rounded-t-2xl bg-white pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+            className={`relative z-0 -mt-10 rounded-t-2xl bg-white pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
           >
             <div className={`mb-4 text-center ${SD_MOBILE_GUTTER_CLASS}`}>
               <Skeleton height={26} width="80%" className="mx-auto mb-3" />
-              <Skeleton height={20} width="60%" className="mx-auto mb-3" />
-              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
+            </div>
+
+            <div className={`mb-3 ${SD_MOBILE_GUTTER_CLASS}`}>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <Skeleton height={14} width={100} borderRadius={4} />
+                <Skeleton height={14} width={88} borderRadius={4} />
+              </div>
+              <Skeleton height={100} width="100%" borderRadius={0} />
+            </div>
+
+            <div className={`mb-3 ${SD_MOBILE_GUTTER_CLASS}`}>
+              <Skeleton height={14} width={120} className="mb-2" />
+              <div className="flex gap-1.5">
                 {[...Array(7)].map((_, idx) => (
                   <Skeleton key={idx} height={28} width={32} borderRadius={6} />
                 ))}
@@ -88,17 +100,14 @@ export function ServiceDetailSkeleton() {
                 <Skeleton height={200} width="100%" borderRadius={8} />
               </div>
             </div>
+          </div>
 
-            {/* Botón de reserva flotante skeleton */}
-            <div className={SD_MOBILE_FOOTER_SHELL_CLASS}>
-              <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
-                <div className="sd-mobile-footer-row">
-                  <div className="flex-1 space-y-2">
-                    <Skeleton height={22} width={88} borderRadius={4} />
-                    <Skeleton height={16} width={72} borderRadius={4} />
-                  </div>
-                  <Skeleton height={52} width={152} borderRadius={9999} />
-                </div>
+          {/* Barra fija — misma jerarquía que ServiceReviewPage */}
+          <div className={SD_MOBILE_FOOTER_SHELL_CLASS}>
+            <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
+              <div className="sd-mobile-footer-row">
+                <Skeleton height={20} width={140} borderRadius={4} className="min-w-0 flex-1" />
+                <Skeleton height={48} width={120} borderRadius={9999} className="shrink-0" />
               </div>
             </div>
           </div>
