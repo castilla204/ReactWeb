@@ -540,6 +540,13 @@ export function ServiceReviewPage({
         }
     }, [validImages.length]);
 
+    const scrollMobileCarouselTo = useCallback((index: number) => {
+        const carousel = carouselRef.current;
+        if (!carousel || index < 0 || index >= validImages.length) return;
+        carousel.scrollTo({ left: index * carousel.offsetWidth, behavior: 'smooth' });
+        setMobileImageIndex(index);
+    }, [validImages.length]);
+
     // Inicializar listener del carrusel móvil
     useEffect(() => {
         const carousel = carouselRef.current;
@@ -618,9 +625,9 @@ export function ServiceReviewPage({
                         <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`} />
                     </button>
                 </div>
-                {/* Hero móvil: imagen + chips (capa 1) y card blanca (capa 2, solapa sin tapar título) */}
-                <div className="grid w-full grid-cols-1">
-                    <div className="relative col-start-1 row-start-1 w-full min-h-0">
+                {/* Hero móvil: chips anclados al borde inferior de la foto */}
+                <div className="relative w-full">
+                    <div className="relative w-full overflow-hidden">
                     {/* Carrusel de imágenes con indicadores */}
                     <div 
                         ref={carouselRef}
@@ -661,39 +668,6 @@ export function ServiceReviewPage({
                                             </div>
                                         </div>
                                     )}
-                                    
-                                    {/* Contador de imágenes discreto - Abajo a la derecha */}
-                                    {validImages.length > 1 && idx === mobileImageIndex && (
-                                        <div 
-                                            className="absolute top-3 right-3 z-30 pointer-events-none"
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                                paddingTop: '2px',
-                                                paddingBottom: '2px',
-                                                paddingLeft: '6px',
-                                                paddingRight: '6px',
-                                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                                                backdropFilter: 'blur(4px)',
-                                                borderRadius: '6px',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            <span
-                                                style={{
-                                                    fontSize: '9px',
-                                                    lineHeight: '11px',
-                                                    fontWeight: 500,
-                                                    color: 'rgba(255, 255, 255, 0.9)',
-                                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                                    letterSpacing: '0.2px',
-                                                }}
-                                            >
-                                                {mobileImageIndex + 1} / {validImages.length}
-                                            </span>
-                                        </div>
-                                    )}
                                 </button>
                             )) : (
                                 <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 flex items-center justify-center">
@@ -709,17 +683,41 @@ export function ServiceReviewPage({
                         </div>
                     </div>
 
+                    {validImages.length > 1 && (
+                        <div
+                            className="sd-gallery-dots"
+                            role="tablist"
+                            aria-label="Fotos del servicio"
+                        >
+                            {validImages.map((_, dotIndex) => (
+                                <button
+                                    key={dotIndex}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={dotIndex === mobileImageIndex}
+                                    aria-label={`Foto ${dotIndex + 1} de ${validImages.length}`}
+                                    className={`sd-gallery-dot${dotIndex === mobileImageIndex ? ' is-active' : ''}`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        scrollMobileCarouselTo(dotIndex);
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+
                     {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
                         <ServiceDetailDeliverablesGuide
                             items={finalDeliverableTypes}
                             variant="overlay"
-                            className="z-20"
+                            className="sd-deliverable-guide-on-image"
                         />
                     )}
                     </div>
 
                     <div
-                        className={`relative col-start-1 row-start-2 -mt-10 z-10 bg-white rounded-t-2xl pt-6 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+                        className={`relative -mt-10 z-10 bg-white rounded-t-2xl pt-6 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
                     >
                         <div className={`${SD_MOBILE_GUTTER_CLASS} mb-3 text-center`}>
                             <h1
@@ -736,7 +734,7 @@ export function ServiceReviewPage({
                                 <ServiceDetailDeliverablesGuide
                                     items={finalDeliverableTypes}
                                     variant="inline"
-                                    className="mb-3"
+                                    className={`mb-3 ${SD_MOBILE_GUTTER_CLASS}`}
                                 />
                             )}
 
