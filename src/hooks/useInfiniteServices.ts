@@ -6,6 +6,7 @@ import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { Service } from './useServices';
 import { capacitorFetch } from '../utils/capacitorFetch';
+import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
 
 interface UseInfiniteServicesProps {
     categoryId?: number;
@@ -96,15 +97,9 @@ export function useInfiniteServices({
                     totalReviews: service.TotalReviews ?? service.totalReviews ?? 0,
                     averageRating: service.AverageRating ?? service.averageRating,
                     isActive: service.IsActive ?? service.isActive ?? true,
-                    selectedDeliverableTypes: (service.SelectedDeliverableTypes || service.selectedDeliverableTypes || []).map((dt: any) => ({
-                        id: dt.Id || dt.id,
-                        name: dt.Name || dt.name,
-                        displayName: dt.DisplayName || dt.displayName,
-                        description: dt.Description || dt.description,
-                        isRequired: dt.IsRequired ?? dt.isRequired,
-                        isActive: dt.IsActive ?? dt.isActive,
-                        sortOrder: dt.SortOrder ?? dt.sortOrder,
-                    })),
+                    selectedDeliverableTypes: mapSelectedDeliverableTypes(
+                        service.SelectedDeliverableTypes || service.selectedDeliverableTypes
+                    ),
                     expert: service.Expert || service.expert ? {
                         id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
                         profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
