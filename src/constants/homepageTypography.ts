@@ -132,11 +132,15 @@ export const SD_MOBILE_GUTTER_CLASS = 'px-4';
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
 
 /**
- * Reserva inferior del scroll: altura barra fija (~5.75rem) + colchón + safe-area.
- * Barra ≈ pt-4 + fila 52px + pb min 1.25rem.
+ * Reserva inferior del scroll: barra fija compacta + colchón + safe-area.
+ * Barra ≈ py-3 + fila 48px + pb safe-area.
  */
 export const SD_MOBILE_SCROLL_PAD_CLASS =
-  'pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))]';
+  'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]';
+
+/** Offset superior botones flotantes (notch / Dynamic Island) */
+export const SD_MOBILE_FLOATING_TOP_CLASS =
+  'top-[max(1rem,env(safe-area-inset-top,0px))]';
 
 /** Shell barra fija móvil */
 export const SD_MOBILE_FOOTER_SHELL_CLASS =

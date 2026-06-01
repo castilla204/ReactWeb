@@ -54,7 +54,11 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   if (visible.length === 0) return null;
 
   const isOverlay = variant === 'overlay';
-  const detail = active ? getDeliverableDetail(active) : null;
+  const hasPdf = visible.some((dt) => {
+    const key = (dt.name || dt.displayName || '').toLowerCase();
+    return key.includes('pdf') || key.includes('informe');
+  });
+  const detail = active ? getDeliverableDetail(active, { hasPdf }) : null;
 
   const openDetail = (dt: ServiceDeliverableType, e: React.MouseEvent) => {
     e.preventDefault();
@@ -76,6 +80,8 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               className={`${chipClass} cursor-pointer transition-transform hover:brightness-[0.98] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066CC]`}
               style={isOverlay ? { animationDelay: `${60 + idx * 70}ms` } : undefined}
               onClick={(e) => openDetail(dt, e)}
+              aria-haspopup="dialog"
+              aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
               <Icon className="sd-deliverable-chip-icon" aria-hidden />
@@ -114,7 +120,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             ))}
           </ul>
         </div>
-        <p className="text-xs leading-relaxed text-[#9ca3af]">
+        <p className="text-xs leading-relaxed text-[#6a6a6a]">
           El experto lo sube en el chat de la reserva cuando finalice la revisión. El pago en custodia
           se libera cuando apruebes el trabajo.
         </p>
@@ -125,8 +131,16 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   if (isOverlay) {
     return (
       <>
-        <div className={`sd-deliverable-guide ${className}`.trim()} aria-label="Entregables incluidos">
-          <p className="sd-deliverable-guide-label mb-1.5" style={{ animationDelay: '0ms' }}>
+        <div
+          className={`sd-deliverable-guide ${className}`.trim()}
+          role="region"
+          aria-labelledby="sd-deliverables-guide-label"
+        >
+          <p
+            id="sd-deliverables-guide-label"
+            className="sd-deliverable-guide-label mb-1.5"
+            style={{ animationDelay: '0ms' }}
+          >
             Incluye · pulsa para ver más
           </p>
           {chipList}

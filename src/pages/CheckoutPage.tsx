@@ -652,20 +652,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                 {(() => {
                     const priceInfo = formatPriceDisplay(finalTotal);
-                    const tzLabel = formatTimezoneFriendly(service.expert?.timezone);
                     return (
                         <MobileReserveFooter
                             price={priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
-                            priceMeta="Precio total"
+                            priceSuffix="total"
                             priceAriaLabel={`Precio total ${priceInfo.display}`}
-                            priceExtra={
-                                tzLabel ? (
-                                    <>
-                                        <Globe className="h-3.5 w-3.5 shrink-0 text-[#0066CC]" aria-hidden />
-                                        <span>Horario: {tzLabel}</span>
-                                    </>
-                                ) : undefined
-                            }
                         >
                             <button
                                 onClick={handlePayment}

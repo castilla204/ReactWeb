@@ -45,6 +45,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
   SD_MOBILE_CAROUSEL_EDGE_CLASS,
+  SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_SCROLL_PAD_CLASS,
@@ -266,8 +267,6 @@ export function ServiceReviewPage({
 
     // ✅ DISPONIBILIDAD
     const finalAvailability = finalService?.expert?.currentAvailability;
-    const footerTimezoneLabel = formatTimezoneFriendly(finalService?.expert?.timezone);
-
     // ✅ INFORMACIÓN DE UBICACIÓN DEL EXPERTO PARA EL MAPA
     // Intentar múltiples fuentes para obtener las coordenadas
     const expertLat = finalService?.expertLatitude 
@@ -294,6 +293,16 @@ export function ServiceReviewPage({
         || locationRange 
         || null;
     const expertCountry = finalService?.expert?.country || null;
+
+    const expertLocationLabel = (() => {
+        const city = finalService?.expert?.city;
+        const country = expertCountry;
+        const countryName = country ? getCountryName(country) : '';
+        const parts: string[] = [];
+        if (city) parts.push(city);
+        if (countryName) parts.push(countryName);
+        return parts.length > 0 ? parts.join(', ') : countryName || '';
+    })();
     
     // ✅ DEBUG: Log para verificar datos de ubicación
     console.log('🗺️ ServiceReviewPage - Datos de ubicación del experto:', {
@@ -405,8 +414,20 @@ export function ServiceReviewPage({
     // Round 24: conversion to preferred currency. Service price source default 'EUR'.
     const { formatPriceWithSource, preferredCurrency } = useCurrency();
     const servicePriceCurrency = (finalService as any)?.priceCurrency || (finalService as any)?.currency || 'EUR';
+    const getServicePriceInfo = (amount: number) =>
+        formatPriceWithSource(amount, servicePriceCurrency, preferredCurrency);
+
+    /** Footer móvil: una sola línea (sin paréntesis de moneda origen). */
+    const getMobileFooterPriceLine = (amount: number) => {
+        const info = getServicePriceInfo(amount);
+        if (!info.wasConverted) {
+            return info.display.replace(/^≈\s*/, '');
+        }
+        return `≈ ${info.converted}`;
+    };
+
     const renderServicePrice = (amount: number) => {
-        const info = formatPriceWithSource(amount, servicePriceCurrency, preferredCurrency);
+        const info = getServicePriceInfo(amount);
         if (!info.wasConverted) return <span>{info.display}</span>;
         return (
             <>
@@ -472,6 +493,23 @@ export function ServiceReviewPage({
         touchStartX.current = null;
         touchEndX.current = null;
     };
+
+    useEffect(() => {
+        if (!isLightboxOpen || validImages.length <= 1) return;
+
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                handleLightboxNavigation('prev');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                handleLightboxNavigation('next');
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isLightboxOpen, validImages.length]);
 
     // Funciones para manejar el lightbox de imágenes de reseñas
     const handleReviewLightboxNavigation = (reviewId: number, direction: 'prev' | 'next', totalImages: number) => {
@@ -552,7 +590,7 @@ export function ServiceReviewPage({
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
             <div className="lg:hidden">
                 {/* Botones flotantes móvil con fondo blanco redondo */}
-                <div className="fixed top-4 left-4 z-50">
+                <div className={`fixed left-4 z-50 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
                     <button 
                         onClick={onBack}
                         className="sd-icon-btn"
@@ -561,24 +599,28 @@ export function ServiceReviewPage({
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="fixed top-4 right-4 z-50 flex gap-2">
+                <div className={`fixed right-4 z-50 flex gap-2 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
                     <button 
+                        type="button"
                         className="sd-icon-btn"
                         aria-label="Compartir"
+                        disabled
+                        aria-disabled="true"
                     >
                         <Share2 className="w-5 h-5" />
                     </button>
                     <button 
                         onClick={() => setIsFavorite(!isFavorite)}
                         className="sd-icon-btn"
-                        aria-label="Favorito"
+                        aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                        aria-pressed={isFavorite}
                     >
                         <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`} />
                     </button>
                 </div>
-                {/* Galería móvil mejorada - Carrusel de imágenes */}
-                <div className="relative w-full">
-                    <div className="relative w-full">
+                {/* Hero móvil: imagen + chips (capa 1) y card blanca (capa 2, solapa sin tapar título) */}
+                <div className="grid w-full grid-cols-1">
+                    <div className="relative col-start-1 row-start-1 w-full min-h-0">
                     {/* Carrusel de imágenes con indicadores */}
                     <div 
                         ref={carouselRef}
@@ -588,10 +630,12 @@ export function ServiceReviewPage({
                     >
                         <div className="flex">
                             {validImages.length > 0 ? validImages.map((img, idx) => (
-                                <div 
+                                <button
+                                    type="button"
                                     key={idx}
-                                    className="relative w-full flex-shrink-0 aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 snap-start overflow-hidden cursor-pointer active:scale-[0.98] transition-transform duration-150"
+                                    className="relative block w-full flex-shrink-0 aspect-[4/3] border-0 bg-gradient-to-br from-gray-100 to-gray-200 p-0 snap-start overflow-hidden cursor-pointer text-left active:scale-[0.98] transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066CC]"
                                     onClick={() => handleImageClick(idx)}
+                                    aria-label={`Abrir imagen ${idx + 1} de ${validImages.length}`}
                                 >
                                     {loadingImages.has(img) && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
@@ -621,7 +665,7 @@ export function ServiceReviewPage({
                                     {/* Contador de imágenes discreto - Abajo a la derecha */}
                                     {validImages.length > 1 && idx === mobileImageIndex && (
                                         <div 
-                                            className="absolute bottom-16 right-3 z-30 pointer-events-none"
+                                            className="absolute top-3 right-3 z-30 pointer-events-none"
                                             style={{
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
@@ -650,7 +694,7 @@ export function ServiceReviewPage({
                                             </span>
                                         </div>
                                     )}
-                                </div>
+                                </button>
                             )) : (
                                 <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 flex items-center justify-center">
                                     <div className={`text-center ${SD_MOBILE_GUTTER_CLASS}`}>
@@ -669,60 +713,24 @@ export function ServiceReviewPage({
                         <ServiceDetailDeliverablesGuide
                             items={finalDeliverableTypes}
                             variant="overlay"
+                            className="z-20"
                         />
                     )}
                     </div>
 
-                    {/* Card blanco mejorado con mejor espaciado */}
                     <div
-                        className={`relative -mt-10 bg-white rounded-t-2xl pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+                        className={`relative col-start-1 row-start-2 -mt-10 z-10 bg-white rounded-t-2xl pt-6 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
                     >
                         <div className={`${SD_MOBILE_GUTTER_CLASS} mb-3 text-center`}>
-                            <h1 
-                                style={{
-                                    fontSize: '22px',
-                                    lineHeight: '26px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                    marginBottom: '12px',
-                                    marginTop: 0,
-                                    padding: 0,
-                                }}
+                            <h1
+                                className="sd-page-title relative z-10 mb-3 text-[22px] leading-[26px] md:text-[22px]"
                             >
-                                {serviceTypeName} por <span style={{ textDecoration: 'underline', textDecorationColor: 'rgb(209, 213, 219)', textUnderlineOffset: '3px' }}>{finalExpertName}</span>
+                                {serviceTypeName} por{' '}
+                                <span className="underline decoration-[#d1d5db] underline-offset-[3px]">
+                                    {finalExpertName}
+                                </span>
                             </h1>
-                            
-                            <div>
-                                <h2 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(113, 113, 113)',
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                        margin: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    {(() => {
-                                        const city = finalService?.expert?.city;
-                                        const country = finalService?.expert?.country;
-                                        const countryName = country ? getCountryName(country) : '';
-                                        
-                                        const locationParts: string[] = [];
-                                        if (city) locationParts.push(city);
-                                        if (countryName) locationParts.push(countryName);
-                                        
-                                        const location = locationParts.length > 0 
-                                            ? locationParts.join(', ')
-                                            : (countryName || 'España');
-                                        
-                                        return location;
-                                    })()}
-                                </h2>
-                            </div>
-                                </div>
+                        </div>
 
                             {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
                                 <ServiceDetailDeliverablesGuide
@@ -739,6 +747,7 @@ export function ServiceReviewPage({
                                     timezone={finalService?.expert?.timezone}
                                     isOnVacation={finalService?.expert?.isOnVacation}
                                     location={expertLocation ?? undefined}
+                                    locationLabel={expertLocationLabel || undefined}
                                     rangeKm={expertRange || 25}
                                     coverageFirst
                                     mapVariant="preview"
@@ -822,8 +831,17 @@ export function ServiceReviewPage({
                     <div className="my-3 border-t border-[#e8e8e8]" />
 
                         <div className={`mb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
-                        <div className="flex border-b border-gray-200">
+                        <div
+                            className="flex border-b border-gray-200"
+                            role="tablist"
+                            aria-label="Información del servicio"
+                        >
                             <button
+                                type="button"
+                                role="tab"
+                                id="sd-tab-about"
+                                aria-controls="sd-panel-about"
+                                aria-selected={activeTab === 'about'}
                                 onClick={() => setActiveTab('about')}
                                 className="flex-1 py-3 text-center relative"
                                 style={{
@@ -838,7 +856,12 @@ export function ServiceReviewPage({
                                 >
                                 Acerca del servicio
                             </button>
-                                    <button 
+                                    <button
+                                type="button"
+                                role="tab"
+                                id="sd-tab-how"
+                                aria-controls="sd-panel-how"
+                                aria-selected={activeTab === 'how'}
                                 onClick={() => setActiveTab('how')}
                                 className="flex-1 py-3 text-center relative"
                                         style={{
@@ -857,7 +880,7 @@ export function ServiceReviewPage({
                         
                         {/* Contenido del tab "Acerca del servicio" */}
                         {activeTab === 'about' && (
-                            <div className="pt-6">
+                            <div id="sd-panel-about" role="tabpanel" aria-labelledby="sd-tab-about" className="pt-6">
                                 {/* Descripción del tipo de habitación/servicio */}
                                 {finalService?.serviceTypeName && (
                                     <div className="mb-6">
@@ -934,7 +957,7 @@ export function ServiceReviewPage({
                         
                         {/* Contenido del tab "¿Cómo funciona?" */}
                         {activeTab === 'how' && (
-                            <div className="pt-6">
+                            <div id="sd-panel-how" role="tabpanel" aria-labelledby="sd-tab-how" className="pt-6">
                                 <div className="space-y-5">
                                     {/* Paso 1 */}
                                     <div>
@@ -1463,17 +1486,9 @@ export function ServiceReviewPage({
                 </div>
 
                 <MobileReserveFooter
-                    price={renderServicePrice(finalPrice)}
-                    priceMeta="el servicio"
-                    priceAriaLabel={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
-                    priceExtra={
-                        footerTimezoneLabel ? (
-                            <>
-                                <Globe className="h-3.5 w-3.5 shrink-0 text-[#0066CC]" aria-hidden />
-                                <span>Horario: {footerTimezoneLabel}</span>
-                            </>
-                        ) : undefined
-                    }
+                    price={getMobileFooterPriceLine(finalPrice)}
+                    priceSuffix="por servicio"
+                    priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
                 >
                     {isAuthenticated ? (
                         <button
@@ -1533,6 +1548,7 @@ export function ServiceReviewPage({
                                     type="button"
                                     className="shrink-0"
                                     onClick={() => finalExpertPicture && setIsExpertPhotoOpen(true)}
+                                    aria-label={`Ver foto de ${finalExpertName}`}
                                 >
                                     <Avatar className="h-12 w-12 rounded-md">
                                         <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
@@ -1656,7 +1672,7 @@ export function ServiceReviewPage({
                                 </section>
 
                                 {(finalAvailability || expertLocation) && (
-                                    <section className="mt-4 w-full min-h-0 flex-1 overflow-y-auto">
+                                    <section className="mt-4 w-full min-h-0 flex-1">
                                         <ServiceDetailBookingMeta
                                             layout="card"
                                             availability={finalAvailability ?? undefined}
@@ -1711,6 +1727,34 @@ export function ServiceReviewPage({
                 >
                     <DialogTitle className="sr-only">Foto {lightboxIndex + 1} de {validImages.length} del servicio</DialogTitle>
                     <DialogDescription className="sr-only">Imagen ampliada del servicio</DialogDescription>
+                    <button
+                        type="button"
+                        onClick={() => setIsLightboxOpen(false)}
+                        className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-lg transition-colors hover:bg-gray-100"
+                        aria-label="Cerrar galería"
+                    >
+                        <X className="h-5 w-5 text-gray-700" />
+                    </button>
+                    {validImages.length > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => handleLightboxNavigation('prev')}
+                                className="absolute left-4 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white/90 shadow-lg backdrop-blur-sm"
+                                aria-label="Imagen anterior"
+                            >
+                                <ChevronLeft className="h-6 w-6 text-gray-800" strokeWidth={2.5} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleLightboxNavigation('next')}
+                                className="absolute right-4 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white/90 shadow-lg backdrop-blur-sm"
+                                aria-label="Imagen siguiente"
+                            >
+                                <ChevronRight className="h-6 w-6 text-gray-800" strokeWidth={2.5} />
+                            </button>
+                        </>
+                    )}
                     <div 
                         className="relative w-full h-full flex items-center justify-center pointer-events-auto"
                         onTouchStart={handleTouchStart}
@@ -1830,10 +1874,16 @@ export function ServiceReviewPage({
                             className="w-full max-w-[1920px] p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
                             overlayClassName="bg-black/20"
                         >
+                            <DialogTitle className="sr-only">
+                                Fotos de la reseña, imagen {currentIndex + 1} de {reviewImages.length}
+                            </DialogTitle>
+                            <DialogDescription className="sr-only">Galería de fotos de la reseña</DialogDescription>
                             <div className="relative h-[90vh] max-h-[90vh]">
                                 <button
+                                    type="button"
                                     onClick={() => setReviewLightboxOpen(prev => ({ ...prev, [reviewId]: false }))}
                                     className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 shadow-lg border border-gray-200 transition-all duration-200 hover:scale-110"
+                                    aria-label="Cerrar galería de reseña"
                                 >
                                     <X className="w-5 h-5 text-gray-700" />
                                 </button>
@@ -1841,14 +1891,18 @@ export function ServiceReviewPage({
                                 {reviewImages.length > 1 && (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={() => handleReviewLightboxNavigation(reviewId, 'prev', reviewImages.length)}
                                             className="absolute left-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
+                                            aria-label="Foto anterior de la reseña"
                                         >
                                             <ChevronLeft className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={() => handleReviewLightboxNavigation(reviewId, 'next', reviewImages.length)}
                                             className="absolute right-6 top-1/2 -translate-y-1/2 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md hover:bg-white shadow-2xl border border-gray-100 hover:scale-110 hover:shadow-3xl transition-all duration-300 group"
+                                            aria-label="Foto siguiente de la reseña"
                                         >
                                             <ChevronRight className="w-7 h-7 text-gray-800 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
                                         </button>
