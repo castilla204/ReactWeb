@@ -161,15 +161,15 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         {title && (
           <DialogHeader
             className={cn(
-              'flex-shrink-0 border-b border-border bg-muted px-4 pb-3.5 pt-4 text-left',
+              'flex-shrink-0 border-b border-[#ebebeb] bg-white px-4 pb-3.5 pt-4 text-left',
               dialogHeaderClassName
             )}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 pr-2">
-                <DialogTitle className="text-base font-semibold leading-snug">{title}</DialogTitle>
+                <DialogTitle className="text-base font-semibold leading-snug text-[#1c1c1c]">{title}</DialogTitle>
                 {description && (
-                  <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                  <DialogDescription className="mt-0.5 text-sm text-[#717171]">
                     {description}
                   </DialogDescription>
                 )}

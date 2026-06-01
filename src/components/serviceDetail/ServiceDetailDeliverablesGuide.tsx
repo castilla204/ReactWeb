@@ -111,8 +111,8 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           </ul>
         </div>
         <p className="text-xs leading-relaxed text-[#6a6a6a]">
-          El experto lo sube en el chat de la reserva cuando finalice la revisión. El pago en custodia
-          se libera cuando apruebes el trabajo.
+          El experto lo sube en el chat de la reserva cuando finalice la revisión. El pago retenido se
+          libera cuando apruebes el informe.
         </p>
       </div>
     </ResponsiveModal>
