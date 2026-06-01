@@ -1,7 +1,7 @@
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import {
-  SD_MOBILE_FOOTER_INNER_CLASS,
+  SD_MOBILE_FOOTER_SHELL_CLASS,
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_SCROLL_PAD_CLASS,
   SD_PAGE_GRID_CLASS,
@@ -90,9 +90,15 @@ export function ServiceDetailSkeleton() {
             </div>
 
             {/* Botón de reserva flotante skeleton */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e8e8e8] bg-white shadow-[0_-2px_14px_rgba(15,23,42,0.07)]">
-              <div className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_FOOTER_INNER_CLASS}`}>
-                <Skeleton height={48} width="100%" borderRadius={8} />
+            <div className={SD_MOBILE_FOOTER_SHELL_CLASS}>
+              <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
+                <div className="sd-mobile-footer-row">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton height={22} width={88} borderRadius={4} />
+                    <Skeleton height={16} width={72} borderRadius={4} />
+                  </div>
+                  <Skeleton height={52} width={152} borderRadius={9999} />
+                </div>
               </div>
             </div>
           </div>

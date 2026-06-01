@@ -23,7 +23,8 @@ import {
     Video,
     Image,
     File,
-    Calendar
+    Calendar,
+    Globe
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
@@ -37,18 +38,24 @@ import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
 import { getCountryName } from '../utils/countries';
 import { formatPriceNumber } from '../utils/priceUtils';
+import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
+import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
   SD_MOBILE_CAROUSEL_EDGE_CLASS,
-  SD_MOBILE_FOOTER_INNER_CLASS,
+  SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_SCROLL_PAD_CLASS,
   SD_PAGE_GRID_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../constants/homepageTypography';
 import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
+import {
+    ServiceDetailDeliverablesGuide,
+    normalizeDeliverableTypes,
+} from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { ServiceDetailReviewsSection } from '../components/serviceDetail/ServiceDetailReviewsSection';
 import { ServiceDetailHowItWorks } from '../components/serviceDetail/ServiceDetailHowItWorks';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
@@ -92,23 +99,9 @@ export function ServiceReviewPage({
     onContinue,
     service: serviceProp, // ✅ Servicio pasado como prop
 }: ServiceReviewPageProps) {
-    const { isAuthenticated, updateUser } = useAuth();
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
-    
-    // Redirigir a checkout después del login si hay una ruta guardada
-    useEffect(() => {
-        if (isAuthenticated) {
-            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-            if (redirectPath) {
-                console.log('🔵 Usuario autenticado, redirigiendo a:', redirectPath);
-                sessionStorage.removeItem('redirectAfterLogin');
-                // Usar setTimeout para asegurar que la navegación se complete
-                setTimeout(() => {
-                    navigate(redirectPath, { replace: true });
-                }, 100);
-            }
-        }
-    }, [isAuthenticated, navigate]);
+
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [mobileImageIndex, setMobileImageIndex] = useState(0);
@@ -131,14 +124,55 @@ export function ServiceReviewPage({
     // Handler para abrir chat o login
     const handleChatClick = () => {
         if (isAuthenticated && token && userId > 0) {
-            // Usuario autenticado: navegar a la página de chat
             navigate(`/chat-pre-contratacion/${serviceId}`);
-        } else {
-            // Usuario no autenticado: abrir login
-            sessionStorage.setItem('loginFromChat', 'true');
-            setShowLoginDialog(true);
+            return;
         }
+        sessionStorage.removeItem('redirectAfterLogin');
+        sessionStorage.setItem('loginFromChat', 'true');
+        setShowLoginDialog(true);
     };
+
+    const getCheckoutPath = useCallback(() => {
+        if (!serviceId) return null;
+        const serviceIdNumber = typeof serviceId === 'number' ? serviceId : parseInt(String(serviceId), 10);
+        if (isNaN(serviceIdNumber) || serviceIdNumber <= 0) return null;
+        return `/checkout/${serviceIdNumber}`;
+    }, [serviceId]);
+
+    const openLoginForCheckout = useCallback(() => {
+        const checkoutPath = getCheckoutPath();
+        if (!checkoutPath) {
+            showToast('error', 'Error: ID de servicio no válido');
+            return;
+        }
+        sessionStorage.removeItem('loginFromChat');
+        sessionStorage.setItem('redirectAfterLogin', checkoutPath);
+        setShowLoginDialog(true);
+    }, [getCheckoutPath]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        if (sessionStorage.getItem('loginFromChat') === 'true') {
+            sessionStorage.removeItem('loginFromChat');
+            if (serviceId) {
+                const t = window.setTimeout(() => {
+                    navigate(`/chat-pre-contratacion/${serviceId}`, { replace: true });
+                }, 100);
+                return () => clearTimeout(t);
+            }
+            return;
+        }
+
+        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+        if (redirectPath) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            const t = window.setTimeout(() => {
+                navigate(redirectPath, { replace: true });
+            }, 100);
+            return () => clearTimeout(t);
+        }
+    }, [isAuthenticated, navigate, serviceId]);
 
     // ✅ Si el servicio viene como prop, usarlo directamente; si no, buscarlo con useServices
     const { services, isLoading } = useServices({
@@ -232,7 +266,8 @@ export function ServiceReviewPage({
 
     // ✅ DISPONIBILIDAD
     const finalAvailability = finalService?.expert?.currentAvailability;
-    
+    const footerTimezoneLabel = formatTimezoneFriendly(finalService?.expert?.timezone);
+
     // ✅ INFORMACIÓN DE UBICACIÓN DEL EXPERTO PARA EL MAPA
     // Intentar múltiples fuentes para obtener las coordenadas
     const expertLat = finalService?.expertLatitude 
@@ -357,15 +392,8 @@ export function ServiceReviewPage({
     });
     const finalCompletedSearches = finalService?.completedSearches || 0;
     
-    // ✅ FALLBACK VISUAL PARA ENTREGABLES (Si no hay, mostramos los estándar para que se vea el diseño)
-    const defaultDeliverables = [
-        { id: 991, name: 'Report', displayName: 'Informe detallado' },
-        { id: 992, name: 'Photos', displayName: 'Fotos HD' },
-        { id: 993, name: 'Video', displayName: 'Video revisión' }
-    ];
-    const finalDeliverableTypes = (finalService?.selectedDeliverableTypes && finalService.selectedDeliverableTypes.length > 0) 
-        ? finalService.selectedDeliverableTypes 
-        : defaultDeliverables;
+    const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
+    const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
 
     const serviceTypeName = serviceTypes.find(st => st.id === (finalService?.serviceTypeId || serviceTypeId))?.name || 'Servicio';
 
@@ -388,208 +416,19 @@ export function ServiceReviewPage({
         );
     };
 
-    const [isGoogleReady, setIsGoogleReady] = useState(false);
-    const [isAuthenticating, setIsAuthenticating] = useState(false);
-    const [authStep, setAuthStep] = useState<string>('');
-    const googleButtonRefMobile = useRef<HTMLDivElement>(null);
-    const googleButtonRefDesktop = useRef<HTMLDivElement>(null);
-
-    // Inicializar Google Sign-In
-    useEffect(() => {
-        const initGoogleSignIn = () => {
-            if (window.google?.accounts?.id) {
-                    const clientId = '61603823707-4vsp43naifci8t893hdc276kkhbvn49a.apps.googleusercontent.com';
-                
-                    window.google.accounts.id.initialize({
-                        client_id: clientId,
-                        callback: async (response: any) => {
-                            try {
-                                setIsAuthenticating(true);
-                                setAuthStep('Verificando credenciales...');
-                                console.log('🔐 [ServiceReviewPage] Iniciando autenticación...');
-                                
-                                if (!response.credential) {
-                                    throw new Error('No credential received from Google');
-                                }
-
-                                setAuthStep('Guardando información...');
-                                // Guardar estado antes de iniciar sesión
-                                sessionStorage.setItem('pendingServiceSelection', JSON.stringify({
-                                    serviceId,
-                                    expertName,
-                                    servicePrice,
-                                    expertProfilePicture,
-                                    serviceDescription,
-                                    serviceImageUrls,
-                                    categoryId,
-                                    serviceTypeId,
-                                    latitude,
-                                    longitude,
-                                }));
-
-                                setAuthStep('Autenticando con el servidor...');
-                                const result = await authService.googleAuth(response.credential);
-                                
-                                if (!result.success) {
-                                    throw new Error('Authentication failed');
-                                }
-
-                                setAuthStep('Configurando sesión...');
-                                // ✅ ACTUALIZAR CONTEXTO DE AUTENTICACIÓN CON TOKEN
-                                const token = authService.getAccessToken();
-                                if (result.user && token) {
-                                    updateUser(result.user, token, () => {
-                                        setAuthStep('Redirigiendo...');
-                                        console.log('✅ [ServiceReviewPage] Autenticación exitosa, redirigiendo...');
-                                        
-                                        // Si el login fue desde el diálogo de chat, cerrar el diálogo y navegar al chat
-                                        const loginFromChat = sessionStorage.getItem('loginFromChat');
-                                        if (loginFromChat === 'true') {
-                                            sessionStorage.removeItem('loginFromChat');
-                                            setShowLoginDialog(false);
-                                            setTimeout(() => {
-                                                navigate(`/chat-pre-contratacion/${serviceId}`);
-                                            }, 300);
-                                            return;
-                                        }
-                                        
-                                        // Después de actualizar el usuario, redirigir a checkout
-                                        setTimeout(() => {
-                                            // Verificar si hay una ruta guardada para redirigir
-                                            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-                                            if (redirectPath) {
-                                                sessionStorage.removeItem('redirectAfterLogin');
-                                                navigate(redirectPath, { replace: true });
-                                            } else if (serviceId) {
-                                                // Si no hay ruta guardada pero hay serviceId, navegar directamente a checkout
-                                                const serviceIdNumber = typeof serviceId === 'number' ? serviceId : parseInt(String(serviceId), 10);
-                                                if (!isNaN(serviceIdNumber) && serviceIdNumber > 0) {
-                                                    navigate(`/checkout/${serviceIdNumber}`, { replace: true });
-                                                }
-                                            }
-                                        }, 500);
-                                    });
-                                } else {
-                                    throw new Error('No token received after authentication');
-                                }
-                            } catch (error: any) {
-                                console.error('❌ [ServiceReviewPage] Error en Google Auth:', error);
-                                const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
-                                showToast('error', errorMessage);
-                                setAuthStep('');
-                            } finally {
-                                setIsAuthenticating(false);
-                            }
-                        },
-                    });
-
-                // Renderizar en Móvil
-                if (googleButtonRefMobile.current) {
-                    window.google.accounts.id.renderButton(googleButtonRefMobile.current, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'signin_with',
-                        width: '100%',
-                    });
-                }
-
-                // Renderizar en Desktop
-                if (googleButtonRefDesktop.current) {
-                    window.google.accounts.id.renderButton(googleButtonRefDesktop.current, {
-                        type: 'standard',
-                        theme: 'outline',
-                        size: 'large',
-                        text: 'signin_with',
-                        width: '100%',
-                    });
-                }
-
-                setIsGoogleReady(true);
-            } else {
-                setTimeout(initGoogleSignIn, 100);
-            }
-        };
-
-        // Cargar script de Google si no está cargado
-        if (!window.google?.accounts?.id) {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = () => {
-                setTimeout(initGoogleSignIn, 100);
-            };
-            document.head.appendChild(script);
-        } else {
-            initGoogleSignIn();
-        }
-    }, []);
-    
-    const handleGoogleSignIn = () => {
-        // Intentar desktop primero, si es visible
-        const containerDesktop = googleButtonRefDesktop.current;
-        if (containerDesktop && containerDesktop.offsetParent !== null) {
-            const googleButton = containerDesktop.querySelector('div[role="button"]') as HTMLElement;
-            if (googleButton) {
-                googleButton.click();
-                return;
-            }
-        }
-
-        // Si no, intentar móvil
-        const containerMobile = googleButtonRefMobile.current;
-        if (containerMobile) {
-            const googleButton = containerMobile.querySelector('div[role="button"]') as HTMLElement;
-            if (googleButton) {
-                googleButton.click();
-                return;
-            }
-        }
-        
-        // Fallback
-        if (window.google?.accounts?.id?.prompt) {
-            window.google.accounts.id.prompt();
-        }
-    };
-
     const handleReserveClick = () => {
-        console.log('🔵 handleReserveClick llamado', { isAuthenticated, serviceId, serviceIdType: typeof serviceId });
-        
-        // Validar serviceId primero
-        if (!serviceId) {
-            console.error('❌ No hay serviceId');
+        const checkoutPath = getCheckoutPath();
+        if (!checkoutPath) {
             showToast('error', 'Error: ID de servicio no válido');
             return;
         }
-        
-        // Asegurar que serviceId sea un número válido y convertirlo a string
-        const serviceIdNumber = typeof serviceId === 'number' ? serviceId : parseInt(String(serviceId), 10);
-        if (isNaN(serviceIdNumber) || serviceIdNumber <= 0) {
-            console.error('❌ serviceId no es un número válido:', serviceId);
-            showToast('error', 'Error: ID de servicio no válido');
-            return;
-        }
-        
-        const checkoutPath = `/checkout/${serviceIdNumber}`;
-        
+
         if (!isAuthenticated) {
-            console.log('🔵 Usuario no autenticado, guardando ruta de destino y llamando handleGoogleSignIn');
-            // Guardar la ruta de destino para redirigir después del login
-            sessionStorage.setItem('redirectAfterLogin', checkoutPath);
-            handleGoogleSignIn();
+            openLoginForCheckout();
             return;
         }
-        
-        console.log('🔵 Navegando a checkout:', checkoutPath);
-        
-        try {
-            // Navegar a la página de checkout
-            navigate(checkoutPath, { replace: false });
-        } catch (error) {
-            console.error('❌ Error al navegar a checkout:', error);
-            showToast('error', 'Error al redirigir a la página de checkout. Por favor, intenta de nuevo.');
-        }
+
+        navigate(checkoutPath, { replace: false });
     };
 
     const handleImageClick = (index: number) => {
@@ -739,6 +578,7 @@ export function ServiceReviewPage({
                 </div>
                 {/* Galería móvil mejorada - Carrusel de imágenes */}
                 <div className="relative w-full">
+                    <div className="relative w-full">
                     {/* Carrusel de imágenes con indicadores */}
                     <div 
                         ref={carouselRef}
@@ -825,6 +665,14 @@ export function ServiceReviewPage({
                         </div>
                     </div>
 
+                    {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
+                        <ServiceDetailDeliverablesGuide
+                            items={finalDeliverableTypes}
+                            variant="overlay"
+                        />
+                    )}
+                    </div>
+
                     {/* Card blanco mejorado con mejor espaciado */}
                     <div
                         className={`relative -mt-10 bg-white rounded-t-2xl pt-5 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
@@ -875,6 +723,14 @@ export function ServiceReviewPage({
                                 </h2>
                             </div>
                                 </div>
+
+                            {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
+                                <ServiceDetailDeliverablesGuide
+                                    items={finalDeliverableTypes}
+                                    variant="inline"
+                                    className="mb-3"
+                                />
+                            )}
 
                             {(finalAvailability || expertLocation) && (
                                 <ServiceDetailBookingMeta
@@ -1040,72 +896,6 @@ export function ServiceReviewPage({
                                             </p>
                                         </div>
                                 )}
-
-                                {/* Qué incluye mejorado - Diseño profesional */}
-                        {finalDeliverableTypes.length > 0 && (
-                            <>
-                                        <div className="mb-6 mt-6">
-                                    <h3 
-                                        style={{
-                                            fontSize: '16px',
-                                            lineHeight: '20px',
-                                            fontWeight: 600,
-                                            color: 'rgb(34, 34, 34)',
-                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                            marginBottom: '16px',
-                                            marginTop: 0,
-                                            padding: 0,
-                                        }}
-                                    >
-                                        Qué incluye
-                                    </h3>
-                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                                {finalDeliverableTypes.map((dt, idx) => {
-                                            const n = (dt.displayName || dt.name).toLowerCase();
-                                            let Icon = FileText;
-                                                    
-                                                    if (n.includes('video')) {
-                                                        Icon = Video;
-                                                    } else if (n.includes('imagen') || n.includes('foto')) {
-                                                        Icon = Image;
-                                                    } else if (n.includes('documento') || n.includes('informe')) {
-                                                        Icon = FileText;
-                                                    } else if (n.includes('archivo')) {
-                                                        Icon = File;
-                                                    }
-
-                                            return (
-                                                        <div key={dt.id} className="flex items-center gap-1.5">
-                                                            <Icon className="w-3.5 h-3.5 text-[#0066CC] flex-shrink-0" />
-                                                    <span 
-                                                        style={{
-                                                            fontSize: '14px',
-                                                            lineHeight: '20px',
-                                                                    fontWeight: 400,
-                                                            color: 'rgb(34, 34, 34)',
-                                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {dt.displayName || dt.name}
-                                                    </span>
-                                                            {idx < finalDeliverableTypes.length - 1 && (
-                                                                <span 
-                                                                    style={{
-                                                                        fontSize: '14px',
-                                                                        color: 'rgb(113, 113, 113)',
-                                                                        marginLeft: '4px',
-                                                                    }}
-                                                                >
-                                                                    ·
-                                                                </span>
-                                                            )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </>
-                        )}
 
                                 {/* Información del Experto Móvil mejorada */}
                                 {showSecondaryDescription && (
@@ -1672,59 +1462,37 @@ export function ServiceReviewPage({
                     </div>
                 </div>
 
-                {/* Footer fijo móvil mejorado - Estilo Airbnb */}
-                <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-2px_14px_rgba(15,23,42,0.07)]">
-                    <div className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_FOOTER_INNER_CLASS}`}>
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                                <button
-                                    type="button"
-                                    className="text-left flex flex-col"
-                                >
-                                    <div className="flex items-baseline gap-1 flex-wrap">
-                                        <span
-                                            className="text-[16px] font-semibold text-gray-900 leading-[1.5]"
-                                            aria-label={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
-                                        >
-                                            {renderServicePrice(finalPrice)}
-                                        </span>
-                                    </div>
-                                    <span className="text-[15px] text-gray-600 font-normal leading-[1.4]">el servicio</span>
-                                </button>
-                            </div>
-                            {isAuthenticated ? (
-                                <button
-                                    onClick={handleReserveClick}
-                                    type="button"
-                                    className="sd-btn-primary shadow-[0_4px_16px_rgba(0,102,204,0.2)]"
-                                >
-                                    <span className="relative z-10" data-button-content="true">Reservar</span>
-                                </button>
-                            ) : (
-                                <div className="relative flex-shrink-0">
-                                    {/* Hidden Google button */}
-                                    <div ref={googleButtonRefMobile} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', zIndex: -1 }}></div>
-                                    {/* Custom button - Sin icono de Google, solo texto blanco */}
-                                    <button
-                                        onClick={handleGoogleSignIn}
-                                        disabled={!isGoogleReady || isAuthenticating}
-                                        type="button"
-                                        className={`sd-btn-primary ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
-                                    >
-                                        {isAuthenticating ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
-                                                <span className="relative z-10" data-button-content="true">{authStep || 'Iniciando sesión...'}</span>
-                                            </>
-                                        ) : (
-                                            <span className="relative z-10" data-button-content="true">Inicia sesión</span>
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <MobileReserveFooter
+                    price={renderServicePrice(finalPrice)}
+                    priceMeta="el servicio"
+                    priceAriaLabel={`${formatPrice(finalPrice)} ${servicePriceCurrency} el servicio`}
+                    priceExtra={
+                        footerTimezoneLabel ? (
+                            <>
+                                <Globe className="h-3.5 w-3.5 shrink-0 text-[#0066CC]" aria-hidden />
+                                <span>Horario: {footerTimezoneLabel}</span>
+                            </>
+                        ) : undefined
+                    }
+                >
+                    {isAuthenticated ? (
+                        <button
+                            onClick={handleReserveClick}
+                            type="button"
+                            className={SD_MOBILE_FOOTER_CTA_CLASS}
+                        >
+                            Reservar
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={openLoginForCheckout}
+                            className={SD_MOBILE_FOOTER_CTA_CLASS}
+                        >
+                            Inicia sesión
+                        </button>
+                    )}
+                </MobileReserveFooter>
             </div>
 
             {/* ========== DESKTOP — topbar homepage + grid (galería columna izquierda) ========== */}
@@ -1734,15 +1502,30 @@ export function ServiceReviewPage({
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-6 lg:pt-8`}>
                     <div className={`${SD_PAGE_GRID_CLASS}`}>
                         <div className="min-w-0 space-y-6 lg:space-y-8">
-                            <ServiceDetailDesktopGallery
-                                images={validImages}
-                                onOpen={handleImageClick}
-                                loadingImages={loadingImages}
-                                failedImages={failedImages}
-                                onImageError={handleImageError}
-                                onImageLoad={handleImageLoad}
-                                onImageLoadStart={handleImageLoadStart}
-                            />
+                            <div className="relative">
+                                <ServiceDetailDesktopGallery
+                                    images={validImages}
+                                    onOpen={handleImageClick}
+                                    loadingImages={loadingImages}
+                                    failedImages={failedImages}
+                                    onImageError={handleImageError}
+                                    onImageLoad={handleImageLoad}
+                                    onImageLoadStart={handleImageLoadStart}
+                                />
+                                {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
+                                    <ServiceDetailDeliverablesGuide
+                                        items={finalDeliverableTypes}
+                                        variant="overlay"
+                                    />
+                                )}
+                            </div>
+
+                            {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
+                                <ServiceDetailDeliverablesGuide
+                                    items={finalDeliverableTypes}
+                                    variant="inline"
+                                />
+                            )}
 
                             {/* Experto */}
                             <div className="flex items-center gap-4 border-b border-[#e8e8e8] pb-5">
@@ -1787,27 +1570,6 @@ export function ServiceReviewPage({
                                     <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
                                         {finalUserConditions}
                                     </p>
-                                </section>
-                            )}
-
-                            {finalDeliverableTypes.length > 0 && (
-                                <section>
-                                    <h2 className="hp-section-title mb-2">Qué incluye</h2>
-                                    <ul className="mt-2 space-y-2">
-                                        {finalDeliverableTypes.map((dt) => {
-                                            const n = (dt.displayName || dt.name).toLowerCase();
-                                            let Icon = FileText;
-                                            if (n.includes('video')) Icon = Video;
-                                            else if (n.includes('imagen') || n.includes('foto')) Icon = Image;
-                                            else if (n.includes('archivo')) Icon = File;
-                                            return (
-                                                <li key={dt.id} className="flex items-center gap-2.5 text-sm text-[#6a6a6a]">
-                                                    <Icon className="h-4 w-4 shrink-0 text-[#0066CC]" />
-                                                    {dt.displayName || dt.name}
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
                                 </section>
                             )}
 
@@ -1894,15 +1656,17 @@ export function ServiceReviewPage({
                                 </section>
 
                                 {(finalAvailability || expertLocation) && (
-                                    <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+                                    <section className="mt-4 w-full min-h-0 flex-1 overflow-y-auto">
                                         <ServiceDetailBookingMeta
+                                            layout="card"
                                             availability={finalAvailability ?? undefined}
                                             timezone={finalService?.expert?.timezone}
                                             isOnVacation={finalService?.expert?.isOnVacation}
                                             location={expertLocation ?? undefined}
                                             rangeKm={expertRange || 25}
+                                            mapVariant="preview"
                                         />
-                                    </div>
+                                    </section>
                                 )}
 
                                 <footer className="mt-4 shrink-0 space-y-2 border-t border-[#e8e8e8] pt-4">
@@ -1915,21 +1679,13 @@ export function ServiceReviewPage({
                                         Reservar
                                     </button>
                                 ) : (
-                                    <div className="relative">
-                                        <div
-                                            ref={googleButtonRefDesktop}
-                                            className="pointer-events-none absolute opacity-0"
-                                            aria-hidden
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleGoogleSignIn}
-                                            disabled={!isGoogleReady || isAuthenticating}
-                                            className={`sd-btn-primary w-full min-w-0 ${isAuthenticating ? 'opacity-75' : ''}`}
-                                        >
-                                            {isAuthenticating ? 'Iniciando sesión…' : 'Inicia sesión para reservar'}
-                                        </button>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={openLoginForCheckout}
+                                        className="sd-btn-primary w-full min-w-0"
+                                    >
+                                        Inicia sesión para reservar
+                                    </button>
                                 )}
                                 <p className="text-xs leading-relaxed text-[#6a6a6a]">
                                     Sin cargo hasta confirmar la reserva con el experto.
@@ -2186,11 +1942,15 @@ export function ServiceReviewPage({
             {/* Modal de Login unificado cuando el usuario no está autenticado */}
             <LoginModal
                 open={showLoginDialog}
-                onOpenChange={setShowLoginDialog}
+                onOpenChange={(open) => {
+                    setShowLoginDialog(open);
+                    if (!open && !isAuthenticated) {
+                        sessionStorage.removeItem('loginFromChat');
+                    }
+                }}
                 initialTab="login"
                 onSuccess={() => {
                     setShowLoginDialog(false);
-                    // Existing post-login navigation should already trigger via AuthContext useEffect.
                 }}
             />
         </div>

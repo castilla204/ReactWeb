@@ -172,8 +172,88 @@
         @apply inline-flex items-center justify-center h-12 px-6 min-w-[140px] shrink-0 rounded-full bg-[#0066CC] text-white text-base font-semibold shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait;
     }
 
+    /* Barra fija móvil: ficha servicio + checkout */
+    .sd-mobile-footer-inner {
+        @apply pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))];
+    }
+
+    .sd-mobile-footer-row {
+        @apply flex min-h-[52px] items-center justify-between gap-4;
+    }
+
+    .sd-mobile-footer-price {
+        @apply text-[18px] font-semibold leading-[1.2] tracking-[-0.02em] text-[#1c1c1c];
+    }
+
+    .sd-mobile-footer-price-meta {
+        @apply mt-1 text-sm leading-snug text-[#6a6a6a];
+    }
+
+    .sd-mobile-footer-price-extra {
+        @apply mt-1.5 flex items-center gap-1.5 text-xs leading-snug text-[#6a6a6a];
+    }
+
+    .sd-mobile-footer-cta {
+        @apply inline-flex h-[52px] min-w-[152px] shrink-0 items-center justify-center rounded-full bg-[#0066CC] px-8 text-[17px] font-semibold leading-none text-white shadow-[0_4px_18px_rgba(0,102,204,0.24)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
+    }
+
     .sd-icon-btn {
         @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:border-[#ccc] hover:bg-[#f9fafb] hover:text-[#1c1c1c];
+    }
+
+    /* Chips entregables — banda inferior de la galería, sobre la foto */
+    .sd-deliverable-guide {
+        @apply absolute inset-x-0 z-[45] flex flex-col items-start justify-end px-3 pb-3;
+        bottom: 2.75rem;
+        pointer-events: none;
+    }
+
+    @media (min-width: 1024px) {
+        .sd-deliverable-guide {
+            bottom: 0;
+            padding-bottom: 0.75rem;
+        }
+    }
+
+    .sd-deliverable-guide-label {
+        @apply mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        animation: sd-deliverable-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .sd-deliverable-chip {
+        @apply pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-[12px] font-medium leading-none text-[#1c1c1c] shadow-[0_2px_14px_rgba(15,23,42,0.18)];
+        opacity: 0;
+        animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .sd-deliverable-chip-icon {
+        @apply h-3.5 w-3.5 shrink-0 text-[#0066CC];
+    }
+
+    .sd-deliverable-chip-inline {
+        @apply inline-flex items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-[12px] font-medium leading-none text-[#1c1c1c] shadow-sm;
+    }
+
+    @keyframes sd-deliverable-rise {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sd-deliverable-guide-label,
+        .sd-deliverable-chip {
+            animation: none;
+            opacity: 1;
+            transform: none;
+        }
     }
 
     .sd-btn-secondary {
