@@ -56,9 +56,8 @@ import {
     ServiceDetailDeliverablesGuide,
     normalizeDeliverableTypes,
 } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
-import { ServiceDetailReviewsSection } from '../components/serviceDetail/ServiceDetailReviewsSection';
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
-import { ServiceDetailReviewsDesktopPreview } from '../components/serviceDetail/ServiceDetailReviewsDesktopPreview';
+import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
@@ -865,30 +864,15 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className="pt-6"
+                                    className="pt-4"
                                 >
-                                    <ServiceDetailReviewsSection
+                                    <ServiceDetailReviewsPreview
+                                        variant="mobile"
+                                        hideHeading
+                                        headingId="sd-reviews-tab-heading"
                                         reviews={finalReviews}
                                         averageRating={finalRating}
-                                        expandedReviews={expandedReviews}
-                                        onToggleExpand={(key) =>
-                                            setExpandedReviews((prev) => ({
-                                                ...prev,
-                                                [key]: !prev[key],
-                                            }))
-                                        }
-                                        onOpenReviewImage={(reviewKey, imageIndex) => {
-                                            setReviewLightboxIndex((prev) => ({
-                                                ...prev,
-                                                [reviewKey]: imageIndex,
-                                            }));
-                                            setReviewLightboxOpen((prev) => ({
-                                                ...prev,
-                                                [reviewKey]: true,
-                                            }));
-                                        }}
-                                        hideHeading
-                                        className="!mt-0 !border-t-0 !pt-0"
+                                        onShowAll={() => setReviewsModalOpen(true)}
                                     />
                                 </div>
                             )}
@@ -993,7 +977,8 @@ export function ServiceReviewPage({
                                 </section>
                             )}
 
-                            <ServiceDetailReviewsDesktopPreview
+                            <ServiceDetailReviewsPreview
+                              variant="desktop"
                               reviews={finalReviews}
                               averageRating={finalRating}
                               onShowAll={() => setReviewsModalOpen(true)}
