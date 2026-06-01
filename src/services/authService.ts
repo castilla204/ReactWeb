@@ -111,12 +111,20 @@ class AuthService {
     // ============================================
     // 2. GUARDAR TOKENS
     // ============================================
+    // 🛡️ SEC-MAJ-5 FIX: el refresh token YA NO se persiste en localStorage. El backend
+    // lo guarda como cookie HttpOnly+Secure+SameSite=Strict (Path=/api/Auth). JS no puede
+    // leerlo → un XSS reflejado/stored o un script third-party (Stripe.js, Maps...) ya no
+    // puede exfiltrar 90 días de sesión. El access token sigue en localStorage por simplicidad
+    // (TTL 1h, blast radius reducido). El refresh se mantiene también en memoria para clientes
+    // que aún no tienen la cookie (1ª llamada después de login regular/Google/Apple).
     setTokens(accessToken: string, refreshToken: string) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
+        this.refreshToken = refreshToken; // 🛡️ SEC-MAJ-5: SÓLO en memoria, no en localStorage.
 
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        // 🛡️ SEC-MAJ-5: removido `localStorage.setItem('refreshToken', refreshToken)`.
+        // Si existe un valor legacy, lo limpiamos para no dejar residuos atacables.
+        try { localStorage.removeItem('refreshToken'); } catch { /* ignore */ }
 
         // Guardar también en el formato antiguo para compatibilidad
         localStorage.setItem('authToken', accessToken);
@@ -185,17 +193,18 @@ class AuthService {
 
         this.refreshPromise = (async () => {
             try {
-                const refreshToken = this.getRefreshToken();
-                if (!refreshToken) {
-                    throw new Error('No refresh token available');
-                }
-
+                // 🛡️ SEC-MAJ-5 FIX: el backend lee la cookie `refresh_token` primero; si no existe
+                // cae al body (clientes legacy / sesiones aún sin cookie tras login no-MFA). Por eso
+                // enviamos `credentials: 'include'` Y si tenemos refresh en memoria (post-login),
+                // lo mandamos en body como fallback. CORS de prod ya tiene AllowCredentials() (Program.cs).
+                const refreshTokenMaybe = this.getRefreshToken();
                 const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.refreshToken}`, {
                     method: 'POST',
+                    credentials: 'include', // 🛡️ SEC-MAJ-5: envía cookie HttpOnly `refresh_token`
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ refreshToken }),
+                    body: JSON.stringify(refreshTokenMaybe ? { refreshToken: refreshTokenMaybe } : {}),
                 });
 
                 if (!response.ok) {
@@ -418,18 +427,23 @@ class AuthService {
     // ============================================
     // 6. LOGOUT
     // ============================================
+    // 🛡️ SEC-MAJ-5 FIX: enviar credentials:include para que la cookie HttpOnly viaje
+    // — el backend revoca el refresh referenciado por cookie O por body (legacy).
+    // Llamamos siempre (incluso sin refresh en memoria) para que el backend pueda limpiar
+    // la cookie correctamente vía Set-Cookie de expiración.
     async logout() {
         try {
             const refreshToken = this.getRefreshToken();
-            if (refreshToken) {
-                await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.logout}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ refreshToken }),
-                });
-            }
+            const accessToken = this.getAccessToken();
+            await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.logout}`, {
+                method: 'POST',
+                credentials: 'include', // 🛡️ SEC-MAJ-5: cookie refresh_token
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
+                },
+                body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+            });
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
@@ -499,13 +513,20 @@ class AuthService {
     // ============================================
     // 6. INICIALIZAR AL CARGAR LA APP
     // ============================================
+    // 🛡️ SEC-MAJ-5 FIX: el refresh token ya no vive en localStorage. Si hay accessToken
+    // intentamos rehidratar la sesión: si está vigente, schedule refresh; si expiró,
+    // refreshAccessToken() — la cookie HttpOnly `refresh_token` viaja sola gracias a
+    // `credentials: 'include'`. Si no hay accessToken, el usuario está deslogueado.
     initFromStorage() {
         const accessToken = localStorage.getItem('accessToken');
+        // 🛡️ SEC-MAJ-5: leer legacy refreshToken de localStorage SOLO para migración
+        // — si existe (build anterior), lo retenemos en memoria para que el primer
+        // refresh tenga fallback de body. setTokens() lo eliminará tras la rotación.
         const refreshToken = localStorage.getItem('refreshToken');
 
-        if (accessToken && refreshToken) {
+        if (accessToken) {
             this.accessToken = accessToken;
-            this.refreshToken = refreshToken;
+            if (refreshToken) this.refreshToken = refreshToken;
 
             // ✅ BEST PRACTICE: Verificar si el access token ya expiró
             try {
@@ -541,8 +562,11 @@ class AuthService {
     // ============================================
     // 7. HELPERS
     // ============================================
+    // 🛡️ SEC-MAJ-5 FIX: la autenticación se basa en accessToken válido. El refresh
+    // ya no vive en memoria persistente — está en la cookie HttpOnly que JS no puede leer.
+    // Antes este check exigía AMBOS y rompía la rehidratación post-reload con cookie.
     isAuthenticated(): boolean {
-        return !!this.accessToken && !!this.refreshToken;
+        return !!this.accessToken;
     }
 
     getCurrentUser(): any | null {

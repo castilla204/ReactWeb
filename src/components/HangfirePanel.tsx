@@ -24,23 +24,20 @@ const HangfirePanel: React.FC = () => {
         const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
         const isAdminByRole = userRole === 'Admin' || userRole === 'admin';
         const userIsAdmin = isAdminByEmail || isAdminByRole;
-        
+
         if (!userIsAdmin) {
             setError('Solo los administradores pueden acceder al dashboard de Hangfire');
             return;
         }
 
-        // Construir la URL del Hangfire dashboard usando la misma configuración que el resto de la app
-        // API_CONFIG.baseUrl ya incluye la URL base (ej: https://newapi-yn9v.onrender.com o http://localhost:7124)
-        // Hangfire está en /hangfire, no en /api/hangfire, así que usamos la baseUrl directamente
         const apiUrl = API_CONFIG.baseUrl;
         const token = getAuthToken();
-        
+
         if (!token) {
             setError('No se encontró token de autenticación. Por favor, recarga la página o cierra sesión y vuelve a iniciar sesión.');
             return;
         }
-        
+
         // Verificar si el token está expirado (decodificar JWT básico)
         try {
             const tokenParts = token.split('.');
@@ -56,12 +53,43 @@ const HangfirePanel: React.FC = () => {
         } catch (e) {
             console.warn('No se pudo verificar expiración del token:', e);
         }
-        
-        // Intentar pasar el token como query parameter
-        const url = `${apiUrl}/hangfire?token=${encodeURIComponent(token)}`;
-        
-        setHangfireUrl(url);
-        console.log('Hangfire URL:', url);
+
+        // 🛡️ SEC-MAJ-6 FIX: en lugar de `?token=<JWT>` en la URL (que filtraba el JWT a logs
+        // nginx de Render, browser history, Referer headers a third-party assets cargados por
+        // Hangfire, y sync de historial entre dispositivos), llamamos al endpoint POST
+        // /api/Admin/hangfire-session que setea la cookie HttpOnly `HangfireAuthToken` con
+        // SameSite=None+Secure+Path=/hangfire. Después cargamos el iframe en /hangfire sin
+        // token en la URL — el HangfireAuthorizationFilter ya prioriza la cookie sobre query/header.
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(`${apiUrl}/api/Admin/hangfire-session`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                if (!res.ok) {
+                    if (!cancelled) {
+                        setError(`No se pudo establecer la sesión de Hangfire (HTTP ${res.status}). Recarga e intenta de nuevo.`);
+                    }
+                    return;
+                }
+                const data = await res.json().catch(() => ({} as { dashboardUrl?: string }));
+                const dashboardUrl: string = (data && (data as { dashboardUrl?: string }).dashboardUrl) || `${apiUrl}/hangfire`;
+                if (!cancelled) {
+                    setHangfireUrl(dashboardUrl);
+                }
+            } catch (e: any) {
+                if (!cancelled) {
+                    setError(`Error estableciendo sesión Hangfire: ${e?.message ?? 'unknown'}`);
+                }
+            }
+        })();
+
+        return () => { cancelled = true; };
     }, [isAuthenticated, user]);
 
     if (!isAuthenticated || !user) {
