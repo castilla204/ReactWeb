@@ -52,11 +52,15 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   // snapToSequentialPoint y scrollLockTimeout aceptados por compat — el handoff
   // físico ya emula "un snap por gesto" y la ventana de bloqueo es implícita.
 }) => {
-  const snapPoints = snapPointsProp ?? [0.30, 0.92];
+  const snapPoints = snapPointsProp ?? [0.30, 0.50, 0.92];
   const fractions = React.useMemo(() => snapPoints.map(toFraction), [snapPoints]);
   const peekFrac = fractions[0] ?? 0.30;
   const fullFrac = fractions[fractions.length - 1] ?? 0.92;
-  const defaultSnap = snapPoints[snapPoints.length - 1];
+  // ✅ Con 3+ snaps abre en el intermedio (mitad de pantalla). Con 2, abre full.
+  const defaultSnap =
+    snapPoints.length >= 3
+      ? snapPoints[snapPoints.length - 2]
+      : snapPoints[snapPoints.length - 1];
 
   const [internalSnap, setInternalSnap] = React.useState<number | string | null>(defaultSnap);
   const activeSnap = controlledSnap !== undefined ? controlledSnap : internalSnap;

@@ -616,12 +616,14 @@ const getMapOverviewZoom = (countryCode: string): number =>
     getCountryCoordinates(countryCode)?.zoom ?? 6;
 
 /** peek · reposo (al cargar, ~mitad inferior) · casi pantalla completa */
-// ✅ Solo 2 snaps (peek + full) para gesto continuo "Apple Maps".
-//    Un snap intermedio creaba una pared a media altura que se sentía como tramo.
-const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.30, 0.92];
-const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];
-const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // mismo que FULL ahora
-const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[1];
+// ✅ 3 snaps: peek (mostrar el mapa) · deployed (mitad - posición inicial) · full.
+//    Con la implementación custom (motion value + spring), el drag es 1:1 con el
+//    dedo; los snaps SOLO se aplican al soltar, así que el snap intermedio no
+//    se siente como "tramo" durante el gesto.
+const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.30, 0.50, 0.92];
+const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 30% – ver mapa
+const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 50% – posición inicial
+const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[2];     // 92% – pantalla casi completa
 
 function MapPanelHeader({
     count,
