@@ -4,7 +4,7 @@ import 'react-loading-skeleton/dist/skeleton.css';
 export function MapPageSkeleton() {
   return (
     <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-      <div className="fixed inset-0 z-[99999] bg-white flex flex-col" style={{ pointerEvents: 'auto' }}>
+      <div className="fixed inset-0 z-[99999] flex flex-col bg-white/95 backdrop-blur-sm" style={{ pointerEvents: 'none' }}>
         {/* ✅ Header skeleton - Mejorado */}
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
           <Skeleton height={32} width={32} borderRadius="50%" />

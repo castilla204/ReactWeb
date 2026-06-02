@@ -73,8 +73,9 @@ export const useMapMarkers = (
           urlParams.append('northeastLng', params.bounds.northeast.lng.toString());
           urlParams.append('southwestLat', params.bounds.southwest.lat.toString());
           urlParams.append('southwestLng', params.bounds.southwest.lng.toString());
-          if (params.zoom) {
-            urlParams.append('zoom', params.zoom.toString());
+          if (typeof params.zoom === 'number' && Number.isFinite(params.zoom)) {
+            const normalizedZoom = Math.max(0, Math.round(params.zoom));
+            urlParams.append('zoom', normalizedZoom.toString());
           }
           if (params.limit) {
             urlParams.append('limit', params.limit.toString());

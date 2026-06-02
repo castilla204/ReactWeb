@@ -40,7 +40,7 @@ export const ClusterMarker: React.FC<ClusterMarkerProps> = ({
           width: `${size}px`,
           height: `${size}px`,
           borderRadius: '50%',
-          backgroundColor: '#FF385C', // Color Airbnb
+          backgroundColor: '#0066CC',
           color: '#ffffff',
           display: 'flex',
           alignItems: 'center',

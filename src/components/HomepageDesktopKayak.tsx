@@ -253,7 +253,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
   const { landingTarget: ipLanding, isResolved: ipLandingResolved } = useDetectedCountryFromIp();
 
   const goToMap = () => {
-    navigate(`/crear-busqueda?categoryId=${categoryId}&serviceTypeId=1&step=map`);
+    navigate(`/crear-busqueda?categoryId=${categoryId}&serviceTypeId=2&step=map`);
   };
 
   /** Personaje más pegado al borde; texto alineado con grid 1280px */

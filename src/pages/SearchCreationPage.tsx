@@ -15,14 +15,12 @@ import { Button } from '../components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { mfaService } from '../services/mfaService';
-import { MapContainer } from '../components/Map/MapContainer';
 import { Service } from '../hooks/useServiceLoader';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
-import Autocomplete from 'react-google-autocomplete';
 import logoImg from '../media/logoi.png';
 
 import { Footer } from '../components/Footer';
@@ -80,10 +78,6 @@ const SearchCreationPage: React.FC = () => {
     // Estado del mapa compartido para pasos 1, 2 y 3
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string>('es');
-    const [searchAddress, setSearchAddress] = useState<string>('');
-    const searchInputRef = React.useRef<HTMLInputElement>(null);
-    const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
     
     // Inicializar ubicación con coordenadas de searchParameters o país por defecto
@@ -229,12 +223,13 @@ const SearchCreationPage: React.FC = () => {
                 }
             }
 
-            // Si se abre directamente el mapa sin serviceTypeId, usar revisión presencial por defecto.
+            // Si se abre directamente el mapa sin serviceTypeId, usar
+            // "Búsqueda web + revisión" por defecto para evitar mapas vacíos.
             if (stepParam === 'map' && !serviceTypeIdParam) {
                 setSearchParameters(prev => {
-                    if (prev.serviceTypeId !== 1) {
+                    if (prev.serviceTypeId !== 2) {
                         hasChanges = true;
-                        return { ...prev, serviceTypeId: 1 };
+                        return { ...prev, serviceTypeId: 2 };
                     }
                     return prev;
                 });
@@ -458,7 +453,7 @@ const SearchCreationPage: React.FC = () => {
             userSearch: '',
             category: 1,
             frequency: 24,
-            serviceTypeId: 1,
+            serviceTypeId: 2,
             strictMatchOnly: false,
         });
         setSelectedServiceId(null);
@@ -514,36 +509,8 @@ const SearchCreationPage: React.FC = () => {
         }
     };
     
-    // Función para manejar la selección de lugar en el mapa
-    const handlePlaceSelected = (place: google.maps.places.PlaceResult) => {
-        if (!place.geometry || !place.geometry.location) return;
-        
-        setIsGeocoding(true);
-        const location = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-        };
-        
-        const address = place.formatted_address || '';
-        setSelectedLocation(location);
-        setSearchAddress(address);
-        
-        // Actualizar searchParameters con la nueva ubicación
-        setSearchParameters(prev => ({
-            ...prev,
-            latitude: location.lat.toString(),
-            longitude: location.lng.toString(),
-            locationName: address
-        }));
-        
-        // El mapa se actualizará automáticamente con el nuevo MapContainer
-        
-        setIsGeocoding(false);
-    };
-    
     // Función para manejar selección de servicio en el mapa
     const handleServiceSelect = (service: Service) => {
-        setSelectedService(service);
         setSelectedServiceId(service.id);
         // Extraer información del servicio
         const expert = (service as any).raw?.expert || (service as any).expert || {};
@@ -614,11 +581,10 @@ const SearchCreationPage: React.FC = () => {
                     {/* ✅ Mostrar skeleton mientras carga el mapa */}
                     {!isMapLoaded && <MapPageSkeleton />}
                     
-                    <div className={`w-full h-screen flex flex-col lg:flex-row bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
-                    {/* Left Side - Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden lg:overflow-y-auto">
+                    <div className={`relative flex h-screen w-full flex-col overflow-hidden bg-gray-50 ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                             {searchParameters.category && searchParameters.serviceTypeId ? (
-                                <div className="flex-1 min-h-0 overflow-hidden">
+                                <div className="min-h-0 flex-1 overflow-hidden">
                                     <SearchParameterForm
                                         onComplete={handleParametersComplete}
                                         setCurrentStep={setCurrentStep}
@@ -626,6 +592,7 @@ const SearchCreationPage: React.FC = () => {
                                         initialKeywords={searchParameters.keywords || ''}
                                         initialUserSearch={searchParameters.userSearch || ''}
                                         serviceTypeId={searchParameters.serviceTypeId}
+                                        onMapReady={() => setIsMapLoaded(true)}
                                     />
                                 </div>
                             ) : (
@@ -638,24 +605,10 @@ const SearchCreationPage: React.FC = () => {
                                         initialKeywords={searchParameters.keywords || ''}
                                         initialUserSearch={searchParameters.userSearch || ''}
                                         serviceTypeId={searchParameters.serviceTypeId || null}
+                                        onMapReady={() => setIsMapLoaded(true)}
                                     />
                                 </div>
                             )}
-                    </div>
-                    
-                    {/* Right Side - Map (Desktop only, solo en paso 1) */}
-                    <div className="hidden lg:flex lg:flex-1 relative bg-gray-100 border-l border-gray-200">
-                        <MapContainer
-                            categoryId={searchParameters.category ?? null}
-                            serviceTypeId={searchParameters.serviceTypeId ?? null}
-                            initialCenter={selectedLocation || { lat: 42.5, lng: -3.7 }}
-                            initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2(((searchParameters.locationRange || 25) * 1000) / 500)))) : 5}
-                            onServiceSelect={handleServiceSelect}
-                            selectedServiceId={selectedServiceId}
-                            isMobile={false}
-                            style={{ width: '100%', height: '100%' }}
-                            onMapLoad={() => setIsMapLoaded(true)}
-                        />
                     </div>
                 </div>
                 </>

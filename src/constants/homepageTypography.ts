@@ -125,6 +125,13 @@ export const SD_PAGE_INNER_MAX_CLASS =
 export const SD_PAGE_GRID_CLASS =
   'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 xl:gap-10';
 
+/** Checkout desktop: más ancho útil y columnas más unidas */
+export const SD_CHECKOUT_INNER_MAX_CLASS =
+  'mx-auto w-full max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8';
+
+export const SD_CHECKOUT_GRID_CLASS =
+  'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6 xl:gap-7';
+
 /** Gutter horizontal móvil (mismo que `px-4` de SD_PAGE_INNER_MAX_CLASS) */
 export const SD_MOBILE_GUTTER_CLASS = 'px-4';
 

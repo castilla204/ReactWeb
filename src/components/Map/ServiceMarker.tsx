@@ -34,7 +34,7 @@ export const ServiceMarker: React.FC<ServiceMarkerProps> = ({
   const priceText = service.price > 0 ? `${displaySymbol}${Math.round(convertedPrice)}` : 'Consultar';
 
   // Colores según estado
-  const backgroundColor = isSelected ? '#000000' : isHovered ? '#f7f7f7' : '#ffffff';
+  const backgroundColor = isSelected ? '#0066CC' : isHovered ? '#f7f7f7' : '#ffffff';
   const textColor = isSelected ? '#ffffff' : 'rgb(34, 34, 34)';
   const scale = isSelected ? 1.1 : isHovered ? 1.05 : 1;
 

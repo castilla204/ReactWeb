@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ServiceReviewPage } from './ServiceReviewPage';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
 import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
+import {
+  persistServiceReturnPath,
+  resolveServiceReturnPath,
+} from '../utils/servicePageNavigation';
 
 const ServiceDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { fetchApi } = useApi();
   
   const [service, setService] = useState<Service | null>(null);
@@ -135,8 +140,15 @@ const ServiceDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceId]);
 
+  useEffect(() => {
+    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+    if (returnTo) {
+      persistServiceReturnPath(returnTo);
+    }
+  }, [location.state]);
+
   const handleBack = () => {
-    navigate(-1);
+    navigate(resolveServiceReturnPath((location.state as { returnTo?: string } | null)?.returnTo));
   };
 
   const handleContinue = () => {

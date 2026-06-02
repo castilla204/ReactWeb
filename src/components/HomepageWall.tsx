@@ -5,7 +5,7 @@ import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } fro
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
 import { Star, ChevronRight, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { homepageToast } from '../lib/toast';
@@ -774,14 +774,16 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { toggleFavoriteAsync } = useServiceFavorites();
 
   const handleOpenService = useCallback(
     (serviceId: number) => {
-      navigate(`/service/${serviceId}`);
+      const returnTo = `${location.pathname}${location.search}`;
+      navigate(`/service/${serviceId}`, { state: { returnTo } });
     },
-    [navigate],
+    [navigate, location.pathname, location.search],
   );
 
   const handleToggleFavorite = useCallback(

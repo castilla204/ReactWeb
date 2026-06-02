@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
 import { useServices } from '../hooks/useServices';
@@ -29,7 +29,9 @@ import CountrySelector from './CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import { useCurrency } from '../contexts/CurrencyContext';
-import Autocomplete from 'react-google-autocomplete';
+import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
+import { hpTitleUnderlineBarStyle } from '../constants/homepageTypography';
+import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 
 // libraries ya no es necesario - MapContainer lo maneja internamente
 
@@ -41,12 +43,27 @@ interface MapServiceCardProps {
     initialIsFavorite?: boolean; // Estado inicial desde check-multiple
 }
 
+const getExpertDisplayName = (service: any): string =>
+    service.expert?.user?.name || service.expert?.User?.Name || 'Experto verificado';
+
+const getCityLabel = (service: any): string | null =>
+    service.expert?.city || service.expert?.City || null;
+
+const getCardHook = (service: any): string => {
+    const completed = Number(service.completedSearches ?? 0);
+    const reviews = Number(service.totalReviews ?? (service as any).TotalReviews ?? 0);
+    if (completed >= 10) return `${completed} inspecciones completadas`;
+    if (reviews >= 5) return `${reviews} clientes ya confiaron en este experto`;
+    return 'Verificado · Reserva con confianza';
+};
+
 const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect, initialIsFavorite = false }) => {
     const [imageIndex, setImageIndex] = useState(0);
     const { isAuthenticated } = useAuth();
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
     const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
     const navigate = useNavigate();
+    const location = useLocation();
     const [isMobile, setIsMobile] = useState(false);
     
     const serviceId = service.id || service.Id;
@@ -84,7 +101,8 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     const handleCardClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        navigate(`/service/${serviceId}`);
+        const returnTo = `${location.pathname}${location.search}`;
+        navigate(`/service/${serviceId}`, { state: { returnTo } });
     };
     
     const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -173,7 +191,18 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
     
     const availabilityInfo = formatAvailability();
     
-    // En desktop, usar el mismo estilo que HomepageWall
+    const expertName = getExpertDisplayName(service);
+    const cityLabel = getCityLabel(service);
+    const cardHook = getCardHook(service);
+    const serviceTypeLabel = service.serviceTypeName || service.categoryName || 'Revisión';
+    const totalReviews =
+        service.totalReviews ??
+        (service as any).TotalReviews ??
+        service.expert?.totalReviews ??
+        (service.expert as any)?.TotalReviews ??
+        0;
+
+    // En desktop, tarjeta estilo listado mapa (limpia, con copy corto)
     if (!isMobile) {
         return (
             <a
@@ -182,9 +211,15 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                 className="block flex-shrink-0 cursor-pointer group"
                 style={{ width: '100%', textDecoration: 'none', color: 'inherit' }}
             >
-                <div className="relative w-full">
+                <div
+                    className={`relative w-full rounded-2xl bg-white transition-all duration-200 ${
+                        isSelected
+                            ? 'ring-2 ring-[#0066CC] shadow-md'
+                            : 'border border-gray-100 hover:border-gray-200 hover:shadow-md hover:-translate-y-0.5'
+                    }`}
+                >
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
-                    <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
+                    <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3', borderRadius: '16px 16px 0 0', width: '100%' }}>
                         {imageUrls.length > 0 ? (
                             <>
                                 <div className="relative w-full h-full">
@@ -406,187 +441,53 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         )}
                     </div>
 
-                    {/* Información del servicio - Estructura exacta como Airbnb */}
-                    <div style={{ marginTop: '12px' }}>
-                        {/* Primera fila: Título con Rating en la misma línea */}
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '4px',
-                                gap: '8px',
-                                width: '100%',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    flex: '1 1 auto',
-                                    minWidth: 0,
-                                    overflow: 'hidden',
-                                    fontSize: '16px',
-                                    lineHeight: 'normal',
-                                    fontWeight: 500,
-                                    color: 'rgb(0, 0, 0)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textAlign: 'left',
-                                }}
-                            >
-                                <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
+                    <div className="px-3.5 py-3">
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#0066CC]">
+                                    {serviceTypeLabel}
+                                </p>
+                                <h3 className="truncate text-base font-semibold text-gray-900">{expertName}</h3>
                             </div>
-                            {service.averageRating && service.averageRating > 0 && (
-                                <div style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '4px', 
-                                    flexShrink: 0,
-                                    whiteSpace: 'nowrap',
-                                }}>
-                                    <Star 
-                                        className="flex-shrink-0" 
-                                        style={{ 
-                                            width: '14px', 
-                                            height: '14px', 
-                                            fill: '#222222', 
-                                            color: '#222222',
-                                        }} 
-                                    />
-                                    <span style={{ 
-                                        fontSize: '15px',
-                                        lineHeight: '19px',
-                                        fontWeight: 400,
-                                        color: 'rgb(106, 106, 106)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}>
-                                        {service.averageRating.toFixed(2).replace('.', ',')}
+                            {service.averageRating > 0 && (
+                                <div className="flex shrink-0 items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
+                                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                    <span className="text-sm font-medium text-gray-900">
+                                        {service.averageRating.toFixed(1).replace('.', ',')}
                                     </span>
-                                    {(() => {
-                                        // Buscar totalReviews en múltiples ubicaciones posibles
-                                        const totalReviews = service.totalReviews 
-                                            ?? (service as any).TotalReviews 
-                                            ?? service.expert?.totalReviews 
-                                            ?? (service.expert as any)?.TotalReviews
-                                            ?? 0;
-                                        // Debug temporal
-                                        if (process.env.NODE_ENV === 'development') {
-                                            console.log('🔍 [MapServiceCard Desktop] totalReviews:', {
-                                                serviceId: service.id || service.Id,
-                                                totalReviews,
-                                                serviceTotalReviews: service.totalReviews,
-                                                serviceTotalReviewsPascal: (service as any).TotalReviews,
-                                                expertTotalReviews: service.expert?.totalReviews,
-                                                expertTotalReviewsPascal: (service.expert as any)?.TotalReviews,
-                                                serviceKeys: Object.keys(service)
-                                            });
-                                        }
-                                        return totalReviews > 0 ? (
-                                            <span style={{ 
-                                                fontSize: '15px',
-                                                lineHeight: '19px',
-                                                fontWeight: 400,
-                                                color: 'rgb(106, 106, 106)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}>
-                                                ({totalReviews})
-                                            </span>
-                                        ) : null;
-                                    })()}
+                                    {totalReviews > 0 && (
+                                        <span className="text-xs text-gray-500">({totalReviews})</span>
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Segunda fila: Descripción del servicio (justo después del título) */}
-                        {(() => {
-                            const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
-                            return serviceDescription ? (
-                                <>
-                                    <div
-                                        className="overflow-hidden"
-                                        style={{
-                                            marginBottom: '4px',
-                                            fontSize: '15px',
-                                            lineHeight: '19px',
-                                            fontWeight: 400,
-                                            color: 'rgb(106, 106, 106)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            textAlign: 'left',
-                                        }}
-                                    >
-                                        <div style={{ 
-                                            textAlign: 'left',
-                                            whiteSpace: 'pre-line',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            lineHeight: '19px',
-                                            gap: '4px',
-                                        }}>{serviceDescription}</div>
-                                    </div>
-                                </>
-                            ) : null;
-                        })()}
+                        <p className="mb-2 text-sm leading-snug text-gray-600">{cardHook}</p>
 
-                        {/* Tercera fila: Ciudad · Horario */}
-                        <div
-                            className="flex items-center overflow-hidden"
-                            style={{
-                                marginBottom: '4px',
-                                fontSize: '15px',
-                                lineHeight: '19px',
-                                fontWeight: 400,
-                                color: 'rgb(106, 106, 106)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
-                            }}
-                        >
-                            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                                {service.expert?.city && (
-                                    <>
-                                        <span className="truncate">{service.expert.city}</span>
-                                        <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                                    </>
-                                )}
-                                <span className="truncate">{availabilityInfo}</span>
-                            </div>
+                        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                            {cityLabel && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {cityLabel}
+                                </span>
+                            )}
+                            <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1">
+                                <Clock className="mr-1 h-3 w-3" />
+                                {availabilityInfo}
+                            </span>
+                            {isGuestFavorite && (
+                                <span className="inline-flex items-center rounded-full bg-[#0066CC]/10 px-2 py-1 font-medium text-[#0066CC]">
+                                    Top valorado
+                                </span>
+                            )}
                         </div>
 
-                        {/* Quinta fila: Precio con "por servicio" seguido */}
-                        <div
-                            className="flex items-center"
-                            style={{
-                                marginTop: '4px',
-                                gap: '4px',
-                            }}
-                        >
-                            <span
-                                style={{
-                                    fontSize: '16px',
-                                    lineHeight: 'normal',
-                                    fontWeight: 500,
-                                    color: 'rgb(0, 0, 0)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textDecoration: 'underline',
-                                }}
-                            >
-                                {price}
-                                {priceData.wasConverted && (
-                                    <span style={{ marginLeft: 4, fontSize: '0.85em', color: '#6B7280', fontWeight: 400 }}>
-                                        {priceData.sourceFormatted}
-                                    </span>
-                                )}
-                            </span>
-                            <span
-                                style={{
-                                    fontSize: '15px',
-                                    lineHeight: '19px',
-                                    fontWeight: 400,
-                                    color: 'rgb(106, 106, 106)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                por servicio
-                            </span>
+                        <div className="flex items-baseline gap-1.5 border-t border-gray-100 pt-2.5">
+                            <span className="text-lg font-semibold text-gray-900">{price}</span>
+                            {priceData.wasConverted && (
+                                <span className="text-xs text-gray-500">{priceData.sourceFormatted}</span>
+                            )}
+                            <span className="text-sm text-gray-500">/ servicio</span>
                         </div>
                     </div>
                 </div>
@@ -871,18 +772,6 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                         ?? service.expert?.totalReviews 
                                         ?? (service.expert as any)?.TotalReviews
                                         ?? 0;
-                                    // Debug temporal
-                                    if (process.env.NODE_ENV === 'development') {
-                                        console.log('🔍 [MapServiceCard Mobile] totalReviews:', {
-                                            serviceId: service.id || service.Id,
-                                            totalReviews,
-                                            serviceTotalReviews: service.totalReviews,
-                                            serviceTotalReviewsPascal: (service as any).TotalReviews,
-                                            expertTotalReviews: service.expert?.totalReviews,
-                                            expertTotalReviewsPascal: (service.expert as any)?.TotalReviews,
-                                            serviceKeys: Object.keys(service)
-                                        });
-                                    }
                                     return totalReviews > 0 ? (
                                         <span style={{ 
                                             fontSize: '15px',
@@ -1005,6 +894,10 @@ const defaultCenter = {
     lat: 40.4168,
     lng: -3.7038
 };
+
+/** Zoom inicial del mapa: vista amplia (país/región), no encima del usuario */
+const getMapOverviewZoom = (countryCode: string): number =>
+    getCountryCoordinates(countryCode)?.zoom ?? 6;
 interface SearchParameterFormProps {
     onComplete: (parameters: any) => void;
     setCurrentStep: (step: number) => void;
@@ -1012,8 +905,9 @@ interface SearchParameterFormProps {
     initialKeywords: string;
     initialUserSearch: string;
     serviceTypeId: number | null;
+    onMapReady?: () => void;
 }
-export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId }: SearchParameterFormProps) {
+export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId, onMapReady }: SearchParameterFormProps) {
     const { width } = useWindowSize();
     const navigate = useNavigate();
     const isMobileDevice = width > 0 ? width < 1024 : (typeof window !== 'undefined' && window.innerWidth < 1024);
@@ -1094,6 +988,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [mapServicesCount, setMapServicesCount] = useState<number>(0);
     // Estado para servicios del mapa (para verificar favoritos)
     const [mapServices, setMapServices] = useState<Service[]>([]);
+    const [mapLoading, setMapLoading] = useState(true);
+
+    const handleMapLoadingChange = useCallback(
+        (state: { loading: boolean; isInitialLoading: boolean; isRefreshing: boolean }) => {
+            setMapLoading(state.isInitialLoading);
+        },
+        []
+    );
     // Estado para prevenir clics accidentales en la card móvil justo después de abrirse
     const [cardJustOpened, setCardJustOpened] = useState(false);
     const cardOpenTimeRef = useRef<number>(0);
@@ -1255,14 +1157,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             },
                             latitude: rawExpert.latitude || rawExpert.Latitude || mapService.lat?.toString(),
                             longitude: rawExpert.longitude || rawExpert.Longitude || mapService.lng?.toString(),
+                            city: rawExpert.city || rawExpert.City || '',
                         },
                     } as typeof allServices[0];
                 })
                 .filter(service => {
                     // Filtrar por categoría si está seleccionada
                     if (selectedCategory > 0) {
-                        const serviceCategoryId = service.categoryId || (service as any).CategoryId;
-                        return serviceCategoryId === selectedCategory;
+                        const serviceCategoryId = Number(service.categoryId ?? (service as any).CategoryId);
+                        return Number.isFinite(serviceCategoryId) && serviceCategoryId === Number(selectedCategory);
                     }
                     return true;
                 });
@@ -1277,8 +1180,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         // Filtrar por categoría si está seleccionada
         if (selectedCategory > 0) {
             services = services.filter(s => {
-                const serviceCategoryId = s.categoryId || (s as any).CategoryId;
-                return serviceCategoryId === selectedCategory;
+                const serviceCategoryId = Number(s.categoryId ?? (s as any).CategoryId);
+                return Number.isFinite(serviceCategoryId) && serviceCategoryId === Number(selectedCategory);
             });
         }
         
@@ -1413,16 +1316,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             setSelectedService(null);
         }
     };
-    // Logs para debugging
-    useEffect(() => {
-        console.log('📍 [DEBUG] Estado de ubicación:', {
-            selectedLocation,
-            formDataLatitude: formData.latitude,
-            formDataLongitude: formData.longitude,
-            hasSelectedLocation: !!selectedLocation,
-            hasCoordinates: !!(formData.latitude && formData.longitude)
-        });
-    }, [selectedLocation, formData.latitude, formData.longitude]);
+    // Logs de ubicación desactivados para evitar ruido y renders aparentes en bucle.
     useEffect(() => {
         // Log comentado para evitar spam
         // const service154 = allServices.find(s => s.id === 154);
@@ -1447,15 +1341,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
    
     
     // Función para extraer el código de país desde los resultados de geocodificación o place
-    const extractCountryCode = (result: google.maps.GeocoderResult | google.maps.places.PlaceResult): string | null => {
-        if (!result.address_components) return null;
-        
-        for (const component of result.address_components) {
-            if (component.types.includes('country') && component.short_name) {
-                return component.short_name.toLowerCase();
+    const extractCountryCode = (result: any): string | null => {
+        if (!result) return null;
+        if (result.address_components && Array.isArray(result.address_components)) {
+            for (const component of result.address_components) {
+                if (component.types?.includes('country') && component.short_name) {
+                    return component.short_name.toLowerCase();
+                }
             }
         }
-        return null;
+        return extractCountryCodeFromMapbox(result as MapboxFeature);
     };
     
     // Función para extraer ciudad y código postal de la dirección
@@ -1550,17 +1445,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             lng: position.coords.longitude
                         };
                         
-                        // Geocodificar la ubicación actual para mostrar la dirección
-                        if (window.google?.maps?.Geocoder) {
-                            const geocoder = new google.maps.Geocoder();
-                            geocoder.geocode({ location: currentLocation }, (results, status) => {
-                                if (status === 'OK' && results && results[0]) {
-                                    updateLocationAndMap(currentLocation, results[0].formatted_address);
-                                } else {
-                                    updateLocationAndMap(currentLocation);
-                                }
-                            });
-                        } else {
+                        try {
+                            const feature = await reverseGeocodeMapbox(currentLocation.lat, currentLocation.lng);
+                            if (feature?.place_name) {
+                                updateLocationAndMap(currentLocation, feature.place_name);
+                            } else {
+                                updateLocationAndMap(currentLocation);
+                            }
+                        } catch {
                             updateLocationAndMap(currentLocation);
                         }
                     },
@@ -1679,7 +1571,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     useEffect(() => {
         // El mapa se actualiza automáticamente con MapContainer
     }, [selectedLocation, formData.latitude, formData.longitude]);
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    const handleMapClick = async (e: any) => {
         // ✅ Si el drawer está abierto, cerrarlo y marcar como cerrado manualmente
         if (isDrawerOpen && isDrawerVisible) {
             setIsDrawerOpen(false);
@@ -1696,31 +1588,28 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         
         // Solo cambiar la ubicación si NO hay una card abierta
         if (e.latLng) {
+            const latValue = typeof e.latLng?.lat === 'function' ? e.latLng.lat() : e.latLng?.lat;
+            const lngValue = typeof e.latLng?.lng === 'function' ? e.latLng.lng() : e.latLng?.lng;
             const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng()
+                lat: latValue,
+                lng: lngValue
             };
             
             setIsGeocoding(true);
             
-            // Geocodificar la ubicación seleccionada para obtener la dirección
-            if (window.google?.maps?.Geocoder) {
-                const geocoder = new google.maps.Geocoder();
-                geocoder.geocode({ location: newLocation }, (results, status) => {
-                    setIsGeocoding(false);
-                    if (status === 'OK' && results && results[0]) {
-                        const address = results[0].formatted_address;
-                        // Detectar y actualizar el país si es diferente
-                        const countryCode = extractCountryCode(results[0]);
-                        if (countryCode && countryCode !== selectedCountry.toLowerCase()) {
-                            setSelectedCountry(countryCode);
-                        }
-                        updateLocationAndMap(newLocation, address);
-                    } else {
-                        updateLocationAndMap(newLocation);
+            try {
+                const feature = await reverseGeocodeMapbox(newLocation.lat, newLocation.lng);
+                setIsGeocoding(false);
+                if (feature?.place_name) {
+                    const countryCode = extractCountryCode(feature);
+                    if (countryCode && countryCode !== selectedCountry.toLowerCase()) {
+                        setSelectedCountry(countryCode);
                     }
-                });
-            } else {
+                    updateLocationAndMap(newLocation, feature.place_name);
+                } else {
+                    updateLocationAndMap(newLocation);
+                }
+            } catch {
                 setIsGeocoding(false);
                 updateLocationAndMap(newLocation);
             }
@@ -1797,25 +1686,45 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="bg-white h-[100dvh] flex flex-col overflow-visible fixed inset-0 z-[100]">
-                   
+        <div className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-white lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0">
+            <HomepageDesktopTopBar variant="map" onBack={() => navigate('/')} />
+
             {/* Main Layout - Split View */}
-            <div className="flex flex-1 min-h-0 overflow-visible w-full">
+            <div className="flex min-h-0 w-full flex-1 overflow-hidden">
                 {/* Left Side - Panel de resultados (Desktop) */}
                 <div className="hidden lg:flex flex-col bg-white flex-shrink-0" style={{ 
                     width: width >= 1280 ? '900px' : '600px', 
                     minWidth: '600px', 
                     maxWidth: '900px' 
                 }}>
-                    {/* Header del panel */}
-                    <div className="px-8 md:px-10 py-4 border-b border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            {formData.latitude && formData.longitude 
-                                ? `${services.length} expertos disponibles`
-                                : 'Selecciona una ubicación en el mapa'
-                            }
-                        </p>
-                        </div>
+                    {/* Header del panel — mismo lenguaje visual que checkout */}
+                    <div className="border-b border-[#e8e8e8]/90 px-8 py-5 md:px-10">
+                        {formData.latitude && formData.longitude ? (
+                            <>
+                                <p className="hp-eyebrow mb-2">
+                                    {services.length}{' '}
+                                    {services.length === 1 ? 'opción en el mapa' : 'opciones en el mapa'}
+                                </p>
+                                <h2 className="relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]">
+                                    Elige antes de comprar
+                                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
+                                </h2>
+                                <p className="mt-1.5 max-w-md text-sm leading-relaxed text-[#6a6a6a]">
+                                    Compara valoraciones, informe y precio. Reserva con pago seguro.
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]">
+                                    Marca dónde buscas
+                                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
+                                </h2>
+                                <p className="mt-1.5 text-sm leading-relaxed text-[#6a6a6a]">
+                                    Toca el mapa o usa tu ubicación para ver opciones cerca.
+                                </p>
+                            </>
+                        )}
+                    </div>
                     
                     {/* Lista de servicios */}
                     <div 
@@ -1833,29 +1742,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             }
                         `}</style>
                         {formData.latitude && formData.longitude && (
-                            <div className="px-8 md:px-10 pt-20 pb-6">
-                            {/* Services List - Desktop estilo Airbnb en grid de 2 columnas */}
-                            {(() => {
-                                console.log('🔍 SearchParameterForm - Renderizando sidebar:', {
-                                    reorderedServicesCount: reorderedServices.length,
-                                    reorderedServices: reorderedServices
-                                });
-                                return null;
-                            })()}
+                            <div className="px-8 pb-6 pt-8 md:px-10">
                             {reorderedServices.length > 0 ? (
                                 <>
-                                    {/* Header con total de servicios estilo Airbnb */}
-                                    <div className="px-8 md:px-10 pb-4">
-                                        <p className="text-base font-medium text-gray-900">
-                                            {(() => {
-                                                // ✅ CORREGIDO: Mostrar número de servicios, no de revisiones
-                                                const servicesCount = reorderedServices.length;
-                                                return servicesCount > 0 
-                                                    ? `${servicesCount} ${servicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}`
-                                                    : 'Sin servicios disponibles';
-                                            })()}
-                                        </p>
-                                    </div>
                                     <div 
                                         className="grid grid-cols-1 xl:grid-cols-2" 
                                         style={{ 
@@ -1880,7 +1769,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     })}
                                     </div>
                                 </>
-                            ) : (
+                            ) : mapLoading ? (
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-2">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="h-44 animate-pulse rounded-2xl bg-gray-100" />
+                                        ))}
+                                    </div>
+                                ) : (
                                     <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
                                         <div className="flex flex-col items-center gap-4 max-w-sm">
                                             <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
@@ -1979,6 +1874,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         </div>
                         
                         {/* Map - ocupa todo el espacio restante */}
+                                {isMobileDevice && (
                                 <div className="flex-1 relative w-full overflow-visible">
                                     <MapContainer
                                         categoryId={selectedCategory}
@@ -1997,10 +1893,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         selectedServiceId={selectedService}
                                         isMobile={true}
                                         style={{ width: '100%', height: '100%' }}
+                                        onMapLoad={onMapReady}
                                         onServicesCountChange={setMapServicesCount}
                                         onServicesChange={setMapServices}
+                                        onLoadingChange={handleMapLoadingChange}
                                     />
                                 </div>
+                                )}
                                 
                             {/* Floating Button - Siempre visible cuando NO hay card seleccionada */}
                                 {formData.latitude && formData.longitude && !selectedService && (
@@ -2044,23 +1943,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 </div>
                 
                 {/* Desktop: Right Side - Map */}
-                <div className="hidden lg:flex lg:flex-1 relative bg-white" style={{ paddingTop: '80px', paddingLeft: '0px', paddingRight: '32px', paddingBottom: '32px', minWidth: '400px' }}>
+                {!isMobileDevice && (
+                <div className="relative hidden min-h-0 min-w-[400px] flex-1 bg-white p-6 pl-5 pr-8 pb-8 lg:flex">
                         {false ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
                             </div>
                         ) : (
                             <>
-                            {/* Map ocupa todo el espacio con borde blanco más grueso y laterales muy redondeados */}
-                            <div className="absolute" style={{ 
-                                borderRadius: '32px', 
-                                overflow: 'hidden',
-                                top: '80px',
-                                left: '40px',
-                                right: '32px',
-                                bottom: '32px',
-                                boxShadow: '0 0 0 24px white'
-                            }}>
+                            {/* Map ocupa el espacio restante bajo la topbar homepage */}
+                            <div
+                                className="relative h-full min-h-0 w-full overflow-hidden"
+                                style={{
+                                    borderRadius: '32px',
+                                    boxShadow: '0 0 0 24px white',
+                                }}
+                            >
                                 <MapContainer
                                     categoryId={selectedCategory}
                                     serviceTypeId={serviceTypeId}
@@ -2068,7 +1966,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         const countryCoords = getCountryCoordinates(selectedCountry);
                                         return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
                                     })()}
-                                    initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((25 * 1000) / 500)))) : 5}
+                                    initialZoom={getMapOverviewZoom(selectedCountry)}
+                                    recenterMode="pan-only"
                                     onServiceSelect={(service: Service) => {
                                         // ✅ Convertir Service a formato esperado por handleServiceSelect
                                         // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
@@ -2078,6 +1977,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     selectedServiceId={selectedService}
                                     isMobile={false}
                                     style={{ width: '100%', height: '100%' }}
+                                    onMapLoad={onMapReady}
+                                    onServicesCountChange={setMapServicesCount}
+                                    onServicesChange={setMapServices}
+                                    onLoadingChange={handleMapLoadingChange}
                                 />
                                 
                                 {/* Floating Card Desktop - OCULTA EN PC */}
@@ -2085,6 +1988,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             </>
                         )}
                     </div>
+                )}
                 </div>
                 
                 
