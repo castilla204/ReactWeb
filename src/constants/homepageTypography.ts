@@ -172,15 +172,49 @@ export const hpCardText = {
   },
 } as const;
 
-/** Paso mapa (crear-busqueda step=map) — gutters y tipografía unificados */
-export const MAP_DESKTOP_PANEL_GUTTER = 'px-6 xl:px-8';
+/** Paso mapa (crear-busqueda step=map) — gutters y márgenes unificados */
+export const MAP_DESKTOP_PANEL_GUTTER = 'px-5 xl:px-6';
 
-export const MAP_DESKTOP_HEADER_CLASS = `shrink-0 border-b border-[#e8e8e8] ${MAP_DESKTOP_PANEL_GUTTER} py-6`;
-
-export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-8 pt-6`;
+export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-4 pt-1.5`;
 
 export const MAP_DESKTOP_GRID_CLASS =
-  'grid w-full grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-6';
+  'grid w-full grid-cols-1 gap-3.5 lg:grid-cols-2 lg:gap-3.5 xl:gap-4';
+
+/**
+ * Desktop: fila 1 = cabecera unificada (2 cols), fila 2 = lista + mapa.
+ */
+export const MAP_DESKTOP_SPLIT_CLASS =
+  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(460px,42vw,780px)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]';
+
+export const MAP_DESKTOP_UNIFIED_HEADER_CLASS =
+  'hidden shrink-0 bg-white lg:col-span-2 lg:row-start-1 lg:block px-5 pb-3.5 pt-4 xl:px-6';
+
+export const MAP_DESKTOP_PAGE_TITLE_CLASS =
+  'font-display text-xl font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c] xl:text-[21px]';
+
+export const MAP_DESKTOP_PAGE_LEAD_CLASS =
+  'mt-2 max-w-2xl text-sm font-normal leading-relaxed text-[#6a6a6a]';
+
+export const MAP_META_CHIP_CLASS =
+  'inline-flex items-center rounded-full bg-[#0066CC]/[0.08] px-2.5 py-1 text-[11px] font-semibold text-[#0066CC]';
+
+export const MAP_META_CHIP_MUTED_CLASS =
+  'inline-flex items-center rounded-full bg-[#f4f4f4] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
+
+export const MAP_DESKTOP_LIST_CELL_CLASS =
+  'hidden min-h-0 overflow-hidden bg-white lg:col-start-1 lg:row-start-2 lg:block';
+
+export const MAP_PANEL_SCROLL_CLASS = 'map-panel-scroll';
+
+export const MAP_DESKTOP_SCROLL_CLASS =
+  `${MAP_PANEL_SCROLL_CLASS} h-full min-h-0 overflow-y-auto overscroll-contain`;
+
+/** Mapa fila 2 — alineado con las cards */
+export const MAP_DESKTOP_MAP_WRAP_CLASS =
+  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-4 pt-1.5 lg:col-start-2 lg:row-start-2 lg:flex xl:pr-6 xl:pb-5';
+
+export const MAP_DESKTOP_MAP_INNER_CLASS =
+  'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl';
 
 export const MAP_PAGE_TITLE_CLASS =
   'relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]';
@@ -189,31 +223,49 @@ export const MAP_PAGE_TITLE_MOBILE_CLASS =
   'relative inline-block font-display text-[1.125rem] font-semibold leading-[1.3] tracking-[-0.02em] text-[#1c1c1c]';
 
 export const MAP_PAGE_SUBTITLE_CLASS =
-  'mt-2 max-w-md text-sm font-normal leading-[1.45] text-[#6a6a6a]';
+  'mt-1 max-w-md text-sm font-normal leading-snug text-[#6a6a6a]';
 
 export const MAP_PAGE_SUBTITLE_MOBILE_CLASS =
   'mt-1.5 text-sm font-normal leading-[1.45] text-[#6a6a6a]';
 
-export const MAP_MOBILE_DRAWER_HEADER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-4 pt-3 pr-12`;
+export const MAP_MOBILE_DRAWER_HEADER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-3 pt-2.5 pr-12`;
 
-export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] pt-2`;
+export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-1.5`;
 
-export const MAP_CARD_BODY_CLASS = 'px-4 py-3.5 font-display';
+export const MAP_CARD_BODY_CLASS = 'px-3.5 py-2.5 font-display';
+
+/** Imagen un poco más baja que 4/3 (desktop y móvil) */
+export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/10]';
+
+export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
 export const MAP_CARD_EYEBROW_CLASS =
-  'text-[11px] font-semibold uppercase tracking-[0.08em] text-[#0066CC]';
+  'text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0066CC]';
 
 export const MAP_CARD_NAME_CLASS =
-  'truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
+  'truncate text-[14px] font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
 
-export const MAP_CARD_HOOK_CLASS = 'text-sm font-normal leading-snug text-[#6a6a6a]';
+export const MAP_CARD_HOOK_CLASS = 'line-clamp-1 text-[13px] font-normal leading-snug text-[#6a6a6a]';
 
 export const MAP_CARD_CHIP_CLASS =
-  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2.5 py-1 text-xs font-medium text-[#6a6a6a]';
+  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[11px] font-medium text-[#6a6a6a]';
 
-export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 text-[#1c1c1c]';
+export const MAP_CARD_PRICE_CLASS = 'text-[16px] font-semibold leading-5 text-[#1c1c1c]';
 
 export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-sm font-normal text-[#6a6a6a]';
 
 export const MAP_CARD_BADGE_CLASS =
   'inline-flex items-center rounded-lg bg-white/95 px-2 py-1 font-display text-[10px] font-medium leading-3 text-[#222222] shadow-sm backdrop-blur-sm';
+
+/** Sombras desktop — un poco más visibles sobre fondo blanco */
+export const MAP_CARD_DESKTOP_SHADOW =
+  'shadow-[0_2px_10px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.05)]';
+
+export const MAP_CARD_DESKTOP_SHADOW_HOVER =
+  'hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5';
+
+export const MAP_CARD_DESKTOP_SHADOW_ACTIVE =
+  'shadow-[0_4px_18px_rgba(0,102,204,0.14),0_2px_8px_rgba(0,0,0,0.08)]';
+
+export const MAP_CARD_DESKTOP_SHADOW_HOVERED =
+  'shadow-[0_6px_20px_rgba(0,0,0,0.11),0_2px_6px_rgba(0,0,0,0.06)]';

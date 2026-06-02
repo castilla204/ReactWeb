@@ -581,36 +581,29 @@ const SearchCreationPage: React.FC = () => {
                     {/* ✅ Mostrar skeleton mientras carga el mapa */}
                     {!isMapLoaded && <MapPageSkeleton />}
                     
-                    <div className={`relative flex h-screen w-full flex-col overflow-hidden bg-gray-50 ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            {searchParameters.category && searchParameters.serviceTypeId ? (
-                                <div className="min-h-0 flex-1 overflow-hidden">
-                                    <SearchParameterForm
-                                        onComplete={handleParametersComplete}
-                                        setCurrentStep={setCurrentStep}
-                                        selectedCategory={searchParameters.category}
-                                        initialKeywords={searchParameters.keywords || ''}
-                                        initialUserSearch={searchParameters.userSearch || ''}
-                                        serviceTypeId={searchParameters.serviceTypeId}
-                                        onMapReady={() => setIsMapLoaded(true)}
-                                    />
-                                </div>
-                            ) : (
-                                // Mostrar el formulario con valores por defecto mientras cargan los parámetros
-                                <div className="flex-1 min-h-0 overflow-hidden">
-                                    <SearchParameterForm
-                                        onComplete={handleParametersComplete}
-                                        setCurrentStep={setCurrentStep}
-                                        selectedCategory={searchParameters.category || null}
-                                        initialKeywords={searchParameters.keywords || ''}
-                                        initialUserSearch={searchParameters.userSearch || ''}
-                                        serviceTypeId={searchParameters.serviceTypeId || null}
-                                        onMapReady={() => setIsMapLoaded(true)}
-                                    />
-                                </div>
-                            )}
+                    <div className={`relative flex h-[100dvh] w-full flex-col overflow-hidden bg-white ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
+                        {searchParameters.category && searchParameters.serviceTypeId ? (
+                            <SearchParameterForm
+                                onComplete={handleParametersComplete}
+                                setCurrentStep={setCurrentStep}
+                                selectedCategory={searchParameters.category}
+                                initialKeywords={searchParameters.keywords || ''}
+                                initialUserSearch={searchParameters.userSearch || ''}
+                                serviceTypeId={searchParameters.serviceTypeId}
+                                onMapReady={() => setIsMapLoaded(true)}
+                            />
+                        ) : (
+                            <SearchParameterForm
+                                onComplete={handleParametersComplete}
+                                setCurrentStep={setCurrentStep}
+                                selectedCategory={searchParameters.category || null}
+                                initialKeywords={searchParameters.keywords || ''}
+                                initialUserSearch={searchParameters.userSearch || ''}
+                                serviceTypeId={searchParameters.serviceTypeId || null}
+                                onMapReady={() => setIsMapLoaded(true)}
+                            />
+                        )}
                     </div>
-                </div>
                 </>
             )}
             

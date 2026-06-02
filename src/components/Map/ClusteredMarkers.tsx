@@ -9,6 +9,7 @@ interface ClusteredMarkersProps {
   bounds?: [number, number, number, number];
   zoom?: number;
   selectedServiceId?: number | null;
+  hoveredServiceId?: number | null;
   onServiceClick?: (service: Service) => void;
   clusterRadius?: number; // Radio de clustering en píxeles
   maxZoom?: number; // Zoom máximo para clustering
@@ -28,6 +29,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
   bounds,
   zoom,
   selectedServiceId,
+  hoveredServiceId,
   onServiceClick,
   clusterRadius = 56,
   maxZoom = 17,
@@ -152,10 +154,18 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       markerEl.style.fontSize = '14px';
       markerEl.style.cursor = 'pointer';
       markerEl.style.whiteSpace = 'nowrap';
-      markerEl.style.border = selectedServiceId === service.id ? 'none' : '1.5px solid #e5e5e5';
-      markerEl.style.background = selectedServiceId === service.id ? '#0066CC' : '#fff';
-      markerEl.style.color = selectedServiceId === service.id ? '#fff' : '#222';
-      markerEl.style.boxShadow = selectedServiceId === service.id ? '0 4px 16px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.25)';
+      const isSelected = selectedServiceId === service.id;
+      const isHovered = !isSelected && hoveredServiceId === service.id;
+      markerEl.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease';
+      markerEl.style.border = isSelected ? 'none' : isHovered ? '2px solid #0066CC' : '1.5px solid #e5e5e5';
+      markerEl.style.background = isSelected ? '#0066CC' : isHovered ? '#eef4fc' : '#fff';
+      markerEl.style.color = isSelected ? '#fff' : isHovered ? '#0066CC' : '#222';
+      markerEl.style.boxShadow = isSelected
+        ? '0 4px 16px rgba(0,102,204,0.45)'
+        : isHovered
+          ? '0 4px 14px rgba(0,102,204,0.28)'
+          : '0 2px 6px rgba(0,0,0,0.25)';
+      markerEl.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
       markerEl.textContent = service.price > 0 ? `€${Math.round(service.price)}` : 'Consultar';
       markerEl.setAttribute('aria-label', `Servicio ${service.name}`);
       markerEl.addEventListener('click', () => onServiceClick?.(service));
@@ -167,7 +177,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
     };
-  }, [map, clusters, onServiceClick, selectedServiceId, supercluster]);
+  }, [map, clusters, onServiceClick, selectedServiceId, hoveredServiceId, supercluster]);
 
   return null;
 };

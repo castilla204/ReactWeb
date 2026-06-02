@@ -155,10 +155,12 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   return (
     <>
       <header
-        className={`sticky top-0 z-50 hidden md:block border-b ${
-          isCheckout || isMap
-            ? 'border-[#e8e8e8] bg-white'
-            : 'border-[#dbe8f5]/80'
+        className={`sticky top-0 z-50 hidden md:block ${
+          isCheckout
+            ? 'border-b border-[#e8e8e8] bg-white'
+            : isMap
+              ? 'bg-white'
+              : 'border-b border-[#dbe8f5]/80'
         }`}
         style={
           isCheckout || isMap
@@ -172,7 +174,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         <div
           className={
             isMap
-              ? 'flex min-h-14 w-full items-center justify-between gap-4 px-4 md:px-5 lg:px-8'
+              ? 'flex min-h-12 w-full items-center justify-between gap-3 px-4 md:px-5 lg:px-6'
               : `${isCheckout ? 'max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8' : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
           }
         >

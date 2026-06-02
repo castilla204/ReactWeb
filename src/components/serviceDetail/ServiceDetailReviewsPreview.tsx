@@ -45,7 +45,7 @@ function MobileReviewsPreview({
   if (reviews.length === 0) {
     return (
       <section
-        className="sd-reviews-preview sd-reviews-preview--mobile"
+        className="sd-reviews-preview sd-reviews-preview--mobile w-full px-4"
         aria-labelledby={hideHeading ? undefined : headingId}
       >
         <p className="text-sm leading-relaxed text-[#6a6a6a]">
@@ -57,11 +57,11 @@ function MobileReviewsPreview({
 
   return (
     <section
-      className="sd-reviews-preview sd-reviews-preview--mobile"
+      className="sd-reviews-preview sd-reviews-preview--mobile w-full"
       aria-labelledby={hideHeading ? undefined : headingId}
     >
       {/* Widget global: nota media + distribución de todas las valoraciones */}
-      <div className="sd-reviews-preview-summary-mobile">
+      <div className="sd-reviews-preview-summary-mobile px-4">
         {showFeaturedBadge ? (
           <p className="mb-3">
             <span className="inline-flex rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#1c1c1c]">
@@ -106,11 +106,11 @@ function MobileReviewsPreview({
       </div>
 
       {previewReviews.length > 0 ? (
-        <ul className="mt-5 divide-y divide-[#e8e8e8]">
+        <ul className="mt-5 w-full divide-y divide-[#e8e8e8] border-t border-[#e8e8e8]">
           {previewReviews.map((review, idx) => {
             const key = review.id ?? `${review.createdAt}-${idx}`;
             return (
-              <li key={key}>
+              <li key={key} className="px-4">
                 <ServiceDetailReviewSnippet
                   review={review}
                   variant="mobile"
@@ -123,9 +123,11 @@ function MobileReviewsPreview({
         </ul>
       ) : null}
 
-      <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-5 w-full justify-center">
-        {ctaLabel}
-      </button>
+      <div className="px-4">
+        <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-5 w-full justify-center">
+          {ctaLabel}
+        </button>
+      </div>
     </section>
   );
 }

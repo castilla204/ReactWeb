@@ -86,8 +86,8 @@ export const MobileBottomBar: React.FC = () => {
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
 
-  const guestTabWidth = isAuthenticated ? '80px' : '72px';
-  const guestTabMargin = isAuthenticated ? '-8px' : '-6px';
+  const tabWidth = isAuthenticated ? '64px' : '72px';
+  const tabMargin = isAuthenticated ? '-4px' : '-6px';
 
   const handleHowItWorksClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -213,7 +213,7 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: guestTabWidth,
+            width: tabWidth,
             height: '44px',
             flexShrink: 0,
             border: 'none',
@@ -278,10 +278,10 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: guestTabWidth,
+            width: tabWidth,
             height: '44px',
             flexShrink: 0,
-            marginLeft: guestTabMargin,
+            marginLeft: tabMargin,
             border: 'none',
             background: 'transparent',
             padding: 0,
@@ -330,51 +330,49 @@ export const MobileBottomBar: React.FC = () => {
           </div>
         </button>
 
-        {/* Cómo funciona — solo invitados */}
-        {!isAuthenticated && (
-          <button
-            type="button"
-            onClick={handleHowItWorksClick}
-            onTouchEnd={handleHowItWorksClick}
-            aria-current={howItWorksActive ? 'page' : undefined}
-            aria-label="Cómo funciona"
-            disabled={howItWorksActive}
+        {/* Ayuda — invitados y registrados */}
+        <button
+          type="button"
+          onClick={handleHowItWorksClick}
+          onTouchEnd={handleHowItWorksClick}
+          aria-current={howItWorksActive ? 'page' : undefined}
+          aria-label="Cómo funciona"
+          disabled={howItWorksActive}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: tabWidth,
+            height: '44px',
+            flexShrink: 0,
+            marginLeft: tabMargin,
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+            color: howItWorksActive ? '#0066CC' : '#717171',
+            cursor: howItWorksActive ? 'default' : 'pointer',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              width: guestTabWidth,
-              height: '44px',
-              flexShrink: 0,
-              marginLeft: guestTabMargin,
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              color: howItWorksActive ? '#0066CC' : '#717171',
-              cursor: howItWorksActive ? 'default' : 'pointer',
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
+              marginBottom: '4px',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '4px',
-              }}
-            >
-              <HelpCircle
-                size={24}
-                strokeWidth={2}
-                style={{ color: howItWorksActive ? '#0066CC' : '#717171' }}
-                aria-hidden
-              />
-            </div>
-            <div style={tabLabelStyle(howItWorksActive)}>Ayuda</div>
-          </button>
-        )}
+            <HelpCircle
+              size={24}
+              strokeWidth={2}
+              style={{ color: howItWorksActive ? '#0066CC' : '#717171' }}
+              aria-hidden
+            />
+          </div>
+          <div style={tabLabelStyle(howItWorksActive)}>Ayuda</div>
+        </button>
 
         {/* Mis mensajes - button (solo cuando está autenticado) */}
         {isAuthenticated && (
@@ -389,10 +387,10 @@ export const MobileBottomBar: React.FC = () => {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '80px',
+              width: tabWidth,
               height: '44px',
               flexShrink: 0,
-              marginLeft: guestTabMargin,
+              marginLeft: tabMargin,
               border: 'none',
               background: 'transparent',
               padding: 0,
@@ -441,10 +439,10 @@ export const MobileBottomBar: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            width: guestTabWidth,
+            width: tabWidth,
             height: '44px',
             flexShrink: 0,
-            marginLeft: guestTabMargin,
+            marginLeft: tabMargin,
             border: 'none',
             background: 'transparent',
             padding: 0,

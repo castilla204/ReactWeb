@@ -873,7 +873,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className="pt-6"
+                                    className="-mx-4 pt-6"
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
