@@ -15,13 +15,18 @@ interface FormData {
     availability?: AvailabilityFormData;
 }
 
+interface MapLocation {
+    lat: number;
+    lng: number;
+}
+
 interface UseBecomeExpertResult {
     formData: FormData;
     previewUrl: string | null;
     isSubmitting: boolean;
     error: string | null;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleMapClick: (e: google.maps.MapMouseEvent) => void;
+    handleMapClick: (location: {lat: number; lng: number}) => void;
     handleSubmit: () => Promise<void>;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     setPreviewUrl: React.Dispatch<React.SetStateAction<string | null>>;
@@ -58,18 +63,16 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         }
     };
 
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-            };
-            setFormData((prev) => ({
-                ...prev,
-                latitude: newLocation.lat.toString(),
-                longitude: newLocation.lng.toString(),
-            }));
-        }
+    const handleMapClick = (location: {lat: number; lng: number}) => {
+        const newLocation = {
+            lat: location.lat,
+            lng: location.lng,
+        };
+        setFormData((prev) => ({
+            ...prev,
+            latitude: newLocation.lat.toString(),
+            longitude: newLocation.lng.toString(),
+        }));
     };
 
     const handleSubmit = useCallback(async () => {
@@ -182,7 +185,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
 
             const rawResult = await response.json();
             console.log('Success response (raw):', rawResult);
-            
+
             // ✅ Normalizar la respuesta del backend (puede venir en PascalCase o camelCase)
             const result: BecomeExpertResponse = {
                 message: rawResult.Message || rawResult.message,
@@ -211,7 +214,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                     }
                 }
             };
-            
+
             console.log('Success response (normalized):', result);
             console.log('User role received:', result.user?.role);
             console.log('Full user object:', result.user);
@@ -254,7 +257,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 expertProfile: result.user.expertProfile,
                 ExpertProfile: result.user.expertProfile,
             };
-            
+
             console.log('✅ [useBecomeExpert] Actualizando usuario con rol Expert:', userToUpdate);
             console.log('✅ [useBecomeExpert] Rol del usuario:', userToUpdate.role, userToUpdate.Role);
 
@@ -264,7 +267,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             // o solo es el accessToken
             let accessToken = result.token;
             let refreshToken: string | null = null;
-            
+
             try {
                 // Verificar si el token viene en formato "accessToken|refreshToken"
                 if (result.token.includes('|')) {
@@ -285,13 +288,13 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                         refreshToken = result.token; // Temporal, pero mejor que nada
                     }
                 }
-                
+
                 // Guardar tokens en authService
                 authService.setTokens(accessToken, refreshToken);
-                
+
                 // ✅ CRÍTICO: Programar renovación automática del token
                 authService.scheduleTokenRefresh();
-                
+
                 // ✅ Verificar que los tokens se guardaron correctamente
                 const savedAccessToken = authService.getAccessToken();
                 const savedRefreshToken = authService.getRefreshToken();
@@ -307,10 +310,10 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 refreshToken = result.token;
                 authService.setTokens(accessToken, refreshToken);
             }
-            
+
             // Guardar token en localStorage también (compatibilidad)
             setAuthToken(accessToken, userToUpdate);
-            
+
             console.log('✅ [useBecomeExpert] Usuario a actualizar:', {
                 id: userToUpdate.id,
                 email: userToUpdate.email,
@@ -318,10 +321,10 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 Role: userToUpdate.Role,
                 hasToken: !!accessToken
             });
-            
+
             // Actualizar autenticación - actualizar el contexto
             updateUser(userToUpdate, accessToken);
-            
+
             // ✅ Esperar un momento para que el contexto y authService se actualicen completamente
             await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -345,9 +348,9 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 authService.scheduleTokenRefresh();
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
-            
+
             // ✅ CRÍTICO: Verificar que el refreshToken funcione
-            // Si el refreshToken antiguo no funciona (porque el backend lo invalidó), 
+            // Si el refreshToken antiguo no funciona (porque el backend lo invalidó),
             // el interceptor de authService lo manejará automáticamente al recibir 401
             // Pero es mejor advertir si el refreshToken es igual al accessToken (temporal)
             try {
