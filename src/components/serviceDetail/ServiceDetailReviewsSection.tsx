@@ -20,7 +20,7 @@ export interface ServiceReviewItem {
   };
 }
 
-export type ServiceDetailReviewsDensity = 'default' | 'compact';
+export type ServiceDetailReviewsDensity = 'default' | 'compact' | 'drawer';
 
 interface ServiceDetailReviewsSectionProps {
   reviews: ServiceReviewItem[];
@@ -34,7 +34,7 @@ interface ServiceDetailReviewsSectionProps {
   className?: string;
 }
 
-const TRUNCATE_CHARS = { default: 280, compact: 160 } as const;
+const TRUNCATE_CHARS = { default: 280, compact: 160, drawer: 280 } as const;
 
 export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionProps> = ({
   reviews,
@@ -48,6 +48,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
   className = '',
 }) => {
   const isCompact = density === 'compact';
+  const isDrawer = density === 'drawer';
 
   const sortedReviews = useMemo(
     () =>
@@ -73,7 +74,9 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
           className={
             isCompact
               ? 'mb-2 flex flex-wrap items-baseline justify-between gap-2'
-              : 'mb-3 flex flex-wrap items-baseline justify-between gap-3 md:mb-4'
+              : isDrawer
+                ? 'mb-4 flex flex-wrap items-baseline justify-between gap-3'
+                : 'mb-3 flex flex-wrap items-baseline justify-between gap-3 md:mb-4'
           }
         >
           <h2 id={headingId} className="hp-section-title">
@@ -96,7 +99,9 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
           className={
             isCompact
               ? 'border-l-2 border-[#0066CC] py-0 pl-2.5 text-xs text-[#6a6a6a]'
-              : 'border-l-2 border-[#0066CC] py-0 pl-3 text-sm text-[#6a6a6a]'
+              : isDrawer
+                ? 'border-l-2 border-[#0066CC] py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
+                : 'border-l-2 border-[#0066CC] py-0 pl-3 text-sm text-[#6a6a6a]'
           }
         >
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
@@ -106,7 +111,9 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
           className={
             isCompact
               ? 'divide-y divide-[#ebebeb]'
-              : 'divide-y divide-[#e8e8e8] border-y border-[#e8e8e8]'
+              : isDrawer
+                ? 'divide-y divide-[#e8e8e8]'
+                : 'divide-y divide-[#e8e8e8] border-y border-[#e8e8e8]'
           }
         >
           {sortedReviews.map((review, idx) => {
@@ -118,7 +125,11 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
             const rating = getReviewStarRating(review);
             const clientName = review.client?.name?.trim() || 'Cliente';
             const clientInitial = clientName.charAt(0).toUpperCase();
-            const itemPy = isCompact ? 'py-3.5 first:pt-0 last:pb-0' : 'py-5 first:pt-5';
+            const itemPy = isCompact
+              ? 'py-3.5 first:pt-0 last:pb-0'
+              : isDrawer
+                ? 'py-5 first:pt-5 last:pb-2'
+                : 'py-5 first:pt-5';
 
             return (
               <li key={key} className={itemPy}>
@@ -126,20 +137,24 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                   className={
                     isCompact
                       ? 'mb-2 flex items-start gap-2.5'
-                      : 'mb-2.5 flex items-start gap-3'
+                      : isDrawer
+                        ? 'mb-3 flex items-start gap-3'
+                        : 'mb-2.5 flex items-start gap-3'
                   }
                 >
                   <Avatar
                     className={
                       isCompact
                         ? 'h-8 w-8 shrink-0 rounded-full border border-[#ebebeb]'
-                        : 'h-9 w-9 shrink-0 rounded-full border border-[#ebebeb]'
+                        : isDrawer
+                          ? 'h-11 w-11 shrink-0 rounded-full border border-[#ebebeb]'
+                          : 'h-9 w-9 shrink-0 rounded-full border border-[#ebebeb]'
                     }
                   >
                     <AvatarImage src={review.client?.profilePictureUrl} alt="" />
                     <AvatarFallback
                       className={`rounded-full bg-[#f0f0f0] font-semibold text-[#1c1c1c] ${
-                        isCompact ? 'text-xs' : 'text-sm'
+                        isCompact ? 'text-xs' : isDrawer ? 'text-base' : 'text-sm'
                       }`}
                     >
                       {clientInitial}
@@ -151,28 +166,36 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                         className={
                           isCompact
                             ? 'truncate text-xs font-semibold text-[#1c1c1c]'
-                            : 'text-sm font-semibold text-[#1c1c1c]'
+                            : isDrawer
+                              ? 'truncate text-base font-semibold text-[#1c1c1c]'
+                              : 'text-sm font-semibold text-[#1c1c1c]'
                         }
                       >
                         {clientName}
                       </span>
                       {formattedDate ? (
-                        <time className="shrink-0 text-[11px] text-[#6a6a6a]">{formattedDate}</time>
+                        <time className={`shrink-0 text-[#6a6a6a] ${isDrawer ? 'text-sm' : 'text-[11px]'}`}>
+                          {formattedDate}
+                        </time>
                       ) : null}
                     </div>
                     <ServiceDetailReviewStars
                       rating={rating}
-                      size={isCompact ? 'sm' : 'md'}
-                      className="mt-1"
+                      size={isCompact ? 'sm' : isDrawer ? 'lg' : 'md'}
+                      className={isDrawer ? 'mt-1.5' : 'mt-1'}
                     />
                   </div>
                 </div>
                 {reviewText ? (
                   <>
                     <p
-                      className={`leading-snug text-[#6a6a6a] ${
-                        isCompact ? 'text-xs leading-5' : 'text-sm'
-                      } ${!isExpanded && shouldTruncate ? (isCompact ? 'line-clamp-2' : 'line-clamp-3') : ''}`}
+                      className={`text-[#444] ${
+                        isCompact
+                          ? 'text-xs leading-5'
+                          : isDrawer
+                            ? 'text-[15px] leading-relaxed'
+                            : 'text-sm leading-snug'
+                      } ${!isExpanded && shouldTruncate ? (isCompact ? 'line-clamp-2' : isDrawer ? 'line-clamp-4' : 'line-clamp-3') : ''}`}
                     >
                       {reviewText}
                     </p>
@@ -183,7 +206,9 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                         className={
                           isCompact
                             ? 'mt-1 text-xs font-medium text-[#1c1c1c] underline-offset-2 hover:underline'
-                            : 'mt-2 text-sm font-medium text-[#0066CC] hover:underline'
+                            : isDrawer
+                              ? 'mt-2.5 text-[15px] font-medium text-[#0066CC] hover:underline'
+                              : 'mt-2 text-sm font-medium text-[#0066CC] hover:underline'
                         }
                       >
                         {isExpanded ? 'Menos' : 'Más'}
@@ -212,6 +237,20 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                         key={imgIdx}
                         type="button"
                         className="h-10 w-10 overflow-hidden rounded-md border border-[#ebebeb] bg-[#f5f5f5]"
+                        onClick={() => onOpenReviewImage?.(key, imgIdx)}
+                      >
+                        <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {isDrawer && review.imageUrls && review.imageUrls.length > 0 ? (
+                  <div className="mt-3 flex gap-2">
+                    {review.imageUrls.slice(0, 3).map((img, imgIdx) => (
+                      <button
+                        key={imgIdx}
+                        type="button"
+                        className="h-14 w-14 overflow-hidden rounded-md border border-[#ebebeb] bg-[#f5f5f5]"
                         onClick={() => onOpenReviewImage?.(key, imgIdx)}
                       >
                         <img src={img} alt="" className="h-full w-full object-cover" loading="lazy" />

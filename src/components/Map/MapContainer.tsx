@@ -12,6 +12,7 @@ interface MapContainerProps {
   initialZoom?: number;
   onServiceSelect?: (service: Service) => void;
   selectedServiceId?: number | null;
+  hoveredServiceId?: number | null;
   isMobile?: boolean;
   className?: string;
   style?: React.CSSProperties;
@@ -42,6 +43,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   initialZoom = 5, // Zoom 5 para ver toda España
   onServiceSelect,
   selectedServiceId,
+  hoveredServiceId,
   isMobile = false,
   className,
   style,
@@ -284,6 +286,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('load', () => {
+      // ✅ En móvil el drawer cubre la mitad inferior. Aplicamos un padding bottom
+      //    igual a esa altura para que el centro geográfico (la ubicación del
+      //    usuario) quede visualmente en la mitad superior — la zona NO cubierta.
+      //    MapLibre re-encaja la cámara para que la región "útil" del mapa
+      //    (viewport menos padding) muestre el mismo área.
+      if (isMobile && typeof window !== 'undefined') {
+        const drawerHeightPx = Math.round(window.innerHeight * 0.50);
+        map.setPadding({ top: 0, bottom: drawerHeightPx, left: 0, right: 0 });
+      }
       mapInstanceRef.current = map;
       setIsMapLoaded(true);
       setMapInstance(map);
@@ -341,6 +352,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           bounds={cameraBounds}
           zoom={cameraZoom}
           selectedServiceId={selectedServiceId}
+          hoveredServiceId={hoveredServiceId}
           onServiceClick={onServiceSelect}
           clusterRadius={clusterRadius}
           maxZoom={maxClusterZoom}

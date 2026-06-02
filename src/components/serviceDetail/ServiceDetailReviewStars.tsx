@@ -3,13 +3,14 @@ import { Star } from 'lucide-react';
 
 interface ServiceDetailReviewStarsProps {
   rating: number;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 const SIZE_CLASS = {
   sm: 'h-3 w-3',
   md: 'h-3.5 w-3.5',
+  lg: 'h-4 w-4',
 } as const;
 
 export const ServiceDetailReviewStars: React.FC<ServiceDetailReviewStarsProps> = ({

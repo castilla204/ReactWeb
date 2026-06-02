@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
@@ -37,18 +37,31 @@ import {
     MAP_CARD_CHIP_CLASS,
     MAP_CARD_EYEBROW_CLASS,
     MAP_CARD_HOOK_CLASS,
+    MAP_CARD_IMAGE_CLASS,
+    MAP_CARD_IMAGE_TOP_CLASS,
     MAP_CARD_NAME_CLASS,
     MAP_CARD_PRICE_CLASS,
     MAP_CARD_PRICE_SUFFIX_CLASS,
     MAP_CARD_BADGE_CLASS,
+    MAP_CARD_DESKTOP_SHADOW,
+    MAP_CARD_DESKTOP_SHADOW_ACTIVE,
+    MAP_CARD_DESKTOP_SHADOW_HOVER,
+    MAP_CARD_DESKTOP_SHADOW_HOVERED,
     MAP_DESKTOP_GRID_CLASS,
-    MAP_DESKTOP_HEADER_CLASS,
+    MAP_DESKTOP_LIST_CELL_CLASS,
     MAP_DESKTOP_LIST_CLASS,
+    MAP_DESKTOP_MAP_INNER_CLASS,
+    MAP_DESKTOP_MAP_WRAP_CLASS,
+    MAP_DESKTOP_PAGE_LEAD_CLASS,
+    MAP_DESKTOP_PAGE_TITLE_CLASS,
+    MAP_DESKTOP_SCROLL_CLASS,
+    MAP_DESKTOP_SPLIT_CLASS,
+    MAP_DESKTOP_UNIFIED_HEADER_CLASS,
+    MAP_META_CHIP_CLASS,
+    MAP_META_CHIP_MUTED_CLASS,
     MAP_MOBILE_DRAWER_HEADER_CLASS,
     MAP_MOBILE_LIST_CLASS,
-    MAP_PAGE_SUBTITLE_CLASS,
     MAP_PAGE_SUBTITLE_MOBILE_CLASS,
-    MAP_PAGE_TITLE_CLASS,
     MAP_PAGE_TITLE_MOBILE_CLASS,
     SD_MOBILE_GUTTER_CLASS,
 } from '../constants/homepageTypography';
@@ -60,6 +73,7 @@ import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 interface MapServiceCardProps {
     service: any;
     isSelected: boolean;
+    isHovered?: boolean;
     onSelect: (serviceId: number) => void;
     initialIsFavorite?: boolean; // Estado inicial desde check-multiple
 }
@@ -78,7 +92,7 @@ const getCardHook = (service: any): string => {
     return 'Verificado · Reserva con confianza';
 };
 
-const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect, initialIsFavorite = false }) => {
+const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelected, isHovered = false, onSelect, initialIsFavorite = false }) => {
     const [imageIndex, setImageIndex] = useState(0);
     const { isAuthenticated } = useAuth();
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
@@ -235,12 +249,14 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 <div
                     className={`relative w-full rounded-2xl bg-white transition-all duration-200 ${
                         isSelected
-                            ? 'ring-2 ring-[#0066CC] shadow-md'
-                            : 'border border-[#ebebeb] hover:border-[#d8d8d8] hover:shadow-md hover:-translate-y-0.5'
+                            ? `ring-2 ring-[#0066CC] ${MAP_CARD_DESKTOP_SHADOW_ACTIVE}`
+                            : isHovered
+                              ? `${MAP_CARD_DESKTOP_SHADOW_HOVERED} ring-1 ring-[#0066CC]/15`
+                              : `${MAP_CARD_DESKTOP_SHADOW} ${MAP_CARD_DESKTOP_SHADOW_HOVER}`
                     }`}
                 >
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
-                    <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3', borderRadius: '16px 16px 0 0', width: '100%' }}>
+                    <div className={MAP_CARD_IMAGE_CLASS} style={{ borderRadius: '16px 16px 0 0' }}>
                         {imageUrls.length > 0 ? (
                             <>
                                 <div className="relative w-full h-full">
@@ -362,9 +378,9 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     <div
                                         className="absolute left-3 z-10"
                                     style={{
-                                        width: '52px',
-                                        height: '52px',
-                                        bottom: '12px',
+                                        width: '44px',
+                                        height: '44px',
+                                        bottom: '10px',
                                             borderRadius: '50%',
                                             border: '2px solid white',
                                             overflow: 'hidden',
@@ -434,7 +450,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                         : 'border border-[#ebebeb] shadow-sm'
                 }`}
             >
-                <div className="relative w-full overflow-hidden rounded-t-2xl" style={{ aspectRatio: '4/3' }}>
+                <div className={MAP_CARD_IMAGE_TOP_CLASS}>
                     {imageUrls.length > 0 ? (
                         <>
                             {/* Imagen principal */}
@@ -531,8 +547,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 <div
                                     className="absolute left-3 z-10"
                                     style={{
-                                        width: '48px',
-                                        height: '48px',
+                                        width: '40px',
+                                        height: '40px',
                                         bottom: '8px',
                                         borderRadius: '50%',
                                         border: '2px solid white',
@@ -598,6 +614,7 @@ const MapServiceCard = memo(
     (prev, next) =>
         prev.service === next.service &&
         prev.isSelected === next.isSelected &&
+        prev.isHovered === next.isHovered &&
         prev.initialIsFavorite === next.initialIsFavorite &&
         prev.onSelect === next.onSelect,
 );
@@ -654,7 +671,7 @@ function MapPanelHeader({
     return (
         <>
             {count > 0 && (
-                <p className="hp-eyebrow mb-2">
+                <p className="hp-eyebrow mb-1">
                     {count} {count === 1 ? 'opción en el mapa' : 'opciones en el mapa'}
                 </p>
             )}
@@ -678,6 +695,57 @@ function MapMobileDrawerHeader({ count }: { count: number }) {
                 subtitle="Compara valoraciones, informe y precio."
             />
         </div>
+    );
+}
+
+function MapDesktopPageHeader({
+    count,
+    hasLocation,
+    locationLabel,
+    loading,
+    rangeKm = 25,
+}: {
+    count: number;
+    hasLocation: boolean;
+    locationLabel?: string;
+    loading?: boolean;
+    rangeKm?: number;
+}) {
+    if (!hasLocation) {
+        return (
+            <header className={MAP_DESKTOP_UNIFIED_HEADER_CLASS}>
+                <h1 className={MAP_DESKTOP_PAGE_TITLE_CLASS}>Marca dónde buscas</h1>
+                <p className={MAP_DESKTOP_PAGE_LEAD_CLASS}>
+                    Selecciona una zona en el mapa para ver expertos con cobertura cerca de ti.
+                </p>
+            </header>
+        );
+    }
+
+    return (
+        <header className={MAP_DESKTOP_UNIFIED_HEADER_CLASS}>
+            <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+                {loading ? (
+                    <span className={MAP_META_CHIP_MUTED_CLASS}>Actualizando resultados…</span>
+                ) : (
+                    <span className={MAP_META_CHIP_CLASS}>
+                        {count > 0
+                            ? `${count} ${count === 1 ? 'experto' : 'expertos'} en esta vista`
+                            : 'Sin expertos en esta vista'}
+                    </span>
+                )}
+                {locationLabel ? (
+                    <span className={MAP_META_CHIP_MUTED_CLASS}>{locationLabel}</span>
+                ) : null}
+                <span className={MAP_META_CHIP_MUTED_CLASS}>~{rangeKm} km</span>
+            </div>
+            <h1 className={MAP_DESKTOP_PAGE_TITLE_CLASS}>Elige antes de comprar</h1>
+            <p className={MAP_DESKTOP_PAGE_LEAD_CLASS}>
+                Compara valoraciones, informe y precio con reserva segura. La lista y el mapa
+                muestran la misma cobertura: cada precio es un experto en esa zona. Desplaza el
+                mapa para explorar otras áreas.
+            </p>
+        </header>
     );
 }
 
@@ -711,22 +779,22 @@ function MapServiceCardInfo({
     return (
         <div className={MAP_CARD_BODY_CLASS}>
             <p className={`${MAP_CARD_EYEBROW_CLASS} mb-1`}>{serviceTypeLabel}</p>
-            <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="mb-1.5 flex items-start justify-between gap-2">
                 <h3 className={MAP_CARD_NAME_CLASS}>{expertName}</h3>
                 {averageRating > 0 && (
-                    <div className="flex shrink-0 items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-0.5">
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-sm font-medium text-[#1c1c1c]">
+                    <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#f5f5f5] px-1.5 py-0.5">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-medium text-[#1c1c1c]">
                             {averageRating.toFixed(1).replace('.', ',')}
                         </span>
                         {totalReviews > 0 && (
-                            <span className="text-xs font-normal text-[#6a6a6a]">({totalReviews})</span>
+                            <span className="text-[11px] font-normal text-[#6a6a6a]">({totalReviews})</span>
                         )}
                     </div>
                 )}
             </div>
-            <p className={`${MAP_CARD_HOOK_CLASS} mb-2.5`}>{cardHook}</p>
-            <div className="mb-3 flex flex-wrap gap-2">
+            <p className={`${MAP_CARD_HOOK_CLASS} mb-1.5`}>{cardHook}</p>
+            <div className="mb-2 flex flex-wrap gap-1.5">
                 {cityLabel && (
                     <span className={MAP_CARD_CHIP_CLASS}>
                         <MapPin className="h-3 w-3 shrink-0" />
@@ -743,7 +811,7 @@ function MapServiceCardInfo({
                     </span>
                 )}
             </div>
-            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-t border-[#ebebeb] pt-2.5">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
                 <span className={MAP_CARD_PRICE_CLASS}>{price}</span>
                 {priceWasConverted && priceSourceFormatted && (
                     <span className="text-xs font-normal text-[#6a6a6a]">{priceSourceFormatted}</span>
@@ -890,6 +958,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // ✅ INFINITE SCROLL: Refs para los sentinels
     const sentinelRefMobile = useRef<HTMLDivElement>(null);
     const sentinelRefDesktop = useRef<HTMLDivElement>(null);
+    const sentinelRefSidebar = useRef<HTMLDivElement>(null);
+    const [hoveredServiceId, setHoveredServiceId] = useState<number | null>(null);
     // ✅ Ref para el elemento del servicio seleccionado en móvil (para scroll automático)
     const selectedServiceRef = useRef<HTMLDivElement | null>(null);
     // ✅ Ref para evitar múltiples aperturas del drawer
@@ -980,7 +1050,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             // ✅ En móvil solo refetch cuando el drawer está desplegado.
             //    Antes era `isMobileDevice || ...` (siempre true en móvil) → refetch
             //    durante el drag del drawer cuando el mapa se movía bajo el dedo.
-            (isMobileDevice ? isMobileDrawerDeployed : (isDrawerOpen || isDrawerVisible)),
+            (isMobileDevice ? isMobileDrawerDeployed : true),
     });
    
     // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
@@ -1117,7 +1187,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     
     // ✅ INFINITE SCROLL: IntersectionObserver para cargar más servicios
     useEffect(() => {
-        const sentinels = [sentinelRefMobile.current, sentinelRefDesktop.current].filter(Boolean) as HTMLDivElement[];
+        const sentinels = [
+            sentinelRefMobile.current,
+            sentinelRefDesktop.current,
+            sentinelRefSidebar.current,
+        ].filter(Boolean) as HTMLDivElement[];
         if (sentinels.length === 0 || !hasNextPage || isFetchingNextPage) return;
 
         const observer = new IntersectionObserver(
@@ -1538,41 +1612,33 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="fixed inset-0 z-[100] flex h-[100dvh] flex-col overflow-hidden bg-white lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0">
+        <div className="fixed inset-0 z-[100] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white lg:relative lg:inset-auto lg:z-auto lg:h-[100dvh] lg:max-h-[100dvh] lg:min-h-0">
             <HomepageDesktopTopBar variant="map" onBack={() => navigate('/')} />
 
-            {/* Main Layout - Split View */}
-            <div className="flex min-h-0 w-full flex-1 overflow-hidden">
-                {/* Left Side - Panel de resultados (Desktop) */}
-                <div className="hidden lg:flex flex-col bg-white flex-shrink-0" style={{ 
-                    width: width >= 1280 ? '900px' : '600px', 
-                    minWidth: '600px', 
-                    maxWidth: '900px' 
-                }}>
-                    <div className={MAP_DESKTOP_HEADER_CLASS}>
-                        <MapPanelHeader
-                            count={services.length}
-                            hasLocation={!!(formData.latitude && formData.longitude)}
-                            titleClassName={MAP_PAGE_TITLE_CLASS}
-                            subtitleClassName={MAP_PAGE_SUBTITLE_CLASS}
-                        />
-                    </div>
-                    
-                    {/* Lista de servicios */}
-                    <div 
-                        ref={sidebarRef} 
-                        className="flex-1 overflow-y-auto"
+            {/* Main Layout — cabecera unificada + lista | mapa */}
+            <div className={MAP_DESKTOP_SPLIT_CLASS}>
+                {!isMobileDevice && (
+                    <MapDesktopPageHeader
+                        count={services.length}
+                        hasLocation={!!(formData.latitude && formData.longitude)}
+                        locationLabel={
+                            formData.locationName ||
+                            searchAddress ||
+                            getCountryName(selectedCountry) ||
+                            undefined
+                        }
+                        loading={mapLoading}
+                        rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
+                    />
+                )}
+
+                {/* Cards con scroll */}
+                <div className={MAP_DESKTOP_LIST_CELL_CLASS}>
+                    <div
+                        ref={sidebarRef}
+                        className={MAP_DESKTOP_SCROLL_CLASS}
                         data-sidebar-scroll
-                        style={{
-                            scrollbarWidth: 'none', /* Firefox */
-                            msOverflowStyle: 'none', /* IE and Edge */
-                        }}
                     >
-                        <style>{`
-                            [data-sidebar-scroll]::-webkit-scrollbar {
-                                display: none; /* Chrome, Safari, Opera */
-                            }
-                        `}</style>
                         {formData.latitude && formData.longitude && (
                             <div className={MAP_DESKTOP_LIST_CLASS}>
                             {reorderedServices.length > 0 ? (
@@ -1581,37 +1647,62 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     {reorderedServices.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
+                                        const isHovered = hoveredServiceId === serviceId;
                                         return (
-                                            <div key={serviceId} style={{ width: '100%' }}>
+                                            <div
+                                                key={serviceId}
+                                                className="w-full"
+                                                onMouseEnter={() => setHoveredServiceId(serviceId)}
+                                                onMouseLeave={() => setHoveredServiceId(null)}
+                                            >
                                                 <MapServiceCard
                                                     service={service}
                                                     isSelected={isSelected}
+                                                    isHovered={isHovered}
                                                     onSelect={handleServiceSelect}
                                                     initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                                 />
                                             </div>
                                         );
                                     })}
+                                    {hasNextPage && (
+                                        <div
+                                            ref={sentinelRefSidebar}
+                                            className="col-span-full flex h-16 items-center justify-center"
+                                        >
+                                            {isFetchingNextPage && (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
+                                                    <p className="font-display text-sm text-[#6a6a6a]">Cargando más opciones…</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {!hasNextPage && reorderedServices.length > 0 && (
+                                        <p className="col-span-full py-3 text-center font-display text-sm text-[#6a6a6a]">
+                                            Has visto todas las opciones en esta zona
+                                        </p>
+                                    )}
                                     </div>
                                 </>
                             ) : mapLoading ? (
-                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-2">
+                                    <div className={MAP_DESKTOP_GRID_CLASS}>
                                         {[1, 2, 3, 4].map((i) => (
                                             <div key={i} className="h-44 animate-pulse rounded-2xl bg-gray-100" />
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-                                        <div className="flex flex-col items-center gap-4 max-w-sm">
-                                            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center">
-                                                <MapPin className="w-10 h-10 text-muted-foreground/50" />
+                                    <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
+                                        <div className="flex max-w-sm flex-col items-center gap-4">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#0066CC]/10">
+                                                <MapPin className="h-8 w-8 text-[#0066CC]" />
                                             </div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-lg font-semibold text-foreground">
-                                                    No hay servicios disponibles
+                                            <div className="space-y-2 font-display">
+                                                <h3 className="text-lg font-semibold text-[#1c1c1c]">
+                                                    Sin opciones aquí
                                                 </h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    No encontramos expertos en esta ubicación. Intenta seleccionar otra ubicación en el mapa.
+                                                <p className="text-sm leading-relaxed text-[#6a6a6a]">
+                                                    Mueve el mapa o elige otra zona para ver más expertos.
                                                 </p>
                                             </div>
                                         </div>
@@ -1626,13 +1717,40 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </CardContent>
                             </Card>
                         )}
-                </div>
-                
-                    {/* Botón de continuar eliminado - ahora se avanza automáticamente al seleccionar un servicio */}
                     </div>
-                    
+                </div>
+
+                {/* Fila 2 col 2: mapa */}
+                {!isMobileDevice && (
+                    <div className={MAP_DESKTOP_MAP_WRAP_CLASS}>
+                        <div className={MAP_DESKTOP_MAP_INNER_CLASS}>
+                            <MapContainer
+                                categoryId={selectedCategory}
+                                serviceTypeId={serviceTypeId}
+                                initialCenter={selectedLocation || (() => {
+                                    const countryCoords = getCountryCoordinates(selectedCountry);
+                                    return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
+                                })()}
+                                initialZoom={getMapOverviewZoom(selectedCountry)}
+                                recenterMode="pan-only"
+                                onServiceSelect={(service: Service) => {
+                                    handleServiceSelect(service.id);
+                                }}
+                                selectedServiceId={selectedService}
+                                hoveredServiceId={hoveredServiceId}
+                                isMobile={false}
+                                style={{ width: '100%', height: '100%' }}
+                                onMapLoad={onMapReady}
+                                onServicesCountChange={setMapServicesCount}
+                                onServicesChange={setMapServices}
+                                onLoadingChange={handleMapLoadingChange}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {/* Mobile: Map View */}
-                <div className="lg:hidden flex-1 relative w-full flex flex-col">
+                <div className="relative flex min-h-0 w-full flex-1 flex-col lg:hidden">
                         {/* ✅ Loading overlay - Reemplazado por skeleton en la transición */}
                         {/* El skeleton se muestra desde AirbnbSearchBar y SearchCreationPage */}
                         {/* Header móvil — extremos + scrim para legibilidad sobre el mapa */}
@@ -1661,36 +1779,51 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
                                 </button>
 
-                                {isMobileDevice && selectedCategory && serviceTypeId && (
+                                <div className="flex items-center gap-1.5">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            const searchParams = {
-                                                serviceTypeId,
-                                                categoryId: selectedCategory,
-                                                adUrl: initialUserSearch || '',
-                                            };
-                                            sessionStorage.setItem('returnToSearch', JSON.stringify(searchParams));
-                                            navigate('/');
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            navigate('/como-funciona');
                                         }}
-                                        aria-label="Cambiar búsqueda"
                                         className={hpIconButtonClass}
+                                        aria-label="Cómo funciona Inspecciono"
                                     >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 32 32"
-                                            aria-hidden="true"
-                                            role="presentation"
-                                            focusable="false"
-                                            className="block fill-none h-4 w-4 stroke-current stroke-[2.5] overflow-visible text-gray-900"
-                                        >
-                                            <path
-                                                fill="none"
-                                                d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
-                                            />
-                                        </svg>
+                                        <HelpCircle className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
                                     </button>
-                                )}
+
+                                    {isMobileDevice && selectedCategory && serviceTypeId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const searchParams = {
+                                                    serviceTypeId,
+                                                    categoryId: selectedCategory,
+                                                    adUrl: initialUserSearch || '',
+                                                };
+                                                sessionStorage.setItem('returnToSearch', JSON.stringify(searchParams));
+                                                navigate('/');
+                                            }}
+                                            aria-label="Cambiar búsqueda"
+                                            className={hpIconButtonClass}
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 32 32"
+                                                aria-hidden="true"
+                                                role="presentation"
+                                                focusable="false"
+                                                className="block fill-none h-4 w-4 stroke-current stroke-[2.5] overflow-visible text-gray-900"
+                                            >
+                                                <path
+                                                    fill="none"
+                                                    d="M7 16H3m26 0H15M29 6h-4m-8 0H3m26 20h-4M7 16a4 4 0 1 0 8 0 4 4 0 0 0-8 0zM17 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 20a4 4 0 1 0 8 0 4 4 0 0 0-8 0zm0 0H3"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         
@@ -1765,57 +1898,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     )}
                                 </div>
                                 )}
-                        
                 </div>
-                
-                {/* Desktop: Right Side - Map */}
-                {!isMobileDevice && (
-                <div className="relative hidden min-h-0 min-w-[400px] flex-1 bg-white p-5 pl-5 pr-6 pb-6 lg:flex xl:p-6 xl:pr-8 xl:pb-8">
-                        {false ? (
-                        <div className="h-full w-full flex items-center justify-center bg-gray-100">
-                            <div className="text-red-500">Error al cargar el mapa</div>
-                            </div>
-                        ) : (
-                            <>
-                            {/* Map ocupa el espacio restante bajo la topbar homepage */}
-                            <div
-                                className="relative h-full min-h-0 w-full overflow-hidden"
-                                style={{
-                                    borderRadius: '32px',
-                                    boxShadow: '0 0 0 24px white',
-                                }}
-                            >
-                                <MapContainer
-                                    categoryId={selectedCategory}
-                                    serviceTypeId={serviceTypeId}
-                                    initialCenter={selectedLocation || (() => {
-                                        const countryCoords = getCountryCoordinates(selectedCountry);
-                                        return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
-                                    })()}
-                                    initialZoom={getMapOverviewZoom(selectedCountry)}
-                                    recenterMode="pan-only"
-                                    onServiceSelect={(service: Service) => {
-                                        // ✅ Convertir Service a formato esperado por handleServiceSelect
-                                        // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
-                                        const serviceId = service.id;
-                                        handleServiceSelect(serviceId);
-                                    }}
-                                    selectedServiceId={selectedService}
-                                    isMobile={false}
-                                    style={{ width: '100%', height: '100%' }}
-                                    onMapLoad={onMapReady}
-                                    onServicesCountChange={setMapServicesCount}
-                                    onServicesChange={setMapServices}
-                                    onLoadingChange={handleMapLoadingChange}
-                                />
-                                
-                                {/* Floating Card Desktop - OCULTA EN PC */}
-                            </div>
-                            </>
-                        )}
-                    </div>
-                )}
-                </div>
+            </div>
                 
                 
                 {/* CustomBottomSheet con Framer Motion en móvil, ResponsiveModal (Dialog) en PC */}
@@ -1859,7 +1943,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         {/* Contenido con scroll */}
                         <div ref={drawerContentRef} className={MAP_MOBILE_LIST_CLASS}>
                             {services.length > 0 ? (
-                                <div className="space-y-5">
+                                <div className="space-y-4">
                                     {services.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
