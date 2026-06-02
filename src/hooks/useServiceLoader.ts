@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { API_CONFIG } from '../config/api';
 
 export interface Service {
@@ -46,6 +46,7 @@ export function useServiceLoader(
   const [error, setError] = useState<string | null>(null);
   
   // Referencias para cancelación y caché
+  const inFlightCountRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
   const lastRequestRef = useRef<string>('');
@@ -54,6 +55,26 @@ export function useServiceLoader(
   
   const CACHE_TTL = options?.cacheTTL || 5 * 60 * 1000; // 5 minutos por defecto
   const MAX_CACHE_SIZE = 20; // Máximo de entradas en caché
+  const enabled = options?.enabled !== false;
+  const limit = options?.limit;
+  const isDev = import.meta.env.DEV;
+
+  const setLoadingSafe = useCallback((value: boolean) => {
+    if (value) {
+      inFlightCountRef.current += 1;
+      setLoading(true);
+      return;
+    }
+    inFlightCountRef.current = Math.max(0, inFlightCountRef.current - 1);
+    if (inFlightCountRef.current === 0) {
+      setLoading(false);
+    }
+  }, []);
+
+  const viewportKey = useMemo(() => {
+    if (!viewport) return null;
+    return `${viewport.northeast.lat.toFixed(4)}-${viewport.northeast.lng.toFixed(4)}-${viewport.southwest.lat.toFixed(4)}-${viewport.southwest.lng.toFixed(4)}-${viewport.zoom.toFixed(2)}`;
+  }, [viewport]);
 
   /**
    * Determina el límite máximo de resultados según el nivel de zoom
@@ -76,7 +97,7 @@ export function useServiceLoader(
     catId: number,
     svcTypeId: number
   ): string => {
-    return `${catId}-${svcTypeId}-${viewport.northeast.lat.toFixed(4)}-${viewport.northeast.lng.toFixed(4)}-${viewport.southwest.lat.toFixed(4)}-${viewport.southwest.lng.toFixed(4)}-${viewport.zoom}`;
+    return `${catId}-${svcTypeId}-${viewport.northeast.lat.toFixed(4)}-${viewport.northeast.lng.toFixed(4)}-${viewport.southwest.lat.toFixed(4)}-${viewport.southwest.lng.toFixed(4)}-${viewport.zoom.toFixed(2)}`;
   }, []);
 
   /**
@@ -139,13 +160,15 @@ export function useServiceLoader(
       // Validar parámetros requeridos
       if (!categoryId || !serviceTypeId) {
         setServices([]);
+        inFlightCountRef.current = 0;
         setLoading(false);
         return;
       }
 
       // Validar que el hook esté habilitado
-      if (options?.enabled === false) {
+      if (!enabled) {
         setServices([]);
+        inFlightCountRef.current = 0;
         setLoading(false);
         return;
       }
@@ -153,6 +176,7 @@ export function useServiceLoader(
       // Validar viewport
       if (!validateViewport(viewportData)) {
         setServices([]);
+        inFlightCountRef.current = 0;
         setLoading(false);
         return;
       }
@@ -178,8 +202,11 @@ export function useServiceLoader(
       // Verificar caché
       const cached = cacheRef.current.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log(`✅ Usando caché (${cached.services.length} servicios):`, cacheKey);
+        if (isDev) {
+          console.log(`✅ Usando caché (${cached.services.length} servicios):`, cacheKey);
+        }
         setServices(cached.services);
+        inFlightCountRef.current = 0;
         setLoading(false);
         return;
       }
@@ -189,21 +216,20 @@ export function useServiceLoader(
       const signal = abortControllerRef.current.signal;
       requestStartTimeRef.current = Date.now(); // ✅ Registrar tiempo de inicio
 
-      // Iniciar carga
-      console.log('🔄 Iniciando carga de servicios:', {
-        bounds: {
-          ne: viewportData.northeast,
-          sw: viewportData.southwest
-        },
-        zoom: viewportData.zoom,
-        cacheKey
-      });
+      if (isDev) {
+        console.log('🔄 Iniciando carga de servicios:', {
+          bounds: { ne: viewportData.northeast, sw: viewportData.southwest },
+          zoom: viewportData.zoom,
+          cacheKey,
+        });
+      }
 
-      setLoading(true);
+      setLoadingSafe(true);
       setError(null);
 
       try {
-        const limit = options?.limit || getMaxResults(viewportData.zoom);
+        const normalizedZoom = Math.max(0, Math.round(viewportData.zoom));
+        const maxResults = limit || getMaxResults(normalizedZoom);
         
         // Construir parámetros de la query
         const params = new URLSearchParams({
@@ -213,8 +239,8 @@ export function useServiceLoader(
           northeastLng: viewportData.northeast.lng.toString(),
           southwestLat: viewportData.southwest.lat.toString(),
           southwestLng: viewportData.southwest.lng.toString(),
-          zoom: viewportData.zoom.toString(),
-          limit: limit.toString(),
+          zoom: normalizedZoom.toString(),
+          limit: maxResults.toString(),
         });
 
         const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.mapExperts}?${params.toString()}`;
@@ -243,12 +269,18 @@ export function useServiceLoader(
         // Mapear y deduplicar servicios
         let mappedServices: Service[] = [];
 
-        if (data.services && Array.isArray(data.services)) {
-          mappedServices = data.services
+        const servicesPayload = Array.isArray(data?.services)
+          ? data.services
+          : (Array.isArray(data?.Services) ? data.Services : null);
+
+        if (servicesPayload) {
+          mappedServices = servicesPayload
             .map((service: any) => {
-              const expert = service.expert || service.Expert || {};
-              const lat = parseFloat(expert.latitude || expert.Latitude || '0');
-              const lng = parseFloat(expert.longitude || expert.Longitude || '0');
+              const expert = service.expert || service.Expert || service.expertProfile || service.ExpertProfile || {};
+              const rawLat = expert.latitude ?? expert.Latitude;
+              const rawLng = expert.longitude ?? expert.Longitude;
+              const lat = rawLat !== undefined && rawLat !== null ? parseFloat(String(rawLat)) : NaN;
+              const lng = rawLng !== undefined && rawLng !== null ? parseFloat(String(rawLng)) : NaN;
 
               // Validar coordenadas
               if (isNaN(lat) || isNaN(lng) || !isFinite(lat) || !isFinite(lng)) {
@@ -270,20 +302,22 @@ export function useServiceLoader(
           const experts = data.Experts || data.experts || [];
           mappedServices = experts
             .map((expert: any) => {
-              const lat = parseFloat(expert.latitude);
-              const lng = parseFloat(expert.longitude);
+              const rawLat = expert.latitude ?? expert.Latitude;
+              const rawLng = expert.longitude ?? expert.Longitude;
+              const lat = rawLat !== undefined && rawLat !== null ? parseFloat(String(rawLat)) : NaN;
+              const lng = rawLng !== undefined && rawLng !== null ? parseFloat(String(rawLng)) : NaN;
 
               if (isNaN(lat) || isNaN(lng) || !isFinite(lat) || !isFinite(lng)) {
                 return null;
               }
 
               return {
-                id: expert.id,
+                id: expert.id || expert.Id,
                 lat,
                 lng,
-                name: expert.name,
-                price: expert.price,
-                type: expert.serviceTypeName,
+                name: expert.name || expert.Name,
+                price: expert.price || expert.Price || 0,
+                type: expert.serviceTypeName || expert.ServiceTypeName,
               };
             })
             .filter((s): s is Service => s !== null);
@@ -299,7 +333,9 @@ export function useServiceLoader(
         });
         const uniqueServices = Array.from(uniqueMap.values());
 
-        console.log(`✅ Servicios cargados: ${uniqueServices.length} únicos (de ${mappedServices.length} recibidos)`);
+        if (isDev) {
+          console.log(`✅ Servicios cargados: ${uniqueServices.length} únicos (de ${mappedServices.length} recibidos)`);
+        }
 
         // Guardar en caché
         cacheRef.current.set(cacheKey, {
@@ -318,33 +354,35 @@ export function useServiceLoader(
 
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          console.log('⏹️ Petición cancelada');
+          if (isDev) {
+            console.log('⏹️ Petición cancelada');
+          }
           return;
         }
 
-        console.error('❌ Error al cargar servicios:', err);
+        if (isDev) {
+          console.error('❌ Error al cargar servicios:', err);
+        }
         const errorMessage = err.message || 'Error al cargar servicios';
         
         if (!signal.aborted) {
           setError(errorMessage);
-          setServices([]);
+          // Mantener marcadores previos en errores de refresh (stale-while-revalidate)
         }
       } finally {
-        if (!signal.aborted) {
-          setLoading(false);
-        }
+        setLoadingSafe(false);
       }
     },
-    [categoryId, serviceTypeId, options?.limit, options?.enabled, getMaxResults, validateViewport, getCacheKey, cleanCache, CACHE_TTL]
+    [categoryId, serviceTypeId, limit, enabled, getMaxResults, validateViewport, getCacheKey, cleanCache, CACHE_TTL, isDev, setLoadingSafe]
   );
 
   /**
    * Effect principal: cargar servicios cuando cambie el viewport
    */
   useEffect(() => {
-    if (!viewport) {
-      console.log('⏸️ Viewport null, limpiando servicios');
+    if (!viewport || !viewportKey) {
       setServices([]);
+      inFlightCountRef.current = 0;
       setLoading(false);
       return;
     }
@@ -356,13 +394,10 @@ export function useServiceLoader(
     return () => {
       const timeSinceStart = Date.now() - requestStartTimeRef.current;
       if (abortControllerRef.current && timeSinceStart >= MIN_REQUEST_TIME) {
-        console.log('🧹 Cleanup: Cancelando petición (después de', timeSinceStart, 'ms)');
         abortControllerRef.current.abort();
-      } else if (abortControllerRef.current) {
-        console.log('🧹 Cleanup: Petición muy reciente (', timeSinceStart, 'ms), no cancelando');
       }
     };
-  }, [viewport, loadServices]);
+  }, [viewportKey, loadServices]);
 
   /**
    * Función para forzar recarga
@@ -382,12 +417,16 @@ export function useServiceLoader(
    */
   const clearCache = useCallback(() => {
     cacheRef.current.clear();
-    console.log('🧹 Caché completamente limpiado');
   }, []);
+
+  const isInitialLoading = loading && services.length === 0;
+  const isRefreshing = loading && services.length > 0;
 
   return {
     services,
     loading,
+    isInitialLoading,
+    isRefreshing,
     error,
     reload,
     clearCache,

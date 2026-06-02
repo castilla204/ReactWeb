@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { persistServiceReturnPath } from '../utils/servicePageNavigation';
 import { ArrowLeft, Heart, Star, ChevronRight } from 'lucide-react';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { useAuth } from '../contexts/AuthContext';
@@ -46,7 +47,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, initialIsFavorite = 
   }, [service.isFavorite, initialIsFavorite]);
 
   const handleCardClick = () => {
-    navigate(`/service/${service.id}`);
+    const returnTo = '/favoritos';
+    persistServiceReturnPath(returnTo);
+    navigate(`/service/${service.id}`, { state: { returnTo } });
   };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {

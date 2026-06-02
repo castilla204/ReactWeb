@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Globe } from 'lucide-react';
 import { useCurrency } from '../contexts/CurrencyContext';
 
@@ -8,6 +8,19 @@ interface CurrencySelectorProps {
 
 export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'compact' }) => {
     const { currencies, preferredCurrency, setPreferredCurrency } = useCurrency();
+    const safeCurrencies = useMemo(() => {
+        const seen = new Set<string>();
+        return currencies
+            .map((c) => ({
+                ...c,
+                code: (c.code ?? '').trim().toUpperCase(),
+            }))
+            .filter((c) => {
+                if (!c.code || seen.has(c.code)) return false;
+                seen.add(c.code);
+                return true;
+            });
+    }, [currencies]);
 
     const sizeClasses =
         variant === 'full'
@@ -28,7 +41,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'c
                 className={`appearance-none ${sizeClasses} cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[#0066CC]/30`}
                 aria-label="Select display currency"
             >
-                {currencies.map(c => (
+                {safeCurrencies.map(c => (
                     <option key={c.code} value={c.code}>
                         {variant === 'full' ? `${c.code} — ${c.symbol} ${c.name}` : `${c.code} — ${c.symbol}`}
                     </option>

@@ -23,6 +23,7 @@ import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
 import AppointmentMap from '../components/AppointmentMap';
 import { LoginModal } from '../components/LoginModal';
+import { PRE_HIRE_CHAT_COPY } from '../constants/chatCopy.es';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
@@ -301,8 +302,11 @@ export function PreHireChatPage() {
         ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}`
         : expertCountryName || 'Zona no especificada';
     
-    // Calcular tiempo de respuesta promedio (simulado - en producción vendría del backend)
-    const responseTime = reviewsCount > 0 ? 'Menos de 1 hora' : null;
+    const servicePrice = service?.price ?? 0;
+    const priceLabel =
+      servicePrice > 0
+        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(servicePrice)
+        : null;
     
     // Handler para favorito
     const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -396,168 +400,11 @@ export function PreHireChatPage() {
                                 <DropdownMenuItem onClick={() => navigate(`/service/${serviceIdNumber}`)}>
                                     Ver servicio
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    Reportar usuario
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">
-                                    Bloquear usuario
+                                <DropdownMenuItem onClick={() => navigate('/mis-mensajes')}>
+                                    Mis mensajes
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                    </div>
-                    
-                    {/* Información del servicio - Móvil */}
-                    <div className="md:hidden">
-                        <div className="px-4 py-3">
-                            {/* Sección del experto - A la derecha de la foto */}
-                            <div className="mb-3">
-                                <div className="flex items-start gap-3">
-                                    {serviceImage && (
-                                        <div 
-                                            className="relative w-16 h-16 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
-                                            style={{ backgroundImage: `url(${serviceImage})` }}
-                                        />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <Link 
-                                            to={`/service/${serviceIdNumber}`}
-                                            className="block"
-                                        >
-                                            <div 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    marginBottom: '4px',
-                                                }}
-                                            >
-                                                {expertName}
-                                            </div>
-                                            {expertRating > 0 && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="flex items-center gap-0.5">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <Star
-                                                                key={star}
-                                                                className={`w-3.5 h-3.5 ${
-                                                                    star <= Math.round(expertRating)
-                                                                        ? 'fill-gray-900 text-gray-900'
-                                                                        : 'fill-gray-200 text-gray-200'
-                                                                }`}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    <span 
-                                                        style={{
-                                                            fontSize: '14px',
-                                                            lineHeight: '20px',
-                                                            fontWeight: 400,
-                                                            color: 'rgb(113, 113, 113)',
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        {expertRating.toFixed(1)} ({reviewsCount})
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {(expertCity || expertCountryName) && (
-                                                <div 
-                                                    style={{
-                                                        fontSize: '14px',
-                                                        lineHeight: '20px',
-                                                        fontWeight: 400,
-                                                        color: 'rgb(113, 113, 113)',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        marginTop: '4px',
-                                                    }}
-                                                >
-                                                    {locationLabel}
-                                                </div>
-                                            )}
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
-                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-gray-500" />}
-                                    <span className="truncate">{locationLabel}</span>
-                                </div>
-                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    <Clock className="h-4 w-4 text-gray-500" />
-                                    <span className="truncate">{responseTime || 'Respuesta rápida'}</span>
-                                </div>
-                            </div>
-
-                            {hasExpertLocation && (
-                                <div className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowMapPreview((value) => !value)}
-                                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-gray-900"
-                                        aria-expanded={showMapPreview}
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-[#E31C5F]" />
-                                            Zona aproximada del servicio
-                                        </span>
-                                        <span className="text-xs text-gray-500">{showMapPreview ? 'Ocultar' : 'Ver mapa'}</span>
-                                    </button>
-                                    {showMapPreview && (
-                                        <AppointmentMap
-                                            className="h-36 w-full"
-                                            expertLocation={{ latitude: expertLatitude!, longitude: expertLongitude! }}
-                                            expertRange={expertRange}
-                                            expertCountry={expertCountry}
-                                            disabled
-                                            showSearch={false}
-                                            showCountrySelector={false}
-                                            defaultZoom={11}
-                                        />
-                                    )}
-                                </div>
-                            )}
-                            
-                            {/* Barra de separación */}
-                            <div className="border-t border-gray-200 my-3"></div>
-                            
-                            {/* Barra de botones */}
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    onClick={handleFavoriteClick}
-                                    variant="outline"
-                                    className="flex-1 rounded-full"
-                                    aria-pressed={isFavorite}
-                                    aria-label={isFavorite ? 'Quitar servicio de favoritos' : 'Guardar servicio en favoritos'}
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                    <Heart 
-                                        className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
-                                    />
-                                    Favorito
-                                </Button>
-                                <Button
-                                    onClick={handleHireClick}
-                                    className="flex-1 rounded-full bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white font-semibold"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                    Contratar
-                                </Button>
-                            </div>
-                        </div>
                     </div>
                     
                     {/* Información del servicio - Desktop */}
@@ -661,7 +508,7 @@ export function PreHireChatPage() {
                                 </div>
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
                                     <Clock className="h-4 w-4 text-gray-500" />
-                                    <span className="truncate">{responseTime || 'Respuesta rápida'}</span>
+                                    <span className="truncate">Mensajes antes de contratar</span>
                                 </div>
                                 <button
                                     type="button"
@@ -733,14 +580,29 @@ export function PreHireChatPage() {
             
             {/* Chat Container - Ocupa el resto del espacio */}
             {service && !loading && (
-                <div className="flex-1 max-w-4xl mx-auto w-full overflow-hidden flex flex-col bg-white min-h-0">
+                <div className="flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-hidden bg-white mx-auto">
                     <PreHireChat
                         serviceId={serviceIdNumber}
                         token={token}
                         userId={userId}
                         conversationId={conversationId && conversationId > 0 ? conversationId : undefined}
                         onConnectionChange={setIsChatConnected}
+                        peerName={expertName}
+                        embedded
                     />
+                </div>
+            )}
+
+            {service && !loading && (
+                <div className="shrink-0 border-t border-gray-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden">
+                    <Button
+                        type="button"
+                        onClick={handleHireClick}
+                        className="h-12 w-full rounded-full bg-[#0066CC] text-base font-semibold text-white shadow-[0_4px_16px_rgba(0,102,204,0.22)] hover:bg-[#005bb5]"
+                    >
+                        {PRE_HIRE_CHAT_COPY.hireCta}
+                        {priceLabel ? ` · ${priceLabel}` : ''}
+                    </Button>
                 </div>
             )}
             

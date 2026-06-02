@@ -1,8 +1,8 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Footer } from '../components/Footer';
-import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
+import { LoginModal } from '../components/LoginModal';
 import { useAuth } from '../contexts/AuthContext';
 import { HP_PANEL_GRADIENT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 import { COMO_FUNCIONA_STEPS, COMO_FUNCIONA_TRUST } from '../content/comoFuncionaContent';
@@ -14,11 +14,19 @@ const MobileBottomBar = lazy(() =>
 const ComoFuncionaPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleMisRevisiones = () => {
+    if (isAuthenticated) {
+      navigate('/busquedas');
+      return;
+    }
+    sessionStorage.setItem('redirectAfterLogin', '/busquedas');
+    setShowLoginDialog(true);
+  };
 
   return (
     <div className="min-h-screen bg-[#fafafa] font-display text-[#1c1c1c]">
-      <HomepageDesktopTopBar />
-
       <header className="sticky top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm md:hidden">
         <div className="flex h-12 items-center gap-2 px-4">
           <button
@@ -56,15 +64,13 @@ const ComoFuncionaPage: React.FC = () => {
             >
               Explorar expertos
             </button>
-            {!isAuthenticated ? (
-              <button
-                type="button"
-                onClick={() => navigate('/crear-busqueda')}
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[#1c1c1c] bg-white px-5 text-sm font-semibold text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7]"
-              >
-                Publicar una búsqueda
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={handleMisRevisiones}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#1c1c1c] bg-white px-5 text-sm font-semibold text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7]"
+            >
+              Mis revisiones
+            </button>
           </div>
         </div>
       </section>
@@ -166,6 +172,17 @@ const ComoFuncionaPage: React.FC = () => {
           <MobileBottomBar />
         </Suspense>
       </div>
+
+      <LoginModal
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={() => {
+          setShowLoginDialog(false);
+          const redirect = sessionStorage.getItem('redirectAfterLogin');
+          sessionStorage.removeItem('redirectAfterLogin');
+          navigate(redirect || '/busquedas');
+        }}
+      />
     </div>
   );
 };
