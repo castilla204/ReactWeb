@@ -21,10 +21,13 @@ interface DrawerProps extends React.ComponentProps<typeof DrawerPrimitive.Root> 
   fadeFromIndex?: number;
   handleOnly?: boolean;
   snapToSequentialPoint?: boolean;
+  scrollLockTimeout?: number;
+  closeThreshold?: number;
+  fixed?: boolean;
 }
 
 const Drawer = ({
-  shouldScaleBackground = true, // ✅ Efecto de escalado del fondo como Airbnb
+  shouldScaleBackground = true,
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -32,7 +35,10 @@ const Drawer = ({
   dismissible = true,
   fadeFromIndex,
   handleOnly = false,
-  snapToSequentialPoint = true, // ✅ true para mejor fluidez y snap points secuenciales
+  snapToSequentialPoint = false,
+  scrollLockTimeout,
+  closeThreshold,
+  fixed,
   ...props
 }: DrawerProps) => (
   <DrawerPrimitive.Root
@@ -45,6 +51,9 @@ const Drawer = ({
     fadeFromIndex={fadeFromIndex}
     handleOnly={handleOnly}
     snapToSequentialPoint={snapToSequentialPoint}
+    scrollLockTimeout={scrollLockTimeout}
+    closeThreshold={closeThreshold}
+    fixed={fixed}
     {...props}
   />
 )
@@ -56,24 +65,17 @@ const DrawerPortal = DrawerPrimitive.Portal
 
 const DrawerClose = DrawerPrimitive.Close
 
-// Handle component optimizado para drag fluido
+/** Handle oficial de Vaul — necesario para arrastre fluido con snap points */
 const DrawerHandle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  React.ElementRef<typeof DrawerPrimitive.Handle>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Handle>
 >(({ className, ...props }, ref) => (
-  <div
+  <DrawerPrimitive.Handle
     ref={ref}
     className={cn(
-      "mx-auto mt-3 mb-3 h-1 w-12 flex-shrink-0 rounded-full bg-gray-300 cursor-grab active:cursor-grabbing touch-none transition-opacity duration-200",
-      "hover:bg-gray-400 active:bg-gray-500",
-      className
+      "mx-auto mt-2.5 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-[#d1d5db]",
+      className,
     )}
-    style={{
-      userSelect: 'none',
-      WebkitUserSelect: 'none',
-      willChange: 'opacity',
-      ...props.style,
-    }}
     {...props}
   />
 ))
@@ -103,8 +105,10 @@ const DrawerContent = React.forwardRef<
     description?: string;
     noOverlay?: boolean;
     noHandle?: boolean;
+    /** Sin animaciones slide (usar con snap points de Vaul) */
+    withSnapPoints?: boolean;
   }
->(({ className, children, title, description, noOverlay, noHandle, ...props }, ref) => {
+>(({ className, children, title, description, noOverlay, noHandle, withSnapPoints, ...props }, ref) => {
   const contentRef = React.useRef<HTMLDivElement>(null);
   
   // Verificar si los children ya incluyen DrawerTitle o DrawerDescription
@@ -134,23 +138,16 @@ const DrawerContent = React.forwardRef<
         }}
         translate="no"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[16px] border-0 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]",
-          "focus:outline-none",
-          // Animaciones suaves nativas de vaul
-          "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-          className
+          "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col border-0 bg-white focus:outline-none",
+          withSnapPoints
+            ? "flex max-h-[96dvh] min-h-0 flex-col rounded-t-[24px] shadow-[0_-12px_40px_rgba(0,0,0,0.12)]"
+            : "rounded-t-[16px] shadow-[0_-4px_24px_rgba(0,0,0,0.12)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+          className,
         )}
         style={{
           ...props.style,
-          zIndex: showOverlay ? (props.style?.zIndex || 9998) : (props.style?.zIndex || 9998), // ✅ Menor que el header (z-[9999]) para que no tape los botones
-          // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
-          // Mejorar rendimiento de animaciones
-          willChange: 'transform',
-          contain: 'layout style',
-          // ✅ Asegurar que Vaul controle completamente el transform durante el drag
-          transition: 'none', // Vaul maneja las transiciones internamente
+          zIndex: props.style?.zIndex ?? 9998,
+          willChange: "transform",
         }}
         {...props}
       >
