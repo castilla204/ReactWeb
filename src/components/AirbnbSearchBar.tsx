@@ -856,8 +856,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 setCategoryId(category.id);
                                 setCategorySearchQuery('');
                                 
-                                // ✅ Usar serviceTypeId existente o 1 por defecto
-                                const defaultServiceTypeId = serviceTypeId || 1;
+                                // ✅ Usar serviceTypeId existente o 2 por defecto para evitar mapas vacíos
+                                const defaultServiceTypeId = serviceTypeId || 2;
                                 
                                 // Navegar al mapa con la categoría y serviceTypeId por defecto
                                 const params = new URLSearchParams();

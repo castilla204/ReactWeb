@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { APIProvider, Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 import { ClusteredMarkers } from './ClusteredMarkers';
+import { MapLoadingIndicator } from './MapLoadingIndicator';
 
 interface MapContainerProps {
   categoryId: number | null;
@@ -16,6 +18,9 @@ interface MapContainerProps {
   onMapLoad?: () => void;
   onServicesCountChange?: (count: number) => void; // Callback para notificar cambios en el número de servicios
   onServicesChange?: (services: Service[]) => void; // Callback para pasar servicios al padre (para favoritos)
+  onLoadingChange?: (state: { loading: boolean; isInitialLoading: boolean; isRefreshing: boolean }) => void;
+  /** Al cambiar el centro desde fuera: solo desplazar (vista amplia) o acercar también */
+  recenterMode?: 'pan-only' | 'fly-to-zoom';
   // Opciones de optimización
   debounceMs?: number; // Tiempo de debounce (default: 500ms)
   clusterRadius?: number; // Radio de clustering (default: 75px)
@@ -43,51 +48,62 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onMapLoad,
   onServicesCountChange,
   onServicesChange,
-  debounceMs = 500, // 500ms es óptimo según research de Airbnb
-  clusterRadius = 75,
-  maxClusterZoom = 16,
+  onLoadingChange,
+  recenterMode = 'pan-only',
+  debounceMs = 280,
+  clusterRadius = 56,
+  maxClusterZoom = 17,
 }) => {
   // Estado del mapa
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [currentViewport, setCurrentViewport] = useState<ViewportRequest | null>(null);
+  const [cameraBounds, setCameraBounds] = useState<[number, number, number, number] | undefined>(undefined);
+  const [cameraZoom, setCameraZoom] = useState<number | undefined>(undefined);
+  const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<maplibregl.Map | null>(null);
+  const onMapLoadRef = useRef(onMapLoad);
 
   // Referencias para debounce y control
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isDraggingRef = useRef(false);
   const lastBoundsKeyRef = useRef<string>('');
-
-  // 🛡️ SECURITY: usa SOLO env var. Antes había fallback hardcoded a una key
-  // filtrada en git history → exponía la key vieja en builds aunque rotase. Si el
-  // env var no está, el componente fallará con error claro de Google Maps en lugar
-  // de usar key insegura. Asegura que VITE_GOOGLE_MAPS_API_KEY está en Render env.
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-  // Map ID requerido para AdvancedMarker - usar DEMO_MAP_ID si no está configurado
-  const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
+  const lastServicesKeyRef = useRef<string>('');
+  const lastInitialCenterRef = useRef(initialCenter);
+  const loaderEnabled = isMapLoaded && currentViewport !== null;
+  const loaderOptions = useMemo(
+    () => ({
+      enabled: loaderEnabled,
+      cacheTTL: 5 * 60 * 1000, // 5 minutos
+    }),
+    [loaderEnabled]
+  );
 
   // Hook de carga de servicios (con todas las optimizaciones)
-  const { services, loading, error } = useServiceLoader(
+  const { services, loading, isInitialLoading, isRefreshing, error } = useServiceLoader(
     categoryId,
     serviceTypeId,
     currentViewport,
-    {
-      enabled: isMapLoaded && currentViewport !== null,
-      cacheTTL: 5 * 60 * 1000, // 5 minutos
-    }
+    loaderOptions
   );
 
   // Notificar cambios en el número de servicios
   useEffect(() => {
-    if (onServicesCountChange) {
-      onServicesCountChange(services.length);
-    }
+    onServicesCountChange?.(services.length);
   }, [services.length, onServicesCountChange]);
 
-  // Notificar cambios en los servicios (para favoritos)
+  // Notificar cambios en los servicios (evitar re-renders si los ids no cambian)
   useEffect(() => {
-    if (onServicesChange) {
-      onServicesChange(services);
-    }
+    if (!onServicesChange) return;
+    const key = services.map((s) => s.id).join(',');
+    if (key === lastServicesKeyRef.current) return;
+    lastServicesKeyRef.current = key;
+    onServicesChange(services);
   }, [services, onServicesChange]);
+
+  useEffect(() => {
+    onLoadingChange?.({ loading, isInitialLoading, isRefreshing });
+  }, [loading, isInitialLoading, isRefreshing, onLoadingChange]);
 
   // Configuración del mapa según dispositivo
   const mapOptions = useMemo(
@@ -112,36 +128,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         },
         strictBounds: false,
       },
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }],
-        },
-        {
-          featureType: 'poi',
-          elementType: 'labels.text',
-          stylers: [{ visibility: 'off' }],
-        },
-        {
-          featureType: 'poi.business',
-          stylers: [{ visibility: 'off' }],
-        },
-        {
-          featureType: 'transit',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }],
-        },
-        {
-          featureType: 'transit.station',
-          stylers: [{ visibility: 'off' }],
-        },
-        {
-          featureType: 'road',
-          elementType: 'labels.icon',
-          stylers: [{ visibility: 'off' }],
-        },
-      ],
     }),
     [isMobile]
   );
@@ -149,217 +135,189 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   /**
    * Genera una clave única para los bounds (evita updates innecesarios)
    */
-  const getBoundsKey = useCallback((bounds: google.maps.LatLngBounds, zoom: number): string => {
+  const getBoundsKey = useCallback((bounds: maplibregl.LngLatBounds, zoom: number): string => {
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
-    return `${sw.lat().toFixed(4)},${sw.lng().toFixed(4)},${ne.lat().toFixed(4)},${ne.lng().toFixed(4)},${zoom}`;
+    // Reducimos sensibilidad para evitar refetch por variaciones minimas de camara
+    return `${sw.lat.toFixed(4)},${sw.lng.toFixed(4)},${ne.lat.toFixed(4)},${ne.lng.toFixed(4)},${zoom.toFixed(2)}`;
   }, []);
 
   /**
    * Valida que los bounds sean correctos
    */
-  const validateBounds = useCallback((bounds: google.maps.LatLngBounds, zoom: number): boolean => {
+  const validateBounds = useCallback((bounds: maplibregl.LngLatBounds, zoom: number): boolean => {
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
 
     if (
-      !isFinite(ne.lat()) ||
-      !isFinite(ne.lng()) ||
-      !isFinite(sw.lat()) ||
-      !isFinite(sw.lng()) ||
+      !isFinite(ne.lat) ||
+      !isFinite(ne.lng) ||
+      !isFinite(sw.lat) ||
+      !isFinite(sw.lng) ||
       !isFinite(zoom)
     ) {
       return false;
     }
 
-    if (Math.abs(ne.lat()) > 90 || Math.abs(sw.lat()) > 90) {
+    if (Math.abs(ne.lat) > 90 || Math.abs(sw.lat) > 90) {
       return false;
     }
 
-    if (Math.abs(ne.lng()) > 180 || Math.abs(sw.lng()) > 180) {
+    if (Math.abs(ne.lng) > 180 || Math.abs(sw.lng) > 180) {
       return false;
     }
 
-    if (ne.lat() <= sw.lat()) {
+    if (ne.lat <= sw.lat) {
       return false;
     }
 
     return true;
   }, []);
 
-  /**
-   * Actualiza el viewport (con debounce)
-   */
-  const updateViewport = useCallback(
-    (map: google.maps.Map) => {
+  /** Sincroniza cámara al instante (clusters reactivos) */
+  const syncCamera = useCallback(
+    (map: maplibregl.Map) => {
+      const bounds = map.getBounds();
+      const zoom = map.getZoom();
+      if (!bounds || !Number.isFinite(zoom) || !validateBounds(bounds, zoom)) return;
+
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      setCameraBounds([sw.lng, sw.lat, ne.lng, ne.lat]);
+      setCameraZoom(zoom);
+    },
+    [validateBounds]
+  );
+
+  /** Programa fetch de servicios (debounced) */
+  const scheduleViewportFetch = useCallback(
+    (map: maplibregl.Map) => {
       if (!map || isDraggingRef.current) return;
 
       const bounds = map.getBounds();
       const zoom = map.getZoom();
+      if (!bounds || !Number.isFinite(zoom) || !validateBounds(bounds, zoom)) return;
 
-      if (!bounds || !zoom) {
-        console.warn('⚠️ Bounds o zoom no disponibles');
-        return;
-      }
-
-      // Validar bounds
-      if (!validateBounds(bounds, zoom)) {
-        console.warn('⚠️ Bounds inválidos, ignorando update');
-        return;
-      }
-
-      // Generar clave para evitar duplicados
       const boundsKey = getBoundsKey(bounds, zoom);
-
-      if (lastBoundsKeyRef.current === boundsKey) {
-        console.log('⏭️ Bounds sin cambios, ignorando update');
-        return;
-      }
+      if (lastBoundsKeyRef.current === boundsKey) return;
 
       lastBoundsKeyRef.current = boundsKey;
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
 
-      // Limpiar debounce anterior
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
 
-      // Aplicar debounce
       debounceTimerRef.current = setTimeout(() => {
         if (isDraggingRef.current) return;
-
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-
-        const viewport: ViewportRequest = {
-          northeast: { lat: ne.lat(), lng: ne.lng() },
-          southwest: { lat: sw.lat(), lng: sw.lng() },
+        setCurrentViewport({
+          northeast: { lat: ne.lat, lng: ne.lng },
+          southwest: { lat: sw.lat, lng: sw.lng },
           zoom,
-        };
-
-        console.log('✅ Actualizando viewport:', {
-          ne: viewport.northeast,
-          sw: viewport.southwest,
-          zoom: viewport.zoom,
         });
-
-        setCurrentViewport(viewport);
       }, debounceMs);
     },
     [validateBounds, getBoundsKey, debounceMs]
   );
 
-  /**
-   * Componente interno para manejar eventos del mapa
-   * Debe estar dentro de APIProvider para acceder al contexto
-   */
-  const MapEventHandler: React.FC = () => {
-    const map = useMap();
+  const handleMapIdle = useCallback(
+    (map: maplibregl.Map) => {
+      isDraggingRef.current = false;
+      syncCamera(map);
+      scheduleViewportFetch(map);
+    },
+    [syncCamera, scheduleViewportFetch]
+  );
 
-    // Efecto para marcar el mapa como cargado
-    useEffect(() => {
-      if (map && !isMapLoaded) {
-        console.log('🗺️ Mapa cargado correctamente');
-        setIsMapLoaded(true);
-        onMapLoad?.();
+  useEffect(() => {
+    onMapLoadRef.current = onMapLoad;
+  }, [onMapLoad]);
 
-        // Ajustar zoom inicial para ver toda España (zoom 5)
-        const currentZoom = map.getZoom() || initialZoom;
-        if (currentZoom > 5) {
-          map.setZoom(5);
-          map.setCenter({ lat: 40.0, lng: -3.0 });
-        }
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-        // Cargar viewport inicial inmediatamente (sin debounce para la carga inicial)
-        const loadInitialViewport = () => {
-          const bounds = map.getBounds();
-          const zoom = map.getZoom() || initialZoom;
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: {
+        version: 8,
+        sources: {
+          carto: {
+            type: 'raster',
+            tiles: [
+              'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
+              'https://d.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+          },
+        },
+        layers: [{ id: 'carto-layer', type: 'raster', source: 'carto' }],
+      },
+      center: [initialCenter.lng, initialCenter.lat],
+      zoom: initialZoom,
+      minZoom: mapOptions.minZoom,
+      maxZoom: mapOptions.maxZoom,
+      dragRotate: false,
+      touchPitch: false,
+      attributionControl: false,
+    });
 
-          if (!bounds || !zoom) {
-            // Si los bounds no están listos, esperar un poco y reintentar
-            setTimeout(loadInitialViewport, 100);
-            return;
-          }
+    if (!isMobile) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    }
 
-          // Validar bounds
-          if (!validateBounds(bounds, zoom)) {
-            setTimeout(loadInitialViewport, 100);
-            return;
-          }
-
-          const ne = bounds.getNorthEast();
-          const sw = bounds.getSouthWest();
-
-          const viewport: ViewportRequest = {
-            northeast: { lat: ne.lat(), lng: ne.lng() },
-            southwest: { lat: sw.lat(), lng: sw.lng() },
-            zoom,
-          };
-
-          console.log('✅ Cargando viewport inicial:', {
-            ne: viewport.northeast,
-            sw: viewport.southwest,
-            zoom: viewport.zoom,
-          });
-
-          setCurrentViewport(viewport);
-          lastBoundsKeyRef.current = getBoundsKey(bounds, zoom);
-        };
-
-        // Esperar a que el mapa esté completamente inicializado
-        setTimeout(loadInitialViewport, 200);
+    const onMoveStart = () => {
+      isDraggingRef.current = true;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
       }
-    }, [map, isMapLoaded, initialZoom, validateBounds, getBoundsKey]);
+    };
+    const onIdle = () => handleMapIdle(map);
 
-    // Efecto para manejar eventos del mapa
-    useEffect(() => {
-      if (!map || !isMapLoaded) return;
+    map.on('movestart', onMoveStart);
+    map.on('moveend', onIdle);
+    map.on('zoomend', onIdle);
+    map.on('load', () => {
+      mapInstanceRef.current = map;
+      setIsMapLoaded(true);
+      setMapInstance(map);
+      onMapLoadRef.current?.();
+      onIdle();
+    });
 
-      // Handler para cuando el mapa termina de moverse
-      const handleIdle = () => {
-        isDraggingRef.current = false;
-        updateViewport(map);
-      };
+    return () => {
+      map.off('movestart', onMoveStart);
+      map.off('moveend', onIdle);
+      map.off('zoomend', onIdle);
+      map.remove();
+      mapInstanceRef.current = null;
+      setMapInstance(null);
+      setIsMapLoaded(false);
+    };
+  }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle]);
 
-      // Handler para cuando empieza a moverse
-      const handleDragStart = () => {
-        isDraggingRef.current = true;
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = null;
-        }
-      };
-
-      // Registrar listeners
-      const idleListener = map.addListener('idle', handleIdle);
-      const dragStartListener = map.addListener('dragstart', handleDragStart);
-      const zoomChangedListener = map.addListener('zoom_changed', () => {
-        // Solo actualizar en idle, no en cada cambio de zoom
-      });
-
-      console.log('👂 Event listeners registrados');
-
-      // Cargar viewport inicial inmediatamente cuando se registran los listeners
-      // Esto asegura que se carguen servicios al inicio
-      setTimeout(() => {
-        handleIdle();
-      }, 300);
-
-      // Cleanup
-      return () => {
-        google.maps.event.removeListener(idleListener);
-        google.maps.event.removeListener(dragStartListener);
-        google.maps.event.removeListener(zoomChangedListener);
-
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-
-        console.log('🧹 Event listeners removidos');
-      };
-    }, [map, isMapLoaded, updateViewport]);
-
-    return null;
-  };
+  // Actualizar centro/zoom solo cuando cambie de verdad (geocoding / país)
+  useEffect(() => {
+    if (!mapInstance) return;
+    const prev = lastInitialCenterRef.current;
+    const moved =
+      Math.abs(prev.lat - initialCenter.lat) > 0.0001 ||
+      Math.abs(prev.lng - initialCenter.lng) > 0.0001;
+    if (!moved) return;
+    lastInitialCenterRef.current = initialCenter;
+    const zoom =
+      recenterMode === 'pan-only'
+        ? mapInstance.getZoom()
+        : initialZoom;
+    mapInstance.easeTo({
+      center: [initialCenter.lng, initialCenter.lat],
+      zoom,
+      duration: 400,
+    });
+  }, [mapInstance, initialCenter, initialZoom, recenterMode]);
 
   return (
     <div
@@ -371,110 +329,29 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         ...style,
       }}
     >
-      <APIProvider apiKey={apiKey} libraries={['marker']}>
-        <GoogleMap
-          defaultCenter={initialCenter}
-          defaultZoom={initialZoom}
-          mapId={mapId}
-          disableDefaultUI={mapOptions.disableDefaultUI}
-          zoomControl={mapOptions.zoomControl}
-          mapTypeControl={mapOptions.mapTypeControl}
-          streetViewControl={mapOptions.streetViewControl}
-          fullscreenControl={mapOptions.fullscreenControl}
-          gestureHandling={mapOptions.gestureHandling}
-          clickableIcons={mapOptions.clickableIcons}
-          minZoom={mapOptions.minZoom}
-          maxZoom={mapOptions.maxZoom}
-          restriction={mapOptions.restriction}
-          styles={mapOptions.styles}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <MapEventHandler />
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+      {/* Renderizar marcadores solo cuando el mapa esté cargado */}
+      {isMapLoaded && services.length > 0 && (
+        <ClusteredMarkers
+          map={mapInstance}
+          services={services}
+          bounds={cameraBounds}
+          zoom={cameraZoom}
+          selectedServiceId={selectedServiceId}
+          onServiceClick={onServiceSelect}
+          clusterRadius={clusterRadius}
+          maxZoom={maxClusterZoom}
+        />
+      )}
 
-          {/* Renderizar marcadores solo cuando el mapa esté cargado */}
-          {isMapLoaded && services.length > 0 && (
-            <ClusteredMarkers
-              services={services}
-              selectedServiceId={selectedServiceId}
-              onServiceClick={onServiceSelect}
-              clusterRadius={clusterRadius}
-              maxZoom={maxClusterZoom}
-            />
-          )}
-        </GoogleMap>
+      {isInitialLoading && <MapLoadingIndicator variant="initial" />}
+      {isRefreshing && <MapLoadingIndicator variant="refresh" />}
 
-        {/* Indicador de carga */}
-        {loading && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '16px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(255, 255, 255, 0.95)',
-              padding: isMobile ? '8px 12px' : '10px 18px',
-              borderRadius: '24px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-              fontSize: isMobile ? '12px' : '14px',
-              fontWeight: '600',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              gap: isMobile ? '6px' : '10px',
-              whiteSpace: 'nowrap',
-              fontFamily:
-                '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, sans-serif',
-            }}
-          >
-            <div
-              style={{
-                width: isMobile ? '14px' : '18px',
-                height: isMobile ? '14px' : '18px',
-                border: '2.5px solid #e5e5e5',
-                borderTopColor: '#FF385C',
-                borderRadius: '50%',
-                animation: 'spin 0.7s linear infinite',
-                flexShrink: 0,
-              }}
-            />
-            <span>Cargando servicios...</span>
-          </div>
-        )}
-
-        {/* Indicador de error */}
-        {error && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '16px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: '#ff4444',
-              color: '#ffffff',
-              padding: '10px 18px',
-              borderRadius: '24px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-              fontSize: '14px',
-              fontWeight: '600',
-              zIndex: 1000,
-              fontFamily:
-                '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, sans-serif',
-            }}
-          >
-            ⚠️ {error}
-          </div>
-        )}
-
-      </APIProvider>
-
-      {/* Estilos de animación */}
-      <style>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
+      {error && (
+        <div className="absolute left-1/2 top-3 z-[901] max-w-[90vw] -translate-x-1/2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white shadow-md">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

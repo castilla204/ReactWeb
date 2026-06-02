@@ -172,7 +172,9 @@ const AppContent: React.FC = () => {
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
     const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
     const hideGlobalHeaderPaths = isHomePage
+        || location.pathname === '/crear-busqueda'
         || location.pathname.startsWith('/service/')
+        || location.pathname.startsWith('/checkout/')
         || location.pathname === '/expert-panel'
         || location.pathname === '/become-expert'
         || location.pathname.startsWith('/complete-onboarding')

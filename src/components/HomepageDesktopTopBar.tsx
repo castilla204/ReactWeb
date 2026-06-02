@@ -11,12 +11,25 @@ import { SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
  * Barra superior desktop de la homepage (cuenta, moneda, favoritos).
  * Reutilizable en ficha de servicio sin el hero Kayak.
  */
+export type HomepageDesktopTopBarVariant = 'default' | 'checkout' | 'map';
+
 export interface HomepageDesktopTopBarProps {
   /** En ficha de servicio: sustituye "Mi cuenta" por volver */
   onBack?: () => void;
+  /** checkout: barra mínima (volver + admin), sin distracciones de exploración */
+  /** map: pantalla completa mapa+búsqueda — blanco, botones en extremos, iconos compactos */
+  variant?: HomepageDesktopTopBarVariant;
+  /** Título en línea junto al back (solo checkout desktop) */
+  pageTitle?: string;
 }
 
-export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({ onBack }) => {
+export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
+  onBack,
+  variant = 'default',
+  pageTitle,
+}) => {
+  const isCheckout = variant === 'checkout';
+  const isMap = variant === 'map';
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -30,70 +43,141 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({ on
     return byEmail || byRole;
   }, [isAuthenticated, userEmail, userRole]);
 
+  const handleAccount = () => {
+    if (isAuthenticated) {
+      navigate('/busquedas');
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
+
+  const rightActions = (
+    <div className="flex shrink-0 items-center gap-2">
+      {!isCheckout ? (
+        isMap ? (
+          <button
+            type="button"
+            onClick={() => navigate('/como-funciona')}
+            className="sd-icon-btn"
+            aria-label="Cómo funciona Inspecciono"
+          >
+            <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate('/como-funciona')}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#d1d5db] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
+            aria-label="Cómo funciona Inspecciono"
+          >
+            <HelpCircle className="h-4 w-4 shrink-0" strokeWidth={2.1} />
+            <span className="hidden lg:inline">Cómo funciona</span>
+          </button>
+        )
+      ) : null}
+      {userIsAdmin && (
+        <button
+          type="button"
+          onClick={() => navigate('/admin')}
+          className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+        >
+          Admin
+        </button>
+      )}
+      {!isCheckout ? <CurrencySelector variant="compact" /> : null}
+      {!isCheckout ? (
+        <button
+          type="button"
+          aria-label="Favoritos"
+          onClick={() => navigate('/favoritos')}
+          className={
+            isMap
+              ? 'sd-icon-btn'
+              : 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
+          }
+        >
+          <Heart className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
+  );
+
+  const leftControl = onBack ? (
+    isCheckout && pageTitle ? (
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="sd-icon-btn shrink-0"
+          aria-label="Volver"
+        >
+          <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+        </button>
+        <h1 className="truncate font-display text-lg font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]">
+          {pageTitle}
+        </h1>
+      </div>
+    ) : isMap ? (
+      <button
+        type="button"
+        onClick={onBack}
+        className="sd-icon-btn shrink-0"
+        aria-label="Volver"
+      >
+        <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
+      >
+        <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.1} />
+        Volver
+      </button>
+    )
+  ) : (
+    <button
+      type="button"
+      onClick={handleAccount}
+      className={
+        isMap
+          ? 'sd-icon-btn shrink-0'
+          : 'inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]'
+      }
+      aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+    >
+      <User className={isMap ? 'h-4 w-4' : 'h-4 w-4 shrink-0'} strokeWidth={2.1} />
+      {!isMap && (isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión')}
+    </button>
+  );
+
   return (
     <>
       <header
-        className="sticky top-0 z-50 hidden md:block border-b border-[#dbe8f5]/80"
-        style={{
-          background: 'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, #fafafa 100%)',
-        }}
+        className={`sticky top-0 z-50 hidden md:block border-b ${
+          isCheckout || isMap
+            ? 'border-[#e8e8e8] bg-white'
+            : 'border-[#dbe8f5]/80'
+        }`}
+        style={
+          isCheckout || isMap
+            ? undefined
+            : {
+                background:
+                  'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, #fafafa 100%)',
+              }
+        }
       >
-        <div className={`${SD_PAGE_INNER_MAX_CLASS} flex h-12 items-center justify-between`}>
-          {onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
-            >
-              <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.1} />
-              Volver
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                if (isAuthenticated) {
-                  navigate('/busquedas');
-                } else {
-                  setIsLoginModalOpen(true);
-                }
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#d1d5db] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
-            >
-              <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
-              {isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
-            </button>
-          )}
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/como-funciona')}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#d1d5db] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
-              aria-label="Cómo funciona Inspecciono"
-            >
-              <HelpCircle className="h-4 w-4 shrink-0" strokeWidth={2.1} />
-              <span className="hidden lg:inline">Cómo funciona</span>
-            </button>
-            {userIsAdmin && (
-              <button
-                type="button"
-                onClick={() => navigate('/admin')}
-                className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
-              >
-                Admin
-              </button>
-            )}
-            <CurrencySelector variant="compact" />
-            <button
-              type="button"
-              aria-label="Favoritos"
-              onClick={() => navigate('/favoritos')}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
-            >
-              <Heart className="h-4 w-4" />
-            </button>
-          </div>
+        <div
+          className={
+            isMap
+              ? 'flex min-h-14 w-full items-center justify-between gap-4 px-4 md:px-5 lg:px-8'
+              : `${isCheckout ? 'max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8' : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
+          }
+        >
+          {leftControl}
+          {rightActions}
         </div>
       </header>
 

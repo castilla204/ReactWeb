@@ -33,7 +33,8 @@ import { useServices, Service } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { persistServiceReturnPath, resolveServiceReturnPath } from '../utils/servicePageNavigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
 import { formatPriceNumber } from '../utils/priceUtils';
@@ -103,7 +104,8 @@ export function ServiceReviewPage({
 }: ServiceReviewPageProps) {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
-
+    const location = useLocation();
+    
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [mobileImageIndex, setMobileImageIndex] = useState(0);
@@ -130,8 +132,8 @@ export function ServiceReviewPage({
             return;
         }
         sessionStorage.removeItem('redirectAfterLogin');
-        sessionStorage.setItem('loginFromChat', 'true');
-        setShowLoginDialog(true);
+            sessionStorage.setItem('loginFromChat', 'true');
+            setShowLoginDialog(true);
     };
 
     const getCheckoutPath = useCallback(() => {
@@ -149,6 +151,7 @@ export function ServiceReviewPage({
         }
         sessionStorage.removeItem('loginFromChat');
         sessionStorage.setItem('redirectAfterLogin', checkoutPath);
+        sessionStorage.setItem('pendingCheckoutAfterLogin', '1');
         setShowLoginDialog(true);
     }, [getCheckoutPath]);
 
@@ -166,9 +169,12 @@ export function ServiceReviewPage({
             return;
         }
 
+        if (sessionStorage.getItem('pendingCheckoutAfterLogin') !== '1') return;
+
         const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+        sessionStorage.removeItem('pendingCheckoutAfterLogin');
+        sessionStorage.removeItem('redirectAfterLogin');
         if (redirectPath) {
-            sessionStorage.removeItem('redirectAfterLogin');
             const t = window.setTimeout(() => {
                 navigate(redirectPath, { replace: true });
             }, 100);
@@ -301,7 +307,7 @@ export function ServiceReviewPage({
         if (countryName) parts.push(countryName);
         return parts.length > 0 ? parts.join(', ') : countryName || '';
     })();
-
+    
     // ✅ DEBUG: Log para verificar datos de ubicación
     console.log('🗺️ ServiceReviewPage - Datos de ubicación del experto:', {
         hasFinalService: !!finalService,
@@ -418,12 +424,15 @@ export function ServiceReviewPage({
             showToast('error', 'Error: ID de servicio no válido');
             return;
         }
-
+        
         if (!isAuthenticated) {
             openLoginForCheckout();
             return;
         }
 
+        persistServiceReturnPath(
+            resolveServiceReturnPath((location.state as { returnTo?: string } | null)?.returnTo),
+        );
         navigate(checkoutPath, { replace: false });
     };
 
@@ -689,8 +698,8 @@ export function ServiceReviewPage({
                             className="sd-deliverable-guide-on-image"
                         />
                     )}
-                    </div>
-
+                            </div>
+                            
                     <div
                         className={`relative -mt-10 z-10 bg-white rounded-t-2xl pt-6 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
                     >
@@ -701,9 +710,9 @@ export function ServiceReviewPage({
                                 {serviceTypeName} por{' '}
                                 <span className="underline decoration-[#d1d5db] underline-offset-[3px]">
                                     {finalExpertName}
-                                </span>
+                                            </span>
                             </h1>
-                        </div>
+                                    </div>
 
                             {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
                                 <ServiceDetailDeliverablesGuide
@@ -809,19 +818,19 @@ export function ServiceReviewPage({
                                 role="tablist"
                                 aria-label="Información del servicio"
                             >
-                                <button
+                            <button
                                     type="button"
                                     role="tab"
                                     id="sd-tab-about"
                                     aria-controls="sd-panel-about"
                                     aria-selected={activeTab === 'about'}
                                     data-active={activeTab === 'about' ? 'true' : undefined}
-                                    onClick={() => setActiveTab('about')}
+                                onClick={() => setActiveTab('about')}
                                     className="sd-tab"
                                 >
-                                    Acerca del servicio
-                                </button>
-                                <button
+                                Acerca del servicio
+                            </button>
+                                    <button 
                                     type="button"
                                     role="tab"
                                     id="sd-tab-reviews"
@@ -833,16 +842,16 @@ export function ServiceReviewPage({
                                 >
                                     Reseñas
                                     {finalReviews.length > 0 ? (
-                                        <span
+                                                    <span 
                                             className={`ml-1.5 tabular-nums font-normal ${
                                                 activeTab === 'reviews' ? 'text-[#6a6a6a]' : 'text-[#737373]'
                                             }`}
                                         >
                                             ({finalReviews.length})
-                                        </span>
+                                                    </span>
                                     ) : null}
                                 </button>
-                            </div>
+                                                </div>
 
                             {activeTab === 'about' && (
                                 <div
@@ -856,15 +865,15 @@ export function ServiceReviewPage({
                                             {displayMainDescription}
                                         </p>
                                     ) : null}
-                                </div>
-                            )}
+                            </div>
+                        )}
 
                             {activeTab === 'reviews' && (
                                 <div
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className="pt-4"
+                                    className="pt-6"
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
@@ -874,34 +883,34 @@ export function ServiceReviewPage({
                                         averageRating={finalRating}
                                         onShowAll={() => setReviewsModalOpen(true)}
                                     />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                                                    </div>
+                                                                            </div>
 
                 <MobileReserveFooter
                     price={getMobileFooterPriceLine(finalPrice)}
                     priceSuffix="por servicio"
                     priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
                 >
-                    {isAuthenticated ? (
-                        <button
-                            onClick={handleReserveClick}
-                            type="button"
+                            {isAuthenticated ? (
+                                <button
+                                    onClick={handleReserveClick}
+                                    type="button"
                             className={SD_MOBILE_FOOTER_CTA_CLASS}
-                        >
+                                >
                             Reservar
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
+                                </button>
+                            ) : (
+                                    <button
+                                        type="button"
                             onClick={openLoginForCheckout}
                             className={SD_MOBILE_FOOTER_CTA_CLASS}
                         >
                             Inicia sesión
-                        </button>
-                    )}
+                                    </button>
+                            )}
                 </MobileReserveFooter>
             </div>
 
@@ -913,15 +922,15 @@ export function ServiceReviewPage({
                     <div className={`${SD_PAGE_GRID_CLASS}`}>
                         <div className="min-w-0 space-y-5 lg:space-y-6">
                             <div className="relative">
-                                <ServiceDetailDesktopGallery
-                                    images={validImages}
-                                    onOpen={handleImageClick}
-                                    loadingImages={loadingImages}
-                                    failedImages={failedImages}
-                                    onImageError={handleImageError}
-                                    onImageLoad={handleImageLoad}
-                                    onImageLoadStart={handleImageLoadStart}
-                                />
+                    <ServiceDetailDesktopGallery
+                        images={validImages}
+                        onOpen={handleImageClick}
+                        loadingImages={loadingImages}
+                        failedImages={failedImages}
+                        onImageError={handleImageError}
+                        onImageLoad={handleImageLoad}
+                        onImageLoadStart={handleImageLoadStart}
+                    />
                                 {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
                                     <ServiceDetailDeliverablesGuide
                                         items={finalDeliverableTypes}
@@ -969,7 +978,7 @@ export function ServiceReviewPage({
                             )}
 
                             {displayMainDescription && (
-                                <section>
+                            <section>
                                     <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
                                     <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
                                         {displayMainDescription}
@@ -1023,13 +1032,13 @@ export function ServiceReviewPage({
                                             />
                                         </button>
                                     </div>
-                                </div>
+                        </div>
                                 <section className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
                                     <p className="text-2xl font-semibold tracking-tight text-[#1c1c1c]">
                                         {renderServicePrice(finalPrice)}
                                     </p>
                                     <p className="text-sm text-[#6a6a6a]">por servicio</p>
-                                    {finalRating > 0 && (
+                                {finalRating > 0 && (
                                         <button
                                             type="button"
                                             onClick={() => setReviewsModalOpen(true)}
@@ -1075,13 +1084,13 @@ export function ServiceReviewPage({
                                         Reservar
                                     </button>
                                 ) : (
-                                    <button
-                                        type="button"
+                                        <button
+                                            type="button"
                                         onClick={openLoginForCheckout}
                                         className="sd-btn-primary w-full min-w-0"
-                                    >
+                                        >
                                         Inicia sesión para reservar
-                                    </button>
+                                        </button>
                                 )}
                                 <p className="text-xs leading-relaxed text-[#6a6a6a]">
                                     Sin cargo hasta confirmar la reserva con el experto.

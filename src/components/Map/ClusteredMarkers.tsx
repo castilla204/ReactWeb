@@ -1,12 +1,13 @@
-import React, { useMemo, useCallback } from 'react';
-import { useMap, AdvancedMarker } from '@vis.gl/react-google-maps';
+import React, { useMemo, useEffect, useRef } from 'react';
+import maplibregl from 'maplibre-gl';
 import useSupercluster from 'use-supercluster';
 import { Service } from '../../hooks/useServiceLoader';
-import { ServiceMarker } from './ServiceMarker';
-import { ClusterMarker } from './ClusterMarker';
 
 interface ClusteredMarkersProps {
+  map: maplibregl.Map | null;
   services: Service[];
+  bounds?: [number, number, number, number];
+  zoom?: number;
   selectedServiceId?: number | null;
   onServiceClick?: (service: Service) => void;
   clusterRadius?: number; // Radio de clustering en píxeles
@@ -22,22 +23,23 @@ interface ClusteredMarkersProps {
  * - Compatible con Airbnb/Google Maps
  */
 export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
+  map,
   services,
+  bounds,
+  zoom,
   selectedServiceId,
   onServiceClick,
-  clusterRadius = 75, // Similar a Airbnb
-  maxZoom = 16, // Dejar de agrupar en zoom 17+
+  clusterRadius = 56,
+  maxZoom = 17,
   minZoom = 0,
 }) => {
-  const map = useMap();
+  const markersRef = useRef<maplibregl.Marker[]>([]);
 
   // 1️⃣ Convertir servicios a formato GeoJSON para Supercluster
   const points = useMemo(() => {
     if (!services || services.length === 0) {
       return [];
     }
-
-    console.log(`🗺️ ClusteredMarkers: Procesando ${services.length} servicios para clustering`);
 
     // Validar y deduplicar por ID antes de crear puntos
     const uniqueMap = new Map<number, Service>();
@@ -46,8 +48,8 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         service &&
         service.id &&
         !isNaN(service.id) &&
-        service.lat &&
-        service.lng &&
+        Number.isFinite(service.lat) &&
+        Number.isFinite(service.lng) &&
         !isNaN(service.lat) &&
         !isNaN(service.lng) &&
         isFinite(service.lat) &&
@@ -61,12 +63,6 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     });
 
     const uniqueServices = Array.from(uniqueMap.values());
-
-    if (uniqueServices.length !== services.length) {
-      console.warn(
-        `⚠️ ClusteredMarkers: Filtrados ${services.length - uniqueServices.length} servicios duplicados/inválidos`
-      );
-    }
 
     // Crear puntos GeoJSON
     const geoJsonPoints = uniqueServices.map(service => ({
@@ -85,32 +81,13 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       },
     }));
 
-    console.log(`✅ ClusteredMarkers: ${geoJsonPoints.length} puntos únicos creados para clustering`);
     return geoJsonPoints;
   }, [services]);
-
-  // 2️⃣ Obtener bounds y zoom del mapa
-  const bounds = map?.getBounds();
-  const zoom = map?.getZoom();
-
-  const mapBounds = useMemo(() => {
-    if (!bounds) return undefined;
-
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-
-    return [
-      sw.lng(), // west
-      sw.lat(), // south
-      ne.lng(), // east
-      ne.lat(), // north
-    ] as [number, number, number, number];
-  }, [bounds]);
 
   // 3️⃣ Configurar Supercluster
   const { clusters, supercluster } = useSupercluster({
     points,
-    bounds: mapBounds,
+    bounds,
     zoom: zoom ?? 12,
     options: {
       radius: clusterRadius, // Radio de agrupación
@@ -122,81 +99,77 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     },
   });
 
-  // 4️⃣ Handler para expandir clusters
-  const handleClusterClick = useCallback(
-    (clusterId: number, latitude: number, longitude: number) => {
-      if (!map || !supercluster) return;
+  // 4️⃣ Dibujar marcadores/clusteres en MapLibre
+  useEffect(() => {
+    if (!map) return;
 
-      try {
-        // Obtener el zoom de expansión del cluster
-        const expansionZoom = Math.min(
-          supercluster.getClusterExpansionZoom(clusterId),
-          maxZoom
-        );
+    // Limpiar markers previos
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
 
-        // Animar hacia el cluster
-        map.panTo({ lat: latitude, lng: longitude });
-        
-        // Hacer zoom con animación suave
-        setTimeout(() => {
-          map.setZoom(expansionZoom);
-        }, 200);
+    if (!clusters || clusters.length === 0) return;
 
-        console.log(`🔍 Expandiendo cluster ${clusterId} a zoom ${expansionZoom}`);
-      } catch (error) {
-        console.error('Error expandiendo cluster:', error);
+    clusters.forEach((cluster) => {
+      const [lng, lat] = cluster.geometry.coordinates as [number, number];
+      const { cluster: isCluster, point_count: pointCount } = cluster.properties as any;
+
+      if (isCluster) {
+        const clusterEl = document.createElement('button');
+        clusterEl.type = 'button';
+        clusterEl.style.width = `${Math.min(80, Math.max(40, 36 + Math.log2(pointCount || 1) * 8))}px`;
+        clusterEl.style.height = clusterEl.style.width;
+        clusterEl.style.borderRadius = '9999px';
+        clusterEl.style.background = '#0066CC';
+        clusterEl.style.color = '#fff';
+        clusterEl.style.border = '2px solid #fff';
+        clusterEl.style.fontWeight = '700';
+        clusterEl.style.cursor = 'pointer';
+        clusterEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+        clusterEl.textContent = String(pointCount ?? 0);
+        clusterEl.setAttribute('aria-label', `Cluster con ${pointCount} servicios`);
+
+        clusterEl.addEventListener('click', () => {
+          if (!supercluster) return;
+          // Forzar avance real de zoom para desagrupar visualmente
+          const currentZoom = map.getZoom();
+          const suggestedZoom = supercluster.getClusterExpansionZoom(cluster.id as number);
+          const expansionZoom = Math.max(suggestedZoom, currentZoom + 1);
+          map.easeTo({ center: [lng, lat], zoom: expansionZoom, duration: 350 });
+        });
+
+        markersRef.current.push(new maplibregl.Marker({ element: clusterEl }).setLngLat([lng, lat]).addTo(map));
+        return;
       }
-    },
-    [map, supercluster, maxZoom]
-  );
 
-  // 5️⃣ Renderizar clusters y marcadores
-  if (!clusters || clusters.length === 0) {
-    return null;
-  }
+      const service = (cluster.properties as any).service as Service;
+      if (!service?.id) return;
 
-  console.log(
-    `🎯 ClusteredMarkers: Renderizando ${clusters.length} elementos (clusters + marcadores individuales)`
-  );
+      const markerEl = document.createElement('button');
+      markerEl.type = 'button';
+      markerEl.style.padding = '6px 14px';
+      markerEl.style.borderRadius = '9999px';
+      markerEl.style.fontWeight = '700';
+      markerEl.style.fontSize = '14px';
+      markerEl.style.cursor = 'pointer';
+      markerEl.style.whiteSpace = 'nowrap';
+      markerEl.style.border = selectedServiceId === service.id ? 'none' : '1.5px solid #e5e5e5';
+      markerEl.style.background = selectedServiceId === service.id ? '#0066CC' : '#fff';
+      markerEl.style.color = selectedServiceId === service.id ? '#fff' : '#222';
+      markerEl.style.boxShadow = selectedServiceId === service.id ? '0 4px 16px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.25)';
+      markerEl.textContent = service.price > 0 ? `€${Math.round(service.price)}` : 'Consultar';
+      markerEl.setAttribute('aria-label', `Servicio ${service.name}`);
+      markerEl.addEventListener('click', () => onServiceClick?.(service));
 
-  return (
-    <>
-      {clusters.map((cluster) => {
-        const [lng, lat] = cluster.geometry.coordinates;
-        const { cluster: isCluster, point_count: pointCount } = cluster.properties;
+      markersRef.current.push(new maplibregl.Marker({ element: markerEl }).setLngLat([service.lng, service.lat]).addTo(map));
+    });
 
-        // SI ES UN CLUSTER
-        if (isCluster) {
-          return (
-            <ClusterMarker
-              key={`cluster-${cluster.id}`}
-              latitude={lat}
-              longitude={lng}
-              pointCount={pointCount}
-              onClick={() => handleClusterClick(cluster.id as number, lat, lng)}
-            />
-          );
-        }
+    return () => {
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+    };
+  }, [map, clusters, onServiceClick, selectedServiceId, supercluster]);
 
-        // SI ES UN MARCADOR INDIVIDUAL
-        const service = cluster.properties.service as Service;
-
-        if (!service || !service.id) {
-          console.warn('⚠️ Servicio inválido en cluster:', cluster);
-          return null;
-        }
-
-        return (
-          <ServiceMarker
-            key={`service-${service.id}`}
-            service={service}
-            isSelected={selectedServiceId === service.id}
-            onClick={onServiceClick}
-          />
-        );
-      })}
-    </>
-  );
+  return null;
 };
 
 // Memoizar el componente para evitar re-renders innecesarios
