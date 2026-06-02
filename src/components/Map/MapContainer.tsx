@@ -50,7 +50,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onServicesChange,
   onLoadingChange,
   recenterMode = 'pan-only',
-  debounceMs = 280,
+  // ✅ 500 ms (no 280): da margen al gesto del drawer móvil sin disparar refetch
+  //    a mitad del arrastre cuando el mapa "se mueve" bajo el dedo. El default del
+  //    comentario superior ya decía 500; el valor real era 280.
+  debounceMs = 500,
   clusterRadius = 56,
   maxClusterZoom = 17,
 }) => {
@@ -344,7 +347,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         />
       )}
 
-      {isInitialLoading && <MapLoadingIndicator variant="initial" />}
+      {isInitialLoading && (
+        <MapLoadingIndicator variant="initial" className={isMobile ? '!top-16' : undefined} />
+      )}
       {isRefreshing && <MapLoadingIndicator variant="refresh" />}
 
       {error && (

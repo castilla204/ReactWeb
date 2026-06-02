@@ -171,3 +171,49 @@ export const hpCardText = {
     color: HP_COLOR.muted,
   },
 } as const;
+
+/** Paso mapa (crear-busqueda step=map) — gutters y tipografía unificados */
+export const MAP_DESKTOP_PANEL_GUTTER = 'px-6 xl:px-8';
+
+export const MAP_DESKTOP_HEADER_CLASS = `shrink-0 border-b border-[#e8e8e8] ${MAP_DESKTOP_PANEL_GUTTER} py-6`;
+
+export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-8 pt-6`;
+
+export const MAP_DESKTOP_GRID_CLASS =
+  'grid w-full grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-6';
+
+export const MAP_PAGE_TITLE_CLASS =
+  'relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]';
+
+export const MAP_PAGE_TITLE_MOBILE_CLASS =
+  'relative inline-block font-display text-[1.125rem] font-semibold leading-[1.3] tracking-[-0.02em] text-[#1c1c1c]';
+
+export const MAP_PAGE_SUBTITLE_CLASS =
+  'mt-2 max-w-md text-sm font-normal leading-[1.45] text-[#6a6a6a]';
+
+export const MAP_PAGE_SUBTITLE_MOBILE_CLASS =
+  'mt-1.5 text-sm font-normal leading-[1.45] text-[#6a6a6a]';
+
+export const MAP_MOBILE_DRAWER_HEADER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-4 pt-3 pr-12`;
+
+export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2.5rem+env(safe-area-inset-bottom,0px))] pt-2`;
+
+export const MAP_CARD_BODY_CLASS = 'px-4 py-3.5 font-display';
+
+export const MAP_CARD_EYEBROW_CLASS =
+  'text-[11px] font-semibold uppercase tracking-[0.08em] text-[#0066CC]';
+
+export const MAP_CARD_NAME_CLASS =
+  'truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
+
+export const MAP_CARD_HOOK_CLASS = 'text-sm font-normal leading-snug text-[#6a6a6a]';
+
+export const MAP_CARD_CHIP_CLASS =
+  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2.5 py-1 text-xs font-medium text-[#6a6a6a]';
+
+export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 text-[#1c1c1c]';
+
+export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-sm font-normal text-[#6a6a6a]';
+
+export const MAP_CARD_BADGE_CLASS =
+  'inline-flex items-center rounded-lg bg-white/95 px-2 py-1 font-display text-[10px] font-medium leading-3 text-[#222222] shadow-sm backdrop-blur-sm';
