@@ -8,7 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { showToast } from '../lib/toast';
-import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+import Map, { Marker, NavigationControl, type MapMouseEvent } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface ChatProps {
     searchId: number | null;
@@ -28,8 +29,6 @@ interface ChatProps {
     /** Volver / salir del chat */
     onBack?: () => void;
 }
-
-const libraries: ("drawing" | "geometry")[] = ['drawing', 'geometry'];
 
 function formatLastSeen(iso: string): string {
     const diffMs = Date.now() - new Date(iso).getTime();
@@ -62,49 +61,6 @@ function TypingDots({ className = '' }: { className?: string }) {
         </span>
     );
 }
-
-const mapStyles = [
-    {
-        featureType: "all",
-        elementType: "labels.text.fill",
-        stylers: [{ color: "#666666" }],
-    },
-    {
-        featureType: "water",
-        elementType: "geometry",
-        stylers: [{ color: "#e8f4f8" }],
-    },
-    {
-        featureType: "landscape",
-        elementType: "geometry",
-        stylers: [{ color: "#ffffff" }],
-    },
-    {
-        featureType: "road",
-        elementType: "geometry",
-        stylers: [{ color: "#e6e6e6" }],
-    },
-    {
-        featureType: "poi",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }],
-    },
-    {
-        featureType: "transit",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }],
-    },
-];
-
-const markerIcon = {
-    path: "M -4,0 A 4,4 0 1,0 4,0 A 4,4 0 1,0 -4,0",
-    fillColor: '#3b82f6',
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 1.5,
-    scale: 1.5,
-    zIndex: 3,
-};
 
 const defaultCenter = {
     lat: 40.4168,
@@ -294,7 +250,7 @@ const Chat: React.FC<ChatProps> = ({
             (hireExpertId != null && userId === hireExpertId) ||
             (isExpert && hireExpertId != null && userId === hireExpertId));
     const isChatLoading = conversationLoading ?? loading;
-    
+
     // State for image modal
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -305,11 +261,7 @@ const Chat: React.FC<ChatProps> = ({
     const [selectedMapLocation, setSelectedMapLocation] = useState(defaultCenter);
     const [messageSent, setMessageSent] = useState(false);
     const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const { isLoaded, loadError } = useLoadScript({
-        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        libraries,
-    });
+    const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || '';
 
     const otherParticipantId = isClient
         ? Number(expertId ?? 0)
@@ -385,22 +337,22 @@ const Chat: React.FC<ChatProps> = ({
             // Check if chat container is visible before scrolling
             const chatContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
             if (!chatContainer) return;
-            
+
             // Check if container is visible (not hidden by tab switching)
             const containerRect = chatContainer.getBoundingClientRect();
             const isContainerVisible = containerRect.width > 0 && containerRect.height > 0;
-            
+
             if (!isContainerVisible) return;
-            
+
             // Use a single timeout to avoid multiple scrolls
             const scrollToBottom = () => {
                 // Check again if container is still visible
                 const currentContainer = document.querySelector('[data-chat-messages]') as HTMLElement;
                 if (!currentContainer) return;
-                
+
                 const currentRect = currentContainer.getBoundingClientRect();
                 if (currentRect.width === 0 || currentRect.height === 0) return;
-                
+
                 // Check if already at bottom to avoid unnecessary scroll
                 const isNearBottom = currentContainer.scrollHeight - currentContainer.scrollTop <= currentContainer.clientHeight + 100;
                 if (!isNearBottom && messagesEndRef.current) {
@@ -456,11 +408,11 @@ const Chat: React.FC<ChatProps> = ({
         }
     };
 
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
+    const handleMapClick = (e: MapMouseEvent) => {
+        if (e.lngLat) {
             const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
+                lat: e.lngLat.lat,
+                lng: e.lngLat.lng,
             };
             setSelectedMapLocation(newLocation);
         }
@@ -525,7 +477,7 @@ const Chat: React.FC<ChatProps> = ({
         if (senderId === null || senderId === undefined) {
             return 'bg-gray-500';
         }
-        
+
         if (String(senderId) === String(user?.id)) {
             return 'bg-gray-600';
         }
@@ -626,7 +578,7 @@ const Chat: React.FC<ChatProps> = ({
             previousMessage &&
             ((prevSid === null && currSid === null) ||
                 (prevSid !== null && currSid !== null && prevSid === currSid));
-        
+
         if (sameSender && timeDiff < 5 * 60 * 1000) {
             groups[groups.length - 1].messages.push(message);
         } else {
@@ -726,7 +678,7 @@ const Chat: React.FC<ChatProps> = ({
                             const isFirstInGroup = msgIndex === 0;
                             const isLastInGroup = msgIndex === group.messages.length - 1;
                                     const isStatusMessage = message.content && isAppointmentStatusChangeMessage(message.content);
-                                    
+
                                     // Mensajes de estado → pill centrado minimalista
                                     if (isStatusMessage) {
                                         const statusValue = extractStatusValue(message.content);
@@ -741,11 +693,11 @@ const Chat: React.FC<ChatProps> = ({
                                             </div>
                                         );
                                     }
-                                    
+
                                     // Mensaje normal con avatar - Estilo igual a PreHireChat
                                     const isOwnMessage =
                                         isMessageFromUser(message.senderId, userId) || group.isOwn;
-                                    
+
                                     return (
                                         <div
                                             key={message.id}
@@ -798,7 +750,7 @@ const Chat: React.FC<ChatProps> = ({
                                                         })}
                                                     </span>
                                                 )}
-                                                
+
                                                 {/* Adjuntos */}
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
                                                     <div className="flex flex-wrap gap-2 mt-2">
@@ -961,28 +913,39 @@ const Chat: React.FC<ChatProps> = ({
                             <h3 className="text-lg font-semibold text-gray-900">Seleccionar Ubicación</h3>
                         </div>
 
-                        {isLoaded && !loadError ? (
+                        {mapboxToken ? (
                             <div className="relative h-[400px]">
-                                <GoogleMap
-                                    mapContainerStyle={{ width: '100%', height: '100%' }}
-                                    zoom={14}
-                                    center={selectedMapLocation}
-                                    onClick={handleMapClick}
-                                    options={{
-                                        disableDefaultUI: false,
-                                        zoomControl: true,
-                                        mapTypeControl: false,
-                                        scaleControl: true,
-                                        streetViewControl: false,
-                                        rotateControl: false,
-                                        fullscreenControl: false,
-                                        styles: mapStyles,
+                                <Map
+                                    mapboxAccessToken={mapboxToken}
+                                    initialViewState={{
+                                        longitude: selectedMapLocation.lng,
+                                        latitude: selectedMapLocation.lat,
+                                        zoom: 14,
                                     }}
+                                    style={{ width: '100%', height: '100%' }}
+                                    mapStyle="mapbox://styles/mapbox/streets-v12"
+                                    onClick={handleMapClick}
                                 >
+                                    <NavigationControl position="top-right" />
                                     {selectedMapLocation && (
-                                        <Marker position={selectedMapLocation} icon={markerIcon} />
+                                        <Marker
+                                            longitude={selectedMapLocation.lng}
+                                            latitude={selectedMapLocation.lat}
+                                            anchor="center"
+                                        >
+                                            <div
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    backgroundColor: '#3b82f6',
+                                                    border: '2px solid #ffffff',
+                                                    borderRadius: '50%',
+                                                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                                }}
+                                            />
+                                        </Marker>
                                     )}
-                                </GoogleMap>
+                                </Map>
                                 <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
                                     <span className="text-sm text-gray-700 font-medium">
                                         Haz clic para seleccionar una ubicación
@@ -998,11 +961,7 @@ const Chat: React.FC<ChatProps> = ({
                             </div>
                         ) : (
                             <div className="h-[400px] flex items-center justify-center bg-gray-50">
-                                {loadError ? (
-                                    <span className="text-red-500">Error al cargar el mapa</span>
-                                ) : (
-                                    <span className="text-gray-500">Cargando mapa...</span>
-                                )}
+                                <span className="text-red-500">Error al cargar el mapa: falta VITE_MAPBOX_PUBLIC_TOKEN</span>
                             </div>
                         )}
 
@@ -1026,7 +985,7 @@ const Chat: React.FC<ChatProps> = ({
 
             {/* Image Modal */}
             {selectedImage && (
-                <div 
+                <div
                     className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
                     onClick={() => setSelectedImage(null)}
                 >

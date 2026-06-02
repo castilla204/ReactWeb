@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLoadScript } from '@react-google-maps/api';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import CountrySelector from './CountrySelector';
-import { getCountryCoordinates } from '../utils/countryCoordinates';
-
-const libraries: ('drawing' | 'geometry' | 'places')[] = ['geometry', 'places'];
+import {
+  searchMapboxAutocomplete,
+  reverseGeocodeMapbox,
+  MapboxAutocompleteItem,
+} from '../utils/mapboxGeocoding';
 
 interface AppointmentMapProps {
   onLocationSelect?: (location: {
@@ -27,19 +30,106 @@ interface AppointmentMapProps {
   className?: string;
   radius?: number;
   service?: any;
-  expertCountry?: string | null; // ✅ NUEVO: País del experto para mostrar en el selector
-  // ✅ NUEVAS PROPS PARA MODO SIMPLIFICADO
-  showSearch?: boolean; // Mostrar input de búsqueda
-  showCountrySelector?: boolean; // Mostrar selector de país
-  showExpertMarker?: boolean; // Mostrar marcador verde del experto
-  defaultZoom?: number; // Zoom por defecto (menor = más alejado)
+  expertCountry?: string | null;
+  showSearch?: boolean;
+  showCountrySelector?: boolean;
+  showExpertMarker?: boolean;
+  defaultZoom?: number;
 }
+
+// ============================================================================
+// Helpers (haversine + circle polygon)
+// ============================================================================
+
+const EARTH_RADIUS_KM = 6371;
+
+/**
+ * Distancia haversine entre dos puntos lat/lng en kilómetros.
+ */
+const haversineDistanceKm = (
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number => {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
+};
+
+/**
+ * Construye un anillo de coordenadas [lng,lat] aproximando un círculo geodésico.
+ * Devuelve `steps + 1` puntos cerrando el polígono.
+ */
+const buildCirclePolygon = (
+  centerLng: number,
+  centerLat: number,
+  radiusKm: number,
+  steps = 96,
+): Array<[number, number]> => {
+  const coords: Array<[number, number]> = [];
+  const distanceX =
+    radiusKm / (EARTH_RADIUS_KM * Math.cos((centerLat * Math.PI) / 180)) * (180 / Math.PI);
+  const distanceY = (radiusKm / EARTH_RADIUS_KM) * (180 / Math.PI);
+
+  for (let i = 0; i < steps; i++) {
+    const theta = (i / steps) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    coords.push([centerLng + x, centerLat + y]);
+  }
+  // Cerrar el anillo
+  coords.push(coords[0]);
+  return coords;
+};
+
+// ============================================================================
+// Sources/layers ids constants (para referenciarlos en cleanup/update)
+// ============================================================================
+
+const SRC_CIRCLE = 'appt-circle-src';
+const SRC_MASK = 'appt-mask-src';
+const LAYER_CIRCLE_FILL = 'appt-circle-fill';
+const LAYER_CIRCLE_LINE = 'appt-circle-line';
+const LAYER_MASK_FILL = 'appt-mask-fill';
+
+const EXPERT_MARKER_SVG = `
+  <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#4B5563" stroke="#374151" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
+  </svg>
+`;
+
+const SELECTED_MARKER_SVG = `
+  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="#1E40AF" stroke-width="3"/>
+    <circle cx="16" cy="16" r="6" fill="#FFFFFF"/>
+    <circle cx="16" cy="16" r="3" fill="#3B82F6"/>
+  </svg>
+`;
+
+const buildMarkerElement = (svg: string, size: number): HTMLDivElement => {
+  const el = document.createElement('div');
+  el.style.width = `${size}px`;
+  el.style.height = `${size}px`;
+  el.style.cursor = 'pointer';
+  el.innerHTML = svg.trim();
+  return el;
+};
+
+// ============================================================================
+// Component
+// ============================================================================
 
 const AppointmentMap: React.FC<AppointmentMapProps> = ({
   latitude,
   longitude,
-  address = "Ubicación del servicio",
-  className = "w-full h-64",
+  address: _address = 'Ubicación del servicio',
+  className = 'w-full h-64',
   radius,
   service,
   expertLocation,
@@ -51,515 +141,407 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   showSearch = true,
   showCountrySelector = true,
   showExpertMarker = true,
-  defaultZoom = 10
+  defaultZoom = 10,
 }) => {
-  const { isLoaded, loadError } = useLoadScript({
-    // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-    libraries
-  });
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const expertMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const selectedMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
-  const searchInputId = React.useMemo(() => `search-input-${Math.random().toString(36).substr(2, 9)}`, []);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(expertCountry || null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [autocompleteResults, setAutocompleteResults] = useState<MapboxAutocompleteItem[]>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Actualizar selectedCountry cuando cambia expertCountry
+  // ---------------------------------------------------------------------------
+  // Coordenadas / props normalizadas
+  // ---------------------------------------------------------------------------
+
   useEffect(() => {
-    if (expertCountry) {
-      setSelectedCountry(expertCountry);
-    }
+    if (expertCountry) setSelectedCountry(expertCountry);
   }, [expertCountry]);
-  
+
   const getCoordinates = () => {
-    // Validar y convertir a número (maneja tanto strings como números)
     const toValidNumber = (value: any): number | null => {
       if (value === null || value === undefined) return null;
       const num = typeof value === 'string' ? parseFloat(value) : Number(value);
-      return (typeof num === 'number' && !isNaN(num) && isFinite(num)) ? num : null;
+      return typeof num === 'number' && !isNaN(num) && isFinite(num) ? num : null;
     };
-    
-    // Prioridad 1: expertLocation (puede venir como string o número)
+
     if (expertLocation) {
       const lat = toValidNumber(expertLocation.latitude);
       const lng = toValidNumber(expertLocation.longitude);
       if (lat !== null && lng !== null) {
         const range = toValidNumber(expertRange);
-        console.log('[AppointmentMap] Usando expertLocation:', { lat, lng, range: range || 25 });
-        return {
-          lat: lat,
-          lng: lng,
-          radius: range !== null ? range : 25
-        };
+        return { lat, lng, radius: range !== null ? range : 25 };
       }
     }
-    
-    // Prioridad 2: service.searchHire.service (puede venir como string)
+
     if (service?.searchHire?.service) {
       const serviceData = service.searchHire.service;
       const lat = toValidNumber(serviceData.expertLatitude);
       const lng = toValidNumber(serviceData.expertLongitude);
       if (lat !== null && lng !== null) {
         const range = toValidNumber(serviceData.locationRange);
-        console.log('[AppointmentMap] Usando service.searchHire.service:', { lat, lng, range: range || 25 });
-        return {
-          lat: lat,
-          lng: lng,
-          radius: range !== null ? range : 25
-        };
+        return { lat, lng, radius: range !== null ? range : 25 };
       }
     }
-    
-    // Prioridad 3: initialLocation
+
     if (initialLocation) {
       const lat = toValidNumber(initialLocation.latitude);
       const lng = toValidNumber(initialLocation.longitude);
       if (lat !== null && lng !== null) {
         const range = toValidNumber(radius);
-        console.log('[AppointmentMap] Usando initialLocation:', { lat, lng, range: range || 500 });
-        return {
-          lat: lat,
-          lng: lng,
-          radius: range !== null ? range : 500
-        };
+        return { lat, lng, radius: range !== null ? range : 500 };
       }
     }
-    
-    // Valores por defecto (Madrid) solo si no hay coordenadas válidas
+
     const defaultLat = toValidNumber(latitude) ?? 40.4168;
     const defaultLng = toValidNumber(longitude) ?? -3.7038;
     const defaultRadius = toValidNumber(radius) ?? 500;
-    
-    return {
-      lat: defaultLat,
-      lng: defaultLng,
-      radius: defaultRadius
-    };
+    return { lat: defaultLat, lng: defaultLng, radius: defaultRadius };
   };
 
-  // Memoizar las coordenadas para evitar recálculos innecesarios
-  const memoizedCoordinates = React.useMemo(() => {
-    const coords = getCoordinates();
-    console.log('[AppointmentMap] Coordenadas calculadas:', coords, 'expertLocation:', expertLocation);
-    return coords;
-  }, [expertLocation?.latitude, expertLocation?.longitude, expertRange, initialLocation?.latitude, initialLocation?.longitude, service]);
-  
-  useEffect(() => {
-    if (!isLoaded || loadError || !mapRef.current) return;
+  const memoizedCoordinates = React.useMemo(
+    () => getCoordinates(),
+    [
+      expertLocation?.latitude,
+      expertLocation?.longitude,
+      expertRange,
+      initialLocation?.latitude,
+      initialLocation?.longitude,
+      service,
+      latitude,
+      longitude,
+      radius,
+    ],
+  );
 
-    // Validar coordenadas antes de crear el mapa
+  // ---------------------------------------------------------------------------
+  // Inicialización del mapa (una sola vez)
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
+    if (!token) {
+      console.error('[AppointmentMap] Falta VITE_MAPBOX_PUBLIC_TOKEN');
+      return;
+    }
+
     if (!isFinite(memoizedCoordinates.lat) || !isFinite(memoizedCoordinates.lng)) {
       console.error('[AppointmentMap] Coordenadas inválidas:', memoizedCoordinates);
       return;
     }
-    
-    console.log('[AppointmentMap] Creando mapa con coordenadas:', memoizedCoordinates);
 
-    mapRef.current.innerHTML = '';
+    mapboxgl.accessToken = token;
 
-    if (!(window as any).google || !(window as any).google.maps) {
-      console.error('Google Maps no está disponible');
-      return;
-    }
-    
-    if (!(window as any).google.maps.geometry || !(window as any).google.maps.geometry.spherical) {
-      console.error('Google Maps Geometry library no está disponible');
-      return;
-    }
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [memoizedCoordinates.lng, memoizedCoordinates.lat],
+      zoom: defaultZoom,
+      minZoom: 3,
+      maxZoom: 20,
+      interactive: !disabled,
+      attributionControl: false,
+    });
 
-    try {
-      const map = new (window as any).google.maps.Map(mapRef.current, {
-        center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
-        zoom: defaultZoom,
-        mapTypeId: 'roadmap',
-        streetViewControl: false,
-        fullscreenControl: false,
-        zoomControl: false,
-        mapTypeControl: false,
-        scaleControl: false,
-        rotateControl: false,
-        clickableIcons: false,
-        draggable: !disabled, // Deshabilitar arrastre si está deshabilitado
-        minZoom: 3, // ✅ Limitar zoom mínimo: permite ver continentes pero no tanto fondo gris
-        maxZoom: 20, // ✅ Limitar zoom máximo también
+    mapRef.current = map;
+
+    map.on('load', () => {
+      // 1) Círculo de cobertura
+      const circleRing = buildCirclePolygon(
+        memoizedCoordinates.lng,
+        memoizedCoordinates.lat,
+        memoizedCoordinates.radius,
+      );
+
+      map.addSource(SRC_CIRCLE, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: [circleRing],
+          },
+        },
       });
 
-      // Guardar referencia del mapa para poder actualizarlo desde el selector de países
-      mapInstanceRef.current = map;
+      map.addLayer({
+        id: LAYER_CIRCLE_FILL,
+        type: 'fill',
+        source: SRC_CIRCLE,
+        paint: {
+          'fill-color': '#F3F4F6',
+          'fill-opacity': 0.15,
+        },
+      });
 
-      // Solo crear marcador del experto si las coordenadas son válidas Y showExpertMarker es true
-      if (showExpertMarker && isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng)) {
-        new (window as any).google.maps.Marker({
-          position: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
-          map: map,
-          title: "Ubicación del experto",
-          icon: {
-            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-              <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#4B5563" stroke="#374151" stroke-width="1.5"/>
-                <circle cx="12" cy="12" r="4" fill="#FFFFFF"/>
-              </svg>
-            `),
-            scaledSize: new (window as any).google.maps.Size(24, 24),
-            anchor: new (window as any).google.maps.Point(12, 12)
-          }
-        });
+      map.addLayer({
+        id: LAYER_CIRCLE_LINE,
+        type: 'line',
+        source: SRC_CIRCLE,
+        paint: {
+          'line-color': '#6B7280',
+          'line-opacity': 0.4,
+          'line-width': 2,
+        },
+      });
+
+      // 2) Máscara invertida: polígono mundial con anillo interior = círculo
+      // El segundo anillo crea un "agujero" sobre el área de cobertura.
+      const worldRing: Array<[number, number]> = [
+        [-180, -85],
+        [180, -85],
+        [180, 85],
+        [-180, 85],
+        [-180, -85],
+      ];
+
+      map.addSource(SRC_MASK, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: [worldRing, circleRing],
+          },
+        },
+      });
+
+      map.addLayer(
+        {
+          id: LAYER_MASK_FILL,
+          type: 'fill',
+          source: SRC_MASK,
+          paint: {
+            'fill-color': '#EF4444',
+            'fill-opacity': 0.4,
+          },
+        },
+        LAYER_CIRCLE_LINE, // insertar debajo de la línea del círculo
+      );
+
+      // 3) Marker del experto
+      if (
+        showExpertMarker &&
+        isFinite(memoizedCoordinates.lat) &&
+        isFinite(memoizedCoordinates.lng)
+      ) {
+        const expertEl = buildMarkerElement(EXPERT_MARKER_SVG, 24);
+        expertMarkerRef.current = new mapboxgl.Marker({
+          element: expertEl,
+          anchor: 'center',
+        })
+          .setLngLat([memoizedCoordinates.lng, memoizedCoordinates.lat])
+          .addTo(map);
       }
 
-      const radiusInMeters = (memoizedCoordinates.radius && isFinite(memoizedCoordinates.radius)) ? memoizedCoordinates.radius * 1000 : 25000;
-
-      const createMask = () => {
-        // Validar coordenadas antes de crear la máscara
-        if (!isFinite(memoizedCoordinates.lat) || !isFinite(memoizedCoordinates.lng)) {
-          return [];
-        }
-        
-        // Calcular el antipode (punto opuesto en la Tierra)
-        const antipode = {
-          lat: -memoizedCoordinates.lat,
-          lng: memoizedCoordinates.lng > 0 ? memoizedCoordinates.lng - 180 : memoizedCoordinates.lng + 180
-        };
-        
-        // Validar que el antipode también sea válido
-        if (!isFinite(antipode.lat) || !isFinite(antipode.lng)) {
-          return [];
-        }
-        
-        // *** CORRECCIÓN: Usar un radio grande (20,000 km) para asegurar que la máscara cubra todo, 
-        // *** dejando el agujero del tamaño del círculo verde (25km).
-        const inverseRadius = 20000 * 1000.625; // 20,000 km en metros
-        
-        const maskCircle = new (window as any).google.maps.Circle({
-          center: antipode,
-          radius: inverseRadius, // Usar el radio muy grande
-          fillColor: '#EF4444',
-          fillOpacity: 0.4,
-          strokeColor: '#EF4444',
-          strokeOpacity: 0.1,
-          strokeWeight: 0,
-          map: map,
-          clickable: false // IMPORTANTE: Hacer la máscara no clickeable
-        });
-
-        return [maskCircle];
-      };
-
-      let maskElements: any[] = [];
-      let maskCreated = false;
-      let boundsChangedTimeout: NodeJS.Timeout | null = null;
-
-      const createMaskWhenReady = () => {
-        if (maskElements.length > 0) {
-          maskElements.forEach(element => element.setMap(null));
-          maskElements = [];
-        }
-        const newMaskElements = createMask();
-        maskElements = newMaskElements;
-        maskCreated = true;
-      };
-
-      // Crear la máscara solo una vez cuando el mapa esté listo
-      (window as any).google.maps.event.addListenerOnce(map, 'idle', () => {
-        if (!maskCreated) {
-          createMaskWhenReady();
-        }
-      });
-
-      // Redibujar la máscara solo si el usuario se aleja mucho (con debounce)
-      map.addListener('bounds_changed', () => {
-        if (boundsChangedTimeout) {
-          clearTimeout(boundsChangedTimeout);
-        }
-        boundsChangedTimeout = setTimeout(() => {
-          const bounds = map.getBounds();
-          if (bounds) {
-            const center = bounds.getCenter();
-            const distance = (window as any).google.maps.geometry.spherical.computeDistanceBetween(
-              new (window as any).google.maps.LatLng(memoizedCoordinates.lat, memoizedCoordinates.lng),
-              center
-            );
-            // Solo redibujar si el usuario se aleja más de 50km del centro original
-            if (distance > 50000) {
-              createMaskWhenReady();
-            }
-          }
-        }, 500);
-      });
-
-      // Add a transparent circle to define the boundary (solo si las coordenadas son válidas)
-      if (isFinite(memoizedCoordinates.lat) && isFinite(memoizedCoordinates.lng) && isFinite(radiusInMeters)) {
-        new (window as any).google.maps.Circle({
-          strokeColor: '#6B7280',
-          strokeOpacity: 0.4,
-          strokeWeight: 2,
-          fillColor: '#F3F4F6',
-          fillOpacity: 0.15,
-          map: map,
-          center: { lat: memoizedCoordinates.lat, lng: memoizedCoordinates.lng },
-          radius: radiusInMeters,
-          clickable: false // IMPORTANTE: Hacer el círculo no clickeable
-        });
-      }
-
-      let selectedMarker: any = null;
-      let selectedInfoWindow: any = null;
-
-      const isWithinRange = (lat: number, lng: number) => {
-        if (!(window as any).google.maps.geometry || !(window as any).google.maps.geometry.spherical) {
-          console.error('Geometry library no disponible para calcular distancia.');
-          return false;
-        }
-
-        try {
-          const distance = (window as any).google.maps.geometry.spherical.computeDistanceBetween(
-            new (window as any).google.maps.LatLng(memoizedCoordinates.lat, memoizedCoordinates.lng),
-            new (window as any).google.maps.LatLng(lat, lng)
-          );
-          
-          const isWithin = distance <= radiusInMeters;
-          console.log(`📍 Distancia calculada: ${(distance/1000).toFixed(2)}km, Límite: ${(radiusInMeters/1000).toFixed(2)}km, Dentro del rango: ${isWithin}`);
-          
-          return isWithin;
-        } catch (error) {
-          console.error('Error calculando distancia:', error);
-          return false;
-        }
-      };
-
-      // Función para crear marcador
-      const createMarker = (lat: number, lng: number, title: string = "Ubicación seleccionada") => {
-        // Si el mapa está deshabilitado, no crear marcadores
-        if (disabled) {
-          console.log('🚫 Mapa deshabilitado, no se creará marcador');
-          return null;
-        }
-        
-        try {
-          // Validar coordenadas
-          if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-            console.error('Coordenadas inválidas:', { lat, lng });
-            return null;
-          }
-
-          // Eliminar marcador anterior si existe
-          if (selectedMarker) {
-            selectedMarker.setMap(null);
-          }
-          if (selectedInfoWindow) {
-            selectedInfoWindow.close();
-          }
-
-          console.log(`📍 Creando marcador en: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-
-          // Crear nuevo marcador
-          selectedMarker = new (window as any).google.maps.Marker({
-            position: { lat: lat, lng: lng },
-            map: map,
-            title: title,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-               <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                 <circle cx="16" cy="16" r="14" fill="#3B82F6" stroke="#1E40AF" stroke-width="3"/>
-                 <circle cx="16" cy="16" r="6" fill="#FFFFFF"/>
-                 <circle cx="16" cy="16" r="3" fill="#3B82F6"/>
-                </svg>
-              `),
-              scaledSize: new (window as any).google.maps.Size(32, 32),
-              anchor: new (window as any).google.maps.Point(16, 16)
-            }
-          });
-
-          console.log('✅ Marcador creado exitosamente');
-          return selectedMarker;
-        } catch (error) {
-          console.error('Error creando marcador:', error);
-          return null;
-        }
-      };
-
-      // Si hay una ubicación inicial, crear el marcador solo si no está deshabilitado
+      // 4) Marcador de ubicación inicial (si se pasó)
       if (initialLocation && !disabled) {
-        createMarker(initialLocation.latitude, initialLocation.longitude, "Ubicación seleccionada");
+        const initLat = Number(initialLocation.latitude);
+        const initLng = Number(initialLocation.longitude);
+        if (isFinite(initLat) && isFinite(initLng)) {
+          const el = buildMarkerElement(SELECTED_MARKER_SVG, 32);
+          selectedMarkerRef.current = new mapboxgl.Marker({
+            element: el,
+            anchor: 'center',
+          })
+            .setLngLat([initLng, initLat])
+            .addTo(map);
+        }
+      }
+    });
+
+    // 5) Click handler con reverse geocoding
+    const handleClick = async (e: mapboxgl.MapMouseEvent) => {
+      if (disabled || !onLocationSelect) return;
+
+      const clickedLat = e.lngLat.lat;
+      const clickedLng = e.lngLat.lng;
+
+      // Validar que esté dentro del rango (haversine)
+      const distanceKm = haversineDistanceKm(
+        memoizedCoordinates.lat,
+        memoizedCoordinates.lng,
+        clickedLat,
+        clickedLng,
+      );
+
+      if (distanceKm > memoizedCoordinates.radius) {
+        // Fuera del rango: no hacer nada
+        return;
       }
 
-       const handleMapClick = (event: any) => {
-         // Si el mapa está deshabilitado, no hacer nada
-         if (disabled || !onLocationSelect) {
-           return;
-         }
-         
-         if (!event || !event.latLng) {
-           console.error('Evento de clic inválido:', event);
-           return;
-         }
-
-         const clickedLat = event.latLng.lat();
-         const clickedLng = event.latLng.lng();
-        
-         console.log(`🖱️ Clic en coordenadas: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`);
-        
-         // Verificar si el clic está dentro del rango permitido
-         if (!isWithinRange(clickedLat, clickedLng)) {
-           console.log('🚫 Clic fuera del rango permitido');
-           return; // No hacer nada si está fuera del rango
-         }
-
-         console.log('✅ Clic dentro del rango, creando marcador...');
-         
-         // Crear marcador usando la función helper
-         createMarker(clickedLat, clickedLng, "Ubicación seleccionada");
-
-        // Geocoding para obtener dirección legible
-        const geocoder = new (window as any).google.maps.Geocoder();
-        geocoder.geocode({ 
-          location: { lat: clickedLat, lng: clickedLng },
-          language: 'es',
-          region: 'ES'
-        }, (results: any, status: any) => {
-          let address = `Ubicación: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
-          
-          if (status === 'OK' && results && results.length > 0) {
-            // Buscar el primer resultado que NO sea Plus Code
-            for (let result of results) {
-              if (result.formatted_address && 
-                  !result.formatted_address.includes('+') && 
-                  !result.formatted_address.match(/^[A-Z0-9]+\+[A-Z0-9]+/)) {
-                address = result.formatted_address;
-                break;
-              }
-            }
-          }
-
-          // Llamar a la función de callback
-          if (onLocationSelect) {
-            onLocationSelect({
-              address: address,
-              latitude: clickedLat,
-              longitude: clickedLng
-            });
-          }
-        });
-      };
-
-       // Agregar listener de clic al mapa solo si no está deshabilitado
-      if (!disabled && onLocationSelect) {
-        map.addListener('click', handleMapClick);
+      // Crear/mover marcador seleccionado
+      if (selectedMarkerRef.current) {
+        selectedMarkerRef.current.setLngLat([clickedLng, clickedLat]);
+      } else {
+        const el = buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        selectedMarkerRef.current = new mapboxgl.Marker({
+          element: el,
+          anchor: 'center',
+        })
+          .setLngLat([clickedLng, clickedLat])
+          .addTo(map);
       }
 
-      const searchInput = document.getElementById(searchInputId);
-      if (searchInput && showSearch) {
-        // Crear SearchBox pero sin vincularlo al mapa para evitar interferencias
-        const searchBox = new (window as any).google.maps.places.SearchBox(searchInput);
-        
-        searchBox.addListener('places_changed', () => {
-          const places = searchBox.getPlaces();
-          if (places.length === 0) return;
-
-          const place = places[0];
-          if (place.geometry && place.geometry.location) {
-            const placeLat = place.geometry.location.lat();
-            const placeLng = place.geometry.location.lng();
-            
-              map.setCenter(place.geometry.location);
-              map.setZoom(15);
-              
-             // Crear marcador para la búsqueda usando la función helper (solo si no está deshabilitado)
-             if (!disabled) {
-               createMarker(placeLat, placeLng, "Ubicación encontrada");
-             }
-
-             const address = place.formatted_address || place.name || `Lat: ${placeLat.toFixed(6)}, Lng: ${placeLng.toFixed(6)}`;
-             
-             if (onLocationSelect && isWithinRange(placeLat, placeLng)) {
-               onLocationSelect({
-                 address: address,
-                 latitude: placeLat,
-                 longitude: placeLng
-               });
-             }
-           }
-         });
-
-        searchInput.addEventListener('keypress', (e: KeyboardEvent) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            const query = (searchInput as HTMLInputElement).value.trim();
-            if (query) {
-              // SearchBox handles the search automatically
-            }
-          }
-        });
-
-        // Prevenir que el SearchBox interfiera con el mapa
-        searchInput.addEventListener('click', (e) => {
-          e.stopPropagation();
-        });
-        
-        // Prevenir que el SearchBox capture eventos del mapa
-        searchInput.addEventListener('mousedown', (e) => {
-          e.stopPropagation();
-        });
-        
-        searchInput.addEventListener('mouseup', (e) => {
-          e.stopPropagation();
-        });
-      }
-
-      // NO crear info window para el experto - solo mostrar en la leyenda
-
-      return () => {
-        if (boundsChangedTimeout) {
-          clearTimeout(boundsChangedTimeout);
+      // Reverse geocoding
+      let resolvedAddress = `Ubicación: ${clickedLat.toFixed(6)}, ${clickedLng.toFixed(6)}`;
+      try {
+        const result = await reverseGeocodeMapbox(clickedLat, clickedLng, {
+          accessToken: token,
+          language: 'es',
+        });
+        if (result?.address) {
+          resolvedAddress = result.address;
         }
-        if (maskElements.length > 0) {
-          maskElements.forEach(element => element.setMap(null));
-        }
-        if (map) {
-          (window as any).google.maps.event.clearInstanceListeners(map);
-        }
-      };
-    } catch (error) {
-      console.error('Error creando el mapa:', error);
-    }
-  }, [isLoaded, loadError, memoizedCoordinates.lat, memoizedCoordinates.lng, memoizedCoordinates.radius]);
+      } catch (err) {
+        console.warn('[AppointmentMap] Reverse geocoding falló:', err);
+      }
 
-  if (loadError) {
-    return (
-      <div className={`${className} rounded-lg border border-gray-200 shadow-sm flex items-center justify-center`}>
-        <div className="text-red-600 text-center">
-          <p>Error cargando Google Maps</p>
-          <p className="text-sm">{loadError.message}</p>
-        </div>
-      </div>
-    );
-  }
+      onLocationSelect({
+        address: resolvedAddress,
+        latitude: clickedLat,
+        longitude: clickedLng,
+      });
+    };
 
-  if (!isLoaded) {
-    return (
-      <div className={`${className} rounded-lg border border-gray-200 shadow-sm flex items-center justify-center`}>
-        <div className="text-gray-600 text-center">
-          <p>Cargando mapa...</p>
-        </div>
-        </div>
-    );
-  }
+    if (!disabled && onLocationSelect) {
+      map.on('click', handleClick);
+    }
+
+    // Cleanup: destruir el mapa entero (markers se limpian con él)
+    return () => {
+      map.off('click', handleClick);
+      try {
+        map.remove();
+      } catch (err) {
+        console.warn('[AppointmentMap] Error al destruir el mapa:', err);
+      }
+      mapRef.current = null;
+      expertMarkerRef.current = null;
+      selectedMarkerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    memoizedCoordinates.lat,
+    memoizedCoordinates.lng,
+    memoizedCoordinates.radius,
+    defaultZoom,
+    disabled,
+    showExpertMarker,
+  ]);
+
+  // ---------------------------------------------------------------------------
+  // Autocomplete (Mapbox)
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!showSearch) return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+
+    const query = searchQuery.trim();
+    if (query.length < 3) {
+      setAutocompleteResults([]);
+      setShowAutocomplete(false);
+      setSearchError(null);
+      return;
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        setSearchError(null);
+        const results = await searchMapboxAutocomplete(query, {
+          language: 'es',
+          country: selectedCountry || undefined,
+          proximity: {
+            lat: memoizedCoordinates.lat,
+            lng: memoizedCoordinates.lng,
+          },
+        });
+        setAutocompleteResults(results);
+        setShowAutocomplete(results.length > 0);
+      } catch (err: any) {
+        console.warn('[AppointmentMap] Autocomplete falló:', err);
+        setSearchError(err?.message || 'Error en la búsqueda');
+        setAutocompleteResults([]);
+        setShowAutocomplete(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery, showSearch, selectedCountry, memoizedCoordinates.lat, memoizedCoordinates.lng]);
+
+  const handleAutocompleteSelect = (item: MapboxAutocompleteItem) => {
+    setSearchQuery(item.address);
+    setShowAutocomplete(false);
+    setAutocompleteResults([]);
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.flyTo({ center: [item.lng, item.lat], zoom: 15 });
+
+    if (!disabled) {
+      if (selectedMarkerRef.current) {
+        selectedMarkerRef.current.setLngLat([item.lng, item.lat]);
+      } else {
+        const el = buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        selectedMarkerRef.current = new mapboxgl.Marker({
+          element: el,
+          anchor: 'center',
+        })
+          .setLngLat([item.lng, item.lat])
+          .addTo(map);
+      }
+    }
+
+    // Solo notificar si está dentro del rango
+    const distanceKm = haversineDistanceKm(
+      memoizedCoordinates.lat,
+      memoizedCoordinates.lng,
+      item.lat,
+      item.lng,
+    );
+
+    if (onLocationSelect && distanceKm <= memoizedCoordinates.radius) {
+      onLocationSelect({
+        address: item.address,
+        latitude: item.lat,
+        longitude: item.lng,
+      });
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
     <div className={`${className} rounded-lg border border-border bg-background relative`}>
-      <div ref={mapRef} className="w-full h-full rounded-lg overflow-hidden" />
-      
-      {/* Selector de países y búsqueda - Fuera del overflow-hidden */}
+      <div ref={mapContainerRef} className="w-full h-full rounded-lg overflow-hidden" />
+
       {(showCountrySelector || showSearch) && (
         <div className="absolute top-4 left-4 right-4 z-[9999] flex gap-2 pointer-events-none">
-          {/* Selector de países */}
           {showCountrySelector && (
             <div className="pointer-events-auto">
               <CountrySelector
                 onCountrySelect={(countryCode, coordinates) => {
                   setSelectedCountry(countryCode);
-                  if (mapInstanceRef.current) {
-                    mapInstanceRef.current.setCenter({ lat: coordinates.lat, lng: coordinates.lng });
-                    mapInstanceRef.current.setZoom(coordinates.zoom);
+                  if (mapRef.current) {
+                    mapRef.current.flyTo({
+                      center: [coordinates.lng, coordinates.lat],
+                      zoom: coordinates.zoom,
+                    });
                   }
                 }}
                 currentCountry={selectedCountry}
@@ -567,24 +549,58 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
               />
             </div>
           )}
-          
-          {/* Input de búsqueda */}
+
           {showSearch && (
             <div className="relative flex-1 min-w-0 pointer-events-auto">
               <input
                 type="text"
                 placeholder="Buscar dirección..."
                 className="w-full px-4 py-2.5 pr-10 bg-white/98 backdrop-blur-md border-2 border-gray-300 rounded-lg shadow-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:border-blue-500 transition-all"
-                id={searchInputId}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => autocompleteResults.length > 0 && setShowAutocomplete(true)}
+                onBlur={() => setTimeout(() => setShowAutocomplete(false), 150)}
+                disabled={disabled}
               />
-              <svg 
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
+
+              {showAutocomplete && autocompleteResults.length > 0 && (
+                <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto z-[10000]">
+                  {autocompleteResults.map((item) => (
+                    <li
+                      key={item.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleAutocompleteSelect(item);
+                      }}
+                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium truncate">{item.address}</div>
+                      {item.locationName && item.locationName !== 'Ubicación' && (
+                        <div className="text-xs text-gray-500 truncate">{item.locationName}</div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {searchError && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-red-50 border border-red-200 rounded-lg shadow text-xs text-red-700 px-3 py-1.5">
+                  {searchError}
+                </div>
+              )}
             </div>
           )}
         </div>

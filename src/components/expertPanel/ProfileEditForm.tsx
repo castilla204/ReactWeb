@@ -1,8 +1,19 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock } from 'lucide-react';
-import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+// 🛡️ Round 28: migración Google Maps → Mapbox (react-map-gl@^7 + mapbox-gl@^3).
+import Map, {
+    Marker,
+    NavigationControl,
+    Source,
+    Layer,
+    type MapRef,
+    type MapMouseEvent,
+    type MarkerDragEvent,
+} from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { circlePolygonGeoJSON } from '../../utils/geoCircle';
 import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES, CurrentExpertAvailabilityDto } from '../../types/stripe';
 import {
@@ -15,69 +26,29 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 
-// Define a local type to match the Library enum values
-type GoogleMapLibrary = 'drawing' | 'geometry';
-const libraries: GoogleMapLibrary[] = ['drawing', 'geometry'];
+// 🛡️ Round 28: token Mapbox vía env var (preferido VITE_MAPBOX_PUBLIC_TOKEN; fallback al usado por mapboxGeocoding).
+const MAPBOX_TOKEN =
+    import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN ||
+    import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
+    '';
 
-const mapStyles = [
-    {
-        featureType: "all",
-        elementType: "labels.text.fill",
-        stylers: [{ color: "#555555" }]
-    },
-    {
-        featureType: "water",
-        elementType: "geometry",
-        stylers: [{ color: "#e0f0f8" }]
-    },
-    {
-        featureType: "landscape",
-        elementType: "geometry",
-        stylers: [{ color: "#f5f5f5" }]
-    },
-    {
-        featureType: "road",
-        elementType: "geometry",
-        stylers: [{ color: "#e0e0e0" }]
-    },
-    {
-        featureType: "poi",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
-    },
-    {
-        featureType: "transit",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
-    }
-];
+// 🛡️ Round 28: estilo Mapbox claro, equivalente visual a los estilos custom anteriores de Google Maps.
+const MAPBOX_STYLE = 'mapbox://styles/mapbox/light-v11';
 
+// Centro fallback (Madrid) sólo si el experto aún no tiene coords guardadas.
 const defaultCenter = {
     lat: 40.4168,
-    lng: -3.7038
+    lng: -3.7038,
 };
 
-const markerIcon = {
-    path: "M -4,0 A 4,4 0 1,0 4,0 A 4,4 0 1,0 -4,0",
-    fillColor: '#1e40af',
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 1.5,
-    scale: 1.5,
-    zIndex: 3
-};
+// Radio de cobertura del experto (en km) — equivalente a los 100 000 m del círculo de Google Maps.
+const COVERAGE_RADIUS_KM = 100;
 
-const circleOptions = {
-    fillColor: 'rgba(30, 64, 175, 0.1)',
-    fillOpacity: 0.15,
-    strokeColor: 'rgba(30, 64, 175, 0.5)',
-    strokeOpacity: 1,
-    strokeWeight: 2,
-    zIndex: 1,
-    clickable: false,
-    editable: false,
-    draggable: false
-};
+// 🛡️ Round 28: colores azules translúcidos heredados del círculo de Google Maps original.
+const CIRCLE_FILL_COLOR = '#1e40af';
+const CIRCLE_FILL_OPACITY = 0.15;
+const CIRCLE_LINE_COLOR = 'rgba(30, 64, 175, 0.5)';
+const CIRCLE_LINE_WIDTH = 2;
 
 interface ProfileEditFormProps {
     showEditForm: boolean;
@@ -105,6 +76,8 @@ export function ProfileEditForm({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const prevShowEditFormRef = useRef(false);
     const localPreviewBlobRef = useRef<string | null>(null);
+    // 🛡️ Round 28: ref tipada de react-map-gl; permite recentrar/animar tras cambios.
+    const mapRef = useRef<MapRef | null>(null);
 
     const [formData, setFormData] = useState({
         description: profile?.description || '',
@@ -123,20 +96,20 @@ export function ProfileEditForm({
     const initialAvailability: AvailabilityFormData = profile?.currentAvailability ? {
         daysOfWeek: (() => {
             // Manejar tanto camelCase como PascalCase
-            const days = profile?.currentAvailability?.daysOfWeek ?? 
-                        (profile?.currentAvailability as any)?.DaysOfWeek ?? 
+            const days = profile?.currentAvailability?.daysOfWeek ??
+                        (profile?.currentAvailability as any)?.DaysOfWeek ??
                         [];
             console.log('🔍 ProfileEditForm: Initial availability daysOfWeek:', days);
             return Array.isArray(days) ? days : [];
         })(),
         startTime: formatTimeFromTimeSpan(
-            profile?.currentAvailability?.startTime ?? 
-            (profile?.currentAvailability as any)?.StartTime ?? 
+            profile?.currentAvailability?.startTime ??
+            (profile?.currentAvailability as any)?.StartTime ??
             ''
         ),
         endTime: formatTimeFromTimeSpan(
-            profile?.currentAvailability?.endTime ?? 
-            (profile?.currentAvailability as any)?.EndTime ?? 
+            profile?.currentAvailability?.endTime ??
+            (profile?.currentAvailability as any)?.EndTime ??
             ''
         ),
     } : {
@@ -151,14 +124,18 @@ export function ProfileEditForm({
     // ✅ Inicializar previewUrl como null, se actualizará en useEffect
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-    const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
-    const [circle, setCircle] = useState<google.maps.Circle | null>(null);
-    
-    const { isLoaded, loadError } = useLoadScript({
-        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        libraries
-    });
+
+    // 🛡️ Round 28: centro inicial = coords del experto si existen; si no, Madrid.
+    const initialLocation = useMemo(() => {
+        const lat = Number(profile?.latitude);
+        const lng = Number(profile?.longitude);
+        if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+            return { lat, lng };
+        }
+        return defaultCenter;
+    }, [profile?.latitude, profile?.longitude]);
+
+    const [selectedLocation, setSelectedLocation] = useState(initialLocation);
 
     useEffect(() => {
         const justOpened = showEditForm && !prevShowEditFormRef.current;
@@ -203,14 +180,19 @@ export function ProfileEditForm({
         };
         setAvailability(newAvailability);
 
-        const newLocation = (profile.latitude && profile.longitude)
-            ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
-            : defaultCenter;
+        const lat = Number(profile.latitude);
+        const lng = Number(profile.longitude);
+        const newLocation =
+            Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+                ? { lat, lng }
+                : defaultCenter;
 
         setSelectedLocation(newLocation);
 
-        if (circle) {
-            circle.setCenter(newLocation);
+        // 🛡️ Round 28: recentrar el mapa al abrir el formulario.
+        const map = mapRef.current;
+        if (map) {
+            map.flyTo({ center: [newLocation.lng, newLocation.lat], duration: 0 });
         }
     }, [showEditForm, profile?.id]);
 
@@ -322,43 +304,54 @@ export function ProfileEditForm({
         }
     };
 
-    const onLoad = (map: google.maps.Map) => {
-        const initialCircle = new google.maps.Circle({
-            map: map,
-            center: selectedLocation,
-            radius: 100000, // 100km en metros
-            ...circleOptions
-        });
-        setCircle(initialCircle);
-    };
+    // 🛡️ Round 28: GeoJSON del círculo de cobertura — se recalcula cuando cambia la ubicación.
+    const coverageGeoJSON = useMemo(
+        () =>
+            circlePolygonGeoJSON(
+                selectedLocation.lng,
+                selectedLocation.lat,
+                COVERAGE_RADIUS_KM,
+            ),
+        [selectedLocation.lat, selectedLocation.lng],
+    );
 
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-            };
-            
-            setSelectedLocation(newLocation);
-            setFormData(prev => ({
-                ...prev,
-                latitude: newLocation.lat.toString(),
-                longitude: newLocation.lng.toString(),
-            }));
-            
-            // Actualizar el círculo si existe
-            if (circle) {
-                circle.setCenter(newLocation);
-            }
-            
-            // Limpiar errores de ubicación si los hay
-            setFormErrors(prev => ({
-                ...prev,
-                latitude: '',
-                longitude: ''
-            }));
-        }
-    };
+    // 🛡️ Round 28: click en el mapa → fijar ubicación + sincronizar inputs y limpiar errores.
+    const handleMapClick = useCallback((e: MapMouseEvent) => {
+        const { lng, lat } = e.lngLat;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const newLocation = { lat, lng };
+        setSelectedLocation(newLocation);
+        setFormData(prev => ({
+            ...prev,
+            latitude: lat.toString(),
+            longitude: lng.toString(),
+        }));
+        setFormErrors(prev => ({
+            ...prev,
+            latitude: '',
+            longitude: '',
+        }));
+    }, []);
+
+    // 🛡️ Round 28: marker arrastrable — al soltarlo, persistimos coords.
+    const handleMarkerDragEnd = useCallback((e: MarkerDragEvent) => {
+        const { lng, lat } = e.lngLat;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const newLocation = { lat, lng };
+        setSelectedLocation(newLocation);
+        setFormData(prev => ({
+            ...prev,
+            latitude: lat.toString(),
+            longitude: lng.toString(),
+        }));
+        setFormErrors(prev => ({
+            ...prev,
+            latitude: '',
+            longitude: '',
+        }));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -370,12 +363,12 @@ export function ProfileEditForm({
         try {
             // Incluir disponibilidad solo si hay días seleccionados
             const availabilityData = availability;
-            
+
             console.log('🔍 ProfileEditForm: Submitting with availability:', availabilityData);
             console.log('🔍 ProfileEditForm: daysOfWeek to send:', availabilityData?.daysOfWeek);
             console.log('🔍 ProfileEditForm: startTime to send:', availabilityData?.startTime);
             console.log('🔍 ProfileEditForm: endTime to send:', availabilityData?.endTime);
-            
+
             await updateExpertProfile({
                 description: formData.description.trim(),
                 latitude: formData.latitude,
@@ -408,7 +401,7 @@ export function ProfileEditForm({
         setProfilePicture(null);
         setPreviewUrl(null);
         setFormErrors({});
-        
+
         // Resetear disponibilidad
         const resetAvailability: AvailabilityFormData = profile.currentAvailability ? {
             daysOfWeek: profile.currentAvailability.daysOfWeek || [],
@@ -420,19 +413,23 @@ export function ProfileEditForm({
             endTime: '18:00',
         };
         setAvailability(resetAvailability);
-        
+
         // Resetear la ubicación del mapa
-        const resetLocation = (profile.latitude && profile.longitude) 
-            ? { lat: Number(profile.latitude), lng: Number(profile.longitude) }
-            : defaultCenter;
-            
+        const lat = Number(profile.latitude);
+        const lng = Number(profile.longitude);
+        const resetLocation =
+            Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+                ? { lat, lng }
+                : defaultCenter;
+
         setSelectedLocation(resetLocation);
-        
-        // Actualizar el círculo si existe
-        if (circle) {
-            circle.setCenter(resetLocation);
+
+        // 🛡️ Round 28: recentrar el mapa al resetear.
+        const map = mapRef.current;
+        if (map) {
+            map.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
         }
-        
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -500,14 +497,14 @@ export function ProfileEditForm({
                                     {(() => {
                                         // ✅ Priorizar previewUrl (imagen nueva seleccionada), luego ProfilePictureUrl del nivel superior
                                         // ✅ IMPORTANTE: Usar ProfilePictureUrl (PascalCase) del objeto principal, NO del objeto User
-                                        const imageUrl = previewUrl || 
-                                                       (profile as any)?.ProfilePictureUrl || 
-                                                       profile.profilePictureUrl || 
+                                        const imageUrl = previewUrl ||
+                                                       (profile as any)?.ProfilePictureUrl ||
+                                                       profile.profilePictureUrl ||
                                                        null;
                                         console.log('🔍 ProfileEditForm (render): imageUrl:', imageUrl);
                                         console.log('🔍 ProfileEditForm (render): previewUrl:', previewUrl);
                                         console.log('🔍 ProfileEditForm (render): profile.profilePictureUrl:', profile.profilePictureUrl);
-                                        
+
                                         if (imageUrl) {
                                             return (
                                                 <>
@@ -633,8 +630,8 @@ export function ProfileEditForm({
                                                         size="sm"
                                                         onClick={() => toggleDay(day)}
                                                         className={`text-xs font-medium transition-all ${
-                                                            isSelected 
-                                                                ? "bg-primary text-primary-foreground shadow-sm" 
+                                                            isSelected
+                                                                ? "bg-primary text-primary-foreground shadow-sm"
                                                                 : "hover:bg-accent"
                                                         }`}
                                                     >
@@ -682,50 +679,85 @@ export function ProfileEditForm({
                             {/* Columna derecha - Ubicación */}
                             <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
                                 <Separator className="md:hidden" />
-                                
+
                                 {/* Ubicación con mapa */}
                                 <div className="space-y-2">
                                     <Label>Ubicación del servicio</Label>
-                                    
-                                    {loadError ? (
+
+                                    {/* 🛡️ Round 28: si falta el token, mostrar mensaje claro en lugar de un mapa roto. */}
+                                    {!MAPBOX_TOKEN ? (
                                         <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
-                                            <p className="text-sm text-destructive">Error al cargar el mapa. Por favor, recarga la página.</p>
-                                </div>
-                            ) : !isLoaded ? (
-                                        <div className="bg-muted border border-border rounded-md p-8 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                            <span className="ml-2 text-sm text-muted-foreground">Cargando mapa...</span>
-                                </div>
-                            ) : (
+                                            <p className="text-sm text-destructive">
+                                                Falta configurar <code className="font-mono">VITE_MAPBOX_PUBLIC_TOKEN</code>. El mapa no puede cargarse.
+                                            </p>
+                                        </div>
+                                    ) : (
                                         <div className="border border-border rounded-lg overflow-hidden shadow-sm">
-                                    <GoogleMap
-                                        mapContainerStyle={{
-                                            width: '100%',
-                                                    height: '240px'
-                                        }}
-                                        center={selectedLocation}
-                                        zoom={6}
-                                        onLoad={onLoad}
-                                        onClick={handleMapClick}
-                                        options={{
-                                            styles: mapStyles,
-                                            disableDefaultUI: false,
-                                            zoomControl: true,
-                                            mapTypeControl: false,
-                                                    scaleControl: false,
-                                            streetViewControl: false,
-                                            rotateControl: false,
-                                                    fullscreenControl: false,
-                                        }}
-                                    >
-                                        <Marker
-                                            position={selectedLocation}
-                                            icon={markerIcon}
-                                        />
-                                    </GoogleMap>
-                                </div>
-                            )}
-                            
+                                            {/* 🛡️ Round 28: Map de react-map-gl/mapbox con marker draggable + círculo GeoJSON. */}
+                                            <Map
+                                                ref={mapRef}
+                                                mapboxAccessToken={MAPBOX_TOKEN}
+                                                initialViewState={{
+                                                    longitude: initialLocation.lng,
+                                                    latitude: initialLocation.lat,
+                                                    zoom: 6,
+                                                }}
+                                                style={{ width: '100%', height: 240 }}
+                                                mapStyle={MAPBOX_STYLE}
+                                                onClick={handleMapClick}
+                                                cursor="pointer"
+                                                attributionControl={false}
+                                                dragRotate={false}
+                                                pitchWithRotate={false}
+                                                touchPitch={false}
+                                            >
+                                                <NavigationControl position="top-right" showCompass={false} />
+
+                                                {/* 🛡️ Round 28: círculo de cobertura como Source GeoJSON + 2 capas (fill + line) en azul translúcido. */}
+                                                <Source id="coverage" type="geojson" data={coverageGeoJSON}>
+                                                    <Layer
+                                                        id="coverage-fill"
+                                                        type="fill"
+                                                        paint={{
+                                                            'fill-color': CIRCLE_FILL_COLOR,
+                                                            'fill-opacity': CIRCLE_FILL_OPACITY,
+                                                        }}
+                                                    />
+                                                    <Layer
+                                                        id="coverage-line"
+                                                        type="line"
+                                                        paint={{
+                                                            'line-color': CIRCLE_LINE_COLOR,
+                                                            'line-width': CIRCLE_LINE_WIDTH,
+                                                        }}
+                                                    />
+                                                </Source>
+
+                                                {/* 🛡️ Round 28: marker draggable con el mismo div azul #1e40af de antes. */}
+                                                <Marker
+                                                    longitude={selectedLocation.lng}
+                                                    latitude={selectedLocation.lat}
+                                                    draggable
+                                                    onDragEnd={handleMarkerDragEnd}
+                                                    anchor="center"
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: 18,
+                                                            height: 18,
+                                                            borderRadius: '50%',
+                                                            background: '#1e40af',
+                                                            border: '2px solid #ffffff',
+                                                            boxShadow: '0 2px 6px rgba(30, 64, 175, 0.4)',
+                                                            cursor: 'grab',
+                                                        }}
+                                                        aria-label="Marcador de ubicación del experto"
+                                                    />
+                                                </Marker>
+                                            </Map>
+                                        </div>
+                                    )}
+
                             {/* Mostrar coordenadas seleccionadas */}
                                     <div className="text-xs text-muted-foreground">
                                 <span>Ubicación seleccionada: </span>
@@ -733,7 +765,7 @@ export function ProfileEditForm({
                                     {typeof selectedLocation.lat === 'number' ? selectedLocation.lat.toFixed(6) : '0.000000'}, {typeof selectedLocation.lng === 'number' ? selectedLocation.lng.toFixed(6) : '0.000000'}
                                 </span>
                             </div>
-                            
+
                             {(formErrors.latitude || formErrors.longitude) && (
                                         <p className="text-sm text-destructive">
                                     {formErrors.latitude || formErrors.longitude}
@@ -745,7 +777,7 @@ export function ProfileEditForm({
                             <div className="flex items-start gap-2">
                                             <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                                             <p className="text-xs text-muted-foreground leading-relaxed">
-                                                Haz clic en el mapa para seleccionar tu ubicación. El círculo azul representa un rango de 100km.
+                                                Haz clic en el mapa o arrastra el marcador para seleccionar tu ubicación. El círculo azul representa un rango de {COVERAGE_RADIUS_KM} km.
                                             </p>
                                         </div>
                                     </div>
