@@ -292,7 +292,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
 
           <div
             ref={scrollRef}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white font-display text-[#1c1c1c]"
+            className={`map-panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white font-display text-[#1c1c1c]`}
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             {children}
