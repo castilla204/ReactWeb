@@ -1,75 +1,117 @@
-const MAPBOX_BASE_URL = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
+// Mapbox Geocoding v6 — forward + reverse + helpers.
+// Compat: lee VITE_MAPBOX_PUBLIC_TOKEN con fallback a VITE_MAPBOX_ACCESS_TOKEN.
+// Compat call sites: AppointmentMap (usa MapboxAutocompleteItem con address/lat/lng)
+// y SearchParameterForm (lee feature.place_name del resultado reverse).
+
+const MAPBOX_FORWARD_URL = 'https://api.mapbox.com/search/geocode/v6/forward';
+const MAPBOX_REVERSE_URL = 'https://api.mapbox.com/search/geocode/v6/reverse';
 const DEFAULT_AUTOCOMPLETE_LIMIT = 6;
 const DEFAULT_LANGUAGE = 'es';
+const DEFAULT_TYPES = 'address,place,postcode,locality,neighborhood,street';
+
+// ---------------------------------------------------------------------------
+// Tipos públicos
+// ---------------------------------------------------------------------------
+
+export interface MapboxFeatureContext {
+  country?: { name?: string; country_code?: string; country_code_alpha_3?: string };
+  region?: { name?: string };
+  place?: { name?: string };
+  locality?: { name?: string };
+  postcode?: { name?: string };
+  district?: { name?: string };
+  neighborhood?: { name?: string };
+  street?: { name?: string };
+}
+
+export interface MapboxFeatureProperties {
+  name?: string;
+  full_address?: string;
+  place_formatted?: string;
+  feature_type?: string;
+  coordinates?: { latitude: number; longitude: number };
+  context?: MapboxFeatureContext;
+}
+
+export interface MapboxFeature {
+  id: string;
+  type: 'Feature';
+  properties: MapboxFeatureProperties;
+  geometry: { type: 'Point'; coordinates: [number, number] };
+  // --- Compat retroactiva con call sites legados (SearchParameterForm, AppointmentMap) ---
+  // Estos campos se rellenan a partir de `properties` durante la normalización
+  // para que el código existente que lee `feature.place_name` / `.address` siga
+  // funcionando sin cambios.
+  place_name?: string;
+  text?: string;
+  center?: [number, number];
+  address?: string;
+  locationName?: string;
+  countryCode?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  lat?: number;
+  lng?: number;
+}
+
+// Alias mantenido por compat: AppointmentMap importa MapboxAutocompleteItem.
+export type MapboxAutocompleteItem = MapboxFeature;
+// Alias mantenido por compat: la versión v5 exponía MapboxReverseResult.
+export type MapboxReverseResult = MapboxFeature;
 
 export interface MapboxGeocodingOptions {
   accessToken?: string;
   language?: string;
   country?: string;
-  proximity?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-export interface MapboxAutocompleteItem {
-  id: string;
-  address: string;
-  locationName: string;
-  countryCode: string | null;
-  city: string | null;
-  postalCode: string | null;
-  lat: number;
-  lng: number;
-}
-
-export interface MapboxReverseResult {
-  address: string;
-  locationName: string;
-  countryCode: string | null;
-  city: string | null;
-  postalCode: string | null;
-  lat: number;
-  lng: number;
-}
-
-export interface MapboxFeature {
-  id: string;
-  place_name?: string;
-  text?: string;
-  center?: [number, number];
-  context?: Array<{
-    id?: string;
-    text?: string;
-    short_code?: string;
-  }>;
+  limit?: number;
+  proximity?: { lat: number; lng: number };
+  signal?: AbortSignal;
 }
 
 interface MapboxResponse {
   features?: MapboxFeature[];
 }
 
+// ---------------------------------------------------------------------------
+// Token
+// ---------------------------------------------------------------------------
+
 const getAccessToken = (explicitToken?: string): string => {
-  const token = explicitToken || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-  if (!token) throw new Error('Falta VITE_MAPBOX_ACCESS_TOKEN');
+  const fromEnv =
+    (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined) ??
+    (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
+  const token = explicitToken || fromEnv;
+  if (!token) {
+    throw new Error('Falta VITE_MAPBOX_PUBLIC_TOKEN (o VITE_MAPBOX_ACCESS_TOKEN como fallback)');
+  }
   return token;
 };
 
-const extractContextValue = (
-  feature: MapboxFeature,
-  startsWith: string,
-  field: 'text' | 'short_code' = 'text',
-): string | null => {
-  const context = feature.context || [];
-  const match = context.find((item) => item.id?.startsWith(startsWith));
-  const rawValue = match?.[field];
-  return rawValue ? rawValue.toString() : null;
+// ---------------------------------------------------------------------------
+// Helpers de extracción
+// ---------------------------------------------------------------------------
+
+export const extractCountryCodeFromMapbox = (feature: MapboxFeature | null | undefined): string | null => {
+  if (!feature) return null;
+  const code = feature.properties?.context?.country?.country_code;
+  if (!code) return null;
+  // En v6 los country_code ya vienen en minúscula ISO 3166-1 alpha-2.
+  return code.split('-')[0]?.toLowerCase() || null;
 };
 
-export const extractCountryCodeFromMapbox = (feature: MapboxFeature | null): string | null => {
-  if (!feature) return null;
-  const countryCodeRaw = extractContextValue(feature, 'country.', 'short_code');
-  return countryCodeRaw?.split('-')[0]?.toLowerCase() || null;
+const extractCity = (feature: MapboxFeature): string | null => {
+  const ctx = feature.properties?.context;
+  return (
+    ctx?.place?.name ||
+    ctx?.locality?.name ||
+    ctx?.district?.name ||
+    ctx?.neighborhood?.name ||
+    null
+  );
+};
+
+const extractPostalCode = (feature: MapboxFeature): string | null => {
+  return feature.properties?.context?.postcode?.name || null;
 };
 
 const buildLocationName = (city: string | null, postalCode: string | null): string => {
@@ -79,23 +121,29 @@ const buildLocationName = (city: string | null, postalCode: string | null): stri
   return 'Ubicación';
 };
 
-const normalizeFeature = (feature: MapboxFeature): MapboxAutocompleteItem | null => {
-  const center = feature.center;
-  if (!center || center.length < 2) return null;
-  const [lng, lat] = center;
+// Rellena los campos de compat (place_name, address, lat, lng, etc.) sobre el
+// MapboxFeature crudo que devuelve la API v6. Devuelve null si la geometría es
+// inválida.
+const decorateFeature = (raw: MapboxFeature): MapboxFeature | null => {
+  const coords = raw.geometry?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const [lng, lat] = coords;
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-  const city =
-    extractContextValue(feature, 'place.') ||
-    extractContextValue(feature, 'locality.') ||
-    extractContextValue(feature, 'district.');
-  const postalCode = extractContextValue(feature, 'postcode.');
-  const countryCode = extractCountryCodeFromMapbox(feature);
-  const address = feature.place_name || feature.text || `${lat}, ${lng}`;
+  const props = raw.properties || ({} as MapboxFeatureProperties);
+  const fullAddress = props.full_address || props.place_formatted || props.name || `${lat}, ${lng}`;
+  const city = extractCity(raw);
+  const postalCode = extractPostalCode(raw);
+  const countryCode = extractCountryCodeFromMapbox(raw);
 
   return {
-    id: feature.id,
-    address,
+    ...raw,
+    properties: props,
+    // Aliases de compat retroactiva:
+    place_name: fullAddress,
+    text: props.name,
+    center: [lng, lat],
+    address: fullAddress,
     locationName: buildLocationName(city, postalCode),
     countryCode,
     city,
@@ -105,75 +153,113 @@ const normalizeFeature = (feature: MapboxFeature): MapboxAutocompleteItem | null
   };
 };
 
-const buildCommonParams = (
-  options: MapboxGeocodingOptions,
-  accessToken: string,
-): URLSearchParams => {
-  const params = new URLSearchParams({
-    access_token: accessToken,
-    language: options.language || DEFAULT_LANGUAGE,
-  });
+// ---------------------------------------------------------------------------
+// HTTP
+// ---------------------------------------------------------------------------
+
+const appendCommonParams = (
+  params: URLSearchParams,
+  options: { language?: string; country?: string; proximity?: { lat: number; lng: number } },
+): void => {
+  params.set('language', options.language || DEFAULT_LANGUAGE);
   if (options.country) params.set('country', options.country);
-  if (options.proximity) params.set('proximity', `${options.proximity.lng},${options.proximity.lat}`);
-  return params;
+  if (options.proximity) {
+    params.set('proximity', `${options.proximity.lng},${options.proximity.lat}`);
+  }
 };
+
+const performMapboxRequest = async (
+  url: string,
+  signal: AbortSignal | undefined,
+  label: string,
+): Promise<MapboxResponse> => {
+  let response: Response;
+  try {
+    response = await fetch(url, { signal });
+  } catch (err) {
+    if ((err as DOMException)?.name === 'AbortError') throw err;
+    throw new Error(`Mapbox ${label} falló: ${(err as Error)?.message || 'error de red'}`);
+  }
+  if (!response.ok) {
+    throw new Error(`Mapbox ${label} falló (HTTP ${response.status})`);
+  }
+  return (await response.json()) as MapboxResponse;
+};
+
+// ---------------------------------------------------------------------------
+// Forward geocoding (autocomplete) — v6
+// ---------------------------------------------------------------------------
 
 export const searchMapboxAutocomplete = async (
   query: string,
   options: MapboxGeocodingOptions = {},
-): Promise<MapboxAutocompleteItem[]> => {
+): Promise<MapboxFeature[]> => {
   const normalized = query.trim();
   if (!normalized) return [];
 
   const accessToken = getAccessToken(options.accessToken);
-  const params = buildCommonParams(options, accessToken);
-  params.set('autocomplete', 'true');
-  params.set('limit', String(DEFAULT_AUTOCOMPLETE_LIMIT));
-  params.set('types', 'address,place,postcode,locality');
+  const params = new URLSearchParams({
+    q: normalized,
+    access_token: accessToken,
+    autocomplete: 'true',
+    limit: String(options.limit ?? DEFAULT_AUTOCOMPLETE_LIMIT),
+    types: DEFAULT_TYPES,
+  });
+  appendCommonParams(params, options);
 
-  const url = `${MAPBOX_BASE_URL}/${encodeURIComponent(normalized)}.json?${params.toString()}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Mapbox autocomplete falló (${response.status})`);
-
-  const data = (await response.json()) as MapboxResponse;
+  const url = `${MAPBOX_FORWARD_URL}?${params.toString()}`;
+  const data = await performMapboxRequest(url, options.signal, 'autocomplete');
   const features = data.features || [];
-  return features.map(normalizeFeature).filter((item): item is MapboxAutocompleteItem => !!item);
+  return features
+    .map(decorateFeature)
+    .filter((item): item is MapboxFeature => !!item);
 };
+
+// ---------------------------------------------------------------------------
+// Reverse geocoding — v6
+// ---------------------------------------------------------------------------
 
 export const reverseGeocodeMapbox = async (
   lat: number,
   lng: number,
   options: MapboxGeocodingOptions = {},
-): Promise<MapboxReverseResult | null> => {
+): Promise<MapboxFeature | null> => {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
   const accessToken = getAccessToken(options.accessToken);
-  const params = buildCommonParams(options, accessToken);
-  params.set('types', 'address,place,postcode,locality');
-  params.set('limit', '1');
+  const params = new URLSearchParams({
+    longitude: String(lng),
+    latitude: String(lat),
+    access_token: accessToken,
+    limit: String(options.limit ?? 1),
+    types: DEFAULT_TYPES,
+  });
+  appendCommonParams(params, options);
 
-  const url = `${MAPBOX_BASE_URL}/${lng},${lat}.json?${params.toString()}`;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Mapbox reverse geocoding falló (${response.status})`);
-
-  const data = (await response.json()) as MapboxResponse;
+  const url = `${MAPBOX_REVERSE_URL}?${params.toString()}`;
+  const data = await performMapboxRequest(url, options.signal, 'reverse geocoding');
   const feature = data.features?.[0];
   if (!feature) return null;
-  return normalizeFeature(feature);
+  return decorateFeature(feature);
 };
 
-export const toAppointmentLocation = (item: Pick<MapboxAutocompleteItem, 'address' | 'lat' | 'lng'>) => ({
-  address: item.address,
-  latitude: item.lat,
-  longitude: item.lng,
+// ---------------------------------------------------------------------------
+// Adaptadores (compat con call sites legados)
+// ---------------------------------------------------------------------------
+
+export const toAppointmentLocation = (
+  item: Pick<MapboxFeature, 'address' | 'lat' | 'lng'>,
+) => ({
+  address: item.address || '',
+  latitude: item.lat ?? 0,
+  longitude: item.lng ?? 0,
 });
 
 export const toSearchParameterLocation = (
-  item: Pick<MapboxAutocompleteItem, 'address' | 'locationName' | 'lat' | 'lng'>,
+  item: Pick<MapboxFeature, 'address' | 'locationName' | 'lat' | 'lng'>,
 ) => ({
-  address: item.address,
-  latitude: item.lat.toString(),
-  longitude: item.lng.toString(),
-  locationName: item.locationName,
+  address: item.address || '',
+  latitude: (item.lat ?? 0).toString(),
+  longitude: (item.lng ?? 0).toString(),
+  locationName: item.locationName || 'Ubicación',
 });
-
