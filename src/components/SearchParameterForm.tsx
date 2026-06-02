@@ -1704,11 +1704,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const countryCoords = getCountryCoordinates(selectedCountry);
                                             return countryCoords ? { lat: 42.5, lng: -3.7 } : { lat: 42.5, lng: -3.7 };
                                         })()}
-                                        initialZoom={
-                                            selectedLocation
+                                        initialZoom={(() => {
+                                            const baseZoom = selectedLocation
                                                 ? getZoomLevel(parseInt(formData.locationRange || '25', 10))
-                                                : getMapOverviewZoom(selectedCountry)
-                                        }
+                                                : getMapOverviewZoom(selectedCountry);
+                                            // ✅ Este MapContainer SOLO se monta en móvil ({isMobileDevice && ...})
+                                            //    Cargamos "mucho más atrás" (2 niveles de zoom menos) para dar
+                                            //    contexto regional; el usuario amplía con gesto si quiere acercar.
+                                            return Math.max(3, baseZoom - 2);
+                                        })()}
                                         recenterMode="pan-only"
                                         onServiceSelect={(service: Service) => {
                                             // ✅ Convertir Service a formato esperado por handleServiceSelect
