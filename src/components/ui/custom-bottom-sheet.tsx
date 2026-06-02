@@ -1,235 +1,300 @@
 import * as React from "react";
-import { Drawer, DrawerContent } from "./drawer";
+import { AnimatePresence, motion, useMotionValue, animate } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
+
+/**
+ * Bottom-sheet móvil con drag 1:1 y handoff drag↔scroll dentro del MISMO gesto.
+ * Solo `transform: translate3d` para animar; refs/motionValue para 0 re-renders en drag.
+ */
 
 interface CustomBottomSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
   title?: string;
+  headerContent?: React.ReactNode;
   className?: string;
+  /** Fracciones del viewport (0..1). Default [0.30, 0.92]. */
+  snapPoints?: (number | string)[];
+  activeSnapPoint?: number | string | null;
+  onActiveSnapPointChange?: (point: number | string | null) => void;
+  dismissible?: boolean;
+  snapToSequentialPoint?: boolean;
+  scrollLockTimeout?: number;
+  onCloseRequest?: () => void;
 }
+
+const SPRING = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.9 };
+const DELIBERATE_PX = 30;     // delta acumulado para considerar push deliberado
+const DELIBERATE_VEL = 0.6;   // px/ms instantáneo (umbral alternativo)
+
+const toFraction = (p: number | string): number => {
+  if (typeof p === "number") return p;
+  const s = p.trim();
+  if (s.endsWith("%")) return parseFloat(s) / 100;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? (n > 1 ? n / 100 : n) : 0;
+};
 
 export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   open,
   onOpenChange,
   children,
   title,
+  headerContent,
   className,
+  snapPoints: snapPointsProp,
+  activeSnapPoint: controlledSnap,
+  onActiveSnapPointChange,
+  dismissible = false,
+  onCloseRequest,
+  // snapToSequentialPoint y scrollLockTimeout aceptados por compat — el handoff
+  // físico ya emula "un snap por gesto" y la ventana de bloqueo es implícita.
 }) => {
-  const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(0.7);
-  const drawerContentRef = React.useRef<HTMLDivElement>(null);
-  const lastYRef = React.useRef<number | null>(null);
-  const isDraggingRef = React.useRef(false);
-  
-  // Snap points: 0.7 = reposo (70%), 0.85 = casi arriba (deja espacio para el header)
-  const snapPoints: (number | string)[] = [0.7, 0.85];
-  
-  // ✅ Resetear snap point a 0.7 cuando se abre el drawer
+  const snapPoints = snapPointsProp ?? [0.30, 0.92];
+  const fractions = React.useMemo(() => snapPoints.map(toFraction), [snapPoints]);
+  const peekFrac = fractions[0] ?? 0.30;
+  const fullFrac = fractions[fractions.length - 1] ?? 0.92;
+  const defaultSnap = snapPoints[snapPoints.length - 1];
+
+  const [internalSnap, setInternalSnap] = React.useState<number | string | null>(defaultSnap);
+  const activeSnap = controlledSnap !== undefined ? controlledSnap : internalSnap;
+  const setActiveSnap = onActiveSnapPointChange ?? setInternalSnap;
+
+  // Viewport en ref — no re-render storm en resize
+  const vhRef = React.useRef<number>(typeof window !== "undefined" ? window.innerHeight : 800);
+  const [, bumpVh] = React.useReducer((x: number) => x + 1, 0);
   React.useEffect(() => {
-    if (open) {
-      // ✅ Resetear a posición de reposo cuando se abre
-      setActiveSnapPoint(0.7);
-    }
-  }, [open]); // Solo cuando cambia `open`
-  
-  // ✅ Detectar movimiento del drawer para cambiar snap point más rápido
-  React.useEffect(() => {
-    if (!open) return;
-    
-    let cleanup: (() => void) | null = null;
-    
-    // ✅ Esperar a que el drawer se monte completamente
-    const timeoutId = setTimeout(() => {
-      const drawerElement = drawerContentRef.current;
-      if (!drawerElement) return;
-      
-      const viewportHeight = window.innerHeight;
-      const threshold = viewportHeight * 0.03; // ✅ 3% de la pantalla = umbral ultra sensible
-      
-      const handleTouchStart = (e: TouchEvent) => {
-        isDraggingRef.current = true;
-        lastYRef.current = e.touches[0].clientY;
-      };
-      
-      const handleTouchMove = (e: TouchEvent) => {
-        if (!isDraggingRef.current || lastYRef.current === null) return;
-        
-        const currentY = e.touches[0].clientY;
-        const deltaY = lastYRef.current - currentY; // Positivo = arrastra arriba, negativo = abajo
-        
-        // ✅ Si el movimiento es significativo (más de 3% de la pantalla), cambiar snap point
-        if (Math.abs(deltaY) > threshold) {
-          const currentIndex = snapPoints.findIndex(sp => sp === activeSnapPoint);
-          
-          if (deltaY > 0 && currentIndex < snapPoints.length - 1) {
-            // ✅ Arrastra hacia arriba → siguiente snap point
-            setActiveSnapPoint(snapPoints[currentIndex + 1]);
-            lastYRef.current = currentY; // Reset para evitar cambios múltiples
-          } else if (deltaY < 0 && currentIndex > 0) {
-            // ✅ Arrastra hacia abajo → snap point anterior
-            setActiveSnapPoint(snapPoints[currentIndex - 1]);
-            lastYRef.current = currentY; // Reset para evitar cambios múltiples
-          }
-        }
-      };
-      
-      const handleTouchEnd = () => {
-        isDraggingRef.current = false;
-        lastYRef.current = null;
-      };
-      
-      // ✅ También detectar mouse para desktop
-      const handleMouseDown = (e: MouseEvent) => {
-        isDraggingRef.current = true;
-        lastYRef.current = e.clientY;
-      };
-      
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!isDraggingRef.current || lastYRef.current === null) return;
-        
-        const currentY = e.clientY;
-        const deltaY = lastYRef.current - currentY;
-        
-        if (Math.abs(deltaY) > threshold) {
-          const currentIndex = snapPoints.findIndex(sp => sp === activeSnapPoint);
-          
-          if (deltaY > 0 && currentIndex < snapPoints.length - 1) {
-            setActiveSnapPoint(snapPoints[currentIndex + 1]);
-            lastYRef.current = currentY;
-          } else if (deltaY < 0 && currentIndex > 0) {
-            setActiveSnapPoint(snapPoints[currentIndex - 1]);
-            lastYRef.current = currentY;
-          }
-        }
-      };
-      
-      const handleMouseUp = () => {
-        isDraggingRef.current = false;
-        lastYRef.current = null;
-      };
-      
-      drawerElement.addEventListener('touchstart', handleTouchStart, { passive: true });
-      drawerElement.addEventListener('touchmove', handleTouchMove, { passive: true });
-      drawerElement.addEventListener('touchend', handleTouchEnd, { passive: true });
-      drawerElement.addEventListener('mousedown', handleMouseDown);
-      drawerElement.addEventListener('mousemove', handleMouseMove);
-      drawerElement.addEventListener('mouseup', handleMouseUp);
-      drawerElement.addEventListener('mouseleave', handleMouseUp);
-      
-      cleanup = () => {
-        drawerElement.removeEventListener('touchstart', handleTouchStart);
-        drawerElement.removeEventListener('touchmove', handleTouchMove);
-        drawerElement.removeEventListener('touchend', handleTouchEnd);
-        drawerElement.removeEventListener('mousedown', handleMouseDown);
-        drawerElement.removeEventListener('mousemove', handleMouseMove);
-        drawerElement.removeEventListener('mouseup', handleMouseUp);
-        drawerElement.removeEventListener('mouseleave', handleMouseUp);
-      };
-    }, 100); // ✅ Pequeño delay para asegurar que el drawer esté montado
-    
+    const onResize = () => { vhRef.current = window.innerHeight; bumpVh(); };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
     return () => {
-      clearTimeout(timeoutId);
-      if (cleanup) cleanup();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
     };
-  }, [open, activeSnapPoint, snapPoints]);
+  }, []);
+
+  const yForFrac = React.useCallback((f: number) => vhRef.current * (1 - f), []);
+  const peekY = yForFrac(peekFrac);
+  const fullY = yForFrac(fullFrac);
+  const closedY = vhRef.current;
+
+  const y = useMotionValue(closedY);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Animar a snap cuando cambia open o activeSnap (controlado)
+  React.useEffect(() => {
+    if (!open) { animate(y, closedY, SPRING); return; }
+    const frac = activeSnap == null ? fullFrac : toFraction(activeSnap as number | string);
+    animate(y, yForFrac(frac), SPRING);
+  }, [open, activeSnap, fullFrac, yForFrac, closedY, y]);
+
+  // Reset scrollTop al colapsar a peek
+  React.useEffect(() => {
+    if (activeSnap == null) return;
+    if (toFraction(activeSnap as number | string) <= peekFrac + 0.001 && scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [activeSnap, peekFrac]);
+
+  // Estado del gesto en refs — cero re-renders durante el drag
+  const g = React.useRef({
+    active: false,
+    startY: 0, startSheetY: 0,
+    lastY: 0, lastT: 0,
+    velocity: 0,                // px/ms, signo: + = abajo
+    handedToScroll: false,      // gesto cedido al scroll interno
+    pushDownDelta: 0,           // acumulado intentando bajar con scrollTop=0
+    pointerId: -1,
+  }).current;
+
+  const handleDismiss = React.useCallback(() => {
+    if (onCloseRequest) onCloseRequest(); else onOpenChange(false);
+  }, [onCloseRequest, onOpenChange]);
+
+  const snapToNearest = React.useCallback(() => {
+    const current = y.get();
+    const projected = current + g.velocity * 120;  // proyección de inercia ~120ms
+    let bestFrac = fractions[0];
+    let bestDist = Infinity;
+    for (const f of fractions) {
+      const d = Math.abs(projected - yForFrac(f));
+      if (d < bestDist) { bestDist = d; bestFrac = f; }
+    }
+    // Cerrar si dismissible + flick fuerte hacia abajo desde peek
+    if (dismissible && g.velocity > 1.2 && bestFrac === fractions[0]
+        && current > yForFrac(fractions[0]) - 20) {
+      animate(y, closedY, SPRING).then(() => onOpenChange(false));
+      return;
+    }
+    animate(y, yForFrac(bestFrac), { ...SPRING, velocity: g.velocity * 1000 });
+    const idx = fractions.indexOf(bestFrac);
+    setActiveSnap(snapPoints[idx] ?? bestFrac);
+  }, [y, g, fractions, yForFrac, snapPoints, setActiveSnap, dismissible, closedY, onOpenChange]);
+
+  // Listeners táctiles con passive:false para poder preventDefault selectivo.
+  // Pointer events de React no aceptan passive:false; por eso ref + addEventListener.
+  React.useEffect(() => {
+    const el = sheetRef.current;
+    if (!el || !open) return;
+
+    const getY = (e: TouchEvent | PointerEvent) =>
+      "touches" in e ? (e.touches[0]?.clientY ?? e.changedTouches[0]?.clientY ?? 0) : e.clientY;
+
+    const onDown = (e: TouchEvent) => {
+      if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+      const t = e.touches[0]; if (!t) return;
+      g.active = true;
+      g.startY = t.clientY;
+      g.startSheetY = y.get();
+      g.lastY = t.clientY;
+      g.lastT = e.timeStamp;
+      g.velocity = 0;
+      g.handedToScroll = false;
+      g.pushDownDelta = 0;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (!g.active) return;
+      const ny = getY(e);
+      const dy = ny - g.lastY;
+      const dt = Math.max(1, e.timeStamp - g.lastT);
+      g.velocity = dy / dt;
+      g.lastY = ny;
+      g.lastT = e.timeStamp;
+
+      const scrollEl = scrollRef.current;
+      const atTop = !scrollEl || scrollEl.scrollTop <= 0;
+      const sheetY = y.get();
+      const atFull = Math.abs(sheetY - fullY) < 1;
+      const atPeek = Math.abs(sheetY - peekY) < 1;
+
+      // ¿Ya cedimos al scroll? Comprobamos si el usuario quiere recuperar el drawer.
+      if (g.handedToScroll) {
+        if (atTop && dy > 0) {
+          g.pushDownDelta += dy;
+          if (g.pushDownDelta > DELIBERATE_PX || g.velocity > DELIBERATE_VEL) {
+            g.handedToScroll = false;
+            g.startY = ny; g.startSheetY = y.get();  // re-ancla, no hay salto
+          }
+        } else {
+          g.pushDownDelta = 0;
+        }
+        return;  // sin preventDefault → el scroll nativo del hijo procede
+      }
+
+      // En full + dedo arriba → el contenido scrollea
+      if (atFull && dy < 0) { g.handedToScroll = true; return; }
+      // En full + dedo abajo + contenido scrolleado → el contenido scrollea
+      if (atFull && dy > 0 && !atTop) { g.handedToScroll = true; return; }
+      // En full + dedo abajo + scrollTop=0 → SOLO colapsa si push deliberado
+      if (atFull && dy > 0 && atTop) {
+        g.pushDownDelta += dy;
+        const deliberate = g.pushDownDelta > DELIBERATE_PX || g.velocity > DELIBERATE_VEL;
+        if (!deliberate) { g.handedToScroll = true; return; }
+        g.startY = ny; g.startSheetY = y.get();  // re-ancla post-decisión
+      }
+      // En peek + dedo arriba → expande inmediato (no hay scroll que disputar)
+      // (sin reglas extra: cae al drag 1:1 abajo)
+      void atPeek;
+
+      // Drag 1:1 — secuestramos el gesto, preventDefault impide scroll nativo.
+      if (e.cancelable) e.preventDefault();
+      const delta = ny - g.startY;
+      let next = g.startSheetY + delta;
+      // Resistencia suave en bordes
+      if (next < fullY) next = fullY - (fullY - next) * 0.35;
+      const lower = dismissible ? closedY : peekY;
+      if (next > lower) next = lower + (next - lower) * 0.35;
+      y.set(next);
+    };
+
+    const onUp = () => {
+      if (!g.active) return;
+      g.active = false;
+      if (g.handedToScroll) return;  // el scroll se llevó el gesto
+      snapToNearest();
+    };
+
+    el.addEventListener("touchstart", onDown, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onUp, { passive: true });
+    el.addEventListener("touchcancel", onUp, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onDown);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onUp);
+      el.removeEventListener("touchcancel", onUp);
+    };
+  }, [open, y, g, fullY, peekY, closedY, dismissible, snapToNearest]);
 
   return (
-    <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
-      snapPoints={snapPoints}
-      activeSnapPoint={activeSnapPoint}
-      setActiveSnapPoint={setActiveSnapPoint}
-      modal={false} // ✅ Sin overlay para permitir interacción con el mapa
-      dismissible={true}
-      snapToSequentialPoint={true}
-      shouldScaleBackground={false} // ✅ Sin escalado del fondo
-      {...({} as any)} // ✅ Type assertion para children (DrawerPrimitive.Root acepta children en runtime)
-    >
-      <DrawerContent
-        ref={drawerContentRef}
-        className={cn(
-          "rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
-          "focus:outline-none focus-visible:outline-none",
-          className
-        )}
-        style={{
-          width: '100%',
-          maxWidth: '100%',
-          maxHeight: '100vh',
-          zIndex: 9998, // ✅ Menor que el header (z-[9999]) para que no tape los botones
-          willChange: 'transform',
-        }}
-        noOverlay={true} // ✅ Sin overlay
-        noHandle={false} // ✅ Mostrar handle para drag
-        title={title}
-        onPointerDownOutside={(e) => {
-          // ✅ Detectar clicks fuera del drawer para cerrarlo
-          const target = e.target as HTMLElement;
-          // ✅ Verificar que no sea un click en el mapa (para no interferir con la interacción del mapa)
-          const isMapClick = target.closest('[role="button"]') || 
-                             target.closest('.gm-style') || 
-                             target.closest('[class*="map"]') ||
-                             target.closest('#mobile-search-header'); // ✅ No cerrar si es click en el header
-          
-          // ✅ Solo cerrar si no es un click en el mapa o header
-          if (!isMapClick) {
-            onOpenChange(false);
-          } else {
-            // ✅ Prevenir el cierre si es click en el mapa
-            e.preventDefault();
-          }
-        }}
-      >
-        {/* Header con título y botón cerrar */}
-        {title && (
-          <div className="flex-shrink-0 px-6 py-1.5 flex items-center justify-between border-b border-gray-100">
-            <div className="flex-1" />
-            <div className="flex flex-col items-center flex-1">
-              <h2
-                style={{
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  lineHeight: '19px',
-                  color: 'rgb(34, 34, 34)',
-                  margin: 0,
-                  padding: 0,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {title}
-              </h2>
-            </div>
-            <div className="flex-1 flex justify-end">
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={sheetRef}
+          key="sheet"
+          role="dialog"
+          aria-modal="false"
+          className={cn(
+            "fixed inset-x-0 top-0 z-[9998] flex flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+            className,
+          )}
+          style={{
+            height: "100dvh",
+            y,
+            // pan-y → el navegador permite scroll vertical del hijo; nosotros hacemos
+            // preventDefault() en touchmove cuando queremos secuestrar para drag.
+            touchAction: "pan-y",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            willChange: "transform",
+          }}
+          initial={{ y: closedY }}
+          exit={{ y: closedY, transition: { duration: 0.22, ease: [0.32, 0.72, 0, 1] } }}
+        >
+          {headerContent ? (
+            <div className="relative shrink-0 border-b border-[#e8e8e8]">
+              {headerContent}
               <button
-                onClick={() => onOpenChange(false)}
-                className="p-2 -mr-2 text-gray-600 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100 flex-shrink-0"
-                aria-label="Cerrar"
+                type="button"
+                data-no-drag
+                onClick={handleDismiss}
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-[#666] hover:bg-[#f5f5f5] active:bg-[#ebebeb]"
+                aria-label="Minimizar lista"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-          </div>
-        )}
+          ) : title ? (
+            <div className="flex shrink-0 items-center justify-between border-b border-[#e8e8e8] px-4 py-2">
+              <h2 className="font-display text-base font-semibold text-[#1c1c1c]">{title}</h2>
+              <button
+                type="button"
+                data-no-drag
+                onClick={handleDismiss}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#666] hover:bg-[#f5f5f5]"
+                aria-label="Minimizar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex shrink-0 justify-center py-2" aria-hidden>
+              <div className="h-1 w-10 rounded-full bg-[#d8d8d8]" />
+            </div>
+          )}
 
-        {/* Contenido scrolleable */}
-        <div
-          className="flex-1 overflow-y-auto bg-white px-0"
-          style={{
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch',
-          }}
-          onTouchStart={(e) => {
-            // Prevenir que el mapa se mueva cuando se toca el drawer
-            e.stopPropagation();
-          }}
-        >
-          {children}
-        </div>
-      </DrawerContent>
-    </Drawer>
+          <div
+            ref={scrollRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white font-display text-[#1c1c1c]"
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+          >
+            {children}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

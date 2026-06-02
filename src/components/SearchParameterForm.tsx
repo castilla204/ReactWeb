@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -30,7 +30,28 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
-import { hpTitleUnderlineBarStyle } from '../constants/homepageTypography';
+import {
+    hpIconButtonClass,
+    hpTitleUnderlineBarStyle,
+    MAP_CARD_BODY_CLASS,
+    MAP_CARD_CHIP_CLASS,
+    MAP_CARD_EYEBROW_CLASS,
+    MAP_CARD_HOOK_CLASS,
+    MAP_CARD_NAME_CLASS,
+    MAP_CARD_PRICE_CLASS,
+    MAP_CARD_PRICE_SUFFIX_CLASS,
+    MAP_CARD_BADGE_CLASS,
+    MAP_DESKTOP_GRID_CLASS,
+    MAP_DESKTOP_HEADER_CLASS,
+    MAP_DESKTOP_LIST_CLASS,
+    MAP_MOBILE_DRAWER_HEADER_CLASS,
+    MAP_MOBILE_LIST_CLASS,
+    MAP_PAGE_SUBTITLE_CLASS,
+    MAP_PAGE_SUBTITLE_MOBILE_CLASS,
+    MAP_PAGE_TITLE_CLASS,
+    MAP_PAGE_TITLE_MOBILE_CLASS,
+    SD_MOBILE_GUTTER_CLASS,
+} from '../constants/homepageTypography';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 
 // libraries ya no es necesario - MapContainer lo maneja internamente
@@ -57,7 +78,7 @@ const getCardHook = (service: any): string => {
     return 'Verificado · Reserva con confianza';
 };
 
-const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect, initialIsFavorite = false }) => {
+const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelected, onSelect, initialIsFavorite = false }) => {
     const [imageIndex, setImageIndex] = useState(0);
     const { isAuthenticated } = useAuth();
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
@@ -215,7 +236,7 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     className={`relative w-full rounded-2xl bg-white transition-all duration-200 ${
                         isSelected
                             ? 'ring-2 ring-[#0066CC] shadow-md'
-                            : 'border border-gray-100 hover:border-gray-200 hover:shadow-md hover:-translate-y-0.5'
+                            : 'border border-[#ebebeb] hover:border-[#d8d8d8] hover:shadow-md hover:-translate-y-0.5'
                     }`}
                 >
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
@@ -233,81 +254,20 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 
                                 {/* Badge "Recomendamos" - Estilo exacto de HomepageWall */}
                                 {isGuestFavorite && (
-                                    <div
-                                        className="absolute top-3 left-3 z-10"
-                                        style={{
-                                            padding: '0',
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                paddingTop: '4px',
-                                                paddingBottom: '4px',
-                                                paddingLeft: '8px',
-                                                paddingRight: '8px',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                backdropFilter: 'blur(4px)',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            <span
-                                                style={{
-                                                    fontSize: '10px',
-                                                    lineHeight: '12px',
-                                                    fontWeight: 400,
-                                                    color: '#222222',
-                                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                                    letterSpacing: '0',
-                                                }}
-                                                aria-label="Recomendamos"
-                                            >
-                                                Recomendamos
-                                            </span>
-                                        </div>
+                                    <div className="absolute left-3 top-3 z-10">
+                                        <span className={MAP_CARD_BADGE_CLASS} aria-label="Recomendamos">
+                                            Recomendamos
+                                        </span>
                                     </div>
                                 )}
                                 
                                 {/* Badge "Recomendación del viajero" cuando está seleccionado */}
                                 {isSelected && (
-                                    <div
-                                        className="absolute top-3 left-3 z-10"
-                                        style={{
-                                            padding: '0',
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                paddingTop: '4px',
-                                                paddingBottom: '4px',
-                                                paddingLeft: '8px',
-                                                paddingRight: '8px',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                backdropFilter: 'blur(4px)',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            <CheckCircle className="w-3.5 h-3.5 text-gray-900 flex-shrink-0" strokeWidth={2.5} />
-                                            <span
-                                                style={{
-                                                    fontSize: '12px',
-                                                    lineHeight: '16px',
-                                                    fontWeight: 400,
-                                                    color: '#000000',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                Selección del usuario
-                                            </span>
-                                        </div>
+                                    <div className="absolute left-3 top-3 z-10">
+                                        <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
+                                            <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
+                                            Seleccionado
+                                        </span>
                                     </div>
                                 )}
 
@@ -441,72 +401,40 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                         )}
                     </div>
 
-                    <div className="px-3.5 py-3">
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#0066CC]">
-                                    {serviceTypeLabel}
-                                </p>
-                                <h3 className="truncate text-base font-semibold text-gray-900">{expertName}</h3>
-                            </div>
-                            {service.averageRating > 0 && (
-                                <div className="flex shrink-0 items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
-                                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                                    <span className="text-sm font-medium text-gray-900">
-                                        {service.averageRating.toFixed(1).replace('.', ',')}
-                                    </span>
-                                    {totalReviews > 0 && (
-                                        <span className="text-xs text-gray-500">({totalReviews})</span>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <p className="mb-2 text-sm leading-snug text-gray-600">{cardHook}</p>
-
-                        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                            {cityLabel && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {cityLabel}
-                                </span>
-                            )}
-                            <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1">
-                                <Clock className="mr-1 h-3 w-3" />
-                                {availabilityInfo}
-                            </span>
-                            {isGuestFavorite && (
-                                <span className="inline-flex items-center rounded-full bg-[#0066CC]/10 px-2 py-1 font-medium text-[#0066CC]">
-                                    Top valorado
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="flex items-baseline gap-1.5 border-t border-gray-100 pt-2.5">
-                            <span className="text-lg font-semibold text-gray-900">{price}</span>
-                            {priceData.wasConverted && (
-                                <span className="text-xs text-gray-500">{priceData.sourceFormatted}</span>
-                            )}
-                            <span className="text-sm text-gray-500">/ servicio</span>
-                        </div>
-                    </div>
+                    <MapServiceCardInfo
+                        serviceTypeLabel={serviceTypeLabel}
+                        expertName={expertName}
+                        cardHook={cardHook}
+                        cityLabel={cityLabel}
+                        availabilityInfo={availabilityInfo}
+                        isGuestFavorite={isGuestFavorite}
+                        averageRating={service.averageRating || 0}
+                        totalReviews={totalReviews}
+                        price={price}
+                        priceWasConverted={priceData.wasConverted}
+                        priceSourceFormatted={priceData.sourceFormatted}
+                    />
                 </div>
             </a>
         );
     }
     
-    // En móvil, usar exactamente el mismo estilo que HomepageWall (igual a Airbnb) pero cuadradas y un poco menos anchas
+    // Móvil — misma jerarquía que desktop (experto, hook, chips, precio)
     return (
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
-            className="block cursor-pointer group"
-            style={{ textDecoration: 'none', color: 'inherit', width: '100%', maxWidth: '92%', margin: '0 auto', display: 'block' }}
+            className="block w-full cursor-pointer group"
+            style={{ textDecoration: 'none', color: 'inherit' }}
         >
-            {/* Contenedor principal - Estructura exacta de Airbnb */}
-            <div className="relative cursor-pointer group" style={{ width: '100%' }}>
-                {/* Contenedor de imagen con todos los subdivs - Cuadrada y un poco menos ancha */}
-                <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '12px', width: '100%' }}>
+            <div
+                className={`relative w-full overflow-hidden rounded-2xl bg-white transition-all ${
+                    isSelected
+                        ? 'ring-2 ring-[#0066CC] shadow-md'
+                        : 'border border-[#ebebeb] shadow-sm'
+                }`}
+            >
+                <div className="relative w-full overflow-hidden rounded-t-2xl" style={{ aspectRatio: '4/3' }}>
                     {imageUrls.length > 0 ? (
                         <>
                             {/* Imagen principal */}
@@ -519,83 +447,20 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                                 />
                             </div>
                             
-                            {/* Badge "Recomendamos" - Estructura similar a Airbnb */}
                             {isGuestFavorite && (
-                                <div
-                                    className="absolute top-3 left-3 z-10"
-                                    style={{
-                                        padding: '0',
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            paddingTop: '4px',
-                                            paddingBottom: '4px',
-                                            paddingLeft: '8px',
-                                            paddingRight: '8px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                            backdropFilter: 'blur(4px)',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                fontSize: '10px',
-                                                lineHeight: '12px',
-                                                fontWeight: 400,
-                                                color: '#222222',
-                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                                                letterSpacing: '0',
-                                            }}
-                                            aria-label="Recomendamos"
-                                        >
-                                            Recomendamos
-                                        </span>
-                                    </div>
+                                <div className="absolute left-3 top-3 z-10">
+                                    <span className={MAP_CARD_BADGE_CLASS} aria-label="Recomendamos">
+                                        Recomendamos
+                                    </span>
                                 </div>
                             )}
-                            
-                            {/* Badge "Recomendación del viajero" cuando está seleccionado */}
+
                             {isSelected && (
-                                <div
-                                    className="absolute top-3 left-3 z-10"
-                                    style={{
-                                        padding: '0',
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            paddingTop: '4px',
-                                            paddingBottom: '4px',
-                                            paddingLeft: '8px',
-                                            paddingRight: '8px',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                            backdropFilter: 'blur(4px)',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        <CheckCircle className="w-3.5 h-3.5 text-gray-900 flex-shrink-0" strokeWidth={2.5} />
-                                        <span
-                                            style={{
-                                                fontSize: '12px',
-                                                lineHeight: '16px',
-                                                fontWeight: 400,
-                                                color: '#000000',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                        >
-                                            Selección del usuario
-                                        </span>
-                                    </div>
+                                <div className="absolute left-3 top-3 z-10">
+                                    <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
+                                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
+                                        Seleccionado
+                                    </span>
                                 </div>
                             )}
 
@@ -705,187 +570,38 @@ const MapServiceCard: React.FC<MapServiceCardProps> = ({ service, isSelected, on
                     )}
                 </div>
 
-                {/* Información del servicio - Estructura exacta como Airbnb */}
-                <div style={{ marginTop: '12px', width: '100%' }}>
-                    {/* Primera fila: Título con Rating en la misma línea */}
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '4px',
-                            gap: '8px',
-                            width: '100%',
-                            boxSizing: 'border-box',
-                        }}
-                    >
-                        <div
-                            style={{
-                                flex: '1 1 0%',
-                                minWidth: 0,
-                                overflow: 'hidden',
-                                fontSize: '16px',
-                                lineHeight: 'normal',
-                                fontWeight: 500,
-                                color: 'rgb(0, 0, 0)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textAlign: 'left',
-                            }}
-                        >
-                            <div className="truncate" style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{service.serviceTypeName || service.categoryName || 'Servicio'}</div>
-                        </div>
-                        {service.averageRating && service.averageRating > 0 && (
-                            <div style={{ 
-                                display: 'flex', 
-                                flexDirection: 'row',
-                                alignItems: 'center', 
-                                gap: '4px', 
-                                flexShrink: 0,
-                                flexGrow: 0,
-                                whiteSpace: 'nowrap',
-                            }}>
-                                <Star 
-                                    className="flex-shrink-0" 
-                                    style={{ 
-                                        width: '14px', 
-                                        height: '14px', 
-                                        fill: '#222222', 
-                                        color: '#222222',
-                                        flexShrink: 0,
-                                    }} 
-                                />
-                                <span style={{ 
-                                    fontSize: '15px',
-                                    lineHeight: '19px',
-                                    fontWeight: 400,
-                                    color: 'rgb(106, 106, 106)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    whiteSpace: 'nowrap',
-                                }}>
-                                    {service.averageRating.toFixed(2).replace('.', ',')}
-                                </span>
-                                {(() => {
-                                    // Buscar totalReviews en múltiples ubicaciones posibles
-                                    const totalReviews = service.totalReviews 
-                                        ?? (service as any).TotalReviews 
-                                        ?? service.expert?.totalReviews 
-                                        ?? (service.expert as any)?.TotalReviews
-                                        ?? 0;
-                                    return totalReviews > 0 ? (
-                                        <span style={{ 
-                                            fontSize: '15px',
-                                            lineHeight: '19px',
-                                            fontWeight: 400,
-                                            color: 'rgb(106, 106, 106)',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            whiteSpace: 'nowrap',
-                                        }}>
-                                            ({totalReviews})
-                                        </span>
-                                    ) : null;
-                                })()}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Segunda fila: Descripción del servicio (justo después del título) */}
-                    {(() => {
-                        const serviceDescription = service.serviceTypeDescription || (service as any).ServiceTypeDescription || service.conditions || (service as any).Conditions;
-                        return serviceDescription ? (
-                            <>
-                                <div
-                                    className="overflow-hidden"
-                                    style={{
-                                        marginBottom: '4px',
-                                        fontSize: '15px',
-                                        lineHeight: '19px',
-                                        fontWeight: 400,
-                                        color: 'rgb(106, 106, 106)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <div style={{ 
-                                        textAlign: 'left',
-                                        whiteSpace: 'pre-line',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                        lineHeight: '23px',
-                                    }}>{serviceDescription}</div>
-                                </div>
-                            </>
-                        ) : null;
-                    })()}
-
-                    {/* Tercera fila: Ciudad · Horario */}
-                    <div
-                        className="flex items-center overflow-hidden"
-                        style={{
-                            marginBottom: '4px',
-                            fontSize: '15px',
-                            lineHeight: '19px',
-                            fontWeight: 400,
-                            color: 'rgb(106, 106, 106)',
-                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            textAlign: 'left',
-                        }}
-                    >
-                        <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                            {service.expert?.city && (
-                                <>
-                                    <span className="truncate">{service.expert.city}</span>
-                                    <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                                </>
-                            )}
-                            <span className="truncate">{availabilityInfo}</span>
-                        </div>
-                    </div>
-
-                    {/* Quinta fila: Precio con "por servicio" seguido */}
-                    <div
-                        className="flex items-center"
-                        style={{
-                            marginTop: '4px',
-                            gap: '4px',
-                        }}
-                    >
-                        <span
-                            style={{
-                                fontSize: '16px',
-                                lineHeight: 'normal',
-                                fontWeight: 500,
-                                color: 'rgb(0, 0, 0)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                textDecoration: 'underline',
-                            }}
-                        >
-                            {price}
-                            {priceData.wasConverted && (
-                                <span style={{ marginLeft: 4, fontSize: '0.85em', color: '#6B7280', fontWeight: 400 }}>
-                                    {priceData.sourceFormatted}
-                                </span>
-                            )}
-                        </span>
-                        <span
-                            style={{
-                                fontSize: '15px',
-                                lineHeight: '19px',
-                                fontWeight: 400,
-                                color: 'rgb(106, 106, 106)',
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            }}
-                        >
-                            por servicio
-                        </span>
-                    </div>
-                </div>
+                <MapServiceCardInfo
+                    serviceTypeLabel={serviceTypeLabel}
+                    expertName={expertName}
+                    cardHook={cardHook}
+                    cityLabel={cityLabel}
+                    availabilityInfo={availabilityInfo}
+                    isGuestFavorite={isGuestFavorite}
+                    averageRating={service.averageRating || 0}
+                    totalReviews={totalReviews}
+                    price={price}
+                    priceWasConverted={priceData.wasConverted}
+                    priceSourceFormatted={priceData.sourceFormatted}
+                />
             </div>
         </a>
     );
 };
+
+/**
+ * ✅ Memoización por shallow-equal de las props que importan.
+ *    Sin esto, cualquier re-render del padre (mapa moviéndose, debounce, snap)
+ *    re-renderizaba TODAS las cards → jank durante el drag del drawer.
+ */
+const MapServiceCard = memo(
+    MapServiceCardInner,
+    (prev, next) =>
+        prev.service === next.service &&
+        prev.isSelected === next.isSelected &&
+        prev.initialIsFavorite === next.initialIsFavorite &&
+        prev.onSelect === next.onSelect,
+);
+
 const getZoomLevel = (radius: number) => {
     const radiusInMeters = radius * 1000;
     return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
@@ -898,6 +614,144 @@ const defaultCenter = {
 /** Zoom inicial del mapa: vista amplia (país/región), no encima del usuario */
 const getMapOverviewZoom = (countryCode: string): number =>
     getCountryCoordinates(countryCode)?.zoom ?? 6;
+
+/** peek · reposo (al cargar, ~mitad inferior) · casi pantalla completa */
+// ✅ Solo 2 snaps (peek + full) para gesto continuo "Apple Maps".
+//    Un snap intermedio creaba una pared a media altura que se sentía como tramo.
+const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.30, 0.92];
+const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];
+const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // mismo que FULL ahora
+const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[1];
+
+function MapPanelHeader({
+    count,
+    hasLocation,
+    titleClassName,
+    subtitleClassName,
+    subtitle = 'Compara valoraciones, informe y precio. Reserva con pago seguro.',
+}: {
+    count: number;
+    hasLocation: boolean;
+    titleClassName: string;
+    subtitleClassName: string;
+    subtitle?: string;
+}) {
+    if (!hasLocation) {
+        return (
+            <>
+                <h2 className={titleClassName}>
+                    Marca dónde buscas
+                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
+                </h2>
+                <p className={subtitleClassName}>
+                    Toca el mapa o usa tu ubicación para ver opciones cerca.
+                </p>
+            </>
+        );
+    }
+    return (
+        <>
+            {count > 0 && (
+                <p className="hp-eyebrow mb-2">
+                    {count} {count === 1 ? 'opción en el mapa' : 'opciones en el mapa'}
+                </p>
+            )}
+            <h2 className={titleClassName}>
+                Elige antes de comprar
+                <span aria-hidden style={hpTitleUnderlineBarStyle} />
+            </h2>
+            <p className={subtitleClassName}>{subtitle}</p>
+        </>
+    );
+}
+
+function MapMobileDrawerHeader({ count }: { count: number }) {
+    return (
+        <div className={MAP_MOBILE_DRAWER_HEADER_CLASS}>
+            <MapPanelHeader
+                count={count}
+                hasLocation
+                titleClassName={MAP_PAGE_TITLE_MOBILE_CLASS}
+                subtitleClassName={MAP_PAGE_SUBTITLE_MOBILE_CLASS}
+                subtitle="Compara valoraciones, informe y precio."
+            />
+        </div>
+    );
+}
+
+type MapServiceCardInfoProps = {
+    serviceTypeLabel: string;
+    expertName: string;
+    cardHook: string;
+    cityLabel: string | null;
+    availabilityInfo: string;
+    isGuestFavorite: boolean;
+    averageRating: number;
+    totalReviews: number;
+    price: string;
+    priceWasConverted: boolean;
+    priceSourceFormatted: string;
+};
+
+function MapServiceCardInfo({
+    serviceTypeLabel,
+    expertName,
+    cardHook,
+    cityLabel,
+    availabilityInfo,
+    isGuestFavorite,
+    averageRating,
+    totalReviews,
+    price,
+    priceWasConverted,
+    priceSourceFormatted,
+}: MapServiceCardInfoProps) {
+    return (
+        <div className={MAP_CARD_BODY_CLASS}>
+            <p className={`${MAP_CARD_EYEBROW_CLASS} mb-1`}>{serviceTypeLabel}</p>
+            <div className="mb-2 flex items-start justify-between gap-2">
+                <h3 className={MAP_CARD_NAME_CLASS}>{expertName}</h3>
+                {averageRating > 0 && (
+                    <div className="flex shrink-0 items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-0.5">
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-medium text-[#1c1c1c]">
+                            {averageRating.toFixed(1).replace('.', ',')}
+                        </span>
+                        {totalReviews > 0 && (
+                            <span className="text-xs font-normal text-[#6a6a6a]">({totalReviews})</span>
+                        )}
+                    </div>
+                )}
+            </div>
+            <p className={`${MAP_CARD_HOOK_CLASS} mb-2.5`}>{cardHook}</p>
+            <div className="mb-3 flex flex-wrap gap-2">
+                {cityLabel && (
+                    <span className={MAP_CARD_CHIP_CLASS}>
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        {cityLabel}
+                    </span>
+                )}
+                <span className={MAP_CARD_CHIP_CLASS}>
+                    <Clock className="h-3 w-3 shrink-0" />
+                    {availabilityInfo}
+                </span>
+                {isGuestFavorite && (
+                    <span className="inline-flex items-center rounded-full bg-[#0066CC]/10 px-2.5 py-1 text-xs font-semibold text-[#0066CC]">
+                        Top valorado
+                    </span>
+                )}
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-t border-[#ebebeb] pt-2.5">
+                <span className={MAP_CARD_PRICE_CLASS}>{price}</span>
+                {priceWasConverted && priceSourceFormatted && (
+                    <span className="text-xs font-normal text-[#6a6a6a]">{priceSourceFormatted}</span>
+                )}
+                <span className={MAP_CARD_PRICE_SUFFIX_CLASS}>/ servicio</span>
+            </div>
+        </div>
+    );
+}
+
 interface SearchParameterFormProps {
     onComplete: (parameters: any) => void;
     setCurrentStep: (step: number) => void;
@@ -1021,9 +875,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const initialIsMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
     // ✅ OPTIMIZADO: Detectar si viene de búsqueda (tiene categoryId y serviceTypeId)
     const comesFromSearch = selectedCategory !== null && serviceTypeId !== null;
-    // ✅ Drawer cerrado por defecto - NO se abre automáticamente
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+    // Móvil: drawer en reposo al entrar (~52% altura). Desktop: cerrado.
+    const [isDrawerOpen, setIsDrawerOpen] = useState(initialIsMobile);
+    const [isDrawerVisible, setIsDrawerVisible] = useState(initialIsMobile);
     // ✅ Rastrear si el usuario cerró el drawer manualmente para evitar reabrir automáticamente
     const [wasManuallyClosed, setWasManuallyClosed] = useState(false);
     
@@ -1061,7 +915,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     
     // ✅ Posición inicial: 0 (cerrado) - El drawer no se abre automáticamente
     const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0);
-    
+    const [mobileDrawerSnap, setMobileDrawerSnap] = useState<number | string | null>(
+        initialIsMobile ? MOBILE_MAP_SNAP_DEPLOYED : MOBILE_MAP_SNAP_PEEK,
+    );
+
+    const isMobileDrawerDeployed =
+        mobileDrawerSnap === MOBILE_MAP_SNAP_DEPLOYED || mobileDrawerSnap === MOBILE_MAP_SNAP_FULL;
+
     // ✅ Eliminada lógica de scroll personalizada - Vaul maneja todo nativamente con gestos suaves
     
     const [filters, setFilters] = useState({
@@ -1109,7 +969,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         longitude: debouncedParams.longitude,
         locationRange: debouncedParams.locationRange,
         pageSize: 20, // ✅ Cargar 20 servicios por página
-        enabled: (isDrawerOpen || isDrawerVisible) && !!(debouncedParams.categoryId && debouncedParams.serviceTypeId && debouncedParams.latitude && debouncedParams.longitude && debouncedParams.locationRange), // ✅ Solo cargar cuando el drawer esté abierto Y haya parámetros válidos
+        enabled:
+            !!(debouncedParams.categoryId &&
+                debouncedParams.serviceTypeId &&
+                debouncedParams.latitude &&
+                debouncedParams.longitude &&
+                debouncedParams.locationRange) &&
+            // ✅ En móvil solo refetch cuando el drawer está desplegado.
+            //    Antes era `isMobileDevice || ...` (siempre true en móvil) → refetch
+            //    durante el drag del drawer cuando el mapa se movía bajo el dedo.
+            (isMobileDevice ? isMobileDrawerDeployed : (isDrawerOpen || isDrawerVisible)),
     });
    
     // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
@@ -1262,50 +1131,28 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
     
-    // ✅ Drawer cerrado por defecto - NO se abre automáticamente
-    // El usuario debe abrirlo manualmente o usando el botón "Ver resultados"
-    
-    // ✅ Detectar clicks fuera del drawer para cerrarlo
+    const collapseMobileDrawer = useCallback(() => {
+        setWasManuallyClosed(true);
+        setSelectedService(null);
+        setMobileDrawerSnap(MOBILE_MAP_SNAP_PEEK);
+        setIsDrawerOpen(true);
+        setIsDrawerVisible(true);
+    }, []);
+
+    // Móvil: montar el drawer la primera vez en posición de reposo.
+    // ❌ NO depender de formData.latitude/longitude: re-disparaba el setSnap
+    //    cuando el mapa se movía bajo el dedo, interrumpiendo el gesto del drawer.
+    const drawerMountedRef = useRef(false);
     useEffect(() => {
-        if (!isDrawerOpen || !isDrawerVisible || !isMobileDevice) return;
-        
-        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-            const target = event.target as HTMLElement;
-            
-            // ✅ Verificar que el click no sea en el drawer ni en sus elementos hijos
-            const drawerElement = document.querySelector('[data-vaul-drawer]') as HTMLElement;
-            if (!drawerElement) return;
-            
-            if (!drawerElement.contains(target)) {
-                // ✅ Verificar que no sea un click en el mapa o header (para no interferir)
-                const isMapClick = target.closest('[role="button"]') || 
-                                   target.closest('.gm-style') || 
-                                   target.closest('[class*="map"]') ||
-                                   target.closest('#mobile-search-header');
-                
-                // ✅ Solo cerrar si no es un click en el mapa o header
-                if (!isMapClick) {
-                    setIsDrawerOpen(false);
-                    setIsDrawerVisible(false);
-                    setWasManuallyClosed(true);
-                    setSelectedService(null); // ✅ Deseleccionar servicio al cerrar
-                }
-            }
-        };
-        
-        // ✅ Añadir listener con un pequeño delay para evitar que se cierre inmediatamente al abrir
-        const timeoutId = setTimeout(() => {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('touchstart', handleClickOutside);
-        }, 100);
-        
-        return () => {
-            clearTimeout(timeoutId);
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('touchstart', handleClickOutside);
-        };
-    }, [isDrawerOpen, isDrawerVisible, isMobileDevice]);
-    
+        if (!isMobileDevice) return;
+        setIsDrawerOpen(true);
+        setIsDrawerVisible(true);
+        if (!drawerMountedRef.current && !wasManuallyClosed) {
+            setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
+            drawerMountedRef.current = true;
+        }
+    }, [isMobileDevice, wasManuallyClosed]);
+
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
     const handleDrawerOpenChange = (open: boolean) => {
         // ✅ Permitir abrir tanto en móvil como en PC
@@ -1618,20 +1465,22 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // Ref para el contenedor del sidebar (lista de servicios)
     const sidebarRef = useRef<HTMLDivElement>(null);
     
-    const handleServiceSelect = (serviceId: number | undefined | null) => {
-        
+    // ✅ useCallback con deps estables: la referencia es la misma entre renders,
+    //    así MapServiceCard memoizado no se re-renderiza al cambiar otras props del padre.
+    const handleServiceSelect = useCallback((serviceId: number | undefined | null) => {
+
         // Si serviceId es 0, null o undefined, cerrar la card (deseleccionar)
         if (serviceId === 0 || serviceId === null || serviceId === undefined) {
             setSelectedService(null);
             return;
         }
-        
+
         // Validar que serviceId sea un número válido
         if (isNaN(serviceId)) {
             console.warn('⚠️ handleServiceSelect recibió un serviceId inválido:', serviceId);
             return;
         }
-        
+
         // ✅ Actualizar el estado para que el marcador cambie de color
         setSelectedService(serviceId);
         
@@ -1639,7 +1488,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         if (isMobileDevice) {
             setIsDrawerOpen(true);
             setIsDrawerVisible(true);
-            setWasManuallyClosed(false); // ✅ Resetear flag cuando se selecciona un servicio (acción intencional)
+            setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
+            setWasManuallyClosed(false);
         }
         
         // ✅ Hacer scroll al principio del sidebar para mostrar la card seleccionada (solo en desktop)
@@ -1648,7 +1498,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 sidebarRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             }, 100);
         }
-    };
+    }, [isMobileDevice]);
     const handleContinue = () => {
         if (!selectedService) {
             setError('Por favor, selecciona un servicio antes de continuar.');
@@ -1697,33 +1547,13 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     minWidth: '600px', 
                     maxWidth: '900px' 
                 }}>
-                    {/* Header del panel — mismo lenguaje visual que checkout */}
-                    <div className="border-b border-[#e8e8e8]/90 px-8 py-5 md:px-10">
-                        {formData.latitude && formData.longitude ? (
-                            <>
-                                <p className="hp-eyebrow mb-2">
-                                    {services.length}{' '}
-                                    {services.length === 1 ? 'opción en el mapa' : 'opciones en el mapa'}
-                                </p>
-                                <h2 className="relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]">
-                                    Elige antes de comprar
-                                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
-                                </h2>
-                                <p className="mt-1.5 max-w-md text-sm leading-relaxed text-[#6a6a6a]">
-                                    Compara valoraciones, informe y precio. Reserva con pago seguro.
-                                </p>
-                            </>
-                        ) : (
-                            <>
-                                <h2 className="relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]">
-                                    Marca dónde buscas
-                                    <span aria-hidden style={hpTitleUnderlineBarStyle} />
-                                </h2>
-                                <p className="mt-1.5 text-sm leading-relaxed text-[#6a6a6a]">
-                                    Toca el mapa o usa tu ubicación para ver opciones cerca.
-                                </p>
-                            </>
-                        )}
+                    <div className={MAP_DESKTOP_HEADER_CLASS}>
+                        <MapPanelHeader
+                            count={services.length}
+                            hasLocation={!!(formData.latitude && formData.longitude)}
+                            titleClassName={MAP_PAGE_TITLE_CLASS}
+                            subtitleClassName={MAP_PAGE_SUBTITLE_CLASS}
+                        />
                     </div>
                     
                     {/* Lista de servicios */}
@@ -1742,17 +1572,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             }
                         `}</style>
                         {formData.latitude && formData.longitude && (
-                            <div className="px-8 pb-6 pt-8 md:px-10">
+                            <div className={MAP_DESKTOP_LIST_CLASS}>
                             {reorderedServices.length > 0 ? (
                                 <>
-                                    <div 
-                                        className="grid grid-cols-1 xl:grid-cols-2" 
-                                        style={{ 
-                                            width: '100%',
-                                            gap: '24px',
-                                            padding: '0',
-                                        }}
-                                    >
+                                    <div className={MAP_DESKTOP_GRID_CLASS}>
                                     {reorderedServices.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
@@ -1810,20 +1633,19 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 <div className="lg:hidden flex-1 relative w-full flex flex-col">
                         {/* ✅ Loading overlay - Reemplazado por skeleton en la transición */}
                         {/* El skeleton se muestra desde AirbnbSearchBar y SearchCreationPage */}
-                        {/* Header móvil - Completamente transparente, solo botones flotantes */}
-                        <div 
+                        {/* Header móvil — extremos + scrim para legibilidad sobre el mapa */}
+                        <div
                             id="mobile-search-header"
                             ref={headerRef}
-                            className="absolute top-0 left-0 right-0 z-[9999] pointer-events-none px-4 pt-3"
-                            style={{
-                                background: 'transparent',
-                                backgroundColor: 'transparent',
-                                backgroundImage: 'none',
-                                backdropFilter: 'none'
-                            }}
+                            className="pointer-events-none absolute inset-x-0 top-0 z-[9999]"
                         >
-                            <div className="flex items-center justify-between pointer-events-auto">
-                                {/* Botón de atrás */}
+                            <div
+                                className="h-28 bg-gradient-to-b from-white/95 via-white/55 to-transparent"
+                                aria-hidden
+                            />
+                            <div
+                                className={`pointer-events-auto absolute inset-x-0 top-0 flex items-center justify-between pb-2 ${SD_MOBILE_GUTTER_CLASS} pt-[max(0.75rem,env(safe-area-inset-top))]`}
+                            >
                                 <button
                                     type="button"
                                     onClick={(e) => {
@@ -1831,29 +1653,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         e.stopPropagation();
                                         navigate('/');
                                     }}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 transition-colors flex-shrink-0 shadow-lg"
-                                    aria-label="Atrás"
+                                    className={hpIconButtonClass}
+                                    aria-label="Volver"
                                 >
-                                    <ArrowLeft className="w-5 h-5 text-gray-900" />
+                                    <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
                                 </button>
-                                
-                                {/* Botón de filtros - Navega de vuelta a búsqueda */}
+
                                 {isMobileDevice && selectedCategory && serviceTypeId && (
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            // Guardar parámetros en sessionStorage para que AirbnbSearchBar los lea
                                             const searchParams = {
                                                 serviceTypeId,
                                                 categoryId: selectedCategory,
-                                                adUrl: initialUserSearch || ''
+                                                adUrl: initialUserSearch || '',
                                             };
                                             sessionStorage.setItem('returnToSearch', JSON.stringify(searchParams));
-                                            // Navegar a homepage
                                             navigate('/');
                                         }}
                                         aria-label="Cambiar búsqueda"
-                                        className="w-10 h-10 rounded-full bg-white hover:bg-gray-100 transition-all flex items-center justify-center flex-shrink-0 shadow-lg"
+                                        className={hpIconButtonClass}
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -1883,7 +1702,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const countryCoords = getCountryCoordinates(selectedCountry);
                                             return countryCoords ? { lat: 42.5, lng: -3.7 } : { lat: 42.5, lng: -3.7 };
                                         })()}
-                                        initialZoom={selectedLocation ? Math.min(14, Math.max(4, Math.floor(14 - Math.log2((parseInt(formData.locationRange || '25') * 1000) / 500)))) : 5}
+                                        initialZoom={
+                                            selectedLocation
+                                                ? getZoomLevel(parseInt(formData.locationRange || '25', 10))
+                                                : getMapOverviewZoom(selectedCountry)
+                                        }
+                                        recenterMode="pan-only"
                                         onServiceSelect={(service: Service) => {
                                             // ✅ Convertir Service a formato esperado por handleServiceSelect
                                             // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
@@ -1901,42 +1725,38 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                                 )}
                                 
-                            {/* Floating Button - Siempre visible cuando NO hay card seleccionada */}
-                                {formData.latitude && formData.longitude && !selectedService && (
-                                <div className="absolute bottom-[env(safe-area-inset-bottom,16px)] left-1/2 transform -translate-x-1/2 z-[9999] pb-4">
+                            {/* CTA lista — visible si el drawer no está expandido del todo */}
+                                {formData.latitude && formData.longitude && (
+                                <div
+                                    className="pointer-events-none absolute inset-x-0 z-[9998] flex justify-center px-4"
+                                    style={{
+                                        bottom: isDrawerOpen && isDrawerVisible
+                                            ? 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
+                                            : 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)',
+                                    }}
+                                >
+                                    {!isMobileDrawerDeployed && (
                                         <Button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (isDrawerOpen && isDrawerVisible) {
-                                                    // Si está abierto, alternar entre expandido y colapsado
-                                                    // Usar snapPoints nativos de vaul (números decimales)
-                                                    setActiveSnapPoint(activeSnapPoint === 0.85 ? 0.7 : 0.85);
-                                                } else {
-                                                    // Si está cerrado, abrir expandido
-                                                    setIsDrawerOpen(true);
-                                                    setIsDrawerVisible(true);
-                                                    setActiveSnapPoint(0.7);
-                                                    setWasManuallyClosed(false); // ✅ Resetear flag cuando se abre manualmente con el botón
-                                                }
+                                                setWasManuallyClosed(false);
+                                                setIsDrawerOpen(true);
+                                                setIsDrawerVisible(true);
+                                                setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
                                             }}
                                             size="lg"
-                                            className="shadow-[0_2px_8px_rgba(0,0,0,0.1)] border border-gray-200 h-12 px-6 text-sm rounded-full font-medium transition-all duration-200 pointer-events-auto bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100 hover:shadow-[0_2px_12px_rgba(0,0,0,0.15)]"
-                                            disabled={false}
-                                            style={{
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                letterSpacing: '-0.01em',
-                                            }}
+                                            className="pointer-events-auto h-12 rounded-full border-0 bg-[#0066CC] px-5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,102,204,0.35)] transition-all hover:bg-[#005bb5] active:scale-[0.98]"
                                         >
-                                            <div className="flex items-center gap-2">
+                                            <span className="flex items-center gap-2">
                                                 <span>
-                                                    {mapServicesCount > 0 
-                                                        ? `Ver ${mapServicesCount} ${mapServicesCount === 1 ? 'resultado' : 'resultados'}`
-                                                        : 'Ver resultados'
-                                                    }
+                                                    {mapServicesCount > 0
+                                                        ? `Ver ${mapServicesCount} ${mapServicesCount === 1 ? 'opción' : 'opciones'}`
+                                                        : 'Ver lista'}
                                                 </span>
-                                                <ChevronUp className="w-4 h-4 text-gray-500" strokeWidth={2.5} />
-                                            </div>
+                                                <ChevronUp className="h-4 w-4 opacity-90" strokeWidth={2.5} />
+                                            </span>
                                         </Button>
+                                    )}
                                 </div>
                                 )}
                         
@@ -1944,7 +1764,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 
                 {/* Desktop: Right Side - Map */}
                 {!isMobileDevice && (
-                <div className="relative hidden min-h-0 min-w-[400px] flex-1 bg-white p-6 pl-5 pr-8 pb-8 lg:flex">
+                <div className="relative hidden min-h-0 min-w-[400px] flex-1 bg-white p-5 pl-5 pr-6 pb-6 lg:flex xl:p-6 xl:pr-8 xl:pb-8">
                         {false ? (
                         <div className="h-full w-full flex items-center justify-center bg-gray-100">
                             <div className="text-red-500">Error al cargar el mapa</div>
@@ -1996,51 +1816,44 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 {isMobileDevice ? (
                     <CustomBottomSheet
                         open={isDrawerOpen && isDrawerVisible}
+                        dismissible={false}
+                        // ✅ Gesto unificado: secuencial = el dedo siempre lleva al snap
+                        // adyacente, sin saltos por velocidad → no se percibe "tramos".
+                        snapToSequentialPoint={true}
+                        // ✅ 350 ms post-scroll donde el drawer NO se mueve: un scroll
+                        //    natural que llega a scrollTop=0 no colapsa el drawer.
+                        //    Para colapsar: levantar el dedo y volver a empujar,
+                        //    o flick fuerte (Vaul lo evalúa en pointerUp).
+                        scrollLockTimeout={350}
                         onOpenChange={(open) => {
-                            setIsDrawerOpen(open);
-                            setIsDrawerVisible(open);
-                            // ✅ Si el usuario cierra el drawer, marcar como cerrado manualmente y deseleccionar servicio
-                            if (!open) {
-                                setWasManuallyClosed(true);
-                                setSelectedService(null); // ✅ Deseleccionar servicio al cerrar
-                                drawerOpenedRef.current = false; // ✅ Resetear ref cuando se cierra
-                            } else {
-                                // Si lo abre, resetear el flag (puede abrirse manualmente)
+                            setIsDrawerOpen(true);
+                            setIsDrawerVisible(true);
+                            if (open) {
                                 setWasManuallyClosed(false);
-                                drawerOpenedRef.current = true; // ✅ Marcar como abierto
+                                drawerOpenedRef.current = true;
                             }
                         }}
-                        title={(() => {
-                            // ✅ USAR EL CONTADOR CORRECTO: Mostrar número de servicios, no de revisiones
-                            const drawerServicesCount = services.length;
-                            return drawerServicesCount > 0 
-                                ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}` 
-                                : 'Sin servicios';
-                        })()}
+                        onCloseRequest={collapseMobileDrawer}
+                        onActiveSnapPointChange={(snap) => {
+                            // ✅ Solo actualiza si realmente cambió (evita renders
+                            //    concurrentes durante la animación de release de Vaul).
+                            setMobileDrawerSnap((prev) => (prev === snap ? prev : snap));
+                            if (
+                                snap === MOBILE_MAP_SNAP_DEPLOYED ||
+                                snap === MOBILE_MAP_SNAP_FULL
+                            ) {
+                                setWasManuallyClosed(false);
+                            }
+                        }}
+                        snapPoints={MOBILE_MAP_SNAP_POINTS}
+                        activeSnapPoint={mobileDrawerSnap}
+                        headerContent={<MapMobileDrawerHeader count={services.length} />}
                         className="lg:hidden"
                     >
                         {/* Contenido con scroll */}
-                        <div 
-                            ref={drawerContentRef}
-                            style={{ padding: '0 16px' }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onTouchMove={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
-                            onWheel={(e) => e.stopPropagation()}
-                        >
+                        <div ref={drawerContentRef} className={MAP_MOBILE_LIST_CLASS}>
                             {services.length > 0 ? (
-                                <div 
-                                    className="flex flex-col" 
-                                    style={{ 
-                                        gap: '32px', // ✅ Más espacio entre cards
-                                        paddingTop: '12px', 
-                                        paddingBottom: '40px', // ✅ Más padding inferior
-                                    }}
-                                    onTouchStart={(e) => e.stopPropagation()}
-                                    onTouchMove={(e) => e.stopPropagation()}
-                                    onTouchEnd={(e) => e.stopPropagation()}
-                                    onWheel={(e) => e.stopPropagation()}
-                                >
+                                <div className="space-y-5">
                                     {services.map((service) => {
                                         const serviceId = service.id || (service as any).Id;
                                         const isSelected = selectedService === serviceId;
@@ -2073,7 +1886,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             {isFetchingNextPage && (
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                                                    <p className="text-sm text-gray-500">Cargando más servicios...</p>
+                                                    <p className="font-display text-sm text-[#6a6a6a]">Cargando más opciones…</p>
                                                 </div>
                                             )}
                                         </div>
@@ -2082,16 +1895,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     {/* ✅ Indicador de fin de lista */}
                                     {!hasNextPage && allServices.length > 0 && (
                                         <div className="py-8 text-center">
-                                            <p className="text-sm text-gray-500">
-                                                Has visto todos los servicios disponibles
+                                            <p className="font-display text-sm text-[#6a6a6a]">
+                                                Has visto todas las opciones en esta zona
                                             </p>
                                         </div>
                                     )}
                                 </div>
+                            ) : mapLoading ? (
+                                <div className="space-y-4 py-4">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="h-52 animate-pulse rounded-2xl bg-gray-100" />
+                                    ))}
+                                </div>
                             ) : (
-                                <div className="py-12 text-center">
-                                    <p className="text-sm text-gray-500">
-                                        No hay servicios disponibles
+                                <div className="flex flex-col items-center gap-3 py-12 text-center font-display">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#0066CC]/10">
+                                        <MapPin className="h-7 w-7 text-[#0066CC]" />
+                                    </div>
+                                    <p className="text-base font-semibold text-[#1c1c1c]">Sin opciones aquí</p>
+                                    <p className="max-w-[16rem] text-sm leading-relaxed text-[#6a6a6a]">
+                                        Mueve el mapa o elige otra zona para ver más expertos.
                                     </p>
                                 </div>
                             )}
@@ -2284,7 +2107,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             {isFetchingNextPage && (
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                                                    <p className="text-sm text-gray-500">Cargando más servicios...</p>
+                                                    <p className="font-display text-sm text-[#6a6a6a]">Cargando más opciones…</p>
                                                 </div>
                                             )}
                                         </div>
@@ -2292,8 +2115,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     
                                     {!hasNextPage && allServices.length > 0 && (
                                         <div className="py-8 text-center">
-                                            <p className="text-sm text-gray-500">
-                                                Has visto todos los servicios disponibles
+                                            <p className="font-display text-sm text-[#6a6a6a]">
+                                                Has visto todas las opciones en esta zona
                                             </p>
                                         </div>
                                     )}

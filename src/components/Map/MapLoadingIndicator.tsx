@@ -25,7 +25,7 @@ export const MapLoadingIndicator: React.FC<MapLoadingIndicatorProps> = ({
 
   return (
     <div
-      className={`pointer-events-none absolute left-1/2 top-3 z-[900] -translate-x-1/2 ${className}`}
+      className={`pointer-events-none absolute left-1/2 top-3 z-[900] -translate-x-1/2 ${className}`.trim()}
       role="status"
       aria-live="polite"
       aria-label="Actualizando resultados en el mapa"
@@ -35,7 +35,7 @@ export const MapLoadingIndicator: React.FC<MapLoadingIndicatorProps> = ({
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0066CC]/40 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0066CC]" />
         </span>
-        <span className="text-xs font-medium text-[#484848]">Buscando expertos…</span>
+        <span className="font-display text-xs font-medium text-[#484848]">Buscando expertos…</span>
       </div>
     </div>
   );
