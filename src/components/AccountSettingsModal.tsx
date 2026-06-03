@@ -727,6 +727,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               handleDialogOpenChange(false);
             }}
             onPointerDownOutside={(e) => {
+              // 🛡️ Round 28 MUD-T: dejar pasar clicks del wizard de mudanza (portal en body).
+              const target = e.target as HTMLElement | null;
+              if (target?.closest('[data-relocation-wizard]')) return;
               // Permitir cerrar haciendo clic fuera
               e.preventDefault();
               handleDialogOpenChange(false);
