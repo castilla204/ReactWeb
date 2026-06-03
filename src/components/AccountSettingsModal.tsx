@@ -846,11 +846,11 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" />
-              {/* 🛡️ Round 28: usar divisa real del contrato (ChargeCurrency snapshot) en vez de €. */}
+              {/* 🛡️ Round 28 — Sprint 3: el backend ahora emite Currency en ActiveContractInfo. */}
               <span>
                 {new Intl.NumberFormat('es-ES', {
                   style: 'currency',
-                  currency: (((contract as any).currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
+                  currency: ((contract.currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
                 }).format(contract.amount)}
               </span>
             </div>
