@@ -1065,6 +1065,47 @@ export function ExpertPanelPage() {
         );
     }
 
+    // 🛡️ Round 28 MUD-Y: si el experto se acaba de mudar (RelocatedFromCountry presente,
+    // Country=null, sin Stripe acct), el StripeStatusCard mostraría "Continuar Verificación"
+    // que dispararía un onboarding sin país → 400 unsupported_country (loop infinito que
+    // además persistía StripeStatus=Pending antes del fix MUD-V). Aquí lo interceptamos
+    // y mandamos al usuario al wizard /become-expert (paso 2) para elegir país nuevo.
+    const isRelocationPending = !!profile?.relocatedFromCountry
+                              && !profile?.country
+                              && !profile?.onboardingCompleted
+                              && !profile?.stripeAccountId;
+
+    if (!canAccessPanel && stripeStatus !== null && isRelocationPending) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center space-y-5">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
+                        <Plane className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">Completa tu mudanza</h2>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Tu cuenta Stripe Connect anterior se ha cerrado. Para volver a operar como experto,
+                            selecciona tu nuevo país y completa el onboarding fresco.
+                        </p>
+                        {profile?.relocatedFromCountry && (
+                            <p className="text-xs text-gray-500 mt-2">
+                                País anterior: <span className="font-semibold">{profile.relocatedFromCountry}</span>
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => navigate('/become-expert')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        Continuar con la mudanza
+                        <Plane className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // ✅ Solo bloquear acceso si el estado está cargado Y canAccessStripe es false
     if (!canAccessPanel && stripeStatus !== null) {
         return (
