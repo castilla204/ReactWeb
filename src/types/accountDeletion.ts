@@ -11,6 +11,8 @@ export interface ActiveContract {
   status: string;
   serviceName: string;
   amount: number;
+  /** 🛡️ Round 28 — Sprint 3: divisa snapshot del hire (ISO 4217 MAYÚSCULAS). Default EUR. */
+  currency?: string;
   createdAt: string;
   otherPartyName: string;
   otherPartyEmail: string;
