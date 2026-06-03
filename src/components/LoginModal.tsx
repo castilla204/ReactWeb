@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+// 🛡️ Round 28 — Sprint 4: i18n para textos UI multi-idioma (ES/EN).
+import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -163,13 +165,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                                         value="login"
                                         className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
                                     >
-                                        Entrar
+                                        <TabLabel kind="login" />
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="register"
                                         className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
                                     >
-                                        Registrarse
+                                        <TabLabel kind="register" />
                                     </TabsTrigger>
                                 </TabsList>
 
@@ -277,6 +279,53 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </div>
             </div>
         </ResponsiveModal>
+    );
+};
+
+// 🛡️ Round 28 — Sprint 4: pequeño helper i18n para tabs.
+const TabLabel: React.FC<{ kind: 'login' | 'register' }> = ({ kind }) => {
+    const { t } = useTranslation();
+    return <>{kind === 'login' ? t('auth.login.title') : t('auth.register.title')}</>;
+};
+
+// 🛡️ Round 28 — Sprint 4: checkbox T&C reutilizable con i18n. Trans permite que los
+// elementos <a> internos sigan siendo enlaces clicables aunque el texto venga de la traducción.
+const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => void }> = ({ accepted, onChange }) => {
+    const { t } = useTranslation();
+    return (
+        <label className="flex items-start gap-2 mt-1.5 cursor-pointer">
+            <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => onChange(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0066CC] focus:ring-[#0066CC] cursor-pointer"
+                required
+                aria-label={t('auth.register.termsRequired')}
+            />
+            <span className="text-[11px] leading-relaxed text-[#717171]">
+                <Trans
+                    i18nKey="auth.register.acceptTerms"
+                    components={{
+                        terms: (
+                            <a
+                                href="/terms.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#0066CC] underline-offset-2 hover:underline"
+                            />
+                        ),
+                        privacy: (
+                            <a
+                                href="/privacy-policy.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#0066CC] underline-offset-2 hover:underline"
+                            />
+                        ),
+                    }}
+                />
+            </span>
+        </label>
     );
 };
 
@@ -577,26 +626,9 @@ const RegisterForm: React.FC<{
                 </p>
             )}
             {/* 🛡️ Round 28 S2-P0-14: checkbox obligatorio de aceptación T&C + Privacidad. */}
-            <label className="flex items-start gap-2 mt-1.5 cursor-pointer">
-                <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0066CC] focus:ring-[#0066CC] cursor-pointer"
-                    required
-                    aria-label="Aceptar Términos y Política de Privacidad"
-                />
-                <span className="text-[11px] leading-relaxed text-[#717171]">
-                    Acepto los{' '}
-                    <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-[#0066CC] underline-offset-2 hover:underline">
-                        Términos de uso
-                    </a>{' '}
-                    y la{' '}
-                    <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="text-[#0066CC] underline-offset-2 hover:underline">
-                        Política de Privacidad
-                    </a>.
-                </span>
-            </label>
+            {/* 🛡️ Round 28 — Sprint 4: textos i18n vía Trans para que los <a> sigan funcionando. */}
+            <TermsCheckbox accepted={acceptedTerms} onChange={setAcceptedTerms} />
+
             <Button type="submit" disabled={busy || !name || !email || !password || !acceptedTerms} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Crear cuenta'}
             </Button>

@@ -12,6 +12,8 @@ import { CurrencyProvider } from './contexts/CurrencyContext'
 import { MfaVerificationProvider } from './contexts/MfaVerificationContext'
 import { useBodyScrollSafety } from './hooks/useBodyScrollLock'
 import { getFriendlyErrorMessage, isNetworkError } from './hooks/useErrorHandler'
+// 🛡️ Round 28 — Sprint 4: inicializar i18next antes de renderizar la app.
+import './i18n'
 import './index.css'
 
 function logUnhandledError(label: string, error: unknown) {
