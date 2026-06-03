@@ -747,6 +747,15 @@ export function ServiceForm({
                                 required
                             />
                             {formErrors.price && <p className="text-sm text-destructive">{formErrors.price}</p>}
+                            {/* 🛡️ Round 28 MUD-AD: aclaración país↔moneda. Stripe Connect liga la
+                                cuenta al país (inmutable), y eso fuerza la moneda de cobro. El
+                                experto NO puede elegir moneda manualmente — viene dada por el país. */}
+                            {!editingService && expertCountry && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Tu cuenta de cobros está en <span className="font-medium">{expertCountry}</span> y opera en
+                                    <span className="font-medium"> {priceCurrencyCode}</span>. Para cambiar de moneda necesitas mudarte a otro país desde el panel de experto.
+                                </p>
+                            )}
                         </div>
                         {parseInt(formData.serviceTypeId) === 1 && (
                             <div className="space-y-2">
