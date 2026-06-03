@@ -10,8 +10,7 @@ import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
 import { PreHireConversationSummaryDto } from '../../types/chat.types';
 import { Loader2 } from 'lucide-react';
-import { formatPriceNumber } from '../../utils/priceUtils';
-import { useCurrency } from '../../contexts/CurrencyContext';
+import { formatPriceNumber, formatCurrency } from '../../utils/priceUtils';
 
 interface PreHireConversationsTabProps {
   token: string;
@@ -77,18 +76,16 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
   // Antes: inline con minFractionDigits=0 inconsistente con resto de la app (siempre usa 2).
   const formatPrice = (price: number) => formatPriceNumber(price);
 
-  // Round 24: conversion source→preferred currency. Conversations no traen currency,
-  // asumimos EUR (charge default) y mostramos en preferred si distinto.
-  const { formatPriceWithSource, preferredCurrency } = useCurrency();
-  const renderServicePrice = (price: number) => {
-    const info = formatPriceWithSource(price, 'EUR', preferredCurrency);
-    if (!info.wasConverted) return info.display;
-    return (
-      <>
-        ≈ {info.converted}
-        <span className="ml-1 text-xs text-gray-500">({info.sourceFormatted})</span>
-      </>
-    );
+  // 🛡️ Round 28 CUR-9: este componente vive en el PANEL DEL EXPERTO. Antes asumía
+  // EUR hardcoded como source y convertía a preferredCurrency del usuario → doblemente
+  // roto para un experto US (servicio USD interpretado como EUR y convertido a USD del
+  // experto). Regla nueva: en panel experto NUNCA convertimos — mostramos divisa real
+  // del servicio. Si el DTO de la conversación no trae la divisa, fallback a EUR.
+  const renderServicePrice = (price: number, conv?: any) => {
+    const code = (conv?.ServiceCurrency || conv?.serviceCurrency
+      || conv?.PriceCurrency || conv?.priceCurrency || 'EUR')
+      .toString().trim().toUpperCase();
+    return formatCurrency(price, code);
   };
 
   const formatDate = (dateString: string) => {
@@ -237,7 +234,7 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-gray-400" />
                       <span className="text-sm font-semibold text-gray-900">
-                        {renderServicePrice(conv.ServicePrice)}
+                        {renderServicePrice(conv.ServicePrice, conv)}
                       </span>
                     </div>
                     

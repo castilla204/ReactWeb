@@ -12,6 +12,8 @@ import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { StripeLoadingOverlay } from './StripeLoadingOverlay';
 import { getPriceDisplay, formatCurrency } from '../utils/priceUtils';
+// 🛡️ Round 28 CUR-8: convertir a moneda preferida del usuario + mostrar original.
+import { useCurrency } from '../contexts/CurrencyContext';
 
 export interface SearchParameters {
     keywords: string;
@@ -68,6 +70,8 @@ export default function SearchForm({
 }: SearchFormProps) {
     const { createSearchWithHire } = useSearch();
     const { } = useUserSettings();
+    // 🛡️ Round 28 CUR-8: usar formatPriceWithSource para convertir + mostrar original.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -367,8 +371,12 @@ export default function SearchForm({
                                     // DE (19%), CH (8.1%), UK (20%), HU (27%), etc. Ahora mostramos solo el
                                     // total con la divisa real del servicio; el desglose REAL lo calcula
                                     // Stripe Tax en checkout según país del comprador (regla OSS UE).
+                                    // 🛡️ Round 28 CUR-8: además convertimos a moneda preferida del usuario
+                                    // y mostramos el original al lado — para que el paso 3 no diverja del
+                                    // paso 2 (ServiceReviewPage que sí muestra "≈ €23 ($25 USD)").
                                     const total = servicePrice;
                                     const currencyCode = (serviceCurrency ?? 'EUR').toUpperCase();
+                                    const priceInfo = formatPriceWithSource(total, currencyCode, preferredCurrency);
 
                                     return (
                                         <div className="space-y-4">
@@ -376,7 +384,7 @@ export default function SearchForm({
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[15px] text-[#222222]">Subtotal</span>
                                                 <span className="text-[15px] font-normal text-[#222222]">
-                                                    {formatCurrency(total, currencyCode)}
+                                                    {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
                                                 </span>
                                             </div>
 
@@ -387,8 +395,15 @@ export default function SearchForm({
                                                         <span className="text-[16px] font-semibold text-[#222222]">Total</span>
                                                         <div className="text-right">
                                                             <div className="flex items-center justify-end gap-1.5">
-                                                                <span className="text-[20px] font-bold text-[#222222]">{formatCurrency(total, currencyCode)}</span>
+                                                                <span className="text-[20px] font-bold text-[#222222]">
+                                                                    {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                                                </span>
                                                             </div>
+                                                            {priceInfo.wasConverted && (
+                                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                                    ({priceInfo.sourceFormatted} — cargo en {currencyCode})
+                                                                </p>
+                                                            )}
                                                             <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">Impuestos incluidos</p>
                                                         </div>
                                                     </div>

@@ -1076,6 +1076,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     const rawExpert = rawService.expert || rawService.Expert || {};
                     const rawUser = rawExpert.user || rawExpert.User || {};
                     
+                    // 🛡️ Round 28 CUR-6: extraer priceCurrency del raw o del mapService (que ya
+                    // viene normalizado por useServiceLoader tras CUR-4). Sin esta línea, las cards
+                    // del mapa caían SIEMPRE al fallback EUR aunque el servicio fuera USD/GBP/etc.,
+                    // anulando la conversión y el sufijo (source) en `MapServiceCard`.
+                    const cardCurrency = mapService.priceCurrency
+                        || mapService.currency
+                        || rawService.priceCurrency
+                        || rawService.PriceCurrency
+                        || rawService.currency
+                        || rawService.Currency
+                        || 'EUR';
                     return {
                         id: mapService.id,
                         expertProfileId: rawExpert.id || rawExpert.Id,
@@ -1084,6 +1095,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         serviceTypeName: mapService.type || rawService.serviceTypeName || rawService.ServiceTypeName,
                         serviceTypeDescription: rawService.serviceTypeDescription || rawService.ServiceTypeDescription,
                         price: mapService.price,
+                        priceCurrency: cardCurrency,
+                        currency: cardCurrency,
                         conditions: rawService.conditions || rawService.Conditions || '',
                         durationInHours: rawService.durationInHours || rawService.DurationInHours || null,
                         createdAt: rawService.createdAt || rawService.CreatedAt || new Date().toISOString(),
