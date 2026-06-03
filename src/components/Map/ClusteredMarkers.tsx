@@ -252,7 +252,13 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         entriesRef.current.set(key, entry);
       } else {
         entry.marker.setLngLat([service.lng, service.lat]);
-        entry.element.textContent = service.price > 0 ? `€${Math.round(service.price)}` : 'Consultar';
+        // 🛡️ Round 28 CUR-5: usar símbolo derivado del currency del servicio, no € hardcoded.
+        // Antes esta rama (cuando el clustering reciclaba un marker DOM existente al mover el viewport)
+        // sobrescribía cualquier símbolo correcto que applyServiceStyle hubiera puesto inicialmente.
+        // Resultado: experto US con servicio USD se veía $25 al primer render y luego €25 al mover el mapa.
+        entry.element.textContent = service.price > 0
+          ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
+          : 'Consultar';
       }
     });
 

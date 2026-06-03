@@ -214,7 +214,10 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         // Si el usuario está autenticado, persistir también en backend para sincronizar dispositivos.
         const token = getAuthToken();
         if (token) {
-            fetch(`${API_CONFIG.baseUrl}/api/Auth/preferred-currency`, {
+            // 🛡️ Round 28 CUR-2: endpoint correcto es /api/User/preferred-currency (controller
+            // UserController con [Route("api/[controller]")]). Antes apuntaba a /api/Auth → 404
+            // silencioso (catch solo console.warn) → sync multi-device roto desde Round 22.
+            fetch(`${API_CONFIG.baseUrl}/api/User/preferred-currency`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
