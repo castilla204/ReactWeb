@@ -1,0 +1,94 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "continue": "Continue",
+      "back": "Back",
+      "close": "Close",
+      "confirm": "Confirm",
+      "accept": "Accept",
+      "reject": "Reject",
+      "send": "Send",
+      "loading": "Loading…",
+      "saving": "Saving…",
+      "submit": "Submit",
+      "retry": "Retry"
+    },
+    "labels": {
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "phone": "Phone",
+      "country": "Country",
+      "city": "City",
+      "price": "Price",
+      "amount": "Amount",
+      "date": "Date",
+      "status": "Status",
+      "details": "Details",
+      "description": "Description"
+    },
+    "messages": {
+      "loading": "Loading…",
+      "error": "An error occurred",
+      "success": "Operation completed",
+      "noResults": "No results",
+      "unauthorized": "Unauthorized"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot your password?"
+    },
+    "register": {
+      "title": "Sign up",
+      "submit": "Create account",
+      "namePlaceholder": "Full name",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password (min. 8 characters)",
+      "acceptTerms": "I accept the <terms>Terms of use</terms> and the <privacy>Privacy Policy</privacy>.",
+      "termsRequired": "You must accept the Terms and Privacy Policy."
+    },
+    "social": {
+      "google": "Continue with Google",
+      "apple": "Continue with Apple"
+    }
+  },
+  "checkout": {
+    "summary": {
+      "title": "Summary",
+      "subtotal": "Subtotal",
+      "total": "Total",
+      "taxesIncluded": "Taxes included",
+      "taxBreakdownNotice": "The final tax breakdown will be calculated at checkout based on your country."
+    },
+    "actions": {
+      "pay": "Pay",
+      "hire": "Hire"
+    }
+  },
+  "expertPanel": {
+    "tabs": {
+      "services": "Services",
+      "hires": "Bookings",
+      "preHire": "Conversations"
+    },
+    "services": {
+      "addService": "Add service",
+      "editService": "Edit service",
+      "deleteService": "Delete service",
+      "priceLabel": "Price ({{currency}})"
+    }
+  },
+  "legal": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "dataExport": "Export my data (GDPR)"
+  }
+}
