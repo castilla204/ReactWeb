@@ -402,7 +402,7 @@ export function ProfileEditForm({
                 window.dispatchEvent(new CustomEvent('showNotification', {
                     detail: {
                         type: 'warning',
-                        message: `Para operar desde otro país${detected}, debes cerrar tu cuenta de experto actual y volver a registrarte. Ve a Ajustes → Eliminar cuenta de experto.`,
+                        message: `Para operar desde otro país${detected}, debes cerrar tu cuenta Stripe actual y volver a registrarte. Ve al panel de experto → "Mudarme a otro país".`,
                         duration: 12000,
                     },
                 }));

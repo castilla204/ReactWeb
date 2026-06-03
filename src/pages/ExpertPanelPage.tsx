@@ -37,6 +37,8 @@ import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
+// 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
+import { ExpertRelocationWizard } from '../components/ExpertRelocationWizard';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -209,6 +211,9 @@ export function ExpertPanelPage() {
     
     // Estado para el modal de confirmación de modo vacaciones
     const [showVacationModal, setShowVacationModal] = useState(false);
+    // 🛡️ Round 28 MUD-O: state del wizard de mudanza (cierra Stripe Connect actual y prepara
+    // re-onboarding en nuevo país). Botón mostrado junto a Estado de Pagos en el sidebar.
+    const [showRelocationWizard, setShowRelocationWizard] = useState(false);
     
     // Estado para el diálogo de servicio duplicado
     const [duplicateServiceDialog, setDuplicateServiceDialog] = useState<{
@@ -1324,6 +1329,29 @@ export function ExpertPanelPage() {
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Acceder al Panel
                             </Button>
+
+                            {/* 🛡️ Round 28 MUD-O: botón "Mudarme a otro país". Vive aquí porque
+                                cerrar la cuenta Stripe Connect es una operación de cobros — Stripe
+                                bloquea el country por cuenta y la única forma de cambiarlo es
+                                reabrir onboarding. Estilo ghost para que no compita visualmente
+                                con "Acceder al Panel" (CTA primario). */}
+                            {profile?.country && (
+                                <div className="flex items-center justify-between p-2 pt-1">
+                                    <span className="text-[11px] text-muted-foreground">País de la cuenta</span>
+                                    <Badge variant="outline" className="text-[10px] py-0">
+                                        {profile.country}
+                                    </Badge>
+                                </div>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => setShowRelocationWizard(true)}
+                            >
+                                <Plane className="w-3 h-3 mr-1" />
+                                Mudarme a otro país
+                            </Button>
                                 </div>
 
                         <Separator />
@@ -1704,7 +1732,13 @@ export function ExpertPanelPage() {
                 statusInfo={modalState.statusInfo}
                 onAction={modalState.onAction}
             />
-            
+
+            {/* 🛡️ Round 28 MUD-O: wizard de mudanza (cierre Stripe + re-onboarding). */}
+            <ExpertRelocationWizard
+                isOpen={showRelocationWizard}
+                onClose={() => setShowRelocationWizard(false)}
+            />
+
             {/* Drawer de confirmación de modo vacaciones */}
             <Drawer open={showVacationModal} onOpenChange={setShowVacationModal}>
                 <DrawerContent className="max-h-[96vh] flex flex-col">
