@@ -7,7 +7,8 @@ import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion'
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
 // 🛡️ Round 28 MUD-F: wizard de mudanza self-service del experto.
-import { ExpertRelocationWizard } from './ExpertRelocationWizard';
+// 🛡️ Round 28 MUD-U: import retirado — el wizard ya no se monta aquí. Lo monta
+// ExpertPanelPage tras recibir el evento global dispatchado al cerrar este modal.
 import { showToast } from '../lib/toast';
 import {
     Dialog,
@@ -58,7 +59,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const userRole = (user as any)?.Role || (user as any)?.role;
   const isExpert = userRole === 'Expert';
   const tabs = allTabs.filter(t => !t.expertOnly || isExpert);
-  const [showRelocationWizard, setShowRelocationWizard] = useState(false);
+  // 🛡️ MUD-U: state retirado — el wizard vive en ExpertPanelPage.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   // ✅ Ref para rastrear si el componente está montado y limpiar timeouts
@@ -425,7 +426,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </div>
 
           <Button
-            onClick={() => setShowRelocationWizard(true)}
+            onClick={() => {
+              // 🛡️ Round 28 MUD-U: cerrar este modal ANTES de abrir el wizard.
+              // Radix Dialog/Vaul aplica inert/aria-hidden a body cuando está abierto,
+              // así que un wizard en portal queda inert (visible pero sin eventos).
+              // Cerramos primero y dispatchamos evento que ExpertPanelPage recoge.
+              onClose();
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('openExpertRelocationWizard'));
+              }, 50);
+            }}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             <Plane className="w-4 h-4 mr-2" />
@@ -883,13 +893,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         </DrawerContent>
       </Drawer>
 
-      {/* 🛡️ Round 28 MUD-F: wizard de mudanza self-service. */}
-      {isExpert && (
-        <ExpertRelocationWizard
-          isOpen={showRelocationWizard}
-          onClose={() => setShowRelocationWizard(false)}
-        />
-      )}
+      {/* 🛡️ Round 28 MUD-U: wizard NO se monta aquí — ExpertPanelPage lo monta y
+          escucha el evento global 'openExpertRelocationWizard' (necesario porque este
+          modal aplica inert al wizard portal cuando está abierto). */}
     </>
   );
 };
