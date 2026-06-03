@@ -233,6 +233,23 @@ export function useServices({
                     serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
                     requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
                     price: service.Price ?? service.price ?? 0,
+                    // 🛡️ Round 28: Currency real del backend (ISO 4217). Antes se descartaba y
+                    // el frontend caía siempre a EUR. Aceptar PascalCase/camelCase, normalizar
+                    // a MAYÚSCULAS y exponerlo en `priceCurrency` (alias `currency`).
+                    priceCurrency: (() => {
+                        const raw = service.Currency ?? service.currency ?? service.PriceCurrency ?? service.priceCurrency;
+                        if (typeof raw === 'string' && raw.trim().length === 3) {
+                            return raw.trim().toUpperCase();
+                        }
+                        return 'EUR';
+                    })(),
+                    currency: (() => {
+                        const raw = service.Currency ?? service.currency ?? service.PriceCurrency ?? service.priceCurrency;
+                        if (typeof raw === 'string' && raw.trim().length === 3) {
+                            return raw.trim().toUpperCase();
+                        }
+                        return 'EUR';
+                    })(),
                     conditions: service.Conditions || service.conditions || '',
                     durationInHours: service.DurationInHours ?? service.durationInHours,
                     createdAt: service.CreatedAt || service.createdAt,
@@ -483,6 +500,12 @@ export function useServices({
             
             // También invalidar para asegurar que se refresquen los datos
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+            // ✅ FIX correctitud: invalidar también la cache del mapa, drawer y markers
+            //    para que el servicio recién creado aparezca de inmediato en /crear-busqueda.
+            queryClient.invalidateQueries({ queryKey: ['services-infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['map-experts'] });
+            queryClient.invalidateQueries({ queryKey: ['map-markers'] });
+            queryClient.invalidateQueries({ queryKey: ['map-sidebar'] });
         },
         onError: (error) => {
             console.error('Error creating service:', error);
@@ -647,6 +670,11 @@ export function useServices({
             
             // También invalidar para asegurar que se refresquen los datos
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+            // ✅ FIX correctitud: invalidar también cache del mapa/drawer/markers.
+            queryClient.invalidateQueries({ queryKey: ['services-infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['map-experts'] });
+            queryClient.invalidateQueries({ queryKey: ['map-markers'] });
+            queryClient.invalidateQueries({ queryKey: ['map-sidebar'] });
         },
         onError: (error) => {
             console.error('Error updating service:', error);
@@ -696,6 +724,11 @@ export function useServices({
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+            // ✅ FIX correctitud: tras borrar, el servicio debe desaparecer del mapa al instante.
+            queryClient.invalidateQueries({ queryKey: ['services-infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['map-experts'] });
+            queryClient.invalidateQueries({ queryKey: ['map-markers'] });
+            queryClient.invalidateQueries({ queryKey: ['map-sidebar'] });
         },
         onError: (error) => {
             console.error('Error deleting service:', error);

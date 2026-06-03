@@ -18,6 +18,8 @@ interface ExpertProfile {
     isOnVacation: boolean;
     latitude?: string;
     longitude?: string;
+    // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
+    country?: string | null;
     currentAvailability?: CurrentExpertAvailabilityDto | null;
     stripeFutureRequirements?: string | null;
     stripeFutureDueAt?: string | null;
@@ -129,6 +131,8 @@ export function useExpert() {
                 isOnVacation: data.isOnVacation ?? data.IsOnVacation ?? false,
                 latitude: data.latitude ?? data.Latitude ?? null,
                 longitude: data.longitude ?? data.Longitude ?? null,
+                // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
+                country: data.country ?? data.Country ?? null,
                 // ✅ CRÍTICO: Transformar CurrentAvailability de PascalCase a camelCase
                 currentAvailability: (() => {
                     const avail = data.currentAvailability ?? data.CurrentAvailability;
