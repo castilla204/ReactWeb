@@ -98,6 +98,11 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
   // inline de Vaul) el wizard pasa siempre por encima.
   return createPortal(
     <div
+      // 🛡️ Round 28 MUD-T: data-attribute para que los Drawers padre (Vaul) puedan
+      // distinguir clicks dentro del wizard vs "fuera del drawer" y NO bloquearlos.
+      // ProfileEditForm tiene onPointerDownOutside/onInteractOutside = preventDefault
+      // — sin este marker, los clicks del wizard quedan inertes.
+      data-relocation-wizard="true"
       className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4"
       style={{ zIndex: 10000 }}
     >

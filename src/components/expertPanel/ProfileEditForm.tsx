@@ -500,9 +500,26 @@ export function ProfileEditForm({
                 className="max-h-[96vh] flex flex-col md:max-h-[90vh] md:h-[90vh]"
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 onCloseAutoFocus={(e) => e.preventDefault()}
-                onPointerDownOutside={(e) => e.preventDefault()}
-                onInteractOutside={(e) => e.preventDefault()}
-                onFocusOutside={(e) => e.preventDefault()}
+                // 🛡️ Round 28 MUD-T: si el target está dentro del wizard de mudanza
+                // (portal renderizado en body con [data-relocation-wizard]), dejar pasar
+                // — el wizard tiene su propio modal y su propia overlay. Sin esto,
+                // Vaul bloquea TODOS los clicks "fuera" del DrawerContent y el wizard
+                // queda interactivamente muerto (visible pero clicks inertes).
+                onPointerDownOutside={(e) => {
+                    const target = e.target as HTMLElement | null;
+                    if (target?.closest('[data-relocation-wizard]')) return; // dejar pasar
+                    e.preventDefault();
+                }}
+                onInteractOutside={(e) => {
+                    const target = e.target as HTMLElement | null;
+                    if (target?.closest('[data-relocation-wizard]')) return;
+                    e.preventDefault();
+                }}
+                onFocusOutside={(e) => {
+                    const target = e.target as HTMLElement | null;
+                    if (target?.closest('[data-relocation-wizard]')) return;
+                    e.preventDefault();
+                }}
                 onEscapeKeyDown={(e) => e.preventDefault()}
             >
                 <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh] md:max-h-[90vh] md:h-[90vh]">
