@@ -8,6 +8,7 @@
 //   4) processing   → llama execute.
 //   5) result       → muestra "ve a /become-expert" o error.
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -87,9 +88,19 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+  // 🛡️ Round 28 MUD-S: createPortal a document.body con z-index 10000.
+  // El wizard se monta dentro de un <Drawer> en ProfileEditForm — el Drawer (Vaul)
+  // renderiza overlay z=9997 y content z=9998 vía Portal. Sin createPortal aquí, el
+  // wizard queda dentro del Drawer tree con z-50 y los layers del Drawer lo tapan
+  // (invisible). Con portal + z-index 10000 inline (Tailwind perdería contra estilos
+  // inline de Vaul) el wizard pasa siempre por encima.
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4"
+      style={{ zIndex: 10000 }}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -326,7 +337,8 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

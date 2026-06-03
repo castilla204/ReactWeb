@@ -37,8 +37,24 @@ export const useExpertRelocation = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await get<RelocationPreflight>('/api/User/expert-relocation/preflight');
-      return response;
+      // 🛡️ Round 28 MUD-S: el backend con Program.cs:826 forzando PropertyNamingPolicy=null
+      // emitiría PascalCase (Code/Name pattern). El controller MUD-S mapea a camelCase
+      // en el server, pero defendemos aquí también por si una regresión backend revive
+      // el bug (igual que hicimos en CurrencyContext con SUPPORTED_CURRENCIES).
+      const raw = await get<any>('/api/User/expert-relocation/preflight');
+      if (!raw) return null;
+      const normalized: RelocationPreflight = {
+        canProceed: raw.canProceed ?? raw.CanProceed ?? false,
+        blockedReason: raw.blockedReason ?? raw.BlockedReason ?? null,
+        pendingDisputes: raw.pendingDisputes ?? raw.PendingDisputes ?? 0,
+        activeHires: raw.activeHires ?? raw.ActiveHires ?? 0,
+        recentRefunds: raw.recentRefunds ?? raw.RecentRefunds ?? 0,
+        receivedReviewsCount: raw.receivedReviewsCount ?? raw.ReceivedReviewsCount ?? 0,
+        activeServicesCount: raw.activeServicesCount ?? raw.ActiveServicesCount ?? 0,
+        currentCountry: raw.currentCountry ?? raw.CurrentCountry ?? null,
+        stripeAccountId: raw.stripeAccountId ?? raw.StripeAccountId ?? null,
+      };
+      return normalized;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al comprobar elegibilidad de mudanza';
       setError(msg);
