@@ -90,5 +90,57 @@
     "privacy": "Privacidad",
     "cookies": "Cookies",
     "dataExport": "Exportar mis datos (GDPR)"
+  },
+  "stripe": {
+    "sections": {
+      "pending": "Por completar",
+      "pastDue": "Vencidos · acción urgente",
+      "errors": "Problemas detectados",
+      "futureRequirements": "Próximos requisitos"
+    },
+    "messages": {
+      "detailsLeft_one": "Te falta {{count}} detalle por rellenar",
+      "detailsLeft_other": "Te faltan {{count}} detalles por rellenar",
+      "autoActivate": "En cuanto rellenes estos datos en Stripe, tu cuenta se activará automáticamente",
+      "deadline": "Fecha límite estimada: {{date}}"
+    },
+    "requirements": {
+      "external_account": "Cuenta bancaria",
+      "individual.ssn_last_4": "Últimos 4 dígitos del SSN",
+      "individual.id_number": "SSN/EIN/ITIN completo",
+      "individual.verification.document": "Documento de identidad",
+      "individual.verification.additional_document": "Documento adicional",
+      "individual.address": "Dirección",
+      "individual.phone": "Teléfono",
+      "individual.dob": "Fecha de nacimiento",
+      "individual.email": "Email",
+      "individual.first_name": "Nombre",
+      "individual.last_name": "Apellidos",
+      "individual.political_exposure": "Exposición política (PEP)",
+      "individual.relationship.owner": "Relación de propiedad",
+      "company.tax_id": "NIF/CIF",
+      "company.verification.document": "Documentos de la empresa",
+      "company.address": "Dirección de la empresa",
+      "company.owners_provided": "Listado de socios",
+      "business_profile.url": "URL del negocio",
+      "business_profile.mcc": "Código MCC",
+      "business_profile.product_description": "Descripción del producto/servicio",
+      "business_profile.support_address": "Dirección de soporte",
+      "business_profile.support_phone": "Teléfono de soporte",
+      "business_profile.support_email": "Email de soporte",
+      "business_type": "Tipo de negocio",
+      "tos_acceptance.date": "Aceptación de los Términos (fecha)",
+      "tos_acceptance.ip": "Aceptación de los Términos (IP)",
+      "tos_acceptance.user_agent": "Aceptación de los Términos (navegador)",
+      "documents.bank_account_ownership_verification": "Titularidad bancaria",
+      "documents.proof_of_registration": "Prueba de registro",
+      "documents.proof_of_address.files": "Comprobante de domicilio",
+      "documents.company_registration_verification": "Registro mercantil",
+      "settings.payments.statement_descriptor": "Concepto del cobro",
+      "card_payments": "Cobros con tarjeta",
+      "transfers": "Transferencias salientes",
+      "tax_reporting_us_1099_misc": "Reporte fiscal 1099-MISC (EE.UU.)",
+      "tax_reporting_us_1099_k": "Reporte fiscal 1099-K (EE.UU.)"
+    }
   }
 }

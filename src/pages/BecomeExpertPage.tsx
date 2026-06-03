@@ -6,7 +6,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ArrowLeft, Loader2, AlertTriangle, MapPin, Check, Search, CreditCard } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, CheckCircle2 } from 'lucide-react';
 import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
@@ -28,7 +28,7 @@ import { useExpert } from '../hooks/useExpert';
 import { boundsFromCircle, circlePolygonGeoJSON } from '../utils/geoCircle';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
 // 🛡️ Round 28: autocomplete y reverse geocoding vía Mapbox REST (token VITE_MAPBOX_ACCESS_TOKEN)
-import { searchMapboxAutocomplete, MapboxAutocompleteItem } from '../utils/mapboxGeocoding';
+import { searchMapboxAutocomplete, MapboxAutocompleteItem, reverseGeocodeMapbox, extractCountryCodeFromMapbox } from '../utils/mapboxGeocoding';
 // 🛡️ Round 28: worker MapLibre global (idempotente entre montajes)
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -135,6 +135,12 @@ function BecomeExpertPage() {
     }, [isAlreadyExpert]);
 
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
+    // 🛡️ Round 28 — Sprint US-2 (SUS2-10): detección de país en vivo desde las coords
+    // del marker para mostrarlo al experto ANTES del submit. Stripe Connect.account.country
+    // es INMUTABLE post-creación; si el marker está en una zona fronteriza y mal detecta,
+    // el experto queda con una cuenta del país equivocado sin poder mudarla.
+    const [detectedCountry, setDetectedCountry] = useState<{ code: string; supported: boolean } | null>(null);
+    const [detectingCountry, setDetectingCountry] = useState(false);
     const [searchAddress, setSearchAddress] = useState<string>('');
     const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
     const [acceptNotifications, setAcceptNotifications] = useState<boolean>(false);
@@ -195,6 +201,22 @@ function BecomeExpertPage() {
             latitude: lat.toString(),
             longitude: lng.toString(),
         }));
+
+        // 🛡️ Round 28 SUS2-10: reverse-geocode debounced para detectar país en vivo.
+        // Disparamos el fetch en background; si las coords cambian rápido, el último gana.
+        setDetectingCountry(true);
+        setDetectedCountry(null);
+        reverseGeocodeMapbox(lat, lng)
+            .then((feature) => {
+                const cc = extractCountryCodeFromMapbox(feature)?.toUpperCase() ?? null;
+                if (!cc) {
+                    setDetectedCountry(null);
+                } else {
+                    setDetectedCountry({ code: cc, supported: SUPPORTED_PAYOUT_COUNTRIES.has(cc) });
+                }
+            })
+            .catch(() => setDetectedCountry(null))
+            .finally(() => setDetectingCountry(false));
 
         const map = mapRef.current;
         if (!map) return;
@@ -696,6 +718,40 @@ function BecomeExpertPage() {
                                     Arrastra el marcador o haz clic en el mapa para afinar la posición.
                                 </p>
                             )}
+
+                            {/* 🛡️ Round 28 — Sprint US-2 (SUS2-10): banner del país detectado.
+                                Stripe Connect.account.country es INMUTABLE tras crearse — si el
+                                marker está en una zona fronteriza y mal detecta, el experto queda
+                                con una cuenta del país equivocado sin poder mudarla. Mostrar país
+                                en vivo antes del submit reduce drasticamente este error. */}
+                            {detectingCountry ? (
+                                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    <span>Detectando país…</span>
+                                </div>
+                            ) : detectedCountry ? (
+                                detectedCountry.supported ? (
+                                    <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs text-emerald-900">
+                                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                        <div>
+                                            <p className="font-semibold">País detectado: {detectedCountry.code}</p>
+                                            <p className="mt-0.5 leading-relaxed text-emerald-800">
+                                                Tu cuenta de pagos se creará en <strong>{detectedCountry.code}</strong>. Stripe no permite cambiar este país después. Si no es correcto, mueve el marcador.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                        <div>
+                                            <p className="font-semibold">País no disponible: {detectedCountry.code}</p>
+                                            <p className="mt-0.5 leading-relaxed text-amber-800">
+                                                Aún no podemos crear cuentas de pago en este país. Mueve el marcador a una ubicación dentro del EEE, Reino Unido, Suiza, Estados Unidos o Canadá.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            ) : null}
 
                             <style>{`
                                 .maplibregl-ctrl-attribution { font-size: 8px !important; opacity: 0.85; }
