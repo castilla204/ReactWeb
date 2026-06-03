@@ -214,6 +214,16 @@ export function ExpertPanelPage() {
     // 🛡️ Round 28 MUD-O: state del wizard de mudanza (cierra Stripe Connect actual y prepara
     // re-onboarding en nuevo país). Botón mostrado junto a Estado de Pagos en el sidebar.
     const [showRelocationWizard, setShowRelocationWizard] = useState(false);
+
+    // 🛡️ Round 28 MUD-U: el ProfileEditForm dispatcha un evento global tras cerrar SU drawer
+    // (Vaul aplica inert/aria-hidden a todo lo que no es el drawer activo, así que el wizard
+    // dentro de ese drawer queda inert visualmente visible pero no clickeable). Cuando el form
+    // cierra y dispatchá este evento, abrimos el wizard desde aquí (sin drawer encima).
+    useEffect(() => {
+        const handler = () => setShowRelocationWizard(true);
+        window.addEventListener('openExpertRelocationWizard', handler);
+        return () => window.removeEventListener('openExpertRelocationWizard', handler);
+    }, []);
     
     // Estado para el diálogo de servicio duplicado
     const [duplicateServiceDialog, setDuplicateServiceDialog] = useState<{

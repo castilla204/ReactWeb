@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock, Plane } from 'lucide-react';
-// 🛡️ Round 28 MUD-Q: wizard inline cuando el backend bloquea por STRIPE_COUNTRY_LOCKED.
-import { ExpertRelocationWizard } from '../ExpertRelocationWizard';
 // 🛡️ Round 28: migración Google Maps → Mapbox (react-map-gl@^7 + mapbox-gl@^3).
 import Map, {
     Marker,
@@ -126,9 +124,6 @@ export function ProfileEditForm({
     // ✅ Inicializar previewUrl como null, se actualizará en useEffect
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
-    // 🛡️ Round 28 MUD-Q: state del wizard inline (se abre desde el banner rojo de
-    // STRIPE_COUNTRY_LOCKED en vez de pedirle al usuario que navegue).
-    const [showRelocationWizard, setShowRelocationWizard] = useState(false);
 
     // 🛡️ Round 28: centro inicial = coords del experto si existen; si no, Madrid.
     const initialLocation = useMemo(() => {
@@ -844,7 +839,21 @@ export function ProfileEditForm({
                                             variant="default"
                                             size="sm"
                                             className="bg-blue-600 hover:bg-blue-700 text-white"
-                                            onClick={() => setShowRelocationWizard(true)}
+                                            onClick={() => {
+                                                // 🛡️ Round 28 MUD-U: cerrar el Drawer del
+                                                // ProfileEditForm ANTES de abrir el wizard.
+                                                // Vaul/Radix marca todo lo demás como inert/
+                                                // aria-hidden cuando el drawer está abierto,
+                                                // así que el wizard (en portal a body) se ve
+                                                // pero NO recibe eventos. Cerramos el drawer
+                                                // y dispatchamos un evento global para que
+                                                // ExpertPanelPage (sin drawer encima) abra
+                                                // el wizard tras un tick.
+                                                setShowEditForm(false);
+                                                setTimeout(() => {
+                                                    window.dispatchEvent(new CustomEvent('openExpertRelocationWizard'));
+                                                }, 50);
+                                            }}
                                         >
                                             <Plane className="w-4 h-4 mr-2" />
                                             Iniciar asistente de mudanza
@@ -894,11 +903,6 @@ export function ProfileEditForm({
             </div>
         </div>
             </DrawerContent>
-            {/* 🛡️ Round 28 MUD-Q: wizard de mudanza accesible inline desde el banner de error. */}
-            <ExpertRelocationWizard
-                isOpen={showRelocationWizard}
-                onClose={() => setShowRelocationWizard(false)}
-            />
         </Drawer>
     );
 }
