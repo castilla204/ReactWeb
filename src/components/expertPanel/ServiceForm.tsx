@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { CheckCircle, Loader2, Upload, FileText, Video, X, ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
+// 🛡️ Round 28: derivar símbolo de moneda del país del experto (no más € hardcoded).
+import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
 import {
     Drawer,
     DrawerContent,
@@ -103,6 +105,9 @@ interface ServiceFormProps {
     existingImagesWithIds?: Array<{ id: number; url: string }>; // ✅ NUEVO: Imágenes con IDs
     imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
     setImagesToDelete?: (ids: number[]) => void; // ✅ NUEVO: Función para actualizar IDs a eliminar
+    // 🛡️ Round 28: país del experto (ISO 3166-1 alpha-2). Usado para mostrar el símbolo
+    // correcto en el label "Precio (X)". Opcional — fallback a EUR si no se pasa.
+    expertCountry?: string | null;
 }
 
 export function ServiceForm({
@@ -133,7 +138,12 @@ export function ServiceForm({
     existingImagesWithIds: propExistingImagesWithIds,
     imagesToDelete: propImagesToDelete = [],
     setImagesToDelete: propSetImagesToDelete,
+    expertCountry,
 }: ServiceFormProps) {
+    // 🛡️ Round 28: derivar símbolo del país del experto (GB → £, CH → CHF, SE → kr, …).
+    // Si el padre no pasa el país (o el experto aún no tiene país detectado), cae a €.
+    const priceCurrencyCode = getCurrencyForCountry(expertCountry ?? null);
+    const priceCurrencySymbol = getCurrencySymbol(priceCurrencyCode);
     const fileInputRef = useRef<HTMLInputElement>(null);
     // ✅ FIX ARQUITECTÓNICO (no es un hack de timing):
     // El Drawer se renderiza con `dismissible={false}` (ver más abajo). Eso hace que vaul
@@ -714,7 +724,7 @@ export function ServiceForm({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="price">Precio (€)</Label>
+                            <Label htmlFor="price">Precio ({priceCurrencySymbol})</Label>
                             <input
                                 id="price"
                                 type="number"

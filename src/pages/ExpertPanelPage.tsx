@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -47,7 +47,12 @@ import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
-import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
+/** Mapbox solo al abrir edición de perfil — evita bloquear la carga del panel */
+const ProfileEditForm = lazy(() =>
+    import('../components/expertPanel/ProfileEditForm').then((mod) => ({
+        default: mod.ProfileEditForm,
+    })),
+);
 
 interface Hire {
     id: number;
@@ -1660,19 +1665,30 @@ export function ExpertPanelPage() {
                         existingImagesWithIds={existingImagesWithIds}
                         imagesToDelete={imagesToDelete}
                         setImagesToDelete={setImagesToDelete}
+                        // 🛡️ Round 28: el form deriva el símbolo de moneda del país del experto.
+                        expertCountry={profile?.country ?? null}
                     />
-                    {profile && (
-                        <ProfileEditForm
-                            showEditForm={showProfileEditForm}
-                            setShowEditForm={(value) => {
-                                if (value && !showProfileEditForm) {
-                                    fetchProfile(true, { silent: true });
-                                }
-                                setShowProfileEditForm(value);
-                            }}
-                            profile={profile as any}
-                            onProfileUpdated={() => fetchProfile(true, { silent: true })}
-                        />
+                    {profile && showProfileEditForm && (
+                        <Suspense
+                            fallback={
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/25">
+                                    <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden />
+                                    <span className="sr-only">Cargando editor de perfil</span>
+                                </div>
+                            }
+                        >
+                            <ProfileEditForm
+                                showEditForm={showProfileEditForm}
+                                setShowEditForm={(value) => {
+                                    if (value && !showProfileEditForm) {
+                                        fetchProfile(true, { silent: true });
+                                    }
+                                    setShowProfileEditForm(value);
+                                }}
+                                profile={profile as any}
+                                onProfileUpdated={() => fetchProfile(true, { silent: true })}
+                            />
+                        </Suspense>
                     )}
             </div>
             
