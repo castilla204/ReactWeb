@@ -83,53 +83,44 @@ function BecomeExpertPage() {
         && !profile?.stripeAccountId
         && !profile?.country;
 
-    // 🛡️ Round 28 MUD-Z: asegurar perfil fresco al cargar y SOLO disparar el effect de
-    // checkOnboardingStatus cuando ya tengamos profile cargado. Antes había race condition:
-    // useEffect ejecutaba con profile=undefined → isRelocating=false → setCurrentStep(3),
-    // luego profile llegaba con relocatedFromCountry pero el step ya estaba en 3.
+    // 🛡️ Round 28 MUD-AA (rediseño limpio): asegurar perfil fresco al cargar.
+    // El step renderizado se DERIVA del profile abajo con useMemo — cero race conditions.
     useEffect(() => {
         if (isAlreadyExpert && !profile) {
-            void fetchProfile(false);
+            void fetchProfile(true); // force=true para evitar cache stale tras la mudanza
         }
     }, [isAlreadyExpert, profile, fetchProfile]);
 
-    // Si ya eres experto pero no completaste Stripe, NO mostramos el formulario (daría "ya eres experto"):
-    // ✅ Round 30: si ya completaste Stripe → al panel. Si no → saltamos al paso 3 del MISMO
-    //    wizard, que renderiza el bloque Stripe inline (sin vista separada de "ya casi eres experto").
+    // 🛡️ Round 28 MUD-AA: paso DERIVADO síncronamente del profile, no asíncrono.
+    // Esto reemplaza el useEffect+checkOnboardingStatus+setCurrentStep que tenía race
+    // conditions imposibles de cerrar (profile arrives ↔ effect re-runs ↔ setCurrentStep
+    // gana o pierde según el orden de React batching). Ahora es una pura función del
+    // estado: profile → step. -1 = redirect, 0 = loading, 1/3 = step a renderizar.
+    const derivedStep = useMemo<number>(() => {
+        if (!isAlreadyExpert) return 1;          // cliente → wizard fresh
+        if (!profile) return 0;                  // expert pero profile no cargado → spinner
+        // Onboarding YA completo con Stripe activo → al panel
+        if (profile.onboardingCompleted && profile.stripeAccountId) return -1;
+        // Sin país → DEBE elegirlo (relocated O onboarding interrumpido pre-país)
+        if (!profile.country) return 1;
+        // Tiene país pero falta Stripe → bloque Stripe inline
+        return 3;
+    }, [isAlreadyExpert, profile?.country, profile?.stripeAccountId, profile?.onboardingCompleted]);
+
+    // Override manual del usuario (Next/Back/error-link). Si está seteado, gana sobre derivedStep.
+    const [stepOverride, setStepOverride] = useState<number | null>(null);
+
+    // Aplicar derivedStep cuando cambie, salvo que el usuario haya navegado manualmente.
     useEffect(() => {
-        if (!isAlreadyExpert) {
-            setIsCheckingOnboarding(false);
+        if (derivedStep === -1) {
+            navigate('/expert-panel', { replace: true });
             return;
         }
-        // 🛡️ MUD-Z: esperar a que profile esté cargado. Sin esto, race: profile aún null →
-        // isRelocating=false (wrong) → setCurrentStep(3) → cuando profile llega ya es tarde.
-        if (!profile) {
-            setIsCheckingOnboarding(true);
-            return;
+        if (derivedStep === 0) return; // aún loading, no tocar
+        if (stepOverride === null) {
+            setCurrentStep(derivedStep);
         }
-        // 🛡️ MUD-X: mudanza en curso → dejar el wizard en step 1/2 para que el usuario
-        // elija el nuevo país. NO disparar checkOnboardingStatus ni setCurrentStep(3).
-        if (isRelocating) {
-            setCurrentStep(1); // arranca en paso 1 (foto/desc) — paso 2 selector país viene después
-            setIsCheckingOnboarding(false);
-            return;
-        }
-        setIsCheckingOnboarding(true);
-        checkOnboardingStatus(true)
-            .then((status) => {
-                if (status?.onboardingCompleted) {
-                    navigate('/expert-panel', { replace: true });
-                } else {
-                    setCurrentStep(3);
-                }
-            })
-            .catch(() => {
-                showToast('error', 'No pudimos comprobar el estado de pagos. Intenta de nuevo.');
-                setCurrentStep(3);
-            })
-            .finally(() => setIsCheckingOnboarding(false));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAlreadyExpert, isRelocating, profile]);
+    }, [derivedStep, stepOverride, navigate]);
 
     // 🛡️ MUD-X: prefill description al re-onboarding tras mudanza (no tiene que reescribir).
     useEffect(() => {
@@ -155,7 +146,9 @@ function BecomeExpertPage() {
         endTime: '18:00',
     });
     const [currentStep, setCurrentStep] = useState(1);
-    const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(isAlreadyExpert);
+    // 🛡️ MUD-AA: derivado — si eres expert y profile no cargó, está checking.
+    const isCheckingOnboarding = isAlreadyExpert && !profile;
+    const setIsCheckingOnboarding = (_value: boolean) => { /* derived, no-op for compat */ };
     const [stepAttempted, setStepAttempted] = useState<Record<number, boolean>>({});
 
     // 🛡️ Round 28: estado para autocomplete de direcciones (Mapbox forward geocoding).
@@ -390,13 +383,18 @@ function BecomeExpertPage() {
     const handleNext = () => {
         setStepAttempted((prev) => ({ ...prev, [currentStep]: true }));
         if (canAdvance && currentStep < STEPS.length) {
-            setCurrentStep(currentStep + 1);
+            // 🛡️ MUD-AA: usar stepOverride para que la elección manual sobreescriba derivedStep.
+            const next = currentStep + 1;
+            setStepOverride(next);
+            setCurrentStep(next);
         }
     };
 
     const handleBack = () => {
         if (currentStep > 1) {
-            setCurrentStep(currentStep - 1);
+            const prev = currentStep - 1;
+            setStepOverride(prev);
+            setCurrentStep(prev);
         }
     };
 
@@ -841,7 +839,7 @@ function BecomeExpertPage() {
                                     <div className="mt-3 flex flex-col gap-1">
                                         <button
                                             type="button"
-                                            onClick={() => setCurrentStep(2)}
+                                            onClick={() => { setStepOverride(2); setCurrentStep(2); }}
                                             className="text-sm font-semibold text-red-700 hover:text-red-900 underline self-start"
                                         >
                                             Cambiar ubicación
