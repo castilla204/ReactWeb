@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock, Plane } from 'lucide-react';
+// 🛡️ Round 28 MUD-Q: wizard inline cuando el backend bloquea por STRIPE_COUNTRY_LOCKED.
+import { ExpertRelocationWizard } from '../ExpertRelocationWizard';
 // 🛡️ Round 28: migración Google Maps → Mapbox (react-map-gl@^7 + mapbox-gl@^3).
 import Map, {
     Marker,
@@ -124,6 +126,9 @@ export function ProfileEditForm({
     // ✅ Inicializar previewUrl como null, se actualizará en useEffect
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+    // 🛡️ Round 28 MUD-Q: state del wizard inline (se abre desde el banner rojo de
+    // STRIPE_COUNTRY_LOCKED en vez de pedirle al usuario que navegue).
+    const [showRelocationWizard, setShowRelocationWizard] = useState(false);
 
     // 🛡️ Round 28: centro inicial = coords del experto si existen; si no, Madrid.
     const initialLocation = useMemo(() => {
@@ -810,8 +815,24 @@ export function ProfileEditForm({
                         </div>
 
                         {formErrors.general && (
-                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2">
-                                {formErrors.general}
+                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2 space-y-3">
+                                    <div>{formErrors.general}</div>
+                                    {/* 🛡️ Round 28 MUD-Q: CTA inline al wizard de mudanza
+                                        cuando el backend rechaza por STRIPE_COUNTRY_LOCKED.
+                                        Antes el usuario tenía que ir a leer dónde estaba
+                                        "Mudarme a otro país" — ahora un click lo abre aquí. */}
+                                    {formErrors.relocationRequired === 'true' && (
+                                        <Button
+                                            type="button"
+                                            variant="default"
+                                            size="sm"
+                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            onClick={() => setShowRelocationWizard(true)}
+                                        >
+                                            <Plane className="w-4 h-4 mr-2" />
+                                            Iniciar asistente de mudanza
+                                        </Button>
+                                    )}
                             </div>
                         )}
                     </div>
@@ -856,6 +877,11 @@ export function ProfileEditForm({
             </div>
         </div>
             </DrawerContent>
+            {/* 🛡️ Round 28 MUD-Q: wizard de mudanza accesible inline desde el banner de error. */}
+            <ExpertRelocationWizard
+                isOpen={showRelocationWizard}
+                onClose={() => setShowRelocationWizard(false)}
+            />
         </Drawer>
     );
 }
