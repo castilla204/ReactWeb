@@ -462,6 +462,10 @@ const RegisterForm: React.FC<{
     const [password, setPassword] = useState('');
     const [showPwd, setShowPwd] = useState(false);
     const [busy, setBusy] = useState(false);
+    // 🛡️ Round 28 S2-P0-14: GDPR Art. 7 + LGDCU Art. 80 — consentimiento explícito.
+    // Sin este checkbox, los T&C son inoponibles al consumidor y la defensa frente a
+    // chargebacks queda comprometida (Stripe exige evidencia de "customer agreed").
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     const strengthHint = (() => {
         if (password.length === 0) return null;
@@ -473,12 +477,25 @@ const RegisterForm: React.FC<{
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (busy) return;
+        if (!acceptedTerms) {
+            toast.error('Debes aceptar los Términos y la Política de Privacidad.');
+            return;
+        }
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+                // 🛡️ Round 28 S2-P0-14: enviar marcadores de aceptación. Si el backend tiene los
+                // campos (AcceptedTermsAt + AcceptedTermsVersion), persiste; si no, los ignora.
+                body: JSON.stringify({
+                    name: name.trim(),
+                    email: email.trim(),
+                    password,
+                    acceptedTerms: true,
+                    acceptedTermsAt: new Date().toISOString(),
+                    acceptedTermsVersion: 'v1',
+                }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -559,7 +576,28 @@ const RegisterForm: React.FC<{
                     {strengthHint.label}
                 </p>
             )}
-            <Button type="submit" disabled={busy || !name || !email || !password} className={PRIMARY_BTN}>
+            {/* 🛡️ Round 28 S2-P0-14: checkbox obligatorio de aceptación T&C + Privacidad. */}
+            <label className="flex items-start gap-2 mt-1.5 cursor-pointer">
+                <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0066CC] focus:ring-[#0066CC] cursor-pointer"
+                    required
+                    aria-label="Aceptar Términos y Política de Privacidad"
+                />
+                <span className="text-[11px] leading-relaxed text-[#717171]">
+                    Acepto los{' '}
+                    <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-[#0066CC] underline-offset-2 hover:underline">
+                        Términos de uso
+                    </a>{' '}
+                    y la{' '}
+                    <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="text-[#0066CC] underline-offset-2 hover:underline">
+                        Política de Privacidad
+                    </a>.
+                </span>
+            </label>
+            <Button type="submit" disabled={busy || !name || !email || !password || !acceptedTerms} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Crear cuenta'}
             </Button>
         </form>
