@@ -174,7 +174,23 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
                 const data = await response.json();
                 if (cancelled) return;
                 if (Array.isArray(data?.currencies) && data.currencies.length > 0) {
-                    setCurrencies(data.currencies);
+                    // 🛡️ Round 28 CUR-SEL-1: normalizar a lowercase para que sobreviva
+                    // independientemente del PropertyNamingPolicy del backend. Soporta tanto
+                    // `code/name/symbol/locale` (lowercase, contrato correcto) como
+                    // `Code/Name/Symbol/Locale` (PascalCase, regresión anterior). Sin esto,
+                    // el filtro de CurrencySelector descartaba todos los items y el dropdown
+                    // se quedaba vacío.
+                    const normalized: Currency[] = (data.currencies as any[])
+                        .map((c) => ({
+                            code: String(c?.code ?? c?.Code ?? '').trim().toUpperCase(),
+                            name: String(c?.name ?? c?.Name ?? ''),
+                            symbol: String(c?.symbol ?? c?.Symbol ?? ''),
+                            locale: String(c?.locale ?? c?.Locale ?? 'en-US'),
+                        }))
+                        .filter((c) => c.code.length > 0);
+                    if (normalized.length > 0) {
+                        setCurrencies(normalized);
+                    }
                 }
                 if (data?.rates && typeof data.rates === 'object') {
                     setRates(sanitizeRates(data.rates as Record<string, unknown>));
