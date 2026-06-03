@@ -20,6 +20,11 @@ interface ExpertProfile {
     longitude?: string;
     // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
     country?: string | null;
+    // 🛡️ Round 28 MUD-W: si !null, el experto está en proceso de mudanza
+    // (cerró cuenta Stripe en país anterior). El frontend debe llevarlo a
+    // /become-expert para re-elegir país, NO a Stripe onboarding directo.
+    relocatedFromCountry?: string | null;
+    relocatedAt?: string | null;
     currentAvailability?: CurrentExpertAvailabilityDto | null;
     stripeFutureRequirements?: string | null;
     stripeFutureDueAt?: string | null;
@@ -133,6 +138,9 @@ export function useExpert() {
                 longitude: data.longitude ?? data.Longitude ?? null,
                 // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
                 country: data.country ?? data.Country ?? null,
+                // 🛡️ MUD-W: relocation signal del backend (defensive: ambas casings).
+                relocatedFromCountry: data.relocatedFromCountry ?? data.RelocatedFromCountry ?? null,
+                relocatedAt: data.relocatedAt ?? data.RelocatedAt ?? null,
                 // ✅ CRÍTICO: Transformar CurrentAvailability de PascalCase a camelCase
                 currentAvailability: (() => {
                     const avail = data.currentAvailability ?? data.CurrentAvailability;
