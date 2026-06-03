@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Search, Loader2, Trash2, Edit3, MoreHorizontal, Image as ImageIcon, Euro, Package } from 'lucide-react';
+import { Plus, Search, Loader2, Trash2, Edit3, MoreHorizontal, Image as ImageIcon, Package, CircleDollarSign } from 'lucide-react';
 import { useCategories } from '../../contexts/CategoryContext';
+// 🛡️ Round 28: formato de moneda real (no más EUR hardcoded en el panel de experto).
+import { formatCurrency } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -26,6 +28,10 @@ interface Service {
     imageUrls: string[];
     conditions: string;
     price: number;
+    /** 🛡️ Round 28: divisa ISO 4217 emitida por el backend (EUR/GBP/CHF/…). Default EUR si falta. */
+    priceCurrency?: string;
+    /** Alias PascalCase del backend. */
+    currency?: string;
     durationInHours: number | null;
     categoryName?: string;
     serviceTypeName?: string;
@@ -210,22 +216,29 @@ export function ServicesTab({
                                             <Badge variant="outline" className="text-xs">{serviceTypeName}</Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex flex-col items-end gap-0.5">
-                                                <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-                                                    <Euro className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-muted-foreground" />
-                                                    <span className="font-semibold text-sm sm:text-base">
-                                                        {new Intl.NumberFormat('es-ES', {
-                                                            style: 'currency',
-                                                            currency: 'EUR',
-                                                            minimumFractionDigits: 0,
-                                                            maximumFractionDigits: 2,
-                                                        }).format(service.price).replace('€', '').trim()}
-                                                    </span>
-                                                </div>
-                                                <span className="text-[10px] text-muted-foreground">
-                                                    IVA incluido
-                                                </span>
-                                            </div>
+                                            {(() => {
+                                                // 🛡️ Round 28: usar la moneda REAL del servicio. Antes se
+                                                // forzaba EUR + icono €, dando "€350" a expertos UK que en
+                                                // realidad cobran en GBP. Intl.NumberFormat añade el símbolo
+                                                // correcto (£, CHF, kr, etc.) y un icono genérico de divisa.
+                                                const code = (service.priceCurrency ?? service.currency ?? 'EUR')
+                                                    .toString()
+                                                    .trim()
+                                                    .toUpperCase();
+                                                return (
+                                                    <div className="flex flex-col items-end gap-0.5">
+                                                        <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                                                            <CircleDollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-muted-foreground" />
+                                                            <span className="font-semibold text-sm sm:text-base">
+                                                                {formatCurrency(service.price, code)}
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            IVA incluido
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </TableCell>
                                         <TableCell className="hidden lg:table-cell">
                                             {service.durationInHours ? (
