@@ -97,7 +97,11 @@ interface ServiceFormProps {
     categories: CategoryWithDetailsDto[] | undefined;
     categoriesLoading?: boolean;
     categoriesError?: string | null;
-    editingService?: { id: number; categoryId: number; serviceTypeId: number; price: number; conditions: string; durationInHours: number | null; imageUrls: string[] } | null;
+    // 🛡️ Round 28: añadir currency/priceCurrency al tipo para que en modo edit
+    // el form pueda mostrar la moneda REAL del servicio (snapshot inmutable), no la
+    // derivada del país actual del experto. Sin estos campos, un experto que se mudó
+    // veía "Precio (£)" sobre un servicio EUR antiguo y guardaba con desalineamiento.
+    editingService?: { id: number; categoryId: number; serviceTypeId: number; price: number; conditions: string; durationInHours: number | null; imageUrls: string[]; currency?: string; priceCurrency?: string } | null;
     handleUpdateService?: (e: React.FormEvent) => void;
     isUpdatingService?: boolean;
     existingImages?: string[];
@@ -141,8 +145,13 @@ export function ServiceForm({
     expertCountry,
 }: ServiceFormProps) {
     // 🛡️ Round 28: derivar símbolo del país del experto (GB → £, CH → CHF, SE → kr, …).
-    // Si el padre no pasa el país (o el experto aún no tiene país detectado), cae a €.
-    const priceCurrencyCode = getCurrencyForCountry(expertCountry ?? null);
+    // En modo EDICIÓN priorizamos la moneda real del servicio (snapshot inmutable) sobre
+    // el país actual del experto — un experto que se mudó ES→GB no debe ver "Precio (£)"
+    // sobre un servicio EUR antiguo. En modo CREACIÓN cae al país (experto crea en su divisa).
+    const editingCurrencyCode = editingService?.currency ?? editingService?.priceCurrency;
+    const priceCurrencyCode = editingCurrencyCode
+        ? editingCurrencyCode.toUpperCase()
+        : getCurrencyForCountry(expertCountry ?? null);
     const priceCurrencySymbol = getCurrencySymbol(priceCurrencyCode);
     const fileInputRef = useRef<HTMLInputElement>(null);
     // ✅ FIX ARQUITECTÓNICO (no es un hack de timing):

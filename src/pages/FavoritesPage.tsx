@@ -8,6 +8,8 @@ import { showToast } from '../lib/toast';
 import { Footer } from '../components/Footer';
 import { SearchServiceDetailDto } from '../types/homepageWall';
 import { useCurrency } from '../contexts/CurrencyContext';
+// 🛡️ Round 28: símbolos unificados.
+import { getCurrencySymbol } from '../utils/priceUtils';
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -95,16 +97,17 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, initialIsFavorite = 
   const isGuestFavorite = service.completedSearches > 10 && service.averageRating >= 4.5;
   // Round 24: conversión multi-moneda.
   const { formatPriceWithSource, preferredCurrency } = useCurrency();
+  // 🛡️ Round 28: símbolos del helper unificado (cubre 13 divisas, evita el switch duplicado).
   const priceData = (() => {
     if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
     const src = (service as any).priceCurrency || (service as any).currency || 'EUR';
     const info = formatPriceWithSource(service.price, src, preferredCurrency);
     if (!info.wasConverted) {
-      const symbol = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+      const symbol = getCurrencySymbol(src);
       return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
     }
-    const tSym = preferredCurrency === 'USD' ? '$' : preferredCurrency === 'GBP' ? '£' : preferredCurrency === 'CHF' ? 'CHF ' : preferredCurrency === 'CAD' ? 'C$' : '€';
-    const sSym = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+    const tSym = getCurrencySymbol(preferredCurrency);
+    const sSym = getCurrencySymbol(src);
     return {
       display: `≈ ${tSym}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
       wasConverted: true,

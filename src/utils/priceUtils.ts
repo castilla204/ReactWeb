@@ -12,6 +12,13 @@ interface PriceInfo {
   BaseAmount?: number;
   taxAmount?: number;
   TaxAmount?: number;
+  // 🛡️ Round 28: divisa snapshot del hire/transacción (ISO 4217). Si no viene, cae a EUR.
+  currency?: string;
+  Currency?: string;
+  chargeCurrency?: string;
+  ChargeCurrency?: string;
+  priceCurrency?: string;
+  PriceCurrency?: string;
 }
 
 /**
@@ -74,6 +81,15 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
   const base = baseRaw != null ? toFiniteNumber(baseRaw) : null;
   const tax = taxRaw != null ? toFiniteNumber(taxRaw) : null;
 
+  // 🛡️ Round 28: leer la divisa del hire/transacción. Antes el formateo caía siempre a EUR
+  // por el default de formatCurrency, mostrando "€100" en hires GBP/CHF/etc.
+  const currencyRaw = priceInfo.chargeCurrency ?? priceInfo.ChargeCurrency
+    ?? priceInfo.priceCurrency ?? priceInfo.PriceCurrency
+    ?? priceInfo.currency ?? priceInfo.Currency;
+  const currency = (typeof currencyRaw === 'string' && currencyRaw.trim().length === 3)
+    ? currencyRaw.trim().toUpperCase()
+    : 'EUR';
+
   // Si hay información de tax, mostrar desglose
   const hasTaxInfo = base != null && tax != null && tax > 0;
 
@@ -82,10 +98,10 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
     base: base ?? total, // Fallback a total si no hay base
     tax: tax ?? 0,
     hasTaxInfo: hasTaxInfo,
-    // Helper para formatear
-    formattedTotal: formatCurrency(total),
-    formattedBase: base != null ? formatCurrency(base) : null,
-    formattedTax: tax != null && tax > 0 ? formatCurrency(tax) : null,
+    // Helper para formatear con divisa real
+    formattedTotal: formatCurrency(total, currency),
+    formattedBase: base != null ? formatCurrency(base, currency) : null,
+    formattedTax: tax != null && tax > 0 ? formatCurrency(tax, currency) : null,
   };
 }
 

@@ -46,7 +46,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -164,22 +164,32 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const handleDelete = async () => {
     setDeletionStep('processing');
     clearError();
-    
+
     // ✅ El backend ya no requiere contraseña, solo razón opcional
     const request: any = deletionReason.trim() ? { reason: deletionReason.trim() } : {};
-    
+
     const response = await deleteAccount(request);
-    
+
     if (response) {
       setDeletionResult(response);
       setDeletionStep('result');
+      // 🛡️ FIX: Desloguear INMEDIATAMENTE al confirmar la eliminación.
+      //    Antes, el signOut solo se ejecutaba si el usuario pulsaba "Continuar";
+      //    si cerraba el modal con ESC/X o abría otra pestaña, el JWT seguía
+      //    en localStorage y el AuthContext seguía creyendo que estaba logueado.
+      //    Llamamos a signOut() en background — el AuthContext ya es defensivo
+      //    ante un /logout backend caído (la cuenta acaba de borrarse).
+      void signOut();
     } else {
       setDeletionStep('confirm');
     }
   };
 
   const handleDeleteSuccess = () => {
+    // El signOut() ya se disparó en handleDelete; aquí solo cerramos y redirigimos.
     onClose();
+    // Hard redirect para garantizar que cualquier estado en memoria (React Query,
+    // contextos, etc.) se descarte por completo.
     window.location.href = '/login';
   };
 
@@ -589,10 +599,23 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
-      
+
       // Cerrar el drawer anidado primero para evitar conflictos de DOM
       setMobileMenuOpen(false);
-      
+
+      // 🛡️ Si la cuenta ya se eliminó, cerrar el modal debe redirigir SIEMPRE
+      //    al login para evitar dejar al usuario en una vista zombi.
+      if (deletionStep === 'result') {
+        closeTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            onClose();
+            window.location.href = '/login';
+          }
+          closeTimeoutRef.current = null;
+        }, 150);
+        return;
+      }
+
       // Pequeño delay para asegurar que el drawer anidado se cierre antes
       // Solo llamar onClose si el componente sigue montado
       closeTimeoutRef.current = setTimeout(() => {
@@ -603,7 +626,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       }, 150);
     }
     // Si open es true, no hacemos nada - el drawer se abre automáticamente
-  }, [onClose]);
+  }, [onClose, deletionStep]);
 
   const handleNestedDrawerOpenChange = React.useCallback((open: boolean) => {
     setMobileMenuOpen(open);
@@ -617,10 +640,17 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
+      // 🛡️ Si la cuenta ya se eliminó, cerrar el modal debe redirigir SIEMPRE
+      //    al login para evitar dejar al usuario en una vista zombi.
+      if (deletionStep === 'result') {
+        onClose();
+        window.location.href = '/login';
+        return;
+      }
       // Cerrar inmediatamente - Radix UI maneja el overlay automáticamente
       onClose();
     }
-  }, [onClose]);
+  }, [onClose, deletionStep]);
 
   if (isDesktop) {
     // ✅ Solo renderizar el Dialog si está abierto para evitar overlays huérfanos
@@ -816,7 +846,13 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" />
-              <span>€{contract.amount.toFixed(2)}</span>
+              {/* 🛡️ Round 28: usar divisa real del contrato (ChargeCurrency snapshot) en vez de €. */}
+              <span>
+                {new Intl.NumberFormat('es-ES', {
+                  style: 'currency',
+                  currency: (((contract as any).currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
+                }).format(contract.amount)}
+              </span>
             </div>
             
             <div className="flex items-center">
