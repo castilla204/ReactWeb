@@ -261,7 +261,13 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
           <div className="space-y-1 text-sm text-gray-600">
             <div className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" />
-              <span>€{contract.amount.toFixed(2)}</span>
+              {/* 🛡️ Round 28: divisa real del contrato (ChargeCurrency snapshot). */}
+              <span>
+                {new Intl.NumberFormat('es-ES', {
+                  style: 'currency',
+                  currency: (((contract as any).currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
+                }).format(contract.amount)}
+              </span>
             </div>
             
             <div className="flex items-center">

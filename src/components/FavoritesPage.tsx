@@ -145,9 +145,10 @@ export function FavoritesPage({ onBack }: FavoritesPageProps) {
                                     {favorite.title}
                                 </h3>
                                 <p className="text-2xl font-bold text-blue-400 mb-4">
+                                    {/* 🛡️ Round 28: divisa real del anuncio (puede no ser EUR) */}
                                     {new Intl.NumberFormat('es-ES', {
                                         style: 'currency',
-                                        currency: 'EUR'
+                                        currency: ((favorite as any).priceCurrency || (favorite as any).currency || 'EUR').toUpperCase()
                                     }).format(favorite.price)}
                                 </p>
                                 <p className="text-sm text-gray-400 line-clamp-3 mb-4">

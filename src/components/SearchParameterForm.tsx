@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
+// 🛡️ Round 28: helper unificado de símbolos de divisa (cubre EUR/USD/GBP/CHF/CAD/SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
+import { getCurrencySymbol } from '../utils/priceUtils';
 import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
@@ -8,7 +10,10 @@ import { useServices } from '../hooks/useServices';
 import { useInfiniteServices } from '../hooks/useInfiniteServices';
 // useMapExperts ya no es necesario - MapContainer lo maneja internamente
 import { useMapMarkers } from '../hooks/useMapMarkers'; // ✅ NUEVO: Marcadores ultra ligeros
-import { MapContainer } from './Map/MapContainer';
+// ✅ Default import → activa React.memo del MapContainer. Antes (named import)
+//    cualquier re-render de SearchParameterForm forzaba al MapContainer a recorrer
+//    su function body, lo que disparaba el efecto de markers (remove+create de TODOS).
+import MapContainer from './Map/MapContainer';
 import { Service } from '../hooks/useServiceLoader';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
@@ -171,17 +176,18 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
     };
     
     // Precio del servicio. Round 24: conversión a moneda preferida del usuario.
+    // 🛡️ Round 28: símbolos del helper unificado en lugar de switches duplicados (cubre 13 divisas).
     const { formatPriceWithSource, preferredCurrency } = useCurrency();
     const priceData = (() => {
         if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
         const src = service.priceCurrency || service.currency || service.Currency || 'EUR';
         const info = formatPriceWithSource(service.price, src, preferredCurrency);
         if (!info.wasConverted) {
-            const symbol = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+            const symbol = getCurrencySymbol(src);
             return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
         }
-        const tSym = preferredCurrency === 'USD' ? '$' : preferredCurrency === 'GBP' ? '£' : preferredCurrency === 'CHF' ? 'CHF ' : preferredCurrency === 'CAD' ? 'C$' : '€';
-        const sSym = src === 'USD' ? '$' : src === 'GBP' ? '£' : src === 'CHF' ? 'CHF ' : src === 'CAD' ? 'C$' : '€';
+        const tSym = getCurrencySymbol(preferredCurrency);
+        const sSym = getCurrencySymbol(src);
         return {
             display: `≈ ${tSym}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
             wasConverted: true,

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
+// 🛡️ Round 28: símbolos de divisa derivados del helper unificado (cubre SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
+import { getCurrencySymbol } from '../utils/priceUtils';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
@@ -87,18 +89,19 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
 
   // ✅ Información real del servicio para la segunda línea: Precio · Horario
   // Precio del servicio. Round 24: usa CurrencyContext para conversión.
+  // 🛡️ Round 28: símbolos derivados del helper unificado (cubre SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
   const priceData = useMemo(() => {
     if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
     const source = service.priceCurrency || service.currency || 'EUR';
     const info = formatPriceWithSource(service.price, source, preferredCurrency);
     if (!info.wasConverted) {
       // Mismo currency: redondear como antes para mantener el estilo compacto
-      const symbol = source === 'USD' ? '$' : source === 'GBP' ? '£' : '€';
+      const symbol = getCurrencySymbol(source);
       return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
     }
     // Convertido: mostrar el converted redondeado y el source en paréntesis
-    const targetSymbol = preferredCurrency === 'USD' ? '$' : preferredCurrency === 'GBP' ? '£' : preferredCurrency === 'CHF' ? 'CHF ' : preferredCurrency === 'CAD' ? 'C$' : '€';
-    const sourceSymbol = source === 'USD' ? '$' : source === 'GBP' ? '£' : source === 'CHF' ? 'CHF ' : source === 'CAD' ? 'C$' : '€';
+    const targetSymbol = getCurrencySymbol(preferredCurrency);
+    const sourceSymbol = getCurrencySymbol(source);
     return {
       display: `≈ ${targetSymbol}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
       wasConverted: true,

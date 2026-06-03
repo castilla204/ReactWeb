@@ -1,4 +1,4 @@
-import { Search, Loader2, MessageCircle, Calendar, Euro, Tag } from 'lucide-react';
+import { Search, Loader2, MessageCircle, Calendar, CircleDollarSign, Tag } from 'lucide-react';
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from '../StatusBadge';
 import { getStatusInfoWithFallback } from '../../utils/statusUtils';
@@ -283,14 +283,15 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
                                             </div>
                                             
                                             <div className="flex items-center gap-1.5">
-                                                <Euro className="w-3 h-3 text-muted-foreground" />
+                                                {/* 🛡️ Round 28: icon de moneda genérico — el símbolo lo añade Intl en formattedTotal */}
+                                                <CircleDollarSign className="w-3 h-3 text-muted-foreground" />
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-foreground">
                                                         {getPriceDisplay(hire).formattedTotal}
                                                     </span>
                                                     {getPriceDisplay(hire).hasTaxInfo && (
                                                         <span className="text-xs text-muted-foreground">
-                                                            IVA incluido
+                                                            Impuestos incluidos
                                                         </span>
                                                     )}
                                                 </div>

@@ -58,6 +58,23 @@ const ServiceDetailPage: React.FC = () => {
               serviceTypeCategoryName: service.ServiceTypeCategoryName || service.serviceTypeCategoryName,
               requiresAppointment: service.RequiresAppointment ?? service.requiresAppointment,
               price: service.Price ?? service.price ?? 0,
+              // 🛡️ Round 28: propagar Currency real del backend (ISO 4217) para que las pantallas
+              // intermedias (ServiceReviewPage, SearchForm) muestren £/CHF/kr en vez de €. Antes
+              // se descartaba aquí y caían siempre al default EUR.
+              priceCurrency: (() => {
+                const raw = service.Currency ?? service.currency ?? service.PriceCurrency ?? service.priceCurrency;
+                if (typeof raw === 'string' && raw.trim().length === 3) {
+                  return raw.trim().toUpperCase();
+                }
+                return 'EUR';
+              })(),
+              currency: (() => {
+                const raw = service.Currency ?? service.currency ?? service.PriceCurrency ?? service.priceCurrency;
+                if (typeof raw === 'string' && raw.trim().length === 3) {
+                  return raw.trim().toUpperCase();
+                }
+                return 'EUR';
+              })(),
               conditions: service.Conditions || service.conditions || '',
               durationInHours: service.DurationInHours ?? service.durationInHours,
               createdAt: service.CreatedAt || service.createdAt,
