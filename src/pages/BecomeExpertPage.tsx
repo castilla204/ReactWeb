@@ -6,13 +6,22 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle, MapPin, Check, ChevronRight, Search } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, MapPin, Check, Search, CreditCard } from 'lucide-react';
+import {
+    BecomeExpertWizardShell,
+    BecomeExpertStepHeader,
+    BE_INPUT_CLASS,
+    BE_SECTION_CLASS,
+    BE_DAY_ACTIVE,
+    BE_DAY_IDLE,
+} from '../components/becomeExpert/BecomeExpertShell';
+import { BecomeExpertPhotoField } from '../components/becomeExpert/BecomeExpertPhotoField';
+import { HP_PANEL_GRADIENT, hpIconButtonClass } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
-import { Stepper } from '../components/ui/stepper';
 import { useAuth } from '../contexts/AuthContext';
 import { useExpert } from '../hooks/useExpert';
 // 🛡️ Round 28: helpers compartidos para tiles Carto + círculo en GeoJSON
@@ -20,7 +29,6 @@ import { boundsFromCircle, circlePolygonGeoJSON } from '../utils/geoCircle';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
 // 🛡️ Round 28: autocomplete y reverse geocoding vía Mapbox REST (token VITE_MAPBOX_ACCESS_TOKEN)
 import { searchMapboxAutocomplete, MapboxAutocompleteItem } from '../utils/mapboxGeocoding';
-
 // 🛡️ Round 28: worker MapLibre global (idempotente entre montajes)
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -52,13 +60,20 @@ const SUPPORTED_PAYOUT_COUNTRIES = new Set<string>([
 // 🛡️ Round 28: zoom de inicio para 100 km de radio (similar al getZoomLevel previo)
 const INITIAL_ZOOM = 7;
 
+// 🎨 Round 30 — Rediseño: de 5 pasos triviales a 3 pasos sólidos.
+//   - "Identidad": foto + descripción (juntos en grid 2 columnas en desktop).
+//   - "Cobertura": mapa de zona + disponibilidad horaria (juntos).
+//   - "Confirmar": resumen + términos. Tras el submit, este paso muta a "Conecta Stripe"
+//                  INLINE — sin navegar a otra página. Antes había una vista separada
+//                  "Ya casi eres experto" que rompía el flujo y daba sensación de juguete.
 const STEPS = [
-    { id: 1, label: 'Foto', icon: Upload },
-    { id: 2, label: 'Descripción', icon: UserPlus },
-    { id: 3, label: 'Ubicación', icon: MapPin },
-    { id: 4, label: 'Disponibilidad', icon: Clock },
-    { id: 5, label: 'Confirmar', icon: Check },
-];
+    { id: 1, label: 'Identidad' },
+    { id: 2, label: 'Cobertura' },
+    { id: 3, label: 'Confirmar' },
+] as const;
+
+const BE_CHECKOUT_CARD =
+    'overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-sm';
 
 // 🛡️ Round 28: estilo MapLibre con tiles Carto Voyager (sin labels) — mismo que el mapa de servicios.
 function buildCartoStyle(): maplibregl.StyleSpecification {
@@ -86,9 +101,12 @@ const MAPBOX_TOKEN: string | undefined =
 
 function BecomeExpertPage() {
     const navigate = useNavigate();
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const { formData, previewUrl, isSubmitting, error, handleFileChange, handleSubmit, setFormData } = useBecomeExpert();
+    // 🛡️ Round 28: capturamos errorCode + detectedCountry para mostrar UX específica
+    // (en vez del mensaje fósil "Google Cloud Storage configuration issue").
+    // ✅ Round 30: `submitted` permite mostrar el bloque Stripe inline sin navegar.
+    const { formData, previewUrl, isSubmitting, error, errorCode, detectedCountry, submitted,
+            applyProfilePhoto, handleSubmit, setFormData } = useBecomeExpert();
     const { user } = useAuth();
     const { startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
     const isAlreadyExpert =
@@ -99,12 +117,18 @@ function BecomeExpertPage() {
         Number(user?.role) === 1;
 
     // Si ya eres experto pero no completaste Stripe, NO mostramos el formulario (daría "ya eres experto"):
-    // comprobamos el estado y, si ya está completo, vamos al panel; si no, mostramos el botón de reanudar pagos.
+    // ✅ Round 30: si ya completaste Stripe → al panel. Si no → saltamos al paso 3 del MISMO
+    //    wizard, que renderiza el bloque Stripe inline (sin vista separada de "ya casi eres experto").
     useEffect(() => {
         if (!isAlreadyExpert) return;
         checkOnboardingStatus(true)
             .then((status) => {
-                if (status?.onboardingCompleted) navigate('/expert-panel', { replace: true });
+                if (status?.onboardingCompleted) {
+                    navigate('/expert-panel', { replace: true });
+                } else {
+                    // Saltar al último paso, que mostrará el bloque Stripe automáticamente.
+                    setCurrentStep(3);
+                }
             })
             .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,8 +227,8 @@ function BecomeExpertPage() {
         const el = mapContainerRef.current;
         const wrapper = mapWrapperRef.current;
         if (!el || !wrapper) return;
-        // Solo crear el mapa cuando el contenedor sea visible (stepper en paso 3).
-        if (currentStep !== 3) return;
+        // ✅ Round 30: el mapa vive ahora en el paso 2 (Cobertura), no en el 3.
+        if (currentStep !== 2) return;
         if (mapRef.current) return;
 
         let cancelled = false;
@@ -404,12 +428,11 @@ function BecomeExpertPage() {
     const canGoNext = () => {
         switch (currentStep) {
             case 1:
-                return !!formData.profilePicture;
-            case 2:
-                return formData.description.trim().length >= 50;
-            case 3:
-                return !!(formData.latitude && formData.longitude);
-            case 4: {
+                // ✅ Identidad: foto + descripción ≥ 50 caracteres.
+                return !!formData.profilePicture && formData.description.trim().length >= 50;
+            case 2: {
+                // ✅ Cobertura: ubicación válida + disponibilidad coherente.
+                if (!(formData.latitude && formData.longitude)) return false;
                 if (availability.daysOfWeek.length === 0) return false;
                 if (!availability.startTime || !availability.endTime) return false;
                 const [startH, startM] = availability.startTime.split(':').map(Number);
@@ -417,7 +440,8 @@ function BecomeExpertPage() {
                 if (Number.isNaN(startH) || Number.isNaN(endH)) return false;
                 return startH * 60 + startM < endH * 60 + endM;
             }
-            case 5:
+            case 3:
+                // ✅ Confirmar: términos aceptados (Stripe se conecta DESPUÉS del submit).
                 return acceptTerms;
             default:
                 return false;
@@ -442,229 +466,177 @@ function BecomeExpertPage() {
         }
     };
 
+    // ✅ Round 30: bloque Stripe inline. Lo usamos en el paso 3 cuando ya hay perfil creado
+    //    (submitted=true tras submit, o isAlreadyExpert=true al volver de Stripe sin completar).
+    //    Antes esto era una vista totalmente separada — ahora es parte natural del wizard.
+    const renderStripeConnectBlock = () => (
+        <div className="space-y-6">
+            <BecomeExpertStepHeader
+                title="Conecta tus cobros con Stripe"
+                description="Configura tu cuenta de pagos para recibir encargos. Es el último paso antes de publicar tu perfil."
+            />
+
+            <div className={BE_CHECKOUT_CARD}>
+                <div className="border-b border-[#ececec] px-5 py-4 sm:px-6">
+                    <p className="text-sm font-semibold text-[#1c1c1c]">Tu perfil está creado</p>
+                    <p className="mt-1 text-sm text-[#6a6a6a]">Solo falta conectar la cuenta de cobros.</p>
+                </div>
+
+                <div className="space-y-5 px-5 py-6 sm:px-6">
+                    <ul className="space-y-3">
+                        {[
+                            'Cobros protegidos por Stripe.',
+                            'Unos 5 minutos; solo se hace una vez.',
+                            'Sin coste para ti; los pagos llegan a tu cuenta.',
+                        ].map((label) => (
+                            <li key={label} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#444]">
+                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" strokeWidth={2.5} />
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await startOnboarding();
+                            } catch (err: any) {
+                                // 🛡️ Round 28 Sprint US: antes el catch tragaba el error y mostraba un
+                                // toast genérico. Ahora extraemos el mensaje real del backend (que ya
+                                // contiene el StripeError.Message si aplica, p.ej. "You cannot request the
+                                // `transfers` capability without `card_payments` for US"). Si no hay
+                                // mensaje útil, caemos al texto amigable original.
+                                const detail = err?.message && !err.message.includes('status 401')
+                                    ? err.message
+                                    : 'No se pudo iniciar la configuración de pagos. Inténtalo en unos minutos.';
+                                showToast('error', detail);
+                            }
+                        }}
+                        disabled={isStartingOnboarding}
+                        className="sd-btn-primary w-full gap-2 disabled:cursor-wait"
+                    >
+                        {isStartingOnboarding ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Conectando con Stripe…
+                            </>
+                        ) : (
+                            <>
+                                <CreditCard className="h-4 w-4" />
+                                Configurar pagos con Stripe
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/expert-panel')}
+                        className="block w-full text-center text-sm font-semibold text-[#6a6a6a] hover:text-[#1c1c1c]"
+                    >
+                        Configurar más tarde
+                    </button>
+                </div>
+            </div>
+
+            <p className="text-center text-xs leading-relaxed text-[#9ca3af]">
+                Necesitas conectar Stripe antes de poder aceptar encargos.
+            </p>
+        </div>
+    );
+
     const renderStepContent = () => {
+        // ✅ Round 30: tras submit exitoso (o si ya eres experto pendiente de Stripe),
+        //    el paso 3 se transforma en el bloque Stripe inline.
+        if (submitted) return renderStripeConnectBlock();
+
         switch (currentStep) {
             case 1:
+                // 🎨 Paso 1 — Identidad: foto + descripción juntos.
+                //    Desktop: foto a la izquierda (200px), textarea a la derecha.
+                //    Móvil: stack vertical natural.
                 return (
-                    <div className="space-y-6">
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Sube tu foto de perfil
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Esta será la foto que verán todos los usuarios en tu perfil
-                            </div>
-                        </div>
-                        <div
-                            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
-                                formData.profilePicture
-                                    ? 'border-gray-300 bg-gray-50'
-                                    : 'border-gray-300 hover:border-gray-400'
-                            }`}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            {previewUrl ? (
-                                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden">
-                                    <img
-                                        src={previewUrl}
-                                        alt="Preview"
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                        <Upload className="w-6 h-6 text-white" />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="inline-flex p-4 bg-gray-100 rounded-full">
-                                        <Upload className="w-8 h-8 text-gray-500" />
-                                    </div>
-                                    <div>
-                                        <div
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '4px',
-                                            }}
-                                        >
-                                            Haz clic para subir foto
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                        >
-                                            PNG o JPG (máx. 5MB)
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/jpg"
-                                onChange={handleFileChange}
-                                className="hidden"
+                    <div className="space-y-5">
+                        <BecomeExpertStepHeader
+                            title="Tu identidad pública"
+                            description="La foto y la descripción son lo primero que verán los clientes."
+                        />
+
+                        <BecomeExpertPhotoField
+                            previewUrl={previewUrl}
+                            onPhotoReady={applyProfilePhoto}
+                        />
+
+                        <section className={BE_SECTION_CLASS}>
+                            <label htmlFor="be-description" className="block text-sm font-semibold text-[#1c1c1c]">
+                                Experiencia profesional
+                            </label>
+                            <p className="mt-1 text-xs text-[#6a6a6a]">
+                                Años de experiencia, especialidad y qué incluye tu servicio.
+                            </p>
+                            <textarea
+                                id="be-description"
+                                value={formData.description}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                                className={`${BE_INPUT_CLASS} mt-3 min-h-[120px] resize-y leading-relaxed sm:min-h-[140px]`}
+                                rows={5}
+                                placeholder="Ej.: 8 años revisando vehículos de ocasión. Informes detallados para compradores y concesionarios…"
+                                required
+                                minLength={50}
                             />
-                        </div>
+                            <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+                                <span className="text-[#6a6a6a]">Mínimo 50 caracteres</span>
+                                <span
+                                    className={`font-semibold tabular-nums ${
+                                        formData.description.length >= 50 ? 'text-[#0066CC]' : 'text-[#9ca3af]'
+                                    }`}
+                                >
+                                    {formData.description.length}/50
+                                </span>
+                            </div>
+                        </section>
                     </div>
                 );
 
             case 2:
+                // 🎨 Paso 2 — Cobertura + disponibilidad juntos en la misma página.
+                //    Mapa arriba (sigue siendo la pieza visual principal), días/horario debajo.
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Describe tu experiencia
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Cuéntanos sobre tu experiencia y especialidad en vehículos o inmobiliario
-                            </div>
-                        </div>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 resize-none"
-                            style={{
-                                fontSize: '14px',
-                                lineHeight: '20px',
-                                fontWeight: 400,
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            }}
-                            rows={6}
-                            placeholder="Describe tu experiencia y especialidad en vehículos o inmobiliario..."
-                            required
-                            minLength={50}
+                        <BecomeExpertStepHeader
+                            title="Dónde y cuándo trabajas"
+                            description="Zona de cobertura (100 km) y disponibilidad horaria para recibir encargos."
                         />
-                        <div className="flex justify-between items-center">
-                            <p
-                                style={{
-                                    fontSize: '12px',
-                                    lineHeight: '16px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Mínimo 50 caracteres
-                            </p>
-                            <span
-                                style={{
-                                    fontSize: '12px',
-                                    lineHeight: '16px',
-                                    fontWeight: 500,
-                                    color: formData.description.length >= 50 ? 'rgb(34, 34, 34)' : 'rgb(156, 163, 175)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                {formData.description.length}/50
-                            </span>
-                        </div>
-                    </div>
-                );
 
-            case 3:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Define tu área de trabajo
+                        <section className={`${BE_SECTION_CLASS} space-y-3`}>
+                            <div className="flex items-baseline justify-between gap-3">
+                                <label className="text-sm font-semibold text-[#1c1c1c]">Zona de cobertura</label>
+                                <span className="text-xs text-[#9ca3af]">Radio fijo de 100 km</span>
                             </div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Área donde te encontrarán los usuarios y donde se te encargarán los trabajos
-                            </div>
-                        </div>
-                        <div>
-                            {/* 🛡️ Round 28: input de búsqueda + dropdown de sugerencias Mapbox (reemplaza places.Autocomplete) */}
-                            <div className="relative mb-4">
+                            <div className="relative">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
                                     <input
                                         ref={searchInputRef}
                                         type="text"
-                                        placeholder="Buscar dirección o ciudad..."
+                                        placeholder="Buscar dirección o ciudad…"
                                         value={searchAddress}
                                         onChange={(e) => setSearchAddress(e.target.value)}
                                         onFocus={() => {
                                             if (autocompleteResults.length > 0) setShowAutocomplete(true);
                                         }}
                                         onBlur={() => {
-                                            // Delay para permitir click en la sugerencia antes de cerrar el dropdown.
                                             window.setTimeout(() => setShowAutocomplete(false), 180);
                                         }}
-                                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '20px',
-                                            fontWeight: 400,
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        }}
+                                        className={`${BE_INPUT_CLASS} pl-10 pr-10`}
                                     />
                                     {isSearching && (
-                                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                                        <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#9ca3af]" />
                                     )}
                                 </div>
                                 {showAutocomplete && autocompleteResults.length > 0 && (
                                     <ul
-                                        className="absolute z-30 mt-1 w-full max-h-72 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg"
+                                        className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-lg bg-white py-1 shadow-[0_16px_48px_rgba(0,0,0,0.12)]"
                                         role="listbox"
                                     >
                                         {autocompleteResults.map((item) => (
@@ -672,36 +644,16 @@ function BecomeExpertPage() {
                                                 <button
                                                     type="button"
                                                     onMouseDown={(e) => {
-                                                        // onMouseDown gana al onBlur del input → click siempre se procesa.
                                                         e.preventDefault();
                                                         handleSelectAutocomplete(item);
                                                     }}
-                                                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-start gap-2"
+                                                    className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[#f0f6fc]"
                                                 >
-                                                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                                                    <div className="flex-1 min-w-0">
-                                                        <div
-                                                            className="truncate"
-                                                            style={{
-                                                                fontSize: '14px',
-                                                                fontWeight: 500,
-                                                                color: 'rgb(34, 34, 34)',
-                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            }}
-                                                        >
-                                                            {item.address}
-                                                        </div>
+                                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-medium text-[#1c1c1c]">{item.address}</p>
                                                         {item.locationName && item.locationName !== 'Ubicación' && (
-                                                            <div
-                                                                className="truncate"
-                                                                style={{
-                                                                    fontSize: '12px',
-                                                                    color: 'rgb(113, 113, 113)',
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                {item.locationName}
-                                                            </div>
+                                                            <p className="truncate text-xs text-[#6a6a6a]">{item.locationName}</p>
                                                         )}
                                                     </div>
                                                 </button>
@@ -711,9 +663,12 @@ function BecomeExpertPage() {
                                 )}
                             </div>
 
-                            <div className="border border-gray-300 rounded-xl overflow-hidden">
-                                {/* 🛡️ Round 28: el contenedor mantiene el mismo height (300px) del mapa Google previo. */}
-                                <div ref={mapWrapperRef} className="relative h-[300px] w-full bg-[#dce9f2]">
+                            <div className="overflow-hidden rounded-xl border border-[#e8e8e8] bg-[#eef4f8]">
+                                <div
+                                    ref={mapWrapperRef}
+                                    className="relative h-[240px] w-full touch-pan-y sm:h-[280px]"
+                                    style={{ touchAction: 'pan-y pinch-zoom' }}
+                                >
                                     {mapError ? (
                                         <div className="h-full flex flex-col items-center justify-center gap-2 bg-gray-50 px-4 text-center">
                                             <AlertTriangle className="w-6 h-6 text-gray-400" />
@@ -732,258 +687,176 @@ function BecomeExpertPage() {
                                 </div>
                             </div>
 
-                            {!MAPBOX_TOKEN && (
-                                <p
-                                    className="mt-2"
-                                    style={{
-                                        fontSize: '12px',
-                                        lineHeight: '16px',
-                                        fontWeight: 400,
-                                        color: 'rgb(180, 83, 9)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
+                            {!MAPBOX_TOKEN ? (
+                                <p className="text-xs leading-relaxed text-amber-800">
                                     Búsqueda de direcciones deshabilitada (falta token de Mapbox). Puedes seleccionar la ubicación haciendo clic en el mapa.
+                                </p>
+                            ) : (
+                                <p className="text-xs text-[#6a6a6a]">
+                                    Arrastra el marcador o haz clic en el mapa para afinar la posición.
                                 </p>
                             )}
 
-                            {/* 🛡️ Round 28: estilos de los controles MapLibre (mismos que ServiceDetailCoverageMap) */}
                             <style>{`
                                 .maplibregl-ctrl-attribution { font-size: 8px !important; opacity: 0.85; }
                                 .maplibregl-ctrl-group { border: none !important; box-shadow: 0 1px 6px rgba(0,0,0,0.08) !important; }
                             `}</style>
-                        </div>
-                    </div>
-                );
+                        </section>
 
-            case 4:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Disponibilidad horaria
+                        <section className={`${BE_SECTION_CLASS} space-y-4`}>
+                            <div className="flex items-baseline justify-between gap-3">
+                                <label className="text-sm font-semibold text-[#1c1c1c]">Tu disponibilidad horaria</label>
+                                <span className="text-xs text-[#9ca3af]">Mínimo 1 día</span>
                             </div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Define los días y horarios en los que estarás disponible (obligatorio)
+
+                            <div className="flex flex-wrap gap-2">
+                                {VALID_DAYS_OF_WEEK.map((day) => (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => toggleDay(day)}
+                                        className={`rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${
+                                            availability.daysOfWeek.includes(day) ? BE_DAY_ACTIVE : BE_DAY_IDLE
+                                        }`}
+                                    >
+                                        {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
+                                    </button>
+                                ))}
                             </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '18px',
-                                        fontWeight: 500,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '12px',
-                                        display: 'block',
-                                    }}
-                                >
-                                    Días de trabajo
-                                </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    {VALID_DAYS_OF_WEEK.map(day => (
-                                        <button
-                                            key={day}
-                                            type="button"
-                                            onClick={() => toggleDay(day)}
-                                            className={`px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
-                                                availability.daysOfWeek.includes(day)
-                                                    ? 'bg-gray-900 text-white border-gray-900'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                                            }`}
-                                            style={{
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                        >
-                                            {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+
                             {availability.daysOfWeek.length > 0 && (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3 pt-2">
                                     <div>
-                                        <label
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '18px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '8px',
-                                                display: 'block',
-                                            }}
-                                        >
-                                            Hora de inicio
-                                        </label>
+                                        <label className="mb-2 block text-xs font-medium text-[#6a6a6a]">Hora de inicio</label>
                                         <input
                                             type="time"
                                             value={availability.startTime}
-                                            onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
+                                            onChange={(e) => setAvailability((prev) => ({ ...prev, startTime: e.target.value }))}
+                                            className={BE_INPUT_CLASS}
                                         />
                                     </div>
                                     <div>
-                                        <label
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '18px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '8px',
-                                                display: 'block',
-                                            }}
-                                        >
-                                            Hora de fin
-                                        </label>
+                                        <label className="mb-2 block text-xs font-medium text-[#6a6a6a]">Hora de fin</label>
                                         <input
                                             type="time"
                                             value={availability.endTime}
-                                            onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
+                                            onChange={(e) => setAvailability((prev) => ({ ...prev, endTime: e.target.value }))}
+                                            className={BE_INPUT_CLASS}
                                         />
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </section>
                     </div>
                 );
 
-            case 5:
+            case 3:
+                // 🎨 Paso 3 — Confirmar: resumen + términos. Tras submit, se transforma
+                //    automáticamente en el bloque Stripe (gestionado en el guard de arriba).
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Confirma y finaliza
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Revisa y acepta los términos para completar tu registro
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+                        <BecomeExpertStepHeader
+                            title="Revisa y publica tu perfil"
+                            description="Confirma que todo está correcto. Después conectarás Stripe para recibir pagos."
+                        />
+
+                        <ul className={`${BE_CHECKOUT_CARD} divide-y divide-[#ececec] p-0`}>
+                            {[
+                                { ok: !!formData.profilePicture, label: 'Foto de perfil' },
+                                { ok: formData.description.length >= 50, label: `Descripción (${formData.description.length} caracteres)` },
+                                { ok: !!(formData.latitude && formData.longitude), label: 'Zona de cobertura' },
+                                { ok: availability.daysOfWeek.length > 0, label: `Disponibilidad (${availability.daysOfWeek.length} día${availability.daysOfWeek.length === 1 ? '' : 's'})` },
+                            ].map((item) => (
+                                <li key={item.label} className="flex items-center gap-3 px-4 py-3 text-sm">
+                                    <Check
+                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-[#0066CC]' : 'text-[#d1d5db]'}`}
+                                        strokeWidth={2.5}
+                                        aria-hidden
+                                    />
+                                    <span className={item.ok ? 'text-[#1c1c1c]' : 'text-[#9ca3af]'}>{item.label}</span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div className="space-y-4 border-t border-[#ececec] pt-6">
+                            <label htmlFor="acceptTerms" className="flex cursor-pointer items-start gap-3">
                                 <input
                                     type="checkbox"
                                     id="acceptTerms"
                                     checked={acceptTerms}
                                     onChange={(e) => setAcceptTerms(e.target.checked)}
-                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
+                                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-[#0066CC] focus:ring-[#0066CC]/30"
                                     required
                                 />
-                                <label
-                                    htmlFor="acceptTerms"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
+                                <span className="text-[15px] leading-relaxed text-[#1c1c1c]">
                                     Acepto las{' '}
-                                    <a href="/privacy-policy.html" target="_blank" style={{ color: 'rgb(34, 34, 34)', fontWeight: 500, textDecoration: 'underline' }}>
-                                        condiciones de uso de inspecciono.io
-                                    </a>
-                                    {' '}y confirmo que he leído la política de privacidad
-                                </label>
-                            </div>
-                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+                                    <a
+                                        href="/privacy-policy.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[#0066CC] underline-offset-2 hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        condiciones de uso
+                                    </a>{' '}
+                                    y la política de privacidad.
+                                </span>
+                            </label>
+                            <label htmlFor="acceptNotifications" className="flex cursor-pointer items-start gap-3">
                                 <input
                                     type="checkbox"
                                     id="acceptNotifications"
                                     checked={acceptNotifications}
                                     onChange={(e) => setAcceptNotifications(e.target.checked)}
-                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
+                                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-[#0066CC] focus:ring-[#0066CC]/30"
                                 />
-                                <label
-                                    htmlFor="acceptNotifications"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                    Acepto recibir notificaciones sobre nuevas búsquedas
-                                </label>
-                            </div>
+                                <span className="text-[15px] leading-relaxed text-[#6a6a6a]">
+                                    Recibir avisos de nuevas búsquedas en mi zona (opcional).
+                                </span>
+                            </label>
                         </div>
-                        {error && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
-                            <div className="p-4 border border-red-200 bg-red-50 rounded-xl">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                    <span
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '18px',
-                                            fontWeight: 600,
-                                            color: '#991b1b',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        }}
-                                    >
-                                        Error al procesar la solicitud
+
+                        {error && errorCode !== 'ACTIVE_HIRES_AS_CLIENT' && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
+                            <div className={`${BE_CHECKOUT_CARD} border-red-200 bg-red-50/80 px-4 py-3`}>
+                                <div className="mb-1 flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
+                                    <span className="text-sm font-semibold text-red-900">
+                                        {errorCode === 'COUNTRY_NOT_SUPPORTED'
+                                            ? `País no disponible${detectedCountry ? ` (${detectedCountry})` : ''}`
+                                            : errorCode === 'COUNTRY_DETECTION_FAILED'
+                                            ? 'No pudimos verificar tu ubicación'
+                                            : errorCode === 'PROFILE_PICTURE_UPLOAD_FAILED'
+                                            ? 'Error al subir tu foto'
+                                            : errorCode === 'AVAILABILITY_CREATION_FAILED'
+                                            ? 'Error al guardar tu disponibilidad'
+                                            : errorCode === 'DATABASE_ERROR' || errorCode === 'INTERNAL_ERROR'
+                                            ? 'Error temporal del servidor'
+                                            : 'Error al procesar la solicitud'}
                                     </span>
                                 </div>
-                                <p
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: '#b91c1c',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginTop: '4px',
-                                    }}
-                                >
-                                    {error}
-                                </p>
+                                <p className="mt-1 text-sm leading-relaxed text-red-800">{error}</p>
+                                {errorCode === 'COUNTRY_NOT_SUPPORTED' && (
+                                    <div className="mt-3 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCurrentStep(2)}
+                                            className="text-sm font-semibold text-red-700 hover:text-red-900 underline self-start"
+                                        >
+                                            Cambiar ubicación
+                                        </button>
+                                        <a
+                                            href="mailto:soporte@inspecciono.io?subject=Solicitud%20pa%C3%ADs%20no%20soportado"
+                                            className="text-sm font-semibold text-red-700 hover:text-red-900 underline self-start"
+                                        >
+                                            Contactar soporte
+                                        </a>
+                                    </div>
+                                )}
+                                {(errorCode === 'COUNTRY_DETECTION_FAILED' || errorCode === 'PROFILE_PICTURE_UPLOAD_FAILED' || errorCode === 'DATABASE_ERROR' || errorCode === 'INTERNAL_ERROR') && (
+                                    <p className="text-xs text-red-600 mt-2 italic">
+                                        Si el problema persiste, contacta con soporte indicando el código: <code className="px-1 py-0.5 bg-red-100 rounded">{errorCode}</code>
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -994,210 +867,37 @@ function BecomeExpertPage() {
         }
     };
 
-    // Guard: ya eres experto → no mostrar el formulario; ofrecer reanudar la configuración de pagos.
-    if (isAlreadyExpert) {
-        return (
-            <div className="min-h-screen bg-white">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        aria-label="Atrás"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-900" />
-                    </button>
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center">
-                        <div className="inline-flex p-4 bg-blue-50 rounded-full mb-4">
-                            <Check className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <h1 className="text-xl font-semibold text-gray-900 mb-2">Ya casi eres experto</h1>
-                        <p className="text-sm text-gray-600 mb-6">
-                            Tu perfil de experto ya está creado. Solo falta <strong>configurar tus pagos con Stripe</strong> para
-                            poder recibir encargos y cobrar.
-                        </p>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await startOnboarding();
-                                } catch {
-                                    showToast('error', 'No se pudo iniciar la configuración de pagos. Inténtalo de nuevo en unos minutos.');
-                                }
-                            }}
-                            disabled={isStartingOnboarding}
-                            className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isStartingOnboarding ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Conectando con Stripe…</span>
-                                </>
-                            ) : (
-                                <span>Configurar pagos con Stripe</span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => navigate('/expert-panel')}
-                            className="mt-3 text-sm font-semibold text-gray-700 hover:text-gray-900 underline"
-                        >
-                            Ir a mi panel de experto
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // ✅ Round 30: el guard "ya eres experto" desapareció como vista separada.
+    //    Si llegas como experto pendiente de Stripe, el useEffect de arriba te lleva al
+    //    paso 3 del MISMO wizard y `renderStepContent` muestra el bloque Stripe inline
+    //    (mismo flujo visual, sin saltos a otra página).
+    //
+    //    Una vez `submitted=true` (acabas de completar el formulario) o estás siendo
+    //    redirigido como experto pendiente, el shell debe ocultar el botón "Completar
+    //    registro" — porque ya no hay nada que enviar, solo conectar Stripe.
+    const isOnStripeStage = submitted || (isAlreadyExpert && currentStep === 3);
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Hero Header más pequeño */}
-            <div className="relative h-[200px] lg:h-[240px] overflow-hidden">
-                {/* Imagen de fondo con gradiente */}
-                <div
-                    className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"
-                    style={{
-                        backgroundImage: `linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(79, 70, 229, 0.9) 100%),
-                        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                    }}
-                />
-
-                {/* Contenido del header */}
-                <div className="relative z-10 h-full flex flex-col">
-                    {/* Botón volver */}
-                    <div className="absolute top-4 left-4 z-20">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg"
-                            aria-label="Atrás"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-900" />
-                        </button>
-                    </div>
-
-                    {/* Contenido centrado */}
-                    <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-16 pb-8">
-                        <div className="text-center max-w-2xl">
-                            <h1
-                                style={{
-                                    fontSize: '22px',
-                                    lineHeight: '26px',
-                                    fontWeight: 600,
-                                    color: 'rgb(255, 255, 255)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                                }}
-                            >
-                                Conviértete en Buscador Experto
-                            </h1>
-                            <p
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgba(255, 255, 255, 0.95)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-                                }}
-                            >
-                                Ayuda a otros usuarios y genera ingresos trabajando desde casa
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Contenido principal con stepper arriba */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 sm:-mt-12 relative z-20">
-                {/* Card del formulario */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
-                    {/* Stepper arriba */}
-                    <div className="px-4 sm:px-8 py-5 border-b border-gray-200 bg-gray-50">
-                        <Stepper
-                            steps={STEPS.map(s => ({ label: s.label, icon: <s.icon className="w-4 h-4" /> }))}
-                            currentStep={currentStep}
-                            size="default"
-                        />
-                    </div>
-
-                    {/* Contenido del paso */}
-                    <div className="px-4 sm:px-8 py-6 sm:py-8">
-                        {renderStepContent()}
-                    </div>
-
-                    {/* Botones de navegación */}
-                    <div className="px-4 sm:px-8 py-4 sm:py-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
-                        <button
-                            onClick={handleBack}
-                            disabled={currentStep === 1}
-                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                currentStep === 1
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            style={{
-                                fontSize: '14px',
-                                lineHeight: '18px',
-                                fontWeight: 600,
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            }}
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span className="hidden sm:inline">Atrás</span>
-                        </button>
-
-                        {currentStep < STEPS.length ? (
-                            <button
-                                onClick={handleNext}
-                                disabled={!canGoNext()}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                    canGoNext()
-                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                <span>Siguiente</span>
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleFinalSubmit}
-                                disabled={!acceptTerms || isSubmitting}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                    acceptTerms && !isSubmitting
-                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Procesando...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Completar Registro</span>
-                                        <span className="sm:hidden">Completar</span>
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+        <BecomeExpertWizardShell
+            steps={STEPS}
+            currentStep={currentStep}
+            onBack={() => navigate(-1)}
+            onNavBack={handleBack}
+            onNext={handleNext}
+            onSubmit={handleFinalSubmit}
+            canGoNext={canGoNext()}
+            canSubmit={acceptTerms && !isSubmitting}
+            isSubmitting={isSubmitting}
+            isLastStep={currentStep === STEPS.length}
+            // En la etapa Stripe inline, esconder Next/Back/Submit — la acción primaria
+            // ('Configurar pagos con Stripe') vive dentro del propio paso.
+            hideFooter={isOnStripeStage}
+        >
+            {/* Si entraste como experto pendiente de Stripe (isAlreadyExpert + step 3),
+                renderiza el bloque Stripe directamente; submitted=true llega por el path
+                normal cuando el usuario completa el wizard ahora mismo. */}
+            {isOnStripeStage && !submitted ? renderStripeConnectBlock() : renderStepContent()}
+        </BecomeExpertWizardShell>
     );
 }
 

@@ -322,7 +322,20 @@ export function useExpert() {
                     }));
                     throw new Error(`Failed to start onboarding: Bad Request`);
                 }
-                throw new Error(`Failed to start onboarding: ${response.statusText}`);
+                // 🛡️ Round 28 Sprint US: para status 500 / otros, ANTES caíamos a response.statusText
+                // ("Internal Server Error") perdiendo el mensaje específico de Stripe que el backend
+                // serializa en el body como { error, message, code, type }. Ahora intentamos leer el body
+                // primero y mostramos el error real al usuario (ej. "You cannot request the `transfers`
+                // capability without the `card_payments` capability for accounts in US.").
+                let backendDetail = response.statusText || 'Error desconocido al iniciar el onboarding.';
+                try {
+                    const errData = await response.json();
+                    // Preferimos `error` (StripeError.Message) sobre `message` (label genérico).
+                    backendDetail = errData?.error || errData?.message || backendDetail;
+                } catch {
+                    // body no era JSON → mantenemos statusText
+                }
+                throw new Error(backendDetail);
             }
 
             const { url, isLoginLink } = await response.json();
