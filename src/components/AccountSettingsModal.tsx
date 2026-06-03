@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, Menu, CheckCircle, Mail, Calendar, DollarSign } from 'lucide-react';
+import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, Menu, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAccountDeletion } from '../hooks/useAccountDeletion';
 import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion';
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
+// 🛡️ Round 28 MUD-F: wizard de mudanza self-service del experto.
+import { ExpertRelocationWizard } from './ExpertRelocationWizard';
 import { showToast } from '../lib/toast';
 import {
     Dialog,
@@ -32,14 +34,18 @@ interface AccountSettingsModalProps {
   onClose: () => void;
 }
 
-type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'delete';
+type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'relocate' | 'delete';
 
-const tabs = [
-  { id: 'profile' as TabType, label: 'Perfil', icon: User },
-  { id: 'security' as TabType, label: 'Seguridad', icon: Shield },
-  { id: 'notifications' as TabType, label: 'Notificaciones', icon: Bell },
-  { id: 'privacy' as TabType, label: 'Privacidad', icon: Globe },
-  { id: 'delete' as TabType, label: 'Eliminar Cuenta', icon: Trash2, destructive: true },
+// 🛡️ Round 28 MUD-F: el tab 'relocate' solo se muestra a expertos (filtrado más abajo
+// según user.Role === 'Expert'). El hook React no permite condicionales en `const tabs`
+// por estar en module scope, así que el filtrado se hace al renderizar.
+const allTabs = [
+  { id: 'profile' as TabType, label: 'Perfil', icon: User, expertOnly: false },
+  { id: 'security' as TabType, label: 'Seguridad', icon: Shield, expertOnly: false },
+  { id: 'notifications' as TabType, label: 'Notificaciones', icon: Bell, expertOnly: false },
+  { id: 'privacy' as TabType, label: 'Privacidad', icon: Globe, expertOnly: false },
+  { id: 'relocate' as TabType, label: 'Mudarme a otro país', icon: Plane, expertOnly: true },
+  { id: 'delete' as TabType, label: 'Eliminar Cuenta', icon: Trash2, destructive: true, expertOnly: false },
 ];
 
 export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
@@ -48,6 +54,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  // 🛡️ Round 28 MUD-F: detección rol experto + estado del wizard de mudanza.
+  const userRole = (user as any)?.Role || (user as any)?.role;
+  const isExpert = userRole === 'Expert';
+  const tabs = allTabs.filter(t => !t.expertOnly || isExpert);
+  const [showRelocationWizard, setShowRelocationWizard] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   // ✅ Ref para rastrear si el componente está montado y limpiar timeouts
@@ -377,6 +388,53 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 🛡️ Round 28 MUD-F: Tab Mudarme (solo expertos) */}
+      {activeTab === 'relocate' && isExpert && (
+        <div className="space-y-4">
+          <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Plane className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-semibold text-blue-900">¿Te has mudado a otro país?</h4>
+                <p className="text-sm text-blue-800 mt-1">
+                  Stripe Connect no permite cambiar el país de tu cuenta de cobros. Si te has mudado, este asistente cierra tu cuenta Stripe actual y te prepara para hacer un onboarding nuevo en tu país de residencia.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
+            <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Qué pasa al ejecutar el asistente
+            </h5>
+            <ul className="text-sm text-muted-foreground space-y-1.5 pl-5 list-disc">
+              <li>Verificamos que no haya dinero en vuelo (disputas, refunds o servicios contratados activos).</li>
+              <li>Cerramos tu cuenta Stripe Connect actual.</li>
+              <li>Desactivamos tus servicios actuales (siguen visibles en historial, pero no aparecen en búsquedas).</li>
+              <li>Tus reviews recibidas se preservan con badge "Servicio prestado en {`{país}`}".</li>
+              <li>Te dirigimos a "Convertirse en experto" para registrar tu nuevo país y reanudar el onboarding.</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={() => setShowRelocationWizard(true)}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            <Plane className="w-4 h-4 mr-2" />
+            Iniciar asistente de mudanza
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Esta acción cierra tu cuenta Stripe Connect actual. La acción es irreversible.
+          </p>
         </div>
       )}
 
@@ -821,6 +879,14 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* 🛡️ Round 28 MUD-F: wizard de mudanza self-service. */}
+      {isExpert && (
+        <ExpertRelocationWizard
+          isOpen={showRelocationWizard}
+          onClose={() => setShowRelocationWizard(false)}
+        />
+      )}
     </>
   );
 };
