@@ -83,7 +83,10 @@ function BecomeExpertPage() {
         && !profile?.stripeAccountId
         && !profile?.country;
 
-    // Asegurar perfil fresco al cargar (necesario para detectar relocation antes del effect siguiente).
+    // 🛡️ Round 28 MUD-Z: asegurar perfil fresco al cargar y SOLO disparar el effect de
+    // checkOnboardingStatus cuando ya tengamos profile cargado. Antes había race condition:
+    // useEffect ejecutaba con profile=undefined → isRelocating=false → setCurrentStep(3),
+    // luego profile llegaba con relocatedFromCountry pero el step ya estaba en 3.
     useEffect(() => {
         if (isAlreadyExpert && !profile) {
             void fetchProfile(false);
@@ -98,9 +101,16 @@ function BecomeExpertPage() {
             setIsCheckingOnboarding(false);
             return;
         }
+        // 🛡️ MUD-Z: esperar a que profile esté cargado. Sin esto, race: profile aún null →
+        // isRelocating=false (wrong) → setCurrentStep(3) → cuando profile llega ya es tarde.
+        if (!profile) {
+            setIsCheckingOnboarding(true);
+            return;
+        }
         // 🛡️ MUD-X: mudanza en curso → dejar el wizard en step 1/2 para que el usuario
         // elija el nuevo país. NO disparar checkOnboardingStatus ni setCurrentStep(3).
         if (isRelocating) {
+            setCurrentStep(1); // arranca en paso 1 (foto/desc) — paso 2 selector país viene después
             setIsCheckingOnboarding(false);
             return;
         }
@@ -119,7 +129,7 @@ function BecomeExpertPage() {
             })
             .finally(() => setIsCheckingOnboarding(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAlreadyExpert, isRelocating]);
+    }, [isAlreadyExpert, isRelocating, profile]);
 
     // 🛡️ MUD-X: prefill description al re-onboarding tras mudanza (no tiene que reescribir).
     useEffect(() => {
