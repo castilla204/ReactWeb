@@ -388,7 +388,32 @@ export function ProfileEditForm({
             }));
         } catch (error: any) {
             console.error('Error updating profile:', error);
-            setFormErrors({ general: error.message || 'Error al actualizar el perfil' });
+            // 🛡️ Round 28 MUD-2: distinguir STRIPE_COUNTRY_LOCKED para guiar al experto al
+            // flujo de mudanza (cerrar cuenta + re-registrarse) en vez de mostrar texto plano.
+            // El backend devuelve errorCode + detectedCountry; el hook los propaga en el Error.
+            if (error?.errorCode === 'STRIPE_COUNTRY_LOCKED') {
+                const detected = error?.detectedCountry ? ` (${error.detectedCountry})` : '';
+                setFormErrors({
+                    general: error.message,
+                    // Marcador especial para que el componente pueda mostrar CTA al wizard de mudanza.
+                    relocationRequired: 'true',
+                });
+                // Notificación destacada con call-to-action.
+                window.dispatchEvent(new CustomEvent('showNotification', {
+                    detail: {
+                        type: 'warning',
+                        message: `Para operar desde otro país${detected}, debes cerrar tu cuenta de experto actual y volver a registrarte. Ve a Ajustes → Eliminar cuenta de experto.`,
+                        duration: 12000,
+                    },
+                }));
+            } else if (error?.errorCode === 'COUNTRY_NOT_SUPPORTED') {
+                setFormErrors({
+                    general: error.message,
+                    countryNotSupported: 'true',
+                });
+            } else {
+                setFormErrors({ general: error.message || 'Error al actualizar el perfil' });
+            }
         }
     };
 
