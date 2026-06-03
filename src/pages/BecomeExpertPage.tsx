@@ -221,7 +221,12 @@ function BecomeExpertPage() {
             });
     }, [setFormData]);
 
-    const isOnStripeStage = submitted || (isAlreadyExpert && currentStep === 3);
+    // 🛡️ Round 28 MUD-AB: para un experto MUDADO (Country=null), step 3 NO debe ser el
+    // bloque Stripe directo — debe ser confirmación + "Actualizar perfil" para que
+    // useBecomeExpert.handleSubmit POSTee /api/User/become-expert con la nueva ubicación
+    // (lat/lng/país) y backend UPDATEE Country. Después de submitted=true, sí muestra
+    // el bloque Stripe (con Country ya seteado).
+    const isOnStripeStage = submitted || (isAlreadyExpert && !isRelocating && currentStep === 3);
 
     // Detección de país al entrar en cobertura (antes la hacía el onLoad del mapa).
     useEffect(() => {
