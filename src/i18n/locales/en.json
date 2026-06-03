@@ -90,5 +90,57 @@
     "privacy": "Privacy",
     "cookies": "Cookies",
     "dataExport": "Export my data (GDPR)"
+  },
+  "stripe": {
+    "sections": {
+      "pending": "To complete",
+      "pastDue": "Past due · urgent",
+      "errors": "Issues detected",
+      "futureRequirements": "Upcoming requirements"
+    },
+    "messages": {
+      "detailsLeft_one": "You have {{count}} detail left",
+      "detailsLeft_other": "You have {{count}} details left",
+      "autoActivate": "Once you fill these in Stripe, your account will activate automatically",
+      "deadline": "Estimated deadline: {{date}}"
+    },
+    "requirements": {
+      "external_account": "Bank account",
+      "individual.ssn_last_4": "SSN last 4 digits",
+      "individual.id_number": "Full SSN/EIN/ITIN",
+      "individual.verification.document": "ID document",
+      "individual.verification.additional_document": "Additional ID document",
+      "individual.address": "Address",
+      "individual.phone": "Phone number",
+      "individual.dob": "Date of birth",
+      "individual.email": "Email",
+      "individual.first_name": "First name",
+      "individual.last_name": "Last name",
+      "individual.political_exposure": "Political exposure (PEP)",
+      "individual.relationship.owner": "Ownership relationship",
+      "company.tax_id": "Tax ID (EIN)",
+      "company.verification.document": "Company documents",
+      "company.address": "Company address",
+      "company.owners_provided": "Owners list",
+      "business_profile.url": "Business URL",
+      "business_profile.mcc": "MCC code",
+      "business_profile.product_description": "Product / service description",
+      "business_profile.support_address": "Support address",
+      "business_profile.support_phone": "Support phone",
+      "business_profile.support_email": "Support email",
+      "business_type": "Business type",
+      "tos_acceptance.date": "Terms acceptance (date)",
+      "tos_acceptance.ip": "Terms acceptance (IP)",
+      "tos_acceptance.user_agent": "Terms acceptance (browser)",
+      "documents.bank_account_ownership_verification": "Bank ownership verification",
+      "documents.proof_of_registration": "Proof of registration",
+      "documents.proof_of_address.files": "Proof of address",
+      "documents.company_registration_verification": "Company registration",
+      "settings.payments.statement_descriptor": "Statement descriptor",
+      "card_payments": "Card payments",
+      "transfers": "Outbound transfers",
+      "tax_reporting_us_1099_misc": "Tax reporting 1099-MISC (US)",
+      "tax_reporting_us_1099_k": "Tax reporting 1099-K (US)"
+    }
   }
 }
