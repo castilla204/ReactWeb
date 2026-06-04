@@ -59,12 +59,22 @@ const MAPBOX_TOKEN: string | undefined =
 function BecomeExpertPage() {
     const navigate = useNavigate();
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const { user } = useAuth();
+    const { profile, fetchProfile, startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+    // 🛡️ MUD-AG: si está mudándose, pasar la URL preservada como foto existente.
+    // useBecomeExpert ya NO exige nuevo upload si existingProfilePictureUrl está.
+    const isAlreadyExpertInner =
+        user?.role === 'Expert' || user?.Role === 'Expert' ||
+        user?.role === 'expert' || user?.Role === 'EXPERT' || Number(user?.role) === 1;
+    const isRelocatingInner =
+        !!profile?.relocatedFromCountry && !profile?.onboardingCompleted &&
+        !profile?.stripeAccountId && !profile?.country;
+    const existingProfilePictureUrl =
+        isAlreadyExpertInner && isRelocatingInner ? (profile?.profilePictureUrl || null) : null;
     // 🛡️ Round 28: capturamos errorCode + apiDetectedCountry (backend) para UX de errores.
     // ✅ Round 30: `submitted` permite mostrar el bloque Stripe inline sin navegar.
     const { formData, previewUrl, isSubmitting, error, errorCode, detectedCountry: apiDetectedCountry, submitted,
-            applyProfilePhoto, handleSubmit, setFormData } = useBecomeExpert();
-    const { user } = useAuth();
-    const { profile, fetchProfile, startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+            applyProfilePhoto, handleSubmit, setFormData, setPreviewUrl } = useBecomeExpert({ existingProfilePictureUrl });
     const isAlreadyExpert =
         user?.role === 'Expert' ||
         user?.Role === 'Expert' ||
@@ -129,6 +139,13 @@ function BecomeExpertPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isRelocating, profile?.description]);
 
+    // 🛡️ Round 28 MUD-AG: prefill foto preview con la URL preservada del país anterior.
+    useEffect(() => {
+        if (!isRelocating || !profile?.profilePictureUrl || previewUrl) return;
+        setPreviewUrl(profile.profilePictureUrl);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRelocating, profile?.profilePictureUrl]);
+
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
     // 🛡️ Round 28 — Sprint US-2 (SUS2-10): detección de país en vivo desde las coords
     // del marker para mostrarlo al experto ANTES del submit. Stripe Connect.account.country
@@ -140,11 +157,29 @@ function BecomeExpertPage() {
     const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
     const countryDetectSeqRef = useRef(0);
     const countryDetectAbortRef = useRef<AbortController | null>(null);
+    // 🛡️ Round 28 MUD-AG: ref para evitar re-prefillar si el usuario modificó manualmente.
+    const availabilityPrefilledRef = useRef(false);
     const [availability, setAvailability] = useState<AvailabilityFormData>({
         daysOfWeek: [],
         startTime: '09:00',
         endTime: '18:00',
     });
+    // 🛡️ MUD-AG: prefill availability con la disponibilidad del país anterior.
+    // ExpertProfile.currentAvailability viene del backend con startTime/endTime en HH:mm:ss
+    // (TimeSpan); cortamos a HH:mm que es lo que el <input type="time"> usa.
+    useEffect(() => {
+        if (!isRelocating || availabilityPrefilledRef.current) return;
+        const cur = profile?.currentAvailability;
+        if (!cur || !cur.daysOfWeek?.length) return;
+        availabilityPrefilledRef.current = true;
+        const toHHmm = (s: string) => (s?.length >= 5 ? s.substring(0, 5) : s || '');
+        setAvailability({
+            daysOfWeek: cur.daysOfWeek,
+            startTime: toHHmm(cur.startTime) || '09:00',
+            endTime: toHHmm(cur.endTime) || '18:00',
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRelocating, profile?.currentAvailability]);
     const [currentStep, setCurrentStep] = useState(1);
     // 🛡️ MUD-AA: derivado — si eres expert y profile no cargó, está checking.
     const isCheckingOnboarding = isAlreadyExpert && !profile;
@@ -325,7 +360,8 @@ function BecomeExpertPage() {
     const canGoNext = () => {
         switch (currentStep) {
             case 1:
-                return !!formData.profilePicture && descriptionTrimLen >= 50;
+                // 🛡️ MUD-AG: para mudanza, la foto preservada cuenta como válida.
+                return (!!formData.profilePicture || !!existingProfilePictureUrl) && descriptionTrimLen >= 50;
             case 2: {
                 if (!(formData.latitude && formData.longitude)) return false;
                 if (detectingCountry || !detectedCountry?.supported) return false;
@@ -346,7 +382,7 @@ function BecomeExpertPage() {
         switch (currentStep) {
             case 1: {
                 const missing: string[] = [];
-                if (!formData.profilePicture) missing.push('añade una foto');
+                if (!formData.profilePicture && !existingProfilePictureUrl) missing.push('añade una foto');
                 if (descriptionTrimLen < 50) missing.push('escribe al menos 50 caracteres en tu descripción');
                 return missing.length ? `Para continuar: ${missing.join(' y ')}.` : null;
             }
@@ -732,7 +768,7 @@ function BecomeExpertPage() {
                                             {descriptionTrimLen}/50
                                         </span>
                                     </div>
-                                    {stepAttempted[1] && !formData.profilePicture && (
+                                    {stepAttempted[1] && !formData.profilePicture && !existingProfilePictureUrl && (
                                         <p className="mt-2 text-xs font-medium text-amber-800" role="alert">
                                             Añade una foto de perfil para continuar.
                                         </p>
@@ -758,7 +794,7 @@ function BecomeExpertPage() {
 
                         <ul className={`${BE_CARD_CLASS} divide-y divide-[#ececec] p-0`}>
                             {[
-                                { ok: !!formData.profilePicture, label: 'Foto de perfil' },
+                                { ok: !!formData.profilePicture || !!existingProfilePictureUrl, label: 'Foto de perfil' },
                                 {
                                     ok: descriptionTrimLen >= 50,
                                     label: `Descripción (${descriptionTrimLen} caracteres)`,
