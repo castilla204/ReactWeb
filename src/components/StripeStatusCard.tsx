@@ -60,70 +60,74 @@ const getActionIcon = (action: string) => {
     }
 };
 
+// 🎨 Preferencia usuario: fondo SIEMPRE blanco da igual el estado.
+// La diferenciación de severidad se hace solo con color de TEXTO + ícono, no con bg.
 const getStatusIconClass = (status: string) => {
     switch (status) {
         case STRIPE_STATUS.APPROVED:
-            return 'bg-green-100 text-green-600';
+            return 'bg-white text-green-600 border border-gray-200';
         case STRIPE_STATUS.PENDING:
         case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'bg-blue-100 text-blue-600';
+            return 'bg-white text-blue-600 border border-gray-200';
         case STRIPE_STATUS.ACTION_REQUIRED:
         case STRIPE_STATUS.REQUIREMENTS_DUE:
         case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'bg-amber-100 text-amber-600';
+            return 'bg-white text-orange-600 border border-gray-200';
         case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
         case STRIPE_STATUS.RESTRICTED:
-            return 'bg-orange-100 text-orange-600';
+            return 'bg-white text-orange-700 border border-gray-200';
         case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
-            return 'bg-red-100 text-red-600';
+            return 'bg-white text-red-600 border border-gray-200';
         case STRIPE_STATUS.DEAUTHORIZED:
-            return 'bg-purple-100 text-purple-600';
+            return 'bg-white text-purple-600 border border-gray-200';
         default:
-            return 'bg-gray-100 text-gray-600';
+            return 'bg-white text-gray-600 border border-gray-200';
     }
 };
 
 const getStatusBadgeClass = (status: string) => {
     switch (status) {
         case STRIPE_STATUS.APPROVED:
-            return 'bg-green-100 text-green-800 border-green-200';
+            return 'bg-white text-green-700 border border-gray-200';
         case STRIPE_STATUS.PENDING:
         case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'bg-blue-100 text-blue-800 border-blue-200';
+            return 'bg-white text-blue-700 border border-gray-200';
         case STRIPE_STATUS.ACTION_REQUIRED:
         case STRIPE_STATUS.REQUIREMENTS_DUE:
         case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'bg-amber-100 text-amber-800 border-amber-200';
+            return 'bg-white text-orange-700 border border-gray-200';
         case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
         case STRIPE_STATUS.RESTRICTED:
-            return 'bg-orange-100 text-orange-800 border-orange-200';
+            return 'bg-white text-orange-800 border border-gray-200';
         case STRIPE_STATUS.DISABLED:
         case STRIPE_STATUS.REJECTED:
-            return 'bg-red-100 text-red-800 border-red-200';
+            return 'bg-white text-red-700 border border-gray-200';
         case STRIPE_STATUS.DEAUTHORIZED:
-            return 'bg-purple-100 text-purple-800 border-purple-200';
+            return 'bg-white text-purple-700 border border-gray-200';
         default:
-            return 'bg-gray-100 text-gray-800 border-gray-200';
+            return 'bg-white text-gray-700 border border-gray-200';
     }
 };
 
+// Botones de acción: se mantienen con color sólido porque son CTAs (no son "fondos
+// de estado"). El usuario habló de las CARDS, no de los botones.
 const getButtonClass = (action: string) => {
     switch (action) {
         case 'setup':
         case 'retry':
-            return 'bg-orange-600 hover:bg-orange-700 text-white';
+            return 'bg-brand hover:bg-brand-hover text-white';
         case 'wait':
-            return 'bg-blue-600 hover:bg-blue-700 text-white';
+            return 'bg-gray-700 hover:bg-gray-800 text-white';
         case 'complete_requirements':
-            return 'bg-yellow-600 hover:bg-yellow-700 text-white';
+            return 'bg-brand hover:bg-brand-hover text-white';
         case 'edit_account':
         case 'success':
-            return 'bg-green-600 hover:bg-green-700 text-white';
+            return 'bg-brand hover:bg-brand-hover text-white';
         case 'contact':
-            return 'bg-purple-600 hover:bg-purple-700 text-white';
+            return 'bg-gray-700 hover:bg-gray-800 text-white';
         default:
-            return 'bg-gray-600 hover:bg-gray-700 text-white';
+            return 'bg-gray-700 hover:bg-gray-800 text-white';
     }
 };
 
@@ -339,13 +343,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                         </div>
                     )}
 
-                    {/* Errores específicos */}
+                    {/* Errores específicos — fondo blanco siempre (preferencia usuario: sin amarillos/ámbares) */}
                     {parsedStatus.errors.length > 0 && (
-                        <div className="mt-3 text-left max-w-md mx-auto bg-red-50 border border-red-200 rounded-lg p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-red-800 mb-2">⚠️ Problemas detectados</p>
+                        <div className="mt-3 text-left max-w-md mx-auto bg-white border border-gray-200 rounded-lg p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-2">⚠️ Problemas detectados</p>
                             <ul className="space-y-1">
                                 {parsedStatus.errors.map((err, i) => (
-                                    <li key={`err-${i}`} className="text-xs text-red-900 leading-snug">
+                                    <li key={`err-${i}`} className="text-xs text-red-700 leading-snug">
                                         {err}
                                     </li>
                                 ))}
@@ -363,9 +367,9 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                     {(statusInfo.deadlineText || futureRequirementsText) && (
                         <div className="mt-3 space-y-2 max-w-md mx-auto">
                             {statusInfo.deadlineText && (
-                                <p className="text-xs text-gray-600 inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full">
+                                <p className="text-xs inline-flex items-center gap-1.5 bg-white border border-gray-200 px-2.5 py-1 rounded-full">
                                     <Clock className="w-3 h-3 text-orange-600" />
-                                    <span className="font-medium text-orange-800">{statusInfo.deadlineText}</span>
+                                    <span className="font-medium text-gray-900">{statusInfo.deadlineText}</span>
                                 </p>
                             )}
                             {futureRequirementsText && (
