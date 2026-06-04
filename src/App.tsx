@@ -35,6 +35,7 @@ import { Badge } from './components/ui/badge';
 import { isAdmin } from './utils/admin';
 
 import Background from './components/Background';
+import { HomepageDesktopTopBar } from './components/HomepageDesktopTopBar';
 import { AccountSettingsModal } from './components/AccountSettingsModal';
 import { LoginModal } from './components/LoginModal';
 import { AdminLayout } from './components/layout/AdminLayout';
@@ -178,7 +179,11 @@ const AppContent: React.FC = () => {
         || location.pathname === '/expert-panel'
         || location.pathname === '/become-expert'
         || location.pathname.startsWith('/complete-onboarding')
-        || location.pathname.startsWith('/refresh-onboarding');
+        || location.pathname.startsWith('/refresh-onboarding')
+        // /busquedas tiene su propio toolbar sticky (back + título + search + filtros + nueva).
+        // Mostrar también el header global resulta en dos chromes apilados; ocultamos el global.
+        || location.pathname === '/busquedas'
+        || location.pathname.startsWith('/busquedas/');
     const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
     const [isInFormStep, setIsInFormStep] = useState(false);
     
@@ -287,61 +292,16 @@ const AppContent: React.FC = () => {
     return (
         <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
             <GoogleIdentityBootstrap />
-            {/* Header estilo Memorae - Oculto en móvil */}
-            <header className={`h-12 relative z-50 hidden md:block ${shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? '!hidden' : ''}`} style={{ backgroundColor: '#ffffff' }}>
-                    <div className="w-full h-full px-4 lg:px-6 flex items-center justify-between">
-                        <a
-                            href="/"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                navigate('/');
-                            }}
-                            className="flex items-center shrink-0"
-                        >
-                            <span
-                                className="inline-flex items-center justify-center h-8 px-3 rounded-md bg-[#0066CC]/10 text-[#222] font-semibold text-[11px] tracking-[0.18em]"
-                                aria-label="Inspecciono"
-                            >
-                                INSPECCIONO
-                            </span>
-                        </a>
-
-                        <div className="flex items-center gap-2">
-                            {userIsAdmin && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/admin')}
-                                    className="text-xs font-semibold text-red-600 px-2.5 py-1 rounded-md border border-red-300 hover:bg-red-50"
-                                >
-                                    Admin
-                                </button>
-                            )}
-                            <CurrencySelector variant="compact" />
-                            <button
-                                type="button"
-                                aria-label="Favoritos"
-                                onClick={() => navigate('/favoritos')}
-                                className="h-8 w-8 rounded-full border border-[#e5e7eb] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
-                            >
-                                <Heart className="w-4 h-4" />
-                            </button>
-                            <button
-                                type="button"
-                                aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
-                                onClick={() => {
-                                    if (isAuthenticated) {
-                                        navigate('/busquedas');
-                                    } else {
-                                        setIsHeaderLoginModalOpen(true);
-                                    }
-                                }}
-                                className="h-8 w-8 rounded-full border border-[#d1d5db] bg-white hover:bg-[#f9fafb] text-[#222] inline-flex items-center justify-center transition-colors"
-                            >
-                                <User className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </header>
+            {/* Header global unificado: el mismo HomepageDesktopTopBar que ya usa la home,
+                ficha de servicio, checkout y mapa — pero con variant="plain" y showLogo
+                para páginas internas (búsquedas, admin, transacciones, faq…). Resultado:
+                un único chrome en todo el desktop, contraste WCAG AA en los pills, y el
+                botón cuenta tiene texto visible ("Mi cuenta"/"Iniciar sesión"), no solo icono.
+                El wrapper aplica la condición de ocultar (mobile en form steps + rutas con
+                su propio header). */}
+            <div className={shouldHideHeaderOnMobile || hideGlobalHeaderPaths ? 'hidden' : ''}>
+                <HomepageDesktopTopBar variant="plain" showLogo />
+            </div>
 
 
 
