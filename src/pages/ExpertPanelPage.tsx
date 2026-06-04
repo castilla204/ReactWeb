@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -37,6 +37,8 @@ import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
+// 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
+import { ExpertRelocationWizard } from '../components/ExpertRelocationWizard';
 import { useExpertHires } from '../hooks/useExpertHires';
 import { useServices } from '../hooks/useServices';
 import { useServiceTypes } from '../hooks/useServiceTypes';
@@ -47,7 +49,12 @@ import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
-import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
+/** Mapbox solo al abrir edición de perfil — evita bloquear la carga del panel */
+const ProfileEditForm = lazy(() =>
+    import('../components/expertPanel/ProfileEditForm').then((mod) => ({
+        default: mod.ProfileEditForm,
+    })),
+);
 
 interface Hire {
     id: number;
@@ -204,6 +211,19 @@ export function ExpertPanelPage() {
     
     // Estado para el modal de confirmación de modo vacaciones
     const [showVacationModal, setShowVacationModal] = useState(false);
+    // 🛡️ Round 28 MUD-O: state del wizard de mudanza (cierra Stripe Connect actual y prepara
+    // re-onboarding en nuevo país). Botón mostrado junto a Estado de Pagos en el sidebar.
+    const [showRelocationWizard, setShowRelocationWizard] = useState(false);
+
+    // 🛡️ Round 28 MUD-U: el ProfileEditForm dispatcha un evento global tras cerrar SU drawer
+    // (Vaul aplica inert/aria-hidden a todo lo que no es el drawer activo, así que el wizard
+    // dentro de ese drawer queda inert visualmente visible pero no clickeable). Cuando el form
+    // cierra y dispatchá este evento, abrimos el wizard desde aquí (sin drawer encima).
+    useEffect(() => {
+        const handler = () => setShowRelocationWizard(true);
+        window.addEventListener('openExpertRelocationWizard', handler);
+        return () => window.removeEventListener('openExpertRelocationWizard', handler);
+    }, []);
     
     // Estado para el diálogo de servicio duplicado
     const [duplicateServiceDialog, setDuplicateServiceDialog] = useState<{
@@ -1045,6 +1065,47 @@ export function ExpertPanelPage() {
         );
     }
 
+    // 🛡️ Round 28 MUD-Y: si el experto se acaba de mudar (RelocatedFromCountry presente,
+    // Country=null, sin Stripe acct), el StripeStatusCard mostraría "Continuar Verificación"
+    // que dispararía un onboarding sin país → 400 unsupported_country (loop infinito que
+    // además persistía StripeStatus=Pending antes del fix MUD-V). Aquí lo interceptamos
+    // y mandamos al usuario al wizard /become-expert (paso 2) para elegir país nuevo.
+    const isRelocationPending = !!profile?.relocatedFromCountry
+                              && !profile?.country
+                              && !profile?.onboardingCompleted
+                              && !profile?.stripeAccountId;
+
+    if (!canAccessPanel && stripeStatus !== null && isRelocationPending) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center space-y-5">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
+                        <Plane className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">Completa tu mudanza</h2>
+                        <p className="text-sm text-gray-600 mt-2">
+                            Tu cuenta Stripe Connect anterior se ha cerrado. Para volver a operar como experto,
+                            selecciona tu nuevo país y completa el onboarding fresco.
+                        </p>
+                        {profile?.relocatedFromCountry && (
+                            <p className="text-xs text-gray-500 mt-2">
+                                País anterior: <span className="font-semibold">{profile.relocatedFromCountry}</span>
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => navigate('/become-expert')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                        Continuar con la mudanza
+                        <Plane className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // ✅ Solo bloquear acceso si el estado está cargado Y canAccessStripe es false
     if (!canAccessPanel && stripeStatus !== null) {
         return (
@@ -1318,6 +1379,29 @@ export function ExpertPanelPage() {
                             >
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Acceder al Panel
+                            </Button>
+
+                            {/* 🛡️ Round 28 MUD-O: botón "Mudarme a otro país". Vive aquí porque
+                                cerrar la cuenta Stripe Connect es una operación de cobros — Stripe
+                                bloquea el country por cuenta y la única forma de cambiarlo es
+                                reabrir onboarding. Estilo ghost para que no compita visualmente
+                                con "Acceder al Panel" (CTA primario). */}
+                            {profile?.country && (
+                                <div className="flex items-center justify-between p-2 pt-1">
+                                    <span className="text-[11px] text-muted-foreground">País de la cuenta</span>
+                                    <Badge variant="outline" className="text-[10px] py-0">
+                                        {profile.country}
+                                    </Badge>
+                                </div>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => setShowRelocationWizard(true)}
+                            >
+                                <Plane className="w-3 h-3 mr-1" />
+                                Mudarme a otro país
                             </Button>
                                 </div>
 
@@ -1660,19 +1744,30 @@ export function ExpertPanelPage() {
                         existingImagesWithIds={existingImagesWithIds}
                         imagesToDelete={imagesToDelete}
                         setImagesToDelete={setImagesToDelete}
+                        // 🛡️ Round 28: el form deriva el símbolo de moneda del país del experto.
+                        expertCountry={profile?.country ?? null}
                     />
-                    {profile && (
-                        <ProfileEditForm
-                            showEditForm={showProfileEditForm}
-                            setShowEditForm={(value) => {
-                                if (value && !showProfileEditForm) {
-                                    fetchProfile(true, { silent: true });
-                                }
-                                setShowProfileEditForm(value);
-                            }}
-                            profile={profile as any}
-                            onProfileUpdated={() => fetchProfile(true, { silent: true })}
-                        />
+                    {profile && showProfileEditForm && (
+                        <Suspense
+                            fallback={
+                                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/25">
+                                    <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden />
+                                    <span className="sr-only">Cargando editor de perfil</span>
+                                </div>
+                            }
+                        >
+                            <ProfileEditForm
+                                showEditForm={showProfileEditForm}
+                                setShowEditForm={(value) => {
+                                    if (value && !showProfileEditForm) {
+                                        fetchProfile(true, { silent: true });
+                                    }
+                                    setShowProfileEditForm(value);
+                                }}
+                                profile={profile as any}
+                                onProfileUpdated={() => fetchProfile(true, { silent: true })}
+                            />
+                        </Suspense>
                     )}
             </div>
             
@@ -1688,7 +1783,13 @@ export function ExpertPanelPage() {
                 statusInfo={modalState.statusInfo}
                 onAction={modalState.onAction}
             />
-            
+
+            {/* 🛡️ Round 28 MUD-O: wizard de mudanza (cierre Stripe + re-onboarding). */}
+            <ExpertRelocationWizard
+                isOpen={showRelocationWizard}
+                onClose={() => setShowRelocationWizard(false)}
+            />
+
             {/* Drawer de confirmación de modo vacaciones */}
             <Drawer open={showVacationModal} onOpenChange={setShowVacationModal}>
                 <DrawerContent className="max-h-[96vh] flex flex-col">

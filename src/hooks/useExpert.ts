@@ -18,6 +18,13 @@ interface ExpertProfile {
     isOnVacation: boolean;
     latitude?: string;
     longitude?: string;
+    // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
+    country?: string | null;
+    // 🛡️ Round 28 MUD-W: si !null, el experto está en proceso de mudanza
+    // (cerró cuenta Stripe en país anterior). El frontend debe llevarlo a
+    // /become-expert para re-elegir país, NO a Stripe onboarding directo.
+    relocatedFromCountry?: string | null;
+    relocatedAt?: string | null;
     currentAvailability?: CurrentExpertAvailabilityDto | null;
     stripeFutureRequirements?: string | null;
     stripeFutureDueAt?: string | null;
@@ -129,6 +136,11 @@ export function useExpert() {
                 isOnVacation: data.isOnVacation ?? data.IsOnVacation ?? false,
                 latitude: data.latitude ?? data.Latitude ?? null,
                 longitude: data.longitude ?? data.Longitude ?? null,
+                // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
+                country: data.country ?? data.Country ?? null,
+                // 🛡️ MUD-W: relocation signal del backend (defensive: ambas casings).
+                relocatedFromCountry: data.relocatedFromCountry ?? data.RelocatedFromCountry ?? null,
+                relocatedAt: data.relocatedAt ?? data.RelocatedAt ?? null,
                 // ✅ CRÍTICO: Transformar CurrentAvailability de PascalCase a camelCase
                 currentAvailability: (() => {
                     const avail = data.currentAvailability ?? data.CurrentAvailability;
@@ -318,7 +330,20 @@ export function useExpert() {
                     }));
                     throw new Error(`Failed to start onboarding: Bad Request`);
                 }
-                throw new Error(`Failed to start onboarding: ${response.statusText}`);
+                // 🛡️ Round 28 Sprint US: para status 500 / otros, ANTES caíamos a response.statusText
+                // ("Internal Server Error") perdiendo el mensaje específico de Stripe que el backend
+                // serializa en el body como { error, message, code, type }. Ahora intentamos leer el body
+                // primero y mostramos el error real al usuario (ej. "You cannot request the `transfers`
+                // capability without the `card_payments` capability for accounts in US.").
+                let backendDetail = response.statusText || 'Error desconocido al iniciar el onboarding.';
+                try {
+                    const errData = await response.json();
+                    // Preferimos `error` (StripeError.Message) sobre `message` (label genérico).
+                    backendDetail = errData?.error || errData?.message || backendDetail;
+                } catch {
+                    // body no era JSON → mantenemos statusText
+                }
+                throw new Error(backendDetail);
             }
 
             const { url, isLoginLink } = await response.json();

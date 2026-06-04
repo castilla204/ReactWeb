@@ -1,12 +1,23 @@
 import React from 'react';
-import { Star, User, Calendar, MessageCircle } from 'lucide-react';
+import { Star, User, Calendar, MessageCircle, MapPin } from 'lucide-react';
 import { ReviewDto } from '../types/searchDetails';
 
 interface ProfessionalReviewCardProps {
     review: ReviewDto;
+    /**
+     * 🛡️ Round 28 MUD-I: país ACTUAL del experto. Si difiere de `review.country`
+     * (snapshot del país cuando se prestó el servicio), mostrar badge informativo
+     * "Servicio prestado en {país}" para clarificar la mudanza del experto.
+     */
+    expertCurrentCountry?: string | null;
 }
 
-export default function ProfessionalReviewCard({ review }: ProfessionalReviewCardProps) {
+export default function ProfessionalReviewCard({ review, expertCurrentCountry }: ProfessionalReviewCardProps) {
+    // 🛡️ Round 28 MUD-I: detectar si el experto se mudó tras esta review.
+    const reviewCountryCode = (review as any)?.country as string | undefined;
+    const shouldShowRelocationBadge = !!reviewCountryCode
+        && !!expertCurrentCountry
+        && reviewCountryCode.toUpperCase() !== expertCurrentCountry.toUpperCase();
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('es-ES', {
@@ -74,6 +85,19 @@ export default function ProfessionalReviewCard({ review }: ProfessionalReviewCar
                         <p className="text-sm text-gray-500">Cliente verificado</p>
                     </div>
                 </div>
+
+                {/* 🛡️ Round 28 MUD-I: badge "Servicio prestado en otro país" cuando el experto se mudó. */}
+                {shouldShowRelocationBadge && (
+                    <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                        <div>
+                            <p className="font-medium">Servicio prestado en {reviewCountryCode}</p>
+                            <p className="text-amber-700 leading-relaxed mt-0.5">
+                                El experto operaba en {reviewCountryCode} cuando se prestó este servicio. Actualmente opera desde {expertCurrentCountry}.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Descripción de la reseña */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">

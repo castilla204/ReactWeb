@@ -155,9 +155,11 @@ class AuthService {
             const decoded: any = jwtDecode(token);
             const expiresIn = decoded.exp * 1000 - Date.now();
 
-            // ✅ BEST PRACTICE: Renovar 2 minutos antes de expirar (Access Token dura 30 min)
-            // Esto asegura que el token nunca expire durante una sesión activa
-            const refreshIn = Math.max(0, expiresIn - (2 * 60 * 1000));
+            // 🛡️ Round 28 MUD-AF: Access Token dura 24h (era 1h, comentario decía 30 min — stale).
+            // Renovamos 5 minutos antes de expirar — buffer tolera drift de reloj, suspensión del
+            // dispositivo, y setTimeout throttling cuando el tab está en background (Chrome lo
+            // limita a >=1min entre disparos tras 5min en background).
+            const refreshIn = Math.max(0, expiresIn - (5 * 60 * 1000));
 
             if (refreshIn > 0) {
                 // Solo loguear en desarrollo

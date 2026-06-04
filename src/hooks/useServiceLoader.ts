@@ -7,6 +7,10 @@ export interface Service {
   lng: number;
   name: string;
   price: number;
+  /** 🛡️ Round 28 CUR-4: divisa del servicio (ISO 4217, MAYÚSCULAS). Default EUR si falta. */
+  priceCurrency?: string;
+  /** Alias PascalCase del backend. */
+  currency?: string;
   type?: string;
   [key: string]: any;
 }
@@ -50,8 +54,9 @@ export function useServiceLoader(
   const abortControllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
   const lastRequestRef = useRef<string>('');
-  const requestStartTimeRef = useRef<number>(0);
-  const MIN_REQUEST_TIME = 200; // Mínimo tiempo antes de poder cancelar (200ms)
+  // ✅ Monotonic request counter para descartar respuestas obsoletas que llegan tarde
+  //    aunque la cancelación no fuese efectiva (más robusto que comparar timestamps).
+  const requestIdRef = useRef<number>(0);
   
   const CACHE_TTL = options?.cacheTTL || 5 * 60 * 1000; // 5 minutos por defecto
   const MAX_CACHE_SIZE = 20; // Máximo de entradas en caché
@@ -188,15 +193,15 @@ export function useServiceLoader(
       if (lastRequestRef.current === cacheKey) {
         return;
       }
-      
-      // ✅ MEJORADO: Solo cancelar petición anterior si:
-      // 1. Existe una petición previa
-      // 2. La petición previa lleva al menos MIN_REQUEST_TIME ejecutándose (evita cancelar la primera llamada)
-      const timeSinceLastRequest = Date.now() - requestStartTimeRef.current;
-      if (abortControllerRef.current && timeSinceLastRequest >= MIN_REQUEST_TIME) {
+
+      // ✅ FIX: Cancelar SIEMPRE la petición anterior. El gate por tiempo previo
+      //    (MIN_REQUEST_TIME=200 ms) dejaba peticiones zombi cuando el usuario
+      //    cambiaba de viewport rápido — y como `signal.aborted` quedaba en false,
+      //    el callback pisaba los marcadores actuales con datos obsoletos al volver.
+      if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      
+
       lastRequestRef.current = cacheKey;
 
       // Verificar caché
@@ -214,7 +219,9 @@ export function useServiceLoader(
       // Crear nuevo AbortController
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
-      requestStartTimeRef.current = Date.now(); // ✅ Registrar tiempo de inicio
+      // ✅ Sello monotónico: si llega una respuesta vieja después de una nueva,
+      //    la descartamos comparando contra este id (segundo cinturón anti race).
+      const myRequestId = ++requestIdRef.current;
 
       if (isDev) {
         console.log('🔄 Iniciando carga de servicios:', {
@@ -287,12 +294,21 @@ export function useServiceLoader(
                 return null;
               }
 
+              // 🛡️ Round 28 CUR-4: extraer priceCurrency del servicio para que ClusteredMarkers
+              // y MapServiceCard puedan mostrar el símbolo correcto + conversión. Antes el campo
+              // se perdía aquí y todo el mapa caía al fallback EUR (default de getCurrencySymbol).
+              const rawCurrency = service.Currency ?? service.currency ?? service.PriceCurrency ?? service.priceCurrency;
+              const normalizedCurrency = typeof rawCurrency === 'string' && rawCurrency.trim().length === 3
+                ? rawCurrency.trim().toUpperCase()
+                : undefined;
               return {
                 id: service.id || service.Id,
                 lat,
                 lng,
                 name: expert.user?.name || expert.User?.Name || 'Experto',
                 price: service.price || service.Price || 0,
+                priceCurrency: normalizedCurrency,
+                currency: normalizedCurrency,
                 type: service.serviceTypeName || service.ServiceTypeName,
                 raw: service,
               };
@@ -311,12 +327,19 @@ export function useServiceLoader(
                 return null;
               }
 
+              // 🛡️ Round 28 CUR-4: misma normalización para la rama Experts.
+              const rawCurrency = expert.Currency ?? expert.currency ?? expert.PriceCurrency ?? expert.priceCurrency;
+              const normalizedCurrency = typeof rawCurrency === 'string' && rawCurrency.trim().length === 3
+                ? rawCurrency.trim().toUpperCase()
+                : undefined;
               return {
                 id: expert.id || expert.Id,
                 lat,
                 lng,
                 name: expert.name || expert.Name,
                 price: expert.price || expert.Price || 0,
+                priceCurrency: normalizedCurrency,
+                currency: normalizedCurrency,
                 type: expert.serviceTypeName || expert.ServiceTypeName,
               };
             })
@@ -347,8 +370,9 @@ export function useServiceLoader(
         // Limpiar caché si es necesario
         cleanCache();
 
-        // Actualizar estado solo si no fue cancelado
-        if (!signal.aborted) {
+        // ✅ Actualizar SOLO si esta sigue siendo la petición más reciente.
+        //    Doble cinturón: signal.aborted + requestId monotónico.
+        if (!signal.aborted && myRequestId === requestIdRef.current) {
           setServices(uniqueServices);
         }
 
@@ -377,6 +401,16 @@ export function useServiceLoader(
   );
 
   /**
+   * ✅ FIX correctitud: al cambiar categoryId/serviceTypeId, purgar el cache LRU
+   *    y el lastRequest para forzar refetch limpio. Antes podían quedar marcadores
+   *    de la categoría anterior pintados hasta que el TTL expirase.
+   */
+  useEffect(() => {
+    cacheRef.current.clear();
+    lastRequestRef.current = '';
+  }, [categoryId, serviceTypeId]);
+
+  /**
    * Effect principal: cargar servicios cuando cambie el viewport
    */
   useEffect(() => {
@@ -389,11 +423,9 @@ export function useServiceLoader(
 
     loadServices(viewport);
 
-    // Cleanup al desmontar o cambiar dependencias
-    // ✅ MEJORADO: Solo cancelar si la petición lleva suficiente tiempo ejecutándose
+    // Cleanup: cancelar siempre la petición en vuelo al cambiar deps/desmontar.
     return () => {
-      const timeSinceStart = Date.now() - requestStartTimeRef.current;
-      if (abortControllerRef.current && timeSinceStart >= MIN_REQUEST_TIME) {
+      if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };

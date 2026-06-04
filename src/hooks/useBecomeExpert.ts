@@ -15,19 +15,41 @@ interface FormData {
     availability?: AvailabilityFormData;
 }
 
+interface MapLocation {
+    lat: number;
+    lng: number;
+}
+
 interface UseBecomeExpertResult {
     formData: FormData;
     previewUrl: string | null;
     isSubmitting: boolean;
     error: string | null;
+    // 🛡️ Round 28: errorCode estable + país detectado para UX específica (en vez de mensaje fósil genérico).
+    errorCode: string | null;
+    detectedCountry: string | null;
+    // ✅ Round 30: flag para que la página detecte el éxito SIN navegar — permite
+    //    mostrar el bloque "Conecta Stripe" inline como continuación natural del wizard.
+    submitted: boolean;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleMapClick: (e: google.maps.MapMouseEvent) => void;
+    applyProfilePhoto: (file: File, previewUrl: string) => void;
+    handleMapClick: (location: {lat: number; lng: number}) => void;
     handleSubmit: () => Promise<void>;
     setFormData: React.Dispatch<React.SetStateAction<FormData>>;
     setPreviewUrl: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export function useBecomeExpert(): UseBecomeExpertResult {
+/**
+ * 🛡️ Round 28 MUD-AG: opciones para soportar re-onboarding tras mudanza:
+ * existingProfilePictureUrl permite usar la foto del país anterior como preview
+ * y sin requerir nuevo upload.
+ */
+export interface UseBecomeExpertOptions {
+    existingProfilePictureUrl?: string | null;
+}
+
+export function useBecomeExpert(options: UseBecomeExpertOptions = {}): UseBecomeExpertResult {
+    const { existingProfilePictureUrl } = options;
     const navigate = useNavigate();
     const { user, updateUser } = useAuth();
     const [formData, setFormData] = useState<FormData>({
@@ -40,6 +62,21 @@ export function useBecomeExpert(): UseBecomeExpertResult {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // 🛡️ Round 28: estados para errorCode + detectedCountry que viene del backend.
+    const [errorCode, setErrorCode] = useState<string | null>(null);
+    const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+    // ✅ Round 30: flag de éxito — la página lo usa para renderizar el bloque Stripe inline
+    //    sin navegar a otra ruta (antes hacía navigate('/expert-panel')).
+    const [submitted, setSubmitted] = useState(false);
+
+    const applyProfilePhoto = useCallback((file: File, previewUrl: string) => {
+        setFormData((prev) => ({ ...prev, profilePicture: file }));
+        setPreviewUrl((prev) => {
+            if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+            return previewUrl;
+        });
+        setError(null);
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -52,29 +89,27 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 setError('Solo se permiten imágenes JPG, JPEG y PNG');
                 return;
             }
-            setFormData((prev) => ({ ...prev, profilePicture: file }));
-            setPreviewUrl(URL.createObjectURL(file));
-            setError(null);
+            applyProfilePhoto(file, URL.createObjectURL(file));
         }
     };
 
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-            };
-            setFormData((prev) => ({
-                ...prev,
-                latitude: newLocation.lat.toString(),
-                longitude: newLocation.lng.toString(),
-            }));
-        }
+    const handleMapClick = (location: {lat: number; lng: number}) => {
+        const newLocation = {
+            lat: location.lat,
+            lng: location.lng,
+        };
+        setFormData((prev) => ({
+            ...prev,
+            latitude: newLocation.lat.toString(),
+            longitude: newLocation.lng.toString(),
+        }));
     };
 
     const handleSubmit = useCallback(async () => {
         setIsSubmitting(true);
         setError(null);
+        setErrorCode(null);
+        setDetectedCountry(null);
 
         // Validaciones
         if (!formData.description.trim()) {
@@ -89,7 +124,8 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             return;
         }
 
-        if (!formData.profilePicture) {
+        // 🛡️ MUD-AG: experto mudado puede conservar foto del país anterior.
+        if (!formData.profilePicture && !existingProfilePictureUrl) {
             setError('La foto de perfil es requerida');
             setIsSubmitting(false);
             return;
@@ -112,7 +148,11 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             // Crear FormData
             const data = new FormData();
             data.append('Description', formData.description.trim());
-            data.append('ProfilePicture', formData.profilePicture);
+            // 🛡️ MUD-AG: solo enviar el archivo si el usuario subió uno nuevo.
+            // Si null pero existingProfilePictureUrl está → backend lo preserva.
+            if (formData.profilePicture) {
+                data.append('ProfilePicture', formData.profilePicture);
+            }
             data.append('Latitude', formData.latitude);
             data.append('Longitude', formData.longitude);
 
@@ -146,6 +186,8 @@ export function useBecomeExpert(): UseBecomeExpertResult {
 
             if (!response.ok) {
                 let errorMessage = 'Error al registrarse como experto';
+                let parsedErrorCode: string | null = null;
+                let parsedDetectedCountry: string | null = null;
 
                 try {
                     const errorText = await response.text();
@@ -154,6 +196,9 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                     if (errorText) {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.message || errorMessage;
+                        // 🛡️ Round 28: leer errorCode + detectedCountry del backend.
+                        parsedErrorCode = errorData.errorCode || null;
+                        parsedDetectedCountry = errorData.detectedCountry || null;
                     }
                 } catch (parseError) {
                     console.error('Error parsing error response:', parseError);
@@ -169,6 +214,9 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                         case 403:
                             errorMessage = 'No tienes permisos para realizar esta acción.';
                             break;
+                        case 503:
+                            errorMessage = 'Servicio temporalmente no disponible. Inténtalo en unos minutos.';
+                            break;
                         case 500:
                             errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
                             break;
@@ -177,12 +225,20 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                     }
                 }
 
-                throw new Error(errorMessage);
+                // 🛡️ Round 28: setea estados ANTES del throw para que la UI pueda reaccionar
+                // a errorCode (ej: COUNTRY_NOT_SUPPORTED → mostrar país + link a soporte).
+                if (parsedErrorCode) setErrorCode(parsedErrorCode);
+                if (parsedDetectedCountry) setDetectedCountry(parsedDetectedCountry);
+
+                const err = new Error(errorMessage) as Error & { errorCode?: string; detectedCountry?: string };
+                if (parsedErrorCode) err.errorCode = parsedErrorCode;
+                if (parsedDetectedCountry) err.detectedCountry = parsedDetectedCountry;
+                throw err;
             }
 
             const rawResult = await response.json();
             console.log('Success response (raw):', rawResult);
-            
+
             // ✅ Normalizar la respuesta del backend (puede venir en PascalCase o camelCase)
             const result: BecomeExpertResponse = {
                 message: rawResult.Message || rawResult.message,
@@ -211,7 +267,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                     }
                 }
             };
-            
+
             console.log('Success response (normalized):', result);
             console.log('User role received:', result.user?.role);
             console.log('Full user object:', result.user);
@@ -254,7 +310,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 expertProfile: result.user.expertProfile,
                 ExpertProfile: result.user.expertProfile,
             };
-            
+
             console.log('✅ [useBecomeExpert] Actualizando usuario con rol Expert:', userToUpdate);
             console.log('✅ [useBecomeExpert] Rol del usuario:', userToUpdate.role, userToUpdate.Role);
 
@@ -264,7 +320,7 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             // o solo es el accessToken
             let accessToken = result.token;
             let refreshToken: string | null = null;
-            
+
             try {
                 // Verificar si el token viene en formato "accessToken|refreshToken"
                 if (result.token.includes('|')) {
@@ -285,13 +341,13 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                         refreshToken = result.token; // Temporal, pero mejor que nada
                     }
                 }
-                
+
                 // Guardar tokens en authService
                 authService.setTokens(accessToken, refreshToken);
-                
+
                 // ✅ CRÍTICO: Programar renovación automática del token
                 authService.scheduleTokenRefresh();
-                
+
                 // ✅ Verificar que los tokens se guardaron correctamente
                 const savedAccessToken = authService.getAccessToken();
                 const savedRefreshToken = authService.getRefreshToken();
@@ -307,10 +363,10 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 refreshToken = result.token;
                 authService.setTokens(accessToken, refreshToken);
             }
-            
+
             // Guardar token en localStorage también (compatibilidad)
             setAuthToken(accessToken, userToUpdate);
-            
+
             console.log('✅ [useBecomeExpert] Usuario a actualizar:', {
                 id: userToUpdate.id,
                 email: userToUpdate.email,
@@ -318,10 +374,10 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 Role: userToUpdate.Role,
                 hasToken: !!accessToken
             });
-            
+
             // Actualizar autenticación - actualizar el contexto
             updateUser(userToUpdate, accessToken);
-            
+
             // ✅ Esperar un momento para que el contexto y authService se actualicen completamente
             await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -345,9 +401,9 @@ export function useBecomeExpert(): UseBecomeExpertResult {
                 authService.scheduleTokenRefresh();
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
-            
+
             // ✅ CRÍTICO: Verificar que el refreshToken funcione
-            // Si el refreshToken antiguo no funciona (porque el backend lo invalidó), 
+            // Si el refreshToken antiguo no funciona (porque el backend lo invalidó),
             // el interceptor de authService lo manejará automáticamente al recibir 401
             // Pero es mejor advertir si el refreshToken es igual al accessToken (temporal)
             try {
@@ -365,13 +421,15 @@ export function useBecomeExpert(): UseBecomeExpertResult {
             window.dispatchEvent(new CustomEvent('showNotification', {
                 detail: {
                     type: 'success',
-                    message: '✨ ¡Te has registrado exitosamente como buscador experto!',
+                    message: '✨ ¡Tu perfil de experto está listo! Conecta tus cobros para empezar a recibir encargos.',
                 },
             }));
 
-            // ✅ Navegar después de asegurar que todo se actualice
-            console.log('✅ [useBecomeExpert] Navegando a /expert-panel');
-            navigate('/expert-panel', { replace: true });
+            // ✅ Round 30: NO navegamos a /expert-panel. La página detectará `submitted=true`
+            //    y mostrará el bloque "Conecta Stripe" inline como continuación del wizard.
+            //    Antes: navigate('/expert-panel'). Ahora se gestiona dentro del propio paso 3.
+            console.log('✅ [useBecomeExpert] Registro completo — mostrando bloque Stripe inline');
+            setSubmitted(true);
 
         } catch (err) {
             console.error('Error in handleSubmit:', err);
@@ -389,7 +447,11 @@ export function useBecomeExpert(): UseBecomeExpertResult {
         previewUrl,
         isSubmitting,
         error,
+        errorCode,
+        detectedCountry,
+        submitted,
         handleFileChange,
+        applyProfilePhoto,
         handleMapClick,
         handleSubmit,
         setFormData,

@@ -96,13 +96,24 @@ export function useExpertProfile() {
                     throw new Error('Perfil de experto no encontrado');
                 }
                 let errorMessage = `Error al actualizar perfil: ${response.statusText}`;
+                let errorCode: string | undefined;
+                let detectedCountry: string | undefined;
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
+                    // 🛡️ Round 28 MUD-2: propagar errorCode + detectedCountry para que la UI
+                    // pueda distinguir entre STRIPE_COUNTRY_LOCKED (mostrar wizard de mudanza),
+                    // COUNTRY_NOT_SUPPORTED (sugerir ubicación válida), etc. Antes esto se ignoraba
+                    // → todos los errores se mostraban con texto plano sin CTA accionable.
+                    errorCode = errorData.errorCode || errorData.ErrorCode;
+                    detectedCountry = errorData.detectedCountry || errorData.DetectedCountry;
                 } catch {
                     // Ignore JSON parsing errors
                 }
-                throw new Error(errorMessage);
+                const enrichedError = new Error(errorMessage) as Error & { errorCode?: string; detectedCountry?: string };
+                if (errorCode) enrichedError.errorCode = errorCode;
+                if (detectedCountry) enrichedError.detectedCountry = detectedCountry;
+                throw enrichedError;
             }
 
             const updatedProfile: UpdateExpertProfileResponse = await response.json();

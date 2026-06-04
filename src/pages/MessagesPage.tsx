@@ -71,6 +71,9 @@ export function MessagesPage() {
                         hireAmount: conv.hireAmount ?? conv.HireAmount ?? null,
                         hireBaseAmount: conv.hireBaseAmount ?? conv.HireBaseAmount ?? null,
                         hireTaxAmount: conv.hireTaxAmount ?? conv.HireTaxAmount ?? null,
+                        // 🛡️ Round 28: divisas (ISO 4217) para que la lista muestre £/CHF/kr correcto.
+                        serviceCurrency: conv.serviceCurrency || conv.ServiceCurrency || 'EUR',
+                        hireCurrency: conv.hireCurrency || conv.HireCurrency || conv.chargeCurrency || conv.ChargeCurrency || 'EUR',
                         searchTitle: conv.searchTitle || conv.SearchTitle || null,
                         searchDescription: conv.searchDescription || conv.SearchDescription || null,
                     };
@@ -390,9 +393,10 @@ export function MessagesPage() {
                                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                             }}
                                                         >
+                                                            {/* 🛡️ Round 28: usar divisa real del servicio en vez de EUR hardcoded */}
                                                             {new Intl.NumberFormat('es-ES', {
                                                                 style: 'currency',
-                                                                currency: 'EUR',
+                                                                currency: (conversation.serviceCurrency || 'EUR').toUpperCase(),
                                                                 minimumFractionDigits: 0,
                                                                 maximumFractionDigits: 2,
                                                             }).format(conversation.servicePrice)}
@@ -433,9 +437,10 @@ export function MessagesPage() {
                                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                             }}
                                                         >
+                                                            {/* 🛡️ Round 28: usar divisa real del hire en vez de EUR hardcoded */}
                                                             {new Intl.NumberFormat('es-ES', {
                                                                 style: 'currency',
-                                                                currency: 'EUR',
+                                                                currency: (conversation.hireCurrency || 'EUR').toUpperCase(),
                                                                 minimumFractionDigits: 0,
                                                                 maximumFractionDigits: 2,
                                                             }).format(conversation.hireAmount)}
