@@ -96,6 +96,12 @@
         --input: 214.3 31.8% 91.4%;
         --ring: 222.2 84% 4.9%;
         --radius: 0.5rem;
+        /* ✅ Color de marca (#0066CC) — separado de --primary para que un rebrand
+           sea un único cambio. Úsalo siempre vía bg-brand / text-brand / border-brand
+           (con opacidad: bg-brand/10). NUNCA hardcodees `#0066CC` en componentes. */
+        --brand: 210 100% 40%;
+        --brand-hover: 210 100% 36%;
+        --brand-foreground: 0 0% 100%;
     }
 
     .dark {
@@ -119,6 +125,10 @@
         --input: 217.2 32.6% 17.5%;
         --ring: 212.7 26.8% 83.9%;
         --radius: 0.5rem;
+        /* En dark mode, el azul brilla un poco más para mantener contraste sobre fondo oscuro. */
+        --brand: 210 100% 55%;
+        --brand-hover: 210 100% 60%;
+        --brand-foreground: 0 0% 100%;
     }
 }
 
@@ -144,7 +154,7 @@
     }
 
     .hp-eyebrow {
-        @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[#0066CC];
+        @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-brand;
     }
 
     /* Ficha servicio — minimalista */
@@ -169,7 +179,7 @@
     }
 
     .sd-btn-primary {
-        @apply inline-flex items-center justify-center h-12 px-6 min-w-[140px] shrink-0 rounded-full bg-[#0066CC] text-white text-base font-semibold shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait;
+        @apply inline-flex items-center justify-center h-12 px-6 min-w-[140px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait;
     }
 
     /* Barra fija móvil: ficha servicio + checkout */
@@ -198,7 +208,7 @@
     }
 
     .sd-mobile-footer-cta {
-        @apply inline-flex h-[48px] min-w-[7.5rem] max-w-[42vw] shrink-0 items-center justify-center rounded-full bg-[#0066CC] px-5 text-base font-semibold leading-none text-white shadow-[0_4px_18px_rgba(0,102,204,0.24)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
+        @apply inline-flex h-[48px] min-w-[7.5rem] max-w-[42vw] shrink-0 items-center justify-center rounded-full bg-brand px-5 text-base font-semibold leading-none text-white shadow-[0_4px_18px_hsl(var(--brand)/0.24)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
     }
 
     @media (min-width: 380px) {
@@ -366,7 +376,7 @@
     }
 
     .sd-tab[data-active='true'] {
-        @apply font-semibold text-[#1c1c1c] border-[#0066CC];
+        @apply font-semibold text-[#1c1c1c] border-brand;
     }
 
 }
@@ -1056,7 +1066,7 @@ img[alt*="country"],
     color: #717171;
 }
 
-/* Sonner — alineado con homepage (Manrope, #0066CC, cards wall) */
+/* Sonner — alineado con homepage (Manrope, color de marca, cards wall) */
 [data-sonner-toaster].hp-toaster {
     --width: 360px;
     --border-radius: 16px;
@@ -1090,7 +1100,7 @@ img[alt*="country"],
     bottom: 10px;
     width: 4px;
     border-radius: 9999px;
-    background: linear-gradient(180deg, #0066CC 0%, rgba(0, 102, 204, 0.22) 100%);
+    background: linear-gradient(180deg, hsl(var(--brand)) 0%, hsl(var(--brand) / 0.22) 100%);
     pointer-events: none;
 }
 
@@ -1160,8 +1170,8 @@ img[alt*="country"],
     margin: 0;
     flex-shrink: 0;
     border-radius: 9999px;
-    background: #E8F2FC;
-    color: #0066CC;
+    background: hsl(var(--brand) / 0.1);
+    color: hsl(var(--brand));
 }
 
 [data-sonner-toast].hp-toast--error [data-icon] {
@@ -1216,4 +1226,14 @@ img[alt*="country"],
     padding: 0 4px 0 8px;
     gap: 12px;
     align-items: flex-start;
+}
+
+.become-expert-map .maplibregl-ctrl-attribution {
+    font-size: 8px !important;
+    opacity: 0.85;
+}
+
+.become-expert-map .maplibregl-ctrl-group {
+    border: none !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08) !important;
 }

@@ -2,7 +2,9 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
-import { ClusteredMarkers } from './ClusteredMarkers';
+// ✅ Default import → activa React.memo del ClusteredMarkers. Antes (named import)
+//    cada hover/select sobre la lista forzaba el bucle remove+create de TODOS los markers.
+import ClusteredMarkers from './ClusteredMarkers';
 import { MapLoadingIndicator } from './MapLoadingIndicator';
 
 interface MapContainerProps {
@@ -242,6 +244,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
+    // ✅ Padding inicial calculado en el constructor — antes se aplicaba dentro de
+    //    map.on('load'), lo que provocaba un re-encaje de cámara después del primer
+    //    render y los marcadores brincaban. Aplicándolo aquí, la cámara ya nace
+    //    con el padding correcto y el primer fetch del viewport ya es el definitivo.
+    const initialPadding =
+      isMobile && typeof window !== 'undefined'
+        ? { top: 0, bottom: Math.round(window.innerHeight * 0.5), left: 0, right: 0 }
+        : { top: 0, bottom: 0, left: 0, right: 0 };
+
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: {
@@ -249,12 +260,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         sources: {
           carto: {
             type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-              'https://d.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
-            ],
+            // ✅ Un solo subdominio: CartoCDN sirve HTTP/2 multiplexado — con sharding
+            //    a/b/c/d se abrían 4 conexiones TLS y se perdía el reuse. Con 1 host
+            //    el navegador reusa la misma conexión H/2 para todos los tiles.
+            tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png'],
             tileSize: 256,
           },
         },
@@ -267,7 +276,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       dragRotate: false,
       touchPitch: false,
       attributionControl: false,
+      // padding se pasa via fitBounds/easeTo; lo aplicamos aquí porque el constructor
+      // no acepta padding inicial — MapLibre v3 sí lo acepta, pero por compat dejamos
+      // setPadding inmediato tras el new() abajo (antes del primer render del DOM).
     });
+    map.setPadding(initialPadding);
 
     if (!isMobile) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -286,15 +299,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('load', () => {
-      // ✅ En móvil el drawer cubre la mitad inferior. Aplicamos un padding bottom
-      //    igual a esa altura para que el centro geográfico (la ubicación del
-      //    usuario) quede visualmente en la mitad superior — la zona NO cubierta.
-      //    MapLibre re-encaja la cámara para que la región "útil" del mapa
-      //    (viewport menos padding) muestre el mismo área.
-      if (isMobile && typeof window !== 'undefined') {
-        const drawerHeightPx = Math.round(window.innerHeight * 0.50);
-        map.setPadding({ top: 0, bottom: drawerHeightPx, left: 0, right: 0 });
-      }
+      // ✅ El padding ya se aplicó en el constructor (initialPadding) → no hay
+      //    re-encaje aquí y los marcadores no brincan al primer fetch.
       mapInstanceRef.current = map;
       setIsMapLoaded(true);
       setMapInstance(map);

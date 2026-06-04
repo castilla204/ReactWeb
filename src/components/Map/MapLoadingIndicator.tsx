@@ -18,7 +18,7 @@ export const MapLoadingIndicator: React.FC<MapLoadingIndicatorProps> = ({
         className={`pointer-events-none absolute inset-x-0 top-0 z-[900] h-0.5 overflow-hidden ${className}`}
         aria-hidden
       >
-        <div className="h-full w-1/3 animate-pulse rounded-full bg-[#0066CC]" />
+        <div className="h-full w-1/3 animate-pulse rounded-full bg-brand" />
       </div>
     );
   }
@@ -32,8 +32,8 @@ export const MapLoadingIndicator: React.FC<MapLoadingIndicatorProps> = ({
     >
       <div className="flex items-center gap-2 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.08)] backdrop-blur-md">
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0066CC]/40 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0066CC]" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand/40 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
         </span>
         <span className="font-display text-xs font-medium text-[#484848]">Buscando expertos…</span>
       </div>

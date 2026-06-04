@@ -5,6 +5,8 @@ import CountrySelector from './CountrySelector';
 import {
   searchMapboxAutocomplete,
   reverseGeocodeMapbox,
+  getMapboxAccessToken,
+  isMapboxTokenConfigured,
   MapboxAutocompleteItem,
 } from '../utils/mapboxGeocoding';
 
@@ -153,6 +155,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   const [autocompleteResults, setAutocompleteResults] = useState<MapboxAutocompleteItem[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -226,17 +229,28 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const token = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined;
-    if (!token) {
-      console.error('[AppointmentMap] Falta VITE_MAPBOX_PUBLIC_TOKEN');
+    let token: string;
+    try {
+      token = getMapboxAccessToken();
+    } catch {
+      setMapError('Falta configurar VITE_MAPBOX_PUBLIC_TOKEN en .env.local');
+      return;
+    }
+
+    if (!isMapboxTokenConfigured(token)) {
+      setMapError(
+        'Token de Mapbox no configurado. Sustituye el placeholder en ReactWeb/.env.local y reinicia npm run dev.',
+      );
       return;
     }
 
     if (!isFinite(memoizedCoordinates.lat) || !isFinite(memoizedCoordinates.lng)) {
+      setMapError('Coordenadas del experto no válidas.');
       console.error('[AppointmentMap] Coordenadas inválidas:', memoizedCoordinates);
       return;
     }
 
+    setMapError(null);
     mapboxgl.accessToken = token;
 
     const map = new mapboxgl.Map({
@@ -247,12 +261,34 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       minZoom: 3,
       maxZoom: 20,
       interactive: !disabled,
-      attributionControl: false,
+      attributionControl: true,
     });
 
     mapRef.current = map;
 
+    const resizeMap = () => {
+      try {
+        map.resize();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      resizeMap();
+    });
+    resizeObserver.observe(mapContainerRef.current);
+    requestAnimationFrame(resizeMap);
+
+    map.on('error', (e) => {
+      console.error('[AppointmentMap] Error del mapa:', e);
+      setMapError(
+        'No se pudieron cargar los tiles del mapa. Revisa el token de Mapbox y la política CSP (tiles.mapbox.com).',
+      );
+    });
+
     map.on('load', () => {
+      resizeMap();
       // 1) Círculo de cobertura
       const circleRing = buildCirclePolygon(
         memoizedCoordinates.lng,
@@ -419,6 +455,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
     // Cleanup: destruir el mapa entero (markers se limpian con él)
     return () => {
+      resizeObserver.disconnect();
       map.off('click', handleClick);
       try {
         map.remove();
@@ -528,9 +565,15 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
   return (
     <div className={`${className} rounded-lg border border-border bg-background relative`}>
-      <div ref={mapContainerRef} className="w-full h-full rounded-lg overflow-hidden" />
+      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full rounded-lg overflow-hidden" />
 
-      {(showCountrySelector || showSearch) && (
+      {mapError && (
+        <div className="absolute inset-0 z-[9998] flex items-center justify-center rounded-lg bg-gray-50/95 p-6 text-center">
+          <p className="max-w-sm text-sm text-red-700">{mapError}</p>
+        </div>
+      )}
+
+      {(showCountrySelector || showSearch) && !mapError && (
         <div className="absolute top-4 left-4 right-4 z-[9999] flex gap-2 pointer-events-none">
           {showCountrySelector && (
             <div className="pointer-events-auto">

@@ -57,4 +57,5 @@ android/app/build/
 android/build/
 android/.idea/
 android/local.properties
-*.iml
+*.iml*.tsbuildinfo
+.impeccable/

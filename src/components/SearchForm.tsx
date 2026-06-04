@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check, Lock, BadgeCheck, FileText, Image, Video, ShieldCheck, Info } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -257,7 +257,7 @@ export default function SearchForm({
                                                 </Button>
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                                <BadgeCheck className="w-3.5 h-3.5 text-[#0066CC]" />
+                                                <BadgeCheck className="w-3.5 h-3.5 text-brand" />
                                                 <span className="text-[12px] text-[#4B5563] font-medium">Experto Verificado</span>
                                             </div>
                                         </div>
@@ -322,11 +322,11 @@ export default function SearchForm({
                             <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
                                 <div className="flex items-start gap-3">
                                     <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center border border-gray-200 shadow-sm flex-shrink-0">
-                                        <Shield className="w-4 h-4 text-[#0066CC]" />
+                                        <Shield className="w-4 h-4 text-brand" />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-1 mb-0.5">
-                                            <span className="text-sm font-bold text-[#0066CC] tracking-tight">inspecciono</span>
+                                            <span className="text-sm font-bold text-brand tracking-tight">inspecciono</span>
                                             <span className="text-sm font-light text-gray-900">protección</span>
                                         </div>
                                         <p className="text-[11px] text-gray-500 leading-tight max-w-sm">
@@ -422,8 +422,8 @@ export default function SearchForm({
                                     {servicePrice !== undefined && (
                                     <div className="pt-4 border-t border-[#DDDDDD]">
                                         <div className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-[#0066CC]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Shield className="w-3.5 h-3.5 text-[#0066CC]" />
+                                            <div className="w-5 h-5 rounded-full bg-brand/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Shield className="w-3.5 h-3.5 text-brand" />
                                             </div>
                                             <p className="text-[13px] text-[#717171] leading-relaxed">
                                                 Pago procesado mediante Stripe de forma segura. Tu información está protegida.
@@ -441,7 +441,7 @@ export default function SearchForm({
                                 type="submit"
                                 disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
                             size="lg"
-                            className="w-full sm:w-auto min-w-[220px] h-14 px-10 bg-[#0066CC] hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] text-[16px]"
+                            className="w-full sm:w-auto min-w-[220px] h-14 px-10 bg-brand hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] text-[16px]"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
                                     <>

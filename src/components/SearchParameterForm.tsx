@@ -255,9 +255,9 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 <div
                     className={`relative w-full rounded-2xl bg-white transition-all duration-200 ${
                         isSelected
-                            ? `ring-2 ring-[#0066CC] ${MAP_CARD_DESKTOP_SHADOW_ACTIVE}`
+                            ? `ring-2 ring-brand ${MAP_CARD_DESKTOP_SHADOW_ACTIVE}`
                             : isHovered
-                              ? `${MAP_CARD_DESKTOP_SHADOW_HOVERED} ring-1 ring-[#0066CC]/15`
+                              ? `${MAP_CARD_DESKTOP_SHADOW_HOVERED} ring-1 ring-brand/15`
                               : `${MAP_CARD_DESKTOP_SHADOW} ${MAP_CARD_DESKTOP_SHADOW_HOVER}`
                     }`}
                 >
@@ -452,7 +452,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
             <div
                 className={`relative w-full overflow-hidden rounded-2xl bg-white transition-all ${
                     isSelected
-                        ? 'ring-2 ring-[#0066CC] shadow-md'
+                        ? 'ring-2 ring-brand shadow-md'
                         : 'border border-[#ebebeb] shadow-sm'
                 }`}
             >
@@ -812,7 +812,7 @@ function MapServiceCardInfo({
                     {availabilityInfo}
                 </span>
                 {isGuestFavorite && (
-                    <span className="inline-flex items-center rounded-full bg-[#0066CC]/10 px-2.5 py-1 text-xs font-semibold text-[#0066CC]">
+                    <span className="inline-flex items-center rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand">
                         Top valorado
                     </span>
                 )}
@@ -1713,8 +1713,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 ) : (
                                     <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
                                         <div className="flex max-w-sm flex-col items-center gap-4">
-                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#0066CC]/10">
-                                                <MapPin className="h-8 w-8 text-[#0066CC]" />
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand/10">
+                                                <MapPin className="h-8 w-8 text-brand" />
                                             </div>
                                             <div className="space-y-2 font-display">
                                                 <h3 className="text-lg font-semibold text-[#1c1c1c]">
@@ -1903,7 +1903,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
                                             }}
                                             size="lg"
-                                            className="pointer-events-auto h-12 rounded-full border-0 bg-[#0066CC] px-5 text-sm font-semibold text-white shadow-[0_4px_20px_rgba(0,102,204,0.35)] transition-all hover:bg-[#005bb5] active:scale-[0.98]"
+                                            className="pointer-events-auto h-12 rounded-full border-0 bg-brand px-5 text-sm font-semibold text-white shadow-[0_4px_20px_hsl(var(--brand)/0.35)] transition-all hover:bg-brand-hover active:scale-[0.98]"
                                         >
                                             <span className="flex items-center gap-2">
                                                 <span>
@@ -2018,8 +2018,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center gap-3 py-12 text-center font-display">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#0066CC]/10">
-                                        <MapPin className="h-7 w-7 text-[#0066CC]" />
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/10">
+                                        <MapPin className="h-7 w-7 text-brand" />
                                     </div>
                                     <p className="text-base font-semibold text-[#1c1c1c]">Sin opciones aquí</p>
                                     <p className="max-w-[16rem] text-sm leading-relaxed text-[#6a6a6a]">
