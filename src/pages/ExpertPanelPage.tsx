@@ -35,6 +35,9 @@ import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServi
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
+// 🛡️ Round 28 MUD-BP: banner persistente cuando hay warnings Stripe pero el panel
+// sigue accesible. Antes era código muerto; ahora se monta arriba del main content.
+import { StripeStatusBanner } from '../components/StripeStatusBanner';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 // 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
@@ -1487,6 +1490,21 @@ export function ExpertPanelPage() {
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto">
                     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+                        {/* 🛡️ Round 28 MUD-BP: banner persistente Stripe cuando hay warnings
+                            pero el panel sigue accesible. Antes solo se mostraba un micro-badge
+                            en sidebar — el experto no entendía que tenía que actuar. Ahora
+                            arriba, fondo BLANCO (preferencia usuario), no descartable. */}
+                        {stripeStatus && stripeStatus.stripeStatus && (
+                            <StripeStatusBanner
+                                stripeStatus={stripeStatus.stripeStatus}
+                                statusMessage={(stripeStatus as any).statusMessage || stripeStatus.stripeStatusDetails || ''}
+                                canCreateServices={(stripeStatus as any).canCreateServices !== false}
+                                canReceivePayments={(stripeStatus as any).canReceivePayments !== false}
+                                futureDueAtIso={(stripeStatus as any).stripeFutureDueAt ?? null}
+                                onOpenStripe={async () => { await openAccountLink(); }}
+                            />
+                        )}
+
                         {/* Información móvil - solo visible en móvil */}
                         <div className="lg:hidden space-y-3">
                             {/* Estado de pagos y perfil en una fila */}
