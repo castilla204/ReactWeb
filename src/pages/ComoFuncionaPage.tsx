@@ -46,7 +46,7 @@ const ComoFuncionaPage: React.FC = () => {
         style={{ background: HP_PANEL_GRADIENT }}
       >
         <div className={`${SD_PAGE_INNER_MAX_CLASS} px-4 py-8 md:px-6 md:py-12 lg:py-14`}>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0066CC]">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
             Inspecciono
           </p>
           <h2 className="mt-2 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-[-0.03em] text-[#1c1c1c] md:text-[2rem]">
@@ -90,7 +90,7 @@ const ComoFuncionaPage: React.FC = () => {
                 key={step.title}
                 className="relative rounded-xl border border-[#e8e8e8] bg-white p-4 shadow-sm"
               >
-                <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f6fc] text-xs font-bold text-[#0066CC]">
+                <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f6fc] text-xs font-bold text-brand">
                   {index + 1}
                 </span>
                 <div
@@ -116,7 +116,7 @@ const ComoFuncionaPage: React.FC = () => {
                 key={item.title}
                 className="flex gap-3 rounded-lg border border-[#ebebeb] bg-white px-4 py-3"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fafafa] text-[#0066CC]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fafafa] text-brand">
                   <item.Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
                 </span>
                 <div className="min-w-0">
@@ -137,7 +137,7 @@ const ComoFuncionaPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/become-expert')}
-            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#0066CC] hover:underline"
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline"
           >
             Quiero ser experto
             <ChevronRight className="h-4 w-4" aria-hidden />
@@ -158,7 +158,7 @@ const ComoFuncionaPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="font-medium text-[#0066CC] underline-offset-2 hover:underline"
+            className="font-medium text-brand underline-offset-2 hover:underline"
           >
             Volver al inicio
           </button>

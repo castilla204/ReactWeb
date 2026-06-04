@@ -722,7 +722,7 @@ export const PreHireChat = ({
                 setTrustBannerDismissed(true);
                 localStorage.setItem(TRUST_BANNER_STORAGE_KEY, 'true');
               }}
-              className="font-medium text-[#0066CC] underline-offset-2 hover:underline"
+              className="font-medium text-brand underline-offset-2 hover:underline"
             >
               {PRE_HIRE_CHAT_COPY.trustBannerAck}
             </button>

@@ -76,7 +76,7 @@ interface MapboxResponse {
 // Token
 // ---------------------------------------------------------------------------
 
-const getAccessToken = (explicitToken?: string): string => {
+export const getMapboxAccessToken = (explicitToken?: string): string => {
   const fromEnv =
     (import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN as string | undefined) ??
     (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined);
@@ -86,6 +86,22 @@ const getAccessToken = (explicitToken?: string): string => {
   }
   return token;
 };
+
+/** Token pk.* real configurado (no placeholder de plantilla). */
+export const isMapboxTokenConfigured = (token?: string): boolean => {
+  try {
+    const t = token ?? getMapboxAccessToken();
+    return (
+      t.startsWith('pk.') &&
+      !/REPLACE|YOUR_|EXAMPLE|placeholder/i.test(t) &&
+      t.length > 24
+    );
+  } catch {
+    return false;
+  }
+};
+
+const getAccessToken = getMapboxAccessToken;
 
 // ---------------------------------------------------------------------------
 // Helpers de extracción
@@ -218,6 +234,33 @@ export const searchMapboxAutocomplete = async (
 // ---------------------------------------------------------------------------
 // Reverse geocoding — v6
 // ---------------------------------------------------------------------------
+
+/** Misma lógica que `TimezoneService.GetCountryFromCoordinatesAsync` (types=country). */
+export const reverseCountryMapbox = async (
+  lat: number,
+  lng: number,
+  options: MapboxGeocodingOptions = {},
+): Promise<string | null> => {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const accessToken = getAccessToken(options.accessToken);
+  const params = new URLSearchParams({
+    longitude: String(lng),
+    latitude: String(lat),
+    access_token: accessToken,
+    limit: '5',
+    types: 'country',
+  });
+  appendCommonParams(params, options);
+
+  const url = `${MAPBOX_REVERSE_URL}?${params.toString()}`;
+  const data = await performMapboxRequest(url, options.signal, 'reverse country');
+  for (const raw of data.features || []) {
+    const code = extractCountryCodeFromMapbox(decorateFeature(raw));
+    if (code) return code.toUpperCase();
+  }
+  return null;
+};
 
 export const reverseGeocodeMapbox = async (
   lat: number,
