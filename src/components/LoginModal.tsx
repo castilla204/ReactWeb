@@ -163,13 +163,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                                 <TabsList className="mb-3 grid h-9 w-full grid-cols-2 rounded-full bg-[#f5f5f5] p-0.5">
                                     <TabsTrigger
                                         value="login"
-                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
+                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-brand data-[state=active]:shadow-sm"
                                     >
                                         <TabLabel kind="login" />
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="register"
-                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-[#0066CC] data-[state=active]:shadow-sm"
+                                        className="rounded-full text-[13px] transition-all data-[state=active]:bg-white data-[state=active]:text-brand data-[state=active]:shadow-sm"
                                     >
                                         <TabLabel kind="register" />
                                     </TabsTrigger>
@@ -298,7 +298,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                 type="checkbox"
                 checked={accepted}
                 onChange={(e) => onChange(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#0066CC] focus:ring-[#0066CC] cursor-pointer"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
                 required
                 aria-label={t('auth.register.termsRequired')}
             />
@@ -311,7 +311,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                                 href="/terms.html"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#0066CC] underline-offset-2 hover:underline"
+                                className="text-brand underline-offset-2 hover:underline"
                             />
                         ),
                         privacy: (
@@ -319,7 +319,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                                 href="/privacy-policy.html"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[#0066CC] underline-offset-2 hover:underline"
+                                className="text-brand underline-offset-2 hover:underline"
                             />
                         ),
                     }}
@@ -358,7 +358,7 @@ const AuthModalFooter: React.FC<{
                 <button
                     type="button"
                     onClick={onExpertAction}
-                    className="font-semibold text-[#0066CC] hover:text-[#005bb5] hover:underline underline-offset-2"
+                    className="font-semibold text-brand hover:text-brand-hover hover:underline underline-offset-2"
                 >
                     {expertLabel}
                 </button>
@@ -989,7 +989,7 @@ const INPUT_REBRAND =
 
 /** Clases compartidas para los botones primarios (submit) — gradient cyan→blue→indigo. */
 const PRIMARY_BTN =
-    'w-full h-11 rounded-lg bg-[#0066CC] hover:bg-[#005bb5] text-white text-sm font-semibold shadow-none transition-colors';
+    'w-full h-11 rounded-lg bg-brand hover:bg-brand-hover text-white text-sm font-semibold shadow-none transition-colors';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =

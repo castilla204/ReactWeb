@@ -45,7 +45,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'c
             <select
                 value={preferredCurrency}
                 onChange={(e) => setPreferredCurrency(e.target.value)}
-                className={`appearance-none ${sizeClasses} cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[#0066CC]/30`}
+                className={`appearance-none ${sizeClasses} cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-brand/30`}
                 aria-label="Select display currency"
             >
                 {safeCurrencies.map(c => (

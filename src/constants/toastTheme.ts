@@ -19,9 +19,9 @@ export const TOAST_THEME = {
     hover: '0 10px 28px rgba(15, 23, 42, 0.13)',
   },
   accent: {
-    default: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, rgba(0, 102, 204, 0.22) 100%)`,
-    success: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, rgba(0, 102, 204, 0.22) 100%)`,
-    info: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, rgba(0, 102, 204, 0.22) 100%)`,
+    default: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, hsl(var(--brand)/0.22) 100%)`,
+    success: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, hsl(var(--brand)/0.22) 100%)`,
+    info: `linear-gradient(180deg, ${HP_COLOR.brand} 0%, hsl(var(--brand)/0.22) 100%)`,
     error: 'linear-gradient(180deg, #DC2626 0%, rgba(220, 38, 38, 0.22) 100%)',
     warning: 'linear-gradient(180deg, #D97706 0%, rgba(217, 119, 6, 0.22) 100%)',
   },

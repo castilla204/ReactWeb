@@ -600,7 +600,7 @@ export function PreHireChatPage() {
                     <Button
                         type="button"
                         onClick={handleHireClick}
-                        className="h-12 w-full rounded-full bg-[#0066CC] text-base font-semibold text-white shadow-[0_4px_16px_rgba(0,102,204,0.22)] hover:bg-[#005bb5]"
+                        className="h-12 w-full rounded-full bg-brand text-base font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] hover:bg-brand-hover"
                     >
                         {PRE_HIRE_CHAT_COPY.hireCta}
                         {priceLabel ? ` · ${priceLabel}` : ''}

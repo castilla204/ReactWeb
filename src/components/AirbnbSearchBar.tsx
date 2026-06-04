@@ -546,7 +546,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 e.stopPropagation();
                 openMobileSearch();
               }}
-              className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-[#0066CC] hover:bg-[#005bb5] transition-colors flex items-center justify-center cursor-pointer"
+              className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-brand hover:bg-brand-hover transition-colors flex items-center justify-center cursor-pointer"
               aria-label="Filtros"
             >
               <Filter className="w-5 h-5 text-white" />
@@ -591,7 +591,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   aria-selected={isActive}
                   onClick={() => handleTabClick(tab.id, tab.categoryId)}
                   className={`flex w-[5.25rem] min-[390px]:w-24 shrink-0 flex-col items-center border-b-2 bg-transparent py-0.5 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
-                    isActive ? 'border-[#0066CC]' : 'border-transparent'
+                    isActive ? 'border-brand' : 'border-transparent'
                   }`}
                 >
                   <img
@@ -881,7 +881,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               }}
                                     className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 ease-out border animate-fade-in ${
                                       categoryId === category.id 
-                                        ? 'border-[#005bb5]/40 bg-[#0066CC] text-white shadow-md shadow-[#0066CC]/20' 
+                                        ? 'border-brand-hover/40 bg-brand text-white shadow-md shadow-brand/20' 
                                         : 'border-[#ebebeb]/90 bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white active:bg-white'
                                     }`}
                                     style={{
@@ -1289,7 +1289,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   handleSearch();
                 }, 150);
               }}
-              className="px-6 py-3.5 bg-[#FF385C] text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2 transition-all active:scale-95"
+              className="px-6 py-3.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2 transition-colors active:scale-95 shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
             >
               <Search className="w-4 h-4" />
               Buscar
@@ -1332,7 +1332,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 placeholder="Buscar categorías..."
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:bg-white transition-all border border-[#ebebeb]/80"
+                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand focus:bg-white transition-all border border-[#ebebeb]/80"
                 style={{
                   fontSize: '14px',
                   lineHeight: '18px',
@@ -1382,7 +1382,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         onClick={() => handleDrawerCategoryClick(category.id, category.name)}
                         className={`flex items-center gap-4 px-4 py-4 transition-colors w-full rounded-xl border ${
                           isSelected
-                            ? 'border-[#0066CC]/30 bg-[#0066CC]/8'
+                            ? 'border-brand/30 bg-brand/8'
                             : 'border-transparent hover:bg-[#f9fafb]'
                         }`}
                       >
@@ -1412,7 +1412,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         
                         {isSelected && (
                           <div className="flex-shrink-0">
-                            <div className="w-2 h-2 rounded-full bg-[#0066CC]" />
+                            <div className="w-2 h-2 rounded-full bg-brand" />
                           </div>
                         )}
                       </button>
