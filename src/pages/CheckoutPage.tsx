@@ -63,7 +63,7 @@ function CheckoutLegalNotices({
                     href="/terms.html"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-[#1c1c1c] underline decoration-[#0066CC] underline-offset-2 hover:no-underline"
+                    className="font-semibold text-[#1c1c1c] underline decoration-brand underline-offset-2 hover:no-underline"
                 >
                     Ver condiciones
                 </a>
@@ -382,7 +382,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#fafafa]">
                 <div className="text-center">
-                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#0066CC] border-t-transparent" />
+                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
                     <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>Cargando...</p>
                 </div>
             </div>
@@ -483,7 +483,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             <button
                                                 type="button"
                                                 onClick={handleBack}
-                                                className={`mt-3 text-sm font-semibold text-[#0066CC] ${HP_LINK_UNDERLINE_CLASS}`}
+                                                className={`mt-3 text-sm font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
                                             >
                                                 Ver ficha del servicio
                                             </button>
@@ -638,7 +638,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         return (
                                             <div className="mt-4 flex items-center gap-2 text-xs text-[#6a6a6a]">
                                                 <Globe
-                                                    className="h-3.5 w-3.5 shrink-0 text-[#0066CC]"
+                                                    className="h-3.5 w-3.5 shrink-0 text-brand"
                                                     aria-hidden
                                                 />
                                                 <span>Horario del experto: {tzLabel}</span>

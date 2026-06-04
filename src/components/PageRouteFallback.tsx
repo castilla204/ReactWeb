@@ -7,6 +7,6 @@ export const PageRouteFallback: React.FC = () => (
     aria-busy="true"
     aria-label="Cargando página"
   >
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0066CC] border-t-transparent" />
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand border-t-transparent" />
   </div>
 );

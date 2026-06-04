@@ -50,10 +50,10 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
             className={`inline-flex items-center justify-center font-bold leading-none transition-colors ${cellSize} ${
               variant === 'sidebar'
                 ? on
-                  ? 'bg-[#0066CC] text-white'
+                  ? 'bg-brand text-white'
                   : 'bg-white text-[#b8b8b8]'
                 : on
-                  ? 'rounded-md bg-[#0066CC] text-white'
+                  ? 'rounded-md bg-brand text-white'
                   : 'rounded-md bg-white text-[#c4c4c4]'
             }`}
           >
@@ -71,7 +71,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const scheduleRow = (
     <div className="flex items-center justify-between gap-2">
       {timeRange ? (
-        <span className="text-sm font-semibold tabular-nums tracking-tight text-[#0066CC]">
+        <span className="text-sm font-semibold tabular-nums tracking-tight text-brand">
           {timeRange}
         </span>
       ) : (
@@ -129,7 +129,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
               title={`${day.label}${on ? '' : ' — no disponible'}`}
               aria-pressed={on}
               className={`inline-flex items-center justify-center rounded-md font-bold leading-none transition-colors ${cellSize} ${
-                on ? 'bg-[#0066CC] text-white' : 'bg-white text-[#c4c4c4]'
+                on ? 'bg-brand text-white' : 'bg-white text-[#c4c4c4]'
               }`}
             >
               {day.short}
@@ -143,7 +143,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
           <span className="hidden sm:inline text-[#d4d4d4]" aria-hidden>
             ·
           </span>
-          <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-[#0066CC]">
+          <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-brand">
             {timeRange}
           </span>
         </>

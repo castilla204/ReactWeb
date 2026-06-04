@@ -98,10 +98,10 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
         <p
           className={
             isCompact
-              ? 'border-l-2 border-[#0066CC] py-0 pl-2.5 text-xs text-[#6a6a6a]'
+              ? 'border-l-2 border-brand py-0 pl-2.5 text-xs text-[#6a6a6a]'
               : isDrawer
-                ? 'border-l-2 border-[#0066CC] py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
-                : 'border-l-2 border-[#0066CC] py-0 pl-3 text-sm text-[#6a6a6a]'
+                ? 'border-l-2 border-brand py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
+                : 'border-l-2 border-brand py-0 pl-3 text-sm text-[#6a6a6a]'
           }
         >
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
@@ -207,8 +207,8 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                           isCompact
                             ? 'mt-1 text-xs font-medium text-[#1c1c1c] underline-offset-2 hover:underline'
                             : isDrawer
-                              ? 'mt-2.5 text-[15px] font-medium text-[#0066CC] hover:underline'
-                              : 'mt-2 text-sm font-medium text-[#0066CC] hover:underline'
+                              ? 'mt-2.5 text-[15px] font-medium text-brand hover:underline'
+                              : 'mt-2 text-sm font-medium text-brand hover:underline'
                         }
                       >
                         {isExpanded ? 'Menos' : 'Más'}

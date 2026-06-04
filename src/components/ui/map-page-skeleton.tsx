@@ -22,8 +22,9 @@ export function MapPageSkeleton() {
           </div>
         </div>
 
-        {/* ✅ Bottom drawer skeleton - Mejorado y más realista */}
-        <div className="h-[34vh] rounded-t-[24px] border-t border-[#e8e8e8] bg-white p-4 shadow-[0_-12px_40px_rgba(0,0,0,0.12)]">
+        {/* ✅ Bottom drawer skeleton - alineado con MOBILE_MAP_SNAP_DEPLOYED (~50% viewport)
+             para evitar layout shift al hacer fade-in al mapa real (CLS reducido). */}
+        <div className="h-[50vh] rounded-t-[24px] border-t border-[#e8e8e8] bg-white p-4 shadow-[0_-12px_40px_rgba(0,0,0,0.12)]">
           <div className="flex items-center justify-between mb-4">
             <Skeleton height={20} width={120} borderRadius={4} />
             <Skeleton height={32} width={32} borderRadius="50%" />
