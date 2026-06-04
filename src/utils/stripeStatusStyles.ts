@@ -13,6 +13,29 @@
 
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 
+// 🛡️ Round 28 MUD-CJ: arrays compartidos de severidad. Antes el banner tenía
+// copias locales hardcoded → drift garantizado si se añade un estado nuevo a
+// los helpers (Card/Modal lo pintan correcto, banner lo silencia con return null).
+// Single source of truth para Banner + Card + Modal.
+export const STRIPE_WARNING_STATES: readonly string[] = [
+    STRIPE_STATUS.REQUIREMENTS_DUE,
+    STRIPE_STATUS.RESTRICTED_SOON,
+    STRIPE_STATUS.ACTION_REQUIRED,
+] as const;
+
+export const STRIPE_ERROR_STATES: readonly string[] = [
+    STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
+    STRIPE_STATUS.RESTRICTED,
+    STRIPE_STATUS.DISABLED,
+    STRIPE_STATUS.REJECTED,
+    STRIPE_STATUS.DEAUTHORIZED,
+] as const;
+
+export const STRIPE_INFO_STATES: readonly string[] = [
+    STRIPE_STATUS.PENDING_VERIFICATION,
+    STRIPE_STATUS.PENDING,
+] as const;
+
 /**
  * Clase para el icono circular grande del estado (Card empty state icon).
  * Fondo siempre blanco con borde gris; color en el texto.
