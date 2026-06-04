@@ -141,6 +141,28 @@
       "transfers": "Outbound transfers",
       "tax_reporting_us_1099_misc": "Tax reporting 1099-MISC (US)",
       "tax_reporting_us_1099_k": "Tax reporting 1099-K (US)"
+    },
+    "status": {
+      "notRequested":        { "button": "🔧 Set up payments" },
+      "pending": {
+        "buttonContinue":    "⏳ Continue verification",
+        "buttonRequirements": "⚠️ Complete requirements",
+        "buttonWait":         "Check status"
+      },
+      "actionRequired":      { "button": "⚠️ Resolve in Stripe" },
+      "pendingVerification": { "button": "Open Stripe dashboard" },
+      "requirementsDue":     { "button": "Update info" },
+      "requirementsPastDue": { "button": "Reactivate in Stripe" },
+      "restrictedSoon":      { "button": "Resolve now" },
+      "restricted":          { "button": "Resolve in Stripe" },
+      "disabled":            { "button": "Contact Stripe" },
+      "approved":            { "button": "✅ Open Stripe dashboard" },
+      "rejected": {
+        "buttonContact":     "🚫 Contact support",
+        "buttonRetry":       "🔄 Retry setup"
+      },
+      "deauthorized":        { "button": "🔗 Reconnect" },
+      "unknown":             { "button": "Check status" }
     }
   }
 }

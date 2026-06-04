@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import i18n from '../i18n';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
 import { ExpertStatusResponse, StripeSyncStatusResponse, StripeStatus } from '../types/stripe';
@@ -159,7 +160,8 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos."),
                 action: "setup",
-                buttonText: "🔧 Configurar Pagos",
+                // 🛡️ LOTE D · D-18 FASE 1 — i18n del buttonText. FASE 2 (mensajes largos) pendiente.
+                buttonText: i18n.t('stripe.status.notRequested.button'),
                 color: "#3b82f6",
                 bgColor: "#eff6ff",
                 futureRequirementsText
@@ -173,7 +175,7 @@ const getStatusInfo = (
                     canRetry: true,
                     message: getMessage("Tu proceso de verificación está en curso. Completa la configuración de tu cuenta de pagos para continuar."),
                     action: "setup",
-                    buttonText: "⏳ Continuar Verificación",
+                    buttonText: i18n.t('stripe.status.pending.buttonContinue'),
                     color: "#f59e0b",
                 bgColor: "#fffbeb",
                 futureRequirementsText
@@ -186,7 +188,7 @@ const getStatusInfo = (
                     canRetry: true,
                     message: getMessage("Stripe requiere información adicional para activar tu cuenta. Completa los requisitos pendientes."),
                     action: "complete_requirements",
-                    buttonText: "⚠️ Completar Requisitos",
+                    buttonText: i18n.t('stripe.status.pending.buttonRequirements'),
                     color: "#f59e0b",
                 bgColor: "#fffbeb",
                 futureRequirementsText
@@ -198,7 +200,7 @@ const getStatusInfo = (
                 canRetry: false,
                 message: getMessage("Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista."),
                 action: "wait",
-                buttonText: "Verificar Estado",
+                buttonText: i18n.t('stripe.status.pending.buttonWait'),
                 color: "#f59e0b",
                 bgColor: "#fffbeb",
                 futureRequirementsText
@@ -210,7 +212,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Stripe necesita documentación o datos adicionales de inmediato. Abre tu panel de Stripe y completa los campos marcados como \"currently_due\"."),
                 action: "complete_requirements",
-                buttonText: "⚠️ Resolver en Stripe",
+                buttonText: i18n.t('stripe.status.actionRequired.button'),
                 color: "#f97316",
                 bgColor: "#fff7ed",
                 deadlineText: baseFutureDue,
@@ -223,7 +225,7 @@ const getStatusInfo = (
                 canRetry: false,
                 message: getMessage("Stripe está verificando la documentación enviada. Mientras tanto, los pagos seguirán bloqueados."),
                 action: "wait",
-                buttonText: "Ver panel Stripe",
+                buttonText: i18n.t('stripe.status.pendingVerification.button'),
                 color: "#3b82f6",
                 bgColor: "#eff6ff",
                 deadlineText: baseFutureDue,
@@ -236,7 +238,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Stripe programó requisitos futuros. Actualiza tus datos antes de que la cuenta pase a un estado restrictivo."),
                 action: "complete_requirements",
-                buttonText: "Actualizar datos",
+                buttonText: i18n.t('stripe.status.requirementsDue.button'),
                 color: "#fbbf24",
                 bgColor: "#fffbeb",
                 deadlineText: baseFutureDue,
@@ -249,7 +251,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Algunos requisitos vencieron y Stripe bloqueó tus cobros. Completa la información para reactivar los pagos."),
                 action: "complete_requirements",
-                buttonText: "Reactivar en Stripe",
+                buttonText: i18n.t('stripe.status.requirementsPastDue.button'),
                 color: "#dc2626",
                 bgColor: "#fef2f2",
                 deadlineText: baseFutureDue,
@@ -262,7 +264,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Stripe emitió una alerta: si no actualizas tus datos, restringirá tu cuenta en breve."),
                 action: "complete_requirements",
-                buttonText: "Resolver ahora",
+                buttonText: i18n.t('stripe.status.restrictedSoon.button'),
                 color: "#f97316",
                 bgColor: "#fff7ed",
                 deadlineText: baseFutureDue,
@@ -275,7 +277,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Stripe limitó temporalmente tus cobros/payouts. Revisa el panel para completar los pasos pendientes."),
                 action: "complete_requirements",
-                buttonText: "Resolver en Stripe",
+                buttonText: i18n.t('stripe.status.restricted.button'),
                 color: "#f97316",
                 bgColor: "#fff7ed",
                 deadlineText: baseFutureDue,
@@ -288,7 +290,7 @@ const getStatusInfo = (
                 canRetry: false,
                 message: getMessage("Stripe deshabilitó los pagos por un incidente o incumplimiento. Debes coordinar con Stripe para recuperar la cuenta."),
                 action: "contact",
-                buttonText: "Contactar Stripe",
+                buttonText: i18n.t('stripe.status.disabled.button'),
                 color: "#7f1d1d",
                 bgColor: "#fef2f2",
                 deadlineText: baseFutureDue,
@@ -301,7 +303,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos."),
                 action: "edit_account",
-                buttonText: "✅ Abrir panel de Stripe",
+                buttonText: i18n.t('stripe.status.approved.button'),
                 color: "#10b981",
                 bgColor: "#ecfdf5",
                 futureRequirementsText
@@ -327,7 +329,9 @@ const getStatusInfo = (
                 canRetry: !isPermanent,
                 message: getMessage(rejectedMessage),
                 action: isPermanent ? "contact" : "retry",
-                buttonText: isPermanent ? "🚫 Contactar Soporte" : "🔄 Reintentar Configuración",
+                buttonText: isPermanent
+                    ? i18n.t('stripe.status.rejected.buttonContact')
+                    : i18n.t('stripe.status.rejected.buttonRetry'),
                 color: "#ef4444",
                 bgColor: "#fef2f2",
                 futureRequirementsText
@@ -339,7 +343,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Tu cuenta de pagos ha sido desactivada. Por favor, reconecta tu cuenta para continuar recibiendo pagos."),
                 action: "setup",
-                buttonText: "🔗 Volver a Conectar",
+                buttonText: i18n.t('stripe.status.deauthorized.button'),
                 color: "#8b5cf6",
                 bgColor: "#faf5ff",
                 futureRequirementsText
@@ -351,7 +355,7 @@ const getStatusInfo = (
                 canRetry: true,
                 message: getMessage("Estado de cuenta no reconocido. Por favor, contacta soporte para verificar tu estado."),
                 action: "setup",
-                buttonText: "Verificar Estado",
+                buttonText: i18n.t('stripe.status.unknown.button'),
                 color: "#6b7280",
                 bgColor: "#f9fafb",
                 futureRequirementsText

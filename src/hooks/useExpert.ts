@@ -621,65 +621,46 @@ export function useExpert() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.role]); // Solo depender del role, no de las funciones
 
-    // Verificar el estado del onboarding automáticamente si hay un proceso pendiente
+    // 🛡️ LOTE D · D-17 — Polling Stripe CONSOLIDADO en useExpertStripeStatus.
+    //
+    // ANTES: 3 setInterval concurrentes pegando a /expert-status y /onboarding-status:
+    //   - useExpert.ts:631 (60s, pendingStripeAccountId + !completed)
+    //   - useExpert.ts:661 (120s, stripeAccountId + !completed)
+    //   - useExpertStripeStatus.ts (120s, POLLING_STATUSES)
+    // Resultado: hasta 3 fetches por minuto al mismo expert-status para el mismo experto,
+    // contradicciones de estado entre hooks (race condition entre setProfile y setStatus),
+    // y triple notificación "🎉 cuenta activada".
+    //
+    // AHORA: useExpertStripeStatus es el ÚNICO emisor de fetches a /expert-status.
+    // Cuando detecta un cambio, emite el evento `stripeStatusChanged`. useExpert se
+    // suscribe a ese evento y refresca su `profile` UNA sola vez (force=true), sin
+    // tener su propio interval. La carga inicial al montar sigue ocurriendo cuando hay
+    // un onboarding pendiente — necesaria para sembrar el estado del hook de status.
     useEffect(() => {
+        // Carga inicial cuando hay onboarding pendiente: una única llamada al montar.
         if (profile?.pendingStripeAccountId && profile?.onboardingCompleted !== true) {
-            // Verificar inmediatamente al cargar la página
             checkOnboardingStatus().catch(console.error);
-            
-            // Verificar el estado cada 60 segundos si hay onboarding pendiente (reducido de 30s)
-            const interval = setInterval(async () => {
-                try {
-                    const newStatus = await checkOnboardingStatus();
-                    if (newStatus && newStatus.onboardingCompleted) {
-                        console.log('🎉 ¡Cuenta Stripe activada por Stripe!');
-                        // Disparar evento para mostrar notificación de éxito
-                        window.dispatchEvent(new CustomEvent('showNotification', {
-                            detail: {
-                                type: 'success',
-                                message: '🎉 ¡Cuenta Stripe activada y verificada por Stripe!',
-                            },
-                        }));
-                        // Limpiar cache para forzar actualización
-                        lastFetchRef.current = {};
-                    }
-                } catch (error) {
-                    console.error('Error checking onboarding status:', error);
-                }
-            }, 60000); // Aumentado a 60 segundos
-
-            return () => clearInterval(interval);
         }
     }, [profile?.pendingStripeAccountId, profile?.onboardingCompleted]);
 
-    // Verificar también si hay cuenta Stripe pero no está completada (puede estar en revisión)
+    // 🛡️ LOTE D · D-17 — Listener centralizado: refresca el profile cuando
+    // useExpertStripeStatus detecta un cambio real de estado. Reemplaza los 2
+    // setInterval redundantes que vivían aquí.
     useEffect(() => {
-        if (profile?.stripeAccountId && profile?.onboardingCompleted !== true) {
-            console.log('🔍 Cuenta Stripe existe pero no está completada - verificando estado...');
-            
-            // Verificar cada 2 minutos si la cuenta se activa (reducido de 1 minuto)
-            const interval = setInterval(async () => {
-                try {
-                    const newStatus = await checkOnboardingStatus();
-                    if (newStatus && newStatus.onboardingCompleted) {
-                        console.log('🎉 ¡Cuenta Stripe activada después de revisión!');
-                        window.dispatchEvent(new CustomEvent('showNotification', {
-                            detail: {
-                                type: 'success',
-                                message: '🎉 ¡Cuenta Stripe activada después de revisión por Stripe!',
-                            },
-                        }));
-                        // Limpiar cache para forzar actualización
-                        lastFetchRef.current = {};
-                    }
-                } catch (error) {
-                    console.error('Error checking account activation:', error);
-                }
-            }, 120000); // Cada 2 minutos para cuentas en revisión
+        const handleStripeStatusChange = (event: Event) => {
+            const ev = event as CustomEvent<{ stripeStatus?: string; previousStatus?: string }>;
+            console.log('📬 useExpert: stripeStatusChanged recibido', ev.detail);
+            // Invalidar cache para forzar refetch en la próxima llamada y traer el
+            // perfil actualizado (onboardingCompleted, stripeStatus, etc.).
+            lastFetchRef.current = {};
+            // fetchProfile expuesto via closure desde la función outer del hook.
+            // Si el evento dispara después del unmount, el catch evita warning de React.
+            fetchProfile(true, { silent: true }).catch(console.error);
+        };
 
-            return () => clearInterval(interval);
-        }
-    }, [profile?.stripeAccountId, profile?.onboardingCompleted]);
+        window.addEventListener('stripeStatusChanged', handleStripeStatusChange);
+        return () => window.removeEventListener('stripeStatusChanged', handleStripeStatusChange);
+    }, []);
 
     // Verificar el estado cuando el usuario regresa a la página (después de completar onboarding en Stripe)
     useEffect(() => {
