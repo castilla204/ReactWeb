@@ -533,6 +533,9 @@ const AppContent: React.FC = () => {
                             <Route path="/como-funciona" element={<RouteSuspense><LazyPages.ComoFuncionaPage /></RouteSuspense>} />
                             <Route path="/faq" element={<RouteSuspense><LazyPages.FAQPage /></RouteSuspense>} />
                             <Route path="/favoritos" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
+                            {/* 🛡️ MUD-DI — `/notifications` antes daba 404 a pesar de que
+                                LoggingService.cs:1053 enviaba este link en TODOS los emails. */}
+                            <Route path="/notifications" element={<ProtectedRoute><RouteSuspense><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/explorar" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
                             <Route path="/" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
                             

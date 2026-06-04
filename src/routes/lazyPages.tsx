@@ -44,6 +44,8 @@ export const QuienesSomosPage = lazyDefault(() => import('../pages/QuienesSomosP
 export const ComoFuncionaPage = lazyDefault(() => import('../pages/ComoFuncionaPage'));
 export const FAQPage = lazyDefault(() => import('../pages/FAQPage'));
 export const FavoritesPage = lazyNamed(() => import('../pages/FavoritesPage'), 'FavoritesPage');
+// 🛡️ MUD-DI — página full-page para emails que apuntan a /notifications.
+export const NotificationsPage = lazyDefault(() => import('../pages/NotificationsPage'));
 export const AdminDashboard = lazyDefault(() => import('../pages/admin/AdminDashboard'));
 export const AdminConfigPage = lazyDefault(() => import('../pages/admin/AdminConfigPage'));
 export const AdminCategoriesPage = lazyDefault(() => import('../pages/admin/AdminCategoriesPage'));

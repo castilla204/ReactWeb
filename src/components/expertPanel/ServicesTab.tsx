@@ -51,6 +51,11 @@ interface ServicesTabProps {
     deleteService?: (serviceId: number) => Promise<any>;
     isDeletingService?: boolean;
     onEditService?: (service: Service) => void;
+    // 🛡️ MUD-DF — datos del contexto para badge real de visibilidad.
+    stripeStatus?: string | null;
+    onboardingCompleted?: boolean | null;
+    isOnVacation?: boolean | null;
+    hasLocation?: boolean;
 }
 
 export function ServicesTab({
@@ -64,6 +69,10 @@ export function ServicesTab({
     goToPreviousImage,
     goToNextImage,
     categories,
+    stripeStatus,
+    onboardingCompleted,
+    isOnVacation,
+    hasLocation,
     deleteService,
     isDeletingService,
     onEditService,
@@ -248,9 +257,56 @@ export function ServicesTab({
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200 hover:bg-emerald-500/20 text-xs">
-                                                Activo
-                                            </Badge>
+                                            {(() => {
+                                                // 🛡️ MUD-DF — Badge REAL de visibilidad (sustituye al "Activo" hardcoded).
+                                                // El backend filtra servicios del mapa público por
+                                                // (StripeStatus Approved+OnboardingCompleted o PendingVerification)
+                                                // + IsOnVacation=false + lat/lng válidos + service.IsActive.
+                                                // El badge muestra el motivo dominante de ocultación.
+                                                const isInvisibleByStripe = (() => {
+                                                    const s = stripeStatus || '';
+                                                    if (s === 'Approved' && onboardingCompleted) return false;
+                                                    if (s === 'PendingVerification') return false;
+                                                    return true;
+                                                })();
+                                                const inactive = service.isActive === false;
+                                                const onVacation = isOnVacation === true;
+                                                const noLocation = hasLocation === false;
+
+                                                if (inactive) {
+                                                    return (
+                                                        <Badge title="Lo pausaste tú" className="bg-gray-100 text-gray-700 border-gray-200 text-xs">
+                                                            Pausado
+                                                        </Badge>
+                                                    );
+                                                }
+                                                if (onVacation) {
+                                                    return (
+                                                        <Badge title="Modo vacaciones activo — desactívalo para volver a aparecer" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                                            Oculto · vacaciones
+                                                        </Badge>
+                                                    );
+                                                }
+                                                if (isInvisibleByStripe) {
+                                                    return (
+                                                        <Badge title="Tu cuenta de pagos requiere atención — los clientes no te ven" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                                                            Oculto · Stripe
+                                                        </Badge>
+                                                    );
+                                                }
+                                                if (noLocation) {
+                                                    return (
+                                                        <Badge title="Sin ubicación válida — edita tu perfil para añadirla" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+                                                            Oculto · sin ubicación
+                                                        </Badge>
+                                                    );
+                                                }
+                                                return (
+                                                    <Badge title="Tus clientes te ven en búsquedas" className="bg-emerald-500/10 text-emerald-700 border-emerald-200 hover:bg-emerald-500/20 text-xs">
+                                                        Visible
+                                                    </Badge>
+                                                );
+                                            })()}
                                         </TableCell>
                                         <TableCell>
                                             <DropdownMenu>
