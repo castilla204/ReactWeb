@@ -303,9 +303,11 @@ export function PreHireChatPage() {
         : expertCountryName || 'Zona no especificada';
     
     const servicePrice = service?.price ?? 0;
+    // 🛡️ Round 28: usar divisa real del servicio (priceCurrency/currency) en vez de EUR hardcoded.
+    const serviceCurrencyCode = ((service as any)?.priceCurrency || (service as any)?.currency || 'EUR').toUpperCase();
     const priceLabel =
       servicePrice > 0
-        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(servicePrice)
+        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: serviceCurrencyCode }).format(servicePrice)
         : null;
     
     // Handler para favorito

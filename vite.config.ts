@@ -54,7 +54,7 @@ export default defineConfig({
             'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Permissions-Policy': 'geolocation=(self), microphone=(), camera=()',
             // ✅ Content-Security-Policy con frame-ancestors 'none' para prevenir iframes
-            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://api.atrapo.io https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.basemaps.cartocdn.com https://*.cartocdn.com wss://cckrnifvbrwuagzlsrbj.supabase.co https://cckrnifvbrwuagzlsrbj.supabase.co; frame-src 'self' https://accounts.google.com https://js.stripe.com; frame-ancestors 'none';",
+            'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://api.mapbox.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://api.atrapo.io https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.basemaps.cartocdn.com https://*.cartocdn.com https://api.mapbox.com https://events.mapbox.com wss://cckrnifvbrwuagzlsrbj.supabase.co https://cckrnifvbrwuagzlsrbj.supabase.co; frame-src 'self' https://accounts.google.com https://js.stripe.com; frame-ancestors 'none';",
         },
         proxy: {
             '/api': {
@@ -116,11 +116,12 @@ export default defineConfig({
                     // Al consolidar todo en un solo chunk, eliminamos la circularidad
                     manualChunks: (id) => {
                         if (id.includes('node_modules')) {
-                            if (id.includes('@react-google-maps') || id.includes('google')) {
-                                return undefined;
-                            }
+                            // 🛡️ Round 28: Mapbox (mapbox-gl + react-map-gl) y MapLibre juntos en chunk pesado map-hero.
+                            // Google Maps deps eliminadas tras migración completa a Mapbox.
                             if (
                                 id.includes('maplibre-gl') ||
+                                id.includes('mapbox-gl') ||
+                                id.includes('react-map-gl') ||
                                 id.includes('@mapbox') ||
                                 id.includes('@maplibre')
                             ) {

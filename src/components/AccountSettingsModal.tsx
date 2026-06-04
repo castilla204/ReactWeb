@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, Menu, CheckCircle, Mail, Calendar, DollarSign } from 'lucide-react';
+import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, Menu, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAccountDeletion } from '../hooks/useAccountDeletion';
 import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion';
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
+// 🛡️ Round 28 MUD-F: wizard de mudanza self-service del experto.
+// 🛡️ Round 28 MUD-U: import retirado — el wizard ya no se monta aquí. Lo monta
+// ExpertPanelPage tras recibir el evento global dispatchado al cerrar este modal.
 import { showToast } from '../lib/toast';
 import {
     Dialog,
@@ -32,22 +35,31 @@ interface AccountSettingsModalProps {
   onClose: () => void;
 }
 
-type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'delete';
+type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'relocate' | 'delete';
 
-const tabs = [
-  { id: 'profile' as TabType, label: 'Perfil', icon: User },
-  { id: 'security' as TabType, label: 'Seguridad', icon: Shield },
-  { id: 'notifications' as TabType, label: 'Notificaciones', icon: Bell },
-  { id: 'privacy' as TabType, label: 'Privacidad', icon: Globe },
-  { id: 'delete' as TabType, label: 'Eliminar Cuenta', icon: Trash2, destructive: true },
+// 🛡️ Round 28 MUD-F: el tab 'relocate' solo se muestra a expertos (filtrado más abajo
+// según user.Role === 'Expert'). El hook React no permite condicionales en `const tabs`
+// por estar en module scope, así que el filtrado se hace al renderizar.
+const allTabs = [
+  { id: 'profile' as TabType, label: 'Perfil', icon: User, expertOnly: false },
+  { id: 'security' as TabType, label: 'Seguridad', icon: Shield, expertOnly: false },
+  { id: 'notifications' as TabType, label: 'Notificaciones', icon: Bell, expertOnly: false },
+  { id: 'privacy' as TabType, label: 'Privacidad', icon: Globe, expertOnly: false },
+  { id: 'relocate' as TabType, label: 'Mudarme a otro país', icon: Plane, expertOnly: true },
+  { id: 'delete' as TabType, label: 'Eliminar Cuenta', icon: Trash2, destructive: true, expertOnly: false },
 ];
 
 export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  // 🛡️ Round 28 MUD-F: detección rol experto + estado del wizard de mudanza.
+  const userRole = (user as any)?.Role || (user as any)?.role;
+  const isExpert = userRole === 'Expert';
+  const tabs = allTabs.filter(t => !t.expertOnly || isExpert);
+  // 🛡️ MUD-U: state retirado — el wizard vive en ExpertPanelPage.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   // ✅ Ref para rastrear si el componente está montado y limpiar timeouts
@@ -164,22 +176,32 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const handleDelete = async () => {
     setDeletionStep('processing');
     clearError();
-    
+
     // ✅ El backend ya no requiere contraseña, solo razón opcional
     const request: any = deletionReason.trim() ? { reason: deletionReason.trim() } : {};
-    
+
     const response = await deleteAccount(request);
-    
+
     if (response) {
       setDeletionResult(response);
       setDeletionStep('result');
+      // 🛡️ FIX: Desloguear INMEDIATAMENTE al confirmar la eliminación.
+      //    Antes, el signOut solo se ejecutaba si el usuario pulsaba "Continuar";
+      //    si cerraba el modal con ESC/X o abría otra pestaña, el JWT seguía
+      //    en localStorage y el AuthContext seguía creyendo que estaba logueado.
+      //    Llamamos a signOut() en background — el AuthContext ya es defensivo
+      //    ante un /logout backend caído (la cuenta acaba de borrarse).
+      void signOut();
     } else {
       setDeletionStep('confirm');
     }
   };
 
   const handleDeleteSuccess = () => {
+    // El signOut() ya se disparó en handleDelete; aquí solo cerramos y redirigimos.
     onClose();
+    // Hard redirect para garantizar que cualquier estado en memoria (React Query,
+    // contextos, etc.) se descarte por completo.
     window.location.href = '/login';
   };
 
@@ -367,6 +389,62 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 🛡️ Round 28 MUD-F: Tab Mudarme (solo expertos) */}
+      {activeTab === 'relocate' && isExpert && (
+        <div className="space-y-4">
+          <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Plane className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-base font-semibold text-blue-900">¿Te has mudado a otro país?</h4>
+                <p className="text-sm text-blue-800 mt-1">
+                  Stripe Connect no permite cambiar el país de tu cuenta de cobros. Si te has mudado, este asistente cierra tu cuenta Stripe actual y te prepara para hacer un onboarding nuevo en tu país de residencia.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
+            <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Qué pasa al ejecutar el asistente
+            </h5>
+            <ul className="text-sm text-muted-foreground space-y-1.5 pl-5 list-disc">
+              <li>Verificamos que no haya dinero en vuelo (disputas, refunds o servicios contratados activos).</li>
+              <li>Cerramos tu cuenta Stripe Connect actual.</li>
+              <li>Desactivamos tus servicios actuales (siguen visibles en historial, pero no aparecen en búsquedas).</li>
+              <li>Tus reviews recibidas se preservan con badge "Servicio prestado en {`{país}`}".</li>
+              <li>Te dirigimos a "Convertirse en experto" para registrar tu nuevo país y reanudar el onboarding.</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={() => {
+              // 🛡️ Round 28 MUD-U: cerrar este modal ANTES de abrir el wizard.
+              // Radix Dialog/Vaul aplica inert/aria-hidden a body cuando está abierto,
+              // así que un wizard en portal queda inert (visible pero sin eventos).
+              // Cerramos primero y dispatchamos evento que ExpertPanelPage recoge.
+              onClose();
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('openExpertRelocationWizard'));
+              }, 50);
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            <Plane className="w-4 h-4 mr-2" />
+            Iniciar asistente de mudanza
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Esta acción cierra tu cuenta Stripe Connect actual. La acción es irreversible.
+          </p>
         </div>
       )}
 
@@ -589,10 +667,23 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
-      
+
       // Cerrar el drawer anidado primero para evitar conflictos de DOM
       setMobileMenuOpen(false);
-      
+
+      // 🛡️ Si la cuenta ya se eliminó, cerrar el modal debe redirigir SIEMPRE
+      //    al login para evitar dejar al usuario en una vista zombi.
+      if (deletionStep === 'result') {
+        closeTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            onClose();
+            window.location.href = '/login';
+          }
+          closeTimeoutRef.current = null;
+        }, 150);
+        return;
+      }
+
       // Pequeño delay para asegurar que el drawer anidado se cierre antes
       // Solo llamar onClose si el componente sigue montado
       closeTimeoutRef.current = setTimeout(() => {
@@ -603,7 +694,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       }, 150);
     }
     // Si open es true, no hacemos nada - el drawer se abre automáticamente
-  }, [onClose]);
+  }, [onClose, deletionStep]);
 
   const handleNestedDrawerOpenChange = React.useCallback((open: boolean) => {
     setMobileMenuOpen(open);
@@ -617,10 +708,17 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
+      // 🛡️ Si la cuenta ya se eliminó, cerrar el modal debe redirigir SIEMPRE
+      //    al login para evitar dejar al usuario en una vista zombi.
+      if (deletionStep === 'result') {
+        onClose();
+        window.location.href = '/login';
+        return;
+      }
       // Cerrar inmediatamente - Radix UI maneja el overlay automáticamente
       onClose();
     }
-  }, [onClose]);
+  }, [onClose, deletionStep]);
 
   if (isDesktop) {
     // ✅ Solo renderizar el Dialog si está abierto para evitar overlays huérfanos
@@ -639,6 +737,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               handleDialogOpenChange(false);
             }}
             onPointerDownOutside={(e) => {
+              // 🛡️ Round 28 MUD-T: dejar pasar clicks del wizard de mudanza (portal en body).
+              const target = e.target as HTMLElement | null;
+              if (target?.closest('[data-relocation-wizard]')) return;
               // Permitir cerrar haciendo clic fuera
               e.preventDefault();
               handleDialogOpenChange(false);
@@ -791,6 +892,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* 🛡️ Round 28 MUD-U: wizard NO se monta aquí — ExpertPanelPage lo monta y
+          escucha el evento global 'openExpertRelocationWizard' (necesario porque este
+          modal aplica inert al wizard portal cuando está abierto). */}
     </>
   );
 };
@@ -816,7 +921,13 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" />
-              <span>€{contract.amount.toFixed(2)}</span>
+              {/* 🛡️ Round 28 — Sprint 3: el backend ahora emite Currency en ActiveContractInfo. */}
+              <span>
+                {new Intl.NumberFormat('es-ES', {
+                  style: 'currency',
+                  currency: ((contract.currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
+                }).format(contract.amount)}
+              </span>
             </div>
             
             <div className="flex items-center">

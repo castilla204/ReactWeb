@@ -11,7 +11,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { StripeLoadingOverlay } from './StripeLoadingOverlay';
-import { getPriceDisplay } from '../utils/priceUtils';
+import { getPriceDisplay, formatCurrency } from '../utils/priceUtils';
+// 🛡️ Round 28 CUR-8: convertir a moneda preferida del usuario + mostrar original.
+import { useCurrency } from '../contexts/CurrencyContext';
 
 export interface SearchParameters {
     keywords: string;
@@ -43,6 +45,14 @@ export interface SearchFormProps {
     servicePrice?: number;
     serviceDescription?: string;
     serviceImageUrls?: string[];
+    /**
+     * 🛡️ Round 28: divisa del servicio (ISO 4217). Si el experto está en UK/CH/SE/etc.,
+     * el resumen debe mostrar £/CHF/kr en lugar de €. Default EUR para retro-compat.
+     * El desglose IVA/Base se OCULTA salvo que el backend lo provea — antes se calculaba
+     * `total/1.21` hardcoded asumiendo IVA español 21%, que es FALSO en FR (20%), DE (19%),
+     * CH (8.1%), UK (20%), HU (27%), etc.
+     */
+    serviceCurrency?: string;
 }
 
 export default function SearchForm({
@@ -56,9 +66,12 @@ export default function SearchForm({
     servicePrice,
     serviceDescription,
     serviceImageUrls,
+    serviceCurrency,
 }: SearchFormProps) {
     const { createSearchWithHire } = useSearch();
     const { } = useUserSettings();
+    // 🛡️ Round 28 CUR-8: usar formatPriceWithSource para convertir + mostrar original.
+    const { formatPriceWithSource, preferredCurrency } = useCurrency();
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -353,46 +366,52 @@ export default function SearchForm({
                                         );
                                     }
                                     
-                                    // Cálculo visual del desglose (21% IVA incluido)
-                                    // Total = Base * 1.21 => Base = Total / 1.21
+                                    // 🛡️ Round 28: el desglose Base/IVA antes se CALCULABA en cliente como
+                                    // `total / 1.21` asumiendo IVA español 21%. INCORRECTO para FR (20%),
+                                    // DE (19%), CH (8.1%), UK (20%), HU (27%), etc. Ahora mostramos solo el
+                                    // total con la divisa real del servicio; el desglose REAL lo calcula
+                                    // Stripe Tax en checkout según país del comprador (regla OSS UE).
+                                    // 🛡️ Round 28 CUR-8: además convertimos a moneda preferida del usuario
+                                    // y mostramos el original al lado — para que el paso 3 no diverja del
+                                    // paso 2 (ServiceReviewPage que sí muestra "≈ €23 ($25 USD)").
                                     const total = servicePrice;
-                                    const base = total / 1.21;
-                                    const tax = total - base;
-                                    
+                                    const currencyCode = (serviceCurrency ?? 'EUR').toUpperCase();
+                                    const priceInfo = formatPriceWithSource(total, currencyCode, preferredCurrency);
+
                                     return (
                                         <div className="space-y-4">
-                                    {/* Subtotal */}
+                                            {/* Subtotal */}
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[15px] text-[#222222]">Subtotal</span>
                                                 <span className="text-[15px] font-normal text-[#222222]">
-                                                    €{total.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    
-                                    {/* Total */}
+                                                    {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                                </span>
+                                            </div>
+
+                                            {/* Total */}
                                             <div className="pt-4 border-t border-[#DDDDDD]">
                                                 <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3">
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[16px] font-semibold text-[#222222]">Total</span>
                                                         <div className="text-right">
                                                             <div className="flex items-center justify-end gap-1.5">
-                                                                <span className="text-[20px] font-bold text-[#222222]">€{total.toFixed(2)}</span>
+                                                                <span className="text-[20px] font-bold text-[#222222]">
+                                                                    {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                                                </span>
                                                             </div>
-                                                            <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
+                                                            {priceInfo.wasConverted && (
+                                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                                    ({priceInfo.sourceFormatted} — cargo en {currencyCode})
+                                                                </p>
+                                                            )}
+                                                            <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">Impuestos incluidos</p>
                                                         </div>
                                                     </div>
-                                                    
-                                                    {/* Desglose de impuestos (Simulado/Calculado) - Siempre visible */}
-                                                    <div className="mt-3 pt-3 border-t border-gray-200/50 space-y-2">
-                                                        <div className="flex justify-between text-xs">
-                                                            <span className="text-gray-500">Base imponible</span>
-                                                            <span className="text-gray-700 font-medium">€{base.toFixed(2)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-xs">
-                                                            <span className="text-gray-500">IVA (21%)</span>
-                                                            <span className="text-gray-700 font-medium">€{tax.toFixed(2)}</span>
-                                                        </div>
-                                                    </div>
+
+                                                    {/* 🛡️ Round 28: desglose Base/IVA suprimido — lo calcula Stripe Tax en checkout */}
+                                                    <p className="mt-3 text-[11px] text-gray-500 leading-relaxed">
+                                                        El desglose de impuestos definitivo se calculará en el checkout según tu país.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>

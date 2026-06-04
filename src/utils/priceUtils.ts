@@ -12,6 +12,13 @@ interface PriceInfo {
   BaseAmount?: number;
   taxAmount?: number;
   TaxAmount?: number;
+  // 🛡️ Round 28: divisa snapshot del hire/transacción (ISO 4217). Si no viene, cae a EUR.
+  currency?: string;
+  Currency?: string;
+  chargeCurrency?: string;
+  ChargeCurrency?: string;
+  priceCurrency?: string;
+  PriceCurrency?: string;
 }
 
 /**
@@ -74,6 +81,15 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
   const base = baseRaw != null ? toFiniteNumber(baseRaw) : null;
   const tax = taxRaw != null ? toFiniteNumber(taxRaw) : null;
 
+  // 🛡️ Round 28: leer la divisa del hire/transacción. Antes el formateo caía siempre a EUR
+  // por el default de formatCurrency, mostrando "€100" en hires GBP/CHF/etc.
+  const currencyRaw = priceInfo.chargeCurrency ?? priceInfo.ChargeCurrency
+    ?? priceInfo.priceCurrency ?? priceInfo.PriceCurrency
+    ?? priceInfo.currency ?? priceInfo.Currency;
+  const currency = (typeof currencyRaw === 'string' && currencyRaw.trim().length === 3)
+    ? currencyRaw.trim().toUpperCase()
+    : 'EUR';
+
   // Si hay información de tax, mostrar desglose
   const hasTaxInfo = base != null && tax != null && tax > 0;
 
@@ -82,37 +98,87 @@ export function getPriceDisplay(priceInfo: PriceInfo | null | undefined): PriceD
     base: base ?? total, // Fallback a total si no hay base
     tax: tax ?? 0,
     hasTaxInfo: hasTaxInfo,
-    // Helper para formatear
-    formattedTotal: formatCurrency(total),
-    formattedBase: base != null ? formatCurrency(base) : null,
-    formattedTax: tax != null && tax > 0 ? formatCurrency(tax) : null,
+    // Helper para formatear con divisa real
+    formattedTotal: formatCurrency(total, currency),
+    formattedBase: base != null ? formatCurrency(base, currency) : null,
+    formattedTax: tax != null && tax > 0 ? formatCurrency(tax, currency) : null,
   };
 }
 
 /**
- * Formatea un número como moneda en euros
- * @param amount - Cantidad a formatear (acepta number, string o null/undefined; se hace coerción segura)
- * @returns String formateado (ej: "16,50 €" en es-ES). Devuelve "0,00 €" si el valor no es un número finito.
+ * 🛡️ Round 28: mapping país (ISO 3166-1 alpha-2) → moneda (ISO 4217 MAYÚSCULAS).
+ * Espejo lógico del `StripeCurrencyMapping` del backend. Si el país no está mapeado,
+ * cae a 'EUR' (mayoría del tráfico EEA).
  */
-// 🛡️ N25 TODO arquitectural: i18n. Hardcodear locale='es-ES' + currency='EUR' es correcto
-// MIENTRAS la plataforma sirva solo a España. Cuando se internacionalice (clientes en otros
-// países de la whitelist EEA+US+CA+GB+CH), implementar:
-//  - react-i18next (o similar) para textos UI.
-//  - Hook useLocale() que devuelva el locale del usuario (Accept-Language, preferencia perfil).
-//  - Hook useCurrency() para EUR/CHF/GBP/USD según país del cliente.
-//  - Cambiar firma a formatCurrency(amount, locale?, currency?).
-// Por ahora el currency es fijo EUR (la plataforma cobra siempre en EUR vía Stripe — ver N2
-// descartado en ronda 2: decisión de diseño correcta porque Stripe convierte automático al pagar).
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  // Zona euro
+  AT: 'EUR', BE: 'EUR', CY: 'EUR', EE: 'EUR', FI: 'EUR', FR: 'EUR', DE: 'EUR',
+  GR: 'EUR', HR: 'EUR', IE: 'EUR', IT: 'EUR', LV: 'EUR', LT: 'EUR', LU: 'EUR',
+  MT: 'EUR', NL: 'EUR', PT: 'EUR', SK: 'EUR', SI: 'EUR', ES: 'EUR',
+  // EU/EEA no eurozona
+  SE: 'SEK', DK: 'DKK', NO: 'NOK', PL: 'PLN', HU: 'HUF', CZ: 'CZK', BG: 'BGN', RO: 'RON',
+  // Franco suizo
+  CH: 'CHF', LI: 'CHF',
+  // No-EEA
+  GB: 'GBP', US: 'USD', CA: 'CAD',
+};
+
+/**
+ * 🛡️ Round 28: devuelve el código de divisa ISO 4217 (MAYÚSCULAS) para un país.
+ * Null/desconocido → 'EUR' (fallback seguro).
+ */
+export function getCurrencyForCountry(countryCode: string | null | undefined): string {
+  if (!countryCode || typeof countryCode !== 'string') return 'EUR';
+  const upper = countryCode.trim().toUpperCase();
+  return COUNTRY_TO_CURRENCY[upper] ?? 'EUR';
+}
+
+/**
+ * 🛡️ Round 28: devuelve el símbolo Unicode para una divisa ISO 4217. Si no
+ * lo conocemos, devuelve el propio código (ej. 'SEK', 'PLN') — mejor que un € incorrecto.
+ */
+export function getCurrencySymbol(currency: string | null | undefined): string {
+  const code = (currency ?? 'EUR').trim().toUpperCase();
+  const map: Record<string, string> = {
+    EUR: '€', GBP: '£', USD: '$', CAD: 'CA$', CHF: 'CHF',
+    SEK: 'kr', DKK: 'kr', NOK: 'kr', PLN: 'zł', HUF: 'Ft',
+    CZK: 'Kč', BGN: 'лв', RON: 'lei',
+  };
+  return map[code] ?? code;
+}
+
+/**
+ * Formatea un número como moneda usando Intl.NumberFormat.
+ * @param amount - Cantidad a formatear (acepta number, string o null/undefined; coerción segura)
+ * @param currency - Código ISO 4217 (ej. "EUR", "GBP", "CHF"). Default "EUR" para retro-compat.
+ * @param locale - Locale BCP47. Default "es-ES" (UI es español).
+ * @returns String formateado con el símbolo correcto.
+ */
+// 🛡️ Round 28: ahora acepta currency y locale opcionales. Mientras la UI siga en es-ES,
+// el locale por defecto sigue formateando con "1.234,56 GBP" → £1.234,56 (Intl gestiona
+// la posición del símbolo según locale, no según currency). Si en el futuro pasamos el
+// locale del usuario, basta con cambiar el default aquí.
 //
-// 🛡️ Round 10 — P-A FIX: ahora acepta unknown y hace coerción defensiva.
-export function formatCurrency(amount: unknown): string {
+// 🛡️ Round 10 — P-A FIX: coerción defensiva a número finito.
+export function formatCurrency(amount: unknown, currency: string = 'EUR', locale: string = 'es-ES'): string {
   const safe = toFiniteNumber(amount);
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(safe);
+  const safeCurrency = (currency ?? 'EUR').trim().toUpperCase() || 'EUR';
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: safeCurrency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safe);
+  } catch {
+    // Currency inválida → fallback a EUR para no romper el render.
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safe);
+  }
 }
 
 /**

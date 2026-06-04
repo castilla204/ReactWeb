@@ -1,149 +1,212 @@
-import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Loader2, UserPlus, Clock, AlertTriangle, MapPin, Check, ChevronRight } from 'lucide-react';
+// 🛡️ Round 28: migración Google Maps → Mapbox geocoding + MapLibre interactive map.
+// El proyecto NO tiene `react-map-gl` ni `mapbox-gl` en package.json: usa `maplibre-gl`
+// (renderizado) con tiles Carto + la API REST de Mapbox para geocoding (igual que el
+// resto de pantallas migradas — ver `ServiceDetailCoverageMap.tsx`).
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard } from 'lucide-react';
+import {
+    BecomeExpertWizardShell,
+    BecomeExpertStepHeader,
+    BE_CARD_CLASS,
+    BE_INPUT_CLASS,
+    BE_DAY_ACTIVE,
+    BE_DAY_IDLE,
+} from '../components/becomeExpert/BecomeExpertShell';
+import { BecomeExpertPhotoField } from '../components/becomeExpert/BecomeExpertPhotoField';
+import { BecomeExpertTrustStrip } from '../components/becomeExpert/BecomeExpertTrustStrip';
+import { BecomeExpertCoverageMap } from '../components/becomeExpert/BecomeExpertCoverageMap';
+import {
+    formatPayoutCountryLabel,
+    isSupportedPayoutCountry,
+} from '../constants/stripeConnectCountries';
+import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
-import { GoogleMap, useLoadScript, Marker, DrawingManager } from '@react-google-maps/api';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
-import { Stepper } from '../components/ui/stepper';
 import { useAuth } from '../contexts/AuthContext';
 import { useExpert } from '../hooks/useExpert';
-
-// Define a local type to match the Library enum values
-type GoogleMapLibrary = 'drawing' | 'geometry' | 'places';
-const libraries: GoogleMapLibrary[] = ['drawing', 'geometry', 'places'];
-
-const mapStyles = [
-    {
-        featureType: "all",
-        elementType: "labels.text.fill",
-        stylers: [{ color: "#555555" }]
-    },
-    {
-        featureType: "water",
-        elementType: "geometry",
-        stylers: [{ color: "#e0f0f8" }]
-    },
-    {
-        featureType: "landscape",
-        elementType: "geometry",
-        stylers: [{ color: "#f5f5f5" }]
-    },
-    {
-        featureType: "road",
-        elementType: "geometry",
-        stylers: [{ color: "#e0e0e0" }]
-    },
-    {
-        featureType: "poi",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
-    },
-    {
-        featureType: "transit",
-        elementType: "geometry",
-        stylers: [{ color: "#f0f5f7" }]
-    }
-];
+// 🛡️ Round 28: autocomplete y reverse geocoding vía Mapbox REST (token VITE_MAPBOX_ACCESS_TOKEN)
+import { searchMapboxAutocomplete, MapboxAutocompleteItem, reverseCountryMapbox } from '../utils/mapboxGeocoding';
 
 const defaultCenter = {
     lat: 40.4168,
-    lng: -3.7038
+    lng: -3.7038,
 };
 
-// Espejo de newApi.Common.SupportedConnectCountries (backend). Solo para aviso temprano:
-// EEA-27 + NO/LI + US/CA/GB/CH (IS fuera). La validación REAL la hace el backend.
-const SUPPORTED_PAYOUT_COUNTRIES = new Set<string>([
-    'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
-    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','NO','LI',
-    'US','CA','GB','CH',
-]);
+// Radio de cobertura del experto (km). Antes era 100000 m con google.maps.Circle;
+// ahora generamos el polígono GeoJSON con el mismo radio.
+const COVERAGE_RADIUS_KM = 100;
 
-const getZoomLevel = (radius: number) => {
-    const radiusInMeters = radius * 1000;
-    return Math.min(14, Math.max(4, Math.floor(14 - Math.log2(radiusInMeters / 500))));
-};
-
-const markerIcon = {
-    path: "M -4,0 A 4,4 0 1,0 4,0 A 4,4 0 1,0 -4,0",
-    fillColor: '#1e40af',
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 1.5,
-    scale: 1.5,
-    zIndex: 3
-};
-
-const circleOptions = {
-    fillColor: 'rgba(30, 64, 175, 0.1)',
-    fillOpacity: 0.15,
-    strokeColor: 'rgba(30, 64, 175, 0.5)',
-    strokeOpacity: 1,
-    strokeWeight: 2,
-    zIndex: 1,
-    clickable: false,
-    editable: false,
-    draggable: false
-};
-
+// 🎨 Round 30 — Rediseño: de 5 pasos triviales a 3 pasos sólidos.
+//   - "Identidad": foto + descripción (juntos en grid 2 columnas en desktop).
+//   - "Cobertura": mapa de zona + disponibilidad horaria (juntos).
+//   - "Confirmar": resumen + términos. Tras el submit, este paso muta a "Conecta Stripe"
+//                  INLINE — sin navegar a otra página. Antes había una vista separada
+//                  "Ya casi eres experto" que rompía el flujo y daba sensación de juguete.
 const STEPS = [
-    { id: 1, label: 'Foto', icon: Upload },
-    { id: 2, label: 'Descripción', icon: UserPlus },
-    { id: 3, label: 'Ubicación', icon: MapPin },
-    { id: 4, label: 'Disponibilidad', icon: Clock },
-    { id: 5, label: 'Confirmar', icon: Check },
-];
+    { id: 1, label: 'Identidad' },
+    { id: 2, label: 'Cobertura' },
+    { id: 3, label: 'Confirmar' },
+] as const;
+
+// 🛡️ Round 28: token Mapbox para el geocoder (no para tiles).
+// Mantenemos compatibilidad con ambas convenciones (PUBLIC_TOKEN y ACCESS_TOKEN).
+const MAPBOX_TOKEN: string | undefined =
+    import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
 function BecomeExpertPage() {
     const navigate = useNavigate();
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const { formData, previewUrl, isSubmitting, error, handleFileChange, handleMapClick, handleSubmit, setFormData } = useBecomeExpert();
     const { user } = useAuth();
-    const { startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+    const { profile, fetchProfile, startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+    // 🛡️ MUD-AG: si está mudándose, pasar la URL preservada como foto existente.
+    // useBecomeExpert ya NO exige nuevo upload si existingProfilePictureUrl está.
+    const isAlreadyExpertInner =
+        user?.role === 'Expert' || user?.Role === 'Expert' ||
+        user?.role === 'expert' || user?.Role === 'EXPERT' || Number(user?.role) === 1;
+    const isRelocatingInner =
+        !!profile?.relocatedFromCountry && !profile?.onboardingCompleted &&
+        !profile?.stripeAccountId && !profile?.country;
+    const existingProfilePictureUrl =
+        isAlreadyExpertInner && isRelocatingInner ? (profile?.profilePictureUrl || null) : null;
+    // 🛡️ Round 28: capturamos errorCode + apiDetectedCountry (backend) para UX de errores.
+    // ✅ Round 30: `submitted` permite mostrar el bloque Stripe inline sin navegar.
+    const { formData, previewUrl, isSubmitting, error, errorCode, detectedCountry: apiDetectedCountry, submitted,
+            applyProfilePhoto, handleSubmit, setFormData, setPreviewUrl } = useBecomeExpert({ existingProfilePictureUrl });
     const isAlreadyExpert =
         user?.role === 'Expert' ||
         user?.Role === 'Expert' ||
         user?.role === 'expert' ||
         user?.Role === 'EXPERT' ||
         Number(user?.role) === 1;
-    // Si ya eres experto pero no completaste Stripe, NO mostramos el formulario (daría "ya eres experto"):
-    // comprobamos el estado y, si ya está completo, vamos al panel; si no, mostramos el botón de reanudar pagos.
+
+    // 🛡️ Round 28 MUD-X: si el experto se acaba de mudar, su ExpertProfile tiene
+    // RelocatedFromCountry != null + Country == null + StripeAccountId == null. En ese caso
+    // NO podemos saltar a step 3 (bloque Stripe Connect) porque AccountCreateOptions fallaría
+    // sin país. El usuario debe pasar primero por step 2 (selector de país nuevo) para
+    // setear Country. Esta detección se aplica antes del check onboarding-status.
+    const isRelocating =
+        !!profile?.relocatedFromCountry
+        && !profile?.onboardingCompleted
+        && !profile?.stripeAccountId
+        && !profile?.country;
+
+    // 🛡️ Round 28 MUD-AA (rediseño limpio): asegurar perfil fresco al cargar.
+    // El step renderizado se DERIVA del profile abajo con useMemo — cero race conditions.
     useEffect(() => {
-        if (!isAlreadyExpert) return;
-        checkOnboardingStatus(true)
-            .then((status) => {
-                if (status?.onboardingCompleted) navigate('/expert-panel', { replace: true });
-            })
-            .catch(() => {});
+        if (isAlreadyExpert && !profile) {
+            void fetchProfile(true); // force=true para evitar cache stale tras la mudanza
+        }
+    }, [isAlreadyExpert, profile, fetchProfile]);
+
+    // 🛡️ Round 28 MUD-AA: paso DERIVADO síncronamente del profile, no asíncrono.
+    // Esto reemplaza el useEffect+checkOnboardingStatus+setCurrentStep que tenía race
+    // conditions imposibles de cerrar (profile arrives ↔ effect re-runs ↔ setCurrentStep
+    // gana o pierde según el orden de React batching). Ahora es una pura función del
+    // estado: profile → step. -1 = redirect, 0 = loading, 1/3 = step a renderizar.
+    const derivedStep = useMemo<number>(() => {
+        if (!isAlreadyExpert) return 1;          // cliente → wizard fresh
+        if (!profile) return 0;                  // expert pero profile no cargado → spinner
+        // Onboarding YA completo con Stripe activo → al panel
+        if (profile.onboardingCompleted && profile.stripeAccountId) return -1;
+        // Sin país → DEBE elegirlo (relocated O onboarding interrumpido pre-país)
+        if (!profile.country) return 1;
+        // Tiene país pero falta Stripe → bloque Stripe inline
+        return 3;
+    }, [isAlreadyExpert, profile?.country, profile?.stripeAccountId, profile?.onboardingCompleted]);
+
+    // Override manual del usuario (Next/Back/error-link). Si está seteado, gana sobre derivedStep.
+    const [stepOverride, setStepOverride] = useState<number | null>(null);
+
+    // Aplicar derivedStep cuando cambie, salvo que el usuario haya navegado manualmente.
+    useEffect(() => {
+        if (derivedStep === -1) {
+            navigate('/expert-panel', { replace: true });
+            return;
+        }
+        if (derivedStep === 0) return; // aún loading, no tocar
+        if (stepOverride === null) {
+            setCurrentStep(derivedStep);
+        }
+    }, [derivedStep, stepOverride, navigate]);
+
+    // 🛡️ MUD-X: prefill description al re-onboarding tras mudanza (no tiene que reescribir).
+    useEffect(() => {
+        if (!isRelocating || !profile?.description) return;
+        setFormData(prev => prev.description ? prev : { ...prev, description: profile.description });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAlreadyExpert]);
-    const { isLoaded, loadError } = useLoadScript({
-        // 🛡️ SECURITY: usa env var (sin fallback hardcoded — key vieja filtrada en git)
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        libraries
-    });
+    }, [isRelocating, profile?.description]);
+
+    // 🛡️ Round 28 MUD-AG: prefill foto preview con la URL preservada del país anterior.
+    useEffect(() => {
+        if (!isRelocating || !profile?.profilePictureUrl || previewUrl) return;
+        setPreviewUrl(profile.profilePictureUrl);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRelocating, profile?.profilePictureUrl]);
+
     const [selectedLocation, setSelectedLocation] = useState(defaultCenter);
-    const [circle, setCircle] = useState<google.maps.Circle | null>(null);
+    // 🛡️ Round 28 — Sprint US-2 (SUS2-10): detección de país en vivo desde las coords
+    // del marker para mostrarlo al experto ANTES del submit. Stripe Connect.account.country
+    // es INMUTABLE post-creación; si el marker está en una zona fronteriza y mal detecta,
+    // el experto queda con una cuenta del país equivocado sin poder mudarla.
+    const [detectedCountry, setDetectedCountry] = useState<{ code: string; supported: boolean } | null>(null);
+    const [detectingCountry, setDetectingCountry] = useState(false);
     const [searchAddress, setSearchAddress] = useState<string>('');
-    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
-    const [map, setMap] = useState<google.maps.Map | null>(null);
     const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
-    const [acceptNotifications, setAcceptNotifications] = useState<boolean>(false);
+    const countryDetectSeqRef = useRef(0);
+    const countryDetectAbortRef = useRef<AbortController | null>(null);
+    // 🛡️ Round 28 MUD-AG: ref para evitar re-prefillar si el usuario modificó manualmente.
+    const availabilityPrefilledRef = useRef(false);
     const [availability, setAvailability] = useState<AvailabilityFormData>({
         daysOfWeek: [],
         startTime: '09:00',
         endTime: '18:00',
     });
+    // 🛡️ MUD-AG: prefill availability con la disponibilidad del país anterior.
+    // ExpertProfile.currentAvailability viene del backend con startTime/endTime en HH:mm:ss
+    // (TimeSpan); cortamos a HH:mm que es lo que el <input type="time"> usa.
+    useEffect(() => {
+        if (!isRelocating || availabilityPrefilledRef.current) return;
+        const cur = profile?.currentAvailability;
+        if (!cur || !cur.daysOfWeek?.length) return;
+        availabilityPrefilledRef.current = true;
+        const toHHmm = (s: string) => (s?.length >= 5 ? s.substring(0, 5) : s || '');
+        setAvailability({
+            daysOfWeek: cur.daysOfWeek,
+            startTime: toHHmm(cur.startTime) || '09:00',
+            endTime: toHHmm(cur.endTime) || '18:00',
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRelocating, profile?.currentAvailability]);
     const [currentStep, setCurrentStep] = useState(1);
+    // 🛡️ MUD-AA: derivado — si eres expert y profile no cargó, está checking.
+    const isCheckingOnboarding = isAlreadyExpert && !profile;
+    const setIsCheckingOnboarding = (_value: boolean) => { /* derived, no-op for compat */ };
+    const [stepAttempted, setStepAttempted] = useState<Record<number, boolean>>({});
+
+    // 🛡️ Round 28: estado para autocomplete de direcciones (Mapbox forward geocoding).
+    const [autocompleteResults, setAutocompleteResults] = useState<MapboxAutocompleteItem[]>([]);
+    const [showAutocomplete, setShowAutocomplete] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [autocompleteStatus, setAutocompleteStatus] = useState<'idle' | 'searching' | 'empty' | 'error'>('idle');
+    const autocompleteAbortRef = useRef<AbortController | null>(null);
+
+    const step2GeoInitRef = useRef(false);
+
+    // Mantenemos una ref con la ubicación actual para usarla dentro de listeners (no re-suscribir).
+    const selectedLocationRef = useRef(selectedLocation);
+    useEffect(() => {
+        selectedLocationRef.current = selectedLocation;
+    }, [selectedLocation]);
 
     const toggleDay = (day: string) => {
         setAvailability(prev => ({
             ...prev,
             daysOfWeek: prev.daysOfWeek.includes(day)
                 ? prev.daysOfWeek.filter(d => d !== day)
-                : [...prev.daysOfWeek, day]
+                : [...prev.daysOfWeek, day],
         }));
     };
 
@@ -151,124 +214,131 @@ function BecomeExpertPage() {
     useEffect(() => {
         setFormData(prev => ({
             ...prev,
-            availability: availability.daysOfWeek.length > 0 ? availability : undefined
+            availability: availability.daysOfWeek.length > 0 ? availability : undefined,
         }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [availability]);
 
-    const onLoad = (mapInstance: google.maps.Map) => {
-        setMap(mapInstance);
-        const initialCircle = new google.maps.Circle({
-            map: mapInstance,
-            center: selectedLocation,
-            radius: 100000,
-            ...circleOptions
-        });
-        setCircle(initialCircle);
-    };
+    // 🛡️ Round 28: helper centralizado para actualizar ubicación, marker, círculo y formData.
+    // Reemplaza al antiguo `updateLocationAndMap` + `onMapClick` + `handleMapClick`.
+    const applyLocation = useCallback((lat: number, lng: number) => {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    const onMapClick = (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-            const newLocation = {
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng()
-            };
-
-            setSelectedLocation(newLocation);
-
-            setFormData((prev) => ({
-                ...prev,
-                latitude: newLocation.lat.toString(),
-                longitude: newLocation.lng.toString()
-            }));
-
-            if (circle) {
-                circle.setCenter(newLocation);
-            }
-
-            handleMapClick(e);
-        }
-    };
-
-    const onCircleComplete = (newCircle: google.maps.Circle) => {
-        if (circle) {
-            circle.setMap(null);
-        }
-        setCircle(newCircle);
-        const center = newCircle.getCenter();
-        if (center) {
-            const newLocation = {
-                lat: center.lat(),
-                lng: center.lng()
-            };
-            setSelectedLocation(newLocation);
-            setFormData((prev) => ({
-                ...prev,
-                latitude: center.lat().toString(),
-                longitude: center.lng().toString()
-            }));
-        }
-    };
-
-    const updateLocationAndMap = (newLocation: { lat: number; lng: number }) => {
-        setSelectedLocation(newLocation);
+        const next = { lat, lng };
+        setSelectedLocation(next);
         setFormData((prev) => ({
-                ...prev,
-                latitude: newLocation.lat.toString(),
-                longitude: newLocation.lng.toString()
+            ...prev,
+            latitude: lat.toString(),
+            longitude: lng.toString(),
         }));
-        
-        if (map) {
-            map.panTo(newLocation);
-            const zoom = getZoomLevel(100);
-            map.setZoom(zoom);
-        }
-        
-        if (circle) {
-            circle.setCenter(newLocation);
-            circle.setRadius(100000);
-        }
-    };
 
-    // Inicializar Google Places Autocomplete
-    useEffect(() => {
-        if (isLoaded && searchInputRef.current && !autocomplete) {
-            const autoCompleteInstance = new google.maps.places.Autocomplete(searchInputRef.current, {
-                types: ['address'],
-                // Sin componentRestrictions: el marketplace es global, los expertos
-                // pueden estar en cualquier país (no solo España).
-                fields: ['formatted_address', 'geometry', 'name', 'address_components']
-            });
-
-            autoCompleteInstance.addListener('place_changed', () => {
-                const place = autoCompleteInstance.getPlace();
-                if (place.geometry && place.geometry.location) {
-                    const newLocation = {
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng()
-                    };
-
-                    // Aviso temprano (P3): si el país del lugar elegido no puede recibir pagos,
-                    // advertimos ANTES de completar el formulario (el backend lo bloquea igualmente).
-                    const countryCode = place.address_components
-                        ?.find(c => c.types.includes('country'))
-                        ?.short_name?.toUpperCase();
-                    if (countryCode && !SUPPORTED_PAYOUT_COUNTRIES.has(countryCode)) {
-                        showToast(
-                            'error',
-                            'Tu país aún no puede recibir pagos en la plataforma, por lo que no podrás cobrar como experto. Elige otra ubicación o contacta con soporte.',
-                            9000
-                        );
-                    }
-
-                    updateLocationAndMap(newLocation);
-                    setSearchAddress('');
+        countryDetectAbortRef.current?.abort();
+        const controller = new AbortController();
+        countryDetectAbortRef.current = controller;
+        const seq = ++countryDetectSeqRef.current;
+        setDetectingCountry(true);
+        setDetectedCountry(null);
+        reverseCountryMapbox(lat, lng, { signal: controller.signal })
+            .then((cc) => {
+                if (seq !== countryDetectSeqRef.current || controller.signal.aborted) return;
+                if (!cc) {
+                    setDetectedCountry(null);
+                } else {
+                    setDetectedCountry({ code: cc, supported: isSupportedPayoutCountry(cc) });
                 }
+            })
+            .catch((err) => {
+                if ((err as DOMException)?.name === 'AbortError') return;
+                if (seq === countryDetectSeqRef.current) setDetectedCountry(null);
+            })
+            .finally(() => {
+                if (seq === countryDetectSeqRef.current) setDetectingCountry(false);
             });
+    }, [setFormData]);
 
-            setAutocomplete(autoCompleteInstance);
+    // 🛡️ Round 28 MUD-AB: para un experto MUDADO (Country=null), step 3 NO debe ser el
+    // bloque Stripe directo — debe ser confirmación + "Actualizar perfil" para que
+    // useBecomeExpert.handleSubmit POSTee /api/User/become-expert con la nueva ubicación
+    // (lat/lng/país) y backend UPDATEE Country. Después de submitted=true, sí muestra
+    // el bloque Stripe (con Country ya seteado).
+    const isOnStripeStage = submitted || (isAlreadyExpert && !isRelocating && currentStep === 3);
+
+    // Detección de país al entrar en cobertura (antes la hacía el onLoad del mapa).
+    useEffect(() => {
+        if (currentStep !== 2 || isOnStripeStage) {
+            step2GeoInitRef.current = false;
+            return;
         }
-    }, [isLoaded, autocomplete, circle, map]);
+        if (step2GeoInitRef.current) return;
+        step2GeoInitRef.current = true;
+        const { lat, lng } = selectedLocationRef.current;
+        applyLocation(lat, lng);
+    }, [currentStep, isOnStripeStage, applyLocation]);
+
+    // 🛡️ Round 28: autocomplete con debounce 350ms (reemplaza al google.maps.places.Autocomplete).
+    useEffect(() => {
+        const query = searchAddress.trim();
+        if (query.length < 3) {
+            setAutocompleteResults([]);
+            setShowAutocomplete(false);
+            setIsSearching(false);
+            setAutocompleteStatus('idle');
+            return;
+        }
+        if (!MAPBOX_TOKEN) {
+            setAutocompleteResults([]);
+            setShowAutocomplete(false);
+            setAutocompleteStatus('idle');
+            return;
+        }
+
+        setIsSearching(true);
+        setAutocompleteStatus('searching');
+        autocompleteAbortRef.current?.abort();
+        const controller = new AbortController();
+        autocompleteAbortRef.current = controller;
+
+        const timer = window.setTimeout(async () => {
+            try {
+                const items = await searchMapboxAutocomplete(query, { signal: controller.signal });
+                if (controller.signal.aborted) return;
+                setAutocompleteResults(items);
+                setShowAutocomplete(items.length > 0);
+                setAutocompleteStatus(items.length > 0 ? 'idle' : 'empty');
+            } catch (err) {
+                if (!controller.signal.aborted) {
+                    console.warn('[BecomeExpert] autocomplete falló', err);
+                    setAutocompleteResults([]);
+                    setShowAutocomplete(false);
+                    setAutocompleteStatus('error');
+                }
+            } finally {
+                if (!controller.signal.aborted) setIsSearching(false);
+            }
+        }, 350);
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [searchAddress]);
+
+    // 🛡️ Round 28: al elegir una sugerencia, validamos país y aplicamos ubicación.
+    const handleSelectAutocomplete = useCallback((item: MapboxAutocompleteItem) => {
+        const countryCode = item.countryCode?.toUpperCase();
+        if (countryCode && !isSupportedPayoutCountry(countryCode)) {
+            showToast(
+                'error',
+                'Tu país aún no puede recibir pagos en la plataforma. Elige otra ubicación o contacta con soporte.',
+                9000,
+            );
+            return;
+        }
+        applyLocation(item.lat, item.lng);
+        setSearchAddress('');
+        setAutocompleteResults([]);
+        setShowAutocomplete(false);
+    }, [applyLocation]);
 
     // Mostrar toast cuando hay error de contrataciones activas
     useEffect(() => {
@@ -277,51 +347,95 @@ function BecomeExpertPage() {
         }
     }, [error]);
 
-    // Efecto para asegurar que el mapa y círculo se actualicen cuando cambie la ubicación
-    useEffect(() => {
-        if (map && selectedLocation) {
-            map.panTo(selectedLocation);
-            const zoom = getZoomLevel(100);
-            map.setZoom(zoom);
-        }
-        if (circle && selectedLocation) {
-            circle.setCenter(selectedLocation);
-            circle.setRadius(100000);
-        }
-    }, [selectedLocation, map, circle]);
+    const descriptionTrimLen = formData.description.trim().length;
+
+    const isTimeRangeValid = useCallback(() => {
+        if (!availability.startTime || !availability.endTime) return false;
+        const [startH, startM] = availability.startTime.split(':').map(Number);
+        const [endH, endM] = availability.endTime.split(':').map(Number);
+        if (Number.isNaN(startH) || Number.isNaN(endH)) return false;
+        return startH * 60 + startM < endH * 60 + endM;
+    }, [availability.startTime, availability.endTime]);
 
     const canGoNext = () => {
         switch (currentStep) {
             case 1:
-                return !!formData.profilePicture;
-            case 2:
-                return formData.description.trim().length >= 50;
-            case 3:
-                return !!(formData.latitude && formData.longitude);
-            case 4: {
+                // 🛡️ MUD-AG: para mudanza, la foto preservada cuenta como válida.
+                return (!!formData.profilePicture || !!existingProfilePictureUrl) && descriptionTrimLen >= 50;
+            case 2: {
+                if (!(formData.latitude && formData.longitude)) return false;
+                if (detectingCountry || !detectedCountry?.supported) return false;
                 if (availability.daysOfWeek.length === 0) return false;
-                if (!availability.startTime || !availability.endTime) return false;
-                const [startH, startM] = availability.startTime.split(':').map(Number);
-                const [endH, endM] = availability.endTime.split(':').map(Number);
-                if (Number.isNaN(startH) || Number.isNaN(endH)) return false;
-                return startH * 60 + startM < endH * 60 + endM;
+                return isTimeRangeValid();
             }
-            case 5:
+            case 3:
                 return acceptTerms;
             default:
                 return false;
         }
     };
 
+    const canAdvance = canGoNext();
+
+    const footerHint = useMemo((): string | null => {
+        if (isOnStripeStage || canAdvance) return null;
+        switch (currentStep) {
+            case 1: {
+                const missing: string[] = [];
+                if (!formData.profilePicture && !existingProfilePictureUrl) missing.push('añade una foto');
+                if (descriptionTrimLen < 50) missing.push('escribe al menos 50 caracteres en tu descripción');
+                return missing.length ? `Para continuar: ${missing.join(' y ')}.` : null;
+            }
+            case 2: {
+                if (!(formData.latitude && formData.longitude)) {
+                    return 'Marca tu zona en el mapa o busca una dirección.';
+                }
+                if (detectingCountry) return 'Detectando país para pagos…';
+                if (!detectedCountry) {
+                    return 'No pudimos detectar el país. Mueve el marcador o busca otra dirección.';
+                }
+                if (!detectedCountry.supported) {
+                    return 'Tu ubicación no admite cobros. Coloca el marcador en un país compatible.';
+                }
+                if (availability.daysOfWeek.length === 0) return 'Selecciona al menos un día de disponibilidad.';
+                if (!isTimeRangeValid()) return 'La hora de fin debe ser posterior a la de inicio.';
+                return null;
+            }
+            case 3:
+                return acceptTerms ? null : 'Acepta los términos y la política de privacidad para publicar.';
+            default:
+                return null;
+        }
+    }, [
+        currentStep,
+        formData.profilePicture,
+        descriptionTrimLen,
+        formData.latitude,
+        formData.longitude,
+        detectingCountry,
+        detectedCountry,
+        availability.daysOfWeek.length,
+        acceptTerms,
+        isTimeRangeValid,
+        isOnStripeStage,
+        canAdvance,
+    ]);
+
     const handleNext = () => {
-        if (canGoNext() && currentStep < STEPS.length) {
-            setCurrentStep(currentStep + 1);
+        setStepAttempted((prev) => ({ ...prev, [currentStep]: true }));
+        if (canAdvance && currentStep < STEPS.length) {
+            // 🛡️ MUD-AA: usar stepOverride para que la elección manual sobreescriba derivedStep.
+            const next = currentStep + 1;
+            setStepOverride(next);
+            setCurrentStep(next);
         }
     };
 
     const handleBack = () => {
         if (currentStep > 1) {
-            setCurrentStep(currentStep - 1);
+            const prev = currentStep - 1;
+            setStepOverride(prev);
+            setCurrentStep(prev);
         }
     };
 
@@ -331,490 +445,459 @@ function BecomeExpertPage() {
         }
     };
 
+    // ✅ Round 30: bloque Stripe inline. Lo usamos en el paso 3 cuando ya hay perfil creado
+    //    (submitted=true tras submit, o isAlreadyExpert=true al volver de Stripe sin completar).
+    //    Antes esto era una vista totalmente separada — ahora es parte natural del wizard.
+    const renderStripeConnectBlock = () => (
+        <div className="space-y-5">
+            <BecomeExpertStepHeader
+                title="Conecta tus cobros con Stripe"
+                description="Tu perfil ya está creado. Configura pagos para poder aceptar encargos."
+            />
+
+            <div className={BE_CARD_CLASS}>
+                <div className="space-y-5 px-5 py-6 sm:px-6">
+                    <ul className="space-y-3">
+                        {[
+                            'Cobros protegidos por Stripe.',
+                            'Unos 5 minutos; solo se hace una vez.',
+                            'Sin coste para ti; los pagos llegan a tu cuenta.',
+                        ].map((label) => (
+                            <li key={label} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#444]">
+                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" strokeWidth={2.5} />
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await startOnboarding();
+                            } catch (err: any) {
+                                // 🛡️ Round 28 Sprint US: antes el catch tragaba el error y mostraba un
+                                // toast genérico. Ahora extraemos el mensaje real del backend (que ya
+                                // contiene el StripeError.Message si aplica, p.ej. "You cannot request the
+                                // `transfers` capability without `card_payments` for US"). Si no hay
+                                // mensaje útil, caemos al texto amigable original.
+                                const detail = err?.message && !err.message.includes('status 401')
+                                    ? err.message
+                                    : 'No se pudo iniciar la configuración de pagos. Inténtalo en unos minutos.';
+                                showToast('error', detail);
+                            }
+                        }}
+                        disabled={isStartingOnboarding}
+                        className="sd-btn-primary w-full gap-2 disabled:cursor-wait"
+                    >
+                        {isStartingOnboarding ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Conectando con Stripe…
+                            </>
+                        ) : (
+                            <>
+                                <CreditCard className="h-4 w-4" />
+                                Configurar pagos con Stripe
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/expert-panel')}
+                        className="block w-full text-center text-sm font-semibold text-[#6a6a6a] hover:text-[#1c1c1c]"
+                    >
+                        Configurar más tarde
+                    </button>
+                </div>
+            </div>
+
+            <p className="text-center text-xs leading-relaxed text-[#9ca3af]">
+                Necesitas conectar Stripe antes de poder aceptar encargos.
+            </p>
+        </div>
+    );
+
+    const renderCoverageBlock = () => (
+        <div className="space-y-5">
+            <BecomeExpertStepHeader
+                title="Dónde y cuándo trabajas"
+                description="Zona de cobertura (100 km) y disponibilidad horaria para recibir encargos."
+            />
+
+            <div className={BE_CARD_CLASS}>
+                <div className="space-y-3 p-4 sm:p-5">
+                    <div className="flex items-baseline justify-between gap-3">
+                        <label htmlFor="be-address-search" className="text-sm font-semibold text-[#1c1c1c]">
+                            Zona de cobertura
+                        </label>
+                        <span className="rounded-md bg-[#0066CC]/[0.08] px-2 py-0.5 text-xs font-medium text-[#0066CC]">
+                            Radio 100 km
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+                            <input
+                                id="be-address-search"
+                                ref={searchInputRef}
+                                type="text"
+                                role="combobox"
+                                aria-expanded={showAutocomplete}
+                                aria-autocomplete="list"
+                                aria-controls="be-address-listbox"
+                                placeholder="Buscar dirección o ciudad…"
+                                value={searchAddress}
+                                onChange={(e) => setSearchAddress(e.target.value)}
+                                onFocus={() => {
+                                    if (autocompleteResults.length > 0) setShowAutocomplete(true);
+                                }}
+                                onBlur={() => {
+                                    window.setTimeout(() => setShowAutocomplete(false), 180);
+                                }}
+                                className={`${BE_INPUT_CLASS} pl-10 pr-10`}
+                            />
+                            {isSearching && (
+                                <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#9ca3af]" />
+                            )}
+                        </div>
+                        {showAutocomplete && autocompleteResults.length > 0 && (
+                            <ul
+                                id="be-address-listbox"
+                                className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-lg bg-white py-1 shadow-[0_16px_48px_rgba(0,0,0,0.12)]"
+                                role="listbox"
+                            >
+                                {autocompleteResults.map((item) => (
+                                    <li key={item.id} role="option">
+                                        <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                handleSelectAutocomplete(item);
+                                            }}
+                                            className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[#f0f6fc]"
+                                        >
+                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium text-[#1c1c1c]">{item.address}</p>
+                                                {item.locationName && item.locationName !== 'Ubicación' && (
+                                                    <p className="truncate text-xs text-[#6a6a6a]">{item.locationName}</p>
+                                                )}
+                                            </div>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {!showAutocomplete &&
+                            searchAddress.trim().length >= 3 &&
+                            autocompleteStatus === 'empty' &&
+                            !isSearching && (
+                                <p className="mt-2 text-xs text-[#6a6a6a]" role="status">
+                                    No hay resultados. Prueba con otra ciudad o mueve el marcador en el mapa.
+                                </p>
+                            )}
+                        {autocompleteStatus === 'error' && (
+                            <p className="mt-2 text-xs text-amber-800" role="alert">
+                                No pudimos buscar direcciones. Usa el mapa o inténtalo de nuevo.
+                            </p>
+                        )}
+                    </div>
+
+                    {detectingCountry ? (
+                        <p className="flex items-center gap-2 text-xs text-[#6a6a6a]">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Detectando país para pagos…
+                        </p>
+                    ) : detectedCountry ? (
+                        <p
+                            className={`text-xs leading-relaxed ${
+                                detectedCountry.supported ? 'text-[#444]' : 'text-amber-900'
+                            }`}
+                            role="status"
+                        >
+                            {detectedCountry.supported ? (
+                                <>
+                                    Cuenta de pagos en{' '}
+                                    <strong>{formatPayoutCountryLabel(detectedCountry.code)}</strong>. No se puede
+                                    cambiar después; mueve el marcador si no es correcto.
+                                </>
+                            ) : (
+                                <>
+                                    {formatPayoutCountryLabel(detectedCountry.code)} no admite cobros en la plataforma.
+                                    Coloca el marcador en EEE, UK, CH, EE. UU. o Canadá.
+                                </>
+                            )}
+                        </p>
+                    ) : stepAttempted[2] && formData.latitude && formData.longitude ? (
+                        <p className="text-xs text-amber-800" role="alert">
+                            No detectamos el país en este punto. Mueve el marcador o busca otra dirección.
+                        </p>
+                    ) : null}
+
+                    {!MAPBOX_TOKEN && (
+                        <p className="text-xs text-[#6a6a6a]">
+                            Sin búsqueda por dirección: haz clic en el mapa o arrastra el marcador.
+                        </p>
+                    )}
+                </div>
+
+                <BecomeExpertCoverageMap
+                    latitude={selectedLocation.lat}
+                    longitude={selectedLocation.lng}
+                    radiusKm={COVERAGE_RADIUS_KM}
+                    onLocationChange={applyLocation}
+                />
+
+                <div className="space-y-4 border-t border-[#ececec] p-4 sm:p-5">
+                    <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-sm font-semibold text-[#1c1c1c]">Disponibilidad horaria</span>
+                        <span className="text-xs text-[#9ca3af]">Mín. 1 día</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {VALID_DAYS_OF_WEEK.map((day) => {
+                            const active = availability.daysOfWeek.includes(day);
+                            return (
+                                <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => toggleDay(day)}
+                                    aria-pressed={active}
+                                    className={`rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${
+                                        active ? BE_DAY_ACTIVE : BE_DAY_IDLE
+                                    }`}
+                                >
+                                    {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {availability.daysOfWeek.length > 0 && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label htmlFor="be-start-time" className="mb-2 block text-xs font-medium text-[#6a6a6a]">
+                                    Hora de inicio
+                                </label>
+                                <input
+                                    id="be-start-time"
+                                    type="time"
+                                    value={availability.startTime}
+                                    onChange={(e) =>
+                                        setAvailability((prev) => ({ ...prev, startTime: e.target.value }))
+                                    }
+                                    className={BE_INPUT_CLASS}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="be-end-time" className="mb-2 block text-xs font-medium text-[#6a6a6a]">
+                                    Hora de fin
+                                </label>
+                                <input
+                                    id="be-end-time"
+                                    type="time"
+                                    value={availability.endTime}
+                                    onChange={(e) =>
+                                        setAvailability((prev) => ({ ...prev, endTime: e.target.value }))
+                                    }
+                                    className={BE_INPUT_CLASS}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {stepAttempted[2] &&
+                        availability.daysOfWeek.length > 0 &&
+                        !isTimeRangeValid() && (
+                            <p className="text-xs font-medium text-amber-800" role="alert">
+                                La hora de fin debe ser posterior a la de inicio.
+                            </p>
+                        )}
+                </div>
+            </div>
+        </div>
+    );
+
     const renderStepContent = () => {
+        if (isOnStripeStage) return renderStripeConnectBlock();
+
         switch (currentStep) {
             case 1:
                 return (
-                    <div className="space-y-6">
-                        <div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Sube tu foto de perfil
-                            </div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Esta será la foto que verán todos los usuarios en tu perfil
-                            </div>
-                                    </div>
-                            <div
-                            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
-                                            formData.profilePicture 
-                                    ? 'border-gray-300 bg-gray-50' 
-                                    : 'border-gray-300 hover:border-gray-400'
-                                        }`}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                {previewUrl ? (
-                                <div className="relative w-32 h-32 mx-auto rounded-full overflow-hidden">
-                                        <img
-                                            src={previewUrl}
-                                            alt="Preview"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                        <Upload className="w-6 h-6 text-white" />
-                                        </div>
-                                    </div>
-                                ) : (
-                                <div className="space-y-4">
-                                    <div className="inline-flex p-4 bg-gray-100 rounded-full">
-                                        <Upload className="w-8 h-8 text-gray-500" />
-                                                </div>
-                                                <div>
-                                        <div 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '4px',
-                                            }}
-                                        >
-                                                    Haz clic para subir foto
-                                        </div>
-                                        <div 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontWeight: 400,
-                                                color: 'rgb(113, 113, 113)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                        >
-                                            PNG o JPG (máx. 5MB)
-                                                    </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/jpg"
-                                    onChange={handleFileChange}
-                                    className="hidden"
+                    <div className="space-y-5">
+                        <BecomeExpertTrustStrip />
+                        <BecomeExpertStepHeader
+                            title="Tu identidad pública"
+                            description="La foto y la descripción son lo primero que verán los clientes."
+                        />
+
+                        <div className={BE_CARD_CLASS}>
+                            <div className="p-4 sm:p-5 lg:grid lg:grid-cols-[minmax(200px,240px)_1fr] lg:gap-6 lg:items-start">
+                                <BecomeExpertPhotoField
+                                    previewUrl={previewUrl}
+                                    onPhotoReady={applyProfilePhoto}
                                 />
+                                <div className="mt-5 border-t border-[#ececec] pt-5 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                                    <label htmlFor="be-description" className="block text-sm font-semibold text-[#1c1c1c]">
+                                        Experiencia profesional
+                                    </label>
+                                    <p className="mt-1 text-xs text-[#6a6a6a]">
+                                        Años de experiencia, especialidad y qué incluye tu servicio.
+                                    </p>
+                                    <textarea
+                                        id="be-description"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                                        className={`${BE_INPUT_CLASS} mt-3 min-h-[120px] resize-y leading-relaxed sm:min-h-[140px] ${
+                                            stepAttempted[1] && descriptionTrimLen < 50 ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/25' : ''
+                                        }`}
+                                        rows={5}
+                                        placeholder="Ej.: 8 años revisando vehículos de ocasión. Informes detallados para compradores y concesionarios…"
+                                        required
+                                        minLength={50}
+                                        aria-invalid={stepAttempted[1] && descriptionTrimLen < 50}
+                                    />
+                                    <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+                                        <span className="text-[#6a6a6a]">Mínimo 50 caracteres (sin espacios al inicio o final)</span>
+                                        <span
+                                            className={`font-semibold tabular-nums ${
+                                                descriptionTrimLen >= 50 ? 'text-[#0066CC]' : 'text-[#9ca3af]'
+                                            }`}
+                                        >
+                                            {descriptionTrimLen}/50
+                                        </span>
+                                    </div>
+                                    {stepAttempted[1] && !formData.profilePicture && !existingProfilePictureUrl && (
+                                        <p className="mt-2 text-xs font-medium text-amber-800" role="alert">
+                                            Añade una foto de perfil para continuar.
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
+                    </div>
                 );
 
             case 2:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Describe tu experiencia
-                            </div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Cuéntanos sobre tu experiencia y especialidad en vehículos o inmobiliario
-                                        </div>
-                                    </div>
-                            <textarea
-                                value={formData.description}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 resize-none"
-                            style={{
-                                fontSize: '14px',
-                                lineHeight: '20px',
-                                fontWeight: 400,
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            }}
-                            rows={6}
-                                        placeholder="Describe tu experiencia y especialidad en vehículos o inmobiliario..."
-                                required
-                                minLength={50}
-                            />
-                        <div className="flex justify-between items-center">
-                            <p 
-                                style={{
-                                    fontSize: '12px',
-                                    lineHeight: '16px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Mínimo 50 caracteres
-                            </p>
-                            <span 
-                                style={{
-                                    fontSize: '12px',
-                                    lineHeight: '16px',
-                                    fontWeight: 500,
-                                    color: formData.description.length >= 50 ? 'rgb(34, 34, 34)' : 'rgb(156, 163, 175)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                            {formData.description.length}/50
-                                        </span>
-                                    </div>
-                        </div>
-                );
+                return renderCoverageBlock();
 
             case 3:
+                // 🎨 Paso 3 — Confirmar: resumen + términos. Tras submit, se transforma
+                //    automáticamente en el bloque Stripe (gestionado en el guard de arriba).
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Define tu área de trabajo
-                            </div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Área donde te encontrarán los usuarios y donde se te encargarán los trabajos
-                            </div>
-                                        </div>
-                        <div>
-                                        <input
-                                            ref={searchInputRef}
-                                            type="text"
-                                            placeholder="Buscar dirección o ciudad..."
-                                            value={searchAddress}
-                                            onChange={(e) => setSearchAddress(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 mb-4"
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            />
-                            <div className="border border-gray-300 rounded-xl overflow-hidden">
-                                <div className="relative h-[300px]">
-                                    {!isLoaded ? (
-                                        <div className="h-full flex items-center justify-center bg-gray-50">
-                                            <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-                                        </div>
-                                    ) : loadError ? (
-                                        <div className="h-full flex items-center justify-center bg-gray-50">
-                                            <AlertTriangle className="w-6 h-6 text-gray-400" />
-                                        </div>
-                                    ) : (
-                                            <GoogleMap
-                                                mapContainerStyle={{ width: '100%', height: '100%' }}
-                                                        zoom={getZoomLevel(100)}
-                                                center={selectedLocation}
-                                                onClick={onMapClick}
-                                                onLoad={onLoad}
-                                                options={{
-                                                    disableDefaultUI: false,
-                                                    zoomControl: true,
-                                                    mapTypeControl: false,
-                                                    scaleControl: true,
-                                                    streetViewControl: false,
-                                                    rotateControl: false,
-                                                    fullscreenControl: false,
-                                                    styles: mapStyles
-                                                }}
-                                            >
-                                                {selectedLocation && (
-                                                    <Marker position={selectedLocation} icon={markerIcon} />
-                                                )}
-                                                <DrawingManager
-                                                    drawingMode={null}
-                                                    onCircleComplete={onCircleComplete}
-                                                    options={{
-                                                        drawingControl: false,
-                                                        circleOptions: {
-                                                            ...circleOptions,
-                                                            radius: 100000,
-                                                            center: selectedLocation
-                                                        }
-                                                    }}
-                                                />
-                                            </GoogleMap>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                        <BecomeExpertStepHeader
+                            title="Revisa y publica tu perfil"
+                            description="Confirma que todo está correcto. Después conectarás Stripe para recibir pagos."
+                        />
 
-            case 4:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Disponibilidad horaria
-                            </div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Define los días y horarios en los que estarás disponible (obligatorio)
-                            </div>
-                                </div>
-                        <div className="space-y-4">
-                                <div>
-                                <label 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '18px',
-                                        fontWeight: 500,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginBottom: '12px',
-                                        display: 'block',
-                                    }}
-                                >
-                                    Días de trabajo
-                                        </label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                            {VALID_DAYS_OF_WEEK.map(day => (
-                                                <button
-                                                    key={day}
-                                                    type="button"
-                                                    onClick={() => toggleDay(day)}
-                                            className={`px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
-                                                        availability.daysOfWeek.includes(day)
-                                                    ? 'bg-gray-900 text-white border-gray-900'
-                                                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                                                    }`}
-                                            style={{
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                                >
-                                                    {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES]}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    {availability.daysOfWeek.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                        <label 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '18px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '8px',
-                                                display: 'block',
-                                            }}
-                                        >
-                                                    Hora de inicio
-                                                </label>
-                                                <input
-                                                    type="time"
-                                                    value={availability.startTime}
-                                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                                />
-                                            </div>
-                                            <div>
-                                        <label 
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '18px',
-                                                fontWeight: 600,
-                                                color: 'rgb(34, 34, 34)',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                marginBottom: '8px',
-                                                display: 'block',
-                                            }}
-                                        >
-                                                    Hora de fin
-                                                </label>
-                                                <input
-                                                    type="time"
-                                                    value={availability.endTime}
-                                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                                            style={{
-                                                fontSize: '14px',
-                                                lineHeight: '20px',
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                            }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                        </div>
-                    </div>
-                );
+                        <ul className={`${BE_CARD_CLASS} divide-y divide-[#ececec] p-0`}>
+                            {[
+                                { ok: !!formData.profilePicture || !!existingProfilePictureUrl, label: 'Foto de perfil' },
+                                {
+                                    ok: descriptionTrimLen >= 50,
+                                    label: `Descripción (${descriptionTrimLen} caracteres)`,
+                                },
+                                {
+                                    ok: !!(formData.latitude && formData.longitude && detectedCountry?.supported),
+                                    label: detectedCountry?.supported
+                                        ? `Zona · ${formatPayoutCountryLabel(detectedCountry.code)}`
+                                        : 'Zona de cobertura y país',
+                                },
+                                {
+                                    ok: availability.daysOfWeek.length > 0 && isTimeRangeValid(),
+                                    label: `Disponibilidad (${availability.daysOfWeek.length} día${availability.daysOfWeek.length === 1 ? '' : 's'})`,
+                                },
+                            ].map((item) => (
+                                <li key={item.label} className="flex items-center gap-3 px-4 py-3 text-sm">
+                                    <Check
+                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-[#0066CC]' : 'text-[#d1d5db]'}`}
+                                        strokeWidth={2.5}
+                                        aria-hidden
+                                    />
+                                    <span className={item.ok ? 'text-[#1c1c1c]' : 'text-[#9ca3af]'}>{item.label}</span>
+                                </li>
+                            ))}
+                        </ul>
 
-            case 5:
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    color: 'rgb(34, 34, 34)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                }}
-                            >
-                                Confirma y finaliza
-                            </div>
-                            <div 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgb(113, 113, 113)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                Revisa y acepta los términos para completar tu registro
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                                        <input
-                                            type="checkbox"
-                                            id="acceptTerms"
-                                            checked={acceptTerms}
-                                            onChange={(e) => setAcceptTerms(e.target.checked)}
-                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
-                                            required
-                                        />
-                                <label 
-                                    htmlFor="acceptTerms"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                            Acepto las{' '}
-                                    <a href="/privacy-policy.html" target="_blank" style={{ color: 'rgb(34, 34, 34)', fontWeight: 500, textDecoration: 'underline' }}>
-                                                condiciones de uso de inspecciono.io
-                                            </a>
-                                            {' '}y confirmo que he leído la política de privacidad
-                                        </label>
-                                    </div>
-                            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                                        <input
-                                            type="checkbox"
-                                            id="acceptNotifications"
-                                            checked={acceptNotifications}
-                                            onChange={(e) => setAcceptNotifications(e.target.checked)}
-                                    className="mt-0.5 w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-1 focus:ring-gray-900 cursor-pointer"
+                        <div className={`${BE_CARD_CLASS} space-y-4 p-4 sm:p-5`}>
+                            <label htmlFor="acceptTerms" className="flex cursor-pointer items-start gap-3">
+                                <input
+                                    type="checkbox"
+                                    id="acceptTerms"
+                                    checked={acceptTerms}
+                                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-[#0066CC] focus:ring-[#0066CC]/30"
+                                    required
                                 />
-                                <label 
-                                    htmlFor="acceptNotifications"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                            Acepto recibir notificaciones sobre nuevas búsquedas
-                                        </label>
-                                    </div>
-                                </div>
-                        {error && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
-                            <div className="p-4 border border-red-200 bg-red-50 rounded-xl">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                                    <span 
-                                        style={{
-                                            fontSize: '14px',
-                                            lineHeight: '18px',
-                                            fontWeight: 600,
-                                            color: '#991b1b',
-                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        }}
+                                <span className="text-[15px] leading-relaxed text-[#1c1c1c]">
+                                    Acepto los{' '}
+                                    <a
+                                        href="/terms.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`font-semibold text-[#0066CC] ${HP_LINK_UNDERLINE_CLASS}`}
+                                        onClick={(e) => e.stopPropagation()}
                                     >
-                                        Error al procesar la solicitud
+                                        términos de uso
+                                    </a>{' '}
+                                    y la{' '}
+                                    <a
+                                        href="/privacy-policy.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`font-semibold text-[#0066CC] ${HP_LINK_UNDERLINE_CLASS}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        política de privacidad
+                                    </a>
+                                    .
+                                </span>
+                            </label>
+                        </div>
+
+                        {error && errorCode !== 'ACTIVE_HIRES_AS_CLIENT' && !error.includes('contrataciones activas') && !error.includes('contratación(es) activa(s)') && (
+                            <div className={`${BE_CARD_CLASS} border-red-200 bg-red-50/80 px-4 py-3`}>
+                                <div className="mb-1 flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 shrink-0 text-red-600" />
+                                    <span className="text-sm font-semibold text-red-900">
+                                        {errorCode === 'COUNTRY_NOT_SUPPORTED'
+                                            ? `País no disponible${apiDetectedCountry ? ` (${apiDetectedCountry})` : ''}`
+                                            : errorCode === 'COUNTRY_DETECTION_FAILED'
+                                            ? 'No pudimos verificar tu ubicación'
+                                            : errorCode === 'PROFILE_PICTURE_UPLOAD_FAILED'
+                                            ? 'Error al subir tu foto'
+                                            : errorCode === 'AVAILABILITY_CREATION_FAILED'
+                                            ? 'Error al guardar tu disponibilidad'
+                                            : errorCode === 'DATABASE_ERROR' || errorCode === 'INTERNAL_ERROR'
+                                            ? 'Error temporal del servidor'
+                                            : 'Error al procesar la solicitud'}
                                     </span>
                                 </div>
-                                <p 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: '#b91c1c',
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        marginTop: '4px',
-                                    }}
-                                >
-                                        {error}
-                                </p>
+                                <p className="mt-1 text-sm leading-relaxed text-red-800">{error}</p>
+                                {errorCode === 'COUNTRY_NOT_SUPPORTED' && (
+                                    <div className="mt-3 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setStepOverride(2); setCurrentStep(2); }}
+                                            className="text-sm font-semibold text-red-700 hover:text-red-900 underline self-start"
+                                        >
+                                            Cambiar ubicación
+                                        </button>
+                                        <a
+                                            href="mailto:soporte@inspecciono.io?subject=Solicitud%20pa%C3%ADs%20no%20soportado"
+                                            className="text-sm font-semibold text-red-700 hover:text-red-900 underline self-start"
+                                        >
+                                            Contactar soporte
+                                        </a>
+                                    </div>
+                                )}
+                                {(errorCode === 'COUNTRY_DETECTION_FAILED' || errorCode === 'PROFILE_PICTURE_UPLOAD_FAILED' || errorCode === 'DATABASE_ERROR' || errorCode === 'INTERNAL_ERROR') && (
+                                    <p className="text-xs text-red-600 mt-2 italic">
+                                        Si el problema persiste, contacta con soporte indicando el código: <code className="px-1 py-0.5 bg-red-100 rounded">{errorCode}</code>
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -825,210 +908,33 @@ function BecomeExpertPage() {
         }
     };
 
-    // Guard: ya eres experto → no mostrar el formulario; ofrecer reanudar la configuración de pagos.
-    if (isAlreadyExpert) {
-        return (
-            <div className="min-h-screen bg-white">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="mb-6 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        aria-label="Atrás"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-900" />
-                    </button>
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center">
-                        <div className="inline-flex p-4 bg-blue-50 rounded-full mb-4">
-                            <Check className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <h1 className="text-xl font-semibold text-gray-900 mb-2">Ya casi eres experto</h1>
-                        <p className="text-sm text-gray-600 mb-6">
-                            Tu perfil de experto ya está creado. Solo falta <strong>configurar tus pagos con Stripe</strong> para
-                            poder recibir encargos y cobrar.
-                        </p>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    await startOnboarding();
-                                } catch {
-                                    showToast('error', 'No se pudo iniciar la configuración de pagos. Inténtalo de nuevo en unos minutos.');
-                                }
-                            }}
-                            disabled={isStartingOnboarding}
-                            className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white text-[15px] font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {isStartingOnboarding ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Conectando con Stripe…</span>
-                                </>
-                            ) : (
-                                <span>Configurar pagos con Stripe</span>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => navigate('/expert-panel')}
-                            className="mt-3 text-sm font-semibold text-gray-700 hover:text-gray-900 underline"
-                        >
-                            Ir a mi panel de experto
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
+    // ✅ Round 30: el guard "ya eres experto" desapareció como vista separada.
+    //    Si llegas como experto pendiente de Stripe, el useEffect de arriba te lleva al
+    //    paso 3 del MISMO wizard y `renderStepContent` muestra el bloque Stripe inline
+    //    (mismo flujo visual, sin saltos a otra página).
+    //
+    //    Una vez `submitted=true` (acabas de completar el formulario) o estás siendo
+    //    redirigido como experto pendiente, el shell debe ocultar el botón "Completar
+    //    registro" — porque ya no hay nada que enviar, solo conectar Stripe.
     return (
-        <div className="min-h-screen bg-white">
-            {/* Hero Header más pequeño */}
-            <div className="relative h-[200px] lg:h-[240px] overflow-hidden">
-                {/* Imagen de fondo con gradiente */}
-                <div 
-                    className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600"
-                    style={{
-                        backgroundImage: `linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(79, 70, 229, 0.9) 100%), 
-                        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                    }}
-                />
-                
-                {/* Contenido del header */}
-                <div className="relative z-10 h-full flex flex-col">
-                    {/* Botón volver */}
-                    <div className="absolute top-4 left-4 z-20">
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg"
-                            aria-label="Atrás"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-gray-900" />
-                        </button>
-                    </div>
-
-                    {/* Contenido centrado */}
-                    <div className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-16 pb-8">
-                        <div className="text-center max-w-2xl">
-                            <h1 
-                                style={{
-                                    fontSize: '22px',
-                                    lineHeight: '26px',
-                                    fontWeight: 600,
-                                    color: 'rgb(255, 255, 255)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    marginBottom: '8px',
-                                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                                }}
-                            >
-                                Conviértete en Buscador Experto
-                            </h1>
-                            <p 
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '20px',
-                                    fontWeight: 400,
-                                    color: 'rgba(255, 255, 255, 0.95)',
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                    textShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-                                }}
-                            >
-                                Ayuda a otros usuarios y genera ingresos trabajando desde casa
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Contenido principal con stepper arriba */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 sm:-mt-12 relative z-20">
-                {/* Card del formulario */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
-                    {/* Stepper arriba */}
-                    <div className="px-4 sm:px-8 py-5 border-b border-gray-200 bg-gray-50">
-                        <Stepper 
-                            steps={STEPS.map(s => ({ label: s.label, icon: <s.icon className="w-4 h-4" /> }))}
-                            currentStep={currentStep}
-                            size="default"
-                        />
-                    </div>
-
-                    {/* Contenido del paso */}
-                    <div className="px-4 sm:px-8 py-6 sm:py-8">
-                        {renderStepContent()}
-                    </div>
-
-                    {/* Botones de navegación */}
-                    <div className="px-4 sm:px-8 py-4 sm:py-6 border-t border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
-                        <button
-                            onClick={handleBack}
-                            disabled={currentStep === 1}
-                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                currentStep === 1
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                            style={{
-                                fontSize: '14px',
-                                lineHeight: '18px',
-                                fontWeight: 600,
-                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                            }}
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span className="hidden sm:inline">Atrás</span>
-                        </button>
-                        
-                        {currentStep < STEPS.length ? (
-                            <button
-                                onClick={handleNext}
-                                disabled={!canGoNext()}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                    canGoNext()
-                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                            >
-                                <span>Siguiente</span>
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleFinalSubmit}
-                                disabled={!acceptTerms || isSubmitting}
-                                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-colors ${
-                                    acceptTerms && !isSubmitting
-                                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
-                                style={{
-                                    fontSize: '14px',
-                                    lineHeight: '18px',
-                                    fontWeight: 600,
-                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                }}
-                        >
-                            {isSubmitting ? (
-                                <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Procesando...</span>
-                                </>
-                            ) : (
-                                <>
-                                        <Check className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Completar Registro</span>
-                                        <span className="sm:hidden">Completar</span>
-                                </>
-                            )}
-                        </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+        <BecomeExpertWizardShell
+            steps={STEPS}
+            currentStep={currentStep}
+            onBack={() => navigate(-1)}
+            onNavBack={handleBack}
+            onNext={handleNext}
+            onSubmit={handleFinalSubmit}
+            canGoNext={canAdvance}
+            canSubmit={canAdvance && acceptTerms && !isSubmitting}
+            isSubmitting={isSubmitting}
+            isLastStep={currentStep === STEPS.length && !isOnStripeStage}
+            hideFooter={isOnStripeStage}
+            progressPhaseLabel={isOnStripeStage ? 'Conectar pagos con Stripe' : undefined}
+            footerHint={footerHint}
+            initialLoading={isCheckingOnboarding}
+        >
+            {renderStepContent()}
+        </BecomeExpertWizardShell>
     );
 }
 

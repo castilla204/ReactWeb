@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Globe } from 'lucide-react';
-import { useCurrency } from '../contexts/CurrencyContext';
+import { useCurrency, SUPPORTED_CURRENCIES } from '../contexts/CurrencyContext';
 
 interface CurrencySelectorProps {
     variant?: 'compact' | 'full';
@@ -10,16 +10,23 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'c
     const { currencies, preferredCurrency, setPreferredCurrency } = useCurrency();
     const safeCurrencies = useMemo(() => {
         const seen = new Set<string>();
-        return currencies
+        const filtered = currencies
             .map((c) => ({
                 ...c,
-                code: (c.code ?? '').trim().toUpperCase(),
+                code: (c?.code ?? (c as any)?.Code ?? '').toString().trim().toUpperCase(),
+                name: c?.name ?? (c as any)?.Name ?? '',
+                symbol: c?.symbol ?? (c as any)?.Symbol ?? '',
+                locale: c?.locale ?? (c as any)?.Locale ?? 'en-US',
             }))
             .filter((c) => {
                 if (!c.code || seen.has(c.code)) return false;
                 seen.add(c.code);
                 return true;
             });
+        // 🛡️ Round 28 CUR-SEL-1: hard floor — si el backend devolvió un payload con shape
+        // inesperado o lista vacía, NO dejamos el select sin opciones (lo que produce el
+        // bug visual "parpadea y desaparece"). Caemos al fallback hardcoded EUR/USD/GBP/CHF/CAD.
+        return filtered.length > 0 ? filtered : SUPPORTED_CURRENCIES;
     }, [currencies]);
 
     const sizeClasses =

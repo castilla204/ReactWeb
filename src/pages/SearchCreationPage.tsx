@@ -116,6 +116,11 @@ const SearchCreationPage: React.FC = () => {
     const [expertProfilePicture, setExpertProfilePicture] = useState<string | undefined>(undefined);
     const [expertName, setExpertName] = useState<string | undefined>(undefined);
     const [servicePrice, setServicePrice] = useState<number | undefined>(undefined);
+    // 🛡️ Round 28 CUR-7: divisa del servicio para que el SearchForm muestre la divisa real
+    // (no caiga al fallback EUR). Antes el paso 3 (SearchForm) divergía visualmente del paso 2
+    // (ServiceReviewPage que sí convertía) — el cliente veía "€" justo antes del checkout aunque
+    // ServiceReview le hubiera mostrado "$" con conversión.
+    const [serviceCurrency, setServiceCurrency] = useState<string | undefined>(undefined);
     const [serviceDescription, setServiceDescription] = useState<string | undefined>(undefined);
     const [serviceImageUrls, setServiceImageUrls] = useState<string[]>([]);
 
@@ -418,6 +423,7 @@ const SearchCreationPage: React.FC = () => {
         expertProfilePicture?: string;
         expertName?: string;
         servicePrice?: number;
+        serviceCurrency?: string;
         serviceDescription?: string;
         serviceImageUrls?: string[];
     }) => {
@@ -435,6 +441,7 @@ const SearchCreationPage: React.FC = () => {
             setExpertProfilePicture(parameters.expertProfilePicture);
             setExpertName(parameters.expertName);
             setServicePrice(parameters.servicePrice);
+            setServiceCurrency(parameters.serviceCurrency);
             setServiceDescription(parameters.serviceDescription);
             setServiceImageUrls(parameters.serviceImageUrls || []);
             setCurrentStep(2); // Paso 2: ServiceReviewPage (revisión del servicio)
@@ -641,6 +648,7 @@ const SearchCreationPage: React.FC = () => {
                                 expertProfilePicture={expertProfilePicture}
                                 expertName={expertName}
                                 servicePrice={servicePrice}
+                                serviceCurrency={serviceCurrency}
                                 serviceDescription={serviceDescription}
                                 serviceImageUrls={serviceImageUrls}
                             />

@@ -212,9 +212,10 @@ export function AdDetails({ onBack }: AdDetailsProps) {
                             <p className="text-gray-500 text-sm">Precio</p>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-3xl font-bold text-gray-900">
+                                    {/* 🛡️ Round 28: anuncio scrapeado puede venir en GBP/PLN/etc., usar divisa real */}
                                     {new Intl.NumberFormat('es-ES', {
                                         style: 'currency',
-                                        currency: 'EUR'
+                                        currency: ((result as any).priceCurrency || (result as any).currency || 'EUR').toUpperCase()
                                     }).format(result.price)}
                                 </span>
                             </div>
