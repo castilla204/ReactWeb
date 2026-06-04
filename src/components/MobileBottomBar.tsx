@@ -4,7 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { LoginModal } from './LoginModal';
 import { authService } from '../services/authService';
-import { HelpCircle, MessageSquare } from 'lucide-react';
+import { Bell, HelpCircle, MessageSquare } from 'lucide-react';
+import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { UserRole, RoleChecker } from '../utils/roleChecker';
 import {
   ensureGoogleIdentityReady,
@@ -26,6 +27,15 @@ export const MobileBottomBar: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  // 🛡️ MUD-DH — contador no leídas para badge en Bell mobile.
+  const { data: unreadNotifsCount = 0 } = useUnreadNotificationCount();
+  const handleNotificationsClick = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof (window as any).openNotificationCenter === 'function') {
+      (window as any).openNotificationCenter();
+    } else {
+      navigate('/notifications');
+    }
+  }, [navigate]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const googleLoginButtonRef = useRef<HTMLDivElement>(null);
@@ -373,6 +383,71 @@ export const MobileBottomBar: React.FC = () => {
           </div>
           <div style={tabLabelStyle(howItWorksActive)}>Ayuda</div>
         </button>
+
+        {/* 🛡️ MUD-DH — Bell de notificaciones mobile.
+            Antes el cliente NO tenía forma de abrir el inbox en mobile (sólo el
+            experto, dentro de /expert-panel). Auditoría de 5 agentes lo marcó
+            como gap P0. Click → abre el drawer global compartido. */}
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleNotificationsClick}
+            onTouchEnd={(e) => { e.preventDefault(); handleNotificationsClick(); }}
+            aria-label={unreadNotifsCount > 0 ? `Notificaciones (${unreadNotifsCount} nuevas)` : 'Notificaciones'}
+            data-veloute="pwa-tab-bar-item-notifications"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: tabWidth,
+              height: '44px',
+              flexShrink: 0,
+              marginLeft: tabMargin,
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              color: '#717171',
+              cursor: 'pointer',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              position: 'relative',
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '4px',
+              position: 'relative',
+            }}>
+              <Bell size={24} strokeWidth={2} style={{ color: '#717171' }} aria-hidden />
+              {unreadNotifsCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-6px',
+                    minWidth: '16px',
+                    height: '16px',
+                    padding: '0 4px',
+                    borderRadius: '999px',
+                    background: '#dc2626',
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    lineHeight: '16px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {unreadNotifsCount > 99 ? '99+' : unreadNotifsCount}
+                </span>
+              )}
+            </div>
+            <div style={tabLabelStyle(false)}>Alertas</div>
+          </button>
+        )}
 
         {/* Mis mensajes - button (solo cuando está autenticado) */}
         {isAuthenticated && (
