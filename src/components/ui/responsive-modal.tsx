@@ -32,6 +32,10 @@ interface ResponsiveModalProps {
   snapToSequentialPoint?: boolean
   /** Altura máxima del cuerpo del drawer (p. ej. "96dvh"). Imprescindible si hay pie fijo/sticky. */
   drawerMaxHeight?: string
+  /** Clases del contenedor scroll interno del drawer (p. ej. fondo oscuro). */
+  drawerScrollClassName?: string
+  /** Oculta la cabecera blanca del diálogo en desktop (el contenido lleva su propia cabecera). */
+  hideDialogHeader?: boolean
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -60,6 +64,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   handleOnly = false,
   snapToSequentialPoint = true,
   drawerMaxHeight,
+  drawerScrollClassName,
+  hideDialogHeader = false,
 }) => {
   const { width } = useWindowSize()
   
@@ -101,12 +107,13 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         shouldScaleBackground={true} // ✅ Efecto de escalado del fondo como Airbnb
       >
         <DrawerContent
-          className={cn(
-            "flex min-h-0 flex-col rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
-            "focus:outline-none focus-visible:outline-none",
-            className, 
-            drawerClassName
-          )}
+            className={cn(
+              "flex min-h-0 flex-col rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
+              "focus:outline-none focus-visible:outline-none",
+              "[&_[data-vaul-drawer-handle]]:bg-white/35",
+              className, 
+              drawerClassName
+            )}
           style={{ 
             ...style, 
             ...drawerStyle,
@@ -127,7 +134,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           description={description}
         >
           <div
-            className="h-auto min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]"
+            className={cn(
+              "h-auto min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]",
+              drawerScrollClassName,
+            )}
             style={{
               maxHeight: bodyMaxHeight,
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
@@ -158,7 +168,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         }}
         hideCloseButton={true}
       >
-        {title && (
+        {title && !hideDialogHeader && (
           <DialogHeader
             className={cn(
               'flex-shrink-0 border-b border-[#ebebeb] bg-white px-4 pb-3.5 pt-4 text-left',

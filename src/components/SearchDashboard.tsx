@@ -8,6 +8,15 @@ import { SearchDashboardToolbar } from './searches/SearchDashboardToolbar';
 import { SearchDashboardFiltersSheet } from './searches/SearchDashboardFiltersSheet';
 import { SearchInspectionListItem } from './searches/SearchInspectionListItem';
 
+/**
+ * SearchDashboard — "La bandeja del despacho" (rediseño 2026-06).
+ *
+ * Orquestador de /busquedas. Renderiza toolbar + sheet de filtros + lista
+ * de fichas de informe (SearchInspectionListItem) o estado vacío con sello
+ * brand. La voz visual completa vive en SearchInspectionListItem; aquí solo
+ * componemos.
+ */
+
 function countActiveFilters(
     filters: ReturnType<typeof useSearchDashboard>['filters'],
     totalCategories: number,
@@ -59,8 +68,8 @@ const SearchDashboard: React.FC = () => {
         return (
             <div className="flex min-h-screen items-center justify-center bg-white p-6 pb-[65px]">
                 <div className="max-w-sm text-center">
-                    <AlertCircle className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-                    <p className="text-sm text-slate-600" style={{ fontFamily: HP_FONT }}>
+                    <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[#cccccc]" />
+                    <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
                         {error instanceof Error ? error.message : 'Error al cargar las inspecciones'}
                     </p>
                     <Button type="button" onClick={refetch} variant="outline" className="mt-4 rounded-lg">
@@ -77,7 +86,7 @@ const SearchDashboard: React.FC = () => {
             : `${searches.length} inspección${searches.length !== 1 ? 'es' : ''}`;
 
     return (
-        <div className="min-h-screen bg-slate-50/80 pb-[65px] md:bg-white md:pb-10">
+        <div className="min-h-screen bg-[#fafafa] pb-[65px] md:pb-10">
             <SearchDashboardToolbar
                 searchInput={searchInput}
                 searchInputRef={searchInputRef}
@@ -100,11 +109,11 @@ const SearchDashboard: React.FC = () => {
                 categories={categories}
             />
 
-            <main className="mx-auto w-full max-w-3xl px-4 py-4 md:max-w-4xl md:px-6 md:py-6">
+            <main className="mx-auto w-full max-w-3xl px-4 py-4 md:max-w-5xl md:px-6 md:py-6 lg:max-w-6xl">
                 {isNetworkErr ? (
-                    <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center">
-                        <WifiOff className="mx-auto mb-3 h-9 w-9 text-slate-400" />
-                        <p className="text-sm font-medium text-slate-800" style={{ fontFamily: HP_FONT }}>
+                    <div className="rounded-xl border border-[#e8e8e8] bg-white px-6 py-16 text-center">
+                        <WifiOff className="mx-auto mb-3 h-9 w-9 text-[#737373]" />
+                        <p className="text-sm font-medium text-[#1c1c1c]" style={{ fontFamily: HP_FONT }}>
                             Sin conexión
                         </p>
                         <Button type="button" onClick={refetch} variant="outline" className="mt-4 rounded-lg">
@@ -115,29 +124,49 @@ const SearchDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="mb-3 flex items-center justify-between">
-                            <p className="text-[13px] font-medium text-slate-500" style={{ fontFamily: HP_FONT }}>
+                            <p className="text-[13px] font-medium text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
                                 {countLabel}
                             </p>
                             {isAdmin && pagination && pagination.totalPages > 1 && (
-                                <p className="text-[12px] text-slate-400" style={{ fontFamily: HP_FONT }}>
+                                <p className="text-[12px] text-[#737373]" style={{ fontFamily: HP_FONT }}>
                                     Pág. {pagination.currentPage}/{pagination.totalPages}
                                 </p>
                             )}
                         </div>
 
                         {searches.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                                    <ClipboardList className="h-6 w-6 text-slate-500" strokeWidth={1.5} />
+                            <div className="relative overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white px-6 py-16 text-center md:py-20">
+                                {/* Sello de bandeja vacía. El círculo doble en brand
+                                    transparente es el único decorativo del sistema —
+                                    referencia al sello del perito sobre el informe. */}
+                                <div
+                                    aria-hidden
+                                    className="pointer-events-none absolute right-6 top-6 hidden md:block"
+                                    style={{ transform: 'rotate(-8deg)' }}
+                                >
+                                    <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full border-[1.5px] border-brand/30 text-brand/70">
+                                        <div className="absolute inset-2 rounded-full border border-brand/15" />
+                                        <span className="text-[8px] font-bold uppercase leading-tight tracking-[0.2em]">
+                                            Bandeja
+                                        </span>
+                                        <span className="text-[8px] font-bold uppercase leading-tight tracking-[0.2em]">
+                                            Vacía
+                                        </span>
+                                    </div>
                                 </div>
+
                                 <h2
-                                    className="text-base font-semibold text-slate-900"
+                                    className="text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c] md:text-[20px]"
                                     style={{ fontFamily: HP_FONT }}
                                 >
-                                    No hay inspecciones
+                                    Aún no tienes inspecciones
                                 </h2>
-                                <p className="mx-auto mt-1.5 max-w-xs text-sm text-slate-500" style={{ fontFamily: HP_FONT }}>
-                                    Contrata una revisión desde el inicio o cambia los filtros aplicados
+                                <p
+                                    className="mx-auto mt-2 max-w-md text-[14px] leading-snug text-[#6a6a6a]"
+                                    style={{ fontFamily: HP_FONT }}
+                                >
+                                    Cuando contrates una revisión, aparecerá aquí con su
+                                    número de informe, su estado y el experto asignado.
                                 </p>
                                 <button
                                     type="button"
@@ -145,11 +174,18 @@ const SearchDashboard: React.FC = () => {
                                     className={`${HP_SERVICE_CTA_CLASS} mt-6`}
                                 >
                                     <Plus className="mr-2 inline h-4 w-4" />
-                                    Nueva inspección
+                                    Pedir mi primera revisión
                                 </button>
                             </div>
                         ) : (
-                            <ul className="flex flex-col gap-2 md:gap-2.5">
+                            // Grid 2-col desktop (auto-fit minmax 420px) para que las cards
+                            // dejen de ser slabs de ancho completo. Stack vertical en mobile.
+                            // gap-y-9 (36px) deja espacio limpio para que la pestaña de la
+                            // siguiente fila no quede tapada por la card de arriba.
+                            <ul
+                                className="grid gap-x-4 gap-y-9 pt-3"
+                                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))' }}
+                            >
                                 {searches.map((search) => (
                                     <li key={search.id}>
                                         <SearchInspectionListItem
@@ -174,14 +210,14 @@ const SearchDashboard: React.FC = () => {
                                 <button
                                     type="button"
                                     disabled={!pagination.hasPrevious}
-                                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-40"
+                                    className="rounded-lg border border-[#e8e8e8] bg-white px-4 py-2 text-sm font-medium text-[#1c1c1c] hover:bg-[#fafafa] transition-colors disabled:opacity-40 disabled:hover:bg-white"
                                 >
                                     Anterior
                                 </button>
                                 <button
                                     type="button"
                                     disabled={!pagination.hasNext}
-                                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-40"
+                                    className="rounded-lg border border-[#e8e8e8] bg-white px-4 py-2 text-sm font-medium text-[#1c1c1c] hover:bg-[#fafafa] transition-colors disabled:opacity-40 disabled:hover:bg-white"
                                 >
                                     Siguiente
                                 </button>

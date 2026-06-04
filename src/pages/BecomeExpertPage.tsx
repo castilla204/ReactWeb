@@ -464,7 +464,7 @@ function BecomeExpertPage() {
                             'Sin coste para ti; los pagos llegan a tu cuenta.',
                         ].map((label) => (
                             <li key={label} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#444]">
-                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" strokeWidth={2.5} />
+                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2.5} />
                                 {label}
                             </li>
                         ))}
@@ -532,7 +532,7 @@ function BecomeExpertPage() {
                         <label htmlFor="be-address-search" className="text-sm font-semibold text-[#1c1c1c]">
                             Zona de cobertura
                         </label>
-                        <span className="rounded-md bg-[#0066CC]/[0.08] px-2 py-0.5 text-xs font-medium text-[#0066CC]">
+                        <span className="rounded-md bg-brand/[0.08] px-2 py-0.5 text-xs font-medium text-brand">
                             Radio 100 km
                         </span>
                     </div>
@@ -578,7 +578,7 @@ function BecomeExpertPage() {
                                             }}
                                             className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[#f0f6fc]"
                                         >
-                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#0066CC]" />
+                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate text-sm font-medium text-[#1c1c1c]">{item.address}</p>
                                                 {item.locationName && item.locationName !== 'Ubicación' && (
@@ -762,7 +762,7 @@ function BecomeExpertPage() {
                                         <span className="text-[#6a6a6a]">Mínimo 50 caracteres (sin espacios al inicio o final)</span>
                                         <span
                                             className={`font-semibold tabular-nums ${
-                                                descriptionTrimLen >= 50 ? 'text-[#0066CC]' : 'text-[#9ca3af]'
+                                                descriptionTrimLen >= 50 ? 'text-brand' : 'text-[#9ca3af]'
                                             }`}
                                         >
                                             {descriptionTrimLen}/50
@@ -812,7 +812,7 @@ function BecomeExpertPage() {
                             ].map((item) => (
                                 <li key={item.label} className="flex items-center gap-3 px-4 py-3 text-sm">
                                     <Check
-                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-[#0066CC]' : 'text-[#d1d5db]'}`}
+                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-brand' : 'text-[#d1d5db]'}`}
                                         strokeWidth={2.5}
                                         aria-hidden
                                     />
@@ -828,7 +828,7 @@ function BecomeExpertPage() {
                                     id="acceptTerms"
                                     checked={acceptTerms}
                                     onChange={(e) => setAcceptTerms(e.target.checked)}
-                                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-[#0066CC] focus:ring-[#0066CC]/30"
+                                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-brand focus:ring-brand/30"
                                     required
                                 />
                                 <span className="text-[15px] leading-relaxed text-[#1c1c1c]">
@@ -837,7 +837,7 @@ function BecomeExpertPage() {
                                         href="/terms.html"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`font-semibold text-[#0066CC] ${HP_LINK_UNDERLINE_CLASS}`}
+                                        className={`font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         términos de uso
@@ -847,7 +847,7 @@ function BecomeExpertPage() {
                                         href="/privacy-policy.html"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className={`font-semibold text-[#0066CC] ${HP_LINK_UNDERLINE_CLASS}`}
+                                        className={`font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         política de privacidad

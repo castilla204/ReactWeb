@@ -10,16 +10,11 @@ import {
 } from '../components/homepage/HomePageSearchBarSkeleton';
 import { HomePageWallSkeleton } from '../components/homepage/HomePageWallSkeleton';
 
-const WELCOME_POPUP_KEY = 'welcome-popup-shown';
-
 const AirbnbSearchBar = lazy(() =>
   import('../components/AirbnbSearchBar').then((m) => ({ default: m.AirbnbSearchBar })),
 );
 const HomepageWall = lazy(() =>
   import('../components/HomepageWall').then((m) => ({ default: m.HomepageWall })),
-);
-const WelcomePopup = lazy(() =>
-  import('../components/WelcomePopup').then((m) => ({ default: m.WelcomePopup })),
 );
 const MobileBottomBar = lazy(() =>
   import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
@@ -30,10 +25,6 @@ const HomePage: React.FC = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const [showWelcomePopup] = useState(
-    () => typeof localStorage !== 'undefined' && !localStorage.getItem(WELCOME_POPUP_KEY),
-  );
-
   useEffect(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -111,12 +102,6 @@ const HomePage: React.FC = () => {
   return (
     <>
       <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">
-        {showWelcomePopup && (
-          <Suspense fallback={null}>
-            <WelcomePopup />
-          </Suspense>
-        )}
-
         <Suspense fallback={searchBarFallback}>
           <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
         </Suspense>
