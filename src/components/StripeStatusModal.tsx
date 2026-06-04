@@ -32,24 +32,10 @@ const getStatusIcon = (action: string) => {
     }
 };
 
-const getButtonClass = (action: string) => {
-    switch (action) {
-        case 'setup':
-        case 'retry':
-            return 'bg-orange-600 hover:bg-orange-700 text-white';
-        case 'wait':
-            return 'bg-blue-600 hover:bg-blue-700 text-white';
-        case 'success':
-        case 'edit_account':
-            return 'bg-green-600 hover:bg-green-700 text-white';
-        case 'complete_requirements':
-            return 'bg-amber-600 hover:bg-amber-700 text-white';
-        case 'contact':
-            return 'bg-purple-600 hover:bg-purple-700 text-white';
-        default:
-            return 'bg-gray-600 hover:bg-gray-700 text-white';
-    }
-};
+// 🛡️ Round 28 MUD-CA: usar helper compartido. Antes era una copia local con
+// colores divergentes (bg-orange-600/bg-amber-600/etc) → UI inconsistente
+// con StripeStatusCard rebrandeada en R29.
+import { getButtonClass } from '../utils/stripeStatusStyles';
 
 const getButtonText = (action: string) => {
     switch (action) {
@@ -71,29 +57,9 @@ const getButtonText = (action: string) => {
     }
 };
 
-const getStripeBadgeClass = (status?: string) => {
-    switch (status) {
-        case STRIPE_STATUS.APPROVED:
-            return 'bg-green-100 text-green-800';
-        case STRIPE_STATUS.PENDING:
-        case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'bg-blue-100 text-blue-800';
-        case STRIPE_STATUS.ACTION_REQUIRED:
-        case STRIPE_STATUS.REQUIREMENTS_DUE:
-        case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'bg-amber-100 text-amber-800';
-        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
-        case STRIPE_STATUS.RESTRICTED:
-            return 'bg-orange-100 text-orange-800';
-        case STRIPE_STATUS.DISABLED:
-        case STRIPE_STATUS.REJECTED:
-            return 'bg-red-100 text-red-800';
-        case STRIPE_STATUS.DEAUTHORIZED:
-            return 'bg-purple-100 text-purple-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
+// 🛡️ MUD-CA: alias del helper compartido para mantener el nombre original
+// `getStripeBadgeClass` que el componente usa abajo.
+import { getStatusBadgeClass as getStripeBadgeClass } from '../utils/stripeStatusStyles';
 
 export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
     isOpen,

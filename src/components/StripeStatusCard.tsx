@@ -60,76 +60,10 @@ const getActionIcon = (action: string) => {
     }
 };
 
-// 🎨 Preferencia usuario: fondo SIEMPRE blanco da igual el estado.
-// La diferenciación de severidad se hace solo con color de TEXTO + ícono, no con bg.
-const getStatusIconClass = (status: string) => {
-    switch (status) {
-        case STRIPE_STATUS.APPROVED:
-            return 'bg-white text-green-600 border border-gray-200';
-        case STRIPE_STATUS.PENDING:
-        case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'bg-white text-blue-600 border border-gray-200';
-        case STRIPE_STATUS.ACTION_REQUIRED:
-        case STRIPE_STATUS.REQUIREMENTS_DUE:
-        case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'bg-white text-orange-600 border border-gray-200';
-        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
-        case STRIPE_STATUS.RESTRICTED:
-            return 'bg-white text-orange-700 border border-gray-200';
-        case STRIPE_STATUS.DISABLED:
-        case STRIPE_STATUS.REJECTED:
-            return 'bg-white text-red-600 border border-gray-200';
-        case STRIPE_STATUS.DEAUTHORIZED:
-            return 'bg-white text-purple-600 border border-gray-200';
-        default:
-            return 'bg-white text-gray-600 border border-gray-200';
-    }
-};
-
-const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-        case STRIPE_STATUS.APPROVED:
-            return 'bg-white text-green-700 border border-gray-200';
-        case STRIPE_STATUS.PENDING:
-        case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'bg-white text-blue-700 border border-gray-200';
-        case STRIPE_STATUS.ACTION_REQUIRED:
-        case STRIPE_STATUS.REQUIREMENTS_DUE:
-        case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'bg-white text-orange-700 border border-gray-200';
-        case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
-        case STRIPE_STATUS.RESTRICTED:
-            return 'bg-white text-orange-800 border border-gray-200';
-        case STRIPE_STATUS.DISABLED:
-        case STRIPE_STATUS.REJECTED:
-            return 'bg-white text-red-700 border border-gray-200';
-        case STRIPE_STATUS.DEAUTHORIZED:
-            return 'bg-white text-purple-700 border border-gray-200';
-        default:
-            return 'bg-white text-gray-700 border border-gray-200';
-    }
-};
-
-// Botones de acción: se mantienen con color sólido porque son CTAs (no son "fondos
-// de estado"). El usuario habló de las CARDS, no de los botones.
-const getButtonClass = (action: string) => {
-    switch (action) {
-        case 'setup':
-        case 'retry':
-            return 'bg-brand hover:bg-brand-hover text-white';
-        case 'wait':
-            return 'bg-gray-700 hover:bg-gray-800 text-white';
-        case 'complete_requirements':
-            return 'bg-brand hover:bg-brand-hover text-white';
-        case 'edit_account':
-        case 'success':
-            return 'bg-brand hover:bg-brand-hover text-white';
-        case 'contact':
-            return 'bg-gray-700 hover:bg-gray-800 text-white';
-        default:
-            return 'bg-gray-700 hover:bg-gray-800 text-white';
-    }
-};
+// 🛡️ Round 28 MUD-CA: helpers movidos a utils/stripeStatusStyles.ts para
+// compartir con StripeStatusModal y StripeStatusBanner — antes había 3 copias
+// con colores divergentes. Importamos del módulo central.
+import { getStatusIconClass, getStatusBadgeClass, getButtonClass } from '../utils/stripeStatusStyles';
 
 export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     stripe,
