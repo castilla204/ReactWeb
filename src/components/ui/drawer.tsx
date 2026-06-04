@@ -24,6 +24,7 @@ interface DrawerProps extends React.ComponentProps<typeof DrawerPrimitive.Root> 
   scrollLockTimeout?: number;
   closeThreshold?: number;
   fixed?: boolean;
+  autoFocus?: boolean;
 }
 
 const Drawer = ({
@@ -39,6 +40,10 @@ const Drawer = ({
   scrollLockTimeout,
   closeThreshold,
   fixed,
+  // Vaul desactiva el autoFocus por defecto. Lo exponemos para que los
+  // consumidores puedan activar el focus nativo de Radix Dialog y evitar el
+  // warning de aria-hidden sin recurrir a timeouts manuales.
+  autoFocus = false,
   ...props
 }: DrawerProps) => (
   <DrawerPrimitive.Root
@@ -54,6 +59,7 @@ const Drawer = ({
     scrollLockTimeout={scrollLockTimeout}
     closeThreshold={closeThreshold}
     fixed={fixed}
+    autoFocus={autoFocus}
     {...props}
   />
 )

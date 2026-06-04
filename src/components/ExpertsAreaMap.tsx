@@ -264,6 +264,10 @@ interface ExpertsAreaMapProps {
   ipLanding?: MapLandingTarget | null;
   /** true cuando la detección por IP terminó (éxito o error). */
   ipLandingResolved?: boolean;
+  /** Oculta el chip inferior derecho (ciudades/expertos) si el padre muestra su propia barra */
+  hideCornerStats?: boolean;
+  /** Hero homepage: mapa decorativo sin marcadores numerados (menos ruido visual) */
+  showCityMarkers?: boolean;
 }
 
 export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
@@ -273,6 +277,8 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   overlayPaddingRatio = 0,
   ipLanding = null,
   ipLandingResolved = false,
+  hideCornerStats = false,
+  showCityMarkers = true,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -616,6 +622,12 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
+    if (!showCityMarkers) {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current.clear();
+      return;
+    }
+
     if (markersRef.current.size === 0) {
       CITY_EXPERTS.forEach((city) => {
         const el = document.createElement('div');
@@ -641,7 +653,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         markersRef.current.set(city.name, marker);
       });
     }
-  }, [handleCityClick, mapReady, onCityClick]);
+  }, [handleCityClick, mapReady, onCityClick, showCityMarkers]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -686,11 +698,13 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         </div>
       )}
 
-      <div className="absolute bottom-3 right-3 z-[500] px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] text-[#6b7280] shadow-sm pointer-events-none select-none">
-        <span className="font-semibold text-[#475569]">{CITY_EXPERTS.length} ciudades</span>
+      {!hideCornerStats && (
+        <div className="absolute bottom-3 right-3 z-[500] px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] text-[#6b7280] shadow-sm pointer-events-none select-none">
+          <span className="font-semibold text-[#475569]">{CITY_EXPERTS.length} ciudades</span>
           <span className="mx-1.5 text-[#cbd5e1]">·</span>
           <span>{totalExperts} expertos</span>
-      </div>
+        </div>
+      )}
 
       <style>{`
         .maplibregl-canvas-container.maplibregl-interactive,

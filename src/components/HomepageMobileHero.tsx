@@ -12,6 +12,10 @@ import { HeroExpertCutout } from './HeroExpertCutout';
  * que la marca no había decidido). El experto recortado y el copy llevan ahora
  * el peso visual sobre superficie blanca — alineado con DESIGN.md ("plano por
  * defecto", "el azul firma, no decora").
+ *
+ * Sin línea 50 países / 500 expertos: en móvil compite con el H1, hace wrap feo
+ * con el recorte del experto (pr ~100px) y duplica mensaje que ya está en FAQ /
+ * quienes-somos. Desktop la mantiene bajo el CTA del mapa.
  */
 export const HomepageMobileHero: React.FC = () => {
   const [expanded, setExpanded] = useState(true);

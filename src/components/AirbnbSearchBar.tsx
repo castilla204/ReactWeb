@@ -465,13 +465,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {/* ✅ Overlay de transición con skeletons */}
       {isNavigating && <MapPageSkeleton />}
       
-      <HomepageDesktopTopBar />
+      <HomepageDesktopTopBar variant="plain" showLogo />
 
       {!isMobile && (
         <Suspense
           fallback={
             <div
-              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-[#e8f0f7] animate-pulse"
+              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-[#fafafa] animate-pulse"
               aria-hidden
             />
           }

@@ -17,7 +17,7 @@ export const HP_COLOR = {
   borderSoft: '#ebebeb',
 } as const;
 
-/** Mismo gradiente que HomepageMobileHero / HomepageDesktopKayak */
+/** Gradiente legacy — modales móvil / búsqueda (no usado en hero desktop ni HomepageMobileHero) */
 export const HP_PANEL_GRADIENT =
   'linear-gradient(155deg, #dceaf8 0%, #e5f0fa 28%, #f5f9fd 52%, #fff9f2 82%, #fafafa 100%)';
 
@@ -121,6 +121,12 @@ export const hpType = {
 export const SD_PAGE_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-10';
 
+/** Cifras de cobertura en hero (alineado con FAQ / HomePresentation) */
+export const HP_HERO_COVERAGE = {
+  countriesMin: 50,
+  expertsMin: 500,
+} as const;
+
 /** Contenido + barra lateral reserva */
 export const SD_PAGE_GRID_CLASS =
   'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 xl:gap-10';
@@ -158,7 +164,7 @@ export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 
 /** CTA principal (desktop / inline) */
 export const HP_SERVICE_CTA_CLASS =
-  'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
+  'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
 
 export const hpCardText = {
   title: {
