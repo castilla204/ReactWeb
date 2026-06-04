@@ -12,7 +12,11 @@ maplibregl.setWorkerUrl(maplibreWorkerUrl);
  * Contornos globales de tierra/costa (Natural Earth) — app mundial, no solo España.
  */
 
-/** Paleta clara — agua suave, costas en azul marca (alineada con Carto Voyager) */
+/** Paleta clara — agua suave, costas en azul marca (alineada con Carto Voyager).
+ *  ⚠️ MapLibre `paint.line-color` exige un color CSS resuelto (hex/rgb/hsl con valores
+ *  literales). NO acepta `hsl(var(--brand))` — la `var()` se queda como string opaco.
+ *  Por eso este es el único punto del frontend donde se conserva el hex de marca
+ *  hardcoded. Si cambia `--brand`, actualizar también este literal. */
 const MAP_THEME = {
   sky: '#dce9f2',
   land: '#ebe8e3',
@@ -230,11 +234,11 @@ function markerHtml(
   const scale = selected ? 1.12 : hovered ? 1.06 : 1;
   const shadow =
     selected || hovered
-      ? '0 8px 18px rgba(0,102,204,0.42)'
-      : '0 4px 10px rgba(0,102,204,0.28)';
+      ? '0 8px 18px hsl(var(--brand)/0.42)'
+      : '0 4px 10px hsl(var(--brand)/0.28)';
 
   const ring = selected
-    ? `<div style="position:absolute;inset:-7px;border-radius:50%;border:3px solid rgba(0,102,204,0.35);pointer-events:none"></div>`
+    ? `<div style="position:absolute;inset:-7px;border-radius:50%;border:3px solid hsl(var(--brand)/0.35);pointer-events:none"></div>`
     : '';
 
   const tooltip = hovered
@@ -244,7 +248,7 @@ function markerHtml(
   return `
     <div style="position:relative;width:${size}px;height:${size}px;transform:scale(${scale});transition:transform 150ms ease;cursor:${clickable ? 'pointer' : 'default'}">
       ${ring}
-      <div style="position:absolute;inset:0;border-radius:50%;background:#fff;border:2px solid #0066CC;box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:#0066CC;font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
+      <div style="position:absolute;inset:0;border-radius:50%;background:#fff;border:2px solid hsl(var(--brand));box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:hsl(var(--brand));font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
       ${tooltip}
     </div>
   `;
@@ -677,7 +681,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
       {detectedCountryCode && introComplete && (
         <div className="absolute bottom-3 left-3 z-[500] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] font-medium text-[#475569] shadow-sm pointer-events-none select-none">
-              <MapPin size={12} className="text-[#0066CC]" />
+              <MapPin size={12} className="text-brand" />
           Tu zona
         </div>
       )}

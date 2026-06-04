@@ -133,7 +133,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     el.style.width = `${size}px`;
     el.style.height = `${size}px`;
     el.style.borderRadius = '9999px';
-    el.style.background = '#0066CC';
+    el.style.background = 'hsl(var(--brand))';
     el.style.color = '#fff';
     el.style.border = '2px solid #fff';
     el.style.fontWeight = '700';
@@ -156,13 +156,13 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     el.style.cursor = 'pointer';
     el.style.whiteSpace = 'nowrap';
     el.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease';
-    el.style.border = isSelected ? 'none' : isHovered ? '2px solid #0066CC' : '1.5px solid #e5e5e5';
-    el.style.background = isSelected ? '#0066CC' : isHovered ? '#eef4fc' : '#fff';
-    el.style.color = isSelected ? '#fff' : isHovered ? '#0066CC' : '#222';
+    el.style.border = isSelected ? 'none' : isHovered ? '2px solid hsl(var(--brand))' : '1.5px solid #e5e5e5';
+    el.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
+    el.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
     el.style.boxShadow = isSelected
-      ? '0 4px 16px rgba(0,102,204,0.45)'
+      ? '0 4px 16px hsl(var(--brand) / 0.45)'
       : isHovered
-        ? '0 4px 14px rgba(0,102,204,0.28)'
+        ? '0 4px 14px hsl(var(--brand) / 0.28)'
         : '0 2px 6px rgba(0,0,0,0.25)';
     el.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
     el.textContent = service.price > 0
@@ -177,13 +177,13 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     isSelected: boolean,
     isHovered: boolean
   ) => {
-    el.style.border = isSelected ? 'none' : isHovered ? '2px solid #0066CC' : '1.5px solid #e5e5e5';
-    el.style.background = isSelected ? '#0066CC' : isHovered ? '#eef4fc' : '#fff';
-    el.style.color = isSelected ? '#fff' : isHovered ? '#0066CC' : '#222';
+    el.style.border = isSelected ? 'none' : isHovered ? '2px solid hsl(var(--brand))' : '1.5px solid #e5e5e5';
+    el.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
+    el.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
     el.style.boxShadow = isSelected
-      ? '0 4px 16px rgba(0,102,204,0.45)'
+      ? '0 4px 16px hsl(var(--brand) / 0.45)'
       : isHovered
-        ? '0 4px 14px rgba(0,102,204,0.28)'
+        ? '0 4px 14px hsl(var(--brand)/0.28)'
         : '0 2px 6px rgba(0,0,0,0.25)';
     el.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
   };

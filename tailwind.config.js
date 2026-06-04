@@ -63,6 +63,14 @@ export default {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                // Color de marca (#0066CC). Sustituye a todos los `[#0066CC]` arbitrarios
+                // que había repartidos por componentes. Soporta opacidad (bg-brand/10)
+                // gracias al placeholder <alpha-value>.
+                brand: {
+                    DEFAULT: "hsl(var(--brand) / <alpha-value>)",
+                    hover: "hsl(var(--brand-hover) / <alpha-value>)",
+                    foreground: "hsl(var(--brand-foreground) / <alpha-value>)",
+                },
             },
             borderRadius: {
                 lg: "var(--radius)",

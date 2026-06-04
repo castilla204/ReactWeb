@@ -68,7 +68,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           <li key={dt.id ?? `${label}-${idx}`}>
             <button
               type="button"
-              className={`${chipClass} cursor-pointer transition-transform hover:brightness-[0.98] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066CC]`}
+              className={`${chipClass} cursor-pointer transition-transform hover:brightness-[0.98] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
               style={isOverlay ? { animationDelay: `${60 + idx * 70}ms` } : undefined}
               onClick={(e) => openDetail(dt, e)}
               aria-haspopup="dialog"
@@ -95,7 +95,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
       <div className="space-y-4 pt-1">
         <p className="text-sm leading-relaxed text-[#6a6a6a]">{detail.description}</p>
         {detail.isRequired ? (
-          <p className="text-xs font-medium text-[#0066CC]">Incluido en el precio del servicio</p>
+          <p className="text-xs font-medium text-brand">Incluido en el precio del servicio</p>
         ) : null}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1c1c1c]">
@@ -104,7 +104,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           <ul className="space-y-2">
             {detail.includes.map((line) => (
               <li key={line} className="flex gap-2 text-sm leading-snug text-[#6a6a6a]">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#0066CC]" aria-hidden />
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-brand" aria-hidden />
                 <span>{line}</span>
               </li>
             ))}

@@ -13,7 +13,7 @@
     <!-- ✅ X-Frame-Options se configura en headers HTTP (nginx.conf y vite.config.ts), no funciona como meta tag -->
     <!-- ✅ Content-Security-Policy SÍ funciona como meta tag y se agrega como respaldo adicional -->
     <!-- ⚠️ frame-ancestors NO funciona en meta tags, solo en headers HTTP (ya configurado en vite.config.ts y nginx.conf) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://api.atrapo.io https://ipapi.co https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.basemaps.cartocdn.com https://*.cartocdn.com wss://cckrnifvbrwuagzlsrbj.supabase.co https://cckrnifvbrwuagzlsrbj.supabase.co; frame-src 'self' https://accounts.google.com https://js.stripe.com;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://api.mapbox.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://api.mapbox.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://api.atrapo.io https://ipapi.co https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.basemaps.cartocdn.com https://*.cartocdn.com https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com wss://cckrnifvbrwuagzlsrbj.supabase.co https://cckrnifvbrwuagzlsrbj.supabase.co; frame-src 'self' https://accounts.google.com https://js.stripe.com;" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="geolocation=(self), microphone=(), camera=()" />
@@ -52,10 +52,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://accounts.google.com" />
+
+    <!-- ✅ API Backend: preconnect ahorra DNS+TCP+TLS (~150-280 ms) en el primer fetch del mapa -->
+    <link rel="preconnect" href="https://newapi-yn9v.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://newapi-yn9v.onrender.com" />
+    <link rel="preconnect" href="https://api.atrapo.io" crossorigin />
+    <link rel="dns-prefetch" href="https://api.atrapo.io" />
+
+    <!-- ✅ CartoCDN: los tiles del mapa usan a/b/c/d.basemaps.cartocdn.com (sharding HTTP/1).
+         Pre-resolver los 4 subdominios ahorra ~200-500 ms en el primer pintado del mapa.
+         (El MapContainer ahora usa un solo host para HTTP/2, pero mantenemos los 4 por compatibilidad). -->
+    <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
     <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://b.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://c.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://d.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://d.basemaps.cartocdn.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.mapbox.com" />
+    <link rel="preconnect" href="https://api.mapbox.com" crossorigin />
+
     <link rel="prefetch" href="/geo/ne_110m_land.geojson" as="fetch" crossorigin />
-    
+
     <!-- ✅ DNS Prefetch para APIs -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://accounts.google.com" />

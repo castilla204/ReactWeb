@@ -9,6 +9,9 @@ import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../../utils/
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
+// ⚠️ MapLibre paint specs no resuelven CSS var(--brand) — necesita color CSS literal.
+// Este es uno de los pocos sitios del frontend donde se conserva el hex de marca hardcoded.
+// Si cambia `--brand` en index.css, actualizar también estos literales (#0066CC).
 const MAP_THEME = {
   sky: '#dce9f2',
   brand: '#0066CC',
@@ -146,8 +149,8 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
         const pinSize = isPreview ? 8 : 16;
         const pinBorder = isPreview ? '1.5px' : '2.5px';
         const pinShadow = isPreview
-          ? '0 1px 4px rgba(0,102,204,0.2)'
-          : '0 2px 10px rgba(0,102,204,0.4)';
+          ? '0 1px 4px hsl(var(--brand)/0.2)'
+          : '0 2px 10px hsl(var(--brand)/0.4)';
         pin.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;border-radius:50%;background:${MAP_THEME.brand};border:${pinBorder} solid #fff;box-shadow:${pinShadow}"></div>`;
         markerRef.current?.remove();
         markerRef.current = new maplibregl.Marker({ element: pin, anchor: 'center' })

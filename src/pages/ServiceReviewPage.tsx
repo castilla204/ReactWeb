@@ -606,7 +606,7 @@ export function ServiceReviewPage({
                         aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                         aria-pressed={isFavorite}
                     >
-                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`} />
+                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
                     </button>
                 </div>
                 {/* Hero móvil: chips anclados al borde inferior de la foto */}
@@ -624,7 +624,7 @@ export function ServiceReviewPage({
                                 <button
                                     type="button"
                                     key={idx}
-                                    className="relative block w-full flex-shrink-0 aspect-[4/3] border-0 bg-gradient-to-br from-gray-100 to-gray-200 p-0 snap-start overflow-hidden cursor-pointer text-left active:scale-[0.98] transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0066CC]"
+                                    className="relative block w-full flex-shrink-0 aspect-[4/3] border-0 bg-gradient-to-br from-gray-100 to-gray-200 p-0 snap-start overflow-hidden cursor-pointer text-left active:scale-[0.98] transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                                     onClick={() => handleImageClick(idx)}
                                     aria-label={`Abrir imagen ${idx + 1} de ${validImages.length}`}
                                 >
@@ -765,8 +765,8 @@ export function ServiceReviewPage({
                                     <div className="absolute -bottom-0.5 -right-0.5" style={{ height: '20px', width: '20px' }}>
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 14" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '20px', width: '20px' }}>
                                             <linearGradient id="superhost-gradient-mobile" x1="8.5%" x2="92.18%" y1="17.16%" y2="17.16%">
-                                                <stop offset="0" stopColor="#0066CC"></stop>
-                                                <stop offset=".5" stopColor="#005bb5"></stop>
+                                                <stop offset="0" stopColor="hsl(var(--brand))"></stop>
+                                                <stop offset=".5" stopColor="hsl(var(--brand-hover))"></stop>
                                                 <stop offset="1" stopColor="#004a99"></stop>
                                             </linearGradient>
                                             <path fill="url(#superhost-gradient-mobile)" d="M9.93 0c.88 0 1.6.67 1.66 1.52l.01.15v2.15c0 .54-.26 1.05-.7 1.36l-.13.08-3.73 2.17a3.4 3.4 0 1 1-2.48 0L.83 5.26A1.67 1.67 0 0 1 0 3.96L0 3.82V1.67C0 .79.67.07 1.52 0L1.67 0z"></path>
@@ -972,7 +972,7 @@ export function ServiceReviewPage({
                             </div>
 
                             {finalCompletedSearches > 0 && (
-                                <p className="text-sm text-[#0066CC] font-medium">
+                                <p className="text-sm text-brand font-medium">
                                     {finalCompletedSearches} trabajos completados
                                 </p>
                             )}
@@ -1028,7 +1028,7 @@ export function ServiceReviewPage({
                                             onClick={() => setIsFavorite(!isFavorite)}
                                         >
                                             <Heart
-                                                className={`h-4 w-4 ${isFavorite ? 'fill-[#0066CC] text-[#0066CC]' : ''}`}
+                                                className={`h-4 w-4 ${isFavorite ? 'fill-brand text-brand' : ''}`}
                                             />
                                         </button>
                                     </div>
