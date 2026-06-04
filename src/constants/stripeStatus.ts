@@ -11,5 +11,7 @@ export const STRIPE_STATUS = {
     DISABLED: 'Disabled',
     APPROVED: 'Approved',
     REJECTED: 'Rejected',
-    DEAUTHORIZED: 'Deauthorized'
+    DEAUTHORIZED: 'Deauthorized',
+    // 🛡️ LOTE C-16: revisión manual del equipo Stripe (separado de PendingVerification).
+    UNDER_REVIEW: 'UnderReview'
 } as const;

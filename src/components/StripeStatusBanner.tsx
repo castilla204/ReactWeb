@@ -41,9 +41,16 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     // solo esperar. Title naranja urgente + CTA "resolver" lo invita a ir a Stripe
     // donde no encuentra nada → frustración + tickets soporte. Categorizar como INFO
     // (azul-gris, sin CTA accionable) o no mostrar si puede operar normalmente.
+    // 🛡️ MUD-DA + MUD-DB: PENDING (onboarding incompleto) se gestiona desde la Card
+    // del panel ("⏳ Continuar Verificación"). No tiene sentido pintar también un
+    // banner aquí (genera mensaje contradictorio + ruido visual). Early return.
+    // Antes el fallback `!canCreateServices && !canReceivePayments` engañaba al
+    // banner pintándolo ROJO incluso con MUD-DA quitado PENDING de INFO_STATES —
+    // por eso el fix MUD-DA solo no funcionaba.
+    if (stripeStatus === STRIPE_STATUS.PENDING) return null;
+
     // 🛡️ MUD-CJ + MUD-CO: usar los 3 arrays exportados (single source of truth con
-    // Card/Modal). isInfo cubre PENDING + PENDING_VERIFICATION según el helper, no
-    // solo PENDING_VERIFICATION ad-hoc como antes (perdíamos STRIPE_STATUS.PENDING).
+    // Card/Modal). Single source of truth para Banner + Card + Modal.
     const isError = STRIPE_ERROR_STATES.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
     const isInfo = STRIPE_INFO_STATES.includes(stripeStatus) && !isError;
     const isWarning = STRIPE_WARNING_STATES.includes(stripeStatus) && !isError && !isInfo;
@@ -91,12 +98,18 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
                         </span>
                     )}
                 </p>
-                <p
-                    className="mt-1 text-sm text-gray-700 leading-snug"
-                    dangerouslySetInnerHTML={{
-                        __html: statusMessage.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    }}
-                />
+                {/*
+                  🛡️ LOTE D · D-22 — Sin dangerouslySetInnerHTML.
+                  ANTES: el banner aplicaba un regex `**bold**` → `<strong>` para soportar
+                  un mini-markdown que el backend NUNCA emite. Toda la lista de defaults en
+                  useExpertStripeStatus.getStatusInfo y los `StatusDetails` que construye
+                  BuildStatusDetails en SubscriptionController son texto plano. dangerouslySetInnerHTML
+                  abría una puerta de XSS si en el futuro alguien añade un mensaje con HTML
+                  no escapado (p.ej. nombres de campos con `<`/`>`). Sin uso real → texto plano.
+                */}
+                <p className="mt-1 text-sm text-gray-700 leading-snug">
+                    {statusMessage}
+                </p>
                 {onOpenStripe && (
                     <button
                         type="button"

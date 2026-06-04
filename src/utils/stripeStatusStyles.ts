@@ -45,6 +45,8 @@ export const STRIPE_ERROR_STATES: readonly string[] = [
 // queremos un banner específico para `PENDING`, crear `STRIPE_PROGRESS_STATES`.
 export const STRIPE_INFO_STATES: readonly string[] = [
     STRIPE_STATUS.PENDING_VERIFICATION,
+    // 🛡️ LOTE C-16: UnderReview comparte tratamiento INFO (azul, sin acción) con PendingVerification.
+    STRIPE_STATUS.UNDER_REVIEW,
 ] as const;
 
 /**
@@ -57,6 +59,8 @@ export const getStatusIconClass = (status: string): string => {
             return 'bg-white text-green-600 border border-gray-200';
         case STRIPE_STATUS.PENDING:
         case STRIPE_STATUS.PENDING_VERIFICATION:
+        // 🛡️ LOTE C-16: UnderReview comparte estilo INFO con PendingVerification.
+        case STRIPE_STATUS.UNDER_REVIEW:
             return 'bg-white text-blue-600 border border-gray-200';
         case STRIPE_STATUS.ACTION_REQUIRED:
         case STRIPE_STATUS.REQUIREMENTS_DUE:
@@ -85,6 +89,8 @@ export const getStatusBadgeClass = (status?: string): string => {
             return 'bg-white text-green-700 border border-gray-200';
         case STRIPE_STATUS.PENDING:
         case STRIPE_STATUS.PENDING_VERIFICATION:
+        // 🛡️ LOTE C-16: UnderReview comparte estilo INFO con PendingVerification.
+        case STRIPE_STATUS.UNDER_REVIEW:
             return 'bg-white text-blue-700 border border-gray-200';
         case STRIPE_STATUS.ACTION_REQUIRED:
         case STRIPE_STATUS.REQUIREMENTS_DUE:
