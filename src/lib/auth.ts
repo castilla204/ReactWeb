@@ -41,32 +41,20 @@ export function setAuthToken(token: string, user?: any) {
 }
 
 export function getAuthToken(): string | null {
-    const token = localStorage.getItem('authToken');
+    // 🛡️ Round 28 MUD-AF: ANTES borrábamos el token aquí si exp < Date.now() →
+    // condenaba a TODAS las sesiones a expirar a los 60min sin posibilidad de
+    // refresh (el interceptor de authService nunca veía el 401 porque no se
+    // enviaba Authorization). Ahora SOLO devolvemos el token tal cual
+    // (preferimos 'accessToken' del authService moderno, fallback al legacy
+    // 'authToken'). El interceptor de fetch en authService.setupAxiosInterceptor
+    // hace refresh + retry transparente cuando el backend devuelve 401, y
+    // scheduleTokenRefresh() renueva proactivamente 5 min antes de expirar.
+    // No borramos por estar expirado — el refresh flow se encarga.
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('authToken');
     if (!token) return null;
-
-    try {
-        // Verificar si el token tiene el formato JWT b�sico
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-            // Token con formato inválido - limpiar
-            removeAuthToken();
-            return null;
-        }
-
-        // Decodificar el payload para verificar expiraci�n
-        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-            // Token expirado - limpiar
-            removeAuthToken();
-            return null;
-        }
-
-        return token;
-    } catch (error) {
-        // Error al parsear token - limpiar
-        removeAuthToken();
-        return null; // No eliminamos el token autom�ticamente
-    }
+    const parts = token.split('.');
+    if (parts.length !== 3) return null; // formato inválido, pero NO borramos (puede ser race)
+    return token;
 }
 
 export function removeAuthToken() {

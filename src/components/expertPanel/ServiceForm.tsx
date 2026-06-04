@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { CheckCircle, Loader2, Upload, FileText, Video, X, ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
+// 🛡️ Round 28: derivar símbolo de moneda del país del experto (no más € hardcoded).
+import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
 import {
     Drawer,
     DrawerContent,
@@ -95,7 +97,11 @@ interface ServiceFormProps {
     categories: CategoryWithDetailsDto[] | undefined;
     categoriesLoading?: boolean;
     categoriesError?: string | null;
-    editingService?: { id: number; categoryId: number; serviceTypeId: number; price: number; conditions: string; durationInHours: number | null; imageUrls: string[] } | null;
+    // 🛡️ Round 28: añadir currency/priceCurrency al tipo para que en modo edit
+    // el form pueda mostrar la moneda REAL del servicio (snapshot inmutable), no la
+    // derivada del país actual del experto. Sin estos campos, un experto que se mudó
+    // veía "Precio (£)" sobre un servicio EUR antiguo y guardaba con desalineamiento.
+    editingService?: { id: number; categoryId: number; serviceTypeId: number; price: number; conditions: string; durationInHours: number | null; imageUrls: string[]; currency?: string; priceCurrency?: string } | null;
     handleUpdateService?: (e: React.FormEvent) => void;
     isUpdatingService?: boolean;
     existingImages?: string[];
@@ -103,6 +109,9 @@ interface ServiceFormProps {
     existingImagesWithIds?: Array<{ id: number; url: string }>; // ✅ NUEVO: Imágenes con IDs
     imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
     setImagesToDelete?: (ids: number[]) => void; // ✅ NUEVO: Función para actualizar IDs a eliminar
+    // 🛡️ Round 28: país del experto (ISO 3166-1 alpha-2). Usado para mostrar el símbolo
+    // correcto en el label "Precio (X)". Opcional — fallback a EUR si no se pasa.
+    expertCountry?: string | null;
 }
 
 export function ServiceForm({
@@ -133,7 +142,17 @@ export function ServiceForm({
     existingImagesWithIds: propExistingImagesWithIds,
     imagesToDelete: propImagesToDelete = [],
     setImagesToDelete: propSetImagesToDelete,
+    expertCountry,
 }: ServiceFormProps) {
+    // 🛡️ Round 28: derivar símbolo del país del experto (GB → £, CH → CHF, SE → kr, …).
+    // En modo EDICIÓN priorizamos la moneda real del servicio (snapshot inmutable) sobre
+    // el país actual del experto — un experto que se mudó ES→GB no debe ver "Precio (£)"
+    // sobre un servicio EUR antiguo. En modo CREACIÓN cae al país (experto crea en su divisa).
+    const editingCurrencyCode = editingService?.currency ?? editingService?.priceCurrency;
+    const priceCurrencyCode = editingCurrencyCode
+        ? editingCurrencyCode.toUpperCase()
+        : getCurrencyForCountry(expertCountry ?? null);
+    const priceCurrencySymbol = getCurrencySymbol(priceCurrencyCode);
     const fileInputRef = useRef<HTMLInputElement>(null);
     // ✅ FIX ARQUITECTÓNICO (no es un hack de timing):
     // El Drawer se renderiza con `dismissible={false}` (ver más abajo). Eso hace que vaul
@@ -714,7 +733,7 @@ export function ServiceForm({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="price">Precio (€)</Label>
+                            <Label htmlFor="price">Precio ({priceCurrencySymbol})</Label>
                             <input
                                 id="price"
                                 type="number"
@@ -728,6 +747,15 @@ export function ServiceForm({
                                 required
                             />
                             {formErrors.price && <p className="text-sm text-destructive">{formErrors.price}</p>}
+                            {/* 🛡️ Round 28 MUD-AD: aclaración país↔moneda. Stripe Connect liga la
+                                cuenta al país (inmutable), y eso fuerza la moneda de cobro. El
+                                experto NO puede elegir moneda manualmente — viene dada por el país. */}
+                            {!editingService && expertCountry && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Tu cuenta de cobros está en <span className="font-medium">{expertCountry}</span> y opera en
+                                    <span className="font-medium"> {priceCurrencyCode}</span>. Para cambiar de moneda necesitas mudarte a otro país desde el panel de experto.
+                                </p>
+                            )}
                         </div>
                         {parseInt(formData.serviceTypeId) === 1 && (
                             <div className="space-y-2">

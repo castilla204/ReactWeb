@@ -79,7 +79,12 @@ export const MapExample: React.FC = () => {
             {selectedService.name}
           </h4>
           <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
-            Precio: €{Math.round(selectedService.price)}
+            {/* 🛡️ Round 28: divisa real del servicio (símbolo derivado de priceCurrency/currency). */}
+            Precio: {new Intl.NumberFormat('es-ES', {
+              style: 'currency',
+              currency: (((selectedService as any).priceCurrency || (selectedService as any).currency || 'EUR') as string).toUpperCase(),
+              maximumFractionDigits: 0,
+            }).format(selectedService.price)}
           </p>
           {selectedService.type && (
             <p style={{ margin: '0', fontSize: '12px', color: '#999' }}>

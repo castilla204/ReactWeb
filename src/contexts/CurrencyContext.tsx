@@ -174,7 +174,23 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
                 const data = await response.json();
                 if (cancelled) return;
                 if (Array.isArray(data?.currencies) && data.currencies.length > 0) {
-                    setCurrencies(data.currencies);
+                    // 🛡️ Round 28 CUR-SEL-1: normalizar a lowercase para que sobreviva
+                    // independientemente del PropertyNamingPolicy del backend. Soporta tanto
+                    // `code/name/symbol/locale` (lowercase, contrato correcto) como
+                    // `Code/Name/Symbol/Locale` (PascalCase, regresión anterior). Sin esto,
+                    // el filtro de CurrencySelector descartaba todos los items y el dropdown
+                    // se quedaba vacío.
+                    const normalized: Currency[] = (data.currencies as any[])
+                        .map((c) => ({
+                            code: String(c?.code ?? c?.Code ?? '').trim().toUpperCase(),
+                            name: String(c?.name ?? c?.Name ?? ''),
+                            symbol: String(c?.symbol ?? c?.Symbol ?? ''),
+                            locale: String(c?.locale ?? c?.Locale ?? 'en-US'),
+                        }))
+                        .filter((c) => c.code.length > 0);
+                    if (normalized.length > 0) {
+                        setCurrencies(normalized);
+                    }
                 }
                 if (data?.rates && typeof data.rates === 'object') {
                     setRates(sanitizeRates(data.rates as Record<string, unknown>));
@@ -214,7 +230,10 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         // Si el usuario está autenticado, persistir también en backend para sincronizar dispositivos.
         const token = getAuthToken();
         if (token) {
-            fetch(`${API_CONFIG.baseUrl}/api/Auth/preferred-currency`, {
+            // 🛡️ Round 28 CUR-2: endpoint correcto es /api/User/preferred-currency (controller
+            // UserController con [Route("api/[controller]")]). Antes apuntaba a /api/Auth → 404
+            // silencioso (catch solo console.warn) → sync multi-device roto desde Round 22.
+            fetch(`${API_CONFIG.baseUrl}/api/User/preferred-currency`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
