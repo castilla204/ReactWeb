@@ -4,7 +4,7 @@ import { STRIPE_STATUS } from '../constants/stripeStatus';
 // 🛡️ Round 28 MUD-CJ: arrays compartidos de severidad. Antes el banner tenía
 // copias locales que generaban drift si alguien añadía un STRIPE_STATUS nuevo
 // (helpers Card/Modal lo pintaban, banner lo silenciaba con return null).
-import { STRIPE_WARNING_STATES, STRIPE_ERROR_STATES } from '../utils/stripeStatusStyles';
+import { STRIPE_WARNING_STATES, STRIPE_ERROR_STATES, STRIPE_INFO_STATES } from '../utils/stripeStatusStyles';
 
 interface StripeStatusBannerProps {
     stripeStatus: string;
@@ -41,12 +41,11 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     // solo esperar. Title naranja urgente + CTA "resolver" lo invita a ir a Stripe
     // donde no encuentra nada → frustración + tickets soporte. Categorizar como INFO
     // (azul-gris, sin CTA accionable) o no mostrar si puede operar normalmente.
-    const isPendingVerificationOk = stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION
-                                  && canCreateServices && canReceivePayments;
-    // 🛡️ MUD-CJ: usar arrays exportados del helper (single source of truth con Card/Modal).
+    // 🛡️ MUD-CJ + MUD-CO: usar los 3 arrays exportados (single source of truth con
+    // Card/Modal). isInfo cubre PENDING + PENDING_VERIFICATION según el helper, no
+    // solo PENDING_VERIFICATION ad-hoc como antes (perdíamos STRIPE_STATUS.PENDING).
     const isError = STRIPE_ERROR_STATES.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
-    const isInfo = isPendingVerificationOk
-                || (stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION && !isError);
+    const isInfo = STRIPE_INFO_STATES.includes(stripeStatus) && !isError;
     const isWarning = STRIPE_WARNING_STATES.includes(stripeStatus) && !isError && !isInfo;
 
     if (!isError && !isWarning && !isInfo) return null;
