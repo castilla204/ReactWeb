@@ -32,12 +32,17 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     futureDueAtIso,
     onOpenStripe
 }) => {
-    // Estados warning donde el experto puede seguir operando pero debe actuar.
+    // 🛡️ MUD-BZ: PendingVerification es DISTINTO de los demás warnings. Stripe está
+    // REVISANDO documentos que ya subiste — el experto NO tiene nada que hacer ahora,
+    // solo esperar. Title naranja urgente + CTA "resolver" lo invita a ir a Stripe
+    // donde no encuentra nada → frustración + tickets soporte. Categorizar como INFO
+    // (azul-gris, sin CTA accionable) o no mostrar si puede operar normalmente.
+    const isPendingVerificationOk = stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION
+                                  && canCreateServices && canReceivePayments;
     const warningStates: string[] = [
         STRIPE_STATUS.REQUIREMENTS_DUE,
         STRIPE_STATUS.RESTRICTED_SOON,
         STRIPE_STATUS.ACTION_REQUIRED,
-        STRIPE_STATUS.PENDING_VERIFICATION,
     ];
     const errorStates: string[] = [
         STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
@@ -48,16 +53,20 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     ];
 
     const isError = errorStates.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
-    const isWarning = warningStates.includes(stripeStatus) && !isError;
+    const isInfo = isPendingVerificationOk
+                || (stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION && !isError);
+    const isWarning = warningStates.includes(stripeStatus) && !isError && !isInfo;
 
-    if (!isError && !isWarning) return null;
+    if (!isError && !isWarning && !isInfo) return null;
 
     // Colores SOLO en icono + texto, fondo blanco siempre.
-    const iconColor = isError ? 'text-red-600' : 'text-orange-600';
-    const titleColor = isError ? 'text-red-700' : 'text-orange-700';
+    const iconColor = isError ? 'text-red-600' : (isInfo ? 'text-blue-600' : 'text-orange-600');
+    const titleColor = isError ? 'text-red-700' : (isInfo ? 'text-blue-700' : 'text-orange-700');
     const title = isError
         ? 'Tu cuenta de pagos necesita atención urgente'
-        : 'Hay datos pendientes en tu cuenta de pagos';
+        : isInfo
+            ? 'Stripe está revisando tu cuenta'
+            : 'Hay datos pendientes en tu cuenta de pagos';
 
     // Calcular plazo legible.
     let deadlineText: string | null = null;
