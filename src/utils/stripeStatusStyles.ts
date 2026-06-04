@@ -31,9 +31,20 @@ export const STRIPE_ERROR_STATES: readonly string[] = [
     STRIPE_STATUS.DEAUTHORIZED,
 ] as const;
 
+// 🛡️ MUD-DA: PENDING NO debería estar en INFO_STATES.
+//
+// Razón: `PENDING` significa onboarding INCOMPLETO (acción del experto pendiente
+// — "Continuar Verificación"). `PENDING_VERIFICATION` significa Stripe revisando
+// docs ya subidos (el experto NO tiene nada que hacer). Tratarlos igual provocaba
+// que el Banner pintara `PENDING` como azul info "no hagas nada" mientras la Card
+// debajo decía ámbar "⏳ Continuar Verificación" → mensaje contradictorio.
+//
+// Ahora: solo `PENDING_VERIFICATION` es INFO (Stripe trabajando en background).
+// `PENDING` cae al `if (!isError && !isWarning && !isInfo) return null;` del
+// banner → no se muestra (la Card ya pinta el CTA "Continuar"). Si en el futuro
+// queremos un banner específico para `PENDING`, crear `STRIPE_PROGRESS_STATES`.
 export const STRIPE_INFO_STATES: readonly string[] = [
     STRIPE_STATUS.PENDING_VERIFICATION,
-    STRIPE_STATUS.PENDING,
 ] as const;
 
 /**
