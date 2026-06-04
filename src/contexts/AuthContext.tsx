@@ -138,7 +138,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signOut = async () => {
         console.log('Signing out user');
-        await authService.logout();
+        // 🛡️ Limpiar SIEMPRE el estado local — incluso si el endpoint de logout
+        //    del backend falla (cuenta ya borrada, 401, red caída, …). Antes,
+        //    si `authService.logout()` tiraba, las tres líneas de limpieza no se
+        //    ejecutaban y el usuario quedaba con JWT zombi en localStorage.
+        try {
+            await authService.logout();
+        } catch (err) {
+            console.warn('[AuthContext] authService.logout() falló; limpiando localmente igualmente.', err);
+        }
         setUser(null);
         setIsAuthenticated(false);
         removeAuthToken();

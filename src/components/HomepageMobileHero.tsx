@@ -1,47 +1,25 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { HP_PANEL_GRADIENT } from '../constants/homepageTypography';
 import { HeroExpertCutout } from './HeroExpertCutout';
 
-const MobileHeroJoy: React.FC = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
-    <div
-      className="absolute -top-12 -left-10 h-[120px] w-[120px] rounded-full"
-      style={{ background: 'radial-gradient(circle, rgba(255,209,102,0.35) 0%, transparent 72%)' }}
-    />
-    <div
-      className="absolute top-[12%] right-[-1rem] h-[80px] w-[80px] rounded-full"
-      style={{ background: 'radial-gradient(circle, rgba(0,102,204,0.2) 0%, transparent 72%)' }}
-    />
-    <div
-      className="absolute bottom-[-1rem] left-[8%] h-[90px] w-[90px] rounded-full"
-      style={{ background: 'radial-gradient(circle, rgba(255,56,92,0.15) 0%, transparent 72%)' }}
-    />
-    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 390 200" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="mobile-hero-wave" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#0066CC" stopOpacity="0.1" />
-          <stop offset="50%" stopColor="#FF385C" stopOpacity="0.06" />
-          <stop offset="100%" stopColor="#0066CC" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 0 155 C 80 135, 160 170, 260 150 S 390 140, 390 165 L 390 200 L 0 200 Z"
-        fill="url(#mobile-hero-wave)"
-        opacity="0.6"
-      />
-    </svg>
-  </div>
-);
-
+/**
+ * Hero móvil de la home.
+ *
+ * Polish 2026-06: se retira el `HP_PANEL_GRADIENT` (linear-gradient cream→azul
+ * de la banda warm-neutral AI saturada que el manual de Impeccable lista como
+ * anti-patrón) y el subcomponente `MobileHeroJoy` (tres burbujas radiales
+ * amarillo / azul / rosa-Airbnb + ola SVG en miniatura, decoración acumulada
+ * que la marca no había decidido). El experto recortado y el copy llevan ahora
+ * el peso visual sobre superficie blanca — alineado con DESIGN.md ("plano por
+ * defecto", "el azul firma, no decora").
+ */
 export const HomepageMobileHero: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
 
   return (
     <section
       data-homepage-hero
-      className="relative md:hidden overflow-hidden border-b border-[#e8e8e8]/90"
-      style={{ background: HP_PANEL_GRADIENT }}
+      className="relative md:hidden overflow-hidden border-b border-[#e8e8e8] bg-white"
     >
       {expanded && (
         <HeroExpertCutout
@@ -50,12 +28,6 @@ export const HomepageMobileHero: React.FC = () => {
           className="min-[390px]:!h-[158px]"
         />
       )}
-      <div
-        className={`absolute inset-0 transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}
-        aria-hidden={!expanded}
-      >
-        <MobileHeroJoy />
-      </div>
 
       <div className="relative">
         {!expanded && (
@@ -67,7 +39,7 @@ export const HomepageMobileHero: React.FC = () => {
             aria-label="Desplegar presentación"
           >
             <p className="hp-eyebrow">Inspección antes de comprar</p>
-            <ChevronDown className="h-4 w-4 shrink-0 text-[#0066CC]" strokeWidth={2.5} />
+            <ChevronDown className="h-4 w-4 shrink-0 text-brand" strokeWidth={2.5} />
           </button>
         )}
 
@@ -81,7 +53,7 @@ export const HomepageMobileHero: React.FC = () => {
               <div className="relative z-[1] pr-[100px] min-[390px]:pr-[112px]">
                 <h1 className="hp-hero-title text-[1.35rem] min-[390px]:text-[1.45rem] leading-[1.12]">
                   Antes de comprar,
-                  <span className="block text-[#0066CC]">que lo revise un experto</span>
+                  <span className="block text-brand">que lo revise un experto</span>
                 </h1>
                 <p className="hp-hero-body mt-1.5 text-[13px] min-[390px]:text-sm leading-snug">
                   Informe con fotos y vídeo. Precio cerrado y pago retenido hasta recibirlo.

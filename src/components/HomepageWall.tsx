@@ -6,7 +6,7 @@ import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
-import { Star, ChevronRight, X } from 'lucide-react';
+import { Star, ChevronRight, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
@@ -391,10 +391,9 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                                       decoding="async"
                                     />
                                   ) : (
-                                    <div 
-                                      className="w-full h-full flex items-center justify-center"
+                                    <div
+                                      className="w-full h-full flex items-center justify-center bg-brand"
                                       style={{
-                                        backgroundColor: '#3b82f6',
                                         color: 'white',
                                         fontSize: '14px',
                                         fontWeight: 600,
@@ -621,7 +620,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       <div className="mb-2 md:mb-3 md:px-0">
         <div className="flex items-start gap-3">
           <span
-            className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-[#0066CC] to-[#0066CC]/25"
+            className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-brand to-brand/25"
             aria-hidden
           />
           <div className="min-w-0">
@@ -767,6 +766,34 @@ interface HomepageWallProps {
   animateOnMount?: boolean;
 }
 
+/**
+ * Skeleton estructural del wall. Se reutiliza en:
+ *   1. Estado loading inicial (sin datos en caché).
+ *   2. Estado error (junto al banner con retry) — para que el layout sobreviva el outage
+ *      en vez de colapsarse a un párrafo de texto rojo (mata la conversión).
+ */
+const WallSkeletonGrid: React.FC = () => (
+  <>
+    <div className="mb-2 md:mb-3 md:hidden">
+      <Skeleton height={28} width={220} borderRadius={8} />
+    </div>
+    <div className="hidden md:block mb-5">
+      <Skeleton height={12} width={80} borderRadius={4} className="mb-2" />
+      <Skeleton height={32} width={280} borderRadius={8} />
+    </div>
+    <div className="space-y-6 md:space-y-12 lg:space-y-14">
+      <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
+        {[...Array(6)].map((_, index) => (
+          <div key={index} className="flex-shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]">
+            <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
+            <Skeleton height={16} width="100%" borderRadius={4} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </>
+);
+
 export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   countryCode = 'ES',
   serviceTypeId,
@@ -822,7 +849,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     _enabled: true, // ✅ Siempre habilitado, no hay que esperar geolocalización
   }), [categoryId, countryCode, latitudeProp, longitudeProp]);
 
-  const { data: sections, isLoading, error, isFetching } = useHomepageWallQuery(queryParams);
+  const { data: sections, isLoading, error, isFetching, refetch } = useHomepageWallQuery(queryParams);
 
   const filterServices = useMemo(() => {
     return (services: SearchServiceHomepageDto[]): SearchServiceDetailDto[] => {
@@ -945,44 +972,60 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     return (
       <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
         <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-            <div className="mb-2 md:mb-3 md:hidden">
-              <Skeleton height={28} width={220} borderRadius={8} />
-            </div>
-            <div className="hidden md:block mb-5">
-              <Skeleton height={12} width={80} borderRadius={4} className="mb-2" />
-              <Skeleton height={32} width={280} borderRadius={8} />
-            </div>
-            <div className="space-y-6 md:space-y-12 lg:space-y-14">
-              <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
-                {[...Array(6)].map((_, index) => (
-                  <div key={index} className="flex-shrink-0 w-[160px] min-[428px]:w-[172px] md:w-[184px]">
-                    <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
-                    <Skeleton height={16} width="100%" borderRadius={4} />
-                  </div>
-                ))}
-              </div>
-            </div>
+          <WallSkeletonGrid />
         </div>
       </SkeletonTheme>
     );
   }
 
   if (error) {
+    // 🔴 Antes: párrafo rojo plano "Error al cargar servicios: Failed to fetch" + nada más.
+    // El usuario llegaba a la home y veía un mensaje técnico sin opción de recuperación →
+    // bounce. Ahora: banner ámbar (no rojo destructivo) con botón Reintentar que llama a
+    // refetch() de TanStack Query, y el skeleton estructural sobrevive debajo para que
+    // el layout no colapse.
     console.error('❌ HomepageWall - Error:', error);
     return (
-      <div className="w-full max-w-[1280px] mx-auto px-4 text-center py-8 md:py-12">
-        <p className="text-red-600">Error al cargar servicios: {error.message}</p>
-        <p className="text-gray-500 text-sm mt-2">Revisa la consola para más detalles</p>
-      </div>
+      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mb-4 md:mb-5 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 md:px-4 md:py-3"
+          >
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <p className="flex-1 text-sm leading-snug text-amber-900">
+              No pudimos cargar los servicios. Vuelve a intentarlo en un momento.
+            </p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} aria-hidden />
+              {isFetching ? 'Reintentando' : 'Reintentar'}
+            </button>
+          </div>
+          <WallSkeletonGrid />
+        </div>
+      </SkeletonTheme>
     );
   }
 
   if (!sections || sections.length === 0) {
+    // Estado vacío sin retry — el query fue OK pero no hay datos. Mantenemos copy
+    // amable sin tono de error, encima del skeleton, para no romper el layout.
     console.warn('⚠️ HomepageWall - No hay secciones');
     return (
-      <div className="w-full max-w-[1280px] mx-auto px-4 text-center py-8 md:py-12">
-        <p className="text-gray-600">No hay datos disponibles</p>
-      </div>
+      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+          <p className="mb-4 md:mb-5 text-sm text-[#6a6a6a]">
+            Aún no hay servicios disponibles en esta categoría.
+          </p>
+          <WallSkeletonGrid />
+        </div>
+      </SkeletonTheme>
     );
   }
 
@@ -1054,7 +1097,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           <button
             type="button"
             onClick={() => dispatchHomepagePickCategory(COCHES_CATEGORY_ID, 'Coches')}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-[#FF385C] hover:bg-[#E31C5F]"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-brand hover:bg-brand-hover transition-colors shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
           >
             Ver coches
           </button>

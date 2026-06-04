@@ -6,6 +6,7 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useNavigate } from 'react-router-dom';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { LoginModal } from './LoginModal';
+import SpainCoverageMap from './SpainCoverageMap';
 import {
     Drawer,
     DrawerContent,
@@ -121,20 +122,6 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     const { categories, loading: categoriesLoading } = useCategories();
     const { serviceTypes, isLoading: serviceTypesLoading } = useServiceTypes();
     
-    // Debug: verificar que los datos se están cargando
-    useEffect(() => {
-        console.log('HomePresentation - Categories:', categories, 'Loading:', categoriesLoading, 'Count:', categories?.length);
-        console.log('HomePresentation - ServiceTypes:', serviceTypes, 'Loading:', serviceTypesLoading, 'Count:', serviceTypes?.length);
-        if (serviceTypes && serviceTypes.length > 0) {
-            console.log('First ServiceType:', serviceTypes[0]);
-            console.log('ServiceType structure:', Object.keys(serviceTypes[0] || {}));
-        }
-        if (categories && categories.length > 0) {
-            console.log('First Category:', categories[0]);
-            console.log('Category structure:', Object.keys(categories[0] || {}));
-        }
-    }, [categories, categoriesLoading, serviceTypes, serviceTypesLoading]);
-    
     // Estado del buscador estilo Airbnb
     const [searchForm, setSearchForm] = useState({
         serviceTypeId: null as number | null,
@@ -197,111 +184,50 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
     return (
         <div className="relative w-full bg-white">
 
-            {/* Hero móvil - Diseño profesional marketplace */}
-            <div className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
-                {/* Olas multicolor estilo Stripe */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]">
-                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
-                        <defs>
-                            <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
-                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                            </linearGradient>
-                            <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
-                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
-                            </linearGradient>
-                            <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
-                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
-                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
-                            </linearGradient>
-                        </defs>
-                        <g className="stripe-wave-1">
-                            <path
-                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient1)"
-                            />
-                        </g>
-                        <g className="stripe-wave-2">
-                            <path
-                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient2)"
-                            />
-                        </g>
-                        <g className="stripe-wave-3">
-                            <path
-                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient3)"
-                            />
-                        </g>
-                    </svg>
-                </div>
-                
-                {/* Copos de nieve animados - Móvil */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
-                    {[...Array(10)].map((_, i) => (
-                        <div
-                            key={`snow-mobile-${i}`}
-                            className="absolute text-white animate-snowflake"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${-10 - Math.random() * 20}%`,
-                                animationDelay: `${Math.random() * 5}s`,
-                                animationDuration: `${8 + Math.random() * 12}s`,
-                                fontSize: `${12 + Math.random() * 16}px`,
-                                opacity: 0.8 + Math.random() * 0.2,
-                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
-                            }}
-                        >
-                            ❄
-                        </div>
-                    ))}
-                </div>
+            {/* Hero móvil — fondo de marca sólido (sin gradientes preset / sin olas / sin copos) */}
+            <div data-homepage-hero className="lg:hidden relative min-h-[calc(100dvh-64px)] z-20 flex flex-col bg-brand overflow-hidden">
                 <div className="flex-1 flex flex-col justify-center px-5 pt-8 pb-6 relative z-10">
                     <div className="w-full max-w-md mx-auto space-y-7">
-                    
-                        {/* Badge simple y profesional */}
-                        <div className="inline-flex items-center gap-2 text-sm text-white/90">
+
+                        {/* Eyebrow específico al producto, no genérico */}
+                        <div className="inline-flex items-center gap-2 text-sm text-white">
                             <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                            <span>Disponible en 50+ países</span>
+                            <span>Inspecciones presenciales · informe en 48 h</span>
                             </div>
-                            
-                        {/* Título - Tipografía más natural */}
+
+                        {/* H1 con clamp() para no desbordar S10e/SE; balance para repartir línea */}
                         <div className="space-y-3">
-                            <h1 className="text-[3rem] leading-[1.15] font-bold text-white tracking-[-0.01em]">
+                            <h1 className="font-bold text-white tracking-[-0.02em] [text-wrap:balance] text-[clamp(2rem,8.5vw,2.85rem)] leading-[1.1]">
                                 No compres a ciegas.{' '}
                                 <span className="text-white font-extrabold">Revisa antes de pagar.</span>
                             </h1>
-                            <p className="text-[1.05rem] text-white/90 leading-relaxed">
-                                Revisa tu compra antes de pagar, para que no te estafen. Expertos certificados verifican cada detalle por ti.
+                            <p className="text-[1.05rem] text-white leading-relaxed [text-wrap:pretty]">
+                                Un experto certificado va, verifica el anuncio y te entrega informe antes de que pagues.
                             </p>
                     </div>
-                            
+
                         {/* Estadísticas integradas */}
-                        <div className="flex items-center gap-5 text-sm text-white/80 pt-1">
+                        <div className="flex items-center gap-5 text-sm text-white/85 pt-1">
                             <div className="flex items-center gap-1.5">
                                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 002 2h2.945M15 15v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3m0-4V9a2 2 0 012-2h2.945M15 5v3a2 2 0 01-2 2H9a2 2 0 00-2 2v1m6-6V5a2 2 0 012-2h2a2 2 0 012 2v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span><strong className="text-white font-medium">2.5k+</strong> inspecciones</span>
+                                    <span><strong className="text-white font-semibold">2.5k+</strong> inspecciones</span>
                                 </div>
                                 <div className="w-px h-4 bg-white/30"></div>
                                 <div className="flex items-center gap-1.5">
                                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    <span><strong className="text-white font-medium">500+</strong> expertos</span>
+                                    <span><strong className="text-white font-semibold">500+</strong> expertos</span>
                             </div>
                         </div>
-                                
-                        {/* Botón principal - Diseño marketplace */}
+
+                        {/* CTA primario móvil — inverso sobre fondo de marca */}
                         <div className="pt-3">
                                 <button
                                     onClick={onScrollToForm}
-                                className="w-full bg-white hover:bg-gray-50 text-blue-600 font-semibold text-base py-3.5 px-6 rounded-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-xl"
+                                className="w-full bg-white hover:bg-white/95 text-brand font-semibold text-base py-3.5 px-6 rounded-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 shadow-xl"
                                 >
                                 <span>Empezar ahora</span>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,11 +454,11 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </div>
                         </div>
                         
-                        {/* Botón buscar */}
+                        {/* CTA primario del formulario — alineado con el sistema de marca */}
                         <div className="px-5 pb-5 pt-2">
                             <button
                                 onClick={handleSearch}
-                                className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium text-base py-3.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-brand hover:bg-brand-hover text-white font-semibold text-base py-3.5 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
                             >
                                 <Search className="w-5 h-5" />
                                 <span>Buscar expertos</span>
@@ -542,73 +468,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 </div>
             </div>
 
-            {/* Hero Desktop - Con fondo degradado y texto blanco */}
-            <div className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 overflow-x-hidden">
-                {/* Olas multicolor estilo Stripe - Desktop */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[3]" style={{
-                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
-                }}>
-                    <svg className="absolute bottom-0 left-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1200 200" style={{ height: '60%' }}>
-                        <defs>
-                            <linearGradient id="waveGradient1-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-                                <stop offset="50%" stopColor="#6366f1" stopOpacity="0.5" />
-                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4" />
-                            </linearGradient>
-                            <linearGradient id="waveGradient2-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-                                <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.5" />
-                                <stop offset="100%" stopColor="#a855f7" stopOpacity="0.3" />
-                            </linearGradient>
-                            <linearGradient id="waveGradient3-desktop" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
-                                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.4" />
-                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
-                            </linearGradient>
-                        </defs>
-                        <g className="stripe-wave-1">
-                            <path
-                                d="M0,100 Q300,50 600,100 T1200,100 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient1-desktop)"
-                            />
-                        </g>
-                        <g className="stripe-wave-2">
-                            <path
-                                d="M0,120 Q300,70 600,120 T1200,120 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient2-desktop)"
-                            />
-                        </g>
-                        <g className="stripe-wave-3">
-                            <path
-                                d="M0,140 Q300,90 600,140 T1200,140 L1200,200 L0,200 Z"
-                                fill="url(#waveGradient3-desktop)"
-                            />
-                        </g>
-                    </svg>
-                </div>
-                
-                {/* Copos de nieve animados */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-[5]">
-                    {[...Array(15)].map((_, i) => (
-                        <div
-                            key={`snow-${i}`}
-                            className="absolute text-white animate-snowflake"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${-10 - Math.random() * 20}%`,
-                                animationDelay: `${Math.random() * 5}s`,
-                                animationDuration: `${8 + Math.random() * 12}s`,
-                                fontSize: `${12 + Math.random() * 16}px`,
-                                opacity: 0.8 + Math.random() * 0.2,
-                                filter: 'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))',
-                            }}
-                        >
-                            ❄
-                        </div>
-                    ))}
-                </div>
-                {/* Fondo degradado para el lado izquierdo */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700" style={{
+            {/* Hero Desktop — bloque de marca sólido a la izquierda, foto del oficio a la derecha */}
+            <div data-homepage-hero className="relative z-10 w-full hidden lg:flex min-h-[calc(100vh-64px)] items-start justify-center px-0 bg-brand overflow-x-hidden">
+                {/* Fondo de marca para el lado izquierdo (sin gradiente preset SaaS) */}
+                <div className="absolute inset-0 bg-brand" style={{
                     clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
                 }}></div>
                 
@@ -628,59 +491,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             transform: 'translateX(10%)'
                         }}
                     />
-                    {/* Overlay sutil para mejor contraste */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent"></div>
+                    {/* Overlay sutil para integrar la foto con el bloque de marca */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--brand))]/25 to-transparent"></div>
                 </div>
-                {/* Efecto de interconexiones - Red de líneas animadas (solo lado izquierdo) */}
-                <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
-                    clipPath: 'polygon(0 0, 62% 0, 58% 100%, 0 100%)'
-                }}>
-                    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
-                                <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
-                                <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
-                            </linearGradient>
-                            <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="rgba(147,197,253,0.3)" />
-                                <stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
-                                <stop offset="100%" stopColor="rgba(196,181,253,0.3)" />
-                            </linearGradient>
-                        </defs>
-                        {/* Red de líneas de conexión - más líneas para efecto más completo */}
-                        <line key="line1" x1="5%" y1="15%" x2="25%" y2="35%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.6" />
-                        <line key="line2" x1="25%" y1="35%" x2="45%" y2="20%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line key="line3" x1="45%" y1="20%" x2="65%" y2="30%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line key="line4" x1="65%" y1="30%" x2="85%" y2="15%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line key="line5" x1="10%" y1="50%" x2="30%" y2="65%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line key="line6" x1="30%" y1="65%" x2="55%" y2="75%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line key="line7" x1="55%" y1="75%" x2="75%" y2="85%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.6" />
-                        <line key="line8" x1="75%" y1="85%" x2="90%" y2="70%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        <line key="line9" x1="20%" y1="25%" x2="50%" y2="45%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.4" />
-                        <line key="line10" x1="50%" y1="45%" x2="80%" y2="60%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.4" />
-                        <line key="line11" x1="15%" y1="70%" x2="40%" y2="50%" stroke="url(#lineGradient2)" strokeWidth="1.5" opacity="0.5" />
-                        <line key="line12" x1="60%" y1="55%" x2="85%" y2="40%" stroke="url(#lineGradient1)" strokeWidth="1.5" opacity="0.5" />
-                        {/* Nodos/puntos de conexión - más puntos */}
-                        <circle key="circle1" cx="5%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle key="circle2" cx="25%" cy="35%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle key="circle3" cx="45%" cy="20%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle key="circle4" cx="65%" cy="30%" r="4" fill="rgba(196,181,253,0.7)" />
-                        <circle key="circle5" cx="85%" cy="15%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle key="circle6" cx="10%" cy="50%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle key="circle7" cx="30%" cy="65%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle key="circle8" cx="55%" cy="75%" r="4" fill="rgba(196,181,253,0.7)" />
-                        <circle key="circle9" cx="75%" cy="85%" r="4" fill="rgba(255,255,255,0.7)" />
-                        <circle key="circle10" cx="90%" cy="70%" r="4" fill="rgba(147,197,253,0.7)" />
-                        <circle key="circle11" cx="20%" cy="25%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle key="circle12" cx="50%" cy="45%" r="3" fill="rgba(196,181,253,0.6)" />
-                        <circle key="circle13" cx="80%" cy="60%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle key="circle14" cx="15%" cy="70%" r="3" fill="rgba(147,197,253,0.6)" />
-                        <circle key="circle15" cx="40%" cy="50%" r="3" fill="rgba(255,255,255,0.6)" />
-                        <circle key="circle16" cx="60%" cy="55%" r="3" fill="rgba(196,181,253,0.6)" />
-                    </svg>
-                </div>
-                
+
                 {/* Contenido principal - solo desktop */}
                 <div className="max-w-7xl mx-auto w-full relative z-10 px-4 sm:px-6 md:px-12 lg:px-16 pt-24 lg:pt-28">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
@@ -700,8 +514,8 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             </h1>
                             
                             {/* Descripción desktop */}
-                            <p className="text-xl text-white/90 max-w-2xl leading-relaxed font-light">
-                                Revisa tu compra antes de pagar, para que no te estafen. Expertos certificados verifican cada detalle por ti.
+                            <p className="text-xl text-white max-w-2xl leading-relaxed font-normal [text-wrap:pretty]">
+                                Un experto certificado va, verifica el anuncio y te entrega informe antes de que pagues.
                             </p>
                             
                             {/* 🛡️ Round 17: Botón "Iniciar sesión" desktop → abre el LoginModal (Google + Apple + email/password). */}
@@ -876,7 +690,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="flex-shrink-0 px-2">
                                     <button
                                         onClick={handleSearch}
-                                            className="bg-[#0066CC] hover:bg-[#0052A3] text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                                            className="bg-brand hover:bg-[#0052A3] text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
                                     >
                                             <Search className="w-4 h-4" />
                                     </button>
@@ -905,17 +719,10 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="w-full max-w-[500px] aspect-square bg-white/60 rounded-full blur-2xl"></div>
                                 </div>
 
-                                {/* Contenedor del mapa - Responsive */}
-                                <div 
-                                    className="absolute inset-0 w-full h-full"
-                                    style={{
-                                        backgroundImage: 'url("https://revisario.com/wp-content/uploads/2025/07/mapa-base-revisario.svg")',
-                                        backgroundPosition: '50% 50%',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundSize: 'contain',
-                                    }}
-                                >
-                                </div>
+                                {/* Mapa propio: trazo único en azul de bolígrafo, sin
+                                    glassmorphism, sin dependencias remotas. Reemplaza el SVG
+                                    del competidor revisario.com (ver PRODUCT.md). */}
+                                <SpainCoverageMap className="absolute inset-0" />
                             </div>
                         </div>
                         
@@ -938,7 +745,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                             <div className="flex justify-center lg:justify-start pt-2">
                                 <button
                                     onClick={onScrollToForm}
-                                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-700 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-200 text-sm sm:text-base"
+                                    className="inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-white font-semibold px-6 py-3 rounded-xl shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] transition-all duration-200 text-sm sm:text-base"
                                 >
                                     Quiero mi revisión
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -952,158 +759,6 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
             </div>
 
             <style>{`
-                /* Efecto glitch profesional moderno */
-                .glitch-effect {
-                    position: relative;
-                    animation: glitch 0.3s ease-in-out;
-                }
-                
-                .glitch-effect::before,
-                .glitch-effect::after {
-                    content: attr(data-text);
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    opacity: 0.8;
-                }
-                
-                .glitch-effect::before {
-                    color: #ff0080;
-                    transform: translate(-2px, -2px);
-                    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-                    animation: glitch-before 0.3s ease-in-out;
-                }
-                
-                .glitch-effect::after {
-                    color: #00ffff;
-                    transform: translate(2px, 2px);
-                    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-                    animation: glitch-after 0.3s ease-in-out;
-                }
-                
-                @keyframes glitch {
-                    0% { 
-                        transform: translate(0);
-                        filter: hue-rotate(0deg);
-                    }
-                    10% { 
-                        transform: translate(-1px, 1px);
-                        filter: hue-rotate(90deg);
-                    }
-                    20% { 
-                        transform: translate(1px, -1px);
-                        filter: hue-rotate(180deg);
-                    }
-                    30% { 
-                        transform: translate(-1px, -1px);
-                        filter: hue-rotate(270deg);
-                    }
-                    40% { 
-                        transform: translate(1px, 1px);
-                        filter: hue-rotate(360deg);
-                    }
-                    50% { 
-                        transform: translate(0);
-                        filter: hue-rotate(0deg);
-                    }
-                    100% { 
-                        transform: translate(0);
-                        filter: hue-rotate(0deg);
-                    }
-                }
-                
-                @keyframes glitch-before {
-                    0% { 
-                        transform: translate(-2px, -2px);
-                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-                    }
-                    25% { 
-                        transform: translate(-3px, -1px);
-                        clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%);
-                    }
-                    50% { 
-                        transform: translate(-1px, -3px);
-                        clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
-                    }
-                    75% { 
-                        transform: translate(-2px, -2px);
-                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-                    }
-                    100% { 
-                        transform: translate(-2px, -2px);
-                        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-                    }
-                }
-                
-                @keyframes glitch-after {
-                    0% { 
-                        transform: translate(2px, 2px);
-                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-                    }
-                    25% { 
-                        transform: translate(3px, 1px);
-                        clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
-                    }
-                    50% { 
-                        transform: translate(1px, 3px);
-                        clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
-                    }
-                    75% { 
-                        transform: translate(2px, 2px);
-                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-                    }
-                    100% { 
-                        transform: translate(2px, 2px);
-                        clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-                    }
-                }
-                
-                /* Gradiente profesional moderno */
-                .glitch-text-gradient {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    background-clip: text;
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-size: 200% 200%;
-                    animation: gradientShift 3s ease-in-out infinite;
-                }
-                
-                @keyframes gradientShift {
-                    0%, 100% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                }
-                
-                @keyframes float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-20px); }
-                }
-                .animate-float {
-                    animation: float 6s ease-in-out infinite;
-                }
-                
-                @keyframes fadeFloat {
-                    0%, 100% { 
-                        transform: translateY(0px); 
-                        opacity: 0.1; 
-                    }
-                    25% { 
-                        transform: translateY(-3px); 
-                        opacity: 0.5; 
-                    }
-                    50% { 
-                        transform: translateY(-6px); 
-                        opacity: 1; 
-                    }
-                    75% { 
-                        transform: translateY(-3px); 
-                        opacity: 0.5; 
-                    }
-                }
-                .animate-fade-float {
-                    animation: fadeFloat 8s ease-in-out infinite;
-                }
                 .animation-delay-400 {
                     animation-delay: 0.4s;
                 }
@@ -1161,61 +816,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 .animation-delay-4000 {
                     animation-delay: 4s;
                 }
-                
-                /* Animación de rotación lenta para el globo */
-                @keyframes spin-slow {
-                    from {
-                        transform: rotate(0deg);
-                    }
-                    to {
-                        transform: rotate(360deg);
-                    }
-                }
-                .animate-spin-slow {
-                    animation: spin-slow 20s linear infinite;
-                }
-                
-                @keyframes pulse-slow {
-                    0%, 100% { opacity: 0.6; transform: scale(1); }
-                    50% { opacity: 0.3; transform: scale(1.1); }
-                }
-                .animate-pulse-slow {
-                    animation: pulse-slow 8s ease-in-out infinite;
-                }
-                
-                /* Animaciones modernas para el banner */
-                @keyframes gradient-shift {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                .animate-gradient-shift {
-                    background-size: 200% 200%;
-                    animation: gradient-shift 8s ease infinite;
-                }
-                
-                @keyframes float {
-                    0%, 100% {
-                        transform: translateY(0px) translateX(0px);
-                    }
-                    33% {
-                        transform: translateY(-20px) translateX(10px);
-                    }
-                    66% {
-                        transform: translateY(-10px) translateX(-10px);
-                    }
-                }
-                .animate-float {
-                    animation: float 6s ease-in-out infinite;
-                }
-                .animate-float-delayed {
-                    animation: float 8s ease-in-out infinite;
-                    animation-delay: 2s;
-                }
-                
+
                 @keyframes fade-in-up {
                     from {
                         opacity: 0;
@@ -1238,32 +839,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 .animate-fade-in-up-delayed-3 {
                     animation: fade-in-up 1.2s ease-out 0.6s both;
                 }
-                
-                @keyframes gradient-text {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                .animate-gradient-text {
-                    background-size: 200% 200%;
-                    animation: gradient-text 3s ease infinite;
-                }
-                
-                @keyframes underline {
-                    0% {
-                        transform: scaleX(0);
-                    }
-                    100% {
-                        transform: scaleX(1);
-                    }
-                }
-                .animate-underline {
-                    animation: underline 1s ease-out 1.5s both;
-                }
-                
+
                 /* Shimmer animation para skeleton - efecto moderno y suave */
                 @keyframes shimmer {
                     0% {
@@ -1349,29 +925,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 .animate-slide-down {
                     animation: slide-down 0.3s ease-out;
                 }
-                
-                @keyframes gradient-shift {
-                    0%, 100% {
-                        background-position: 0% 50%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                }
-                .animate-gradient-shift {
-                    animation: gradient-shift 3s ease infinite;
-                }
-                
-                /* Efecto de brillo en botones */
-                @keyframes shine {
-                    0% {
-                        transform: translateX(-100%);
-                    }
-                    100% {
-                        transform: translateX(100%);
-                    }
-                }
-                
+
                 /* Mejoras en glassmorphism */
                 .backdrop-blur-xl {
                     backdrop-filter: blur(16px);
@@ -1410,95 +964,16 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                 .hover\:shadow-3xl:hover {
                     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
                 }
-                
-                /* Animación de copos de nieve */
-                @keyframes snowflake {
-                    0% {
-                        transform: translateY(-100vh) translateX(0) rotate(0deg);
-                        opacity: 0;
-                    }
-                    10% {
-                        opacity: 0.8;
-                    }
-                    50% {
-                        opacity: 1;
-                    }
-                    90% {
-                        opacity: 0.8;
-                    }
-                    100% {
-                        transform: translateY(100vh) translateX(30px) rotate(360deg);
-                        opacity: 0;
+
+                @media (prefers-reduced-motion: reduce) {
+                    .animate-fade-in-up,
+                    .animate-fade-in-up-delayed,
+                    .animate-fade-in-up-delayed-2,
+                    .animate-fade-in-up-delayed-3,
+                    .animate-slide-down {
+                        animation: none !important;
                     }
                 }
-                
-                .animate-snowflake {
-                    animation: snowflake linear infinite;
-                    pointer-events: none;
-                    user-select: none;
-                    will-change: transform, opacity;
-                }
-                
-                /* Olas estilo Stripe - Animación multicolor */
-                @keyframes stripe-wave-1 {
-                    0%, 100% {
-                        transform: translateY(0) translateX(0);
-                    }
-                    25% {
-                        transform: translateY(-10px) translateX(20px);
-                    }
-                    50% {
-                        transform: translateY(-5px) translateX(10px);
-                    }
-                    75% {
-                        transform: translateY(-15px) translateX(-10px);
-                    }
-                }
-                
-                @keyframes stripe-wave-2 {
-                    0%, 100% {
-                        transform: translateY(0) translateX(0);
-                    }
-                    25% {
-                        transform: translateY(5px) translateX(-15px);
-                    }
-                    50% {
-                        transform: translateY(10px) translateX(15px);
-                    }
-                    75% {
-                        transform: translateY(5px) translateX(-5px);
-                    }
-                }
-                
-                @keyframes stripe-wave-3 {
-                    0%, 100% {
-                        transform: translateY(0) translateX(0);
-                    }
-                    25% {
-                        transform: translateY(-8px) translateX(10px);
-                    }
-                    50% {
-                        transform: translateY(8px) translateX(-20px);
-                    }
-                    75% {
-                        transform: translateY(-5px) translateX(5px);
-                    }
-                }
-                
-                .stripe-wave-1 {
-                    animation: stripe-wave-1 8s ease-in-out infinite;
-                }
-                
-                .stripe-wave-2 {
-                    animation: stripe-wave-2 10s ease-in-out infinite;
-                    animation-delay: 0.5s;
-                }
-                
-                .stripe-wave-3 {
-                    animation: stripe-wave-3 12s ease-in-out infinite;
-                    animation-delay: 1s;
-                }
-                
             `}</style>
 
             {/* 🛡️ Round 16: Modal de autenticación (Google + Apple + email/password + OTP). */}

@@ -12,16 +12,17 @@ import { HP_FONT } from '../constants/homepageTypography';
 const FONT = HP_FONT;
 
 const C = {
+  // Sistema según DESIGN.md ("El gabinete del perito" — plano por defecto,
+  // el azul firma, no decora). Sin gradientes ni washes decorativos.
   bg: '#fafafa',
-  bgWash: '#f0f6fc',
+  bgAlt: '#ffffff',
   text: '#1c1c1c',
   textBody: '#6a6a6a',
   textMuted: '#6a6a6a',
-  brand: '#0066CC',
-  brandHover: '#005bb5',
+  brand: 'hsl(var(--brand))',
+  brandHover: 'hsl(var(--brand-hover))',
   border: '#e5e5e5',
   borderLight: '#ebebeb',
-  mapSky: '#dce9f2',
 } as const;
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -97,11 +98,7 @@ const SectionHeading: React.FC<{
 const ExpertsBand: React.FC = () => (
   <section
     aria-labelledby="experts-title"
-    className="py-16 lg:py-20 border-t border-[#e8e8e8]/80"
-    style={{
-      background:
-        'linear-gradient(128deg, #dceaf8 0%, #eef4fb 35%, #fafafa 100%)',
-    }}
+    className="py-16 lg:py-20 border-t border-[#e8e8e8]/80 bg-white"
   >
     <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
       <div className="grid grid-cols-12 gap-10 items-center">
@@ -118,7 +115,7 @@ const ExpertsBand: React.FC = () => (
 
           <motion.h2 variants={fadeUp} id="experts-title" className={`mt-2 ${sectionTitle}`}>
             ¿Mecánico, perito o agente inmobiliario?{' '}
-            <span className="text-[#0066CC]">Tu experiencia, en ingresos.</span>
+            <span className="text-brand">Tu experiencia, en ingresos.</span>
           </motion.h2>
 
           <motion.ul
@@ -133,7 +130,7 @@ const ExpertsBand: React.FC = () => (
           <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-4">
             <Link
               to="/become-expert"
-              className="inline-flex items-center rounded-full bg-[#0066CC] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_rgba(0,102,204,0.2)] hover:bg-[#005bb5] transition-colors"
+              className="inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
             >
               Hazte experto
             </Link>
@@ -200,7 +197,7 @@ const FAQ: React.FC = () => (
                     <Accordion.Trigger className="group w-full flex items-center justify-between gap-6 text-left px-5 py-4 hover:bg-[#fafafa] transition-colors">
                       <span className="text-[15px] font-medium text-[#222222]">{f.q}</span>
                       <ChevronDown
-                        className="w-4 h-4 text-[#737373] shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-[#0066CC]"
+                        className="w-4 h-4 text-[#737373] shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-brand"
                         aria-hidden
                       />
                     </Accordion.Trigger>
@@ -222,7 +219,7 @@ const FinalCTA: React.FC = () => (
   <section
     aria-labelledby="cta-final-title"
     className="py-14 lg:py-16 border-t border-[#e8e8e8]/80"
-    style={{ background: C.bgWash }}
+    style={{ background: C.bgAlt }}
   >
     <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
       <motion.div
@@ -243,7 +240,7 @@ const FinalCTA: React.FC = () => (
         </div>
         <Link
           to="/crear-busqueda"
-          className="inline-flex w-fit shrink-0 items-center rounded-full bg-[#0066CC] px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_rgba(0,102,204,0.2)] hover:bg-[#005bb5] transition-colors"
+          className="inline-flex w-fit shrink-0 items-center rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
         >
           Pedir una revisión
         </Link>
