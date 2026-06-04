@@ -10,8 +10,8 @@ export const HP_COLOR = {
   secondary: '#222222',
   muted: '#6a6a6a',
   mutedSoft: '#737373',
-  brand: '#0066CC',
-  brandDark: '#005bb5',
+  brand: 'hsl(var(--brand))',
+  brandDark: 'hsl(var(--brand-hover))',
   brandDarker: '#004a99',
   border: '#e8e8e8',
   borderSoft: '#ebebeb',
@@ -54,7 +54,7 @@ export const hpTitleUnderlineBarStyle = {
 
 /** Clase Tailwind para enlaces subrayados de marca */
 export const HP_LINK_UNDERLINE_CLASS =
-  'underline decoration-[#0066CC] underline-offset-2 hover:no-underline transition-all';
+  'underline decoration-brand underline-offset-2 hover:no-underline transition-all';
 
 /** Estilos inline para UI densa (cards, búsqueda) */
 export const hpType = {
@@ -158,7 +158,7 @@ export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 
 /** CTA principal (desktop / inline) */
 export const HP_SERVICE_CTA_CLASS =
-  'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-[#0066CC] text-white text-base font-semibold shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-colors hover:bg-[#005bb5] active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
+  'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
 
 export const hpCardText = {
   title: {
@@ -196,7 +196,7 @@ export const MAP_DESKTOP_PAGE_LEAD_CLASS =
   'mt-2 max-w-2xl text-sm font-normal leading-relaxed text-[#6a6a6a]';
 
 export const MAP_META_CHIP_CLASS =
-  'inline-flex items-center rounded-full bg-[#0066CC]/[0.08] px-2.5 py-1 text-[11px] font-semibold text-[#0066CC]';
+  'inline-flex items-center rounded-full bg-brand/[0.08] px-2.5 py-1 text-[11px] font-semibold text-brand';
 
 export const MAP_META_CHIP_MUTED_CLASS =
   'inline-flex items-center rounded-full bg-[#f4f4f4] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
@@ -240,7 +240,7 @@ export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/
 export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
 export const MAP_CARD_EYEBROW_CLASS =
-  'text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0066CC]';
+  'text-[10px] font-semibold uppercase tracking-[0.08em] text-brand';
 
 export const MAP_CARD_NAME_CLASS =
   'truncate text-[14px] font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
@@ -265,7 +265,7 @@ export const MAP_CARD_DESKTOP_SHADOW_HOVER =
   'hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5';
 
 export const MAP_CARD_DESKTOP_SHADOW_ACTIVE =
-  'shadow-[0_4px_18px_rgba(0,102,204,0.14),0_2px_8px_rgba(0,0,0,0.08)]';
+  'shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(0,0,0,0.08)]';
 
 export const MAP_CARD_DESKTOP_SHADOW_HOVERED =
   'shadow-[0_6px_20px_rgba(0,0,0,0.11),0_2px_6px_rgba(0,0,0,0.06)]';

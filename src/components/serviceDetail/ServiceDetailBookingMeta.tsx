@@ -124,7 +124,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           <p className="text-xs font-medium text-[#1c1c1c]">Disponibilidad</p>
           <div className="flex shrink-0 items-center gap-2">
             {availabilityTimeRange && (
-              <span className="text-xs font-semibold tabular-nums text-[#0066CC]">
+              <span className="text-xs font-semibold tabular-nums text-brand">
                 {availabilityTimeRange}
               </span>
             )}
@@ -153,7 +153,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           <p className="text-xs font-medium text-[#1c1c1c]">Disponibilidad</p>
           <div className="flex shrink-0 items-center gap-2">
             {availabilityTimeRange && (
-              <span className="text-xs font-semibold tabular-nums text-[#0066CC]">
+              <span className="text-xs font-semibold tabular-nums text-brand">
                 {availabilityTimeRange}
               </span>
             )}

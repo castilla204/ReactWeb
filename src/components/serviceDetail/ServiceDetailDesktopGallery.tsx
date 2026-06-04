@@ -33,7 +33,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
     >
       {loadingImages.has(src) && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#f5f5f5]">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#ddd] border-t-[#0066CC]" />
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#ddd] border-t-brand" />
         </div>
       )}
       <img

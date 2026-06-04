@@ -220,7 +220,7 @@ export const MobileBottomBar: React.FC = () => {
             background: 'transparent',
             padding: 0,
             margin: 0,
-            color: exploreActive ? '#0066CC' : '#717171',
+            color: exploreActive ? 'hsl(var(--brand))' : '#717171',
             cursor: exploreActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -250,7 +250,7 @@ export const MobileBottomBar: React.FC = () => {
                 fill: 'none',
                 height: '24px',
                 width: '24px',
-                stroke: exploreActive ? '#0066CC' : '#717171',
+                stroke: exploreActive ? 'hsl(var(--brand))' : '#717171',
                 strokeWidth: '2.66667',
                 overflow: 'visible',
               }}
@@ -285,7 +285,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: wishlistsActive ? '#0066CC' : '#717171',
+            color: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
             cursor: wishlistsActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -315,7 +315,7 @@ export const MobileBottomBar: React.FC = () => {
                   fill: 'none',
                   height: '24px',
                   width: '24px',
-                  stroke: wishlistsActive ? '#0066CC' : '#717171',
+                  stroke: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
                   strokeWidth: '2',
                   overflow: 'visible',
                 }}
@@ -350,7 +350,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: howItWorksActive ? '#0066CC' : '#717171',
+            color: howItWorksActive ? 'hsl(var(--brand))' : '#717171',
             cursor: howItWorksActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -367,7 +367,7 @@ export const MobileBottomBar: React.FC = () => {
             <HelpCircle
               size={24}
               strokeWidth={2}
-              style={{ color: howItWorksActive ? '#0066CC' : '#717171' }}
+              style={{ color: howItWorksActive ? 'hsl(var(--brand))' : '#717171' }}
               aria-hidden
             />
           </div>
@@ -394,7 +394,7 @@ export const MobileBottomBar: React.FC = () => {
               border: 'none',
               background: 'transparent',
               padding: 0,
-              color: messagesActive ? '#0066CC' : '#717171',
+              color: messagesActive ? 'hsl(var(--brand))' : '#717171',
               cursor: messagesActive ? 'default' : 'pointer',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
@@ -415,7 +415,7 @@ export const MobileBottomBar: React.FC = () => {
                   size={24}
                   strokeWidth={2}
                   style={{
-                    color: messagesActive ? '#0066CC' : '#717171',
+                    color: messagesActive ? 'hsl(var(--brand))' : '#717171',
                   }}
                 />
               </div>
@@ -446,7 +446,7 @@ export const MobileBottomBar: React.FC = () => {
             border: 'none',
             background: 'transparent',
             padding: 0,
-            color: profileActive ? '#0066CC' : '#717171',
+            color: profileActive ? 'hsl(var(--brand))' : '#717171',
             cursor: profileActive ? 'default' : 'pointer',
             touchAction: 'manipulation',
             WebkitTapHighlightColor: 'transparent',
@@ -510,7 +510,7 @@ export const MobileBottomBar: React.FC = () => {
                     fill: 'none',
                     height: '24px',
                     width: '24px',
-                    stroke: profileActive ? '#0066CC' : '#717171',
+                    stroke: profileActive ? 'hsl(var(--brand))' : '#717171',
                     strokeWidth: '2',
                     overflow: 'visible',
                   }}

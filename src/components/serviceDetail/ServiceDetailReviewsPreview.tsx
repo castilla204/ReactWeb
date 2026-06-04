@@ -153,7 +153,7 @@ function DesktopReviewsPreview({
         <h2 id={headingId} className="hp-section-title mb-2">
           Reseñas
         </h2>
-        <p className="sd-body border-l-2 border-[#0066CC] py-0 pl-3 text-sm leading-relaxed">
+        <p className="sd-body border-l-2 border-brand py-0 pl-3 text-sm leading-relaxed">
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
         </p>
       </section>

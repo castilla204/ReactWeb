@@ -8,10 +8,10 @@ const stepperVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gray-900 text-white",
-        completed: "bg-gray-900 text-white",
-        current: "bg-gray-900 text-white",
-        pending: "bg-gray-200 text-gray-400",
+        default: "bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.25)]",
+        completed: "bg-brand text-white",
+        current: "bg-brand text-white ring-2 ring-brand/25 ring-offset-2",
+        pending: "bg-[#f0f6fc] text-[#9ca3af] border border-[#e8e8e8]",
       },
       size: {
         default: "h-8 w-8",
@@ -76,10 +76,10 @@ const Stepper = React.forwardRef<HTMLDivElement, StepperProps>(
                 {/* Label - Solo en móvil */}
                 <span
                   className={cn(
-                    "text-[9px] font-medium sm:hidden text-center leading-tight",
+                    "max-w-[4.5rem] text-center text-[10px] font-medium leading-tight sm:max-w-none sm:text-xs",
                     isCompleted || isCurrent
-                      ? "text-gray-900"
-                      : "text-gray-400"
+                      ? "text-[#1c1c1c]"
+                      : "text-[#9ca3af]"
                   )}
                 >
                   {step.label}
@@ -90,8 +90,8 @@ const Stepper = React.forwardRef<HTMLDivElement, StepperProps>(
               {index < steps.length - 1 && (
                 <div
                   className={cn(
-                    "h-[1px] w-12 sm:w-16 transition-colors mx-2 sm:mx-3",
-                    isCompleted ? "bg-gray-900" : "bg-gray-200"
+                    "mx-1.5 h-0.5 w-6 rounded-full transition-colors sm:mx-2 sm:w-10",
+                    isCompleted ? "bg-brand" : "bg-[#e8e8e8]"
                   )}
                 />
               )}
