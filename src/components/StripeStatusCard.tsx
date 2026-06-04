@@ -136,13 +136,32 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     isLoadingOnboarding = false
 }) => {
     const { status, loading, error, refetch, syncStatus, statusInfo, isPolling } = stripe;
-    
-    console.log('StripeStatusCard render:', { 
-        status: status?.stripeStatus, 
-        loading, 
-        error, 
+
+    // 🛡️ Round 28 v2: parseamos el stripeStatusDetails una sola vez. Patrones del backend:
+    //   - "Requisitos pendientes: A, B, C." → chips ámbar (currently_due)
+    //   - "Stripe indicó requisitos vencidos: D, E." → chips ROJO (past_due)
+    //   - "Errores a corregir: X (Y); Z (W)." → bullets rojos
+    // El "headline" es todo lo que está ANTES del primer bloque (mensaje corto del backend).
+    const parsedStatus = (() => {
+        const details = status?.stripeStatusDetails || statusInfo?.message || '';
+        const rxPending = /Requisitos pendientes:\s*([^.]+)\./i;
+        const rxPastDue = /(?:Stripe indicó )?requisitos vencidos:\s*([^.]+)\./i;
+        const rxErrors = /Errores a corregir:\s*([^.]+)\./i;
+        const pending = rxPending.exec(details)?.[1]?.split(',').map(s => s.trim()).filter(Boolean) || [];
+        const pastDue = rxPastDue.exec(details)?.[1]?.split(',').map(s => s.trim()).filter(Boolean) || [];
+        const errors = rxErrors.exec(details)?.[1]?.split(';').map(s => s.trim()).filter(Boolean) || [];
+        const totalPending = pending.length + pastDue.length;
+        const headline = details.split(/Requisitos pendientes:|requisitos vencidos:|Errores a corregir:/i)[0].trim();
+        return { headline, pending, pastDue, errors, totalPending };
+    })();
+
+    console.log('StripeStatusCard render:', {
+        status: status?.stripeStatus,
+        loading,
+        error,
         statusInfo: statusInfo?.action,
-        buttonText: statusInfo?.buttonText 
+        buttonText: statusInfo?.buttonText,
+        parsedStatus
     });
 
     if (loading) {
@@ -279,28 +298,79 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                     <EmptyTitle className="text-base font-medium text-gray-900">
                         Estado de Cuenta de Pagos
                     </EmptyTitle>
-                    <EmptyDescription className="text-sm text-gray-500 mt-2 max-w-md">
-                        {statusInfo.message}
+                    <EmptyDescription className="text-sm text-gray-600 mt-2 max-w-md">
+                        {parsedStatus.headline || statusInfo.message}
                     </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
-                    {/* Display detailed status information if available */}
-                    {status.stripeStatusDetails && status.stripeStatusDetails !== statusInfo.message && (
-                        <p className="text-xs text-gray-500 mt-3">
-                            <span className="font-medium">Detalles:</span> {status.stripeStatusDetails}
+                    {parsedStatus.totalPending > 0 && (
+                        <p className="text-sm font-semibold text-gray-900 mt-2">
+                            Te falta{parsedStatus.totalPending !== 1 ? 'n' : ''} {parsedStatus.totalPending} {parsedStatus.totalPending === 1 ? 'detalle' : 'detalles'} por rellenar
                         </p>
                     )}
-                    
+
+                    {/* Requisitos VENCIDOS (rojo) */}
+                    {parsedStatus.pastDue.length > 0 && (
+                        <div className="mt-3 text-left max-w-md mx-auto">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-2">⏰ Vencidos · acción urgente</p>
+                            <ul className="space-y-1.5">
+                                {parsedStatus.pastDue.map((item, i) => (
+                                    <li key={`past-${i}`} className="flex items-start gap-2 text-sm">
+                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                                        <span className="text-red-900 font-medium">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Requisitos PENDIENTES (ámbar) */}
+                    {parsedStatus.pending.length > 0 && (
+                        <div className="mt-3 text-left max-w-md mx-auto">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-2">📋 Por completar</p>
+                            <ul className="space-y-1.5">
+                                {parsedStatus.pending.map((item, i) => (
+                                    <li key={`pending-${i}`} className="flex items-start gap-2 text-sm">
+                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />
+                                        <span className="text-gray-800">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Errores específicos */}
+                    {parsedStatus.errors.length > 0 && (
+                        <div className="mt-3 text-left max-w-md mx-auto bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-red-800 mb-2">⚠️ Problemas detectados</p>
+                            <ul className="space-y-1">
+                                {parsedStatus.errors.map((err, i) => (
+                                    <li key={`err-${i}`} className="text-xs text-red-900 leading-snug">
+                                        {err}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Mensaje tranquilizador cuando hay requirements pendientes */}
+                    {parsedStatus.totalPending > 0 && (
+                        <p className="text-xs text-gray-500 mt-4 italic max-w-md mx-auto">
+                            ✨ En cuanto rellenes estos datos en Stripe, tu cuenta se activará <strong>automáticamente</strong>.
+                        </p>
+                    )}
+
                     {(statusInfo.deadlineText || futureRequirementsText) && (
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-3 space-y-2 max-w-md mx-auto">
                             {statusInfo.deadlineText && (
-                                <p className="text-xs text-gray-500">
-                                    <span className="font-medium">Plazo:</span> {statusInfo.deadlineText}
+                                <p className="text-xs text-gray-600 inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full">
+                                    <Clock className="w-3 h-3 text-orange-600" />
+                                    <span className="font-medium text-orange-800">{statusInfo.deadlineText}</span>
                                 </p>
                             )}
                             {futureRequirementsText && (
-                                <p className="text-xs text-gray-500">
-                                    <span className="font-medium">Requisitos detectados:</span> {futureRequirementsText}
+                                <p className="text-xs text-gray-500 text-left">
+                                    <span className="font-medium">Próximos requisitos:</span> {futureRequirementsText}
                                 </p>
                             )}
                         </div>

@@ -43,21 +43,21 @@ const HeroDecorativeLines: React.FC = () => (
   >
     <defs>
       <linearGradient id="hero-line-h" x1="0.28" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#0066CC" stopOpacity="0" />
-        <stop offset="18%" stopColor="#0066CC" stopOpacity="0.05" />
-        <stop offset="55%" stopColor="#0066CC" stopOpacity="0.11" />
-        <stop offset="100%" stopColor="#0066CC" stopOpacity="0.04" />
+        <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0" />
+        <stop offset="18%" stopColor="hsl(var(--brand))" stopOpacity="0.05" />
+        <stop offset="55%" stopColor="hsl(var(--brand))" stopOpacity="0.11" />
+        <stop offset="100%" stopColor="hsl(var(--brand))" stopOpacity="0.04" />
       </linearGradient>
       <linearGradient id="hero-arc-stroke" x1="0.5" y1="0" x2="0.5" y2="1">
-        <stop offset="0%" stopColor="#0066CC" stopOpacity="0" />
-        <stop offset="30%" stopColor="#0066CC" stopOpacity="0.14" />
-        <stop offset="70%" stopColor="#0066CC" stopOpacity="0.14" />
-        <stop offset="100%" stopColor="#0066CC" stopOpacity="0" />
+        <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0" />
+        <stop offset="30%" stopColor="hsl(var(--brand))" stopOpacity="0.14" />
+        <stop offset="70%" stopColor="hsl(var(--brand))" stopOpacity="0.14" />
+        <stop offset="100%" stopColor="hsl(var(--brand))" stopOpacity="0" />
       </linearGradient>
       <radialGradient id="hero-map-glow" cx="78%" cy="42%" r="42%">
-        <stop offset="0%" stopColor="#0066CC" stopOpacity="0.07" />
-        <stop offset="55%" stopColor="#0066CC" stopOpacity="0.02" />
-        <stop offset="100%" stopColor="#0066CC" stopOpacity="0" />
+        <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0.07" />
+        <stop offset="55%" stopColor="hsl(var(--brand))" stopOpacity="0.02" />
+        <stop offset="100%" stopColor="hsl(var(--brand))" stopOpacity="0" />
       </radialGradient>
     </defs>
 
@@ -106,7 +106,7 @@ const HeroDecorativeLines: React.FC = () => (
     <path
       d="M 0 420 Q 520 380, 900 400 T 1440 360"
       fill="none"
-      stroke="#0066CC"
+      stroke="hsl(var(--brand))"
       strokeOpacity="0.06"
       strokeWidth="1"
       vectorEffect="non-scaling-stroke"
@@ -124,7 +124,7 @@ const HeroDecorativeLines: React.FC = () => (
         cx={cx}
         cy={cy}
         r="2"
-        fill="#0066CC"
+        fill="hsl(var(--brand))"
         opacity="0.12"
       />
     ))}
@@ -142,20 +142,20 @@ const PANEL_GRADIENT =
   'linear-gradient(132deg, #dceaf8 0%, #e5f0fa 22%, #f5f9fd 48%, #fff9f2 78%, #fafafa 100%)';
 
 const PANEL_TOP_GLOW =
-  'radial-gradient(ellipse 95% 85% at 0% 0%, rgba(0,102,204,0.22) 0%, rgba(255,184,77,0.12) 28%, rgba(79,70,229,0.06) 48%, transparent 72%)';
+  'radial-gradient(ellipse 95% 85% at 0% 0%, hsl(var(--brand)/0.22) 0%, rgba(255,184,77,0.12) 28%, rgba(79,70,229,0.06) 48%, transparent 72%)';
 
 const PANEL_WARM_GLOW =
   'radial-gradient(ellipse 70% 60% at 18% 88%, rgba(255,56,92,0.08) 0%, rgba(255,184,77,0.10) 35%, transparent 68%)';
 
 const PANEL_SIDE_LINES =
-  'repeating-linear-gradient(128deg, transparent 0px, transparent 11px, rgba(0,102,204,0.035) 11px, rgba(0,102,204,0.035) 12px)';
+  'repeating-linear-gradient(128deg, transparent 0px, transparent 11px, hsl(var(--brand)/0.035) 11px, hsl(var(--brand)/0.035) 12px)';
 
 /** Acentos alegres en el panel izquierdo — blobs cálidos + destellos sutiles */
 const HeroPanelJoy: React.FC = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
     {/* Orbes difuminados — sensación luminosa y acogedora */}
     <div className="absolute -top-20 -left-16 h-[220px] w-[220px] rounded-full bg-[#FFD166]/30 blur-3xl" />
-    <div className="absolute top-[28%] left-[6%] h-[130px] w-[130px] rounded-full bg-[#0066CC]/18 blur-2xl" />
+    <div className="absolute top-[28%] left-[6%] h-[130px] w-[130px] rounded-full bg-brand/18 blur-2xl" />
     <div className="absolute bottom-[-2rem] left-[14%] h-[160px] w-[160px] rounded-full bg-[#FF385C]/14 blur-3xl" />
     <div className="absolute bottom-[18%] left-[38%] h-[90px] w-[90px] rounded-full bg-[#2DD4BF]/16 blur-2xl" />
 
@@ -171,9 +171,9 @@ const HeroPanelJoy: React.FC = () => (
           <stop offset="100%" stopColor="#FFD166" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="panel-wave" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#0066CC" stopOpacity="0.12" />
+          <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0.12" />
           <stop offset="50%" stopColor="#FF385C" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="#0066CC" stopOpacity="0" />
+          <stop offset="100%" stopColor="hsl(var(--brand))" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -189,11 +189,11 @@ const HeroPanelJoy: React.FC = () => (
       {/* Destellos / confeti minimalista */}
       {[
         { cx: 48, cy: 120, r: 3.5, fill: '#FFB84D', op: 0.55 },
-        { cx: 128, cy: 88, r: 2.5, fill: '#0066CC', op: 0.45 },
+        { cx: 128, cy: 88, r: 2.5, fill: 'hsl(var(--brand))', op: 0.45 },
         { cx: 198, cy: 156, r: 2, fill: '#FF385C', op: 0.5 },
         { cx: 72, cy: 248, r: 2.5, fill: '#2DD4BF', op: 0.45 },
         { cx: 260, cy: 72, r: 2, fill: '#FFB84D', op: 0.4 },
-        { cx: 310, cy: 200, r: 3, fill: '#0066CC', op: 0.35 },
+        { cx: 310, cy: 200, r: 3, fill: 'hsl(var(--brand))', op: 0.35 },
         { cx: 165, cy: 320, r: 2, fill: '#FF385C', op: 0.38 },
         { cx: 340, cy: 340, r: 2.5, fill: '#FFD166', op: 0.42 },
       ].map(({ cx, cy, r, fill, op }) => (
@@ -209,7 +209,7 @@ const HeroPanelJoy: React.FC = () => (
         <g key={`star-${x}-${y}`} transform={`translate(${x} ${y})`} opacity="0.35">
           <path
             d="M 0 -5 L 1.2 0 L 0 5 L -1.2 0 Z M -5 0 L 0 -1.2 L 5 0 L 0 1.2 Z"
-            fill="#0066CC"
+            fill="hsl(var(--brand))"
           />
         </g>
       ))}
@@ -227,7 +227,7 @@ const HeroMapLoadingPlaceholder: React.FC = () => (
       className="absolute inset-0 opacity-60 animate-pulse"
       style={{
         background:
-          'radial-gradient(ellipse 80% 70% at 72% 45%, rgba(0,102,204,0.12) 0%, transparent 55%), linear-gradient(135deg, #dceaf8 0%, #f5f9fd 45%, #fafafa 100%)',
+          'radial-gradient(ellipse 80% 70% at 72% 45%, hsl(var(--brand)/0.12) 0%, transparent 55%), linear-gradient(135deg, #dceaf8 0%, #f5f9fd 45%, #fafafa 100%)',
       }}
     />
     <div className="absolute inset-0 pointer-events-none opacity-40">
@@ -305,7 +305,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
               <h1 className="hp-hero-title-lg">
                 Antes de comprar,
-                <span className="block text-[#0066CC]">que lo revise un experto</span>
+                <span className="block text-brand">que lo revise un experto</span>
               </h1>
 
               <p className="hp-hero-body mt-3 max-w-[26rem] lg:text-base">
@@ -345,7 +345,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
               <button
                 type="button"
                 onClick={goToMap}
-                className="group mt-5 inline-flex w-fit self-start items-center gap-2 rounded-full bg-[#0066CC] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(0,102,204,0.2)] transition-all hover:bg-[#005bb5] hover:shadow-[0_6px_20px_rgba(0,102,204,0.28)] active:scale-[0.99]"
+                className="group mt-5 inline-flex w-fit self-start items-center gap-2 rounded-full bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-all hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)] active:scale-[0.99]"
               >
                 <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
                 Buscar en el mapa
