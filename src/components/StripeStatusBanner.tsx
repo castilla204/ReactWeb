@@ -1,6 +1,10 @@
 import React from 'react';
 import { AlertTriangle, ExternalLink, Clock } from 'lucide-react';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
+// 🛡️ Round 28 MUD-CJ: arrays compartidos de severidad. Antes el banner tenía
+// copias locales que generaban drift si alguien añadía un STRIPE_STATUS nuevo
+// (helpers Card/Modal lo pintaban, banner lo silenciaba con return null).
+import { STRIPE_WARNING_STATES, STRIPE_ERROR_STATES } from '../utils/stripeStatusStyles';
 
 interface StripeStatusBannerProps {
     stripeStatus: string;
@@ -39,23 +43,11 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     // (azul-gris, sin CTA accionable) o no mostrar si puede operar normalmente.
     const isPendingVerificationOk = stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION
                                   && canCreateServices && canReceivePayments;
-    const warningStates: string[] = [
-        STRIPE_STATUS.REQUIREMENTS_DUE,
-        STRIPE_STATUS.RESTRICTED_SOON,
-        STRIPE_STATUS.ACTION_REQUIRED,
-    ];
-    const errorStates: string[] = [
-        STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
-        STRIPE_STATUS.RESTRICTED,
-        STRIPE_STATUS.DISABLED,
-        STRIPE_STATUS.REJECTED,
-        STRIPE_STATUS.DEAUTHORIZED,
-    ];
-
-    const isError = errorStates.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
+    // 🛡️ MUD-CJ: usar arrays exportados del helper (single source of truth con Card/Modal).
+    const isError = STRIPE_ERROR_STATES.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
     const isInfo = isPendingVerificationOk
                 || (stripeStatus === STRIPE_STATUS.PENDING_VERIFICATION && !isError);
-    const isWarning = warningStates.includes(stripeStatus) && !isError && !isInfo;
+    const isWarning = STRIPE_WARNING_STATES.includes(stripeStatus) && !isError && !isInfo;
 
     if (!isError && !isWarning && !isInfo) return null;
 
