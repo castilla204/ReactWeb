@@ -12,6 +12,12 @@ export interface RelocationPreflight {
   activeServicesCount: number;
   currentCountry: string | null;
   stripeAccountId: string | null;
+  // 🛡️ Round 28 MUD-AU: balance Stripe Pending (PIs capturados pero <2-7d, pre-settlement).
+  // Si > 0 el preflight bloquea la mudanza para evitar pérdida (al cerrar cuenta el Pending
+  // se devuelve al platform sin recovery automático). pendingBalanceCurrencies formato
+  // "EUR:120.50,USD:30.00".
+  pendingBalanceMajorUnits: number;
+  pendingBalanceCurrencies: string | null;
 }
 
 export interface RelocationExecuteRequest {
@@ -53,6 +59,9 @@ export const useExpertRelocation = () => {
         activeServicesCount: raw.activeServicesCount ?? raw.ActiveServicesCount ?? 0,
         currentCountry: raw.currentCountry ?? raw.CurrentCountry ?? null,
         stripeAccountId: raw.stripeAccountId ?? raw.StripeAccountId ?? null,
+        // 🛡️ MUD-AU: leer ambas casings (defensa por si el JSON serializer cambia).
+        pendingBalanceMajorUnits: raw.pendingBalanceMajorUnits ?? raw.PendingBalanceMajorUnits ?? 0,
+        pendingBalanceCurrencies: raw.pendingBalanceCurrencies ?? raw.PendingBalanceCurrencies ?? null,
       };
       return normalized;
     } catch (err) {
