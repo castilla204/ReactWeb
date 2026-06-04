@@ -166,14 +166,14 @@ const StatusChip: React.FC<{
         <div className="flex items-center gap-1.5">
             {hasUnread && (
                 <span
-                    className="inline-flex items-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                    className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold leading-none text-white"
                     aria-label={`${unread} ${unread === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}`}
                 >
                     {unread}
                 </span>
             )}
             <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-tight ring-1 ${palette.bg} ${palette.ring} ${palette.text}`}
+                className={`inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-semibold leading-none tracking-tight ring-1 ${palette.bg} ${palette.ring} ${palette.text}`}
             >
                 {palette.label}
             </span>
@@ -239,10 +239,10 @@ const CompactTimeline: React.FC<{
 
 const DataCell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="min-w-0">
-        <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+        <div className="text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[#737373]">
             {label}
         </div>
-        <div className="mt-0.5 truncate text-[13.5px] font-semibold leading-snug text-[#1c1c1c]">
+        <div className="mt-1.5 truncate text-[13px] font-semibold leading-snug text-[#1c1c1c]">
             {value}
         </div>
     </div>
@@ -328,6 +328,9 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                 // z-index alto para que la pestaña no quede tapada por el card adyacente.
                 // El hover sube aún más para asegurar foco visual.
                 'z-[1] hover:z-[2]',
+                // Fondo SIEMPRE blanco. No tintamos por estado (cancelled / disputed /
+                // highlightUnreviewed). El estado se comunica con el chip + la pestaña +
+                // la timeline coloreada; el card es papel limpio.
                 'rounded-[14px] bg-white border border-[#e8e8e8]',
                 // motion: solo transform + shadow + border-color (no layout)
                 'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
@@ -337,7 +340,6 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                 'hover:shadow-[0_12px_28px_-12px_rgba(15,23,42,0.18)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                 'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
-                highlightUnreviewed ? '!bg-[#FFFBEB]/40' : '',
             ].join(' ')}
             style={{ fontFamily: HP_FONT }}
         >
@@ -348,16 +350,16 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                 z-[3] para asegurar que se ve por encima de cards adyacentes. */}
             <div
                 aria-hidden
-                className="absolute left-4 -top-[18px] z-[3] flex h-[26px] items-center sm:left-6"
+                className="absolute left-5 -top-[18px] z-[3] flex h-[26px] items-center sm:left-6"
                 style={{
                     background: tabStyle.bg,
                     color: tabStyle.text,
-                    padding: '0 14px',
+                    padding: '0 12px',
                     boxShadow: `0 2px 8px ${tabStyle.shadow}`,
                     borderRadius: '6px 6px 0 0',
                 }}
             >
-                <span className="font-mono text-[12.5px] font-semibold tracking-[0.06em] leading-none">
+                <span className="font-mono text-[11.5px] font-bold tracking-[0.08em] leading-none">
                     {ref}
                 </span>
             </div>
@@ -381,16 +383,19 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                     />
                 </div>
 
-                {/* LADO CONTENIDO */}
-                <div className="relative flex flex-col gap-3 px-4 pt-5 pb-4 sm:px-5 sm:pt-6 sm:pb-5">
+                {/* LADO CONTENIDO. Padding uniforme p-5 (20px) en todos los
+                    lados para que el centro óptico del contenido coincida con
+                    el centro vertical de la imagen lateral (sin esquinas
+                    asimétricas pt-5/pb-4 que escoraban el contenido). */}
+                <div className="relative flex flex-col gap-3.5 p-5 sm:p-5">
                     {/* Header: título + chip de estado + chevron */}
                     <div className="relative z-[2] flex items-start gap-3">
                         <div className="min-w-0 flex-1">
-                            <h3 className="line-clamp-1 text-[14px] font-medium leading-tight text-[#1c1c1c] sm:text-[14.5px]">
+                            <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
                                 {search.title}
                             </h3>
                             {isRealCategory && (
-                                <p className="mt-0.5 truncate text-[12px] leading-snug text-[#737373]">
+                                <p className="mt-1 truncate text-[12.5px] leading-snug text-[#6a6a6a]">
                                     {categoryLabel}
                                     {locationValue ? ` · ${locationValue}` : ''}
                                 </p>
@@ -399,7 +404,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                         <div className="flex shrink-0 items-center gap-1.5">
                             <StatusChip progress={progress} unread={search.unreadMessagesCount} />
                             <ChevronRight
-                                className="h-4 w-4 text-[#cccccc] transition-colors group-hover:text-brand"
+                                className="h-4 w-4 shrink-0 text-[#cccccc] transition-colors group-hover:text-brand"
                                 strokeWidth={2}
                                 aria-hidden
                             />
@@ -410,7 +415,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                         un dato. Sin nested card, sin slots vacíos. */}
                     {useGrid ? (
                         <div
-                            className="relative z-[2] grid gap-x-5 gap-y-2.5 border-t border-[#ebebeb] pt-3"
+                            className="relative z-[2] grid gap-x-4 gap-y-2 border-t border-[#ebebeb] pt-3.5"
                             style={{
                                 gridTemplateColumns: `repeat(${Math.min(cells.length, 3)}, minmax(0, 1fr))`,
                             }}
@@ -420,11 +425,11 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                             ))}
                         </div>
                     ) : (
-                        <div className="relative z-[2] flex items-center gap-2 border-t border-[#ebebeb] pt-3 text-[12.5px] leading-snug text-[#6a6a6a]">
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+                        <div className="relative z-[2] flex items-center gap-2 border-t border-[#ebebeb] pt-3.5">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#737373]">
                                 Solicitada
                             </span>
-                            <span className="font-semibold text-[#1c1c1c]">{dateValue}</span>
+                            <span className="text-[13px] font-semibold text-[#1c1c1c]">{dateValue}</span>
                         </div>
                     )}
 
@@ -433,7 +438,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                         Para terminales: "Cancelada" / "En disputa" en su color
                         + timeline coloreada del mismo tono (firma del estado). */}
                     <div className="relative z-[2] flex items-center justify-between gap-3">
-                        <div className="min-w-0 truncate text-[11.5px] font-semibold tracking-tight">
+                        <div className="min-w-0 truncate text-[12px] font-semibold leading-tight tracking-tight">
                             {isTerminal ? (
                                 <span
                                     className={
@@ -465,8 +470,8 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
 
                     {/* Cita pendiente como meta extra al pie (solo activos) */}
                     {search.hasPendingAppointment && !isTerminal && (
-                        <div className="relative z-[2] flex items-center gap-1.5 text-[11px] font-semibold tracking-tight text-[#D97706]">
-                            <span className="h-1 w-1 rounded-full bg-[#D97706]" aria-hidden />
+                        <div className="relative z-[2] flex items-center gap-1.5 text-[11.5px] font-semibold tracking-tight text-[#D97706]">
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#D97706]" aria-hidden />
                             Cita pendiente de confirmar
                         </div>
                     )}

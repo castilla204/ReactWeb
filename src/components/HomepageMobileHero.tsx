@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { HeroExpertCutout } from './HeroExpertCutout';
+import { HomepageHeroTrustLines } from './HomepageHeroTrustLines';
 
 /**
  * Hero móvil de la home.
@@ -58,6 +59,7 @@ export const HomepageMobileHero: React.FC = () => {
                 <p className="hp-hero-body mt-1.5 text-[13px] min-[390px]:text-sm leading-snug">
                   Informe con fotos y vídeo. Precio cerrado y pago retenido hasta recibirlo.
                 </p>
+                <HomepageHeroTrustLines className="mt-3" />
               </div>
 
               <div className="relative z-20 -mt-2 flex justify-center">

@@ -12,7 +12,7 @@ import { SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
  * Reutilizable en ficha de servicio sin el hero Kayak.
  *
  * Variants:
- *   - default: gradiente azul cielo (alineado con el hero de la home).
+ *   - default: blanco con borde (legado; en home usar plain + showLogo).
  *   - checkout: barra mínima (back + admin), sin distracciones de exploración.
  *   - map: pantalla completa mapa+búsqueda, blanco, botones en extremos.
  *   - plain: blanco con borde sutil, pensada para páginas internas (busquedas, admin,
@@ -200,18 +200,12 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
             ? 'border-b border-[#e8e8e8] bg-white'
             : isMap
               ? 'bg-white'
-              : isPlain
-                ? 'border-b border-[#e8e8e8] bg-white'
-                : 'border-b border-[#dbe8f5]/80'
+              : isPlain && showLogo
+                ? 'border-b-0 bg-[#fafafa]/95 backdrop-blur-sm'
+                : isPlain
+                  ? 'border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm'
+                  : 'border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm'
         }`}
-        style={
-          isCheckout || isMap || isPlain
-            ? undefined
-            : {
-                background:
-                  'linear-gradient(128deg, #dceaf8 0%, #eaf2fb 34%, #fafafa 100%)',
-              }
-        }
       >
         <div
           className={

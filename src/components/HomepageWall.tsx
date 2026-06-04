@@ -897,7 +897,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               key={`${keyPrefix}-section-${index}-${section.title}`}
               variants={sectionVariants}
               className={[
-                index === 0 ? 'pt-1 min-[428px]:pt-2 md:pt-0' : '',
+                index === 0 ? 'pt-1 min-[428px]:pt-2 md:pt-2' : '',
                 index > 0 ? 'mt-5 md:mt-8' : '',
               ]
                 .filter(Boolean)
