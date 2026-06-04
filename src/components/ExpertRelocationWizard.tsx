@@ -166,6 +166,31 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
                     {preflight.recentRefunds} refund(s) en las últimas 24h
                   </li>
                 )}
+                {/* 🛡️ Round 28 MUD-AU: balance Stripe pendiente de settlement. Si cerramos
+                    la cuenta con Pending > 0, el dinero revierte al platform y NO podemos
+                    recuperarlo automáticamente. El experto debe esperar 2-7 días a que
+                    Stripe libere los cobros recientes. */}
+                {preflight.pendingBalanceMajorUnits > 0 && (
+                  <li className="flex items-start gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
+                    <span>
+                      <strong>Pendiente de liquidar en Stripe:</strong>{' '}
+                      {preflight.pendingBalanceCurrencies
+                        ? preflight.pendingBalanceCurrencies
+                            .split(',')
+                            .map((part) => {
+                              const [cur, amt] = part.split(':');
+                              return `${amt} ${cur}`;
+                            })
+                            .join(' · ')
+                        : `${preflight.pendingBalanceMajorUnits.toFixed(2)}`}
+                      <br />
+                      <span className="text-xs text-gray-500">
+                        Espera 2-7 días al settlement antes de mudarte — si cierras ahora ese dinero se devuelve a la plataforma.
+                      </span>
+                    </span>
+                  </li>
+                )}
               </ul>
               <button
                 onClick={onClose}
