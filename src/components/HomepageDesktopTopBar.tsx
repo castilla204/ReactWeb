@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, HelpCircle, User } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, HelpCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { LoginModal } from './LoginModal';
 import { CurrencySelector } from './CurrencySelector';
+import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 
 /**
@@ -34,6 +35,42 @@ export interface HomepageDesktopTopBarProps {
    *  acciones — patrón header marketplace estándar. */
   showLogo?: boolean;
 }
+
+/**
+ * 🛡️ MUD-DG — Bell de notificaciones para el topbar global.
+ * Reutiliza el contador (`useUnreadNotificationCount`) que ya polleea cada 30s.
+ * Click → dispara el evento global `openNotificationCenter` que `App.tsx`
+ * escucha para abrir el drawer compartido.
+ */
+const TopBarNotificationsBell: React.FC<{ isMap: boolean }> = ({ isMap }) => {
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const handleClick = () => {
+    if (typeof window !== 'undefined' && typeof (window as any).openNotificationCenter === 'function') {
+      (window as any).openNotificationCenter();
+    }
+  };
+  const baseClass = isMap
+    ? 'sd-icon-btn relative'
+    : 'relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]';
+  return (
+    <button
+      type="button"
+      aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} nuevas)` : 'Notificaciones'}
+      onClick={handleClick}
+      className={baseClass}
+    >
+      <Bell className="h-4 w-4" />
+      {unreadCount > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white"
+        >
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
+    </button>
+  );
+};
 
 export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   onBack,
@@ -117,6 +154,10 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         </button>
       )}
       {!isCheckout ? <CurrencySelector variant="compact" /> : null}
+      {/* 🛡️ MUD-DG — Bell global. Antes solo existía dentro del expert-panel
+          → cliente normal NO podía ver su inbox de notificaciones. Auditoría
+          de 5 agentes lo marcó como gap CRÍTICO P0. */}
+      {!isCheckout && user ? <TopBarNotificationsBell isMap={isMap} /> : null}
       {!isCheckout ? (
         <button
           type="button"

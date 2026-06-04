@@ -5,6 +5,7 @@ import { STRIPE_STATUS } from '../constants/stripeStatus';
 // copias locales que generaban drift si alguien añadía un STRIPE_STATUS nuevo
 // (helpers Card/Modal lo pintaban, banner lo silenciaba con return null).
 import { STRIPE_WARNING_STATES, STRIPE_ERROR_STATES, STRIPE_INFO_STATES } from '../utils/stripeStatusStyles';
+import { isStaleSuccessDetail } from '../utils/stripeMessageSanitizer';
 
 interface StripeStatusBannerProps {
     stripeStatus: string;
@@ -107,9 +108,20 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
                   abría una puerta de XSS si en el futuro alguien añade un mensaje con HTML
                   no escapado (p.ej. nombres de campos con `<`/`>`). Sin uso real → texto plano.
                 */}
-                <p className="mt-1 text-sm text-gray-700 leading-snug">
-                    {statusMessage}
-                </p>
+                {/*
+                  🛡️ MUD-DJ — Defensa contra stripeStatusDetails STALE en el banner.
+                  Antes MUD-CZ aplicó esta defensa en getStatusInfo() del hook, pero el
+                  banner recibe el statusMessage RAW del backend → si el detail está
+                  desactualizado ("Tu cuenta está activa" mientras status=ActionRequired),
+                  el banner naranja muestra texto verde = contradicción.
+                  Si detectamos stale, ocultamos el cuerpo y dejamos solo el título +
+                  CTA (más honesto que mostrar contradicción).
+                */}
+                {!isStaleSuccessDetail(stripeStatus, statusMessage) && (
+                    <p className="mt-1 text-sm text-gray-700 leading-snug">
+                        {statusMessage}
+                    </p>
+                )}
                 {onOpenStripe && (
                     <button
                         type="button"

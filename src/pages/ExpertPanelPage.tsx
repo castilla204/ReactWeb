@@ -38,6 +38,7 @@ import { StripeStatusCard } from '../components/StripeStatusCard';
 // 🛡️ Round 28 MUD-BP: banner persistente cuando hay warnings Stripe pero el panel
 // sigue accesible. Antes era código muerto; ahora se monta arriba del main content.
 import { StripeStatusBanner } from '../components/StripeStatusBanner';
+import { ExpertVisibilityBanner } from '../components/ExpertVisibilityBanner';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 // 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
@@ -194,10 +195,14 @@ export function ExpertPanelPage() {
         expertProfileId: profile?.id
     });
 
+    // 🛡️ MUD-DO — cargar hires SIEMPRE, no solo cuando el tab está activo.
+    // ANTES: { enabled: activeTab === 'hires' } → en el tab "services" hires=[]
+    // → sidebar y card central mostraban "Contrataciones: 0" + "Activos: 0" aunque
+    // el experto tuviera contrataciones reales. Mentira de UI visible al abrir el panel.
+    // AHORA: siempre habilitado para que los contadores reflejen el estado real.
     const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(
         hiresPage,
-        hiresPageSize,
-        { enabled: activeTab === 'hires' }
+        hiresPageSize
     );
 
     const stripeHook = useExpertStripeStatus();
@@ -1490,6 +1495,26 @@ export function ExpertPanelPage() {
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto">
                     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+                        {/* 🛡️ Round 29 MUD-DE — Banner ÚNICO de visibilidad real del experto.
+                            Above-the-fold y SIEMPRE presente — le dice si sus servicios SON o
+                            NO son visibles a clientes, y por qué. Cubre el gap crítico
+                            detectado por la auditoría de 5 agentes: el experto puede tener
+                            servicio IsActive=true pero estar oculto del mapa por StripeStatus
+                            invisible (caso real del usuario con ActionRequired). DSA Art. 17
+                            obliga a comunicar visibility restrictions. */}
+                        <ExpertVisibilityBanner
+                            stripeStatus={stripeStatus?.stripeStatus}
+                            onboardingCompleted={(stripeStatus as any)?.onboardingCompleted ?? profile?.onboardingCompleted}
+                            isOnVacation={profile?.isOnVacation}
+                            country={profile?.country}
+                            latitude={(profile as any)?.latitude}
+                            longitude={(profile as any)?.longitude}
+                            servicesCount={services?.length ?? 0}
+                            onOpenStripe={async () => { await openAccountLink(); }}
+                            onDisableVacation={() => setShowVacationModal(true)}
+                            onEditProfile={() => setShowProfileEditForm(true)}
+                        />
+
                         {/* 🛡️ Round 28 MUD-BP: banner persistente Stripe cuando hay warnings
                             pero el panel sigue accesible. Antes solo se mostraba un micro-badge
                             en sidebar — el experto no entendía que tenía que actuar. Ahora
@@ -1701,6 +1726,14 @@ export function ExpertPanelPage() {
                                     deleteService={deleteService}
                                     isDeletingService={isDeletingService}
                                     onEditService={handleEditService}
+                                    // 🛡️ MUD-DF: contexto para badge real de visibilidad por servicio.
+                                    stripeStatus={stripeStatus?.stripeStatus}
+                                    onboardingCompleted={(stripeStatus as any)?.onboardingCompleted ?? profile?.onboardingCompleted}
+                                    isOnVacation={profile?.isOnVacation}
+                                    hasLocation={Boolean(
+                                        (profile as any)?.latitude !== null && (profile as any)?.latitude !== undefined && (profile as any)?.latitude !== '' &&
+                                        (profile as any)?.longitude !== null && (profile as any)?.longitude !== undefined && (profile as any)?.longitude !== ''
+                                    )}
                                 />
                                     ) : activeTab === 'hires' ? (
                                 <HiresTab
