@@ -12,7 +12,9 @@ export type StripeStatus =
     | "Disabled"
     | "Approved"
     | "Rejected"
-    | "Deauthorized";
+    | "Deauthorized"
+    // 🛡️ LOTE C-16: UnderReview separado de PendingVerification (revisión MANUAL del equipo Stripe).
+    | "UnderReview";
 
 // Disponibilidad horaria
 export interface CurrentExpertAvailabilityDto {
