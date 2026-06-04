@@ -51,19 +51,66 @@ const getStatusInfo = (
     });
     const getRejectionMessage = (reason: string) => {
         switch (reason) {
+            // 🛡️ MUD-CT: distinguir rechazos por STRIPE vs rechazos POR LA PLATAFORMA.
+            // Los `rejected.platform_*` significan que NOSOTROS rechazamos al experto
+            // (vía POST /accounts/{id}/reject o equivalente). El CTA debe apuntar a
+            // nuestro soporte, no al de Stripe.
             case "rejected.fraud":
-                return "Tu cuenta fue rechazada por motivos de seguridad. Por favor, contacta nuestro equipo de soporte para más información.";
+                return "Stripe rechazó tu cuenta por motivos de seguridad. Contacta con soporte de Stripe para más información.";
             case "rejected.terms_of_service":
-                return "Tu cuenta fue rechazada por incumplimiento de nuestros términos de servicio.";
+                return "Stripe rechazó tu cuenta por incumplimiento de los términos de servicio de Stripe.";
             case "rejected.listed":
-                return "Tu cuenta fue rechazada por problemas de cumplimiento normativo.";
+                return "Stripe rechazó tu cuenta por aparecer en una lista de cumplimiento normativo.";
+            case "rejected.incomplete_verification":
+                return "Stripe rechazó tu cuenta tras varios intentos fallidos de verificación de identidad. Contacta con soporte de Stripe.";
+            case "rejected.other":
+                return "Stripe rechazó tu cuenta. Contacta con soporte de Stripe para conocer el motivo.";
+            case "rejected.platform_fraud":
+                return "Hemos rechazado tu cuenta desde nuestra plataforma por sospecha de fraude. Contacta con nuestro soporte si crees que es un error.";
+            case "rejected.platform_terms_of_service":
+                return "Hemos rechazado tu cuenta desde nuestra plataforma por incumplimiento de nuestros términos. Contacta con nuestro soporte para apelar.";
+            case "rejected.platform_other":
+                return "Hemos rechazado tu cuenta desde nuestra plataforma. Contacta con nuestro soporte para más información.";
             default:
                 return "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente.";
         }
     };
 
-    // Use stripeStatusDetails if available, otherwise fall back to default messages
+    // 🛡️ MUD-CZ: defensa contra `stripeStatusDetails` STALE.
+    //
+    // BUG REAL detectado: backend persistía StripeStatus=ActionRequired pero
+    // StripeStatusDetails="Tu cuenta está activa y lista para cobrar." (mensaje
+    // del estado anterior `Approved`, sin actualizar al re-evaluar). El frontend
+    // confiaba ciegamente en el detail → banner naranja "Hay datos pendientes" +
+    // texto verde "Tu cuenta está activa" → contradicción visual.
+    //
+    // Defensa: si el status es warning/error y el detail contiene marcadores de
+    // éxito ("activa", "lista para cobrar", "approved", "verificada"), ignorar
+    // y usar el default frontend. Solo aplica cuando hay incoherencia real.
+    const isErrorOrWarningStatus = (s: string): boolean => {
+        const errorWarningSet = new Set<string>([
+            STRIPE_STATUS.ACTION_REQUIRED,
+            STRIPE_STATUS.REQUIREMENTS_DUE,
+            STRIPE_STATUS.REQUIREMENTS_PAST_DUE,
+            STRIPE_STATUS.RESTRICTED_SOON,
+            STRIPE_STATUS.RESTRICTED,
+            STRIPE_STATUS.DISABLED,
+            STRIPE_STATUS.REJECTED,
+            STRIPE_STATUS.DEAUTHORIZED
+        ]);
+        return errorWarningSet.has(s);
+    };
+    const SUCCESS_MARKERS = /(activa\s+y\s+lista|lista\s+para\s+cobrar|cuenta\s+est[áa]\s+activa|approved|verificada|todo\s+est[áa]\s+correcto)/i;
     const getMessage = (defaultMessage: string) => {
+        if (
+            stripeStatusDetails &&
+            isErrorOrWarningStatus(normalizedStatus) &&
+            SUCCESS_MARKERS.test(stripeStatusDetails)
+        ) {
+            // Detail STALE detectado: backend dice warning/error pero el texto es de éxito.
+            // Ignorar el detail y usar el mensaje por defecto coherente con el status.
+            return defaultMessage;
+        }
         return stripeStatusDetails || defaultMessage;
     };
 
@@ -78,7 +125,12 @@ const getStatusInfo = (
         })}`;
     };
 
-    // Verificar si es rechazo permanente basado en stripeStatusDetails
+    // 🛡️ MUD-CT: lista completa de rejection reasons PERMANENTES.
+    // Antes faltaban `rejected.platform_*`, `rejected.incomplete_verification` y
+    // `rejected.other` → un experto con cuenta rechazada definitivamente veía
+    // el botón "Reintentar" que SIEMPRE fallaba (Stripe no permite re-onboarding
+    // tras `rejected.*`). UX confuso + tickets de soporte.
+    // Fuente: https://docs.stripe.com/api/accounts/object#account_object-requirements-disabled_reason
     const isPermanentRejection = (details: string | null | undefined): boolean => {
         if (!details) return false;
         const permanentReasons = [
@@ -86,6 +138,11 @@ const getStatusInfo = (
             "rejected.terms_of_service",
             "rejected.unsupported_business",
             "rejected.listed",
+            "rejected.incomplete_verification",
+            "rejected.other",
+            "rejected.platform_fraud",
+            "rejected.platform_terms_of_service",
+            "rejected.platform_other",
             "listed"
         ];
         return permanentReasons.some(reason => details.includes(reason));
