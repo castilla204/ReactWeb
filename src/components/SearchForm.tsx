@@ -297,19 +297,19 @@ export default function SearchForm({
                                             El servicio incluye
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
-                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                            <div className="inline-flex items-center gap-1.5 bg-brand/[0.08] text-brand px-2.5 py-1 rounded-full border border-brand/15">
                                                 <FileText className="w-3 h-3" />
                                                 <span className="text-[11px] font-medium">Informe</span>
                                             </div>
-                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                            <div className="inline-flex items-center gap-1.5 bg-brand/[0.08] text-brand px-2.5 py-1 rounded-full border border-brand/15">
                                                 <Image className="w-3 h-3" />
                                                 <span className="text-[11px] font-medium">Fotos HD</span>
                                             </div>
-                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                            <div className="inline-flex items-center gap-1.5 bg-brand/[0.08] text-brand px-2.5 py-1 rounded-full border border-brand/15">
                                                 <Video className="w-3 h-3" />
                                                 <span className="text-[11px] font-medium">Video</span>
                                             </div>
-                                            <div className="inline-flex items-center gap-1.5 bg-blue-50/50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-100/50">
+                                            <div className="inline-flex items-center gap-1.5 bg-brand/[0.08] text-brand px-2.5 py-1 rounded-full border border-brand/15">
                                                 <ShieldCheck className="w-3 h-3" />
                                                 <span className="text-[11px] font-medium">Garantía</span>
                                             </div>
@@ -404,7 +404,7 @@ export default function SearchForm({
                                                                     ({priceInfo.sourceFormatted} — cargo en {currencyCode})
                                                                 </p>
                                                             )}
-                                                            <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">Impuestos incluidos</p>
+                                                            <p className="text-[10px] text-gray-500 font-medium mt-1 inline-flex items-center gap-1"><span aria-hidden className="inline-block w-1 h-1 rounded-full bg-gray-400" />Impuestos incluidos</p>
                                                         </div>
                                                     </div>
 
@@ -441,7 +441,7 @@ export default function SearchForm({
                                 type="submit"
                                 disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
                             size="lg"
-                            className="w-full sm:w-auto min-w-[220px] h-14 px-10 bg-brand hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] text-[16px]"
+                            className="w-full sm:w-auto min-w-[220px] h-12 px-8 bg-brand hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-full transition-colors duration-200 text-[15px] shadow-[0_2px_8px_rgba(10,61,143,0.18)] focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
                             >
                                 {createSearchWithHire.isPending || isSubmitting ? (
                                     <>

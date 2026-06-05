@@ -602,7 +602,7 @@ export const PreHireChat = ({
             <Skeleton className="h-20 w-56 rounded-2xl" />
           </div>
         </div>
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-[#e8e8e8] p-4">
           <Skeleton className="h-12 w-full rounded-full" />
         </div>
       </div>
@@ -647,7 +647,7 @@ export const PreHireChat = ({
 
   if (!hasAccess) {
     return (
-      <div className="flex h-full items-center justify-center bg-white p-6 text-center text-gray-600">
+      <div className="flex h-full items-center justify-center bg-white p-6 text-center text-[#6a6a6a]">
         <p>No tienes acceso a esta conversación privada.</p>
       </div>
     );
@@ -661,13 +661,13 @@ export const PreHireChat = ({
     const containerHeight = onClose ? 'h-[600px]' : 'h-full';
     
     return (
-        <div className={`flex flex-col ${containerHeight} ${onClose ? 'border border-gray-200 rounded-lg' : ''} bg-white`}>
+        <div className={`flex flex-col ${containerHeight} ${onClose ? 'border border-[#e8e8e8] rounded-lg' : ''} bg-white`}>
             {/* Header - Solo mostrar si hay onClose (para modales) */}
             {onClose && (
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div className="flex items-center justify-between p-4 border-b border-[#e8e8e8] bg-[#fafafa] rounded-t-lg">
                     <div className="flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-primary" />
-                        <h3 className="text-lg font-semibold text-gray-900">Chat antes de contratar</h3>
+                        <h3 className="text-lg font-semibold text-[#1c1c1c]">Chat antes de contratar</h3>
                     </div>
                     <div className="flex items-center gap-3">
                         {/* Indicador de conexión */}
@@ -686,10 +686,10 @@ export const PreHireChat = ({
                         </div>
                         <button 
                             onClick={onClose} 
-                            className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                            className="p-1 hover:bg-[#fafafa] rounded-full transition-colors"
                             aria-label="Cerrar chat"
                         >
-                            <X className="w-5 h-5 text-gray-600" />
+                            <X className="w-5 h-5 text-[#6a6a6a]" />
                         </button>
                     </div>
                 </div>
@@ -936,7 +936,7 @@ export const PreHireChat = ({
           aria-invalid={!!sendError}
           rows={1}
           maxLength={1200}
-          className="min-h-[44px] max-h-32 flex-1 resize-none rounded-3xl border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-5 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="min-h-[44px] max-h-32 flex-1 resize-none rounded-3xl border-[#e8e8e8] bg-[#fafafa] px-4 py-3 text-sm leading-5 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
           style={{ pointerEvents: 'auto' }}
         />
         <Button
