@@ -1354,7 +1354,11 @@ export function ExpertPanelPage() {
                                 {(() => {
                                     const s = stripeStatus?.stripeStatus;
                                     const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                    // 🛡️ Round 29 FIX-UNDER-REVIEW: incluir UNDER_REVIEW en "atención requerida"
+                                    // (no es OK porque charges/payouts pueden estar bloqueados, no es bloqueado
+                                    // permanente porque Stripe está revisando manualmente sin acción del experto).
                                     const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                   || s === STRIPE_STATUS.UNDER_REVIEW
                                                    || s === STRIPE_STATUS.REQUIREMENTS_DUE
                                                    || s === STRIPE_STATUS.RESTRICTED_SOON
                                                    || s === STRIPE_STATUS.ACTION_REQUIRED;
@@ -1372,14 +1376,19 @@ export function ExpertPanelPage() {
                                 size="sm"
                                 className="w-full text-xs"
                                         onClick={async () => {
+                                            // 🛡️ Round 29 — FIX-DASH-LINK: si la cuenta está APPROVED + onboarding completo,
+                                            // abrir Express Dashboard (LoginLink). Si no, KYC onboarding (AccountLink).
+                                            // Mismo patrón que el prop onAccessDashboard de StripeStatusCard (~línea 1181).
+                                            const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+                                                               && stripeStatus?.onboardingCompleted === true;
                                             try {
-                                                await openAccountLink();
+                                                await (isApprovedNow ? openLoginLink() : openAccountLink());
                                             } catch (error) {
-                                                console.error('Error opening account link:', error);
+                                                console.error('Error opening Stripe link:', error);
                                                 window.dispatchEvent(new CustomEvent('showNotification', {
                                                     detail: {
                                                         type: 'error',
-                                                        message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                                        message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
                                                     },
                                                 }));
                                             }
@@ -1541,7 +1550,9 @@ export function ExpertPanelPage() {
                                         {(() => {
                                             const s = stripeStatus?.stripeStatus;
                                             const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                            // 🛡️ Round 29 FIX-UNDER-REVIEW: incluir UNDER_REVIEW como warning (mismo trato que PendingVerification).
                                             const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                           || s === STRIPE_STATUS.UNDER_REVIEW
                                                            || s === STRIPE_STATUS.REQUIREMENTS_DUE
                                                            || s === STRIPE_STATUS.RESTRICTED_SOON
                                                            || s === STRIPE_STATUS.ACTION_REQUIRED;
@@ -1567,14 +1578,18 @@ export function ExpertPanelPage() {
                                         })()}
                                 <button
                                     onClick={async () => {
+                                        // 🛡️ Round 29 — FIX-DASH-LINK: Approved + onboardingCompleted → Express Dashboard;
+                                        // resto → KYC onboarding. Idéntico al prop onAccessDashboard de StripeStatusCard.
+                                        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+                                                           && stripeStatus?.onboardingCompleted === true;
                                         try {
-                                            await openAccountLink();
+                                            await (isApprovedNow ? openLoginLink() : openAccountLink());
                                         } catch (error) {
-                                            console.error('Error opening account link:', error);
+                                            console.error('Error opening Stripe link:', error);
                                             window.dispatchEvent(new CustomEvent('showNotification', {
                                                 detail: {
                                                     type: 'error',
-                                                    message: 'Error al abrir el enlace de actualización. Inténtalo de nuevo.',
+                                                    message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
                                                 },
                                             }));
                                         }
@@ -1609,7 +1624,9 @@ export function ExpertPanelPage() {
                                                     {(() => {
                                                         const s = stripeStatus?.stripeStatus;
                                                         const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
+                                                        // 🛡️ Round 29 FIX-UNDER-REVIEW: incluir UNDER_REVIEW como warning (símbolo ⏳).
                                                         const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
+                                                                       || s === STRIPE_STATUS.UNDER_REVIEW
                                                                        || s === STRIPE_STATUS.REQUIREMENTS_DUE
                                                                        || s === STRIPE_STATUS.RESTRICTED_SOON
                                                                        || s === STRIPE_STATUS.ACTION_REQUIRED;

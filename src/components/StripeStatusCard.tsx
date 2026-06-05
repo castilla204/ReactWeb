@@ -20,6 +20,9 @@ const getStatusIcon = (status: string) => {
             return <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />;
         case STRIPE_STATUS.PENDING:
         case STRIPE_STATUS.PENDING_VERIFICATION:
+        // 🛡️ Round 29 — FIX-UNDER-REVIEW: mismo icono "esperando" que PendingVerification
+        // (Stripe está revisando, sin acción requerida del experto).
+        case STRIPE_STATUS.UNDER_REVIEW:
             return <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />;
         case STRIPE_STATUS.ACTION_REQUIRED:
         case STRIPE_STATUS.REQUIREMENTS_DUE:
