@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Globe, Star } from 'lucide-react';
+import { ArrowLeft, Globe, Star, ShieldCheck, Clock, RefreshCw, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
@@ -14,7 +14,6 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
-import { CheckoutReserveHint } from '../components/checkout/CheckoutReserveGuide';
 import {
     ServiceDetailDeliverablesGuide,
     normalizeDeliverableTypes,
@@ -29,6 +28,7 @@ import {
     SD_MOBILE_SCROLL_PAD_CLASS,
     SD_CHECKOUT_GRID_CLASS,
     SD_CHECKOUT_INNER_MAX_CLASS,
+    HP_TITLE_UNDERLINE_GRADIENT,
     hpTitleUnderlineBarStyle,
 } from '../constants/homepageTypography';
 
@@ -450,40 +450,92 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     pageTitle="Confirmar y pagar"
                 />
                 <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-12 pt-4 lg:pt-5`}>
-                    <p className="mb-5 max-w-2xl text-sm leading-relaxed text-[#6a6a6a] lg:mb-6">
-                        Revisa tu reserva y continúa al pago seguro con Stripe.
-                    </p>
+                    {/* Lead area: brand eyebrow + supporting paragraph */}
+                    <div className="mb-7 lg:mb-8">
+                        <p
+                            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand"
+                            style={{ fontFamily: HP_FONT }}
+                        >
+                            Paso final · Reserva segura
+                        </p>
+                        <p
+                            className="mt-2 max-w-[640px] text-[15px] leading-relaxed text-[#3a3a3a]"
+                            style={{ fontFamily: HP_FONT }}
+                        >
+                            Revisa tu reserva y continúa al pago seguro con Stripe. El importe queda retenido en custodia
+                            hasta que apruebes el informe del experto.
+                        </p>
+
+                        {/* Quiet trust strip */}
+                        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-[#6a6a6a]">
+                            <span className="inline-flex items-center gap-1.5">
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                                Pago seguro con Stripe
+                            </span>
+                            <span aria-hidden className="hidden h-3.5 w-px bg-[#e0e0e0] sm:inline-block" />
+                            <span className="inline-flex items-center gap-1.5">
+                                <Clock className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                                Importe retenido hasta tu aprobación
+                            </span>
+                            <span aria-hidden className="hidden h-3.5 w-px bg-[#e0e0e0] sm:inline-block" />
+                            <span className="inline-flex items-center gap-1.5">
+                                <RefreshCw className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+                                Cancelación gratuita antes de la revisión
+                            </span>
+                        </div>
+                    </div>
+
                     <div className={SD_CHECKOUT_GRID_CLASS}>
                         <main className="min-w-0">
-                            <div className={checkoutCardClass}>
-                                <div className="p-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-                                    <div className="min-w-0 space-y-5 lg:space-y-6">
+                            <div className="overflow-hidden rounded-2xl border border-[#ececec] bg-white shadow-[0_2px_18px_rgba(15,23,42,0.05)]">
+                                {/* Signature ornament: brand gradient hairline at the top */}
+                                <div
+                                    aria-hidden
+                                    className="h-1 w-full"
+                                    style={{ background: HP_TITLE_UNDERLINE_GRADIENT }}
+                                />
+
+                                <div className="p-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
+                                    <div className="min-w-0 space-y-7 lg:space-y-8">
                                         <section aria-labelledby="checkout-booking-heading">
                                             <h2
                                                 id="checkout-booking-heading"
-                                                className="text-base font-semibold text-[#1c1c1c]"
+                                                className="flex items-center font-display text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c]"
+                                                style={{ fontFamily: HP_FONT }}
                                             >
+                                                <span
+                                                    aria-hidden
+                                                    className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-brand align-middle"
+                                                />
                                                 Tu reserva
                                             </h2>
-                                            <p className="mt-1 text-sm text-[#6a6a6a]">
-                                                {finalServiceTypeName}
-                                                {' · '}
-                                                <span className="font-medium text-[#1c1c1c]">{finalExpertName}</span>
+                                            <p className="mt-1.5 leading-snug">
+                                                <span
+                                                    className="font-display text-[15px] font-medium text-[#1c1c1c]"
+                                                    style={{ fontFamily: HP_FONT }}
+                                                >
+                                                    {finalServiceTypeName}
+                                                </span>
+                                                <span className="text-[14px] text-[#6a6a6a]"> · por {finalExpertName}</span>
                                             </p>
-                                            <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-[minmax(0,9rem)_1fr]">
-                                                <dt className="font-semibold text-[#1c1c1c]">Duración</dt>
-                                                <dd className="text-[#6a6a6a]">{serviceDuration}</dd>
+                                            <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-[minmax(0,9rem)_1fr]">
+                                                <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#6a6a6a]">
+                                                    Duración
+                                                </dt>
+                                                <dd className="text-[15px] leading-tight text-[#1c1c1c]">{serviceDuration}</dd>
                                                 {service?.categoryName ? (
                                                     <>
-                                                        <dt className="font-semibold text-[#1c1c1c]">Categoría</dt>
-                                                        <dd className="text-[#6a6a6a]">{service.categoryName}</dd>
+                                                        <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#6a6a6a]">
+                                                            Categoría
+                                                        </dt>
+                                                        <dd className="text-[15px] leading-tight text-[#1c1c1c]">{service.categoryName}</dd>
                                                     </>
                                                 ) : null}
                                             </dl>
                                             <button
                                                 type="button"
                                                 onClick={handleBack}
-                                                className={`mt-3 text-sm font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
+                                                className={`mt-4 text-sm font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
                                             >
                                                 Ver ficha del servicio
                                             </button>
@@ -491,15 +543,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                                         {finalDeliverableTypes.length > 0 ? (
                                             <section
-                                                className="border-t border-[#e8e8e8] pt-5 lg:border-t-0 lg:pt-0"
-                                                aria-labelledby="checkout-includes-heading"
+                                                className="pt-7 lg:pt-0"
+                                                aria-label="Qué incluye este servicio"
                                             >
-                                                <h2
-                                                    id="checkout-includes-heading"
-                                                    className="mb-2 text-base font-semibold text-[#1c1c1c]"
-                                                >
-                                                    Qué incluye
-                                                </h2>
                                                 <ServiceDetailDeliverablesGuide
                                                     items={finalDeliverableTypes}
                                                     variant="inline"
@@ -509,17 +555,23 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                                         {hasExpertCoords ? (
                                             <section
-                                                className="border-t border-[#e8e8e8] pt-5"
+                                                className="pt-7"
                                                 aria-labelledby="checkout-coverage-heading"
                                             >
                                                 <h2
                                                     id="checkout-coverage-heading"
-                                                    className="mb-2 text-base font-semibold text-[#1c1c1c]"
+                                                    className="mb-3 flex items-center font-display text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c]"
+                                                    style={{ fontFamily: HP_FONT }}
                                                 >
+                                                    <span
+                                                        aria-hidden
+                                                        className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-brand align-middle"
+                                                    />
                                                     Zona de cobertura
                                                 </h2>
-                                                <p className="mb-3 text-xs leading-relaxed text-[#6a6a6a]">
-                                                    El experto se desplaza dentro de un radio de {expertRangeKm} km.
+                                                <p className="mb-3 text-sm leading-relaxed text-[#3a3a3a]">
+                                                    El experto se desplaza dentro de un radio de{' '}
+                                                    <span className="font-semibold tabular-nums text-[#1c1c1c]">{expertRangeKm} km</span>.
                                                 </p>
                                                 <ServiceDetailCoverageMap
                                                     latitude={expertLat}
@@ -527,40 +579,60 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                                     rangeKm={expertRangeKm}
                                                     variant="preview"
                                                     expandable
-                                                    className="h-[170px] w-full rounded-lg border border-[#e8e8e8]"
+                                                    className="h-[200px] w-full rounded-xl border border-[#ececec]"
                                                 />
                                             </section>
                                         ) : null}
                                     </div>
 
                                     <section
-                                        className="border-t border-[#e8e8e8] pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"
+                                        className="pt-7 lg:border-l lg:border-[#f0f0f0] lg:pl-10 lg:pt-0"
                                         aria-labelledby="checkout-steps-heading"
                                     >
                                         <h2
                                             id="checkout-steps-heading"
-                                            className="text-base font-semibold text-[#1c1c1c]"
+                                            className="flex items-center font-display text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c]"
+                                            style={{ fontFamily: HP_FONT }}
                                         >
+                                            <span
+                                                aria-hidden
+                                                className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-brand align-middle"
+                                            />
                                             Qué ocurre al reservar
                                         </h2>
-                                        <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[#6a6a6a]">
-                                            <li className="flex gap-2">
-                                                <span className="font-semibold text-[#1c1c1c]">1.</span>
+                                        <ol className="mt-4 space-y-3 text-sm leading-relaxed text-[#3a3a3a]">
+                                            <li className="flex gap-3">
+                                                <span
+                                                    aria-hidden
+                                                    className="mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/[0.08] text-[12px] font-semibold tabular-nums text-brand ring-1 ring-brand/15"
+                                                >
+                                                    1
+                                                </span>
                                                 <span>Autorizas el pago en Stripe de forma segura.</span>
                                             </li>
-                                            <li className="flex gap-2">
-                                                <span className="font-semibold text-[#1c1c1c]">2.</span>
+                                            <li className="flex gap-3">
+                                                <span
+                                                    aria-hidden
+                                                    className="mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/[0.08] text-[12px] font-semibold tabular-nums text-brand ring-1 ring-brand/15"
+                                                >
+                                                    2
+                                                </span>
                                                 <span>
                                                     El importe queda retenido hasta que apruebes el informe.
                                                 </span>
                                             </li>
-                                            <li className="flex gap-2">
-                                                <span className="font-semibold text-[#1c1c1c]">3.</span>
+                                            <li className="flex gap-3">
+                                                <span
+                                                    aria-hidden
+                                                    className="mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/[0.08] text-[12px] font-semibold tabular-nums text-brand ring-1 ring-brand/15"
+                                                >
+                                                    3
+                                                </span>
                                                 <span>
                                                     Coordinas fecha y lugar con el experto por chat (mín. 24&nbsp;h).
                                                 </span>
                                             </li>
-                                        </ul>
+                                        </ol>
                                     </section>
                                 </div>
                             </div>
@@ -569,9 +641,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         <aside className="lg:sticky lg:top-14 lg:self-start">
                             <article className="sd-aside-card flex max-h-[calc(100dvh-4.5rem)] flex-col overflow-hidden">
                                 <div className="min-h-0 flex-1 overflow-y-auto p-5">
-                                    <div className="mb-4 flex gap-3">
+                                    <div className="mb-5 flex gap-4">
                                         {finalImages[0] ? (
-                                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
+                                            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-[#ececec]">
                                                 <img
                                                     src={finalImages[0]}
                                                     alt={finalServiceTypeName}
@@ -580,14 +652,17 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             </div>
                                         ) : null}
                                         <div className="min-w-0 flex-1">
-                                            <h2 className="font-display text-lg font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]">
+                                            <h2
+                                                className="font-display text-[19px] font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]"
+                                                style={{ fontFamily: HP_FONT }}
+                                            >
                                                 {finalServiceTypeName}
                                             </h2>
-                                            <p className="mt-1 text-xs text-[#6a6a6a]">por {finalExpertName}</p>
+                                            <p className="mt-1 text-[13px] text-[#6a6a6a]">por {finalExpertName}</p>
                                             {showRating ? (
-                                                <div className="mt-1.5 flex items-center gap-1 text-sm text-[#6a6a6a]">
+                                                <div className="mt-2 flex items-center gap-1 text-[13px] text-[#6a6a6a]">
                                                     <Star
-                                                        className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]"
+                                                        className="h-3.5 w-3.5 fill-brand text-brand"
                                                         aria-hidden
                                                     />
                                                     <span className="font-semibold tabular-nums text-[#1c1c1c]">
@@ -605,30 +680,48 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         </div>
                                     </div>
 
-                                    <section className="border-t border-[#e8e8e8] pt-4">
-                                        <p className="text-2xl font-semibold tracking-tight tabular-nums text-[#1c1c1c]">
-                                            {desktopPriceInfo.wasConverted
-                                                ? `≈ ${desktopPriceInfo.converted}`
-                                                : desktopPriceInfo.display}
+                                    {/* Price block — hero of the sidebar */}
+                                    <section className="rounded-xl bg-gradient-to-br from-[#f7fafd] to-[#fafafa] px-4 py-4 ring-1 ring-[#eef2f7]">
+                                        <p
+                                            className="text-xs font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]"
+                                            style={{ fontFamily: HP_FONT }}
+                                        >
+                                            Total · impuestos incluidos
                                         </p>
-                                        <p className="text-sm text-[#6a6a6a]">total · impuestos incluidos</p>
+                                        <p
+                                            className="mt-1.5 font-display text-[36px] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c]"
+                                            style={{ fontFamily: HP_FONT }}
+                                        >
+                                            {desktopPriceInfo.wasConverted ? (
+                                                <>
+                                                    <span className="mr-1 text-[28px] font-semibold text-brand">≈</span>
+                                                    {desktopPriceInfo.converted}
+                                                </>
+                                            ) : (
+                                                desktopPriceInfo.display
+                                            )}
+                                        </p>
                                         {desktopPriceInfo.wasConverted ? (
-                                            <p className="mt-1 text-xs text-[#6a6a6a]">
+                                            <p className="mt-2 text-xs text-[#6a6a6a]">
                                                 ({desktopPriceInfo.sourceFormatted} — cargo final en {sourceCurrency})
                                             </p>
                                         ) : null}
                                         {showPriceDetails ? (
-                                            <p className="mt-2 text-xs leading-relaxed text-[#6a6a6a]">
+                                            <p className="mt-3 text-xs leading-relaxed text-[#6a6a6a]">
                                                 El IVA aplicable se calcula según tu país de facturación en Stripe.
                                             </p>
                                         ) : null}
                                         <button
                                             type="button"
                                             onClick={() => setShowPriceDetails(!showPriceDetails)}
-                                            className={`mt-2 text-sm font-semibold text-[#1c1c1c] ${HP_LINK_UNDERLINE_CLASS}`}
+                                            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#1c1c1c] transition-colors hover:text-brand"
                                             aria-expanded={showPriceDetails}
                                         >
-                                            {showPriceDetails ? 'Ocultar detalles' : 'Detalles de precio'}
+                                            <ChevronDown
+                                                aria-hidden
+                                                className={`h-3.5 w-3.5 transition-transform ${showPriceDetails ? 'rotate-180' : ''}`}
+                                            />
+                                            <span>{showPriceDetails ? 'Ocultar detalles' : 'Detalles de precio'}</span>
                                         </button>
                                     </section>
 
@@ -647,12 +740,18 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     })()}
                                 </div>
 
-                                <footer className="shrink-0 space-y-2 border-t border-[#e8e8e8] bg-white p-5 pt-4">
+                                <footer className="shrink-0 space-y-2 border-t border-[#ececec] bg-white p-5 pt-4">
                                     {!expertCanReceivePayments ? (
                                         <p className="text-xs leading-relaxed text-amber-800">
                                             Este experto no puede recibir nuevas contrataciones en este momento.
                                         </p>
                                     ) : null}
+                                    <p
+                                        className="mt-1 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-[#737373]"
+                                        style={{ fontFamily: HP_FONT }}
+                                    >
+                                        Reserva con confianza
+                                    </p>
                                     <button
                                         onClick={handlePayment}
                                         disabled={
@@ -687,23 +786,26 @@ export function CheckoutPage({}: CheckoutPageProps) {
             <div className="min-h-screen bg-[#fafafa] lg:hidden">
                 <div className={SD_MOBILE_SCROLL_PAD_CLASS}>
                     <header
-                        className={`${SD_MOBILE_GUTTER_CLASS} pb-4 pt-[calc(env(safe-area-inset-top,0px)+2rem)]`}
+                        className={`${SD_MOBILE_GUTTER_CLASS} pb-5 pt-[calc(env(safe-area-inset-top,0px)+1.75rem)]`}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-start gap-3">
                             <button
                                 type="button"
                                 onClick={handleBack}
-                                className="sd-icon-btn shrink-0"
+                                className="sd-icon-btn mt-1 shrink-0"
                                 aria-label="Volver"
                             >
                                 <ArrowLeft className="h-5 w-5" aria-hidden />
                             </button>
                             <div className="min-w-0 flex-1">
-                                <h1 className="sd-page-title relative inline-block text-[22px] leading-[26px]">
+                                <h1 className="sd-page-title relative inline-block text-[22px] leading-[26px] min-[390px]:text-[24px] min-[390px]:leading-[28px]">
                                     Confirmar y pagar
                                     <span aria-hidden style={hpTitleUnderlineBarStyle} />
                                 </h1>
-                                <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
+                                <p
+                                    className="mt-2 text-[13px] leading-relaxed tracking-[-0.005em] text-[#6a6a6a] min-[390px]:text-[13.5px]"
+                                    style={{ fontFamily: HP_FONT }}
+                                >
                                     Revisa tu reserva y continúa al pago seguro con Stripe.
                                 </p>
                             </div>
@@ -711,117 +813,227 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     </header>
 
                     <div className={`${SD_MOBILE_GUTTER_CLASS} pb-4`}>
-                    <div className={`${checkoutCardClass} p-3`}>
-                        <div className="mb-3">
-                            <div className="flex items-center gap-4">
-                                {finalImages[0] && (
-                                    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg">
-                                        <img
-                                            src={finalImages[0]}
-                                            alt={finalServiceTypeName}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </div>
-                                )}
-                                <div className="flex min-w-0 flex-1 flex-col justify-center">
-                                    <h2 className="mb-1 text-lg font-semibold leading-6 tracking-[-0.01em] text-[#1c1c1c]">
-                                        {finalServiceTypeName} por {finalExpertName}
-                                    </h2>
-                                    {showRating ? (
-                                        <div className="flex min-w-0 items-center gap-1.5 text-sm text-[#6a6a6a]">
-                                            <Star
-                                                className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]"
-                                                aria-hidden
-                                            />
-                                            <span className="font-semibold tabular-nums text-[#1c1c1c]">
-                                                {finalRating.toFixed(1).replace('.', ',')}
-                                            </span>
-                                            <span>
-                                                ({reviewCount} evaluación{reviewCount !== 1 ? 'es' : ''})
-                                            </span>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </div>
-                        </div>
+                    <div className={checkoutCardClass}>
+                        {/* Single distinctive accent: brand-colored vertical stripe along the card body */}
+                        <div className="relative">
+                            <span
+                                aria-hidden
+                                className="absolute inset-y-5 left-0 w-[3px] rounded-r-full bg-gradient-to-b from-brand via-brand to-[#004a99] opacity-90"
+                            />
 
-                        <CheckoutReserveHint className="mb-3" />
-
-                        <div className={`${checkoutDividerClass} mb-3`} />
-
-                        <div className="pb-3">
-                            <div className={`${checkoutRowLabelClass} mb-1`}>Servicio</div>
-                            <div className={checkoutRowValueClass}>{finalServiceTypeName}</div>
-                        </div>
-
-                        <div className={checkoutDividerClass} />
-
-                        <div className="py-3">
-                            <div className={`${checkoutRowLabelClass} mb-1`}>Duración estimada</div>
-                            <div className={checkoutRowValueClass}>{serviceDuration}</div>
-                        </div>
-
-                        {service?.categoryName && (
-                            <>
-                                <div className={checkoutDividerClass} />
-                                <div className="pt-3">
-                                    <div className={`${checkoutRowLabelClass} mb-1`}>Categoría</div>
-                                    <div className={checkoutRowValueClass}>{service.categoryName}</div>
-                                </div>
-                            </>
-                        )}
-                        {!service?.categoryName && <div className={checkoutDividerClass} />}
-
-                        <div className={`${checkoutDividerClass} my-3`} />
-
-                        <div>
-                            {(() => {
-                                const priceInfo = formatPriceDisplay(finalTotal);
-                                return (
-                                    <>
-                                        <div className="flex items-center justify-between pb-3">
-                                            <span className="text-base font-semibold leading-5 text-[#1c1c1c]">Precio total</span>
-                                            <span className="text-base font-semibold leading-5 text-[#1c1c1c]">
-                                                {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
-                                            </span>
-                                        </div>
-
-                                        {priceInfo.wasConverted && (
-                                            <p className="pb-2 text-right text-xs leading-4 text-[#6a6a6a]">
-                                                ({priceInfo.sourceFormatted} — cargo final)
-                                            </p>
-                                        )}
-
-                                        {showPriceDetails && (
-                                            <div className="mt-2 space-y-2 pb-1">
-                                                {priceInfo.wasConverted && (
-                                                    <div className="flex justify-between text-xs leading-4 text-[#6a6a6a]">
-                                                        <span>Cargo real ({sourceCurrency})</span>
-                                                        <span>{priceInfo.sourceFormatted}</span>
-                                                    </div>
-                                                )}
-                                                <p className="text-xs leading-4 text-[#6a6a6a]">
-                                                    Impuestos incluidos. El IVA aplicable se calcula según tu país en el pago.
-                                                </p>
+                            <div className="space-y-5 p-5 pl-6 min-[390px]:space-y-6 min-[390px]:p-6 min-[390px]:pl-7">
+                                {/* Service identity */}
+                                <section aria-labelledby="checkout-mobile-service-heading">
+                                    <div className="flex items-start gap-4 min-[390px]:gap-5">
+                                        {finalImages[0] && (
+                                            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-[#e8e8e8] min-[390px]:h-28 min-[390px]:w-28">
+                                                <img
+                                                    src={finalImages[0]}
+                                                    alt={finalServiceTypeName}
+                                                    className="h-full w-full object-cover"
+                                                />
                                             </div>
                                         )}
-                                    </>
-                                );
-                            })()}
+                                        <div className="flex min-w-0 flex-1 flex-col justify-center">
+                                            <h2
+                                                id="checkout-mobile-service-heading"
+                                                className="font-display text-[18px] font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c] min-[390px]:text-[19px]"
+                                                style={{ fontFamily: HP_FONT }}
+                                            >
+                                                {finalServiceTypeName}
+                                            </h2>
+                                            <p className="mt-1 text-[13px] leading-snug text-[#6a6a6a]">
+                                                por <span className="font-medium text-[#1c1c1c]">{finalExpertName}</span>
+                                            </p>
+                                            {showRating ? (
+                                                <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[13px] text-[#6a6a6a]">
+                                                    <Star
+                                                        className="h-3.5 w-3.5 shrink-0 fill-brand text-brand"
+                                                        aria-hidden
+                                                    />
+                                                    <span className="font-semibold tabular-nums text-[#1c1c1c]">
+                                                        {finalRating.toFixed(1).replace('.', ',')}
+                                                    </span>
+                                                    <span className="text-[#d4d4d4]" aria-hidden>·</span>
+                                                    <span className="truncate">
+                                                        {reviewCount} evaluación{reviewCount !== 1 ? 'es' : ''}
+                                                    </span>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                </section>
 
-                            <button
-                                type="button"
-                                onClick={() => setShowPriceDetails(!showPriceDetails)}
-                                className={`text-sm font-semibold text-[#1c1c1c] ${HP_LINK_UNDERLINE_CLASS}`}
-                            >
-                                {showPriceDetails ? 'Ocultar' : 'Detalles'}
-                            </button>
+                                {/* Booking facts — clean dl, no horizontal rules between rows */}
+                                <section aria-label="Detalles de la reserva">
+                                    <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-3 min-[390px]:grid-cols-[100px_1fr]">
+                                        <dt className="text-[11px] font-semibold uppercase leading-[18px] tracking-[0.08em] text-[#6a6a6a]">
+                                            Duración
+                                        </dt>
+                                        <dd className="text-[15px] leading-tight tabular-nums text-[#1c1c1c]">
+                                            {serviceDuration}
+                                        </dd>
+                                        {service?.categoryName ? (
+                                            <>
+                                                <dt className="text-[11px] font-semibold uppercase leading-[18px] tracking-[0.08em] text-[#6a6a6a]">
+                                                    Categoría
+                                                </dt>
+                                                <dd className="text-[15px] leading-tight text-[#1c1c1c]">
+                                                    {service.categoryName}
+                                                </dd>
+                                            </>
+                                        ) : null}
+                                    </dl>
+                                </section>
 
-                            <CheckoutLegalNotices
-                                sourceCurrency={sourceCurrency}
-                                collapsible
-                                defaultOpen={false}
-                            />
+                                {/* Qué incluye — el componente inline ya renderiza su propio eyebrow "Incluye" */}
+                                {finalDeliverableTypes.length > 0 ? (
+                                    <section aria-label="Qué incluye este servicio">
+                                        <ServiceDetailDeliverablesGuide
+                                            items={finalDeliverableTypes}
+                                            variant="inline"
+                                        />
+                                    </section>
+                                ) : null}
+
+                                {/* Zona de cobertura — only when expert coords exist */}
+                                {hasExpertCoords ? (
+                                    <section aria-labelledby="checkout-mobile-coverage-heading">
+                                        <h3
+                                            id="checkout-mobile-coverage-heading"
+                                            className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]"
+                                        >
+                                            Zona de cobertura
+                                        </h3>
+                                        <p className="mb-2.5 text-[12.5px] leading-relaxed text-[#6a6a6a]">
+                                            El experto se desplaza dentro de un radio de{' '}
+                                            <span className="font-semibold tabular-nums text-[#1c1c1c]">{expertRangeKm} km</span>.
+                                        </p>
+                                        <ServiceDetailCoverageMap
+                                            latitude={expertLat}
+                                            longitude={expertLng}
+                                            rangeKm={expertRangeKm}
+                                            variant="preview"
+                                            expandable
+                                            className="h-[150px] w-full rounded-xl border border-[#e8e8e8]"
+                                        />
+                                    </section>
+                                ) : null}
+
+                                {/* Qué ocurre al reservar — numbered roadmap (replaces CheckoutReserveHint wall) */}
+                                <section aria-labelledby="checkout-mobile-steps-heading">
+                                    <h3
+                                        id="checkout-mobile-steps-heading"
+                                        className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]"
+                                    >
+                                        Qué ocurre al reservar
+                                    </h3>
+                                    <ol className="space-y-3 text-[13.5px] leading-relaxed text-[#6a6a6a]">
+                                        <li className="flex gap-3">
+                                            <span
+                                                aria-hidden
+                                                className="mt-[1px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-semibold tabular-nums text-brand"
+                                            >
+                                                1
+                                            </span>
+                                            <span>
+                                                <span className="font-semibold text-[#1c1c1c]">Pago seguro con Stripe.</span>{' '}
+                                                El importe queda retenido hasta que apruebes el informe.
+                                            </span>
+                                        </li>
+                                        <li className="flex gap-3">
+                                            <span
+                                                aria-hidden
+                                                className="mt-[1px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-semibold tabular-nums text-brand"
+                                            >
+                                                2
+                                            </span>
+                                            <span>
+                                                <span className="font-semibold text-[#1c1c1c]">Coordinas por chat</span>{' '}
+                                                fecha, hora y lugar (mín. 24&nbsp;h de antelación).
+                                            </span>
+                                        </li>
+                                        <li className="flex gap-3">
+                                            <span
+                                                aria-hidden
+                                                className="mt-[1px] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-semibold tabular-nums text-brand"
+                                            >
+                                                3
+                                            </span>
+                                            <span>
+                                                <span className="font-semibold text-[#1c1c1c]">Recibes informe, fotos y vídeo.</span>{' '}
+                                                Si cancelas antes de la revisión, reembolso completo.
+                                            </span>
+                                        </li>
+                                    </ol>
+                                </section>
+                            </div>
+
+                            {/* Price block — single structural divider above anchors the CTA region */}
+                            <div className="border-t border-[#e8e8e8] px-5 pb-5 pt-5 min-[390px]:px-6 min-[390px]:pb-6 min-[390px]:pt-6">
+                                {(() => {
+                                    const priceInfo = formatPriceDisplay(finalTotal);
+                                    return (
+                                        <>
+                                            <p
+                                                className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6a6a6a]"
+                                                style={{ fontFamily: HP_FONT }}
+                                            >
+                                                Total
+                                            </p>
+                                            <p
+                                                className="mt-1 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c] min-[390px]:text-[32px]"
+                                                style={{ fontFamily: HP_FONT }}
+                                            >
+                                                {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
+                                            </p>
+                                            <p className="mt-1.5 text-xs leading-snug text-[#6a6a6a]">
+                                                Impuestos incluidos
+                                            </p>
+                                            {priceInfo.wasConverted && (
+                                                <p className="mt-1 text-[11.5px] leading-snug text-[#6a6a6a]">
+                                                    {priceInfo.sourceFormatted} — cargo final en {sourceCurrency}
+                                                </p>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPriceDetails(!showPriceDetails)}
+                                                aria-expanded={showPriceDetails}
+                                                className="mt-4 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-[#1c1c1c] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                                            >
+                                                <span>{showPriceDetails ? 'Ocultar detalles de precio' : 'Detalles de precio'}</span>
+                                                <span
+                                                    aria-hidden
+                                                    className={`text-[10px] text-[#6a6a6a] transition-transform ${showPriceDetails ? 'rotate-180' : ''}`}
+                                                >
+                                                    ▾
+                                                </span>
+                                            </button>
+
+                                            {showPriceDetails && (
+                                                <div className="mt-2 space-y-2 rounded-lg bg-[#fafafa] p-3">
+                                                    {priceInfo.wasConverted && (
+                                                        <div className="flex justify-between text-[12.5px] leading-snug text-[#6a6a6a]">
+                                                            <span>Cargo real ({sourceCurrency})</span>
+                                                            <span className="tabular-nums text-[#1c1c1c]">{priceInfo.sourceFormatted}</span>
+                                                        </div>
+                                                    )}
+                                                    <p className="text-[12.5px] leading-relaxed text-[#6a6a6a]">
+                                                        El IVA aplicable se calcula según tu país de facturación en Stripe.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            <CheckoutLegalNotices
+                                                sourceCurrency={sourceCurrency}
+                                                collapsible
+                                                defaultOpen={priceInfo.wasConverted}
+                                            />
+                                        </>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
                     </div>

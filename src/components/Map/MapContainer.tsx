@@ -248,10 +248,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     //    map.on('load'), lo que provocaba un re-encaje de cámara después del primer
     //    render y los marcadores brincaban. Aplicándolo aquí, la cámara ya nace
     //    con el padding correcto y el primer fetch del viewport ya es el definitivo.
+    //
+    // 🔝 Bottom padding empuja el centro geográfico HACIA ARRIBA en el viewport.
+    //    Móvil: 60% (subido desde 50%) → España visible más arriba sobre el drawer.
+    //    Desktop: 30% del alto (era 0) → España queda en el tercio superior del mapa,
+    //    mostrando más Europa arriba (Francia, Pirineos) y menos África abajo.
     const initialPadding =
       isMobile && typeof window !== 'undefined'
-        ? { top: 0, bottom: Math.round(window.innerHeight * 0.5), left: 0, right: 0 }
-        : { top: 0, bottom: 0, left: 0, right: 0 };
+        ? { top: 0, bottom: Math.round(window.innerHeight * 0.60), left: 0, right: 0 }
+        : typeof window !== 'undefined'
+          ? { top: 0, bottom: Math.round(window.innerHeight * 0.30), left: 0, right: 0 }
+          : { top: 0, bottom: 0, left: 0, right: 0 };
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
