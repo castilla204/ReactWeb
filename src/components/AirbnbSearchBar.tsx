@@ -1,7 +1,23 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { createPortal } from 'react-dom';
-import { Search, ChevronDown, FolderTree, Filter, ChevronUp, Heart, User } from 'lucide-react';
+import {
+  Search,
+  ChevronDown,
+  ChevronRight,
+  FolderTree,
+  Filter,
+  ChevronUp,
+  Heart,
+  User,
+  Car,
+  Bike,
+  Home,
+  Camera,
+  Wrench,
+  Check,
+  type LucideIcon,
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
@@ -18,6 +34,14 @@ import motoaguaImg from '../media/motoagua.png';
 import internet61Img from '../media/internet-61.png';
 import houseImg from '../media/house.png';
 import camarapngImg from '../media/camarapng.png';
+import calderaImg from '../media/caldera.png';
+// Fotos reales del oficio (las mismas que usa SearchInspectionListItem en
+// /busquedas). Se usan en el picker office-row para hablar el mismo lenguaje
+// "carpeta del despacho del perito" que el listado de inspecciones.
+import revisionCocheImg from '../media/revisioncoche.jpg';
+import revisionMotoImg from '../media/revisionmoto.jpg';
+import revisionCasaImg from '../media/revisioncasa.jpg';
+import { getCategoryMeta, type CategoryOfficeMeta } from '../data/categoryMeta';
 
 // Mapa de imágenes importadas
 const imageMap: Record<string, string> = {
@@ -29,6 +53,7 @@ const imageMap: Record<string, string> = {
   'internet-61.png': internet61Img,
   'house.png': houseImg,
   'camarapng.png': camarapngImg,
+  'caldera.png': calderaImg,
 };
 
 // Función para obtener la ruta de imagen (desde src/media con Vite)
@@ -77,7 +102,6 @@ const HomepageDesktopKayak = lazy(() =>
 import {
   HP_FONT,
   HP_COLOR,
-  HP_PANEL_GRADIENT,
   hpType,
   hpCardText,
   hpTitleUnderlineBarStyle,
@@ -85,12 +109,420 @@ import {
 } from '../constants/homepageTypography';
 
 const CATEGORIES = {
+  VEHICULOS: 2,
   COCHES: 5,
   MOTOS: 6,
   INMOBILIARIA: 3,
   CAMARAS: 4,
   FONTANERIA: 12,
 } as const;
+
+const isVehiculosParentCategory = (category: { id: number; name: string; parentId?: number | null }) =>
+  category.id === CATEGORIES.VEHICULOS ||
+  (category.parentId == null && category.name.toLowerCase().includes('vehículo'));
+
+const getCategoryLucideIcon = (categoryName: string): LucideIcon => {
+  const nameLower = categoryName.toLowerCase();
+  if (nameLower.includes('moto') && !nameLower.includes('agua')) return Bike;
+  if (nameLower.includes('coche') || nameLower.includes('vehículo')) return Car;
+  if (nameLower.includes('inmobiliaria') || nameLower.includes('casa') || nameLower.includes('inmueble')) return Home;
+  if (nameLower.includes('cámara') || nameLower.includes('camara')) return Camera;
+  if (nameLower.includes('fontanería') || nameLower.includes('fontaneria') || nameLower.includes('caldera')) return Wrench;
+  return FolderTree;
+};
+
+/**
+ * Devuelve el PNG real de la app para una categoría (cochepng, motorcycle,
+ * casapng, etc.). Cuando hay match real, evitamos el icon outline genérico
+ * de lucide y mostramos la ilustración de la marca — mucho más distintiva,
+ * sin "feel de juguete" que dan los iconos planos en cards grandes.
+ */
+/**
+ * Foto REAL del oficio (no la ilustración PNG). Reutilizamos los JPGs que ya
+ * sirve `SearchInspectionListItem` en /busquedas — así el picker y el listado
+ * hablan el mismo idioma "carpeta del despacho del perito". Si no hay foto
+ * real para la categoría (p.ej. coming-soon o cámaras), devolvemos null y el
+ * componente cae a la ilustración del imageMap.
+ */
+const getCategoryPhoto = (categoryName: string): string | null => {
+  const n = categoryName.toLowerCase();
+  if (n.includes('moto') && n.includes('agua')) return null; // sin foto real aún
+  if (n.includes('moto')) return revisionMotoImg;
+  if (n.includes('coche') || n.includes('vehículo')) return revisionCocheImg;
+  if (n.includes('inmobiliaria') || n.includes('casa') || n.includes('inmueble')) return revisionCasaImg;
+  return null;
+};
+
+const getCategoryImage = (categoryName: string): string | null => {
+  const n = categoryName.toLowerCase();
+  if (n.includes('moto') && n.includes('agua')) return motoaguaImg;
+  if (n.includes('moto')) return motorcycleImg;
+  if (n.includes('coche') || n.includes('vehículo')) return cochepngImg;
+  if (n.includes('inmobiliaria') || n.includes('casa') || n.includes('inmueble')) return casapngImg;
+  if (n.includes('cámara') || n.includes('camara')) return camarapngImg;
+  if (n.includes('internet') || n.includes('online') || n.includes('web')) return internet61Img;
+  // Fontanería / caldera / calefacción: ilustración de caldera blanca con display "25 °C"
+  if (
+    n.includes('fontaner') ||
+    n.includes('caldera') ||
+    n.includes('calefac') ||
+    n.includes('plomer')
+  )
+    return calderaImg;
+  if (n.includes('hogar')) return houseImg;
+  return null;
+};
+
+interface CategoryPickerRowProps {
+  name: string;
+  isSelected: boolean;
+  onClick: () => void;
+  /** 'list' = sidebar desktop. 'tile' = legacy grid (mantenido por compat con
+   *  callsites desktop). 'office-row' = NUEVO mobile picker con foto real del
+   *  oficio + ficha técnica (precio, expertos, descripción). */
+  variant?: 'list' | 'tile' | 'office-row';
+  /** Marca la categoría como "próximamente": render disabled, badge "Pronto",
+   *  sin onClick. Para anunciar verticales que aún no están en el backend. */
+  comingSoon?: boolean;
+  /** Metadata del oficio. Solo usada por variant='office-row'. */
+  meta?: CategoryOfficeMeta | null;
+}
+
+/**
+ * Categorías "Próximamente" que aún NO existen en el backend pero queremos
+ * anunciar visualmente para que el usuario vea el roadmap. Cuando se añadan
+ * al backend, simplemente las quitamos de aquí. Si una de estas se solapa
+ * en nombre con una categoría real del backend, la real gana (filtramos
+ * abajo).
+ */
+const COMING_SOON_CATEGORIES: readonly string[] = [
+  'Cámaras',
+  'Motos de agua',
+  // "Fontanería" en vez de "Fontanería y calderas": el label largo rompía
+  // aspect-square al partirse a 2 líneas en mobile (118px/card). La PNG
+  // `caldera.png` ya comunica el ámbito de calderas visualmente.
+  'Fontanería',
+  'Revisión online',
+];
+
+/**
+ * Tile compacto para sección "Próximamente". No es un botón — es un anuncio
+ * del roadmap. Sin onClick, sin tab-stop, sin afordancia clickable.
+ */
+const ComingSoonTile: React.FC<{ name: string }> = ({ name }) => {
+  const Icon = getCategoryLucideIcon(name);
+  const illustration = getCategoryImage(name);
+  return (
+    <div
+      aria-disabled
+      aria-label={`${name} (próximamente)`}
+      className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[#e8e8e8] bg-[#fafafa] p-2 text-center"
+    >
+      <div className="flex h-9 w-9 items-center justify-center opacity-60">
+        {illustration ? (
+          <img
+            src={illustration}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="h-full w-full select-none object-contain grayscale"
+          />
+        ) : (
+          <Icon className="h-5 w-5 text-[#a0a0a0]" strokeWidth={2} />
+        )}
+      </div>
+      <span className="line-clamp-2 text-[10.5px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
+        {name}
+      </span>
+    </div>
+  );
+};
+
+/**
+ * Sección "Próximamente en el catálogo": divider eyebrow + grid 4-col compacto.
+ * No compite visualmente con las cards activas (rows) y comunica que el
+ * catálogo crece, no que está cerrado.
+ */
+const ComingSoonGrid: React.FC<{ names: readonly string[] }> = ({ names }) => {
+  if (names.length === 0) return null;
+  return (
+    <section className="mt-6" aria-labelledby="coming-soon-heading">
+      <div className="mb-3 flex items-center gap-3">
+        <span className="h-px flex-1 bg-[#ebebeb]" aria-hidden />
+        <h3
+          id="coming-soon-heading"
+          className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#737373]"
+        >
+          Próximamente en el catálogo
+        </h3>
+        <span className="h-px flex-1 bg-[#ebebeb]" aria-hidden />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {names.map((name) => (
+          <ComingSoonTile key={`coming-soon-${name}`} name={name} />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
+  name,
+  isSelected,
+  onClick,
+  variant = 'list',
+  comingSoon = false,
+  meta = null,
+}) => {
+  const Icon = getCategoryLucideIcon(name);
+  const imgSrc = getCategoryImage(name);
+
+  // VARIANT OFFICE-ROW · lista vertical con foto real + ficha técnica del oficio.
+  // Mismo lenguaje "carpeta del despacho" que SearchInspectionListItem en
+  // /busquedas. Altura uniforme garantizada por thumb 80px fijo + line-clamp-1
+  // en todos los textos. Coming-soon NO usa esta variant (va por ComingSoonGrid).
+  if (variant === 'office-row') {
+    const photo = getCategoryPhoto(name);
+    const thumbSrc = photo || imgSrc;
+    const isPhotoReal = Boolean(photo);
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={isSelected}
+        aria-label={
+          `${name}${meta ? `: ${meta.delivery}, desde ${meta.priceFromEur} euros, ${meta.expertCount} expertos disponibles, informe en ${meta.reportHours} horas` : ''}${isSelected ? ' (seleccionado)' : ''}`
+        }
+        className={[
+          'group relative flex w-full items-stretch gap-3 overflow-hidden rounded-[14px] border bg-white p-2.5 text-left',
+          'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'active:scale-[0.995]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+          isSelected
+            ? 'border-brand bg-brand/[0.04] shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(0,0,0,0.06)]'
+            : 'border-[#e8e8e8] hover:border-[#d4d4d4] hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
+        ].join(' ')}
+        style={{ fontFamily: HP_FONT }}
+      >
+        {/* THUMB del oficio · foto real si existe, ilustración si no. */}
+        <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[10px] bg-[#f5f5f5]">
+          {thumbSrc ? (
+            <img
+              src={thumbSrc}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              className={`h-full w-full select-none ${isPhotoReal ? 'object-cover' : 'object-contain p-2'}`}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[#6a6a6a]">
+              <Icon className="h-7 w-7" strokeWidth={1.75} />
+            </div>
+          )}
+        </div>
+
+        {/* FICHA: nombre + entrega + meta-line (precio · expertos) */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
+          <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+            {name}
+          </h3>
+          {meta ? (
+            <>
+              <p className="mt-0.5 line-clamp-1 text-[12px] leading-snug text-[#6a6a6a]">
+                {meta.delivery}
+              </p>
+              <div className="mt-1.5 flex items-center gap-1.5 text-[12px] leading-none">
+                <span className="font-semibold text-[#1c1c1c]">
+                  desde {meta.priceFromEur}€
+                </span>
+                <span className="text-[#d4d4d4]" aria-hidden>·</span>
+                <span className="text-[#737373]">
+                  {meta.expertCount} expertos
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="mt-0.5 line-clamp-1 text-[12px] leading-snug text-[#737373]">
+              Toca para empezar
+            </p>
+          )}
+        </div>
+
+        {/* Indicador a la derecha · check brand cuando activa, chevron sutil cuando no. */}
+        <div className="flex shrink-0 items-center pr-0.5">
+          {isSelected ? (
+            <span
+              aria-hidden
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-brand shadow-[0_2px_6px_hsl(var(--brand)/0.45)]"
+            >
+              <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />
+            </span>
+          ) : (
+            <ChevronRight
+              className="h-4 w-4 text-[#cccccc] transition-colors group-hover:text-brand"
+              strokeWidth={2}
+              aria-hidden
+            />
+          )}
+        </div>
+      </button>
+    );
+  }
+
+  if (variant === 'tile') {
+    // Versión "próximamente": disabled, badge "Pronto", sin hover ni click.
+    if (comingSoon) {
+      return (
+        <div
+          role="button"
+          aria-disabled
+          aria-label={`${name} (próximamente)`}
+          tabIndex={-1}
+          className="relative flex aspect-square cursor-not-allowed flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-[#e8e8e8] bg-[#fafafa] p-3 text-center"
+        >
+          <div className="flex h-[64px] w-[64px] items-center justify-center opacity-55">
+            {imgSrc ? (
+              <img
+                src={imgSrc}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="h-full w-full select-none object-contain grayscale"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0f0f0] text-[#a0a0a0]">
+                <Icon className="h-6 w-6" strokeWidth={2} />
+              </div>
+            )}
+          </div>
+          {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
+              grid no se descuadre cuando algún label parta. line-clamp-2 corta
+              con "..." en el (improbable) caso de un nombre aún más largo. */}
+          <span className="line-clamp-2 min-h-[2.2em] text-[13px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
+            {name}
+          </span>
+          <span
+            aria-hidden
+            className="absolute right-2 top-2 inline-flex h-[18px] items-center rounded-full bg-[#1c1c1c] px-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.06em] text-white"
+          >
+            Pronto
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={isSelected}
+        aria-label={`${name}${isSelected ? ' (seleccionado)' : ''}`}
+        className={[
+          'group relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-2xl border-2 bg-white p-3 text-center',
+          'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'active:scale-[0.97]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+          isSelected
+            ? 'border-brand bg-brand/[0.04] shadow-[0_6px_20px_-6px_hsl(var(--brand)/0.28)]'
+            : 'border-[#e8e8e8] hover:border-[#a0a0a0] hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
+        ].join(' ')}
+      >
+        {/* PNG real de la app si existe; icon lucide solo como fallback */}
+        <div
+          className={[
+            'flex h-[64px] w-[64px] items-center justify-center transition-transform duration-200',
+            isSelected ? 'scale-105' : 'group-hover:scale-105 motion-reduce:group-hover:scale-100',
+          ].join(' ')}
+        >
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              className="h-full w-full select-none object-contain"
+            />
+          ) : (
+            <div
+              className={`flex h-14 w-14 items-center justify-center rounded-full ${
+                isSelected ? 'bg-brand text-white' : 'bg-[#f5f5f5] text-[#6a6a6a]'
+              }`}
+            >
+              <Icon className="h-6 w-6" strokeWidth={2} />
+            </div>
+          )}
+        </div>
+
+        {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
+            grid no se descuadre cuando algún label del backend parta. */}
+        <span className="line-clamp-2 min-h-[2.2em] text-[14px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+          {name}
+        </span>
+
+        {/* Check indicator estilo Airbnb en esquina superior derecha */}
+        {isSelected && (
+          <span
+            aria-hidden
+            className="absolute right-2.5 top-2.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand shadow-[0_2px_6px_hsl(var(--brand)/0.45)]"
+          >
+            <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  // variant === 'list' — versión para sidebar/desktop con PNG también si lo hay
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={isSelected}
+      className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
+        isSelected
+          ? 'border-brand/30 bg-brand/[0.06]'
+          : 'border-transparent hover:bg-[#f4f4f4]/80 active:bg-[#f4f4f4]'
+      }`}
+    >
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden ${
+          imgSrc ? 'bg-white' : isSelected ? 'bg-brand/10' : 'bg-[#f0f0f0]'
+        }`}
+      >
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="h-9 w-9 select-none object-contain"
+          />
+        ) : (
+          <Icon
+            className={`h-[18px] w-[18px] ${isSelected ? 'text-brand' : 'text-[#6a6a6a]'}`}
+            strokeWidth={2}
+          />
+        )}
+      </div>
+      <span className="min-w-0 flex-1 truncate text-[15px] font-medium leading-tight text-[#1c1c1c]">
+        {name}
+      </span>
+      {isSelected && (
+        <span
+          aria-hidden
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand"
+        >
+          <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
+        </span>
+      )}
+    </button>
+  );
+};
 
 interface AirbnbSearchBarProps {
   onSearch?: (searchData: {
@@ -403,6 +835,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const parentCategories = useMemo(() => {
     const list = normalizedCategories.filter((c) => {
       if (!c.isActive) return false;
+      if (isVehiculosParentCategory(c)) return false;
       return c.isParent !== undefined ? c.isParent : c.parentId == null;
     });
     const priority = (name: string) => {
@@ -424,6 +857,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       ),
     [parentCategories]
   );
+
+  /** Solo las 3 categorías accionables en el picker móvil */
+  const mobilePickerCategories = useMemo(() => {
+    const primaryIds = [CATEGORIES.COCHES, CATEGORIES.MOTOS, CATEGORIES.INMOBILIARIA] as const;
+    return primaryIds
+      .map((id) => normalizedCategories.find((c) => c.id === id && c.isActive))
+      .filter((c): c is NonNullable<typeof c> => !!c);
+  }, [normalizedCategories]);
 
   const desktopCategoryTabs = useMemo(
     () =>
@@ -489,7 +930,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <div className="px-4 pt-3.5 pb-1">
           <div
             onClick={openMobileSearch}
-            className="w-full bg-white border border-gray-200 rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
+            className="w-full bg-white border border-[#e8e8e8] rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
             
             style={{
               height: '56px',
@@ -624,7 +1065,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           <div 
             className="md:hidden fixed inset-0 z-50 flex flex-col"
             style={{
-              background: isMobile ? HP_PANEL_GRADIENT : '#f9fafb',
+              background: '#ffffff',
               boxShadow: isMobile ? undefined : '0 4px 24px rgba(15, 23, 42, 0.08)',
             }}
           >
@@ -677,7 +1118,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     : ''
                 }`}
                 style={{
-                  background: (expandedAccordion === 'where' || isMobile) ? HP_PANEL_GRADIENT : '#ffffff',
+                  background: (expandedAccordion === 'where' || isMobile) ? '#ffffff' : '#ffffff',
                   height: (expandedAccordion === 'where' || isMobile) ? '100vh' : 'auto',
                   minHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '280px',
                   maxHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '320px',
@@ -725,34 +1166,30 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     )}
 
                     <div
-                      className={`px-4 border-b border-[#e8e8e8]/90 ${isMobile ? 'pb-3 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3rem)]' : 'pb-4 pt-6'}`}
+                      className={`px-5 ${isMobile ? 'pb-4 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3.25rem)]' : 'border-b border-[#e8e8e8] pb-4 pt-6'}`}
                     >
-                      <div className={`flex items-center justify-between ${isMobile ? '' : 'mb-4'}`}>
-                        <h2
-                          tabIndex={-1}
-                          className={`relative inline-block ${isMobile ? 'hp-section-title' : ''}`}
-                          style={
-                            isMobile
-                              ? {
-                                  fontFeatureSettings: '"liga" 1, "kern" 1',
-                                  WebkitFontSmoothing: 'antialiased',
-                                  MozOsxFontSmoothing: 'grayscale',
-                                }
-                              : {
-                                  ...hpType.modalTitle,
-                                  color: HP_COLOR.secondary,
-                                  fontFeatureSettings: '"liga" 1, "kern" 1',
-                                  WebkitFontSmoothing: 'antialiased',
-                                  MozOsxFontSmoothing: 'grayscale',
-                                }
-                          }
-                        >
-                          ¿Qué revisamos?
-                          <span aria-hidden style={hpTitleUnderlineBarStyle} />
-                        </h2>
-                        {isMobile && (
-                          <p className="hp-eyebrow mt-2 max-w-[85%]">Elige una categoría</p>
-                        )}
+                      <div className={`flex items-start justify-between gap-3 ${isMobile ? '' : 'mb-4'}`}>
+                        <div className="min-w-0 flex-1">
+                          <h2
+                            tabIndex={-1}
+                            className={
+                              isMobile
+                                ? 'm-0 text-[20px] font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]'
+                                : 'hp-section-title m-0'
+                            }
+                            style={isMobile ? { fontFamily: HP_FONT } : undefined}
+                          >
+                            ¿Qué revisamos?
+                          </h2>
+                          {isMobile && (
+                            <p
+                              className="mt-1 text-[13px] leading-snug text-[#6a6a6a]"
+                              style={{ fontFamily: HP_FONT }}
+                            >
+                              Elige qué bien quieres que revise el experto.
+                            </p>
+                          )}
+                        </div>
                         {!isMobile && (
                           <button
                             type="button"
@@ -797,10 +1234,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                             <input
                               id="categories-search-input"
                               type="search"
-                              placeholder="Buscar destinos"
+                              placeholder="Buscar categorías"
                               value={categorySearchQuery}
                               onChange={(e) => setCategorySearchQuery(e.target.value)}
-                              className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                              className="flex-1 border-0 text-sm outline-none bg-transparent text-[#1c1c1c] placeholder:text-[#a0a0a0]"
                               style={{
                                 fontSize: '14px',
                                 lineHeight: '18px',
@@ -810,7 +1247,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               autoComplete="off"
                               autoCorrect="off"
                               spellCheck="false"
-                              aria-label="Buscar destinos"
+                              aria-label="Buscar categorías"
                             />
                           </label>
                         </form>
@@ -819,113 +1256,117 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
                     {/* Contenido expandido al 100% */}
                     <div
-                      className="flex-1 overflow-y-auto px-4 py-4"
+                      className={`flex-1 overflow-y-auto ${isMobile ? 'px-5 pt-2 pb-6' : 'px-4 py-6'}`}
                       style={{
                         paddingBottom: isMobile
-                          ? 'max(1rem, env(safe-area-inset-bottom, 0px))'
+                          ? 'max(1.5rem, env(safe-area-inset-bottom, 0px))'
                           : undefined,
                       }}
                     >
-                      <div>
+                      <div className={isMobile ? 'mx-auto max-w-md' : undefined}>
                         {categoriesLoading ? (
                           <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                            <div className="flex flex-col gap-3">
-                              {[...Array(4)].map((_, index) => (
-                                <Skeleton key={index} height={72} borderRadius={12} />
+                            <div className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}>
+                              {[...Array(isMobile ? 6 : 4)].map((_, index) => (
+                                <Skeleton key={index} height={isMobile ? 120 : 72} borderRadius={16} />
                               ))}
                             </div>
                           </SkeletonTheme>
+                        ) : isMobile ? (
+                          // GRID 3-COL · cuadradas (el diseño que prefieres). Las
+                          // labels largas usan `line-clamp-2 min-h-[2.2em]` en el
+                          // tile para que NUNCA descuadren el aspect-square del
+                          // resto. Coming-soon se mezcla en el mismo grid después
+                          // de las activas como tiles disabled con badge "Pronto".
+                          //
+                          // Nota: el código de variant="office-row" + ComingSoonGrid
+                          // queda definido arriba por si se quiere volver al layout
+                          // lista vertical + sección "Próximamente" más rica.
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {mobilePickerCategories.map((category) => (
+                              <CategoryPickerRow
+                                key={category.id}
+                                name={category.name}
+                                isSelected={categoryId === category.id}
+                                variant="tile"
+                                onClick={() => {
+                                  setCategoryId(category.id);
+                                  setCategorySearchQuery('');
+
+                                  const defaultServiceTypeId = serviceTypeId || 2;
+                                  const params = new URLSearchParams();
+                                  params.append('categoryId', category.id.toString());
+                                  params.append('serviceTypeId', defaultServiceTypeId.toString());
+                                  if (adUrl) {
+                                    params.append('adUrl', adUrl);
+                                  }
+
+                                  window.location.href = `/crear-busqueda?${params.toString()}`;
+
+                                  if (onSearch) {
+                                    onSearch({
+                                      serviceTypeId: defaultServiceTypeId,
+                                      categoryId: category.id,
+                                      adUrl,
+                                    });
+                                  }
+                                }}
+                              />
+                            ))}
+
+                            {/* Coming-soon en el mismo grid después de las activas */}
+                            {COMING_SOON_CATEGORIES
+                              .filter((csName) => {
+                                const lower = csName.toLowerCase();
+                                return !mobilePickerCategories.some(
+                                  (c) => c.name.toLowerCase() === lower,
+                                );
+                              })
+                              .map((csName) => (
+                                <CategoryPickerRow
+                                  key={`coming-soon-${csName}`}
+                                  name={csName}
+                                  isSelected={false}
+                                  variant="tile"
+                                  comingSoon
+                                  onClick={() => {
+                                    /* noop: anunciada, no clickable */
+                                  }}
+                                />
+                              ))}
+                          </div>
                         ) : (
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
                               {normalizedCategories
-                                .filter(cat => cat.isActive)
-                                .filter(cat => {
+                                .filter((cat) => cat.isActive && !isVehiculosParentCategory(cat))
+                                .filter((cat) => {
                                   if (categorySearchQuery.trim()) {
                                     return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                                   }
                                   return true;
                                 })
-                        .map((category, index) => {
-                                  const categoryImage = getCategoryImage(category.name);
-                                  return (
-                                    <button
+                        .map((category) => (
+                                    <CategoryPickerRow
                                       key={category.id}
-                                      type="button"
-                              onClick={() => {
-                                // ✅ En móvil: Navegar directamente al mapa con la categoría seleccionada
-                                setCategoryId(category.id);
-                                setCategorySearchQuery('');
-                                
-                                // ✅ Usar serviceTypeId existente o 2 por defecto para evitar mapas vacíos
-                                const defaultServiceTypeId = serviceTypeId || 2;
-                                
-                                // Navegar al mapa con la categoría y serviceTypeId por defecto
-                                const params = new URLSearchParams();
-                                params.append('categoryId', category.id.toString());
-                                params.append('serviceTypeId', defaultServiceTypeId.toString());
-                                if (adUrl) {
-                                  params.append('adUrl', adUrl);
-                                }
-                                
-                                // ✅ Usar window.location.href para navegación directa sin mostrar homepage
-                                window.location.href = `/crear-busqueda?${params.toString()}`;
-                                
-                                // Llamar a onSearch para actualizar los filtros (antes de navegar)
-                                if (onSearch) {
-                                  onSearch({
-                                    serviceTypeId: defaultServiceTypeId,
-                                    categoryId: category.id,
-                                    adUrl,
-                                  });
-                                }
+                                      name={category.name}
+                                      isSelected={categoryId === category.id}
+                                      onClick={() => {
+                                          setCategoryId(category.id);
+                                          setCategorySearchQuery('');
+                                          setExpandedAccordion('type');
+                                          if (onSearch) {
+                                            onSearch({
+                                              serviceTypeId,
+                                              categoryId: category.id,
+                                              adUrl,
+                                            });
+                                          }
                               }}
-                                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all duration-300 ease-out border animate-fade-in ${
-                                      categoryId === category.id 
-                                        ? 'border-brand-hover/40 bg-brand text-white shadow-md shadow-brand/20' 
-                                        : 'border-[#ebebeb]/90 bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white active:bg-white'
-                                    }`}
-                                    style={{
-                                      animationDelay: `${Math.min(index * 50, 300)}ms`,
-                                      animationFillMode: 'both'
-                                    }}
-                                    >
-                                      {categoryImage ? (
-                                        <img 
-                                          src={categoryImage}
-                                  alt=""
-                                  className="w-12 h-12 rounded-lg object-contain"
-                                        />
-                                      ) : (
-                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                  categoryId === category.id ? 'bg-white/20' : 'bg-white'
-                                }`}>
-                                  <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-[#737373]'}`} />
-                                        </div>
-                                      )}
-                              <div>
-                                    <div
-                                      style={{
-                                        ...hpCardText.title,
-                                        color: categoryId === category.id ? '#ffffff' : HP_COLOR.secondary,
-                                      }}
-                                    >
-                                  {category.name}
-                                </div>
-                                      <div
-                                        style={{
-                                          ...hpType.body,
-                                          color: categoryId === category.id ? 'rgba(255, 255, 255, 0.85)' : HP_COLOR.muted,
-                                        }}
-                                      >
-                                  Explorar servicios
-                                </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
+                                    />
+                                  ))}
                       {normalizedCategories
-                        .filter(cat => cat.isActive)
-                              .filter(cat => {
+                        .filter((cat) => cat.isActive && !isVehiculosParentCategory(cat))
+                              .filter((cat) => {
                                 if (categorySearchQuery.trim()) {
                                   return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                                 }
@@ -949,7 +1390,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     {!isMobile && (
                       <>
                         {/* Header fijo con título y buscador - Estilo Airbnb */}
-                        <div className="px-4 pt-6 pb-4 border-b border-gray-200">
+                        <div className="px-4 pt-6 pb-4 border-b border-[#e8e8e8]">
                           <h2
                             tabIndex={-1}
                             className="relative mb-4 inline-block"
@@ -990,10 +1431,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               <input
                                 id="categories-search-input-collapsed"
                                 type="search"
-                                placeholder="Buscar destinos"
+                                placeholder="Buscar categorías"
                                 value={categorySearchQuery}
                                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                                className="flex-1 border-0 text-sm outline-none bg-transparent text-gray-900 placeholder:text-gray-400"
+                                className="flex-1 border-0 text-sm outline-none bg-transparent text-[#1c1c1c] placeholder:text-[#a0a0a0]"
                                 style={{ 
                                   fontSize: '14px',
                                   lineHeight: '18px',
@@ -1003,7 +1444,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 autoComplete="off"
                                 autoCorrect="off"
                                 spellCheck="false"
-                                aria-label="Buscar destinos"
+                                aria-label="Buscar categorías"
                               />
                             </label>
                           </form>
@@ -1021,22 +1462,21 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 </div>
                               </SkeletonTheme>
                             ) : (
-                              <div>
+                              <div className="flex flex-col gap-2.5">
                                 {normalizedCategories
-                                  .filter(cat => cat.isActive)
+                                  .filter(cat => cat.isActive && !isVehiculosParentCategory(cat))
                                   .filter(cat => {
                                     if (categorySearchQuery.trim()) {
                                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
                                     }
                                     return true;
                                   })
-                                  .map((category) => {
-                                    const categoryImage = getCategoryImage(category.name);
-                                    return (
-                    <button
-                                        key={category.id}
-                      type="button"
-                                        onClick={() => {
+                                  .map((category) => (
+                                    <CategoryPickerRow
+                                      key={category.id}
+                                      name={category.name}
+                                      isSelected={categoryId === category.id}
+                                      onClick={() => {
                                           setCategoryId(category.id);
                                           setCategorySearchQuery('');
                                           setExpandedAccordion('type');
@@ -1048,55 +1488,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                             });
                                           }
                                         }}
-                                        className={`w-full flex items-center gap-4 p-4 mb-3 rounded-lg text-left transition-all duration-200 border-0 ${
-                                          categoryId === category.id 
-                                            ? 'bg-gray-900 text-white shadow-md' 
-                                            : 'hover:bg-gray-50 shadow-sm'
-                                        }`}
-                                      >
-                                        {categoryImage ? (
-                                          <img 
-                                            src={categoryImage}
-                                            alt=""
-                                            className="w-12 h-12 rounded-lg object-contain"
-                                          />
-                                        ) : (
-                                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                            categoryId === category.id ? 'bg-white/20' : 'bg-gray-100'
-                                          }`}>
-                                            <FolderTree className={`w-6 h-6 ${categoryId === category.id ? 'text-white' : 'text-gray-400'}`} />
-                      </div>
-                                        )}
-                      <div>
-                                          <div 
-                                            className={`font-medium ${categoryId === category.id ? 'text-white' : ''}`}
-                                            style={{ 
-                                              fontSize: '14px',
-                                              lineHeight: '18px',
-                                              fontWeight: 500,
-                                              fontFamily: HP_FONT,
-                                              color: categoryId === category.id ? 'rgb(255, 255, 255)' : 'rgb(34, 34, 34)'
-                                            }}
-                                          >
-                                            {category.name}
-                      </div>
-                                          <div 
-                                            style={{ 
-                                              fontSize: '14px',
-                                              lineHeight: '18px',
-                                              fontWeight: 400,
-                                              fontFamily: HP_FONT,
-                                              color: categoryId === category.id ? 'rgba(255, 255, 255, 0.8)' : 'rgb(106, 106, 106)'
-                                            }}
-                                          >
-                                            Explorar servicios
-                      </div>
-                      </div>
-                    </button>
-                                    );
-                                  })}
+                                    />
+                                  ))}
                                 {normalizedCategories
-                                  .filter(cat => cat.isActive)
+                                  .filter(cat => cat.isActive && !isVehiculosParentCategory(cat))
                                   .filter(cat => {
                                     if (categorySearchQuery.trim()) {
                                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
@@ -1104,7 +1499,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                     return true;
                                   }).length === 0 && (
                                   <div 
-                                    className="text-center py-4 text-gray-500"
+                                    className="text-center py-4 text-[#737373]"
                                     style={{ 
                                       fontSize: '14px',
                                       lineHeight: '18px',
@@ -1127,13 +1522,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {/* Separador y flecha al final - Solo cuando NO está expandido Y NO es móvil */}
                 {/* ✅ En móvil: Nunca mostrar la flecha de expandir */}
                 {expandedAccordion !== 'where' && !isMobile && (
-                  <div className="border-t border-gray-200 mt-auto">
+                  <div className="border-t border-[#e8e8e8] mt-auto">
                     <button
                       type="button"
                       onClick={() => setExpandedAccordion('where')}
                       className="w-full flex items-center justify-center py-3 bg-transparent border-none cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      <ChevronDown className="w-4 h-4 text-gray-600" style={{ strokeWidth: 2.5 }} />
+                      <ChevronDown className="w-4 h-4 text-[#6a6a6a]" style={{ strokeWidth: 2.5 }} />
                     </button>
                   </div>
                 )}
@@ -1149,7 +1544,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 >
                   <div className="flex flex-col items-start">
                     <span 
-                      className="font-semibold text-gray-900 mb-1"
+                      className="font-semibold text-[#1c1c1c] mb-1"
                       style={{ 
                         fontSize: '12px',
                         lineHeight: '16px',
@@ -1160,7 +1555,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       Tipo de servicio
                     </span>
                     <span 
-                      className="text-gray-500"
+                      className="text-[#737373]"
                       style={{ 
                         fontSize: '14px',
                         lineHeight: '18px',
@@ -1171,7 +1566,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       {selectedServiceType?.name || 'Añade tipo'}
                     </span>
                   </div>
-                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
+                  <ChevronDown className={`w-3 h-3 text-[#a0a0a0] transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'type' && (
@@ -1206,17 +1601,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               setExpandedAccordion('type');
                             }}
                             className={`w-full px-4 py-4 rounded-lg text-left transition-colors flex flex-col gap-1 ${
-                              serviceTypeId === st.id 
-                                ? 'bg-gray-900 text-white' 
-                                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                              serviceTypeId === st.id
+                                ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)]'
+                                : 'bg-[#fafafa] text-[#1c1c1c] hover:bg-[#f5f5f5]'
                             }`}
                           >
                             <span className="text-sm font-semibold">{st.name}</span>
                             {st.description && (
                               <span className={`text-xs ${
                                 serviceTypeId === st.id 
-                                  ? 'text-gray-300' 
-                                  : 'text-gray-600'
+                                  ? 'text-[#d4d4d4]' 
+                                  : 'text-[#6a6a6a]'
                               }`}>
                                 {st.description}
                               </span>
@@ -1238,11 +1633,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
                   className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
                 >
-                  <label className="text-xs font-semibold text-gray-900 flex items-center gap-1" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+                  <label className="text-xs font-semibold text-[#1c1c1c] flex items-center gap-1" style={{ fontFamily: HP_FONT }}>
                       URL del anuncio
-                    <span className="text-gray-400 font-normal">(opcional)</span>
+                    <span className="text-[#a0a0a0] font-normal">(opcional)</span>
                   </label>
-                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
+                  <ChevronDown className={`w-3 h-3 text-[#a0a0a0] transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'url' && (
@@ -1252,7 +1647,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       placeholder="Pega la URL aquí..."
                         value={adUrl}
                         onChange={(e) => setAdUrl(e.target.value)}
-                      className="w-full px-4 py-4 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
+                      className="w-full px-4 py-4 border border-[#e8e8e8] rounded-lg text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
                       autoFocus
                     />
                     </div>
@@ -1264,7 +1659,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
           {/* ✅ OCULTAR en móvil: Botones de acción */}
           {!isMobile && (
-          <div className="px-4 py-5 border-t border-gray-200 bg-white flex justify-between gap-4">
+          <div className="px-4 py-5 border-t border-[#e8e8e8] bg-white flex justify-between gap-4">
             <button
               type="button"
               onClick={() => {
@@ -1274,7 +1669,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 setCategorySearchQuery('');
                 setExpandedAccordion(null);
               }}
-              className="px-4 py-2 text-sm font-semibold text-gray-900 underline bg-transparent border-none cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold text-[#1c1c1c] underline bg-transparent border-none cursor-pointer"
             >
               Restablecer
             </button>
@@ -1326,13 +1721,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           {/* Barra de búsqueda mejorada */}
           <div className="px-4 pt-3 pb-3 flex-shrink-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a0a0a0] pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar categorías..."
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand focus:bg-white transition-all border border-[#ebebeb]/80"
+                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-[#1c1c1c] placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-brand focus:bg-white transition-all border border-[#ebebeb]/80"
                 style={{
                   fontSize: '14px',
                   lineHeight: '18px',
@@ -1363,7 +1758,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 </div>
               </SkeletonTheme>
             ) : (
-              <div className="flex flex-col pb-4">
+              <div className="flex flex-col gap-2 pb-4">
                 {categoriesForDrawerModal
                   .filter(cat => {
                     if (categorySearchQuery.trim()) {
@@ -1371,53 +1766,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     }
                     return true;
                   })
-                  .map((category) => {
-                    const categoryImage = getCategoryImage(category.name);
-                    const isSelected = categoryId === category.id;
-                    
-                    return (
-                      <button
+                  .map((category) => (
+                      <CategoryPickerRow
                         key={category.id}
-                        type="button"
+                        name={category.name}
+                        isSelected={categoryId === category.id}
                         onClick={() => handleDrawerCategoryClick(category.id, category.name)}
-                        className={`flex items-center gap-4 px-4 py-4 transition-colors w-full rounded-xl border ${
-                          isSelected
-                            ? 'border-brand/30 bg-brand/8'
-                            : 'border-transparent hover:bg-[#f9fafb]'
-                        }`}
-                      >
-                        {categoryImage ? (
-                          <img
-                            src={categoryImage}
-                            alt={category.name}
-                            className="flex-shrink-0 w-10 h-10 object-contain rounded-md"
-                          />
-                        ) : (
-                          <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
-                            <FolderTree className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 text-left min-w-0">
-                          <h3
-                            className="leading-tight mb-0.5"
-                            style={{ ...hpCardText.title }}
-                          >
-                            {category.name}
-                          </h3>
-                          <p style={{ ...hpType.body, color: HP_COLOR.muted }}>
-                            Explorar servicios
-                          </p>
-                        </div>
-                        
-                        {isSelected && (
-                          <div className="flex-shrink-0">
-                            <div className="w-2 h-2 rounded-full bg-brand" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                      />
+                    ))}
                 
                 {normalizedCategories
                   .filter(cat => {
@@ -1430,7 +1786,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   .filter(cat => cat.isActive).length === 0 && (
                   <div className="flex items-center justify-center py-12">
                     <div 
-                      className="text-sm text-gray-500"
+                      className="text-sm text-[#737373]"
                       style={{
                         fontSize: '14px',
                         lineHeight: '18px',

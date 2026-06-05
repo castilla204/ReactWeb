@@ -79,6 +79,11 @@ const SearchCreationPage: React.FC = () => {
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [selectedCountry, setSelectedCountry] = useState<string>('es');
     const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
+    const [areServicesReady, setAreServicesReady] = useState<boolean>(false);
+    // ✅ Bloquear la página hasta que mapa + servicios estén listos. Sin esto, el
+    //    usuario veía primero "Sin opciones aquí" y al rato aparecían las cards →
+    //    feo. Fallback: a los 5s mostramos sí o sí (por si el backend nunca responde).
+    const isPageReady = isMapLoaded && areServicesReady;
     
     // Inicializar ubicación con coordenadas de searchParameters o país por defecto
     useEffect(() => {
@@ -97,7 +102,19 @@ const SearchCreationPage: React.FC = () => {
     }, [searchParameters.latitude, searchParameters.longitude, selectedCountry]);
     
     // El mapa se actualiza automáticamente con el nuevo MapContainer
-    
+
+    // ✅ Fallback: si tras 5s la página sigue oculta (backend lento o caído),
+    //    forzamos a mostrarla para que el usuario no se quede en skeleton infinito.
+    React.useEffect(() => {
+        if (currentStep !== 1) return;
+        if (isPageReady) return;
+        const t = setTimeout(() => {
+            setIsMapLoaded(true);
+            setAreServicesReady(true);
+        }, 5000);
+        return () => clearTimeout(t);
+    }, [currentStep, isPageReady]);
+
     // Notificar a App.tsx cuando estamos en un formulario (step 1, 2 o 3) para ocultar el header en móvil
     React.useEffect(() => {
         if (currentStep === 1 || currentStep === 2 || currentStep === 3) {
@@ -108,6 +125,7 @@ const SearchCreationPage: React.FC = () => {
         // Resetear isMapLoaded cuando se sale del paso 1
         if (currentStep !== 1) {
             setIsMapLoaded(false);
+            setAreServicesReady(false);
         }
         // Disparar evento para que App.tsx pueda reaccionar
         window.dispatchEvent(new CustomEvent('formStepChanged', { detail: { step: currentStep } }));
@@ -585,10 +603,12 @@ const SearchCreationPage: React.FC = () => {
             )}
                     {currentStep === 1 && (
                 <>
-                    {/* ✅ Mostrar skeleton mientras carga el mapa */}
-                    {!isMapLoaded && <MapPageSkeleton />}
-                    
-                    <div className={`relative flex h-[100dvh] w-full flex-col overflow-hidden bg-white ${!isMapLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
+                    {/* ✅ Mostrar skeleton mientras carga el mapa Y los servicios.
+                        Sin la espera a servicios, el usuario veía la página vacía
+                        y al rato aparecían las cards → mal UX. */}
+                    {!isPageReady && <MapPageSkeleton />}
+
+                    <div className={`relative flex h-[100dvh] w-full flex-col overflow-hidden bg-white ${!isPageReady ? 'pointer-events-none opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
                         {searchParameters.category && searchParameters.serviceTypeId ? (
                             <SearchParameterForm
                                 onComplete={handleParametersComplete}
@@ -598,6 +618,7 @@ const SearchCreationPage: React.FC = () => {
                                 initialUserSearch={searchParameters.userSearch || ''}
                                 serviceTypeId={searchParameters.serviceTypeId}
                                 onMapReady={() => setIsMapLoaded(true)}
+                                onServicesReady={() => setAreServicesReady(true)}
                             />
                         ) : (
                             <SearchParameterForm
@@ -608,6 +629,7 @@ const SearchCreationPage: React.FC = () => {
                                 initialUserSearch={searchParameters.userSearch || ''}
                                 serviceTypeId={searchParameters.serviceTypeId || null}
                                 onMapReady={() => setIsMapLoaded(true)}
+                                onServicesReady={() => setAreServicesReady(true)}
                             />
                         )}
                     </div>

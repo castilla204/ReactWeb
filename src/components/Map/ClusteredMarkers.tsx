@@ -149,43 +149,74 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     isSelected: boolean,
     isHovered: boolean
   ) => {
-    el.style.padding = '6px 14px';
-    el.style.borderRadius = '9999px';
-    el.style.fontWeight = '700';
-    el.style.fontSize = '14px';
+    // ⚠️ Wobble-fix: NO aplicar `transition: transform ...` ni `transform: scale(...)`
+    //    al `el` que MapLibre posiciona. MapLibre escribe `transform` de este nodo en
+    //    cada frame del pan, y una transition sobre `transform` hace que el marker
+    //    "persiga" su posición real con ~150 ms de lag elástico (wobble visible al
+    //    arrastrar). El scale del hover se aplica a un `<span>` hijo aislado.
+    el.style.padding = '0';
+    el.style.background = 'transparent';
+    el.style.border = 'none';
     el.style.cursor = 'pointer';
     el.style.whiteSpace = 'nowrap';
-    el.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease';
-    el.style.border = isSelected ? 'none' : isHovered ? '2px solid hsl(var(--brand))' : '1.5px solid #e5e5e5';
-    el.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
-    el.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
-    el.style.boxShadow = isSelected
+    el.style.boxShadow = 'none';
+    el.style.transform = ''; // ⛔ NUNCA escribir transform aquí (MapLibre es dueño)
+
+    // Crear (o reutilizar) el hijo interno que sí anima libremente
+    let inner = el.firstElementChild as HTMLSpanElement | null;
+    if (!inner || inner.dataset.role !== 'pill') {
+      el.textContent = '';
+      inner = document.createElement('span');
+      inner.dataset.role = 'pill';
+      inner.style.display = 'inline-flex';
+      inner.style.alignItems = 'center';
+      inner.style.justifyContent = 'center';
+      inner.style.padding = '6px 14px';
+      inner.style.borderRadius = '9999px';
+      inner.style.fontWeight = '700';
+      inner.style.fontSize = '14px';
+      inner.style.whiteSpace = 'nowrap';
+      inner.style.willChange = 'transform';
+      inner.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease';
+      el.appendChild(inner);
+    }
+    inner.style.borderStyle = 'solid';
+    inner.style.borderWidth = isSelected ? '0' : isHovered ? '2px' : '1.5px';
+    inner.style.borderColor = isSelected ? 'transparent' : isHovered ? 'hsl(var(--brand))' : '#e5e5e5';
+    inner.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
+    inner.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
+    inner.style.boxShadow = isSelected
       ? '0 4px 16px hsl(var(--brand) / 0.45)'
       : isHovered
         ? '0 4px 14px hsl(var(--brand) / 0.28)'
         : '0 2px 6px rgba(0,0,0,0.25)';
-    el.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
-    el.textContent = service.price > 0
+    inner.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
+    inner.textContent = service.price > 0
       ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
       : 'Consultar';
     el.setAttribute('aria-label', `Servicio ${service.name}`);
   };
 
   // Sólo afecta a los estados visuales del marker — sin tocar el DOM ni el set.
+  // ⚠️ Wobble-fix: muta el hijo `pill`, NUNCA el `el` que MapLibre reposiciona.
   const updateServiceVisualState = (
     el: HTMLButtonElement,
     isSelected: boolean,
     isHovered: boolean
   ) => {
-    el.style.border = isSelected ? 'none' : isHovered ? '2px solid hsl(var(--brand))' : '1.5px solid #e5e5e5';
-    el.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
-    el.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
-    el.style.boxShadow = isSelected
+    const inner = el.firstElementChild as HTMLSpanElement | null;
+    if (!inner || inner.dataset.role !== 'pill') return;
+    inner.style.borderStyle = 'solid';
+    inner.style.borderWidth = isSelected ? '0' : isHovered ? '2px' : '1.5px';
+    inner.style.borderColor = isSelected ? 'transparent' : isHovered ? 'hsl(var(--brand))' : '#e5e5e5';
+    inner.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
+    inner.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
+    inner.style.boxShadow = isSelected
       ? '0 4px 16px hsl(var(--brand) / 0.45)'
       : isHovered
         ? '0 4px 14px hsl(var(--brand)/0.28)'
         : '0 2px 6px rgba(0,0,0,0.25)';
-    el.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
+    inner.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
   };
 
   /**
@@ -222,7 +253,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
             const expansionZoom = Math.max(suggestedZoom, currentZoom + 1);
             map.easeTo({ center: [lng, lat], zoom: expansionZoom, duration: 350 });
           });
-          const marker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+          const marker = new maplibregl.Marker({
+            element: el,
+            anchor: 'center',
+            pitchAlignment: 'map',
+            rotationAlignment: 'map',
+          }).setLngLat([lng, lat]).addTo(map);
           entry = { kind: 'cluster', marker, element: el };
           entriesRef.current.set(key, entry);
         } else {
@@ -247,7 +283,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         el.type = 'button';
         applyServiceStyle(el, service, isSelected, isHovered);
         el.addEventListener('click', () => onServiceClickRef.current?.(service));
-        const marker = new maplibregl.Marker({ element: el }).setLngLat([service.lng, service.lat]).addTo(map);
+        const marker = new maplibregl.Marker({
+          element: el,
+          anchor: 'center',
+          pitchAlignment: 'map',
+          rotationAlignment: 'map',
+        }).setLngLat([service.lng, service.lat]).addTo(map);
         entry = { kind: 'service', marker, element: el, serviceId: service.id };
         entriesRef.current.set(key, entry);
       } else {
@@ -256,9 +297,14 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         // Antes esta rama (cuando el clustering reciclaba un marker DOM existente al mover el viewport)
         // sobrescribía cualquier símbolo correcto que applyServiceStyle hubiera puesto inicialmente.
         // Resultado: experto US con servicio USD se veía $25 al primer render y luego €25 al mover el mapa.
-        entry.element.textContent = service.price > 0
-          ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
-          : 'Consultar';
+        // ⚠️ Wobble-fix: el texto vive en el hijo `pill` (no en `entry.element`), porque
+        //    el botón externo debe permanecer libre de mutaciones que rompan el fix.
+        const inner = entry.element.firstElementChild as HTMLSpanElement | null;
+        if (inner && inner.dataset.role === 'pill') {
+          inner.textContent = service.price > 0
+            ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
+            : 'Consultar';
+        }
       }
     });
 

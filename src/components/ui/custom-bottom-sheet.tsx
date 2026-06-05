@@ -23,6 +23,10 @@ interface CustomBottomSheetProps {
   snapToSequentialPoint?: boolean;
   scrollLockTimeout?: number;
   onCloseRequest?: () => void;
+  /** Si true y headerContent está presente, NO renderiza el X automático.
+   *  Útil cuando el headerContent ya incluye su propio botón de minimizar
+   *  (evita el solape entre el X absolute y el contenido del header). */
+  hideCloseButton?: boolean;
 }
 
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.9 };
@@ -49,6 +53,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   onActiveSnapPointChange,
   dismissible = false,
   onCloseRequest,
+  hideCloseButton = false,
   // snapToSequentialPoint y scrollLockTimeout aceptados por compat — el handoff
   // físico ya emula "un snap por gesto" y la ventana de bloqueo es implícita.
 }) => {
@@ -261,16 +266,20 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           {headerContent ? (
             <div className="relative shrink-0 border-b border-[#e8e8e8]">
               {headerContent}
-              {/* X minimizar — pequeño y arriba (fila handle), nunca sobre los chips de filtros */}
-              <button
-                type="button"
-                data-no-drag
-                onClick={handleDismiss}
-                className="absolute right-1.5 top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[#888] active:bg-[#f4f4f4] transition-colors"
-                aria-label="Minimizar lista"
-              >
-                <X className="h-4 w-4" strokeWidth={2.2} />
-              </button>
+              {/* X minimizar — solo si hideCloseButton=false. Cuando el headerContent
+                  ya integra su propio botón de minimizar (caso MapMobileDrawerHeader),
+                  pasar hideCloseButton=true para evitar el solape con los chips. */}
+              {!hideCloseButton && (
+                <button
+                  type="button"
+                  data-no-drag
+                  onClick={handleDismiss}
+                  className="absolute right-1.5 top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[#888] active:bg-[#f4f4f4] transition-colors"
+                  aria-label="Minimizar lista"
+                >
+                  <X className="h-4 w-4" strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           ) : title ? (
             <div className="flex shrink-0 items-center justify-between border-b border-[#e8e8e8] px-4 py-2">

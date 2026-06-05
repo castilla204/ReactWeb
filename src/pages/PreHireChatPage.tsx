@@ -255,7 +255,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-600 mb-4">ID de servicio inválido</p>
+                    <p className="text-[#6a6a6a] mb-4">ID de servicio inválido</p>
                 </div>
             </div>
         );
@@ -265,7 +265,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-600 mb-4">Cargando información del servicio...</p>
+                    <p className="text-[#6a6a6a] mb-4">Cargando información del servicio...</p>
                 </div>
             </div>
         );
@@ -275,7 +275,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-600 mb-4">No se pudo cargar la información del servicio.</p>
+                    <p className="text-[#6a6a6a] mb-4">No se pudo cargar la información del servicio.</p>
                 </div>
             </div>
         );
@@ -386,7 +386,7 @@ export function PreHireChatPage() {
                             </button>
                             <Link 
                                 to={`/service/${serviceIdNumber}`}
-                                className="font-semibold text-gray-900 hover:opacity-80 transition-opacity"
+                                className="font-semibold text-[#1c1c1c] hover:opacity-80 transition-opacity"
                             >
                                 {expertName}
                             </Link>
@@ -432,7 +432,7 @@ export function PreHireChatPage() {
                                                     lineHeight: '20px',
                                                     fontWeight: 400,
                                                     color: 'rgb(34, 34, 34)',
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
                                                     marginBottom: '4px',
                                                 }}
                                             >
@@ -446,7 +446,7 @@ export function PreHireChatPage() {
                                                                 key={star}
                                                                 className={`w-3.5 h-3.5 ${
                                                                     star <= Math.round(expertRating)
-                                                                        ? 'fill-gray-900 text-gray-900'
+                                                                        ? 'fill-gray-900 text-[#1c1c1c]'
                                                                         : 'fill-gray-200 text-gray-200'
                                                                 }`}
                                                             />
@@ -458,7 +458,7 @@ export function PreHireChatPage() {
                                                             lineHeight: '20px',
                                                             fontWeight: 400,
                                                             color: 'rgb(113, 113, 113)',
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
                                                         }}
                                                     >
                                                         {expertRating.toFixed(1)} ({reviewsCount})
@@ -472,7 +472,7 @@ export function PreHireChatPage() {
                                                         lineHeight: '20px',
                                                         fontWeight: 400,
                                                         color: 'rgb(113, 113, 113)',
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
                                                         marginTop: '4px',
                                                     }}
                                                 >
@@ -503,20 +503,20 @@ export function PreHireChatPage() {
                                 </div>
                             </div>
 
-                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-gray-700">
+                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-[#1c1c1c]">
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-gray-500" />}
+                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-[#737373]" />}
                                     <span className="truncate">{locationLabel}</span>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    <Clock className="h-4 w-4 text-gray-500" />
+                                    <Clock className="h-4 w-4 text-[#737373]" />
                                     <span className="truncate">Mensajes antes de contratar</span>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowMapPreview((value) => !value)}
                                     disabled={!hasExpertLocation}
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-gray-900 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-[#1c1c1c] shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-expanded={showMapPreview}
                                 >
                                     <MapPin className="h-4 w-4 text-[#E31C5F]" />
@@ -554,22 +554,22 @@ export function PreHireChatPage() {
                                         fontSize: '14px',
                                         lineHeight: '20px',
                                         fontWeight: 600,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
                                     }}
                                 >
                                     <Heart 
-                                        className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
+                                        className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-[#6a6a6a]'}`}
                                     />
                                     Favorito
                                 </Button>
                                 <Button
                                     onClick={handleHireClick}
-                                    className="flex-1 rounded-full bg-gradient-to-r from-[#E61E4D] via-[#E31C5F] to-[#D70466] hover:from-[#D70466] hover:via-[#E61E4D] hover:to-[#E31C5F] text-white font-semibold"
+                                    className="flex-1 rounded-full bg-brand hover:bg-brand-hover text-white font-semibold transition-colors shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
                                     style={{
                                         fontSize: '14px',
                                         lineHeight: '20px',
                                         fontWeight: 600,
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
                                     }}
                                 >
                                     Contratar
