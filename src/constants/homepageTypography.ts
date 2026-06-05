@@ -181,43 +181,91 @@ export const hpCardText = {
 /** Paso mapa (crear-busqueda step=map) — gutters y márgenes unificados */
 export const MAP_DESKTOP_PANEL_GUTTER = 'px-5 xl:px-6';
 
-export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-4 pt-1.5`;
+export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-4 pt-0`;
 
 export const MAP_DESKTOP_GRID_CLASS =
-  'grid w-full grid-cols-1 gap-3.5 lg:grid-cols-2 lg:gap-3.5 xl:gap-4';
+  // Antes: siempre 2 cols a partir de lg → en monitores grandes la lista respiraba
+  // poco y cada card era muy estrecha. Ahora: 2 cols en lg/xl, 3 cols en 2xl+.
+  'grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-4 xl:gap-5 2xl:grid-cols-3';
 
 /**
- * Desktop: fila 1 = cabecera unificada (2 cols), fila 2 = lista + mapa.
+ * Desktop: una sola fila lista + mapa bajo la topbar.
+ * Antes había un `auto` extra para el page header editorial — robaba ~110px al mapa
+ * y dejaba un hueco blanco a la derecha (mitad de la fila 1). Ahora el mapa nace
+ * a +52px (topbar) y ocupa 100dvh-52px; la microcabecera del panel vive DENTRO
+ * del scroll de la columna 1, no compite con el mapa.
+ * Lista más ancha en pantallas grandes para encajar 3 cards/fila a partir de 2xl.
  */
 export const MAP_DESKTOP_SPLIT_CLASS =
-  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(460px,42vw,780px)_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)]';
+  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(480px,46vw,1040px)_minmax(0,1fr)]';
 
-export const MAP_DESKTOP_UNIFIED_HEADER_CLASS =
-  'hidden shrink-0 bg-white lg:col-span-2 lg:row-start-1 lg:block px-5 pb-3.5 pt-4 xl:px-6';
+/** Microcabecera DEL PANEL DE CARDS (no full-width). Vive dentro del scroll de
+ *  la columna izquierda → no resta altura al mapa. Sticky para que el contexto
+ *  ("Compara antes de reservar · N expertos · zona") quede pinned al hacer scroll. */
+export const MAP_DESKTOP_PANEL_HEADER_CLASS =
+  'sticky top-0 z-10 -mx-5 mb-2 border-b border-[#f0f0f0] bg-white/95 px-5 pb-2.5 pt-3 backdrop-blur-sm xl:-mx-6 xl:px-6';
 
-export const MAP_DESKTOP_PAGE_TITLE_CLASS =
-  'font-display text-xl font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c] xl:text-[21px]';
+export const MAP_DESKTOP_PANEL_HEADER_TITLE_CLASS =
+  'font-display text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
 
-export const MAP_DESKTOP_PAGE_LEAD_CLASS =
-  'mt-2 max-w-2xl text-sm font-normal leading-relaxed text-[#6a6a6a]';
+export const MAP_DESKTOP_PANEL_HEADER_META_CLASS =
+  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-display text-[12.5px] font-medium leading-[1.3] text-[#6a6a6a]';
+
+export const MAP_DESKTOP_PANEL_HEADER_META_STRONG_CLASS =
+  'font-semibold text-[#1c1c1c] tabular-nums';
+
+export const MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS = 'text-[#c8c8c8]';
+
+/** Topbar variant="mapStep" — fusiona la topbar antigua con stepper + chips meta del flow.
+ *  Mata el aire muerto del centro de la topbar y ahorra ~50px verticales en el sidebar.  */
+export const MAP_STEP_TOPBAR_SHELL_CLASS =
+  'sticky top-0 z-50 hidden md:block border-b border-[#ececec] bg-white/95 backdrop-blur-sm';
+
+export const MAP_STEP_TOPBAR_INNER_CLASS =
+  'flex min-h-[52px] w-full items-center gap-3 px-4 md:px-5 lg:px-6';
+
+export const MAP_STEP_TOPBAR_PILL_ACTIVE =
+  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white text-[11px] font-semibold tabular-nums leading-none shadow-[0_1px_4px_hsl(var(--brand)/0.35)]';
+
+export const MAP_STEP_TOPBAR_PILL_DONE =
+  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand/15 text-brand text-[11px] font-semibold tabular-nums leading-none';
+
+export const MAP_STEP_TOPBAR_PILL_IDLE =
+  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f3f3f3] text-[#9aa0a6] text-[11px] font-semibold tabular-nums leading-none';
+
+export const MAP_STEP_TOPBAR_LABEL_ACTIVE =
+  'text-[12.5px] font-semibold tracking-tight text-[#1c1c1c]';
+
+export const MAP_STEP_TOPBAR_LABEL_IDLE =
+  'text-[12.5px] font-medium tracking-tight text-[#6a6a6a]';
+
+export const MAP_STEP_TOPBAR_DIVIDER =
+  'mx-2 hidden h-5 w-px bg-[#ececec] xl:block';
+
+export const MAP_STEP_TOPBAR_META_CHIP =
+  'inline-flex items-center gap-1 rounded-full bg-[#f6f6f6] ring-1 ring-[#ececec] px-2.5 py-1 text-[11.5px] font-medium text-[#5a5a5a] whitespace-nowrap';
+
+export const MAP_STEP_TOPBAR_META_CHIP_BRAND =
+  'inline-flex items-center gap-1 rounded-full bg-brand/[0.08] ring-1 ring-brand/15 px-2.5 py-1 text-[11.5px] font-semibold text-brand whitespace-nowrap';
 
 export const MAP_META_CHIP_CLASS =
-  'inline-flex items-center rounded-full bg-brand/[0.08] px-2.5 py-1 text-[11px] font-semibold text-brand';
+  'inline-flex items-center rounded-full bg-brand/[0.08] ring-1 ring-brand/15 px-2.5 py-1 text-[11px] font-semibold text-brand';
 
 export const MAP_META_CHIP_MUTED_CLASS =
-  'inline-flex items-center rounded-full bg-[#f4f4f4] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
+  'inline-flex items-center rounded-full bg-[#f5f5f5] ring-1 ring-[#ececec] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
 
 export const MAP_DESKTOP_LIST_CELL_CLASS =
-  'hidden min-h-0 overflow-hidden bg-white lg:col-start-1 lg:row-start-2 lg:block';
+  'hidden min-h-0 overflow-hidden bg-white lg:col-start-1 lg:row-start-1 lg:block';
 
 export const MAP_PANEL_SCROLL_CLASS = 'map-panel-scroll';
 
 export const MAP_DESKTOP_SCROLL_CLASS =
   `${MAP_PANEL_SCROLL_CLASS} h-full min-h-0 overflow-y-auto overscroll-contain`;
 
-/** Mapa fila 2 — alineado con las cards */
+/** Mapa — única fila bajo la topbar. Padding superior reducido para que el mapa
+ *  arranque casi pegado a la topbar (antes pt-1.5 colaba bajo el header editorial). */
 export const MAP_DESKTOP_MAP_WRAP_CLASS =
-  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-4 pt-1.5 lg:col-start-2 lg:row-start-2 lg:flex xl:pr-6 xl:pb-5';
+  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-4 pt-3 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-5 xl:pt-3.5';
 
 export const MAP_DESKTOP_MAP_INNER_CLASS =
   'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl';
@@ -234,7 +282,36 @@ export const MAP_PAGE_SUBTITLE_CLASS =
 export const MAP_PAGE_SUBTITLE_MOBILE_CLASS =
   'mt-1.5 text-sm font-normal leading-[1.45] text-[#6a6a6a]';
 
-export const MAP_MOBILE_DRAWER_HEADER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-3 pt-2.5 pr-12`;
+/**
+ * Cabecera drawer móvil — refactor:
+ *  - handle visible arriba (grabber 36×4) → affordance de drag clara
+ *  - meta inline (N expertos · ciudad · ~radio km) — info útil
+ *  - fila de filtros rápidos (chips scrollables) — ordenar/precio/valoración
+ *  - sin pr-12 (la X de cierre se reposiciona como pulsador 44×44 fuera del flujo)
+ */
+export const MAP_MOBILE_DRAWER_HEADER_CLASS = `relative ${SD_MOBILE_GUTTER_CLASS} pb-2.5 pt-1`;
+
+export const MAP_MOBILE_DRAWER_HANDLE_WRAP_CLASS = 'flex w-full justify-center';
+export const MAP_MOBILE_DRAWER_HANDLE_CLASS =
+  'mt-1 mb-1.5 h-1 w-9 rounded-full bg-[#d8d8d8]';
+
+export const MAP_MOBILE_META_ROW_CLASS =
+  // Sin pr-9: ya no hay X cierre que solape a la derecha → meta usa todo el ancho.
+  'flex items-center gap-1.5 text-[12.5px] font-medium leading-[1.3] text-[#6a6a6a] font-display';
+export const MAP_MOBILE_META_STRONG_CLASS =
+  'font-semibold text-[#1c1c1c] tabular-nums';
+export const MAP_MOBILE_META_SEP_CLASS = 'mx-0.5 text-[#c8c8c8]';
+
+export const MAP_MOBILE_FILTER_ROW_CLASS =
+  // mt-3 (12px) en lugar de mt-2 (8px): aire claro entre meta y chips, ningún elemento
+  //   superior puede dar la sensación de "tapar" la fila de filtros.
+  'mt-3 flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+export const MAP_MOBILE_FILTER_CHIP_CLASS =
+  // h-10 (40px) en vez de h-8 (32px) → chips más altos, parecen botones reales.
+  // px-3.5 + gap-1.5 → más respiración interna. Sombra sutil para "salir" del fondo blanco.
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white ring-1 ring-[#dcdcdc] px-3.5 h-10 text-[13px] font-semibold text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors active:bg-[#f4f4f4] font-display';
+export const MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS =
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand/10 ring-1 ring-brand/40 px-3.5 h-10 text-[13px] font-semibold text-brand shadow-[0_1px_2px_hsl(var(--brand)/0.15)] transition-colors font-display';
 
 export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-1.5`;
 
@@ -246,19 +323,19 @@ export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/
 export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
 export const MAP_CARD_EYEBROW_CLASS =
-  'text-[10px] font-semibold uppercase tracking-[0.08em] text-brand';
+  'text-[10px] font-semibold uppercase tracking-[0.085em] text-brand';
 
 export const MAP_CARD_NAME_CLASS =
-  'truncate text-[14px] font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
+  'truncate text-[15px] font-semibold leading-5 tracking-[-0.015em] text-[#1c1c1c]';
 
 export const MAP_CARD_HOOK_CLASS = 'line-clamp-1 text-[13px] font-normal leading-snug text-[#6a6a6a]';
 
 export const MAP_CARD_CHIP_CLASS =
-  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[11px] font-medium text-[#6a6a6a]';
+  'inline-flex items-center gap-1 rounded-full bg-[#f6f6f6] ring-1 ring-[#ececec] px-2 py-0.5 text-[11px] font-medium text-[#5a5a5a]';
 
-export const MAP_CARD_PRICE_CLASS = 'text-[16px] font-semibold leading-5 text-[#1c1c1c]';
+export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 tabular-nums tracking-tight text-[#1c1c1c]';
 
-export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-sm font-normal text-[#6a6a6a]';
+export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-[13px] font-normal text-[#6a6a6a]';
 
 export const MAP_CARD_BADGE_CLASS =
   'inline-flex items-center rounded-lg bg-white/95 px-2 py-1 font-display text-[10px] font-medium leading-3 text-[#222222] shadow-sm backdrop-blur-sm';
@@ -275,3 +352,25 @@ export const MAP_CARD_DESKTOP_SHADOW_ACTIVE =
 
 export const MAP_CARD_DESKTOP_SHADOW_HOVERED =
   'shadow-[0_6px_20px_rgba(0,0,0,0.11),0_2px_6px_rgba(0,0,0,0.06)]';
+
+/**
+ * Card móvil COMPACTA — fila horizontal imagen 96×96 + info derecha.
+ * Usada en el drawer cuando el servicio NO está seleccionado → densidad alta
+ * (2.5–3 cards en deployed 50% vs. 1.1 con layout hero).
+ * El servicio seleccionado conserva el layout hero (imagen 16:10 arriba) para
+ * destacarlo visualmente.
+ */
+export const MAP_CARD_MOBILE_COMPACT_WRAP_CLASS =
+  'relative flex items-stretch gap-3 p-2.5 font-display';
+export const MAP_CARD_MOBILE_COMPACT_IMG_CLASS =
+  'relative h-[96px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-[#f0f0f0]';
+export const MAP_CARD_MOBILE_COMPACT_INFO_CLASS =
+  'flex min-w-0 flex-1 flex-col justify-between py-0.5';
+export const MAP_CARD_MOBILE_NAME_CLASS =
+  'truncate text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
+export const MAP_CARD_MOBILE_META_CLASS =
+  'mt-0.5 truncate text-[12.5px] font-medium leading-[1.35] text-[#6a6a6a]';
+export const MAP_CARD_MOBILE_PRICE_CLASS =
+  'text-[16px] font-semibold leading-[1.15] tabular-nums tracking-tight text-[#1c1c1c]';
+export const MAP_CARD_MOBILE_FAV_BTN_CLASS =
+  'absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-[#1c1c1c] active:bg-[#f4f4f4] transition-colors';

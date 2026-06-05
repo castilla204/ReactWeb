@@ -149,17 +149,17 @@ const statusDisplayMap: Record<string, StatusDisplay> = {
         message: "Cita cancelada - sin respuesta",
         description: "La cita fue cancelada automáticamente porque no se recibió respuesta en el tiempo establecido.",
         icon: <Clock className="w-4 h-4" />,
-        color: "text-gray-700 dark:text-gray-300",
+        color: "text-[#1c1c1c] dark:text-gray-300",
         bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-gray-200 dark:border-gray-800"
+        borderColor: "border-[#e8e8e8] dark:border-gray-800"
     },
     "appointment_cancelled_by_no_report": {
         message: "Cita cancelada - sin reporte",
         description: "La cita fue cancelada automáticamente porque el experto no envió el reporte en el tiempo establecido.",
         icon: <FileText className="w-4 h-4" />,
-        color: "text-gray-700 dark:text-gray-300",
+        color: "text-[#1c1c1c] dark:text-gray-300",
         bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-gray-200 dark:border-gray-800"
+        borderColor: "border-[#e8e8e8] dark:border-gray-800"
     },
     "appointment_report_sent": {
         message: "📄 Reporte enviado",
@@ -191,9 +191,9 @@ const getStatusDisplay = (statusValue: string): StatusDisplay => {
     return statusDisplayMap[statusValue] ?? {
         message: `Estado: ${statusValue}`,
         icon: <HelpCircle className="w-4 h-4" />,
-        color: "text-gray-700 dark:text-gray-300",
+        color: "text-[#1c1c1c] dark:text-gray-300",
         bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-gray-200 dark:border-gray-800"
+        borderColor: "border-[#e8e8e8] dark:border-gray-800"
     };
 };
 
@@ -527,7 +527,7 @@ const Chat: React.FC<ChatProps> = ({
 
     if (!user) {
         return (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-[#737373]">
                 Inicia sesión para ver el chat.
             </div>
         );
@@ -535,7 +535,7 @@ const Chat: React.FC<ChatProps> = ({
 
     if (isChatLoading) {
         return (
-            <div className="flex items-center justify-center h-full text-gray-500">
+            <div className="flex items-center justify-center h-full text-[#737373]">
                 Cargando chat...
             </div>
         );
@@ -543,19 +543,19 @@ const Chat: React.FC<ChatProps> = ({
 
     if (error && !conversation) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-2 px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full text-[#737373] gap-2 px-4 text-center">
                 <p>No se pudo cargar el chat.</p>
-                <p className="text-xs text-gray-400">{error}</p>
+                <p className="text-xs text-[#a0a0a0]">{error}</p>
             </div>
         );
     }
 
     if (!conversation || !hasAccess) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 gap-1 px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full text-[#737373] gap-1 px-4 text-center">
                 <p>No tienes acceso a este chat.</p>
                 {!hasAccess && conversation && (
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-[#a0a0a0]">
                         Tu cuenta (ID {userId}) no coincide con cliente ni experto de esta contratación.
                     </p>
                 )}
@@ -597,26 +597,26 @@ const Chat: React.FC<ChatProps> = ({
     return (
         <div className="flex min-h-0 flex-1 flex-col h-full bg-[#e8ecf1]">
             {/* Cabecera */}
-            <div className="shrink-0 border-b border-white/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md">
+            <div className="shrink-0 border-b border-[#e8e8e8] bg-white px-4 py-3">
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button
                             type="button"
                             onClick={onBack}
                             aria-label="Volver y salir del chat"
-                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
+                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
                         >
-                            <ArrowLeft className="h-5 w-5 text-gray-700" />
+                            <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" />
                         </button>
                     )}
                     <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
                         <AvatarImage src={otherAvatarSrc || undefined} alt={otherParticipantName} />
-                        <AvatarFallback className="bg-gradient-to-br from-gray-700 to-gray-900 text-sm font-medium text-white">
+                        <AvatarFallback className="bg-brand text-sm font-semibold text-white">
                             {otherParticipantName.charAt(0).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold text-gray-900">
+                        <p className="truncate text-[15px] font-semibold text-[#1c1c1c]">
                             {otherParticipantName}
                         </p>
                         {peerPresenceStatus?.kind === 'typing' && (
@@ -635,10 +635,10 @@ const Chat: React.FC<ChatProps> = ({
                             </p>
                         )}
                         {peerPresenceStatus?.kind === 'lastSeen' && (
-                            <p className="mt-0.5 text-xs text-gray-500">{peerPresenceStatus.label}</p>
+                            <p className="mt-0.5 text-xs text-[#737373]">{peerPresenceStatus.label}</p>
                         )}
                         {!peerPresenceStatus && !isReconnecting && (
-                            <p className="mt-0.5 text-xs text-gray-400">Mensajes privados</p>
+                            <p className="mt-0.5 text-xs text-[#a0a0a0]">Mensajes privados</p>
                         )}
                     </div>
                     {isReconnecting && (
@@ -725,16 +725,16 @@ const Chat: React.FC<ChatProps> = ({
                                                 className={`flex min-w-0 flex-col gap-0.5 ${isOwnMessage ? 'items-end' : 'items-start'}`}
                                             >
                                                 {!isOwnMessage && isFirstInGroup && (
-                                                    <span className="mb-0.5 px-1 text-[11px] font-medium text-gray-500">
+                                                    <span className="mb-0.5 px-1 text-[11px] font-medium text-[#737373]">
                                                         {message.senderName || 'Usuario'}
                                                     </span>
                                                 )}
                                                 {message.content && (
                                                     <div
-                                                        className={`px-3.5 py-2.5 text-sm shadow-md transition-shadow ${
+                                                        className={`px-3.5 py-2.5 text-sm transition-shadow ${
                                                             isOwnMessage
-                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/20'
-                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-white/80 bg-white text-gray-900 shadow-black/5'
+                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)]'
+                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-[#e8e8e8] bg-white text-[#1c1c1c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
                                                         }`}
                                                     >
                                                         <p className="whitespace-pre-wrap break-words leading-relaxed">
@@ -743,7 +743,7 @@ const Chat: React.FC<ChatProps> = ({
                                                     </div>
                                                 )}
                                                 {isLastInGroup && (
-                                                    <span className="px-1 text-[10px] tabular-nums text-gray-400">
+                                                    <span className="px-1 text-[10px] tabular-nums text-[#a0a0a0]">
                                                         {new Date(message.sentAt).toLocaleTimeString('es-ES', {
                                                             hour: '2-digit',
                                                             minute: '2-digit',
@@ -772,12 +772,12 @@ const Chat: React.FC<ChatProps> = ({
                     ) : (
                         <div className="flex min-h-[min(280px,50vh)] flex-1 flex-col items-center justify-center px-6 py-8">
                             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md">
-                                <MessageSquare className="h-7 w-7 text-gray-400" strokeWidth={1.5} />
+                                <MessageSquare className="h-7 w-7 text-[#a0a0a0]" strokeWidth={1.5} />
                             </div>
-                            <p className="text-center text-sm font-medium text-gray-700">
+                            <p className="text-center text-sm font-medium text-[#1c1c1c]">
                                 Aún no hay mensajes
                             </p>
-                            <p className="mt-1 max-w-[240px] text-center text-xs leading-relaxed text-gray-500">
+                            <p className="mt-1 max-w-[240px] text-center text-xs leading-relaxed text-[#737373]">
                                 Escribe abajo para coordinar el servicio con {otherParticipantName}.
                             </p>
                         </div>
@@ -792,9 +792,9 @@ const Chat: React.FC<ChatProps> = ({
                     role="status"
                     aria-live="polite"
                 >
-                    <TypingDots className="text-gray-500" />
-                    <span className="text-xs text-gray-600">
-                        <span className="font-medium text-gray-800">{otherParticipantName}</span>
+                    <TypingDots className="text-[#737373]" />
+                    <span className="text-xs text-[#6a6a6a]">
+                        <span className="font-medium text-[#1c1c1c]">{otherParticipantName}</span>
                         {' '}
                         está escribiendo
                     </span>
@@ -802,7 +802,7 @@ const Chat: React.FC<ChatProps> = ({
             )}
 
             {/* Input */}
-            <div className="relative z-10 shrink-0 border-t border-gray-200/80 bg-white/95 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md sm:pt-4 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] lg:pb-0">
+            <div className="relative z-10 shrink-0 border-t border-[#e8e8e8] bg-white pt-3 shadow-[0_-2px_12px_rgba(15,23,42,0.04)] sm:pt-4 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] lg:pb-0">
                 <div className="flex items-end gap-2 px-3 sm:px-4">
                     <input
                         type="text"
@@ -828,7 +828,7 @@ const Chat: React.FC<ChatProps> = ({
                         }}
                         placeholder={isSending ? 'Enviando…' : 'Mensaje…'}
                         disabled={isSending}
-                        className="flex-1 rounded-2xl border border-gray-200/90 bg-gray-50/90 px-4 py-3 text-sm shadow-inner transition-all placeholder:text-gray-400 focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex-1 rounded-2xl border border-[#e8e8e8]/90 bg-gray-50/90 px-4 py-3 text-sm shadow-inner transition-all placeholder:text-[#a0a0a0] focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                     <Button
                         onClick={handleSendMessage}
@@ -860,7 +860,7 @@ const Chat: React.FC<ChatProps> = ({
                             <div
                                 className={[
                                     'flex items-center gap-1.5',
-                                    'text-gray-400 transition-colors duration-200',
+                                    'text-[#a0a0a0] transition-colors duration-200',
                                     isDetailsOpen ? 'text-primary' : 'group-hover:text-primary',
                                 ].join(' ')}
                             >
@@ -895,7 +895,7 @@ const Chat: React.FC<ChatProps> = ({
                             <span
                                 className={[
                                     'text-[10px] tracking-wide transition-colors duration-200',
-                                    isDetailsOpen ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                                    isDetailsOpen ? 'text-primary' : 'text-[#a0a0a0] group-hover:text-primary',
                                 ].join(' ')}
                             >
                                 {isDetailsOpen ? 'Ocultar' : 'Detalles'}
@@ -909,8 +909,8 @@ const Chat: React.FC<ChatProps> = ({
             {isMapModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-                        <div className="p-6 border-b border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900">Seleccionar Ubicación</h3>
+                        <div className="p-6 border-b border-[#e8e8e8]">
+                            <h3 className="text-lg font-semibold text-[#1c1c1c]">Seleccionar Ubicación</h3>
                         </div>
 
                         {mapboxToken ? (
@@ -947,13 +947,13 @@ const Chat: React.FC<ChatProps> = ({
                                     )}
                                 </Map>
                                 <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                                    <span className="text-sm text-gray-700 font-medium">
+                                    <span className="text-sm text-[#1c1c1c] font-medium">
                                         Haz clic para seleccionar una ubicación
                                     </span>
                                 </div>
                                 {selectedMapLocation && (
                                     <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                                        <span className="text-sm text-gray-700 font-mono">
+                                        <span className="text-sm text-[#1c1c1c] font-mono">
                                             {selectedMapLocation.lat.toFixed(4)}, {selectedMapLocation.lng.toFixed(4)}
                                         </span>
                                     </div>
@@ -965,10 +965,10 @@ const Chat: React.FC<ChatProps> = ({
                             </div>
                         )}
 
-                        <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3">
                             <button
                                 onClick={() => setIsMapModalOpen(false)}
-                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                                className="px-6 py-2 bg-[#f5f5f5] text-[#1c1c1c] rounded-xl hover:bg-gray-200 transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -997,21 +997,21 @@ const Chat: React.FC<ChatProps> = ({
                         />
                         <button
                             onClick={() => setSelectedImage(null)}
-                            className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition-colors"
+                            className="absolute top-4 right-4 bg-white border border-[#e8e8e8] hover:bg-[#fafafa] text-[#1c1c1c] rounded-full p-2 shadow-lg transition-colors"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                            <span className="text-sm text-gray-700 font-medium">
+                            <span className="text-sm text-[#1c1c1c] font-medium">
                                 {getFileName(selectedImage)}
                             </span>
                         </div>
                         <a
                             href={selectedImage}
                             download
-                            className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-lg px-4 py-2 shadow-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                            className="absolute bottom-4 right-4 bg-white border border-[#e8e8e8] hover:bg-[#fafafa] text-[#1c1c1c] rounded-lg px-4 py-2 shadow-lg transition-colors flex items-center gap-2 text-sm font-medium"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <Download className="w-4 h-4" />

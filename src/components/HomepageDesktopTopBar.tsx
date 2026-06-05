@@ -1,12 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Heart, HelpCircle, User } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, HelpCircle, MapPin, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { LoginModal } from './LoginModal';
 import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
-import { SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
+import {
+  SD_PAGE_INNER_MAX_CLASS,
+  MAP_STEP_TOPBAR_SHELL_CLASS,
+  MAP_STEP_TOPBAR_INNER_CLASS,
+  MAP_STEP_TOPBAR_PILL_ACTIVE,
+  MAP_STEP_TOPBAR_PILL_DONE,
+  MAP_STEP_TOPBAR_PILL_IDLE,
+  MAP_STEP_TOPBAR_LABEL_ACTIVE,
+  MAP_STEP_TOPBAR_LABEL_IDLE,
+  MAP_STEP_TOPBAR_DIVIDER,
+  MAP_STEP_TOPBAR_META_CHIP,
+  MAP_STEP_TOPBAR_META_CHIP_BRAND,
+} from '../constants/homepageTypography';
 
 /**
  * Barra superior desktop de la homepage (cuenta, moneda, favoritos).
@@ -20,13 +32,15 @@ import { SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
  *     transacciones, faq, etc.) que no quieren chocar con el gradiente del default.
  *     Combinable con showLogo para que el chip "INSPECCIONO" actúe como home-link.
  */
-export type HomepageDesktopTopBarVariant = 'default' | 'checkout' | 'map' | 'plain';
+export type HomepageDesktopTopBarVariant = 'default' | 'checkout' | 'map' | 'mapStep' | 'plain';
 
 export interface HomepageDesktopTopBarProps {
   /** En ficha de servicio: sustituye "Mi cuenta" por volver */
   onBack?: () => void;
   /** checkout: barra mínima (volver + admin), sin distracciones de exploración */
   /** map: pantalla completa mapa+búsqueda — blanco, botones en extremos, iconos compactos */
+  /** mapStep: igual que map, pero embebe stepper + chips meta del flow en el centro
+   *  para matar el aire muerto. Requiere prop `mapStep`. */
   variant?: HomepageDesktopTopBarVariant;
   /** Título en línea junto al back (solo checkout desktop) */
   pageTitle?: string;
@@ -34,6 +48,14 @@ export interface HomepageDesktopTopBarProps {
    *  el botón "Mi cuenta"/"Iniciar sesión" se mueve a la derecha junto al resto de
    *  acciones — patrón header marketplace estándar. */
   showLogo?: boolean;
+  /** Solo `variant="mapStep"`: contexto del paso del flow embebido en la topbar. */
+  mapStep?: {
+    currentStep: 1 | 2 | 3;
+    expertCount?: number;
+    locationLabel?: string;
+    rangeKm?: number;
+    loading?: boolean;
+  };
 }
 
 /**
@@ -77,9 +99,12 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   variant = 'default',
   pageTitle,
   showLogo = false,
+  mapStep,
 }) => {
   const isCheckout = variant === 'checkout';
-  const isMap = variant === 'map';
+  const isMapStep = variant === 'mapStep';
+  // mapStep hereda el chrome de map (back compacto, iconos sin label, etc.)
+  const isMap = variant === 'map' || isMapStep;
   const isPlain = variant === 'plain';
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -233,29 +258,107 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     accountBtn
   );
 
+  // Centro de la topbar SOLO en variant="mapStep" — stepper + chips meta del flow.
+  // Mata el aire muerto entre back y acciones (~1500px en 1920w) y elimina la
+  // duplicación de stepper/chips con la microcabecera del panel de cards.
+  const mapStepCenter = isMapStep && mapStep ? (
+    <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+      <ol className="flex shrink-0 items-center gap-2 font-display" aria-label="Pasos del proceso">
+        {[
+          { n: 1 as const, label: 'Elige experto' },
+          { n: 2 as const, label: 'Revisa servicio' },
+          { n: 3 as const, label: 'Reserva' },
+        ].map((s, idx, arr) => {
+          const isActive = s.n === mapStep.currentStep;
+          const isDone = s.n < mapStep.currentStep;
+          return (
+            <li key={s.n} className="flex items-center gap-2">
+              <span
+                className={
+                  isActive
+                    ? MAP_STEP_TOPBAR_PILL_ACTIVE
+                    : isDone
+                      ? MAP_STEP_TOPBAR_PILL_DONE
+                      : MAP_STEP_TOPBAR_PILL_IDLE
+                }
+                aria-current={isActive ? 'step' : undefined}
+              >
+                {s.n}
+              </span>
+              <span
+                className={`hidden xl:inline ${isActive ? MAP_STEP_TOPBAR_LABEL_ACTIVE : MAP_STEP_TOPBAR_LABEL_IDLE}`}
+              >
+                {s.label}
+              </span>
+              {idx < arr.length - 1 && (
+                <span className="h-px w-4 bg-[#e0e0e0] xl:w-5" aria-hidden />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
+      <span className={MAP_STEP_TOPBAR_DIVIDER} aria-hidden />
+
+      <div className="hidden min-w-0 shrink items-center gap-1.5 lg:flex">
+        {mapStep.loading ? (
+          <span className={MAP_STEP_TOPBAR_META_CHIP}>
+            <span className="mr-0.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#9aa0a6]" />
+            Actualizando…
+          </span>
+        ) : typeof mapStep.expertCount === 'number' ? (
+          <span className={MAP_STEP_TOPBAR_META_CHIP_BRAND}>
+            <span className="tabular-nums">{mapStep.expertCount}</span>
+            <span className="font-medium opacity-80">
+              {mapStep.expertCount === 1 ? 'experto' : 'expertos'}
+            </span>
+          </span>
+        ) : null}
+        {mapStep.locationLabel ? (
+          <span className={`${MAP_STEP_TOPBAR_META_CHIP} hidden xl:inline-flex max-w-[220px]`}>
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">{mapStep.locationLabel}</span>
+          </span>
+        ) : null}
+        {mapStep.rangeKm ? (
+          <span className={`${MAP_STEP_TOPBAR_META_CHIP} hidden 2xl:inline-flex`}>
+            ~{mapStep.rangeKm} km
+          </span>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
       <header
-        className={`sticky top-0 z-50 hidden md:block ${
+        className={
+          isMapStep
+            ? MAP_STEP_TOPBAR_SHELL_CLASS
+            : `sticky top-0 z-50 hidden md:block ${
           isCheckout
             ? 'border-b border-[#e8e8e8] bg-white'
             : isMap
               ? 'bg-white'
               : isPlain && showLogo
-                ? 'border-b-0 bg-[#fafafa]/95 backdrop-blur-sm'
+                ? 'border-b-0 bg-[#fafafa]'
                 : isPlain
-                  ? 'border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm'
-                  : 'border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm'
-        }`}
+                  ? 'border-b border-[#e8e8e8] bg-white'
+                  : 'border-b border-[#e8e8e8] bg-white'
+        }`
+        }
       >
         <div
           className={
-            isMap
-              ? 'flex min-h-12 w-full items-center justify-between gap-3 px-4 md:px-5 lg:px-6'
-              : `${isCheckout ? 'max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8' : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
+            isMapStep
+              ? MAP_STEP_TOPBAR_INNER_CLASS
+              : isMap
+                ? 'flex min-h-12 w-full items-center justify-between gap-3 px-4 md:px-5 lg:px-6'
+                : `${isCheckout ? 'max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8' : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
           }
         >
           {leftControl}
+          {mapStepCenter}
           {rightActions}
         </div>
       </header>
