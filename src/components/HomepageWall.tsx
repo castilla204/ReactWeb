@@ -321,7 +321,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     }}
                   >
-                    <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
+                    <ChevronRight className="w-4 h-4 text-[#1c1c1c] rotate-180" />
                   </button>
                   <button
                     onClick={(e) => handleImageNavigation(e, 'next')}
@@ -331,7 +331,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     }}
                   >
-                    <ChevronRight className="w-4 h-4 text-gray-700" />
+                    <ChevronRight className="w-4 h-4 text-[#1c1c1c]" />
                   </button>
                   
               {/* Indicadores de imágenes */}
@@ -406,8 +406,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                               )}
                             </>
                           ) : (
-                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400 text-sm">Sin imagen</span>
+                            <div className="w-full h-full bg-[#f5f5f5] flex items-center justify-center">
+                              <span className="text-[#a0a0a0] text-sm">Sin imagen</span>
                             </div>
                           )}
         </div>
@@ -495,7 +495,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               onClick={() => setIsExpertPhotoOpen(false)}
             >
               <div 
-                className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-gray-100 border-4 border-white shadow-lg"
+                className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-[#fafafa] border-4 border-white shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
                 <img
@@ -672,7 +672,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           <button
             type="button"
             onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-2 lg:left-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-gray-200 hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
+            className="hidden md:flex absolute left-2 lg:left-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-[#e8e8e8] hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
             style={{ 
               width: '36px', 
               height: '36px',
@@ -706,7 +706,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           <button
             type="button"
             onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-2 lg:right-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-gray-200 hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
+            className="hidden md:flex absolute right-2 lg:right-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-[#e8e8e8] hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
             style={{ 
               width: '36px', 
               height: '36px',

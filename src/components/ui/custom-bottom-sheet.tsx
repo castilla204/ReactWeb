@@ -261,14 +261,15 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           {headerContent ? (
             <div className="relative shrink-0 border-b border-[#e8e8e8]">
               {headerContent}
+              {/* X minimizar — pequeño y arriba (fila handle), nunca sobre los chips de filtros */}
               <button
                 type="button"
                 data-no-drag
                 onClick={handleDismiss}
-                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-[#666] hover:bg-[#f5f5f5] active:bg-[#ebebeb]"
+                className="absolute right-1.5 top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[#888] active:bg-[#f4f4f4] transition-colors"
                 aria-label="Minimizar lista"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" strokeWidth={2.2} />
               </button>
             </div>
           ) : title ? (
