@@ -296,6 +296,23 @@ const getStatusInfo = (
                 deadlineText: baseFutureDue,
                 futureRequirementsText
             };
+
+        // 🛡️ Round 29 — FIX-UNDER-REVIEW: el backend mapea `disabled_reason="under_review"` a
+        // StripeStatus.UnderReview pero el frontend no tenía case → caía al default "Estado no
+        // reconocido. Contacta soporte" + icono naranja AlertTriangle + badge rojo "Bloqueado".
+        // Resultado: UI contradictoria. Tratamiento como `PendingVerification` (wait, no acción)
+        // porque la revisión manual de Stripe NO requiere acción del experto, solo paciencia.
+        case STRIPE_STATUS.UNDER_REVIEW:
+            return {
+                canCreateServices: false,
+                canRetry: false,
+                message: getMessage("Stripe está revisando manualmente tu cuenta. Puede tardar varios días. No es necesaria ninguna acción por tu parte; te avisamos cuando termine."),
+                action: "wait",
+                buttonText: i18n.t('stripe.status.pendingVerification.button'),
+                color: "#3b82f6",
+                bgColor: "#eff6ff",
+                futureRequirementsText
+            };
         
         case STRIPE_STATUS.APPROVED:
             return {
@@ -514,18 +531,25 @@ export const useExpertStripeStatus = () => {
             }
             setError(null);
             const statusData = await getExpertStatus();
-            
+
             // Check if status changed and notify
             const previousStatus = previousStatusRef.current;
-            if (previousStatus !== statusData.stripeStatus) {
+            if (previousStatus === null) {
+                // 🛡️ Round 29 FIX-POLL-STORM: primer fetch exitoso → sembrar el ref sin emitir
+                // 'stripeStatusChanged'. ANTES: cuando `loadInitialStatus` no había completado
+                // (p.ej. `fetchStatus(true)` desde el listener de focus durante el load), el ref
+                // seguía `null` y `null !== "Approved"` disparaba evento artificial en CADA primer
+                // fetch → fan-out a useExpert.fetchProfile + reset de toda su cache.
+                previousStatusRef.current = statusData.stripeStatus;
+            } else if (previousStatus !== statusData.stripeStatus) {
                 handleStripeStatusChange({
                     stripeStatus: statusData.stripeStatus,
                     stripeStatusDetails: statusData.stripeStatusDetails,
-                    previousStatus: previousStatus || undefined
+                    previousStatus
                 });
                 previousStatusRef.current = statusData.stripeStatus;
             }
-            
+
             setStatus(statusData);
             statusRef.current = statusData;
             setLastFetch(now);
@@ -554,14 +578,19 @@ export const useExpertStripeStatus = () => {
             // This gives us the most up-to-date information from the backend
             console.log('🔄 Syncing status using expert-status endpoint...');
             const fallbackData = await getExpertStatus();
-            
+
             // Check if status changed and notify
             const previousStatus = previousStatusRef.current;
-            if (previousStatus !== fallbackData.stripeStatus) {
+            if (previousStatus === null) {
+                // 🛡️ Round 29 FIX-POLL-STORM: coherente con `fetchStatus`. Sin estado previo
+                // conocido, sembrar el ref sin disparar evento. Evita fan-out artificial cuando
+                // `syncStatus()` corre antes de que `loadInitialStatus` haya completado.
+                previousStatusRef.current = fallbackData.stripeStatus;
+            } else if (previousStatus !== fallbackData.stripeStatus) {
                 handleStripeStatusChange({
                     stripeStatus: fallbackData.stripeStatus,
                     stripeStatusDetails: fallbackData.stripeStatusDetails,
-                    previousStatus: previousStatus || undefined
+                    previousStatus
                 });
                 previousStatusRef.current = fallbackData.stripeStatus;
             }
@@ -668,7 +697,19 @@ export const useExpertStripeStatus = () => {
                 return;
             }
             if (document.visibilityState === 'visible') {
-                fetchStatus(true);
+                // 🛡️ Round 29 FIX-POLL-STORM: respetar cache 60s en focus/visibility.
+                //
+                // ANTES: `fetchStatus(true)` forzaba bypass de cache en CADA cambio de foco
+                // (DevTools, drawers que mueven el foco, alt-tab). Resultado: 28+ llamadas a
+                // /expert-status en 2 minutos. Además cada fetch disparaba 'stripeStatusChanged'
+                // → fan-out a useExpert.fetchProfile.
+                //
+                // AHORA: `fetchStatus(false)` — respeta cache de 60s. La frescura sigue cubierta por:
+                //  (1) Polling de 120s para POLLING_STATUSES (línea ~642).
+                //  (2) `useExpert.ts:666-681` con cooldown 5min para `checkOnboardingStatus`
+                //      (cubre la vuelta del onboarding externo de Stripe).
+                //  (3) Webhooks de Stripe → backend → próximo fetch revela el cambio.
+                fetchStatus(false);
             }
         };
         window.addEventListener('focus', revalidate);
