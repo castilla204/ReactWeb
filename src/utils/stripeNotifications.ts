@@ -58,6 +58,16 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
                     duration: 6000
                 };
 
+            // 🛡️ Round 29 — FIX-UNDER-REVIEW: revisión manual del equipo Stripe (no automática
+            // como PendingVerification). Mismo tono info/azul, distinto título para distinguir.
+            case STRIPE_STATUS.UNDER_REVIEW:
+                return {
+                    type: 'info' as const,
+                    title: 'Stripe revisa manualmente tu cuenta',
+                    message: baseMessage,
+                    duration: 6000
+                };
+
             case STRIPE_STATUS.REQUIREMENTS_DUE:
             case STRIPE_STATUS.RESTRICTED_SOON:
                 return {
