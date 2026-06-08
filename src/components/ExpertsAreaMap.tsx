@@ -175,6 +175,14 @@ const HERO_CAMERA = {
   maxPitch: 60,
 } as const;
 
+/** Hero móvil: mundo estático en franja lateral — sin globo ni vuelo regional */
+const MOBILE_PEEK_CAMERA = {
+  center: [0, 18] as [number, number],
+  zoom: 1.55,
+  pitch: 0,
+  bearing: 0,
+} as const;
+
 const GLOBE_HOLD_MS = 100;
 const LANDING_FLY_MS = 1400;
 /** Si IP no marca resolved a tiempo, forzar vuelo igual (evita quedarse en globo sin zoom). */
@@ -268,6 +276,11 @@ interface ExpertsAreaMapProps {
   hideCornerStats?: boolean;
   /** Hero homepage: mapa decorativo sin marcadores numerados (menos ruido visual) */
   showCityMarkers?: boolean;
+  /**
+   * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
+   * `default`: hero desktop con intro globe + aterrizaje regional.
+   */
+  heroVariant?: 'default' | 'mobile-peek';
 }
 
 export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
@@ -279,7 +292,9 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   ipLandingResolved = false,
   hideCornerStats = false,
   showCityMarkers = true,
+  heroVariant = 'default',
 }) => {
+  const isMobilePeek = heroVariant === 'mobile-peek';
   const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -460,40 +475,55 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       if (cancelled || mapRef.current) return;
       if (wrapper.clientWidth < 2 || wrapper.clientHeight < 2) return;
 
+      const initialCamera = isMobilePeek ? MOBILE_PEEK_CAMERA : GLOBE_INTRO;
+
       map = new maplibregl.Map({
         container: el,
         style: buildCartoStyle(),
-        center: GLOBE_INTRO.center,
+        center: initialCamera.center,
         transformRequest: (url, resourceType) => {
           if (resourceType === 'Tile' && isExternalMapTileUrl(url)) {
             return { url, credentials: 'omit' };
           }
           return { url };
         },
-        zoom: GLOBE_INTRO.zoom,
-        pitch: GLOBE_INTRO.pitch,
-        bearing: GLOBE_INTRO.bearing,
+        zoom: initialCamera.zoom,
+        pitch: initialCamera.pitch,
+        bearing: initialCamera.bearing,
         minZoom: 1,
-        maxZoom: 12,
-        maxPitch: HERO_CAMERA.maxPitch,
+        maxZoom: isMobilePeek ? 4 : 12,
+        maxPitch: isMobilePeek ? 0 : HERO_CAMERA.maxPitch,
         pitchWithRotate: false,
         touchPitch: false,
+        dragPan: !isMobilePeek,
+        scrollZoom: false,
+        boxZoom: false,
+        dragRotate: false,
+        keyboard: false,
+        doubleClickZoom: false,
+        touchZoomRotate: false,
         attributionControl: false,
         antialias: false,
         fadeDuration: 0,
       });
 
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-      map.addControl(
-        new maplibregl.NavigationControl({ visualizePitch: true, showCompass: false }),
-        'top-right',
-      );
+      if (!isMobilePeek) {
+        map.addControl(
+          new maplibregl.NavigationControl({ visualizePitch: true, showCompass: false }),
+          'top-right',
+        );
+      }
 
       mapRef.current = map;
       scheduleResize();
 
       const onStyleReady = () => {
         if (cancelled || mapRef.current !== map || !map) return;
+        if (isMobilePeek) {
+          applyRegionalProjection(map);
+          return;
+        }
         try {
           map.setProjection({ type: 'globe' });
         } catch (err) {
@@ -515,6 +545,17 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
         }
         setMapReady(true);
+        if (isMobilePeek) {
+          map.jumpTo({
+            center: MOBILE_PEEK_CAMERA.center,
+            zoom: MOBILE_PEEK_CAMERA.zoom,
+            pitch: MOBILE_PEEK_CAMERA.pitch,
+            bearing: MOBILE_PEEK_CAMERA.bearing,
+          });
+          setIntroComplete(true);
+          repaintWhenTilesReady(map);
+          return;
+        }
         tryScheduleLanding();
         if (!ipLandingResolvedRef.current) {
           ipFallbackTimer = window.setTimeout(() => {
@@ -583,7 +624,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       landFillLoadedRef.current = false;
       outlinesLoadedRef.current = false;
     };
-  }, [overlayPaddingRatio]);
+  }, [heroVariant, overlayPaddingRatio]);
 
   // Relleno tierra en cuanto el estilo está listo (no esperar al vuelo)
   useEffect(() => {
@@ -691,7 +732,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         </div>
       )}
 
-      {detectedCountryCode && introComplete && (
+      {detectedCountryCode && introComplete && !isMobilePeek && (
         <div className="absolute bottom-3 left-3 z-[500] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] font-medium text-[#475569] shadow-sm pointer-events-none select-none">
               <MapPin size={12} className="text-brand" />
           Tu zona

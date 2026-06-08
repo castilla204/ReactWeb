@@ -159,6 +159,26 @@ export const SD_MOBILE_FLOATING_TOP_CLASS =
 export const SD_MOBILE_FOOTER_SHELL_CLASS =
   'fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.09)]';
 
+/** Altura footprint de MobileBottomBar (safe-area ya incluida internamente) */
+export const MOBILE_TAB_BAR_HEIGHT_PX = 65;
+
+/** Offset inferior del FAB con tab bar (20px de aire sobre los 65px de la barra) */
+export const CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS = 'bottom-[calc(65px+1.25rem)]';
+
+/** Offset inferior del FAB sin tab bar (respeta safe-area del dispositivo) */
+export const CHATBOT_FAB_BOTTOM_STANDALONE_CLASS =
+  'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]';
+
+/**
+ * Ficha servicio / checkout: misma huella que SD_MOBILE_SCROLL_PAD_CLASS
+ * (barra Reservar ≈ 5.5rem + safe-area) + 1.25rem de aire.
+ */
+export const CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS =
+  'bottom-[calc(5.5rem+1.25rem+env(safe-area-inset-bottom,0px))]';
+
+/** Esquina inferior derecha en móvil (gutter px-4, igual que el layout) */
+export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-4';
+
 /** CTA barra inferior móvil (más alto y legible que h-12 genérico) */
 export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 
