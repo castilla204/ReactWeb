@@ -4,6 +4,10 @@ import { ArrowRight, MapPin } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
 import { HeroExpertCutout } from './HeroExpertCutout';
 import { HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
+import {
+  DESKTOP_HERO_MAP_OVERLAY_PADDING,
+  DESKTOP_HERO_SOFT_OVAL,
+} from '../constants/homepageHeroMap';
 import { HomepageHeroTrustLines } from './HomepageHeroTrustLines';
 
 const ExpertsAreaMap = lazy(() =>
@@ -23,12 +27,6 @@ interface HomepageDesktopKayakProps {
   categoryId: number;
   countryCode?: string;
 }
-
-/** Viñeta suave bajo el copy — no tapa todo el mapa */
-const HERO_SOFT_OVAL =
-  'radial-gradient(ellipse 72% 100% at 20% 48%, #ffffff 0%, #ffffff 36%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.55) 58%, transparent 78%)';
-
-const MAP_OVERLAY_PADDING = 0.26;
 
 const HeroMapLoadingPlaceholder: React.FC = () => (
   <div className="absolute inset-0 bg-[#fafafa] overflow-hidden" aria-hidden>
@@ -59,7 +57,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
         <Suspense fallback={<HeroMapLoadingPlaceholder />}>
           <ExpertsAreaMap
             className="h-full w-full"
-            overlayPaddingRatio={MAP_OVERLAY_PADDING}
+            overlayPaddingRatio={DESKTOP_HERO_MAP_OVERLAY_PADDING}
             ipLanding={ipLanding}
             ipLandingResolved={ipLandingResolved}
             hideCornerStats
@@ -71,7 +69,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[5]"
-        style={{ background: HERO_SOFT_OVAL }}
+        style={{ background: DESKTOP_HERO_SOFT_OVAL }}
       />
 
       <div className="pointer-events-none relative z-10 h-full w-full overflow-visible">

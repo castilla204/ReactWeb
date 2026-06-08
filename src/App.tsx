@@ -57,6 +57,7 @@ import { StatusPage } from './pages/StatusPage';
 import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookieBanner } from './components/CookieBanner';
+import { ChatbotFab } from './components/ChatbotFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import logoImg from './media/logoi.png';
 
@@ -566,6 +567,7 @@ const AppContent: React.FC = () => {
                         window.dispatchEvent(new CustomEvent('cookieConsentChanged', { detail: { preference: pref } }));
                     }}
                 />
+                <ChatbotFab />
         </div>
     );
 };
