@@ -12,18 +12,21 @@ export interface ExpertSparkleHub {
  * en vista globo, el planeta parece cubierto de expertos.
  */
 export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
-  // España e Iberia (zona de aterrizaje — alta densidad)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESPAÑA — zona de aterrizaje, MUY alta densidad (v8)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Hubs principales (weight 3)
   { id: 'madrid', lat: 40.4168, lng: -3.7038, weight: 3 },
   { id: 'barcelona', lat: 41.3874, lng: 2.1686, weight: 3 },
+  // Ciudades medias (weight 2)
   { id: 'valencia', lat: 39.4699, lng: -0.3763, weight: 2 },
   { id: 'sevilla', lat: 37.3891, lng: -5.9845, weight: 2 },
   { id: 'bilbao', lat: 43.263, lng: -2.935, weight: 2 },
   { id: 'malaga', lat: 36.7213, lng: -4.4214, weight: 2 },
-  { id: 'zaragoza', lat: 41.6488, lng: -0.8891, weight: 1 },
+  { id: 'zaragoza', lat: 41.6488, lng: -0.8891, weight: 2 },
+  // Provincias y secundarias (weight 1 — los "puntitos muy pequeñitos")
   { id: 'murcia', lat: 37.9922, lng: -1.1307, weight: 1 },
-  // 🔧 v5: movido del centro de Palma (sur de la isla, ~3 km de costa) al
-  // interior de Mallorca (zona Inca, ~17 km de cualquier costa). Mallorca mide
-  // ~80 km de ancho — con cualquier glow >40 km el dot parecía "flotar en el mar".
+  // Mallorca: en el interior, no en la capital (que está a ~3 km de costa).
   { id: 'mallorca', lat: 39.7212, lng: 2.9098, weight: 1 },
   { id: 'la-coruna', lat: 43.3623, lng: -8.4115, weight: 1 },
   { id: 'valladolid', lat: 41.6523, lng: -4.7245, weight: 1 },
@@ -31,35 +34,112 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'alicante', lat: 38.3452, lng: -0.481, weight: 1 },
   { id: 'santander', lat: 43.4623, lng: -3.81, weight: 1 },
   { id: 'pamplona', lat: 42.8125, lng: -1.6458, weight: 1 },
+  // 🔧 v8: ~26 ciudades nuevas para "pon bastantes en España"
+  { id: 'vigo', lat: 42.2406, lng: -8.7207, weight: 1 },
+  { id: 'gijon', lat: 43.5453, lng: -5.6619, weight: 1 },
+  { id: 'oviedo', lat: 43.3614, lng: -5.8593, weight: 1 },
+  { id: 'vitoria', lat: 42.8467, lng: -2.6716, weight: 1 },
+  { id: 'san-sebastian', lat: 43.3183, lng: -1.9812, weight: 1 },
+  { id: 'logrono', lat: 42.4627, lng: -2.4449, weight: 1 },
+  { id: 'toledo', lat: 39.8628, lng: -4.0273, weight: 1 },
+  { id: 'albacete', lat: 38.9942, lng: -1.8585, weight: 1 },
+  { id: 'caceres', lat: 39.4762, lng: -6.3722, weight: 1 },
+  { id: 'badajoz', lat: 38.8794, lng: -6.9707, weight: 1 },
+  { id: 'salamanca', lat: 40.9701, lng: -5.6635, weight: 1 },
+  { id: 'leon', lat: 42.5987, lng: -5.5671, weight: 1 },
+  { id: 'burgos', lat: 42.3439, lng: -3.6969, weight: 1 },
+  { id: 'cordoba', lat: 37.8882, lng: -4.7794, weight: 1 },
+  // Cádiz: capital (36.53, -6.29) está en la punta peninsular; uso Jerez 30 km tierra adentro
+  { id: 'jerez', lat: 36.6850, lng: -6.1378, weight: 1 },
+  { id: 'jaen', lat: 37.7796, lng: -3.7849, weight: 1 },
+  { id: 'almeria-int', lat: 37.0900, lng: -2.3300, weight: 1 },
+  { id: 'castellon', lat: 39.9864, lng: -0.0513, weight: 1 },
+  { id: 'tarragona', lat: 41.1189, lng: 1.2445, weight: 1 },
+  { id: 'lleida', lat: 41.6176, lng: 0.62, weight: 1 },
+  { id: 'girona', lat: 41.9794, lng: 2.8214, weight: 1 },
+  { id: 'huesca', lat: 42.1401, lng: -0.4087, weight: 1 },
+  { id: 'segovia', lat: 40.9429, lng: -4.1088, weight: 1 },
+  { id: 'avila', lat: 40.6566, lng: -4.6818, weight: 1 },
+  { id: 'cuenca', lat: 40.0704, lng: -2.1374, weight: 1 },
+  { id: 'merida', lat: 38.9165, lng: -6.3434, weight: 1 },
+  { id: 'ciudad-real', lat: 38.9848, lng: -3.9274, weight: 1 },
+  { id: 'soria', lat: 41.7665, lng: -2.4795, weight: 1 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PORTUGAL (densidad media — v8 añade Coimbra y Braga)
+  // ═══════════════════════════════════════════════════════════════════════════
   { id: 'lisbon', lat: 38.7223, lng: -9.1393, weight: 2 },
   { id: 'porto', lat: 41.1579, lng: -8.6291, weight: 1 },
+  { id: 'coimbra', lat: 40.2033, lng: -8.4103, weight: 1 },
+  { id: 'braga', lat: 41.5454, lng: -8.4265, weight: 1 },
 
-  // Europa occidental y central
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EUROPA OCCIDENTAL Y CENTRAL — densificada (v8 añade ~30 secundarias)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Francia
   { id: 'paris', lat: 48.8566, lng: 2.3522, weight: 3 },
   { id: 'lyon', lat: 45.764, lng: 4.8357, weight: 2 },
   { id: 'marseille', lat: 43.2965, lng: 5.3698, weight: 1 },
   { id: 'toulouse', lat: 43.6047, lng: 1.4442, weight: 1 },
   { id: 'bordeaux', lat: 44.8378, lng: -0.5792, weight: 1 },
   { id: 'lille', lat: 50.6292, lng: 3.0573, weight: 1 },
+  { id: 'nice', lat: 43.7102, lng: 7.262, weight: 1 },
+  { id: 'nantes', lat: 47.2184, lng: -1.5536, weight: 1 },
+  { id: 'strasbourg', lat: 48.5734, lng: 7.7521, weight: 1 },
+  { id: 'rennes', lat: 48.1173, lng: -1.6778, weight: 1 },
+  { id: 'montpellier', lat: 43.6109, lng: 3.8763, weight: 1 },
+  { id: 'grenoble', lat: 45.1885, lng: 5.7245, weight: 1 },
+  // Reino Unido + Irlanda
   { id: 'london', lat: 51.5074, lng: -0.1278, weight: 3 },
   { id: 'manchester', lat: 53.4808, lng: -2.2426, weight: 2 },
   { id: 'birmingham', lat: 52.4862, lng: -1.8904, weight: 1 },
   { id: 'edinburgh', lat: 55.9533, lng: -3.1883, weight: 1 },
   { id: 'dublin', lat: 53.3498, lng: -6.2603, weight: 2 },
+  { id: 'liverpool', lat: 53.4084, lng: -2.9916, weight: 1 },
+  { id: 'leeds', lat: 53.8008, lng: -1.5491, weight: 1 },
+  { id: 'glasgow', lat: 55.8642, lng: -4.2518, weight: 1 },
+  { id: 'cardiff', lat: 51.4816, lng: -3.1791, weight: 1 },
+  { id: 'bristol', lat: 51.4545, lng: -2.5879, weight: 1 },
+  { id: 'newcastle', lat: 54.9783, lng: -1.6178, weight: 1 },
+  // Alemania
   { id: 'berlin', lat: 52.52, lng: 13.405, weight: 3 },
   { id: 'munich', lat: 48.1351, lng: 11.582, weight: 2 },
   { id: 'hamburg', lat: 53.5511, lng: 9.9937, weight: 2 },
   { id: 'frankfurt', lat: 50.1109, lng: 8.6821, weight: 2 },
   { id: 'cologne', lat: 50.9375, lng: 6.9603, weight: 1 },
+  { id: 'stuttgart', lat: 48.7758, lng: 9.1829, weight: 1 },
+  { id: 'dusseldorf', lat: 51.2277, lng: 6.7735, weight: 1 },
+  { id: 'leipzig', lat: 51.3397, lng: 12.3731, weight: 1 },
+  { id: 'dresden', lat: 51.0504, lng: 13.7373, weight: 1 },
+  { id: 'hannover', lat: 52.3759, lng: 9.732, weight: 1 },
+  { id: 'nuremberg', lat: 49.4521, lng: 11.0767, weight: 1 },
+  // Benelux
   { id: 'amsterdam', lat: 52.3676, lng: 4.9041, weight: 2 },
   { id: 'rotterdam', lat: 51.9244, lng: 4.4777, weight: 1 },
   { id: 'brussels', lat: 50.8503, lng: 4.3517, weight: 2 },
+  { id: 'antwerp', lat: 51.2194, lng: 4.4025, weight: 1 },
+  { id: 'gent', lat: 51.0543, lng: 3.7174, weight: 1 },
+  { id: 'utrecht', lat: 52.0907, lng: 5.1214, weight: 1 },
+  { id: 'eindhoven', lat: 51.4416, lng: 5.4697, weight: 1 },
+  // Alpes (Suiza + Austria)
   { id: 'zurich', lat: 47.3769, lng: 8.5417, weight: 2 },
   { id: 'vienna', lat: 48.2082, lng: 16.3738, weight: 2 },
+  { id: 'geneva', lat: 46.2044, lng: 6.1432, weight: 1 },
+  { id: 'bern', lat: 46.948, lng: 7.4474, weight: 1 },
+  { id: 'basel', lat: 47.5596, lng: 7.5886, weight: 1 },
+  // Italia
   { id: 'rome', lat: 41.9028, lng: 12.4964, weight: 3 },
   { id: 'milan', lat: 45.4642, lng: 9.19, weight: 2 },
   { id: 'naples', lat: 40.8518, lng: 14.2681, weight: 1 },
   { id: 'turin', lat: 45.0703, lng: 7.6869, weight: 1 },
+  { id: 'florence', lat: 43.7696, lng: 11.2558, weight: 1 },
+  { id: 'bologna', lat: 44.4949, lng: 11.3426, weight: 1 },
+  { id: 'venice', lat: 45.4408, lng: 12.3155, weight: 1 },
+  { id: 'verona', lat: 45.4384, lng: 10.9916, weight: 1 },
+  // Escandinavia
+  { id: 'gothenburg', lat: 57.7089, lng: 11.9746, weight: 1 },
+  { id: 'malmo', lat: 55.6049, lng: 13.0038, weight: 1 },
+  { id: 'aarhus', lat: 56.1629, lng: 10.2039, weight: 1 },
 
   // Europa norte, este y sur
   { id: 'stockholm', lat: 59.3293, lng: 18.0686, weight: 2 },
