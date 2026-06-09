@@ -21,38 +21,69 @@ export const EXPERT_SPARKLE_PALETTES = [
 type SparklePalette = (typeof EXPERT_SPARKLE_PALETTES)[number];
 
 /**
- * 🔵 PUNTO ANCLADO — diseño v2 (junio 2026).
+ * 🔵 PUNTO DE PRESENCIA — diseño v3 (junio 2026, estilo heatmap Strava/Mapbox).
  *
- * Reemplaza al marcador decorativo anterior (orbits + glints satélite) porque
- * sus partículas internas se animaban con `transform: translate(...)` dentro de
- * un recuadro de 40px → al hacer zoom regional (~zoom 4) ese recuadro ocupaba
- * ~50-100 km sobre el mapa y las partículas aparecían "flotando en el mar",
- * fuera de la ciudad real. Ahora cada marker es UN punto sólido perfectamente
- * centrado en su lng/lat, con halo blanco para contraste y un glow exterior
- * coloreado. Sin transformaciones que muevan el centro.
+ * v1 (deprecado): composición de orbits + glints satélite animados con
+ *   transform:translate → aparecían "en el mar" porque se alejaban del centro.
+ * v2 (deprecado): dot sólido + halo blanco grueso (2px) + glow exterior →
+ *   feedback del usuario: "se ven como varitas, no me gusta". El halo blanco
+ *   denso hacía que el conjunto pareciera la cabeza de un alfiler/varita en
+ *   lugar de un punto orgánico de presencia.
+ * v3 (actual): SOLO color. Tres capas concéntricas del MISMO tono del experto
+ *   con opacidad creciente hacia dentro — el efecto "punto de calor". Sin
+ *   blancos duros, sin bordes opacos. Microsombra al suelo para no flotar.
  *
- * El opcional `twinkle` reutiliza la animación CSS `expert-sparkle-twinkle`
- * que SOLO modula `opacity` (no translate, no scale) → seguro para no romper
- * el anclado.
+ * Cada capa se hace con box-shadow → un único <span> renderiza todo. Sin
+ * elementos hijos que puedan desplazarse del centro de la ciudad.
  */
 
 interface DotSpec {
-  /** Diámetro del punto sólido en píxeles. */
-  size: number;
-  /** Ancho del halo blanco que rodea el punto. */
-  ringPx: number;
-  /** Radio del glow exterior coloreado (box-shadow). */
+  /** Diámetro del núcleo sólido (px). */
+  core: number;
+  /** Radio del halo de presencia, en px añadidos a partir del borde del núcleo. */
+  haloPx: number;
+  /** Radio del glow exterior suave (px). */
   glowPx: number;
 }
 
 const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
-  // weight=3 (hub principal): un poco más grande para destacar megaciudades
-  3: { size: 14, ringPx: 2, glowPx: 10 },
+  // weight=3 (hub principal): núcleo un poco mayor para que destaquen las megaciudades
+  3: { core: 9, haloPx: 4, glowPx: 9 },
   // weight=2 (ciudad media): tamaño medio
-  2: { size: 11, ringPx: 2, glowPx: 7 },
-  // weight=1 (presencia ligera): punto pequeño — la mayoría son éste tier
-  1: { size: 8, ringPx: 1.5, glowPx: 5 },
+  2: { core: 7, haloPx: 3, glowPx: 7 },
+  // weight=1 (presencia ligera): puntito pequeño — la mayoría de hubs son éste tier
+  1: { core: 5, haloPx: 2, glowPx: 5 },
 };
+
+/**
+ * Construye el estilo inline del único <span> que renderiza el punto. Todo el
+ * efecto visual viene de combinar:
+ *   1. background sólido del primary  → el núcleo.
+ *   2. box-shadow capa 1: spread coloreado a baja opacidad → halo del mismo color
+ *      ("aura de presencia"), reemplaza el halo blanco duro de v2.
+ *   3. box-shadow capa 2: blur coloreado a media opacidad → glow exterior suave.
+ *   4. box-shadow capa 3: sombra negra mínima (0 1px 2px) → "pega" al mapa.
+ *   5. inset 0 0 1px white 35% → microhighlight tipo perla, sin grosor — añade
+ *      "vida" sin parecer un borde.
+ */
+function buildDotStyle(color: string, spec: DotSpec): string {
+  return [
+    `width:${spec.core}px`,
+    `height:${spec.core}px`,
+    `border-radius:50%`,
+    `background:${color}`,
+    `box-shadow:` +
+      // Microhighlight perla (no es un border, no engrosa la silueta)
+      `inset 0 0 1px rgba(255,255,255,0.35),` +
+      // Halo concéntrico del mismo color, opacidad muy baja → "aura de presencia"
+      `0 0 0 ${spec.haloPx}px ${color}1f,` +
+      // Glow exterior difuso del mismo color, opacidad media-baja
+      `0 0 ${spec.glowPx}px ${color}73,` +
+      // Microsombra al suelo para dar profundidad sin flotar
+      `0 1px 2px rgba(0,0,0,0.22)`,
+    `box-sizing:border-box`,
+  ].join(';');
+}
 
 export function expertSparkleMarkerHtml(
   palette: SparklePalette,
@@ -61,47 +92,34 @@ export function expertSparkleMarkerHtml(
   twinkle = false,
 ): string {
   const spec = DOT_SPECS[weight];
-  // Reservamos un wrapper algo mayor que el punto para que el glow no quede recortado;
-  // pero el punto SÓLIDO va perfectamente centrado en el wrapper. MapLibre.Marker con
-  // anchor:'center' pone el centro del wrapper sobre la lng/lat → el punto coincide
-  // exactamente con la ciudad.
-  const wrapperSize = spec.size + spec.glowPx * 2 + 4;
+
+  // Wrapper algo mayor que núcleo + halo + glow para que el box-shadow no quede
+  // recortado por sub-pixel rounding en algunos navegadores. El MapLibre.Marker
+  // con anchor:'center' centra ESTE wrapper sobre la lng/lat → el punto coincide
+  // exactamente con la ciudad (sin offsets internos, sin transforms).
+  const wrapperSize = spec.core + (spec.haloPx + spec.glowPx) * 2 + 4;
 
   // Anti-superposición de parpadeos: cada índice arranca en un punto distinto del ciclo.
-  const twinkleDuration = `${3.2 + (index % 9) * 0.35}s`;
+  const twinkleDuration = `${3.4 + (index % 9) * 0.4}s`;
   const twinkleDelay = `${(index * 0.71) % 5.3}s`;
   const twinkleClass = twinkle ? ' expert-sparkle-twinkle' : '';
   const twinkleVars = twinkle
-    ? `;--sp-twinkle-duration:${twinkleDuration};--sp-twinkle-delay:${twinkleDelay}`
+    ? `--sp-twinkle-duration:${twinkleDuration};--sp-twinkle-delay:${twinkleDelay};`
     : '';
 
   // El wrapper conserva la clase `expert-sparkle-marker` porque
   // `updateSparkleVisibility` lee `--sp-scale` para escalar según zoom (no translate).
-  const wrapperStyle = [
-    `--sp-scale:1`,
-    `width:${wrapperSize}px`,
-    `height:${wrapperSize}px`,
-    `display:flex`,
-    `align-items:center`,
-    `justify-content:center`,
-    `pointer-events:none`,
-    twinkleVars.replace(/^;/, ''),
-  ]
-    .filter(Boolean)
-    .join(';');
+  const wrapperStyle =
+    `${twinkleVars}` +
+    `--sp-scale:1;` +
+    `width:${wrapperSize}px;` +
+    `height:${wrapperSize}px;` +
+    `display:flex;` +
+    `align-items:center;` +
+    `justify-content:center;` +
+    `pointer-events:none`;
 
-  // El punto sólido: círculo coloreado + anillo blanco + glow exterior. Todo
-  // posicionado relativo al centro del wrapper, sin transforms que lo desplacen.
-  const dotStyle = [
-    `width:${spec.size}px`,
-    `height:${spec.size}px`,
-    `border-radius:50%`,
-    `background:${palette.primary}`,
-    `border:${spec.ringPx}px solid #ffffff`,
-    // Glow exterior: doble box-shadow (color + sombra negra suave para "pegar" al mapa)
-    `box-shadow:0 0 ${spec.glowPx}px ${palette.primary}b3,0 1px 2px rgba(0,0,0,0.25)`,
-    `box-sizing:border-box`,
-  ].join(';');
+  const dotStyle = buildDotStyle(palette.primary, spec);
 
   return `
     <div class="expert-sparkle-marker${twinkleClass}" style="${wrapperStyle}" aria-hidden="true">
