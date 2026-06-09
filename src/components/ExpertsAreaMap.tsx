@@ -4,6 +4,11 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapPin } from 'lucide-react';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
+import {
+  EXPERT_SPARKLE_PALETTES,
+  expertSparkleMarkerHtml,
+} from './map/expertSparkleMarker';
+import { EXPERT_SPARKLE_HUBS } from './map/expertSparkleHubs';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -276,6 +281,8 @@ interface ExpertsAreaMapProps {
   hideCornerStats?: boolean;
   /** Hero homepage: mapa decorativo sin marcadores numerados (menos ruido visual) */
   showCityMarkers?: boolean;
+  /** Destellos de color anclados a cada ciudad con expertos (símbolo de red global) */
+  showExpertSparkles?: boolean;
   /**
    * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
    * `default`: hero desktop con intro globe + aterrizaje regional.
@@ -292,6 +299,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   ipLandingResolved = false,
   hideCornerStats = false,
   showCityMarkers = true,
+  showExpertSparkles = false,
   heroVariant = 'default',
 }) => {
   const isMobilePeek = heroVariant === 'mobile-peek';
@@ -299,6 +307,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const sparkleMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const landFillLoadedRef = useRef(false);
   const outlinesLoadedRef = useRef(false);
   const landingStartedRef = useRef(false);
@@ -324,6 +333,25 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     },
     [onCityClick],
   );
+
+  const updateSparkleVisibility = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || sparkleMarkersRef.current.size === 0) return;
+
+    // Durante el globo los marcadores del hemisferio oculto se proyectan mal (océano).
+    if (!introComplete) {
+      sparkleMarkersRef.current.forEach((marker) => {
+        marker.getElement().style.display = 'none';
+      });
+      return;
+    }
+
+    const bounds = map.getBounds();
+    sparkleMarkersRef.current.forEach((marker) => {
+      const { lng, lat } = marker.getLngLat();
+      marker.getElement().style.display = bounds.contains([lng, lat]) ? '' : 'none';
+    });
+  }, [introComplete]);
 
   useEffect(() => {
     ipLandingRef.current = ipLanding;
@@ -616,6 +644,8 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       window.removeEventListener('resize', scheduleResize);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current.clear();
+      sparkleMarkersRef.current.forEach((m) => m.remove());
+      sparkleMarkersRef.current.clear();
       map?.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -707,6 +737,54 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       marker.getElement().innerHTML = markerHtml(city, selected, isHovered, clickable);
     });
   }, [hovered, selectedCity, mapReady, onCityClick]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    if (!showExpertSparkles) {
+      sparkleMarkersRef.current.forEach((m) => m.remove());
+      sparkleMarkersRef.current.clear();
+      return;
+    }
+
+    if (sparkleMarkersRef.current.size === 0) {
+      EXPERT_SPARKLE_HUBS.forEach((hub, index) => {
+        const palette = EXPERT_SPARKLE_PALETTES[index % EXPERT_SPARKLE_PALETTES.length];
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight);
+        const el = wrapper.firstElementChild as HTMLElement | null;
+        if (!el) return;
+
+        const marker = new maplibregl.Marker({
+          element: el,
+          anchor: 'center',
+          opacityWhenCovered: 0,
+        })
+          .setLngLat([hub.lng, hub.lat])
+          .addTo(map);
+
+        sparkleMarkersRef.current.set(hub.id, marker);
+      });
+      updateSparkleVisibility();
+    }
+  }, [mapReady, showExpertSparkles, updateSparkleVisibility]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !showExpertSparkles) return;
+
+    updateSparkleVisibility();
+    map.on('move', updateSparkleVisibility);
+    map.on('zoom', updateSparkleVisibility);
+    map.on('moveend', updateSparkleVisibility);
+
+    return () => {
+      map.off('move', updateSparkleVisibility);
+      map.off('zoom', updateSparkleVisibility);
+      map.off('moveend', updateSparkleVisibility);
+    };
+  }, [mapReady, showExpertSparkles, updateSparkleVisibility, introComplete]);
 
   return (
     <div

@@ -8,6 +8,7 @@ import { CurrencySelector } from '../CurrencySelector';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { SD_PAGE_INNER_MAX_CLASS } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
+import erizoImg from '../../media/erizo.png';
 
 interface ServiceDetailDesktopHeaderProps {
   onBack: () => void;
@@ -99,10 +100,16 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
                   e.preventDefault();
                   navigate('/');
                 }}
-                className="hidden h-8 shrink-0 items-center justify-center rounded-md bg-brand/10 px-3 text-[11px] font-semibold tracking-[0.18em] text-[#222] sm:inline-flex"
+                className="hidden h-9 shrink-0 items-center gap-2.5 rounded-md px-1 sm:inline-flex"
                 aria-label="Inspecciono — inicio"
               >
-                INSPECCIONO
+                <img
+                  src={erizoImg}
+                  alt=""
+                  className="h-9 w-9 -scale-x-100 object-contain"
+                  style={{ imageRendering: '-webkit-optimize-contrast' }}
+                />
+                <span className="text-[12px] font-semibold tracking-[0.1em] text-[#222]">INSPECCIONO</span>
               </a>
             </div>
 

@@ -6,6 +6,7 @@ import { isAdmin } from '../utils/admin';
 import { LoginModal } from './LoginModal';
 import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
+import erizoImg from '../media/erizo.png';
 import {
   SD_PAGE_INNER_MAX_CLASS,
   MAP_STEP_TOPBAR_SHELL_CLASS,
@@ -202,8 +203,6 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     </div>
   );
 
-  // Logo "INSPECCIONO" como home-link — solo en variant con showLogo. Usa el mismo
-  // estilo de chip que el header legado de App.tsx para mantener reconocimiento de marca.
   const logoLink = (
     <a
       href="/"
@@ -211,10 +210,16 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         e.preventDefault();
         navigate('/');
       }}
-      className="inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-brand/10 px-3 text-[11px] font-semibold tracking-[0.18em] text-[#222]"
+      className="inline-flex h-9 shrink-0 items-center gap-2.5 rounded-md px-1"
       aria-label="Inspecciono — inicio"
     >
-      INSPECCIONO
+      <img
+        src={erizoImg}
+        alt=""
+        className="h-9 w-9 -scale-x-100 object-contain"
+        style={{ imageRendering: '-webkit-optimize-contrast' }}
+      />
+      <span className="text-[12px] font-semibold tracking-[0.1em] text-[#222]">INSPECCIONO</span>
     </a>
   );
 

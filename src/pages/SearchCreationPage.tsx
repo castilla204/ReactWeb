@@ -21,8 +21,6 @@ import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
-import logoImg from '../media/logoi.png';
-
 import { Footer } from '../components/Footer';
 import { MapPageSkeleton } from '../components/ui/map-page-skeleton';
 
