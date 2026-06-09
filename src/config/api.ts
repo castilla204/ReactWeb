@@ -150,6 +150,9 @@ export const API_CONFIG = {
             block: (userId: number) => `${API_PATH}/User/${userId}/block`,
             delete: (userId: number) => `${API_PATH}/User/${userId}`,
         },
+        support: {
+            message: `${API_PATH}/SupportChat/message`,
+        },
         chat: {
             conversation: `${API_PATH}/chat/conversation`,
             conversationBySearchHire: (searchHireId: number) => `${API_PATH}/chat/by-searchhire/${searchHireId}`,
