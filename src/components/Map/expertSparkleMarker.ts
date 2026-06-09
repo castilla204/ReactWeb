@@ -29,7 +29,7 @@ function paletteVars(palette: SparklePalette, index: number, scale: number) {
 function hubMarkup(palette: SparklePalette, index: number): string {
   const vars = paletteVars(palette, index, 1);
   return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-hub" style="${vars};width:34px;height:34px;position:relative;pointer-events:none" aria-hidden="true">
+    <div class="expert-sparkle-marker expert-sparkle-tier-hub" style="${vars};width:40px;height:40px;position:relative;pointer-events:none" aria-hidden="true">
       <span class="expert-sparkle-orbit expert-sparkle-orbit-a" style="background:${palette.accent}"></span>
       <span class="expert-sparkle-orbit expert-sparkle-orbit-b" style="background:${palette.flare}"></span>
       <span class="expert-sparkle-pulse"></span>
@@ -45,7 +45,7 @@ function hubMarkup(palette: SparklePalette, index: number): string {
 function standardMarkup(palette: SparklePalette, index: number): string {
   const vars = paletteVars(palette, index, 0.82);
   return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-standard" style="${vars};width:26px;height:26px;position:relative;pointer-events:none" aria-hidden="true">
+    <div class="expert-sparkle-marker expert-sparkle-tier-standard" style="${vars};width:32px;height:32px;position:relative;pointer-events:none" aria-hidden="true">
       <span class="expert-sparkle-pulse expert-sparkle-pulse-sm"></span>
       <span class="expert-sparkle-core expert-sparkle-core-sm"></span>
       <span class="expert-sparkle-glint expert-sparkle-glint-1" style="background:${palette.accent}"></span>
@@ -58,7 +58,7 @@ function standardMarkup(palette: SparklePalette, index: number): string {
 function microMarkup(palette: SparklePalette, index: number): string {
   const vars = paletteVars(palette, index, 0.68);
   return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-micro" style="${vars};width:18px;height:18px;position:relative;pointer-events:none" aria-hidden="true">
+    <div class="expert-sparkle-marker expert-sparkle-tier-micro" style="${vars};width:24px;height:24px;position:relative;pointer-events:none" aria-hidden="true">
       <span class="expert-sparkle-core expert-sparkle-core-micro"></span>
       <span class="expert-sparkle-glint expert-sparkle-glint-micro" style="background:${palette.accent}"></span>
     </div>

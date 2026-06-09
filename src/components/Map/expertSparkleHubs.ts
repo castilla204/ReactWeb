@@ -152,3 +152,30 @@ export function isHubInHeroSparkleRegion(lng: number, lat: number): boolean {
 export const HERO_LANDING_SPARKLE_HUBS = EXPERT_SPARKLE_HUBS.filter((hub) =>
   isHubInHeroSparkleRegion(hub.lng, hub.lat),
 );
+
+/**
+ * Red mundial dispersa para el hero — un hub por macro-región, sin micro-puntos
+ * en Iberia. Pensada para zoom ~2 (vista Atlántico + Europa + África + Oriente).
+ */
+export const HERO_WORLD_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
+  { id: 'new-york', lat: 40.7128, lng: -74.006, weight: 3 },
+  { id: 'los-angeles', lat: 34.0522, lng: -118.2437, weight: 2 },
+  { id: 'mexico-city', lat: 19.4326, lng: -99.1332, weight: 2 },
+  { id: 'sao-paulo', lat: -23.5505, lng: -46.6333, weight: 3 },
+  { id: 'buenos-aires', lat: -34.6037, lng: -58.3816, weight: 2 },
+  { id: 'madrid', lat: 40.4168, lng: -3.7038, weight: 3 },
+  { id: 'london', lat: 51.5074, lng: -0.1278, weight: 2 },
+  { id: 'paris', lat: 48.8566, lng: 2.3522, weight: 2 },
+  { id: 'berlin', lat: 52.52, lng: 13.405, weight: 2 },
+  { id: 'rome', lat: 41.9028, lng: 12.4964, weight: 2 },
+  { id: 'istanbul', lat: 41.0082, lng: 28.9784, weight: 2 },
+  { id: 'cairo', lat: 30.0444, lng: 31.2357, weight: 2 },
+  { id: 'lagos', lat: 6.5244, lng: 3.3792, weight: 2 },
+  { id: 'johannesburg', lat: -26.2041, lng: 28.0473, weight: 2 },
+  { id: 'dubai', lat: 25.2048, lng: 55.2708, weight: 3 },
+  { id: 'mumbai', lat: 19.076, lng: 72.8777, weight: 2 },
+  { id: 'singapore', lat: 1.3521, lng: 103.8198, weight: 2 },
+  { id: 'tokyo', lat: 35.6762, lng: 139.6503, weight: 3 },
+  { id: 'seoul', lat: 37.5665, lng: 126.978, weight: 2 },
+  { id: 'sydney', lat: -33.8688, lng: 151.2093, weight: 2 },
+];

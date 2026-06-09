@@ -63,6 +63,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             hideCornerStats
             showCityMarkers={false}
             showExpertSparkles
+            sparkleRegion="hero-world"
           />
         </Suspense>
       </div>
