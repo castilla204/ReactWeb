@@ -44,12 +44,17 @@ interface DotSpec {
 }
 
 const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
-  // weight=3 (hub principal — Madrid, Barcelona, NYC, Tokyo...): 7 px
-  3: { core: 7 },
-  // weight=2 (ciudad media): 6 px
-  2: { core: 6 },
-  // weight=1 (presencia ligera, la mayoría): 5 px
-  1: { core: 5 },
+  // 🔧 v8: ampliamos el rango de tamaños para que la jerarquía sea perceptible.
+  // - weight=3 (hubs principales — Madrid, Barcelona, NYC, Tokyo...): 8 px,
+  //   destacan claramente como cabezas de red.
+  // - weight=2 (ciudades medias — Munich, Hamburg, Valencia...): 5 px,
+  //   tamaño medio.
+  // - weight=1 (provincias / secundarias — Toledo, Cuenca, Florence, Nice...):
+  //   4 px, "puntitos muy pequeñitos" como pidió el usuario; aportan densidad
+  //   sin competir visualmente con los hubs.
+  3: { core: 8 },
+  2: { core: 5 },
+  1: { core: 4 },
 };
 
 export function expertSparkleMarkerHtml(
