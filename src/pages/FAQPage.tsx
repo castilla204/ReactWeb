@@ -4,12 +4,38 @@ import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { FAQ } from '../components/FAQ';
 import { Footer } from '../components/Footer';
+import { SEO } from '../components/SEO';
+import { FAQ_ITEMS } from '../content/faqContent';
+import { faqPageSchema, breadcrumbSchema } from '../utils/jsonLd';
 
 const FAQPage: React.FC = () => {
   const navigate = useNavigate();
 
+  // 🛡️ SEO: FAQPage JSON-LD con TODAS las preguntas del faqContent.
+  // Google requiere que las preguntas estén visibles en el HTML (lo hace el componente <FAQ />)
+  // para mostrar el rich snippet. Con 41 preguntas Inspecciono cubre casi toda la intención
+  // informacional del marketplace → muy alto potencial de AI Overviews + featured snippets.
+  const jsonLd = [
+    faqPageSchema(
+      FAQ_ITEMS.map((it) => ({ question: it.question, answer: it.answer })),
+    ),
+    breadcrumbSchema([
+      { name: 'Inicio', url: '/' },
+      { name: 'Preguntas frecuentes', url: '/faq' },
+    ]),
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Preguntas frecuentes sobre inspecciones pre-compra | Inspecciono"
+        description="Resolvemos las dudas más habituales sobre Inspecciono: precios, plazos, pago en escrow, qué incluye el informe, cómo elegir experto y cómo abrir disputa."
+        canonical="/faq"
+        ogTitle="Preguntas frecuentes — Inspecciono"
+        ogDescription="¿Cuánto cuesta? ¿Qué incluye el informe? ¿Cómo funciona el pago retenido? Todas las respuestas en un sitio."
+        jsonLd={jsonLd}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

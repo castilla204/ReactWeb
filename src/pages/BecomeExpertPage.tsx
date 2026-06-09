@@ -22,6 +22,8 @@ import {
 import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
+import { SEO } from '../components/SEO';
+import { breadcrumbSchema } from '../utils/jsonLd';
 import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES } from '../types/stripe';
 import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
@@ -917,6 +919,20 @@ function BecomeExpertPage() {
     //    redirigido como experto pendiente, el shell debe ocultar el botón "Completar
     //    registro" — porque ya no hay nada que enviar, solo conectar Stripe.
     return (
+        <>
+        <SEO
+            title="Hazte experto en Inspecciono · Cobra inspecciones pre-compra | Inspecciono"
+            description="Mecánico, perito o técnico: monta tu ficha en Inspecciono y empieza a cobrar inspecciones pre-compra con Stripe. Verificación rápida, sin coste de alta."
+            canonical="/become-expert"
+            ogTitle="Hazte experto verificado en Inspecciono"
+            ogDescription="Inspecciones pre-compra para clientes que pagan en escrow. Tú fijas precio y zona. Comisión transparente, sin alta."
+            jsonLd={[
+                breadcrumbSchema([
+                    { name: 'Inicio', url: '/' },
+                    { name: 'Hazte experto', url: '/become-expert' },
+                ]),
+            ]}
+        />
         <BecomeExpertWizardShell
             steps={STEPS}
             currentStep={currentStep}
@@ -935,6 +951,7 @@ function BecomeExpertPage() {
         >
             {renderStepContent()}
         </BecomeExpertWizardShell>
+        </>
     );
 }
 
