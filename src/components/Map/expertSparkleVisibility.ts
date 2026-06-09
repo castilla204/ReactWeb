@@ -15,15 +15,15 @@ const SPREAD_MAX_VISIBLE = 52;
  * el hemisferio visible — el usuario percibe "expertos en todo el mundo".
  * Tras aterrizar (mercator regional) volvemos a SPREAD_MAX_VISIBLE para no saturar.
  */
-// 🔧 v8: densificamos para que España y Europa muestren MUCHOS más puntitos.
-// Rejilla 18×14 = 252 celdas → al estar Iberia ocupando ~12% del canvas, cubre
-// ~30 celdas, y Europa central otras ~40. Con la lista expandida (~75 hubs en
-// España+Europa) salen 30-40 dots en Iberia y otros 30-40 en el resto del
-// continente sin amontonarse.
-const SPREAD_MAX_VISIBLE_GLOBE = 130;
-const MAX_VISIBLE_SPARKLES_GLOBE = 100;
-const SPREAD_GRID_COLS_GLOBE = 18;
-const SPREAD_GRID_ROWS_GLOBE = 14;
+// 🔧 v10 ("más puntos"): rejilla 22×16 = 352 celdas → más capacidad para
+// distribuir los ~200 hubs de la lista. Tope 180 puntos visibles a la vez en
+// el hemisferio (era 130). Con Iberia ocupando ~12% del canvas se rellenan
+// ~42 celdas → con ~50 hubs españoles disponibles salen 40+ dots solo en
+// España; el resto del continente queda igualmente bien cubierto.
+const SPREAD_MAX_VISIBLE_GLOBE = 180;
+const MAX_VISIBLE_SPARKLES_GLOBE = 140;
+const SPREAD_GRID_COLS_GLOBE = 22;
+const SPREAD_GRID_ROWS_GLOBE = 16;
 
 /**
  * Umbral de hemisferio visible: cos(distancia angular) > 0.05 ≈ < 87° desde la
