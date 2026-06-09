@@ -1,0 +1,45 @@
+# ════════════════════════════════════════════════════════════════════════════
+# robots.txt — Inspecciono
+# https://inspecciono.com
+#
+# Política: indexamos todo el contenido público del marketplace.
+# Bloqueamos rutas privadas (auth/dashboard/admin/checkout) para no gastar
+# crawl budget en páginas que solo renderizan tras login y no tienen valor SEO.
+# ════════════════════════════════════════════════════════════════════════════
+
+User-agent: *
+Allow: /
+
+# Auth / onboarding (no aporta SEO, gasta crawl budget)
+Disallow: /login
+Disallow: /complete-onboarding
+Disallow: /refresh-onboarding
+Disallow: /mfa/
+
+# Área privada del usuario
+Disallow: /busquedas
+Disallow: /busquedas/
+Disallow: /searchhire/
+Disallow: /detalles/
+Disallow: /transacciones
+Disallow: /mis-mensajes
+Disallow: /notifications
+Disallow: /favoritos
+Disallow: /chat-pre-contratacion/
+
+# Flujo de pago y resultados de Stripe
+Disallow: /checkout/
+Disallow: /success
+Disallow: /cancel
+
+# Panel del experto y onboarding de experto
+Disallow: /expert-panel
+
+# Back-office admin
+Disallow: /admin
+Disallow: /admin/
+
+# API
+Disallow: /api/
+
+Sitemap: https://inspecciono.com/sitemap.xml
