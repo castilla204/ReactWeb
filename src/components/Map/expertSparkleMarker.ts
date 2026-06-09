@@ -21,72 +21,111 @@ export const EXPERT_SPARKLE_PALETTES = [
 type SparklePalette = (typeof EXPERT_SPARKLE_PALETTES)[number];
 
 /**
- * 🔵 PUNTO DE PRESENCIA — diseño v3 (junio 2026, estilo heatmap Strava/Mapbox).
+ * 🔵 PERLA 3D + RADAR — diseño v6 (junio 2026)
  *
- * v1 (deprecado): composición de orbits + glints satélite animados con
- *   transform:translate → aparecían "en el mar" porque se alejaban del centro.
- * v2 (deprecado): dot sólido + halo blanco grueso (2px) + glow exterior →
- *   feedback del usuario: "se ven como varitas, no me gusta". El halo blanco
- *   denso hacía que el conjunto pareciera la cabeza de un alfiler/varita en
- *   lugar de un punto orgánico de presencia.
- * v3 (actual): SOLO color. Tres capas concéntricas del MISMO tono del experto
- *   con opacidad creciente hacia dentro — el efecto "punto de calor". Sin
- *   blancos duros, sin bordes opacos. Microsombra al suelo para no flotar.
+ * Feedback acumulado:
+ *  - v1 (orbits): "puntos en el mar" (satélites con translate).
+ *  - v2 (halo blanco grueso): "se ven como varitas".
+ *  - v3 (heatmap muy sutil): "no veo ningún punto".
+ *  - v4 (heatmap + glow grande): visible PERO el glow de 210 km a zoom 2.5
+ *    pintaba auras en el Mediterráneo desde Barcelona/Valencia/Lisboa.
+ *  - v5 (glow recortado a 84 km): "apenas se ve", demasiado discreto.
  *
- * Cada capa se hace con box-shadow → un único <span> renderiza todo. Sin
- * elementos hijos que puedan desplazarse del centro de la ciudad.
+ * v6 ataca todo a la vez:
+ *
+ *  1. NÚCLEO 3D tipo perla:
+ *     - Base color de paleta.
+ *     - Radial gradient con brillo blanco al 30%-28% (top-left) → look de
+ *       perla satinada, NO de palo blanco; el brillo está DENTRO de la silueta.
+ *     - inset box-shadow oscuro al 70% bottom-right para profundidad.
+ *     - 1 px de borde colored al 70% → silueta nítida sin invadir mar.
+ *     - Cores grandes: 14 / 12 / 10 px → claramente visibles.
+ *
+ *  2. RADAR centrado (animation `expert-sparkle-radar`):
+ *     - Ring concéntrico del color del experto que crece desde scale 0.7 → 2.0
+ *       y se desvanece (opacity 0.55 → 0.18 a 60%, 0 al final).
+ *     - El "pico" del anillo (opacity 0.55) está en scale 0.7 → radio físico
+ *       de ~5 px = ~100 km a zoom 2.5; cuando ha crecido a scale 2.0 ya está
+ *       a opacity 0. Resultado: el efecto visible se queda cerca del centro y
+ *       NO invade el mar de forma persistente.
+ *     - Delay variable por índice → ondas asíncronas, sensación de "actividad".
+ *
+ *  3. RESPIRACIÓN (animation `expert-sparkle-breathe`) sobre el wrapper:
+ *     - scale 1.0 ↔ 1.08, periodo lento 3.6 s. Nunca opacity 0 → nunca
+ *       desaparece. Toque vital sin alboroto.
+ *
+ * Las animaciones SOLO usan scale (radial) → cero desplazamiento del centro
+ * de la ciudad. Cero translate. Cero translateX/Y. Mantenemos las clases
+ * .expert-sparkle-marker y `--sp-scale` para que `updateSparkleVisibility`
+ * siga ajustando tamaño por zoom (mercator vs globe).
  */
 
 interface DotSpec {
-  /** Diámetro del núcleo sólido (px). */
   core: number;
-  /** Radio del halo de presencia, en px añadidos a partir del borde del núcleo. */
-  haloPx: number;
-  /** Radio del glow exterior suave (px). */
-  glowPx: number;
+  /** Radio del anillo radar BASE (px). El radar pulsa entre 0.7 y 2.0 de este valor. */
+  radarBasePx: number;
+  /** Ancho del trazo del anillo radar (px). */
+  radarStroke: number;
 }
 
 const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
-  // 🔧 v5 (feedback "puntos en el mar"): MANTENEMOS los cores (visibilidad) pero
-  // RECORTAMOS halo y glow drásticamente. La causa raíz no era posición errónea:
-  // el box-shadow se proyecta en píxeles de pantalla, no en metros. A zoom 2.5
-  // (post-landing) 1 px = 21 km a lat 40°N. El glow de 10 px = 210 km de radio
-  // físico → cualquier ciudad costera (Barcelona a 2 km de costa, Valencia a 3,
-  // Lisboa a 1, Nápoles a 2, Tel Aviv <1, Estambul Bósforo, Casablanca 0…) tenía
-  // su halo invadiendo el mar. Bajando glow a 4 px → radio 84 km → la mayoría
-  // del halo queda sobre tierra. Diagnóstico completo en el informe del agente.
-  3: { core: 12, haloPx: 2, glowPx: 4 },
-  2: { core: 10, haloPx: 2, glowPx: 3 },
-  1: { core: 8, haloPx: 1, glowPx: 3 },
+  // weight=3 (hub principal): núcleo grande para megaciudades, radar visible
+  3: { core: 14, radarBasePx: 11, radarStroke: 1.5 },
+  // weight=2 (ciudad media)
+  2: { core: 12, radarBasePx: 9, radarStroke: 1.5 },
+  // weight=1 (presencia ligera): la mayoría
+  1: { core: 10, radarBasePx: 7, radarStroke: 1 },
 };
 
-/**
- * Construye el estilo inline del único <span> que renderiza el punto. Todo el
- * efecto visual viene de combinar:
- *   1. background sólido del primary  → el núcleo.
- *   2. box-shadow capa 1: spread coloreado a baja opacidad → halo del mismo color
- *      ("aura de presencia"), reemplaza el halo blanco duro de v2.
- *   3. box-shadow capa 2: blur coloreado a media opacidad → glow exterior suave.
- *   4. box-shadow capa 3: sombra negra mínima (0 1px 2px) → "pega" al mapa.
- *   5. inset 0 0 1px white 35% → microhighlight tipo perla, sin grosor — añade
- *      "vida" sin parecer un borde.
- */
-function buildDotStyle(color: string, spec: DotSpec): string {
+function buildPearlBackground(color: string): string {
+  // Capa 1 (superior): brillo blanco al 55% en top-left, transparente al 32% → "highlight".
+  // Capa 2 (media): sombra negra suave al 18% bottom-right → "depth".
+  // Capa 3 (base): color sólido.
+  return (
+    `radial-gradient(circle at 32% 28%, rgba(255,255,255,0.55) 0%, transparent 32%),` +
+    `radial-gradient(circle at 65% 78%, rgba(0,0,0,0.18) 0%, transparent 55%),` +
+    color
+  );
+}
+
+function buildCoreStyle(color: string, spec: DotSpec): string {
   return [
     `width:${spec.core}px`,
     `height:${spec.core}px`,
     `border-radius:50%`,
-    `background:${color}`,
+    `background:${buildPearlBackground(color)}`,
+    `border:1px solid ${color}b3`,
     `box-shadow:` +
-      // Microhighlight perla (no es un border, no engrosa la silueta)
-      `inset 0 0 1px rgba(255,255,255,0.45),` +
-      // 🔧 v4: halo concéntrico del mismo color a 33% (era 12% en v3 → diluido)
-      `0 0 0 ${spec.haloPx}px ${color}55,` +
-      // 🔧 v4: glow exterior difuso a 73% (era 45% en v3 → casi invisible)
-      `0 0 ${spec.glowPx}px ${color}bb,` +
-      // Microsombra al suelo para dar profundidad sin flotar
-      `0 1px 3px rgba(0,0,0,0.32)`,
+      // Microhighlight inset para reforzar el "barniz" superior
+      `inset 0 1px 1px rgba(255,255,255,0.35),` +
+      // Inset sombra inferior para volumen
+      `inset 0 -1px 1px rgba(0,0,0,0.22),` +
+      // Drop shadow muy ceñida para "pegar" al mapa sin invadir
+      `0 1px 2px rgba(0,0,0,0.32),` +
+      // Halo color muy ceñido (1.5 px ≈ 30 km a z=2.5 → mínima invasión)
+      `0 0 2px ${color}cc`,
     `box-sizing:border-box`,
+    `display:block`,
+  ].join(';');
+}
+
+function buildRadarStyle(color: string, spec: DotSpec): string {
+  return [
+    `position:absolute`,
+    `top:50%`,
+    `left:50%`,
+    `width:${spec.radarBasePx * 2}px`,
+    `height:${spec.radarBasePx * 2}px`,
+    `border-radius:50%`,
+    `border:${spec.radarStroke}px solid ${color}`,
+    `background:transparent`,
+    // El scale lo controla la animación; el translate -50/-50 lo COMPONE el
+    // user agent porque la keyframe sobrescribe `transform`. Por eso usamos
+    // margin-left/top negativos para centrar SIN tocar transform.
+    `margin-left:-${spec.radarBasePx}px`,
+    `margin-top:-${spec.radarBasePx}px`,
+    `box-sizing:border-box`,
+    `pointer-events:none`,
   ].join(';');
 }
 
@@ -97,38 +136,50 @@ export function expertSparkleMarkerHtml(
   twinkle = false,
 ): string {
   const spec = DOT_SPECS[weight];
+  const c = palette.primary;
 
-  // Wrapper algo mayor que núcleo + halo + glow para que el box-shadow no quede
-  // recortado por sub-pixel rounding en algunos navegadores. El MapLibre.Marker
-  // con anchor:'center' centra ESTE wrapper sobre la lng/lat → el punto coincide
-  // exactamente con la ciudad (sin offsets internos, sin transforms).
-  const wrapperSize = spec.core + (spec.haloPx + spec.glowPx) * 2 + 4;
+  // Tamaño del wrapper = lo bastante para contener radar al pico (scale 2.0 sobre radarBasePx),
+  // halo color (2px) y drop shadow. Mantenemos pointer-events:none para no robar clicks.
+  const wrapperSize = spec.radarBasePx * 4 + 8;
 
-  // Anti-superposición de parpadeos: cada índice arranca en un punto distinto del ciclo.
-  const twinkleDuration = `${3.4 + (index % 9) * 0.4}s`;
-  const twinkleDelay = `${(index * 0.71) % 5.3}s`;
+  // Periodos y delays asíncronos por marker para "movimiento orgánico" sin sincronía
+  const breatheDuration = `${3.4 + (index % 5) * 0.45}s`;
+  const breatheDelay = `${(index * 0.41) % 4.1}s`;
+  const radarDuration = `${2.6 + (index % 7) * 0.32}s`;
+  const radarDelay = `${(index * 0.73) % 3.4}s`;
+
   const twinkleClass = twinkle ? ' expert-sparkle-twinkle' : '';
-  const twinkleVars = twinkle
-    ? `--sp-twinkle-duration:${twinkleDuration};--sp-twinkle-delay:${twinkleDelay};`
-    : '';
 
-  // El wrapper conserva la clase `expert-sparkle-marker` porque
-  // `updateSparkleVisibility` lee `--sp-scale` para escalar según zoom (no translate).
-  const wrapperStyle =
-    `${twinkleVars}` +
-    `--sp-scale:1;` +
-    `width:${wrapperSize}px;` +
-    `height:${wrapperSize}px;` +
-    `display:flex;` +
-    `align-items:center;` +
-    `justify-content:center;` +
-    `pointer-events:none`;
+  const wrapperStyle = [
+    `--sp-scale:1`,
+    `--sp-breathe-dur:${breatheDuration}`,
+    `--sp-breathe-delay:${breatheDelay}`,
+    `--sp-radar-dur:${radarDuration}`,
+    `--sp-radar-delay:${radarDelay}`,
+    `position:relative`,
+    `width:${wrapperSize}px`,
+    `height:${wrapperSize}px`,
+    `display:flex`,
+    `align-items:center`,
+    `justify-content:center`,
+    `pointer-events:none`,
+  ].join(';');
 
-  const dotStyle = buildDotStyle(palette.primary, spec);
+  const coreStyle = buildCoreStyle(c, spec);
+  const radarStyle = buildRadarStyle(c, spec);
 
+  // Estructura:
+  //  <div .expert-sparkle-marker .expert-sparkle-pearl>     ← respira (scale 1↔1.08)
+  //    <span .expert-sparkle-radar style="...">  ← onda radar (scale 0.7→2.0 + fade)
+  //    <span style="...core 3D perla...">         ← núcleo estático centrado
+  //  </div>
+  //
+  // El orden importa: el radar ANTES del core en el DOM para que el core
+  // quede encima visualmente (z-index implícito por orden).
   return `
-    <div class="expert-sparkle-marker${twinkleClass}" style="${wrapperStyle}" aria-hidden="true">
-      <span style="${dotStyle}"></span>
+    <div class="expert-sparkle-marker expert-sparkle-pearl${twinkleClass}" style="${wrapperStyle}" aria-hidden="true">
+      <span class="expert-sparkle-radar" style="${radarStyle}"></span>
+      <span style="${coreStyle}"></span>
     </div>
   `;
 }
