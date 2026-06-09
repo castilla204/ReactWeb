@@ -176,11 +176,17 @@ function buildCartoStyle(): maplibregl.StyleSpecification {
 /**
  * Vista inicial: planeta completo (proyección globe).
  * @see https://maplibre.org/maplibre-gl-js/docs/examples/zoom-and-planet-size-relation-on-globe/
+ *
+ * 🔧 v7-globo: zoom 1.25 → 0.45. A 1.25 el planeta quedaba pegado a cámara
+ * y se veía más bien como un casquete; a 0.45 se aprecia el "efecto globo
+ * terráqueo" con esfera completa, curvatura del horizonte, espacio negro
+ * alrededor. Pitch un poco menos agresivo (58 → 42) para que la rotación
+ * de la Tierra se note mejor sin tanto picado.
  */
 const GLOBE_INTRO = {
   center: [0, 18] as [number, number],
-  zoom: 1.25,
-  pitch: 58,
+  zoom: 0.45,
+  pitch: 42,
   bearing: -22,
 } as const;
 
@@ -201,7 +207,12 @@ const MOBILE_PEEK_CAMERA = {
   bearing: 0,
 } as const;
 
-const GLOBE_HOLD_MS = 100;
+// 🔧 v7-globo: hold 100→650 ms para que el usuario perciba el efecto globo
+// terráqueo (esfera completa) antes de empezar el vuelo regional. Sin esta
+// pausa el flyTo arrancaba a los 100 ms y el ojo no llegaba a registrar la
+// curvatura. 650 ms es el sweet spot — suficiente para "wow", no tanto como
+// para sentir que la página se quedó pillada.
+const GLOBE_HOLD_MS = 650;
 const LANDING_FLY_MS = 1400;
 /** Si IP no marca resolved a tiempo, forzar vuelo igual (evita quedarse en globo sin zoom). */
 const IP_RESOLVE_FALLBACK_MS = 450;
