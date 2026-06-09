@@ -55,7 +55,9 @@
   }
 
   .support-chat-panel,
-  .support-chat-fab-pulse {
+  .support-chat-fab-pulse,
+  .expert-sparkle-marker,
+  .expert-sparkle-marker * {
     animation: none !important;
   }
 }
@@ -75,6 +77,173 @@
 
 .support-chat-fab-pulse {
   animation: support-chat-fab-pulse 2.8s ease-out infinite;
+}
+
+/* Destellos de expertos — anclados a coordenadas del mapa (MapLibre markers) */
+.expert-sparkle-marker {
+  transform: scale(var(--sp-scale, 1));
+}
+
+.expert-sparkle-pulse {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sp-primary);
+  opacity: 0.55;
+  animation: expert-sparkle-pulse 2.6s ease-out infinite;
+  animation-delay: var(--sp-delay);
+}
+
+.expert-sparkle-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--sp-primary);
+  box-shadow:
+    0 0 6px var(--sp-primary),
+    0 0 14px color-mix(in srgb, var(--sp-primary) 55%, transparent);
+  animation: expert-sparkle-core 2.2s ease-in-out infinite;
+  animation-delay: var(--sp-delay);
+}
+
+.expert-sparkle-pulse-sm {
+  inset: 2px;
+  border-width: 1px;
+}
+
+.expert-sparkle-core-sm {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  box-shadow:
+    0 0 4px var(--sp-primary),
+    0 0 10px color-mix(in srgb, var(--sp-primary) 45%, transparent);
+}
+
+.expert-sparkle-core-micro {
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  box-shadow:
+    0 0 3px var(--sp-primary),
+    0 0 7px color-mix(in srgb, var(--sp-primary) 40%, transparent);
+  animation-duration: 1.9s;
+}
+
+.expert-sparkle-glint-micro {
+  top: 2px;
+  right: 2px;
+  animation-delay: calc(var(--sp-delay) + 0.6s);
+}
+
+.expert-sparkle-orbit {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: expert-sparkle-orbit 3.4s ease-in-out infinite;
+  animation-delay: var(--sp-delay);
+}
+
+.expert-sparkle-orbit-a {
+  top: 4px;
+  left: 50%;
+  margin-left: -1.5px;
+}
+
+.expert-sparkle-orbit-b {
+  bottom: 6px;
+  right: 5px;
+  animation-delay: calc(var(--sp-delay) + 0.9s);
+}
+
+.expert-sparkle-glint {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: expert-sparkle-glint 2.8s ease-in-out infinite;
+}
+
+.expert-sparkle-glint-1 {
+  top: 8px;
+  right: 7px;
+  animation-delay: calc(var(--sp-delay) + 0.4s);
+}
+
+.expert-sparkle-glint-2 {
+  bottom: 9px;
+  left: 6px;
+  animation-delay: calc(var(--sp-delay) + 1.1s);
+}
+
+.expert-sparkle-glint-3 {
+  top: 50%;
+  right: 3px;
+  margin-top: -1px;
+  animation-delay: calc(var(--sp-delay) + 1.7s);
+}
+
+@keyframes expert-sparkle-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.65;
+  }
+  75% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+@keyframes expert-sparkle-core {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes expert-sparkle-orbit {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(0);
+  }
+  35% {
+    opacity: 0.95;
+    transform: scale(1) translateY(-2px);
+  }
+  70% {
+    opacity: 0.2;
+    transform: scale(0.7) translateY(1px);
+  }
+}
+
+@keyframes expert-sparkle-glint {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  65% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
 }
 
 @keyframes caret-blink {

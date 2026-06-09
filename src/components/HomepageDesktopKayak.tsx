@@ -62,6 +62,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             ipLandingResolved={ipLandingResolved}
             hideCornerStats
             showCityMarkers={false}
+            showExpertSparkles
           />
         </Suspense>
       </div>

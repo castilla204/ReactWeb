@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import logoImg from '../media/logoi.png';
+import erizoImg from '../media/erizo.png';
 import { useAuth } from '../contexts/AuthContext';
 
 const FONT =
@@ -22,7 +22,7 @@ export const Footer = () => {
     >
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
         <Link to="/" className="inline-flex items-center gap-1.5 shrink-0 mr-1">
-          <img src={logoImg} alt="" className="w-4 h-4 object-contain" />
+          <img src={erizoImg} alt="" className="h-5 w-5 -scale-x-100 object-contain" />
           <span className="text-[13px] font-semibold text-[#222222]">inspecciono.com</span>
         </Link>
 

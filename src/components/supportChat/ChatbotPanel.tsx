@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Headset, Send, Sparkles, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
+import erizoImg from '../../media/erizo.png';
 import { cn } from '../../lib/utils';
 import { TypingDots } from '../chat/TypingDots';
 import {
@@ -15,20 +16,24 @@ import { useSupportChat } from '../../hooks/useSupportChat';
 
 interface ChatbotPanelProps {
   onClose: () => void;
+  variant?: 'floating' | 'drawer';
 }
 
 function AssistantAvatar() {
   return (
-    <span
-      className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8f2fa] text-brand ring-1 ring-[#dce9f2]"
-      aria-hidden
-    >
-      <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
+    <span className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center" aria-hidden>
+      <img
+        src={erizoImg}
+        alt=""
+        className="h-7 w-7 -scale-x-100 object-contain"
+        style={{ imageRendering: '-webkit-optimize-contrast' }}
+      />
     </span>
   );
 }
 
-export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose }) => {
+export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = 'floating' }) => {
+  const isDrawer = variant === 'drawer';
   const navigate = useNavigate();
   const { messages, isLoading, error, sendMessage } = useSupportChat();
   const [draft, setDraft] = useState('');
@@ -67,12 +72,16 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose }) => {
   return (
     <div
       className={cn(
-        'support-chat-panel',
-        'flex w-[min(calc(100vw-1.25rem),21rem)] md:w-[min(calc(100vw-3rem),24rem)]',
-        'max-h-[min(78vh,36rem)] min-h-[20rem] flex-col overflow-hidden',
-        'rounded-[1.25rem] border border-[#e5e7eb]/90 bg-white',
-        'shadow-[0_8px_40px_rgba(15,23,42,0.12),0_2px_8px_rgba(15,23,42,0.04)]',
-        'animate-in fade-in-0 slide-in-from-bottom-3 duration-300',
+        'support-chat-panel flex flex-col overflow-hidden',
+        isDrawer
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden w-full bg-white'
+          : cn(
+              'w-[min(calc(100vw-1.25rem),21rem)] md:w-[min(calc(100vw-3rem),24rem)]',
+              'max-h-[min(78vh,36rem)] min-h-[20rem]',
+              'rounded-[1.25rem] border border-[#e5e7eb]/90 bg-white',
+              'shadow-[0_8px_40px_rgba(15,23,42,0.12),0_2px_8px_rgba(15,23,42,0.04)]',
+              'animate-in fade-in-0 slide-in-from-bottom-3 duration-300',
+            ),
       )}
       role="dialog"
       aria-label="Asistente de Inspecciono"
@@ -85,8 +94,13 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose }) => {
         />
         <div className="relative flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-[0_4px_14px_hsl(var(--brand)/0.28)]">
-              <Headset className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_4px_14px_hsl(var(--brand)/0.18)] ring-1 ring-[#e8eef3]">
+              <img
+                src={erizoImg}
+                alt=""
+                className="h-8 w-8 -scale-x-100 object-contain"
+                style={{ imageRendering: '-webkit-optimize-contrast' }}
+              />
               <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
             </span>
             <div className="min-w-0">
@@ -209,7 +223,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose }) => {
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="shrink-0 border-t border-[#ebebeb] bg-white/95 px-3 py-3 backdrop-blur-sm"
+        className={cn(
+          'shrink-0 border-t border-[#ebebeb] bg-white/95 px-3 py-3 backdrop-blur-sm',
+          isDrawer && 'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]',
+        )}
       >
         <div className="flex items-end gap-2">
           <textarea

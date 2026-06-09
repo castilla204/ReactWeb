@@ -59,7 +59,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { CookieBanner } from './components/CookieBanner';
 import { ChatbotFab } from './components/ChatbotFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
-import logoImg from './media/logoi.png';
+import erizoImg from './media/erizo.png';
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
@@ -316,7 +316,7 @@ const AppContent: React.FC = () => {
                         <div className="flex flex-col h-full">
                             <div className="p-4 border-b border-border/20">
                                 <div className="flex items-center gap-2">
-                                    <img src={logoImg} alt="Logo" className="w-5 h-5 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
+                                    <img src={erizoImg} alt="" className="h-6 w-6 -scale-x-100 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
                                     <h1 className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
                                     inspecciono.com
                                 </h1>
