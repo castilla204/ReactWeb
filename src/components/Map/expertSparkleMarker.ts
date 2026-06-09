@@ -20,57 +20,92 @@ export const EXPERT_SPARKLE_PALETTES = [
 
 type SparklePalette = (typeof EXPERT_SPARKLE_PALETTES)[number];
 
-function paletteVars(palette: SparklePalette, index: number, scale: number) {
-  const delay = `${(index * 0.23) % 3.1}s`;
-  return `--sp-primary:${palette.primary};--sp-accent:${palette.accent};--sp-flare:${palette.flare};--sp-delay:${delay};--sp-scale:${scale}`;
+/**
+ * 🔵 PUNTO ANCLADO — diseño v2 (junio 2026).
+ *
+ * Reemplaza al marcador decorativo anterior (orbits + glints satélite) porque
+ * sus partículas internas se animaban con `transform: translate(...)` dentro de
+ * un recuadro de 40px → al hacer zoom regional (~zoom 4) ese recuadro ocupaba
+ * ~50-100 km sobre el mapa y las partículas aparecían "flotando en el mar",
+ * fuera de la ciudad real. Ahora cada marker es UN punto sólido perfectamente
+ * centrado en su lng/lat, con halo blanco para contraste y un glow exterior
+ * coloreado. Sin transformaciones que muevan el centro.
+ *
+ * El opcional `twinkle` reutiliza la animación CSS `expert-sparkle-twinkle`
+ * que SOLO modula `opacity` (no translate, no scale) → seguro para no romper
+ * el anclado.
+ */
+
+interface DotSpec {
+  /** Diámetro del punto sólido en píxeles. */
+  size: number;
+  /** Ancho del halo blanco que rodea el punto. */
+  ringPx: number;
+  /** Radio del glow exterior coloreado (box-shadow). */
+  glowPx: number;
 }
 
-/** Hub principal — anillo + núcleo + destellos satélite */
-function hubMarkup(palette: SparklePalette, index: number): string {
-  const vars = paletteVars(palette, index, 1);
-  return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-hub" style="${vars};width:40px;height:40px;position:relative;pointer-events:none" aria-hidden="true">
-      <span class="expert-sparkle-orbit expert-sparkle-orbit-a" style="background:${palette.accent}"></span>
-      <span class="expert-sparkle-orbit expert-sparkle-orbit-b" style="background:${palette.flare}"></span>
-      <span class="expert-sparkle-pulse"></span>
-      <span class="expert-sparkle-core"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-1" style="background:${palette.accent}"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-2" style="background:${palette.flare}"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-3" style="background:${palette.primary}"></span>
-    </div>
-  `;
-}
-
-/** Ciudad media */
-function standardMarkup(palette: SparklePalette, index: number): string {
-  const vars = paletteVars(palette, index, 0.82);
-  return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-standard" style="${vars};width:32px;height:32px;position:relative;pointer-events:none" aria-hidden="true">
-      <span class="expert-sparkle-pulse expert-sparkle-pulse-sm"></span>
-      <span class="expert-sparkle-core expert-sparkle-core-sm"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-1" style="background:${palette.accent}"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-2" style="background:${palette.flare}"></span>
-    </div>
-  `;
-}
-
-/** Presencia ligera — punto brillante compacto */
-function microMarkup(palette: SparklePalette, index: number): string {
-  const vars = paletteVars(palette, index, 0.68);
-  return `
-    <div class="expert-sparkle-marker expert-sparkle-tier-micro" style="${vars};width:24px;height:24px;position:relative;pointer-events:none" aria-hidden="true">
-      <span class="expert-sparkle-core expert-sparkle-core-micro"></span>
-      <span class="expert-sparkle-glint expert-sparkle-glint-micro" style="background:${palette.accent}"></span>
-    </div>
-  `;
-}
+const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
+  // weight=3 (hub principal): un poco más grande para destacar megaciudades
+  3: { size: 14, ringPx: 2, glowPx: 10 },
+  // weight=2 (ciudad media): tamaño medio
+  2: { size: 11, ringPx: 2, glowPx: 7 },
+  // weight=1 (presencia ligera): punto pequeño — la mayoría son éste tier
+  1: { size: 8, ringPx: 1.5, glowPx: 5 },
+};
 
 export function expertSparkleMarkerHtml(
   palette: SparklePalette,
   index: number,
   weight: 1 | 2 | 3,
+  twinkle = false,
 ): string {
-  if (weight === 3) return hubMarkup(palette, index);
-  if (weight === 2) return standardMarkup(palette, index);
-  return microMarkup(palette, index);
+  const spec = DOT_SPECS[weight];
+  // Reservamos un wrapper algo mayor que el punto para que el glow no quede recortado;
+  // pero el punto SÓLIDO va perfectamente centrado en el wrapper. MapLibre.Marker con
+  // anchor:'center' pone el centro del wrapper sobre la lng/lat → el punto coincide
+  // exactamente con la ciudad.
+  const wrapperSize = spec.size + spec.glowPx * 2 + 4;
+
+  // Anti-superposición de parpadeos: cada índice arranca en un punto distinto del ciclo.
+  const twinkleDuration = `${3.2 + (index % 9) * 0.35}s`;
+  const twinkleDelay = `${(index * 0.71) % 5.3}s`;
+  const twinkleClass = twinkle ? ' expert-sparkle-twinkle' : '';
+  const twinkleVars = twinkle
+    ? `;--sp-twinkle-duration:${twinkleDuration};--sp-twinkle-delay:${twinkleDelay}`
+    : '';
+
+  // El wrapper conserva la clase `expert-sparkle-marker` porque
+  // `updateSparkleVisibility` lee `--sp-scale` para escalar según zoom (no translate).
+  const wrapperStyle = [
+    `--sp-scale:1`,
+    `width:${wrapperSize}px`,
+    `height:${wrapperSize}px`,
+    `display:flex`,
+    `align-items:center`,
+    `justify-content:center`,
+    `pointer-events:none`,
+    twinkleVars.replace(/^;/, ''),
+  ]
+    .filter(Boolean)
+    .join(';');
+
+  // El punto sólido: círculo coloreado + anillo blanco + glow exterior. Todo
+  // posicionado relativo al centro del wrapper, sin transforms que lo desplacen.
+  const dotStyle = [
+    `width:${spec.size}px`,
+    `height:${spec.size}px`,
+    `border-radius:50%`,
+    `background:${palette.primary}`,
+    `border:${spec.ringPx}px solid #ffffff`,
+    // Glow exterior: doble box-shadow (color + sombra negra suave para "pegar" al mapa)
+    `box-shadow:0 0 ${spec.glowPx}px ${palette.primary}b3,0 1px 2px rgba(0,0,0,0.25)`,
+    `box-sizing:border-box`,
+  ].join(';');
+
+  return `
+    <div class="expert-sparkle-marker${twinkleClass}" style="${wrapperStyle}" aria-hidden="true">
+      <span style="${dotStyle}"></span>
+    </div>
+  `;
 }
