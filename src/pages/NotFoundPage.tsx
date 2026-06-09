@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { SEO } from '../components/SEO';
 
 /**
  * Página 404 - Recurso no encontrado
@@ -11,6 +12,13 @@ export const NotFoundPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+            {/* 🛡️ SEO: 404 SIEMPRE noindex (mata duplicate-content + ahorra crawl budget).
+                Idealmente el servidor también devolvería HTTP 404 — pendiente Fase 3 (nginx). */}
+            <SEO
+                title="Página no encontrada (404) | Inspecciono"
+                description="La página que buscas no existe o ha sido movida. Vuelve al inicio para seguir explorando inspecciones y peritajes."
+                noindex
+            />
             <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 text-center">
                 <div className="flex justify-center mb-4">
                     <div className="rounded-full bg-blue-100 dark:bg-blue-900/20 p-4">

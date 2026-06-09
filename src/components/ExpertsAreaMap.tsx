@@ -8,7 +8,12 @@ import {
   EXPERT_SPARKLE_PALETTES,
   expertSparkleMarkerHtml,
 } from './map/expertSparkleMarker';
-import { EXPERT_SPARKLE_HUBS } from './map/expertSparkleHubs';
+import {
+  EXPERT_SPARKLE_HUBS,
+  HERO_LANDING_SPARKLE_HUBS,
+  type ExpertSparkleHub,
+} from './map/expertSparkleHubs';
+import { isMapMercator, isSparkleOnScreen } from './map/expertSparkleVisibility';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -283,6 +288,8 @@ interface ExpertsAreaMapProps {
   showCityMarkers?: boolean;
   /** Destellos de color anclados a cada ciudad con expertos (símbolo de red global) */
   showExpertSparkles?: boolean;
+  /** `hero-europe`: solo hubs europeos tras aterrizar (homepage). `global`: todos. */
+  sparkleRegion?: 'hero-europe' | 'global';
   /**
    * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
    * `default`: hero desktop con intro globe + aterrizaje regional.
@@ -300,6 +307,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   hideCornerStats = false,
   showCityMarkers = true,
   showExpertSparkles = false,
+  sparkleRegion = 'hero-europe',
   heroVariant = 'default',
 }) => {
   const isMobilePeek = heroVariant === 'mobile-peek';
@@ -327,6 +335,11 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     [],
   );
 
+  const sparkleHubs = useMemo<readonly ExpertSparkleHub[]>(
+    () => (sparkleRegion === 'global' ? EXPERT_SPARKLE_HUBS : HERO_LANDING_SPARKLE_HUBS),
+    [sparkleRegion],
+  );
+
   const handleCityClick = useCallback(
     (city: ExpertCity) => {
       onCityClick?.(city);
@@ -334,22 +347,26 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     [onCityClick],
   );
 
+  const clearSparkleMarkers = useCallback(() => {
+    sparkleMarkersRef.current.forEach((m) => m.remove());
+    sparkleMarkersRef.current.clear();
+  }, []);
+
   const updateSparkleVisibility = useCallback(() => {
     const map = mapRef.current;
     if (!map || sparkleMarkersRef.current.size === 0) return;
 
-    // Durante el globo los marcadores del hemisferio oculto se proyectan mal (océano).
-    if (!introComplete) {
+    if (!introComplete || !isMapMercator(map)) {
       sparkleMarkersRef.current.forEach((marker) => {
         marker.getElement().style.display = 'none';
       });
       return;
     }
 
-    const bounds = map.getBounds();
     sparkleMarkersRef.current.forEach((marker) => {
       const { lng, lat } = marker.getLngLat();
-      marker.getElement().style.display = bounds.contains([lng, lat]) ? '' : 'none';
+      const visible = isSparkleOnScreen(map, lng, lat);
+      marker.getElement().style.display = visible ? '' : 'none';
     });
   }, [introComplete]);
 
@@ -644,8 +661,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       window.removeEventListener('resize', scheduleResize);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current.clear();
-      sparkleMarkersRef.current.forEach((m) => m.remove());
-      sparkleMarkersRef.current.clear();
+      clearSparkleMarkers();
       map?.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -740,16 +756,19 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
+    if (!map || !mapReady || !showExpertSparkles) {
+      clearSparkleMarkers();
+      return;
+    }
 
-    if (!showExpertSparkles) {
-      sparkleMarkersRef.current.forEach((m) => m.remove());
-      sparkleMarkersRef.current.clear();
+    // No crear marcadores HTML durante el globo: se proyectan mal en el hemisferio oculto.
+    if (!introComplete || !isMapMercator(map)) {
+      clearSparkleMarkers();
       return;
     }
 
     if (sparkleMarkersRef.current.size === 0) {
-      EXPERT_SPARKLE_HUBS.forEach((hub, index) => {
+      sparkleHubs.forEach((hub, index) => {
         const palette = EXPERT_SPARKLE_PALETTES[index % EXPERT_SPARKLE_PALETTES.length];
         const wrapper = document.createElement('div');
         wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight);
@@ -766,23 +785,35 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
         sparkleMarkersRef.current.set(hub.id, marker);
       });
-      updateSparkleVisibility();
     }
-  }, [mapReady, showExpertSparkles, updateSparkleVisibility]);
+
+    updateSparkleVisibility();
+  }, [
+    mapReady,
+    showExpertSparkles,
+    introComplete,
+    sparkleHubs,
+    clearSparkleMarkers,
+    updateSparkleVisibility,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !showExpertSparkles) return;
 
+    const onFrame = () => updateSparkleVisibility();
+
     updateSparkleVisibility();
-    map.on('move', updateSparkleVisibility);
-    map.on('zoom', updateSparkleVisibility);
-    map.on('moveend', updateSparkleVisibility);
+    map.on('move', onFrame);
+    map.on('zoom', onFrame);
+    map.on('moveend', onFrame);
+    map.on('render', onFrame);
 
     return () => {
-      map.off('move', updateSparkleVisibility);
-      map.off('zoom', updateSparkleVisibility);
-      map.off('moveend', updateSparkleVisibility);
+      map.off('move', onFrame);
+      map.off('zoom', onFrame);
+      map.off('moveend', onFrame);
+      map.off('render', onFrame);
     };
   }, [mapReady, showExpertSparkles, updateSparkleVisibility, introComplete]);
 

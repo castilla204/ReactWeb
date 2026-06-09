@@ -114,57 +114,10 @@
     }
     </script>
 
-    <!-- FAQPage: rich snippet con preguntas/respuestas en SERP. Las MISMAS preguntas
-         deben aparecer visibles en la home (HomePage) — si solo están aquí Google deja
-         de mostrar el rich snippet desde agosto 2023. -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "¿Cuánto cuesta una inspección en Inspecciono?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "El precio lo fija cada experto en su oferta, según el tipo de inspección y la ubicación. Tú comparas ofertas antes de elegir y no pagas hasta aceptar al experto."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Cuánto tarda en hacerse la inspección?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Desde que publicas la búsqueda hasta que recibes ofertas, normalmente unas horas. Una vez eliges experto, la inspección y el informe se entregan en pocos días según la disponibilidad y el tipo de servicio."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Qué incluye el informe que me entrega el experto?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Un informe escrito con los puntos revisados, hallazgos, fotos y una recomendación clara (comprar, negociar precio o descartar). El formato es estandarizado dentro de cada categoría para que puedas comparar."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Cómo funciona el pago seguro?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Pagas con tarjeta al aceptar al experto, pero el dinero queda retenido por Stripe (escrow) y no se libera hasta que recibes el informe y das tu visto bueno. Si hay desacuerdo, abrimos una disputa."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Qué pasa si el experto no detecta un fallo importante?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Cada experto verificado es responsable profesional del informe que firma. Si crees que se le ha pasado algo grave, abres una incidencia en la propia plataforma y revisamos el caso; los expertos con incidencias reiteradas pierden la verificación."
-          }
-        }
-      ]
-    }
-    </script>
+    <!-- FAQPage JSON-LD: ahora se inyecta dinámicamente desde HomePage.tsx (5 preguntas) y
+         FAQPage.tsx (las 41) vía componente <SEO>, no aquí. Antes este bloque emitía las
+         mismas 5 preguntas en TODAS las rutas — error: Google penaliza JSON-LD que no
+         coincide con el contenido visible de la página. -->
 
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />

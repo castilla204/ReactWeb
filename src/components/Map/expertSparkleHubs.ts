@@ -130,3 +130,25 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'melbourne', lat: -37.8136, lng: 144.9631, weight: 2 },
   { id: 'auckland', lat: -36.8485, lng: 174.7633, weight: 1 },
 ];
+
+/**
+ * Bbox del hero desktop tras aterrizar (Europa occidental + Mediterráneo).
+ * Excluye África subsahariana, Oriente Medio lejano, Américas y Asia —
+ * que con zoom regional amplio aparecían en el océano por proyección/bounds.
+ */
+export const HERO_LANDING_SPARKLE_BBOX = {
+  west: -10.5,
+  east: 28,
+  south: 36,
+  north: 57,
+} as const;
+
+export function isHubInHeroSparkleRegion(lng: number, lat: number): boolean {
+  const { west, east, south, north } = HERO_LANDING_SPARKLE_BBOX;
+  return lng >= west && lng <= east && lat >= south && lat <= north;
+}
+
+/** Hubs usados en el hero homepage — densidad alta sin puntos del otro hemisferio. */
+export const HERO_LANDING_SPARKLE_HUBS = EXPERT_SPARKLE_HUBS.filter((hub) =>
+  isHubInHeroSparkleRegion(hub.lng, hub.lat),
+);
