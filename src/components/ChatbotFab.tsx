@@ -90,7 +90,7 @@ export const ChatbotFab: React.FC = () => {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-[54] bg-[#1c1c1c]/6 md:bg-transparent md:pointer-events-none"
+          className="fixed inset-0 z-[54] bg-[#0f172a]/20 backdrop-blur-[1px] md:bg-transparent md:backdrop-blur-none md:pointer-events-none"
           aria-hidden
         />
       )}
@@ -112,11 +112,12 @@ export const ChatbotFab: React.FC = () => {
           className={cn(
             'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-white',
             'shadow-[0_4px_16px_hsl(var(--brand)/0.22)] ring-2 ring-white',
-            'transition-[background-color,box-shadow] duration-200 ease-out',
-            'hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)]',
-            'active:scale-[0.98]',
+            'transition-[background-color,box-shadow,transform] duration-200 ease-out',
+            'hover:bg-brand-hover hover:shadow-[0_6px_22px_hsl(var(--brand)/0.3)]',
+            'active:scale-[0.96]',
             'touch-manipulation [-webkit-tap-highlight-color:transparent]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+            !isOpen && 'support-chat-fab-pulse',
           )}
           aria-label={isOpen ? 'Cerrar asistente' : 'Abrir asistente de Inspecciono'}
           aria-expanded={isOpen}
