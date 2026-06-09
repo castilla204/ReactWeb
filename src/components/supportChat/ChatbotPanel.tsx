@@ -19,19 +19,6 @@ interface ChatbotPanelProps {
   variant?: 'floating' | 'drawer';
 }
 
-function AssistantAvatar() {
-  return (
-    <span className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center" aria-hidden>
-      <img
-        src={erizoImg}
-        alt=""
-        className="h-7 w-7 -scale-x-100 object-contain"
-        style={{ imageRendering: '-webkit-optimize-contrast' }}
-      />
-    </span>
-  );
-}
-
 export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = 'floating' }) => {
   const isDrawer = variant === 'drawer';
   const navigate = useNavigate();
@@ -150,16 +137,15 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
 
         <div className="relative z-[1] space-y-2.5">
           {showWelcome && (
-            <article className="chat-message-enter flex gap-2">
-              <AssistantAvatar />
-              <div className="max-w-[calc(100%-2.25rem)] rounded-[1.15rem] rounded-bl-md border border-[#e8e8e8]/90 bg-white/95 px-3.5 py-2.5 text-sm leading-relaxed text-[#1c1c1c] shadow-[0_1px_3px_rgba(15,23,42,0.05)] backdrop-blur-[2px]">
+            <article className="chat-message-enter">
+              <div className="rounded-[1.15rem] rounded-bl-md border border-[#e8e8e8]/90 bg-white/95 px-3.5 py-2.5 text-sm leading-relaxed text-[#1c1c1c] shadow-[0_1px_3px_rgba(15,23,42,0.05)] backdrop-blur-[2px]">
                 {CHATBOT_WELCOME_MESSAGE}
               </div>
             </article>
           )}
 
           {showSuggestions && (
-            <div className="chat-message-enter pl-9">
+            <div className="chat-message-enter">
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">
                 Sugerencias
               </p>
@@ -186,10 +172,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
                 msg.role === 'user' ? 'flex-row-reverse' : 'flex-row',
               )}
             >
-              {msg.role === 'assistant' && <AssistantAvatar />}
               <div
                 className={cn(
-                  'max-w-[calc(100%-2.25rem)] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
+                  'px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
+                  msg.role === 'user' && 'max-w-[85%]',
                   msg.role === 'user'
                     ? 'rounded-[1.15rem] rounded-br-md bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.22)]'
                     : 'rounded-[1.15rem] rounded-bl-md border border-[#e8e8e8]/90 bg-white/95 text-[#1c1c1c] shadow-[0_1px_3px_rgba(15,23,42,0.05)] backdrop-blur-[2px]',
@@ -201,8 +187,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
           ))}
 
           {isLoading && (
-            <div className="chat-message-enter flex gap-2">
-              <AssistantAvatar />
+            <div className="chat-message-enter">
               <div className="rounded-[1.15rem] rounded-bl-md border border-[#e8e8e8]/90 bg-white/95 px-3.5 py-2.5 shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
                 <TypingDots className="text-[#6a6a6a]" />
               </div>

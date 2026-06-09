@@ -119,6 +119,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   ) : null;
 
   if (isOverlay) {
+    const isOnImage = className.includes('sd-deliverable-guide-on-image');
     return (
       <>
         <div
@@ -126,15 +127,19 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           role="region"
           aria-labelledby="sd-deliverables-guide-label"
         >
-          <p
-            id="sd-deliverables-guide-label"
-            className="sd-deliverable-guide-label mb-1.5 inline-flex items-center gap-1"
-            style={{ animationDelay: '0ms' }}
-          >
-            <span>Incluye · pulsa para ver más</span>
-            <ChevronRight className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-          </p>
-          {chipList}
+          <div className="sd-deliverable-guide-row">
+            <p
+              id="sd-deliverables-guide-label"
+              className="sd-deliverable-guide-label"
+              style={{ animationDelay: '0ms' }}
+            >
+              <span>Incluye</span>
+              {!isOnImage ? (
+                <ChevronRight className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+              ) : null}
+            </p>
+            {chipList}
+          </div>
         </div>
         {detailModal}
       </>

@@ -109,7 +109,7 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
                   className="h-9 w-9 -scale-x-100 object-contain"
                   style={{ imageRendering: '-webkit-optimize-contrast' }}
                 />
-                <span className="text-[12px] font-semibold tracking-[0.1em] text-[#222]">INSPECCIONO</span>
+                <span className="text-[13px] font-semibold tracking-[-0.01em] text-[#222]">Inspecciono</span>
               </a>
             </div>
 
