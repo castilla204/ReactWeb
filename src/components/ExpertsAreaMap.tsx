@@ -190,13 +190,20 @@ const GLOBE_INTRO = {
   bearing: -22,
 } as const;
 
-/** Vista regional tras el vuelo desde el globo (fallback España) */
+/** Vista regional tras el vuelo desde el globo (fallback España).
+ *
+ * 🔧 v7-globo-stay: pitch 28 → 52. Antes la cámara post-landing quedaba casi
+ * cenital sobre Iberia y, combinado con la conmutación a mercator, mataba la
+ * sensación 3D. Con pitch 52 mantenemos el horizonte visible al fondo y, junto
+ * con el cambio de NO conmutar a mercator (ver flyToLanding más abajo), se ve
+ * la curvatura del planeta detrás de Iberia → "el globo no se aplana al final".
+ */
 const HERO_CAMERA = {
   center: [-4.0, 39.6] as [number, number],
   zoom: 4.1,
-  pitch: 28,
+  pitch: 52,
   bearing: 0,
-  maxPitch: 60,
+  maxPitch: 70,
 } as const;
 
 /** Hero móvil: mundo estático en franja lateral — sin globo ni vuelo regional */
@@ -223,15 +230,15 @@ const MIN_LANDING_ZOOM = 2.05;
 const toHeroLandingZoom = (zoom: number) =>
   Math.max(MIN_LANDING_ZOOM, zoom - LANDING_ZOOM_PULLBACK);
 
-/** Mercator: los tiles raster Carto no se pintan bien en globe a zoom regional. */
+/**
+ * 🔧 v7-globo-stay: ya NO conmutamos a mercator tras el vuelo. MapLibre 5.24
+ * renderiza tiles raster Carto correctamente en globe a cualquier zoom (la
+ * limitación del comentario original era de v4.x). Quedándonos en globe se
+ * preserva la curvatura del planeta detrás del bbox regional → no se "aplana".
+ * Esta función queda como NO-OP para no romper los call-sites; el `resize +
+ * triggerRepaint` final sigue siendo útil para refrescar la viewport.
+ */
 const applyRegionalProjection = (map: maplibregl.Map) => {
-  try {
-    if (map.getProjection().type !== 'mercator') {
-      map.setProjection({ type: 'mercator' });
-    }
-  } catch (err) {
-    console.warn('[ExpertsAreaMap] Proyección mercator:', err);
-  }
   map.resize();
   map.triggerRepaint();
 };
@@ -471,7 +478,9 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         return;
       }
 
-      // Animar en globe; mercator solo al terminar (evita cortar flyTo)
+      // 🔧 v7-globo-stay: animamos Y nos quedamos en globe (sin mercator final).
+      // El zoom de la última frame del flyTo cae a `landingZoom` (~2.05), con pitch
+      // alto la curvatura sigue siendo visible al fondo de Iberia.
       const globeFlyZoom = Math.max(GLOBE_INTRO.zoom, Math.min(landingZoom + 0.35, 3.2));
       targetMap.flyTo({
         center,
