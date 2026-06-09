@@ -1,14 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-ES">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    
-    <!-- Deshabilitar caché en desarrollo -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    
+
     <!-- Security Meta Tags -->
     <!-- ✅ X-Frame-Options se configura en headers HTTP (nginx.conf y vite.config.ts), no funciona como meta tag -->
     <!-- ✅ Content-Security-Policy SÍ funciona como meta tag y se agrega como respaldo adicional -->
@@ -17,37 +12,166 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="geolocation=(self), microphone=(), camera=()" />
-    
-    <!-- SEO Meta Tags -->
-    <title>inspecciono.com - Plataforma de Contratación de Servicios de Verificación Profesional</title>
-    <meta name="description" content="Contrata servicios profesionales de verificación e inspección. Conecta con expertos verificados para revisar vehículos, inmuebles y más. Proceso seguro y garantizado." />
-    <meta name="keywords" content="contratación servicios, verificación profesional, inspección vehículos, inspección inmuebles, expertos verificados, servicios profesionales" />
-    <meta name="author" content="inspecciono.com" />
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="Spanish" />
-    <meta name="revisit-after" content="7 days" />
-    
-    <!-- Open Graph / Facebook -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         SEO — Tarjeta de SERP (lo que se ve en Google ANTES de hacer clic)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+    <title>Antes de comprar, inspecciona · Peritos verificados | Inspecciono</title>
+    <meta name="description" content="¿Vas a comprar un coche, un piso o una moto de segunda mano? Un experto verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow." />
+    <meta name="author" content="Inspecciono" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="theme-color" content="#0066cc" />
+
+    <!-- Canonical: SOLO la home queda hardcoded a /. Para subrutas, App.tsx inyecta
+         el canonical correcto en runtime (React 19 hoistea <link> al <head>).
+         OJO: no añadir "<link rel='canonical' href='/foo'>" estático aquí — perjudica indexación. -->
+    <link rel="canonical" href="https://inspecciono.com/" />
+
+    <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://inspecciono.com/" />
-    <meta property="og:title" content="inspecciono.com - Contratación de Servicios de Verificación Profesional" />
-    <meta property="og:description" content="Contrata servicios profesionales de verificación e inspección. Conecta con expertos verificados para revisar vehículos, inmuebles y más." />
-    <meta property="og:image" content="https://inspecciono.com/og-image.jpg" />
-    <meta property="og:site_name" content="inspecciono.com" />
+    <meta property="og:site_name" content="Inspecciono" />
     <meta property="og:locale" content="es_ES" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://inspecciono.com/" />
-    <meta property="twitter:title" content="inspecciono.com - Contratación de Servicios de Verificación Profesional" />
-    <meta property="twitter:description" content="Contrata servicios profesionales de verificación e inspección. Conecta con expertos verificados." />
-    <meta property="twitter:image" content="https://inspecciono.com/twitter-image.jpg" />
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://inspecciono.com/" />
-    
-    <link rel="icon" type="image/png" href="/src/media/logoi.png" />
-    
+    <meta property="og:title" content="Antes de comprar, que un experto lo revise por ti" />
+    <meta property="og:description" content="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. Tú no pagas hasta dar el visto bueno." />
+    <meta property="og:image" content="https://inspecciono.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:alt" content="Inspecciono — inspecciones y peritajes pre-compra con expertos verificados en España" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://inspecciono.com/" />
+    <meta name="twitter:title" content="Antes de comprar, que un experto lo revise por ti" />
+    <meta name="twitter:description" content="Coches, pisos, motos. Un perito verificado lo inspecciona y te entrega un informe. Pago retenido hasta tu visto bueno." />
+    <meta name="twitter:image" content="https://inspecciono.com/og-image.jpg" />
+    <meta name="twitter:image:alt" content="Inspecciono — inspecciones y peritajes pre-compra" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         JSON-LD Structured Data (rich snippets en Google)
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Organization: identifica la marca a Google. Logo + dominio + contacto. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Inspecciono",
+      "legalName": "Inspecciono",
+      "url": "https://inspecciono.com",
+      "logo": "https://inspecciono.com/favicon.png",
+      "description": "Marketplace español de servicios de inspección y peritaje pre-compra: coches, inmuebles, motos, maquinaria y más, realizados por expertos verificados con pago en escrow.",
+      "areaServed": { "@type": "Country", "name": "España" },
+      "contactPoint": [{
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "soporte@inspecciono.com",
+        "availableLanguage": ["Spanish"],
+        "areaServed": "ES"
+      }]
+    }
+    </script>
+
+    <!-- WebSite: name + url. (Sin SearchAction porque /buscar?q= aún no existe. Añadirlo cuando exista.) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Inspecciono",
+      "url": "https://inspecciono.com",
+      "inLanguage": "es-ES"
+    }
+    </script>
+
+    <!-- Service + OfferCatalog: describe el catálogo de inspecciones a Google. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "serviceType": "Inspección y peritaje pre-compra",
+      "provider": {
+        "@type": "Organization",
+        "name": "Inspecciono",
+        "url": "https://inspecciono.com"
+      },
+      "areaServed": { "@type": "Country", "name": "España" },
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "Compradores de productos de segunda mano"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Categorías de inspección",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de coche de segunda mano" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peritaje de piso antes de comprar" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de moto de segunda mano" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peritaje de maquinaria de segunda mano" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de bici eléctrica de segunda mano" } }
+        ]
+      }
+    }
+    </script>
+
+    <!-- FAQPage: rich snippet con preguntas/respuestas en SERP. Las MISMAS preguntas
+         deben aparecer visibles en la home (HomePage) — si solo están aquí Google deja
+         de mostrar el rich snippet desde agosto 2023. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Cuánto cuesta una inspección en Inspecciono?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "El precio lo fija cada experto en su oferta, según el tipo de inspección y la ubicación. Tú comparas ofertas antes de elegir y no pagas hasta aceptar al experto."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cuánto tarda en hacerse la inspección?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Desde que publicas la búsqueda hasta que recibes ofertas, normalmente unas horas. Una vez eliges experto, la inspección y el informe se entregan en pocos días según la disponibilidad y el tipo de servicio."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué incluye el informe que me entrega el experto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Un informe escrito con los puntos revisados, hallazgos, fotos y una recomendación clara (comprar, negociar precio o descartar). El formato es estandarizado dentro de cada categoría para que puedas comparar."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Cómo funciona el pago seguro?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Pagas con tarjeta al aceptar al experto, pero el dinero queda retenido por Stripe (escrow) y no se libera hasta que recibes el informe y das tu visto bueno. Si hay desacuerdo, abrimos una disputa."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué pasa si el experto no detecta un fallo importante?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Cada experto verificado es responsable profesional del informe que firma. Si crees que se le ha pasado algo grave, abres una incidencia en la propia plataforma y revisamos el caso; los expertos con incidencias reiteradas pierden la verificación."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
     <!-- ✅ OPTIMIZACIONES PARA WEBVIEW: Preconnect a recursos externos -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -80,10 +204,10 @@
     <!-- ✅ DNS Prefetch para APIs -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://accounts.google.com" />
-    
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- ✅ Optimizaciones para webview: reducir layout shifts -->
     <style>
       /* Critical CSS inline para evitar FOUC */
