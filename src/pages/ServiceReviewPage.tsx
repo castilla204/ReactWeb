@@ -733,7 +733,7 @@ export function ServiceReviewPage({
                                     rangeKm={expertRange || 25}
                                     coverageFirst
                                     mapVariant="preview"
-                                    mapClassName="h-[100px] w-full rounded-none border-x-0 border-y border-[#ebebeb]"
+                                    mapClassName="h-[88px] w-full rounded-none border-x-0 border-y border-[#ebebeb]"
                                     showAvailabilityHint={false}
                                     className="mb-1"
                                 />
