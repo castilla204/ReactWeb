@@ -80,14 +80,16 @@
 /* Destellos de expertos — anclados a coordenadas del mapa (MapLibre markers) */
 .expert-sparkle-marker {
   transform: scale(var(--sp-scale, 1));
+  transform-origin: center center;
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.22));
 }
 
 .expert-sparkle-pulse {
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   border-radius: 50%;
-  border: 1.5px solid var(--sp-primary);
-  opacity: 0.55;
+  border: 2px solid var(--sp-primary);
+  opacity: 0.72;
   animation: expert-sparkle-pulse 2.6s ease-out infinite;
   animation-delay: var(--sp-delay);
 }
@@ -96,14 +98,15 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
   border-radius: 50%;
   background: var(--sp-primary);
+  border: 2px solid rgba(255, 255, 255, 0.95);
   box-shadow:
-    0 0 6px var(--sp-primary),
-    0 0 14px color-mix(in srgb, var(--sp-primary) 55%, transparent);
+    0 0 8px var(--sp-primary),
+    0 0 18px color-mix(in srgb, var(--sp-primary) 65%, transparent);
   animation: expert-sparkle-core 2.2s ease-in-out infinite;
   animation-delay: var(--sp-delay);
 }
@@ -114,21 +117,23 @@
 }
 
 .expert-sparkle-core-sm {
-  width: 5px;
-  height: 5px;
-  margin: -2.5px 0 0 -2.5px;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-width: 1.5px;
   box-shadow:
-    0 0 4px var(--sp-primary),
-    0 0 10px color-mix(in srgb, var(--sp-primary) 45%, transparent);
+    0 0 6px var(--sp-primary),
+    0 0 14px color-mix(in srgb, var(--sp-primary) 55%, transparent);
 }
 
 .expert-sparkle-core-micro {
-  width: 4px;
-  height: 4px;
-  margin: -2px 0 0 -2px;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-width: 1.5px;
   box-shadow:
-    0 0 3px var(--sp-primary),
-    0 0 7px color-mix(in srgb, var(--sp-primary) 40%, transparent);
+    0 0 5px var(--sp-primary),
+    0 0 11px color-mix(in srgb, var(--sp-primary) 50%, transparent);
   animation-duration: 1.9s;
 }
 
@@ -190,15 +195,15 @@
 
 @keyframes expert-sparkle-pulse {
   0% {
-    transform: scale(0.55);
-    opacity: 0.65;
+    transform: scale(0.6);
+    opacity: 0.8;
   }
   75% {
-    transform: scale(1.85);
+    transform: scale(2);
     opacity: 0;
   }
   100% {
-    transform: scale(1.85);
+    transform: scale(2);
     opacity: 0;
   }
 }

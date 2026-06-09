@@ -11,9 +11,14 @@ import {
 import {
   EXPERT_SPARKLE_HUBS,
   HERO_LANDING_SPARKLE_HUBS,
+  HERO_WORLD_SPARKLE_HUBS,
   type ExpertSparkleHub,
 } from './map/expertSparkleHubs';
-import { isMapMercator, isSparkleOnScreen } from './map/expertSparkleVisibility';
+import {
+  isMapMercator,
+  pickVisibleSparkleHubIds,
+  sparkleMarkerScale,
+} from './map/expertSparkleVisibility';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -288,8 +293,8 @@ interface ExpertsAreaMapProps {
   showCityMarkers?: boolean;
   /** Destellos de color anclados a cada ciudad con expertos (símbolo de red global) */
   showExpertSparkles?: boolean;
-  /** `hero-europe`: solo hubs europeos tras aterrizar (homepage). `global`: todos. */
-  sparkleRegion?: 'hero-europe' | 'global';
+  /** `hero-world`: red mundial dispersa (homepage). `hero-europe`: solo Europa. `global`: todos. */
+  sparkleRegion?: 'hero-world' | 'hero-europe' | 'global';
   /**
    * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
    * `default`: hero desktop con intro globe + aterrizaje regional.
@@ -307,7 +312,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   hideCornerStats = false,
   showCityMarkers = true,
   showExpertSparkles = false,
-  sparkleRegion = 'hero-europe',
+  sparkleRegion = 'hero-world',
   heroVariant = 'default',
 }) => {
   const isMobilePeek = heroVariant === 'mobile-peek';
@@ -335,10 +340,11 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     [],
   );
 
-  const sparkleHubs = useMemo<readonly ExpertSparkleHub[]>(
-    () => (sparkleRegion === 'global' ? EXPERT_SPARKLE_HUBS : HERO_LANDING_SPARKLE_HUBS),
-    [sparkleRegion],
-  );
+  const sparkleHubs = useMemo<readonly ExpertSparkleHub[]>(() => {
+    if (sparkleRegion === 'global') return EXPERT_SPARKLE_HUBS;
+    if (sparkleRegion === 'hero-europe') return HERO_LANDING_SPARKLE_HUBS;
+    return HERO_WORLD_SPARKLE_HUBS;
+  }, [sparkleRegion]);
 
   const handleCityClick = useCallback(
     (city: ExpertCity) => {
@@ -363,12 +369,18 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       return;
     }
 
-    sparkleMarkersRef.current.forEach((marker) => {
-      const { lng, lat } = marker.getLngLat();
-      const visible = isSparkleOnScreen(map, lng, lat);
-      marker.getElement().style.display = visible ? '' : 'none';
+    const visibleIds = pickVisibleSparkleHubIds(map, sparkleHubs);
+    const scale = sparkleMarkerScale(map);
+
+    sparkleMarkersRef.current.forEach((marker, hubId) => {
+      const el = marker.getElement();
+      const visible = visibleIds.has(hubId);
+      el.style.display = visible ? '' : 'none';
+      if (visible) {
+        el.style.transform = `scale(${scale})`;
+      }
     });
-  }, [introComplete]);
+  }, [introComplete, sparkleHubs]);
 
   useEffect(() => {
     ipLandingRef.current = ipLanding;
@@ -767,25 +779,25 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       return;
     }
 
-    if (sparkleMarkersRef.current.size === 0) {
-      sparkleHubs.forEach((hub, index) => {
-        const palette = EXPERT_SPARKLE_PALETTES[index % EXPERT_SPARKLE_PALETTES.length];
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight);
-        const el = wrapper.firstElementChild as HTMLElement | null;
-        if (!el) return;
+    clearSparkleMarkers();
 
-        const marker = new maplibregl.Marker({
-          element: el,
-          anchor: 'center',
-          opacityWhenCovered: 0,
-        })
-          .setLngLat([hub.lng, hub.lat])
-          .addTo(map);
+    sparkleHubs.forEach((hub, index) => {
+      const palette = EXPERT_SPARKLE_PALETTES[index % EXPERT_SPARKLE_PALETTES.length];
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight);
+      const el = wrapper.firstElementChild as HTMLElement | null;
+      if (!el) return;
 
-        sparkleMarkersRef.current.set(hub.id, marker);
-      });
-    }
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: 'center',
+        opacityWhenCovered: 0,
+      })
+        .setLngLat([hub.lng, hub.lat])
+        .addTo(map);
+
+      sparkleMarkersRef.current.set(hub.id, marker);
+    });
 
     updateSparkleVisibility();
   }, [
