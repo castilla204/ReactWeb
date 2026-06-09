@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Headset, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ChatbotPanel } from './supportChat/ChatbotPanel';
+import { Drawer, DrawerContent } from './ui/drawer';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
+import { useWindowSize } from '../hooks/useWindowSize';
 import {
   CHATBOT_FAB_BOTTOM_STANDALONE_CLASS,
   CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS,
@@ -39,8 +42,9 @@ export const ChatbotFab: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
   const [panelKey, setPanelKey] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const { width } = useWindowSize();
+  const isMobile = width === 0 || width < 768;
 
   const isHidden = HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path));
   const mobileBottomClass = getMobileBottomClass(location.pathname);
@@ -55,26 +59,10 @@ export const ChatbotFab: React.FC = () => {
     return () => window.removeEventListener('cookieConsentChanged', onConsent);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false);
-    };
-
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen]);
+  const handleOpenChange = (open: boolean) => {
+    if (open) setPanelKey((k) => k + 1);
+    setIsOpen(open);
+  };
 
   const toggleOpen = () => {
     setIsOpen((prev) => {
@@ -88,24 +76,52 @@ export const ChatbotFab: React.FC = () => {
 
   return (
     <>
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-[54] bg-[#0f172a]/20 backdrop-blur-[1px] md:bg-transparent md:backdrop-blur-none md:pointer-events-none"
-          aria-hidden
-        />
+      {isMobile ? (
+        <Drawer
+          open={isOpen}
+          onOpenChange={handleOpenChange}
+          shouldScaleBackground={false}
+        >
+          <DrawerContent
+            className="flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 bg-white p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]"
+            title="Asistente de Inspecciono"
+            description="Respuestas sobre la plataforma"
+          >
+            <ChatbotPanel
+              key={panelKey}
+              variant="drawer"
+              onClose={() => setIsOpen(false)}
+            />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+          <SheetContent
+            side="right"
+            className="flex h-full w-full max-w-[24rem] flex-col gap-0 border-l border-[#e8e8e8] bg-white p-0 sm:max-w-[24rem] [&>button]:hidden"
+          >
+            <SheetTitle className="sr-only">Asistente de Inspecciono</SheetTitle>
+            <SheetDescription className="sr-only">
+              Respuestas sobre la plataforma
+            </SheetDescription>
+            <ChatbotPanel
+              key={panelKey}
+              variant="drawer"
+              onClose={() => setIsOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
       )}
 
       <div
-        ref={containerRef}
         className={cn(
           'fixed z-[55] flex flex-col items-end gap-3 font-display',
           CHATBOT_FAB_RIGHT_MOBILE_CLASS,
           'md:right-6',
           `${mobileBottomClass} md:bottom-6`,
+          isOpen && 'pointer-events-none opacity-0',
         )}
       >
-        {isOpen && <ChatbotPanel key={panelKey} onClose={() => setIsOpen(false)} />}
-
         <button
           type="button"
           onClick={toggleOpen}
