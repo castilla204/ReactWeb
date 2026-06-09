@@ -84,6 +84,11 @@
   filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.22));
 }
 
+.expert-sparkle-marker.expert-sparkle-twinkle {
+  animation: expert-sparkle-twinkle var(--sp-twinkle-duration, 3.4s) ease-in-out infinite;
+  animation-delay: var(--sp-twinkle-delay, 0s);
+}
+
 .expert-sparkle-pulse {
   position: absolute;
   inset: 3px;
@@ -247,6 +252,51 @@
     opacity: 0.15;
     transform: scale(0.8);
   }
+}
+
+@keyframes expert-sparkle-twinkle {
+  0%, 100% {
+    opacity: 0;
+  }
+  18%, 52% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.2;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   🛡️ v6 — Pearl marker animations (NUEVO, no conflicta con las clases v1-v3)
+   - .expert-sparkle-pearl: micro-respiración del dot (scale 1.0 ↔ 1.08). No
+     hay translate ni opacity 0 → NUNCA se mueve del centro de la ciudad,
+     NUNCA se vuelve invisible. Pulso vital muy sutil.
+   - .expert-sparkle-radar: ondas concéntricas que crecen desde el centro y
+     desaparecen al 80% del ciclo. Crecen poco (scale 0.6 → 2.0) y la opacidad
+     baja a 0 antes de llegar al borde → el "pico" visible se mantiene cerca
+     del centro (radio ~30-50 km a zoom 2.5) y no invade el mar significativamente.
+   ──────────────────────────────────────────────────────────────────────────── */
+.expert-sparkle-pearl {
+  animation: expert-sparkle-breathe var(--sp-breathe-dur, 3.6s) ease-in-out infinite;
+  animation-delay: var(--sp-breathe-delay, 0s);
+  transform-origin: center center;
+}
+
+.expert-sparkle-radar {
+  animation: expert-sparkle-radar var(--sp-radar-dur, 2.8s) cubic-bezier(0.2, 0.7, 0.4, 1) infinite;
+  animation-delay: var(--sp-radar-delay, 0s);
+  transform-origin: center center;
+}
+
+@keyframes expert-sparkle-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+@keyframes expert-sparkle-radar {
+  0%   { transform: scale(0.7); opacity: 0.55; }
+  60%  { opacity: 0.18; }
+  100% { transform: scale(2.0); opacity: 0; }
 }
 
 @keyframes caret-blink {
