@@ -15,7 +15,10 @@ import {
   type ExpertSparkleHub,
 } from './Map/expertSparkleHubs';
 import {
-  isMapMercator,
+  // 🌍 isMapMercator ya NO se usa aquí: las dos guardas que requerían mercator
+  // (creación de marcadores + visibilidad) se eliminaron para soportar globo.
+  // El culling de hemisferio lo maneja ahora isSparkleOnScreen internamente.
+  pickSpreadSparkleHubIds,
   pickVisibleSparkleHubIds,
   sparkleMarkerScale,
 } from './Map/expertSparkleVisibility';
@@ -293,8 +296,12 @@ interface ExpertsAreaMapProps {
   showCityMarkers?: boolean;
   /** Destellos de color anclados a cada ciudad con expertos (símbolo de red global) */
   showExpertSparkles?: boolean;
-  /** `hero-world`: red mundial dispersa (homepage). `hero-europe`: solo Europa. `global`: todos. */
+  /** `hero-world`: red mundial dispersa. `hero-europe`: densidad regional (homepage desktop). `global`: todos. */
   sparkleRegion?: 'hero-world' | 'hero-europe' | 'global';
+  /** `spread`: rejilla en todo el canvas. `cluster`: prioriza hubs sin solaparse. */
+  sparkleDensity?: 'spread' | 'cluster';
+  /** Ciclo de aparición/desaparición en cada punto (hero decorativo). */
+  sparkleTwinkle?: boolean;
   /**
    * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
    * `default`: hero desktop con intro globe + aterrizaje regional.
@@ -313,6 +320,8 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   showCityMarkers = true,
   showExpertSparkles = false,
   sparkleRegion = 'hero-world',
+  sparkleDensity = 'cluster',
+  sparkleTwinkle = false,
   heroVariant = 'default',
 }) => {
   const isMobilePeek = heroVariant === 'mobile-peek';
@@ -362,14 +371,16 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     const map = mapRef.current;
     if (!map || sparkleMarkersRef.current.size === 0) return;
 
-    if (!introComplete || !isMapMercator(map)) {
-      sparkleMarkersRef.current.forEach((marker) => {
-        marker.getElement().style.display = 'none';
-      });
-      return;
-    }
-
-    const visibleIds = pickVisibleSparkleHubIds(map, sparkleHubs);
+    // 🌍 Antes ocultábamos TODOS los marcadores durante el intro de globo (línea
+    // `if (!introComplete || !isMapMercator(map))`). Ahora `isSparkleOnScreen`
+    // entiende globe — cull por hemisferio visible + bounds del canvas — y los
+    // pickers usan grids/límites más densos en globo. Resultado: durante el
+    // aterrizaje del planeta también se ven destellos por el hemisferio frontal,
+    // sin fantasmas del lado oculto.
+    const visibleIds =
+      sparkleDensity === 'spread'
+        ? pickSpreadSparkleHubIds(map, sparkleHubs)
+        : pickVisibleSparkleHubIds(map, sparkleHubs);
     const scale = sparkleMarkerScale(map);
 
     sparkleMarkersRef.current.forEach((marker, hubId) => {
@@ -377,10 +388,10 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       const visible = visibleIds.has(hubId);
       el.style.display = visible ? '' : 'none';
       if (visible) {
-        el.style.transform = `scale(${scale})`;
+        el.style.setProperty('--sp-scale', String(scale));
       }
     });
-  }, [introComplete, sparkleHubs]);
+  }, [sparkleHubs, sparkleDensity]);
 
   useEffect(() => {
     ipLandingRef.current = ipLanding;
@@ -773,18 +784,19 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       return;
     }
 
-    // No crear marcadores HTML durante el globo: se proyectan mal en el hemisferio oculto.
-    if (!introComplete || !isMapMercator(map)) {
-      clearSparkleMarkers();
-      return;
-    }
+    // 🌍 Antes saltábamos la creación durante el globo porque MapLibre proyecta
+    // hubs del lado oculto en píxeles válidos del canvas (no clipa back-face),
+    // así que se veían fantasmas. Ahora `isSparkleOnScreen` aplica culling de
+    // hemisferio en `updateSparkleVisibility` y el marker queda con display:none
+    // cuando está al otro lado del planeta → se pueden crear de entrada y la
+    // visibilidad se reevalúa en cada `move`/`render` del intro del globo.
 
     clearSparkleMarkers();
 
     sparkleHubs.forEach((hub, index) => {
       const palette = EXPERT_SPARKLE_PALETTES[index % EXPERT_SPARKLE_PALETTES.length];
       const wrapper = document.createElement('div');
-      wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight);
+      wrapper.innerHTML = expertSparkleMarkerHtml(palette, index, hub.weight, sparkleTwinkle);
       const el = wrapper.firstElementChild as HTMLElement | null;
       if (!el) return;
 
@@ -803,8 +815,10 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   }, [
     mapReady,
     showExpertSparkles,
-    introComplete,
+    // 🌍 introComplete eliminado: los marcadores ya se crean también durante el
+    // globe intro (la visibilidad por hemisferio la maneja updateSparkleVisibility).
     sparkleHubs,
+    sparkleTwinkle,
     clearSparkleMarkers,
     updateSparkleVisibility,
   ]);
@@ -827,7 +841,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       map.off('moveend', onFrame);
       map.off('render', onFrame);
     };
-  }, [mapReady, showExpertSparkles, updateSparkleVisibility, introComplete]);
+  }, [mapReady, showExpertSparkles, updateSparkleVisibility]);
 
   return (
     <div

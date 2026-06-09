@@ -62,8 +62,18 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             ipLandingResolved={ipLandingResolved}
             hideCornerStats
             showCityMarkers={false}
+            /* 🌍 Red global de expertos como decoración del hero:
+                 - `showExpertSparkles`: activa los destellos de colores (estaba apagado por defecto).
+                 - `sparkleRegion='global'`: usa la lista completa (~130 ciudades) en vez del subset Europa.
+                 - `sparkleDensity='spread'`: rejilla 14×10 en globo / 10×6 en mercator → puntos
+                   repartidos por todo el canvas, no amontonados en Iberia.
+                 - `sparkleTwinkle`: parpadeo suave para que el mapa se vea "vivo" sin distraer.
+                 El culling de hemisferio se hace en expertSparkleVisibility — ningún punto del lado
+                 opuesto del planeta se pinta durante el intro globe. */
             showExpertSparkles
-            sparkleRegion="hero-world"
+            sparkleRegion="global"
+            sparkleDensity="spread"
+            sparkleTwinkle
           />
         </Suspense>
       </div>
