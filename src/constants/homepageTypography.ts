@@ -29,9 +29,12 @@ export const HP_MOBILE_MEDIUM = 'min-[390px]:' as const;
 
 /**
  * `min-[428px]` — solo cards de servicios en Plus / Pro Max.
- * XR y SE comparten el mismo ancho de card (160px).
+ * XR y SE comparten el mismo ancho de card (148px).
  */
 export const HP_MOBILE_WIDE = 'min-[428px]:' as const;
+
+/** Carrusel de servicios en homepage — solo afecta a móvil (< md). */
+export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[184px]';
 
 /** Botón icono flotante (hero, modal categorías) */
 export const hpIconButtonClass =

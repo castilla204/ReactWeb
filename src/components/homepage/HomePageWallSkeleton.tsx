@@ -1,4 +1,5 @@
 import React from 'react';
+import { HP_WALL_CARD_WIDTH_CLASS } from '../../constants/homepageTypography';
 
 /** Carril de servicios — CSS puro, sin librería de skeleton */
 export const HomePageWallSkeleton: React.FC = () => (
@@ -18,7 +19,7 @@ export const HomePageWallSkeleton: React.FC = () => (
     </div>
     <div className="flex gap-4 overflow-hidden pb-0 md:hidden">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="shrink-0 w-[160px] min-[428px]:w-[172px]">
+        <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
           <div className="aspect-square w-full rounded-[20px] bg-[#f0f0f0] animate-pulse mb-1.5" />
           <div className="h-3.5 w-full rounded bg-[#f0f0f0] animate-pulse mb-1.5" />
           <div className="h-3 w-3/4 rounded bg-[#f0f0f0] animate-pulse" />
