@@ -115,8 +115,12 @@ export function ServiceDetailSkeleton() {
 
         {/* Versión Desktop — alineado con HomepageDesktopTopBar + grid */}
         <div className="hidden lg:block bg-[#fafafa]">
-          <Skeleton height={48} width="100%" borderRadius={0} />
-          <div className={`${SD_PAGE_INNER_MAX_CLASS} py-6 lg:pt-8`}>
+          <div className={`${SD_PAGE_INNER_MAX_CLASS} border-b border-[#e8e8e8]/70 py-5`}>
+            <Skeleton height={36} width="100%" borderRadius={8} className="mb-4" />
+            <Skeleton height={32} width="55%" borderRadius={6} className="mb-2" />
+            <Skeleton height={16} width="35%" borderRadius={4} />
+          </div>
+          <div className={`${SD_PAGE_INNER_MAX_CLASS} py-4 lg:pt-4`}>
             <div className={SD_PAGE_GRID_CLASS}>
               <div className="space-y-6 lg:space-y-8">
                 <Skeleton height={340} width="100%" borderRadius={12} />

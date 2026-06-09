@@ -61,7 +61,7 @@ import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDe
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
-import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
+import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
 import { LoginModal } from '../components/LoginModal';
 
 interface ServiceReviewPageProps {
@@ -916,9 +916,23 @@ export function ServiceReviewPage({
 
             {/* ========== DESKTOP — topbar homepage + grid (galería columna izquierda) ========== */}
             <div className="service-detail-desktop hidden lg:block min-h-screen bg-[#fafafa]">
-                <HomepageDesktopTopBar onBack={onBack} />
+                <ServiceDetailDesktopHeader
+                    onBack={onBack}
+                    title={serviceTypeName}
+                    expertName={finalExpertName}
+                    locationLabel={
+                        [expertCity, expertCountry ? getCountryName(expertCountry) : '']
+                            .filter(Boolean)
+                            .join(', ') || undefined
+                    }
+                    averageRating={finalRating}
+                    reviewCount={finalReviews.length}
+                    isFavorite={isFavorite}
+                    onToggleFavorite={() => setIsFavorite(!isFavorite)}
+                    onReviewsClick={() => setReviewsModalOpen(true)}
+                />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-6 lg:pt-8`}>
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-2 lg:pt-4`}>
                     <div className={`${SD_PAGE_GRID_CLASS}`}>
                         <div className="min-w-0 space-y-5 lg:space-y-6">
                             <div className="relative">
@@ -947,7 +961,7 @@ export function ServiceReviewPage({
                             )}
 
                             {/* Experto */}
-                            <div className="flex items-center gap-4 border-b border-[#e8e8e8] pb-5">
+                            <div className="flex items-center gap-4 rounded-xl border border-[#e8e8e8] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                 <button
                                     type="button"
                                     className="shrink-0"
@@ -994,69 +1008,14 @@ export function ServiceReviewPage({
                             />
                         </div>
 
-                        <aside className="lg:sticky lg:top-12 lg:self-start">
-                            <article className="sd-aside-card flex max-h-[calc(100dvh-3rem)] flex-col overflow-y-auto">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                        <h1 className="font-display text-lg font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]">
-                                            {serviceTypeName}
-                                        </h1>
-                                        <p className="mt-1 text-xs text-[#6a6a6a]">
-                                            {finalExpertName}
-                                            {(expertCity || expertCountry) && (
-                                                <>
-                                                    {' · '}
-                                                    {[expertCity, expertCountry ? getCountryName(expertCountry) : '']
-                                                        .filter(Boolean)
-                                                        .join(', ')}
-                                                </>
-                                            )}
-                                        </p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-1">
-                                        <button
-                                            type="button"
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:bg-[#f9fafb]"
-                                            aria-label="Compartir"
-                                        >
-                                            <Share2 className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:bg-[#f9fafb]"
-                                            aria-label="Favorito"
-                                            onClick={() => setIsFavorite(!isFavorite)}
-                                        >
-                                            <Heart
-                                                className={`h-4 w-4 ${isFavorite ? 'fill-brand text-brand' : ''}`}
-                                            />
-                                        </button>
-                                    </div>
-                        </div>
-                                <section className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
+                        <aside className="lg:sticky lg:top-[7.5rem] lg:self-start">
+                            <article className="sd-aside-card flex max-h-[calc(100dvh-8.5rem)] flex-col overflow-y-auto">
+                                <section className="shrink-0">
+                                    <p className="sd-section-label mb-3">Tu reserva</p>
                                     <p className="text-2xl font-semibold tracking-tight text-[#1c1c1c]">
                                         {renderServicePrice(finalPrice)}
                                     </p>
                                     <p className="text-sm text-[#6a6a6a]">por servicio</p>
-                                {finalRating > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setReviewsModalOpen(true)}
-                                            className="mt-1.5 flex w-fit items-center gap-1 text-left text-sm text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
-                                        >
-                                            <Star className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
-                                            <span className="font-semibold tabular-nums text-[#1c1c1c]">
-                                                {finalRating.toFixed(1).replace('.', ',')}
-                                            </span>
-                                            <span className="text-[#d4d4d4]" aria-hidden>
-                                                ·
-                                            </span>
-                                            <span className="underline-offset-2 hover:underline">
-                                                {finalReviews.length} reseña
-                                                {finalReviews.length !== 1 ? 's' : ''}
-                                            </span>
-                                        </button>
-                                    )}
                                 </section>
 
                                 {(finalAvailability || expertLocation) && (
