@@ -1,11 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import circularDependencyPlugin from 'vite-plugin-circular-dependency';
 
 export default defineConfig({
     base: './', // ✅ Rutas relativas para Capacitor Android
     plugins: [
         react(),
+        tailwindcss(),
         // ✅ Detectar dependencias circulares que pueden causar errores TDZ
         circularDependencyPlugin({
             exclude: /node_modules/,
