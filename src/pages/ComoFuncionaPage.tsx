@@ -6,6 +6,8 @@ import { LoginModal } from '../components/LoginModal';
 import { useAuth } from '../contexts/AuthContext';
 import { HP_PANEL_GRADIENT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 import { COMO_FUNCIONA_STEPS, COMO_FUNCIONA_TRUST } from '../content/comoFuncionaContent';
+import { SEO } from '../components/SEO';
+import { howToSchema, breadcrumbSchema } from '../utils/jsonLd';
 
 const MobileBottomBar = lazy(() =>
   import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
@@ -25,8 +27,31 @@ const ComoFuncionaPage: React.FC = () => {
     setShowLoginDialog(true);
   };
 
+  // 🛡️ SEO: HowTo schema captura búsquedas "cómo funciona X" + AI Overviews.
+  // Reutiliza los 4 pasos visibles en la página → coincidencia HTML/schema (requisito Google 2023).
+  const jsonLd = [
+    howToSchema(
+      'Cómo funciona Inspecciono',
+      'Contrata un perito verificado para revisar lo que vas a comprar: 4 pasos sencillos con pago seguro en escrow.',
+      COMO_FUNCIONA_STEPS.map((s) => ({ name: s.title, text: s.body })),
+    ),
+    breadcrumbSchema([
+      { name: 'Inicio', url: '/' },
+      { name: 'Cómo funciona', url: '/como-funciona' },
+    ]),
+  ];
+
   return (
     <div className="min-h-screen bg-[#fafafa] font-display text-[#1c1c1c]">
+      <SEO
+        title="Cómo funciona Inspecciono · 4 pasos con pago seguro | Inspecciono"
+        description="(1) Eliges experto en el mapa. (2) Reservas con pago retenido. (3) Inspección, fotos e informe. (4) Confirmas y se libera el pago. Sin sorpresas, sin riesgo."
+        canonical="/como-funciona"
+        ogTitle="Cómo funciona Inspecciono en 4 pasos"
+        ogDescription="Eliges experto · reservas con pago retenido · recibes informe · confirmas. Pago seguro en escrow, expertos verificados."
+        jsonLd={jsonLd}
+      />
+
       <header className="sticky top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm md:hidden">
         <div className="flex h-12 items-center gap-2 px-4">
           <button

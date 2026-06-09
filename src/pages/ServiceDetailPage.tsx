@@ -10,6 +10,8 @@ import {
   persistServiceReturnPath,
   resolveServiceReturnPath,
 } from '../utils/servicePageNavigation';
+import { SEO } from '../components/SEO';
+import { serviceSchema, breadcrumbSchema } from '../utils/jsonLd';
 
 const ServiceDetailPage: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
@@ -203,22 +205,68 @@ const ServiceDetailPage: React.FC = () => {
     );
   }
 
+  // 🛡️ SEO long-tail: cada ficha de servicio genera meta tag y Service JSON-LD
+  // ÚNICOS con el nombre del experto, precio, categoría y zona. Esto es lo que captura
+  // búsquedas tipo "inspección coche segunda mano Madrid 80€" — el oro del marketplace
+  // según los datos 2026 (+73% selección en AI Overviews con structured data).
+  const serviceName = service.serviceTypeName || 'Inspección pre-compra';
+  const expertName = service.expert?.user?.name;
+  const seoTitle = expertName
+    ? `${serviceName} con ${expertName} | Inspecciono`
+    : `${serviceName} | Inspecciono`;
+  const seoDesc =
+    (service.conditions && service.conditions.length > 0
+      ? service.conditions.slice(0, 150)
+      : `Servicio de ${serviceName.toLowerCase()} en Inspecciono. Experto verificado, pago seguro en escrow, informe estandarizado con fotos y conclusiones.`).trim();
+
+  const canonicalPath = `/service/${service.id}`;
+  const absoluteUrl = `https://inspecciono.com${canonicalPath}`;
+
+  const jsonLd = [
+    serviceSchema({
+      name: serviceName,
+      description: seoDesc,
+      url: absoluteUrl,
+      priceEUR: typeof service.price === 'number' ? service.price : undefined,
+      providerName: expertName,
+      category: service.serviceTypeCategoryName,
+    }),
+    breadcrumbSchema([
+      { name: 'Inicio', url: '/' },
+      ...(service.serviceTypeCategoryName
+        ? [{ name: service.serviceTypeCategoryName, url: '/' }]
+        : []),
+      { name: serviceName, url: canonicalPath },
+    ]),
+  ];
+
   return (
-    <ServiceReviewPage
-      serviceId={service.id}
-      expertProfilePicture={service.expert?.profilePictureUrl}
-      expertName={service.expert?.user?.name}
-      servicePrice={service.price}
-      serviceDescription={service.conditions}
-      serviceImageUrls={service.imageUrls || []}
-      categoryId={service.categoryId}
-      serviceTypeId={service.serviceTypeId}
-      currentStep={1}
-      totalSteps={2}
-      onBack={handleBack}
-      onContinue={handleContinue}
-      service={service} // ✅ Pasar el servicio completo transformado
-    />
+    <>
+      <SEO
+        title={seoTitle.slice(0, 65)}
+        description={seoDesc.slice(0, 158)}
+        canonical={canonicalPath}
+        ogTitle={seoTitle.slice(0, 65)}
+        ogDescription={seoDesc.slice(0, 158)}
+        ogImage={service.imageUrls?.[0]}
+        jsonLd={jsonLd}
+      />
+      <ServiceReviewPage
+        serviceId={service.id}
+        expertProfilePicture={service.expert?.profilePictureUrl}
+        expertName={service.expert?.user?.name}
+        servicePrice={service.price}
+        serviceDescription={service.conditions}
+        serviceImageUrls={service.imageUrls || []}
+        categoryId={service.categoryId}
+        serviceTypeId={service.serviceTypeId}
+        currentStep={1}
+        totalSteps={2}
+        onBack={handleBack}
+        onContinue={handleContinue}
+        service={service} // ✅ Pasar el servicio completo transformado
+      />
+    </>
   );
 };
 

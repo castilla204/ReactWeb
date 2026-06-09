@@ -9,6 +9,9 @@ import {
   HomePageSearchBarDesktopSkeleton,
 } from '../components/homepage/HomePageSearchBarSkeleton';
 import { HomePageWallSkeleton } from '../components/homepage/HomePageWallSkeleton';
+import { SEO } from '../components/SEO';
+import { FAQ_ITEMS } from '../content/faqContent';
+import { faqPageSchema } from '../utils/jsonLd';
 
 const AirbnbSearchBar = lazy(() =>
   import('../components/AirbnbSearchBar').then((m) => ({ default: m.AirbnbSearchBar })),
@@ -99,8 +102,32 @@ const HomePage: React.FC = () => {
     <HomePageSearchBarDesktopSkeleton />
   );
 
+  // 🛡️ SEO: 6 FAQ curadas (las de máximo intent transaccional). El JSON-LD requiere
+  // que las preguntas también aparezcan visibles en la home (Google update 08/2023).
+  // El componente <FAQ /> al final de la página renderiza las 41 — coincidencia OK.
+  const homeFaqIds = [
+    'what-is',
+    'how-it-works',
+    'price',
+    'escrow',
+    'report-time',
+    'dispute',
+  ];
+  const homeFaq = FAQ_ITEMS.filter((it) => homeFaqIds.includes(it.id)).map((it) => ({
+    question: it.question,
+    answer: it.answer,
+  }));
+
   return (
     <>
+      <SEO
+        title="Antes de comprar, inspecciona · Peritos verificados | Inspecciono"
+        description="¿Vas a comprar un coche, un piso o una moto de segunda mano? Un experto verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow."
+        canonical="/"
+        ogTitle="Antes de comprar, que un experto lo revise por ti"
+        ogDescription="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. Tú no pagas hasta dar el visto bueno."
+        jsonLd={[faqPageSchema(homeFaq)]}
+      />
       <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">
         <Suspense fallback={searchBarFallback}>
           <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />

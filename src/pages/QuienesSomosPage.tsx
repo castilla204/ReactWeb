@@ -2,12 +2,31 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { SEO } from '../components/SEO';
+import { aboutPageSchema, breadcrumbSchema } from '../utils/jsonLd';
 
 const QuienesSomosPage: React.FC = () => {
   const navigate = useNavigate();
 
+  const jsonLd = [
+    aboutPageSchema('https://inspecciono.com/quienes-somos'),
+    breadcrumbSchema([
+      { name: 'Inicio', url: '/' },
+      { name: 'Quiénes somos', url: '/quienes-somos' },
+    ]),
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Quiénes somos | Inspecciono — marketplace de peritos en España"
+        description="Inspecciono conecta a compradores con peritos verificados para inspeccionar coches, pisos, motos y maquinaria antes de la compra. Pago seguro en escrow, cobertura nacional."
+        canonical="/quienes-somos"
+        ogTitle="Inspecciono — peritos verificados para tu próxima compra"
+        ogDescription="Marketplace nacional de inspecciones pre-compra. Coches, pisos, motos. Pago en escrow, informe estandarizado."
+        jsonLd={jsonLd}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
