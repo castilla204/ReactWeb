@@ -10,9 +10,20 @@ export interface SupportChatMessage {
   content: string;
 }
 
+/** NewApi serializa en PascalCase (PropertyNamingPolicy = null). */
 interface SupportChatApiResponse {
-  reply: string;
-  success: boolean;
+  reply?: string;
+  Reply?: string;
+  success?: boolean;
+  Success?: boolean;
+}
+
+function extractReply(data: SupportChatApiResponse): string {
+  const text = (data.reply ?? data.Reply ?? '').trim();
+  if (!text) {
+    throw new Error('La respuesta del asistente llegó vacía.');
+  }
+  return text;
 }
 
 function makeId(): string {
@@ -58,7 +69,7 @@ export function useSupportChat() {
         const assistantMessage: SupportChatMessage = {
           id: makeId(),
           role: 'assistant',
-          content: data.reply,
+          content: extractReply(data),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
