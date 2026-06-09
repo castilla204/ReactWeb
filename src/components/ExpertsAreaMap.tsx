@@ -7,18 +7,18 @@ import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/map
 import {
   EXPERT_SPARKLE_PALETTES,
   expertSparkleMarkerHtml,
-} from './map/expertSparkleMarker';
+} from './Map/expertSparkleMarker';
 import {
   EXPERT_SPARKLE_HUBS,
   HERO_LANDING_SPARKLE_HUBS,
   HERO_WORLD_SPARKLE_HUBS,
   type ExpertSparkleHub,
-} from './map/expertSparkleHubs';
+} from './Map/expertSparkleHubs';
 import {
   isMapMercator,
   pickVisibleSparkleHubIds,
   sparkleMarkerScale,
-} from './map/expertSparkleVisibility';
+} from './Map/expertSparkleVisibility';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
