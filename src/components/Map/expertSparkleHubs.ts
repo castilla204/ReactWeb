@@ -64,6 +64,16 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'merida', lat: 38.9165, lng: -6.3434, weight: 1 },
   { id: 'ciudad-real', lat: 38.9848, lng: -3.9274, weight: 1 },
   { id: 'soria', lat: 41.7665, lng: -2.4795, weight: 1 },
+  // 🔧 v10: más densidad en zonas que se ven vacías
+  { id: 'cartagena', lat: 37.6257, lng: -0.9966, weight: 1 },
+  { id: 'lugo', lat: 43.0125, lng: -7.5559, weight: 1 },
+  { id: 'ourense', lat: 42.336, lng: -7.864, weight: 1 },
+  { id: 'sabadell', lat: 41.5483, lng: 2.1077, weight: 1 },
+  { id: 'reus', lat: 41.1561, lng: 1.1067, weight: 1 },
+  { id: 'manacor', lat: 39.5701, lng: 3.2087, weight: 1 },
+  { id: 'gibraltar', lat: 36.1408, lng: -5.3536, weight: 1 },
+  { id: 'las-palmas', lat: 28.1235, lng: -15.4363, weight: 1 },
+  { id: 'tenerife', lat: 28.4636, lng: -16.2518, weight: 1 },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PORTUGAL (densidad media — v8 añade Coimbra y Braga)
@@ -72,6 +82,8 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'porto', lat: 41.1579, lng: -8.6291, weight: 1 },
   { id: 'coimbra', lat: 40.2033, lng: -8.4103, weight: 1 },
   { id: 'braga', lat: 41.5454, lng: -8.4265, weight: 1 },
+  { id: 'faro', lat: 37.0194, lng: -7.9304, weight: 1 },
+  { id: 'evora', lat: 38.5714, lng: -7.9135, weight: 1 },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EUROPA OCCIDENTAL Y CENTRAL — densificada (v8 añade ~30 secundarias)
@@ -140,6 +152,80 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'gothenburg', lat: 57.7089, lng: 11.9746, weight: 1 },
   { id: 'malmo', lat: 55.6049, lng: 13.0038, weight: 1 },
   { id: 'aarhus', lat: 56.1629, lng: 10.2039, weight: 1 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔧 v10: refuerzo Italia sur + islas + Francia secundaria + UK norte
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Italia sur + islas
+  { id: 'palermo', lat: 38.1157, lng: 13.3615, weight: 1 },
+  { id: 'catania', lat: 37.5079, lng: 15.083, weight: 1 },
+  { id: 'bari', lat: 41.1171, lng: 16.8719, weight: 1 },
+  { id: 'cagliari', lat: 39.2238, lng: 9.1217, weight: 1 },
+  { id: 'brescia', lat: 45.5416, lng: 10.2118, weight: 1 },
+  { id: 'trieste', lat: 45.6495, lng: 13.7768, weight: 1 },
+  // Francia secundaria
+  { id: 'reims', lat: 49.2583, lng: 4.0317, weight: 1 },
+  { id: 'tours', lat: 47.3941, lng: 0.6848, weight: 1 },
+  { id: 'dijon', lat: 47.322, lng: 5.0415, weight: 1 },
+  { id: 'clermont', lat: 45.7772, lng: 3.087, weight: 1 },
+  { id: 'le-havre', lat: 49.4944, lng: 0.1079, weight: 1 },
+  // UK
+  { id: 'sheffield', lat: 53.3811, lng: -1.4701, weight: 1 },
+  { id: 'nottingham', lat: 52.9548, lng: -1.1581, weight: 1 },
+  { id: 'aberdeen', lat: 57.1497, lng: -2.0943, weight: 1 },
+  { id: 'belfast', lat: 54.5973, lng: -5.9301, weight: 1 },
+  { id: 'cork', lat: 51.8985, lng: -8.4756, weight: 1 },
+  // Alemania
+  { id: 'essen', lat: 51.4556, lng: 7.0116, weight: 1 },
+  { id: 'bremen', lat: 53.0793, lng: 8.8017, weight: 1 },
+  { id: 'mannheim', lat: 49.4875, lng: 8.466, weight: 1 },
+  { id: 'karlsruhe', lat: 49.0069, lng: 8.4037, weight: 1 },
+  // Norte Europa
+  { id: 'reykjavik', lat: 64.1466, lng: -21.9426, weight: 1 },
+  { id: 'tampere', lat: 61.4978, lng: 23.761, weight: 1 },
+  { id: 'tallinn', lat: 59.437, lng: 24.7536, weight: 1 },
+  { id: 'riga', lat: 56.9496, lng: 24.1052, weight: 1 },
+  { id: 'vilnius', lat: 54.6872, lng: 25.2797, weight: 1 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔧 v10: BALCANES + EUROPA SE (zona muy vacía en v9)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { id: 'belgrade', lat: 44.7866, lng: 20.4489, weight: 1 },
+  { id: 'zagreb', lat: 45.815, lng: 15.9819, weight: 1 },
+  { id: 'ljubljana', lat: 46.0569, lng: 14.5058, weight: 1 },
+  { id: 'sarajevo', lat: 43.8563, lng: 18.4131, weight: 1 },
+  { id: 'sofia', lat: 42.6977, lng: 23.3219, weight: 2 },
+  { id: 'thessaloniki', lat: 40.6401, lng: 22.9444, weight: 1 },
+  { id: 'tirana', lat: 41.3275, lng: 19.8187, weight: 1 },
+  { id: 'skopje', lat: 41.9981, lng: 21.4254, weight: 1 },
+  { id: 'bratislava', lat: 48.1486, lng: 17.1077, weight: 1 },
+  { id: 'cluj', lat: 46.7712, lng: 23.6236, weight: 1 },
+  // Polonia y Chequia ext
+  { id: 'wroclaw', lat: 51.1079, lng: 17.0385, weight: 1 },
+  { id: 'poznan', lat: 52.4064, lng: 16.9252, weight: 1 },
+  { id: 'gdansk', lat: 54.352, lng: 18.6466, weight: 1 },
+  { id: 'lodz', lat: 51.7592, lng: 19.456, weight: 1 },
+  { id: 'brno', lat: 49.1951, lng: 16.6068, weight: 1 },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🔧 v10: NORTE DE ÁFRICA + LEVANTE (Sahara/Mediterráneo casi vacíos)
+  // ═══════════════════════════════════════════════════════════════════════════
+  { id: 'tangier', lat: 35.7595, lng: -5.834, weight: 1 },
+  { id: 'rabat', lat: 34.0209, lng: -6.8417, weight: 1 },
+  { id: 'fes', lat: 34.0181, lng: -5.0078, weight: 1 },
+  { id: 'marrakech', lat: 31.6295, lng: -7.9811, weight: 1 },
+  { id: 'algiers', lat: 36.7372, lng: 3.0866, weight: 1 },
+  { id: 'oran', lat: 35.6987, lng: -0.6349, weight: 1 },
+  { id: 'tunis', lat: 36.8065, lng: 10.1815, weight: 1 },
+  { id: 'tripoli-ly', lat: 32.8872, lng: 13.1913, weight: 1 },
+  { id: 'alexandria', lat: 31.2001, lng: 29.9187, weight: 1 },
+  { id: 'beirut', lat: 33.8938, lng: 35.5018, weight: 1 },
+  { id: 'amman', lat: 31.9454, lng: 35.9284, weight: 1 },
+  // Turquía
+  { id: 'ankara', lat: 39.9334, lng: 32.8597, weight: 2 },
+  { id: 'izmir', lat: 38.4192, lng: 27.1287, weight: 1 },
+  { id: 'antalya', lat: 36.8969, lng: 30.7133, weight: 1 },
+  { id: 'bursa', lat: 40.1828, lng: 29.067, weight: 1 },
 
   // Europa norte, este y sur
   { id: 'stockholm', lat: 59.3293, lng: 18.0686, weight: 2 },
