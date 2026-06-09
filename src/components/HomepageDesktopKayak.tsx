@@ -67,13 +67,15 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                  - `sparkleRegion='global'`: usa la lista completa (~130 ciudades) en vez del subset Europa.
                  - `sparkleDensity='spread'`: rejilla 14×10 en globo / 10×6 en mercator → puntos
                    repartidos por todo el canvas, no amontonados en Iberia.
-                 - `sparkleTwinkle`: parpadeo suave para que el mapa se vea "vivo" sin distraer.
                  El culling de hemisferio se hace en expertSparkleVisibility — ningún punto del lado
-                 opuesto del planeta se pinta durante el intro globe. */
+                 opuesto del planeta se pinta durante el intro globe.
+                 🔧 v4: `sparkleTwinkle` retirado porque las keyframes empiezan Y terminan en
+                 opacity:0, lo que hacía a la mayoría de puntos invisibles durante gran parte del
+                 ciclo. Para retomar el parpadeo habría que rehacer las keyframes (mínimo 0.6 de
+                 opacidad) — pendiente para otra iteración. */
             showExpertSparkles
             sparkleRegion="global"
             sparkleDensity="spread"
-            sparkleTwinkle
           />
         </Suspense>
       </div>

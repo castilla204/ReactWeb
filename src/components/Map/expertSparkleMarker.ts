@@ -47,12 +47,13 @@ interface DotSpec {
 }
 
 const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
-  // weight=3 (hub principal): núcleo un poco mayor para que destaquen las megaciudades
-  3: { core: 9, haloPx: 4, glowPx: 9 },
-  // weight=2 (ciudad media): tamaño medio
-  2: { core: 7, haloPx: 3, glowPx: 7 },
-  // weight=1 (presencia ligera): puntito pequeño — la mayoría de hubs son éste tier
-  1: { core: 5, haloPx: 2, glowPx: 5 },
+  // 🔧 v4 (feedback "no veo ningún punto"): núcleos +30% y halos al doble de
+  // opacidad. v3 quedó demasiado sutil — los hex 1f/73 se diluían en el mapa
+  // Carto blanco. Mantenemos el estilo heatmap (sin halo blanco rígido), pero
+  // con presencia real de contraste.
+  3: { core: 12, haloPx: 4, glowPx: 10 },
+  2: { core: 10, haloPx: 3, glowPx: 8 },
+  1: { core: 8, haloPx: 2, glowPx: 6 },
 };
 
 /**
@@ -74,13 +75,13 @@ function buildDotStyle(color: string, spec: DotSpec): string {
     `background:${color}`,
     `box-shadow:` +
       // Microhighlight perla (no es un border, no engrosa la silueta)
-      `inset 0 0 1px rgba(255,255,255,0.35),` +
-      // Halo concéntrico del mismo color, opacidad muy baja → "aura de presencia"
-      `0 0 0 ${spec.haloPx}px ${color}1f,` +
-      // Glow exterior difuso del mismo color, opacidad media-baja
-      `0 0 ${spec.glowPx}px ${color}73,` +
+      `inset 0 0 1px rgba(255,255,255,0.45),` +
+      // 🔧 v4: halo concéntrico del mismo color a 33% (era 12% en v3 → diluido)
+      `0 0 0 ${spec.haloPx}px ${color}55,` +
+      // 🔧 v4: glow exterior difuso a 73% (era 45% en v3 → casi invisible)
+      `0 0 ${spec.glowPx}px ${color}bb,` +
       // Microsombra al suelo para dar profundidad sin flotar
-      `0 1px 2px rgba(0,0,0,0.22)`,
+      `0 1px 3px rgba(0,0,0,0.32)`,
     `box-sizing:border-box`,
   ].join(';');
 }
