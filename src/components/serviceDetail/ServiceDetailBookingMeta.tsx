@@ -52,7 +52,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
       : null;
 
   const defaultAsideMapClass =
-    'h-[112px] w-full rounded-lg border border-[#e8e8e8]';
+    'h-[148px] w-full rounded-lg border border-[#e8e8e8]';
   const defaultMinimalMapClass =
     'h-[84px] w-full rounded-none border-0';
 

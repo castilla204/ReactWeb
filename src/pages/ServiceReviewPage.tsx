@@ -385,7 +385,10 @@ export function ServiceReviewPage({
     const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
     const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
 
-    const serviceTypeName = serviceTypes.find(st => st.id === (finalService?.serviceTypeId || serviceTypeId))?.name || 'Servicio';
+    const serviceTypeName =
+        finalService?.serviceTypeName ||
+        serviceTypes.find(st => st.id === (finalService?.serviceTypeId || serviceTypeId))?.name ||
+        'Inspección pre-compra';
 
     // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
@@ -961,40 +964,67 @@ export function ServiceReviewPage({
                             )}
 
                             {/* Experto */}
-                            <div className="flex items-center gap-4 rounded-xl border border-[#e8e8e8] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                            <div className="flex items-center gap-3 rounded-xl border border-[#e8e8e8] bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                 <button
                                     type="button"
-                                    className="shrink-0"
+                                    className="relative shrink-0"
                                     onClick={() => finalExpertPicture && setIsExpertPhotoOpen(true)}
                                     aria-label={`Ver foto de ${finalExpertName}`}
                                 >
-                                    <Avatar className="h-12 w-12 rounded-md">
+                                    <Avatar className="h-11 w-11 rounded-full ring-2 ring-white">
                                         <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                        <AvatarFallback className="rounded-md bg-[#1c1c1c] text-white text-sm">
+                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-white text-sm">
                                             {finalExpertName.charAt(0)}
                                         </AvatarFallback>
                                     </Avatar>
+                                    <span
+                                        className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
+                                        aria-hidden
+                                    >
+                                        <BadgeCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
+                                    </span>
                                 </button>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-semibold text-[#1c1c1c]">{finalExpertName}</p>
-                                    <p className="text-xs text-[#6a6a6a]">Revisor verificado · Inspecciono</p>
+                                    <p className="truncate text-sm font-semibold text-[#1c1c1c]">{finalExpertName}</p>
+                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
+                                        <span className="inline-flex items-center gap-1">
+                                            <BadgeCheck className="h-3 w-3 text-brand" aria-hidden />
+                                            Revisor verificado
+                                        </span>
+                                        {finalRating > 0 && finalReviews.length > 0 ? (
+                                            <>
+                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
+                                                <span className="inline-flex items-center gap-0.5 tabular-nums text-[#1c1c1c]">
+                                                    <Star className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
+                                                    {finalRating.toFixed(1).replace('.', ',')}
+                                                    <span className="font-normal text-[#6a6a6a]">
+                                                        ({finalReviews.length})
+                                                    </span>
+                                                </span>
+                                            </>
+                                        ) : null}
+                                        {finalCompletedSearches > 0 ? (
+                                            <>
+                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
+                                                <span>{finalCompletedSearches} trabajos</span>
+                                            </>
+                                        ) : null}
+                                    </div>
                                 </div>
-                                <button type="button" onClick={handleChatClick} className="sd-btn-secondary shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={handleChatClick}
+                                    className="sd-btn-secondary shrink-0 rounded-full px-3.5"
+                                >
                                     <MessageCircle className="h-4 w-4" />
-                                    Chat
+                                    <span className="hidden xl:inline">Chat</span>
                                 </button>
                             </div>
 
-                            {finalCompletedSearches > 0 && (
-                                <p className="text-sm text-brand font-medium">
-                                    {finalCompletedSearches} trabajos completados
-                                </p>
-                            )}
-
                             {displayMainDescription && (
-                            <section>
-                                    <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
-                                    <p className="text-sm leading-relaxed text-[#6a6a6a] whitespace-pre-line">
+                            <section className="rounded-xl border border-[#e8e8e8] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                                    <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
+                                    <p className="text-sm leading-[1.65] text-[#4a4a4a] whitespace-pre-line">
                                         {displayMainDescription}
                                     </p>
                                 </section>
@@ -1011,11 +1041,23 @@ export function ServiceReviewPage({
                         <aside className="lg:sticky lg:top-[7.5rem] lg:self-start">
                             <article className="sd-aside-card flex max-h-[calc(100dvh-8.5rem)] flex-col overflow-y-auto">
                                 <section className="shrink-0">
-                                    <p className="sd-section-label mb-3">Tu reserva</p>
-                                    <p className="text-2xl font-semibold tracking-tight text-[#1c1c1c]">
-                                        {renderServicePrice(finalPrice)}
-                                    </p>
-                                    <p className="text-sm text-[#6a6a6a]">por servicio</p>
+                                    <p className="sd-section-label mb-2">Tu reserva</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-[1.75rem] font-semibold leading-none tracking-tight text-[#1c1c1c]">
+                                            {renderServicePrice(finalPrice)}
+                                        </p>
+                                        <p className="text-sm text-[#6a6a6a]">/ servicio</p>
+                                    </div>
+                                    <div className="mt-3 flex flex-col gap-1.5">
+                                        <p className="inline-flex items-center gap-2 text-xs text-[#4a4a4a]">
+                                            <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+                                            Pago retenido hasta aprobar el informe
+                                        </p>
+                                        <p className="inline-flex items-center gap-2 text-xs text-[#4a4a4a]">
+                                            <Lock className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+                                            Sin cargo hasta confirmar con el experto
+                                        </p>
+                                    </div>
                                 </section>
 
                                 {(finalAvailability || expertLocation) && (
@@ -1033,7 +1075,7 @@ export function ServiceReviewPage({
                                     </section>
                                 )}
 
-                                <footer className="mt-4 shrink-0 space-y-2 border-t border-[#e8e8e8] pt-4">
+                                <footer className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
                                 {isAuthenticated ? (
                                     <button
                                         type="button"
@@ -1051,9 +1093,6 @@ export function ServiceReviewPage({
                                         Inicia sesión para reservar
                                         </button>
                                 )}
-                                <p className="text-xs leading-relaxed text-[#6a6a6a]">
-                                    Sin cargo hasta confirmar la reserva con el experto.
-                                </p>
                                 </footer>
                             </article>
                         </aside>
