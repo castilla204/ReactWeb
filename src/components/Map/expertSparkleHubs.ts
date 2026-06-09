@@ -21,7 +21,10 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
   { id: 'malaga', lat: 36.7213, lng: -4.4214, weight: 2 },
   { id: 'zaragoza', lat: 41.6488, lng: -0.8891, weight: 1 },
   { id: 'murcia', lat: 37.9922, lng: -1.1307, weight: 1 },
-  { id: 'palma', lat: 39.5696, lng: 2.6502, weight: 1 },
+  // 🔧 v5: movido del centro de Palma (sur de la isla, ~3 km de costa) al
+  // interior de Mallorca (zona Inca, ~17 km de cualquier costa). Mallorca mide
+  // ~80 km de ancho — con cualquier glow >40 km el dot parecía "flotar en el mar".
+  { id: 'mallorca', lat: 39.7212, lng: 2.9098, weight: 1 },
   { id: 'la-coruna', lat: 43.3623, lng: -8.4115, weight: 1 },
   { id: 'valladolid', lat: 41.6523, lng: -4.7245, weight: 1 },
   { id: 'granada', lat: 37.1773, lng: -3.5986, weight: 1 },
@@ -137,10 +140,10 @@ export const EXPERT_SPARKLE_HUBS: readonly ExpertSparkleHub[] = [
  * que con zoom regional amplio aparecían en el océano por proyección/bounds.
  */
 export const HERO_LANDING_SPARKLE_BBOX = {
-  west: -10.5,
-  east: 28,
-  south: 36,
-  north: 57,
+  west: -12,
+  east: 32,
+  south: 30,
+  north: 58,
 } as const;
 
 export function isHubInHeroSparkleRegion(lng: number, lat: number): boolean {

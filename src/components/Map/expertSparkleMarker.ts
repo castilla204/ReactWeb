@@ -47,13 +47,17 @@ interface DotSpec {
 }
 
 const DOT_SPECS: Record<1 | 2 | 3, DotSpec> = {
-  // 🔧 v4 (feedback "no veo ningún punto"): núcleos +30% y halos al doble de
-  // opacidad. v3 quedó demasiado sutil — los hex 1f/73 se diluían en el mapa
-  // Carto blanco. Mantenemos el estilo heatmap (sin halo blanco rígido), pero
-  // con presencia real de contraste.
-  3: { core: 12, haloPx: 4, glowPx: 10 },
-  2: { core: 10, haloPx: 3, glowPx: 8 },
-  1: { core: 8, haloPx: 2, glowPx: 6 },
+  // 🔧 v5 (feedback "puntos en el mar"): MANTENEMOS los cores (visibilidad) pero
+  // RECORTAMOS halo y glow drásticamente. La causa raíz no era posición errónea:
+  // el box-shadow se proyecta en píxeles de pantalla, no en metros. A zoom 2.5
+  // (post-landing) 1 px = 21 km a lat 40°N. El glow de 10 px = 210 km de radio
+  // físico → cualquier ciudad costera (Barcelona a 2 km de costa, Valencia a 3,
+  // Lisboa a 1, Nápoles a 2, Tel Aviv <1, Estambul Bósforo, Casablanca 0…) tenía
+  // su halo invadiendo el mar. Bajando glow a 4 px → radio 84 km → la mayoría
+  // del halo queda sobre tierra. Diagnóstico completo en el informe del agente.
+  3: { core: 12, haloPx: 2, glowPx: 4 },
+  2: { core: 10, haloPx: 2, glowPx: 3 },
+  1: { core: 8, haloPx: 1, glowPx: 3 },
 };
 
 /**
