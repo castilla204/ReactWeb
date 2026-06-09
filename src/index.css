@@ -53,6 +53,28 @@
   .chat-message-enter {
     animation: none;
   }
+
+  .support-chat-panel,
+  .support-chat-fab-pulse {
+    animation: none !important;
+  }
+}
+
+@keyframes support-chat-fab-pulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 16px hsl(var(--brand) / 0.22),
+      0 0 0 0 hsl(var(--brand) / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 6px 20px hsl(var(--brand) / 0.28),
+      0 0 0 6px hsl(var(--brand) / 0);
+  }
+}
+
+.support-chat-fab-pulse {
+  animation: support-chat-fab-pulse 2.8s ease-out infinite;
 }
 
 @keyframes caret-blink {

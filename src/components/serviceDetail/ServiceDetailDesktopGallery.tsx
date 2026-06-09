@@ -11,9 +11,9 @@ interface ServiceDetailDesktopGalleryProps {
   onImageLoadStart: (url: string) => void;
 }
 
-const SHELL = 'overflow-hidden rounded-xl border border-[#e8e8e8]';
+const SHELL = 'overflow-hidden rounded-2xl border border-[#e8e8e8] shadow-[0_2px_12px_rgba(15,23,42,0.05)]';
 /** Altura contenida: la galería vive en la columna izquierda del grid, no a ancho completo */
-const HEIGHT = 'h-[min(340px,36vh)]';
+const HEIGHT = 'h-[min(360px,38vh)]';
 
 export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryProps> = ({
   images,
