@@ -23,4 +23,4 @@ export const MOBILE_HERO_COPY_WASH =
 export const MOBILE_HERO_PHOTO_PATH = '/hero-mobile-inspector.jpg';
 
 export const MOBILE_HERO_PHOTO_OVERLAY =
-  'linear-gradient(95deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 34%, rgba(255,255,255,0.55) 52%, rgba(255,255,255,0.12) 68%, transparent 82%)';
+  'linear-gradient(95deg, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.95) 32%, rgba(255,255,255,0.78) 48%, rgba(255,255,255,0.28) 64%, transparent 82%)';

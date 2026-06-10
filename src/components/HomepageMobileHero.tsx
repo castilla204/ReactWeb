@@ -6,10 +6,10 @@ import {
 } from '../constants/homepageHeroMap';
 
 /**
- * Hero móvil — foto real a pantalla completa (mecánico inspeccionando motor a la derecha)
+ * Hero móvil — foto real a pantalla completa (perito/mecánico con cara visible en taller)
  * + copy "Antes de comprar, que lo revise un experto" sobre viñeta blanca izquierda.
  *
- * Imagen: Unsplash (mecánico con llave en motor) — public/hero-mobile-inspector.jpg
+ * Imagen: Unsplash (retrato profesional, cara visible) — public/hero-mobile-inspector.jpg
  */
 export const HomepageMobileHero: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
@@ -18,14 +18,14 @@ export const HomepageMobileHero: React.FC = () => {
     <section
       data-homepage-hero
       className={`relative md:hidden overflow-hidden border-b border-[#e8e8e8] ${
-        expanded ? 'min-h-[152px]' : ''
+        expanded ? 'min-h-[158px]' : ''
       }`}
     >
       <img
         src={MOBILE_HERO_PHOTO_PATH}
         alt=""
         aria-hidden
-        className="absolute inset-0 z-0 h-full w-full object-cover object-[78%_center]"
+        className="absolute inset-0 z-0 h-full w-full object-cover object-[62%_center]"
         fetchPriority="high"
         decoding="async"
       />
