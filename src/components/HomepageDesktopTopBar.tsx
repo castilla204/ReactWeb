@@ -184,7 +184,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
           → cliente normal NO podía ver su inbox de notificaciones. Auditoría
           de 5 agentes lo marcó como gap CRÍTICO P0. */}
       {!isCheckout && user ? <TopBarNotificationsBell isMap={isMap} /> : null}
-      {!isCheckout ? (
+      {!isCheckout && isAuthenticated ? (
         <button
           type="button"
           aria-label="Favoritos"
