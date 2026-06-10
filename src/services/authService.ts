@@ -23,8 +23,14 @@ class AuthService {
     private pendingMfaRequests: Array<{ url: string; options: RequestInit; resolve: (response: Response) => void; reject: (error: any) => void }> = [];
 
     constructor() {
-        this.initFromStorage();
-        this.setupAxiosInterceptor();
+        // ⚡ Higiene SSR/prerender: ambos métodos tocan window/localStorage. Si
+        // este módulo se importa en un build server-side (vite-prerender-plugin,
+        // RSC, etc.), el constructor del singleton se evalúa en Node y revienta.
+        // Guard barato; no cambia el comportamiento en navegador.
+        if (typeof window !== 'undefined') {
+            this.initFromStorage();
+            this.setupAxiosInterceptor();
+        }
     }
 
     // ============================================

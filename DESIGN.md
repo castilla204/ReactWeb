@@ -104,7 +104,7 @@ components:
     textColor: "{colors.ink-strong}"
     typography: "{typography.body}"
     rounded: "{rounded.xl}"
-    padding: "20px"
+    padding: "24px"
   chip-deliverable:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink-strong}"

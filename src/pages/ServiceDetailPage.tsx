@@ -43,9 +43,7 @@ const ServiceDetailPage: React.FC = () => {
 
         const url = API_CONFIG.endpoints.expert.services.get(id);
         const rawService = await fetchApi<any>(url);
-        
-        console.log('🔍 ServiceDetailPage - Servicio obtenido (raw):', rawService);
-        
+
         if (rawService) {
           // Función para transformar PascalCase a camelCase (igual que en useServices.ts)
           const transformService = (service: any): Service => {
@@ -132,17 +130,6 @@ const ServiceDetailPage: React.FC = () => {
           };
           
           const mappedService = transformService(rawService);
-          
-          console.log('✅ ServiceDetailPage - Servicio transformado:', {
-            id: mappedService.id,
-            imageUrls: mappedService.imageUrls,
-            imageUrlsLength: mappedService.imageUrls.length,
-            serviceTypeName: mappedService.serviceTypeName,
-            serviceTypeDescription: mappedService.serviceTypeDescription,
-            expert: mappedService.expert?.user?.name,
-            reviews: mappedService.expert?.reviews?.length || 0,
-          });
-          
           setService(mappedService);
         } else {
           setError('Servicio no encontrado');

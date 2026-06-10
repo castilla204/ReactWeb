@@ -33,8 +33,9 @@ export function getSupabaseClient(): SupabaseClient {
   return supabaseClient;
 }
 
-/** @deprecated Usar getSupabaseClient() */
-export const supabase = getSupabaseClient();
+// ⚡ Eliminado el `export const supabase = getSupabaseClient()` a nivel de módulo:
+// creaba el cliente (y todo el SDK) en cuanto CUALQUIER archivo importaba algo de
+// aquí, aunque fuera un type. Usar siempre getSupabaseClient() en el punto de uso.
 
 /** No-op: broadcast no requiere JWT de la API .NET */
 export function updateSupabaseAuth(_token: string | null): void {}

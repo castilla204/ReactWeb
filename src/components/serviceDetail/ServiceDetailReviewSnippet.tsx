@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { ServiceReviewItem } from './ServiceDetailReviewsSection';
 import { ServiceDetailReviewStars } from './ServiceDetailReviewStars';
@@ -19,6 +19,7 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
   variant = 'default',
 }) => {
   const isMobile = variant === 'mobile';
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const reviewText = (review.description || review.comment || '').trim();
   const clientName = review.client?.name?.trim() || 'Cliente';
   const initial = clientName.charAt(0).toUpperCase();
@@ -74,19 +75,24 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
         </p>
       ) : null}
 
-      {images.length > 0 ? (
+      {images.length > failedImages.size ? (
         <div className={`flex gap-1.5 ${isMobile ? 'mt-2' : 'mt-2.5'}`}>
-          {images.map((img, idx) => (
-            <img
-              key={idx}
-              src={img}
-              alt=""
-              className={`rounded-md border border-[#e8e8e8] object-cover bg-[#f5f5f5] ${
-                isMobile ? 'h-11 w-11' : 'h-12 w-12'
-              }`}
-              loading="lazy"
-            />
-          ))}
+          {images.map((img, idx) =>
+            failedImages.has(idx) ? null : (
+              <img
+                key={idx}
+                src={img}
+                alt=""
+                className={`rounded-md border border-[#e8e8e8] object-cover bg-[#f5f5f5] ${
+                  isMobile ? 'h-11 w-11' : 'h-12 w-12'
+                }`}
+                loading="lazy"
+                onError={() =>
+                  setFailedImages((prev) => new Set([...prev, idx]))
+                }
+              />
+            ),
+          )}
         </div>
       ) : null}
     </Wrapper>

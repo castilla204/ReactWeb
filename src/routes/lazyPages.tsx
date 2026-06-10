@@ -17,7 +17,16 @@ function lazyNamed<T extends Record<string, ComponentType<unknown>>>(
   );
 }
 
-export const HomePage = lazyDefault(() => import('../pages/HomePage'));
+// ⚡ Precalentamiento de la home: si la URL actual es la home, arrancar la descarga
+// del chunk YA (en paralelo con el arranque de React) en vez de esperar a que React
+// monte el Router, evalúe la ruta y recién entonces pida el chunk. Elimina un viaje
+// de red completo de la cascada index.js → HomePage.js → AirbnbSearchBar.js.
+const importHomePage = () => import('../pages/HomePage');
+const homePageWarmup =
+  typeof window !== 'undefined' && ['/', '/explorar'].includes(window.location.pathname)
+    ? importHomePage()
+    : null;
+export const HomePage = lazyDefault(() => homePageWarmup ?? importHomePage());
 // 🛡️ Round 15 — R5 FIX: LoginPage real para que navigate('/login') no caiga en 404.
 export const LoginPage = lazyDefault(() => import('../pages/LoginPage'));
 export const SearchCreationPage = lazyDefault(() => import('../pages/SearchCreationPage'));

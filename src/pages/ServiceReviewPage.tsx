@@ -1,30 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-    Star, 
-    MapPin, 
-    CheckCircle, 
-    ArrowLeft, 
-    ChevronLeft, 
-    ChevronRight, 
+import {
+    Star,
+    ArrowLeft,
+    ChevronLeft,
+    ChevronRight,
     X,
-    User,
-    Clock,
     Shield,
-    Share2,
     Heart,
-    Headphones,
     MessageCircle,
-    Award,
-    Zap,
-    Grid3X3,
     Lock,
     BadgeCheck,
-    FileText,
-    Video,
     Image,
-    File,
-    Calendar,
-    Globe
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
@@ -44,11 +30,19 @@ import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFo
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
-  SD_MOBILE_CAROUSEL_EDGE_CLASS,
+  HP_FONT,
   SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_CTA_CLASS,
+  SD_MOBILE_EMPHASIS_CLASS,
   SD_MOBILE_GUTTER_CLASS,
-  SD_MOBILE_SCROLL_PAD_CLASS,
+  SD_MOBILE_HEADER_PB_CLASS,
+  SD_MOBILE_INSET_STACK_CLASS,
+  SD_MOBILE_META_CLASS,
+  SD_MOBILE_META_SECTION_CLASS,
+  SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
+  SD_MOBILE_SHEET_BOTTOM_CLASS,
+  SD_MOBILE_SHEET_TOP_CLASS,
+  SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_PAGE_GRID_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../constants/homepageTypography';
@@ -193,19 +187,7 @@ export function ServiceReviewPage({
 
     const service = serviceProp || services.find(s => s.id === serviceId);
     const finalService: Service | null = service || null;
-    
-    console.log('🔍 ServiceReviewPage - Servicio final:', {
-        serviceId,
-        hasServiceProp: !!serviceProp,
-        hasServiceFromHook: !!services.find(s => s.id === serviceId),
-        finalService: finalService ? {
-            id: finalService.id,
-            hasExpert: !!finalService.expert,
-            reviewsCount: finalService.expert?.reviews?.length || 0,
-            reviews: finalService.expert?.reviews,
-        } : null,
-    });
-    
+
     // Normalizar imageUrls - puede venir de diferentes fuentes
     const normalizeImageUrls = (urls: any): string[] => {
       if (Array.isArray(urls)) return urls.filter(url => url && typeof url === 'string');
@@ -219,20 +201,9 @@ export function ServiceReviewPage({
     
     // Filtrar imágenes que fallaron
     const validImages = finalImages.filter(img => !failedImages.has(img));
-    
-    console.log('🖼️ ServiceReviewPage - Imágenes finales:', {
-      serviceId,
-      finalServiceImageUrls: finalService?.imageUrls,
-      serviceImageUrls,
-      finalImages,
-      finalImagesLength: finalImages.length,
-      validImagesLength: validImages.length,
-      failedImagesCount: failedImages.size,
-    });
-    
+
     // Handlers para manejo de imágenes
     const handleImageError = (imgUrl: string) => {
-        console.error('❌ Error cargando imagen:', imgUrl);
         setFailedImages(prev => new Set([...prev, imgUrl]));
         setLoadingImages(prev => {
             const next = new Set(prev);
@@ -307,19 +278,7 @@ export function ServiceReviewPage({
         if (countryName) parts.push(countryName);
         return parts.length > 0 ? parts.join(', ') : countryName || '';
     })();
-    
-    // ✅ DEBUG: Log para verificar datos de ubicación
-    console.log('🗺️ ServiceReviewPage - Datos de ubicación del experto:', {
-        hasFinalService: !!finalService,
-        expertLat,
-        expertLng,
-        expertLocation,
-        expertRange,
-        expertCountry,
-        finalServiceKeys: finalService ? Object.keys(finalService) : [],
-        expertKeys: finalService?.expert ? Object.keys(finalService.expert) : [],
-    });
-    
+
     // ✅ FUNCIÓN PARA FORMATEAR DÍAS DE LA SEMANA
     const formatDay = (day: string): string => {
         const dayMap: Record<string, string> = {
@@ -347,11 +306,6 @@ export function ServiceReviewPage({
     const finalRating = finalService?.averageRating || (finalService as any)?.AverageRating || 0;
     // Manejar tanto PascalCase como camelCase para reviews
     const rawReviews = finalService?.expert?.reviews || (finalService as any)?.Expert?.Reviews || (finalService as any)?.expert?.Reviews || [];
-    console.log('🔍 ServiceReviewPage - Reviews raw:', {
-        rawReviewsCount: rawReviews.length,
-        rawReviews: rawReviews,
-        firstReview: rawReviews[0],
-    });
     const finalReviews = rawReviews.map((review: any) => {
         // Mapear reviewer a client, manejando casos donde reviewer puede ser undefined
         const reviewer = review.reviewer || review.Reviewer || review.client || review.Client;
@@ -375,10 +329,6 @@ export function ServiceReviewPage({
             comment: review.description || review.Description || review.comment || review.Comment || '',
             imageUrls: review.imageUrls || review.ImageUrls || [],
         };
-    });
-    console.log('🔍 ServiceReviewPage - Reviews finales:', {
-        finalReviewsCount: finalReviews.length,
-        finalReviews: finalReviews,
     });
     const finalCompletedSearches = finalService?.completedSearches || 0;
     
@@ -416,7 +366,7 @@ export function ServiceReviewPage({
         return (
             <>
                 <span>≈ {info.converted}</span>
-                <span className="ml-1 text-xs text-gray-500">({info.sourceFormatted})</span>
+                <span className="ml-1 text-xs font-normal text-[#6a6a6a]">({info.sourceFormatted})</span>
             </>
         );
     };
@@ -561,59 +511,33 @@ export function ServiceReviewPage({
 
     return (
         <>
-        <style>{`
-            .loading-dot {
-                display: inline-block;
-                animation: wave 1.4s ease-in-out infinite;
-                font-size: 1.2em;
-                line-height: 1;
-            }
-            @keyframes wave {
-                0%, 60%, 100% {
-                    transform: translateY(0);
-                    opacity: 0.7;
-                }
-                30% {
-                    transform: translateY(-10px);
-                    opacity: 1;
-                }
-            }
-        `}</style>
         <div className="service-detail-page min-h-screen bg-[#fafafa]">
                 
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
             <div className="lg:hidden">
-                {/* Botones flotantes móvil con fondo blanco redondo */}
-                <div className={`fixed left-4 z-50 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-                    <button 
-                        onClick={onBack}
-                        className="sd-icon-btn"
-                        aria-label="Volver"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className={`fixed right-4 z-50 flex gap-2 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-                    <button 
-                        type="button"
-                        className="sd-icon-btn"
-                        aria-label="Compartir"
-                        disabled
-                        aria-disabled="true"
-                    >
-                        <Share2 className="w-5 h-5" />
-                    </button>
-                    <button 
-                        onClick={() => setIsFavorite(!isFavorite)}
-                        className="sd-icon-btn"
-                        aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                        aria-pressed={isFavorite}
-                    >
-                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
-                    </button>
-                </div>
                 {/* Hero móvil: chips anclados al borde inferior de la foto */}
                 <div className="relative w-full">
+                    {/* Botones sobre la foto: absolutos dentro del hero → se van con el scroll,
+                        nunca colisionan con la sheet. Target táctil 44×44. */}
+                    <div className={`absolute left-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
+                        <button
+                            onClick={onBack}
+                            className="sd-icon-btn-float"
+                            aria-label="Volver"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className={`absolute right-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
+                        <button
+                            onClick={() => setIsFavorite(!isFavorite)}
+                            className="sd-icon-btn-float"
+                            aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                            aria-pressed={isFavorite}
+                        >
+                            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
+                        </button>
+                    </div>
                     <div className="relative w-full overflow-hidden">
                     {/* Carrusel de imágenes con indicadores */}
                     <div 
@@ -694,130 +618,101 @@ export function ServiceReviewPage({
                         </div>
                     )}
 
-                    {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
-                        <ServiceDetailDeliverablesGuide
-                            items={finalDeliverableTypes}
-                            variant="overlay"
-                            className="sd-deliverable-guide-on-image"
-                        />
-                    )}
                             </div>
                             
                     <div
-                        className={`relative -mt-10 z-10 bg-white rounded-t-2xl pt-6 ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)] ring-1 ring-black/[0.04]`}
+                        className={`relative -mt-10 z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
                     >
-                        <div className={`${SD_MOBILE_GUTTER_CLASS} mb-3 text-center`}>
-                            <h1
-                                className="sd-page-title relative z-10 mb-3 text-[22px] leading-[26px] md:text-[22px]"
-                            >
-                                {serviceTypeName} por{' '}
-                                <span className="underline decoration-[#d1d5db] underline-offset-[3px]">
-                                    {finalExpertName}
-                                            </span>
-                            </h1>
-                                    </div>
-
-                            {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
-                                <ServiceDetailDeliverablesGuide
-                                    items={finalDeliverableTypes}
-                                    variant="inline"
-                                    className={`mb-3 ${SD_MOBILE_GUTTER_CLASS}`}
-                                />
-                            )}
-
-                            {(finalAvailability || expertLocation) && (
-                                <ServiceDetailBookingMeta
-                                    layout="minimal"
-                                    availability={finalAvailability ?? undefined}
-                                    timezone={finalService?.expert?.timezone}
-                                    isOnVacation={finalService?.expert?.isOnVacation}
-                                    location={expertLocation ?? undefined}
-                                    locationLabel={expertLocationLabel || undefined}
-                                    rangeKm={expertRange || 25}
-                                    coverageFirst
-                                    mapVariant="preview"
-                                    mapClassName="h-[88px] w-full rounded-none border-x-0 border-y border-[#ebebeb]"
-                                    showAvailabilityHint={false}
-                                    className="mb-1"
-                                />
-                            )}
-
-                    
-                    <div className="my-3 border-t border-[#e8e8e8]" />
-
-                    <div className={`${SD_MOBILE_GUTTER_CLASS} my-3`}>
-                        <div className="flex items-start gap-4">
-                            <div className="relative flex-shrink-0" style={{ height: '40px', width: '40px' }}>
+                        <div className={SD_MOBILE_GUTTER_CLASS}>
+                        <h1 className="sd-page-title mb-3">
+                            {serviceTypeName}
+                        </h1>
+                        <header
+                            className={
+                                finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-3'
+                            }
+                        >
+                            <div className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    aria-label={`${finalExpertName} es revisor verificado de inspecciono.com. Obtén más información sobre ${finalExpertName}.`}
-                                    className="relative w-full h-full border-none bg-transparent p-0 cursor-pointer"
+                                    aria-label={`${finalExpertName} es revisor verificado de inspecciono.com`}
+                                    className="relative h-11 w-11 shrink-0 border-none bg-transparent p-0"
                                     onClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
                                         }
                                     }}
                                 >
-                                    <Avatar className="w-10 h-10 flex-shrink-0 border-0" style={{ height: '40px', width: '40px', borderRadius: '50%' }}>
-                                <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                <AvatarFallback className="bg-gray-900 text-white font-bold text-sm">
-                                    {finalExpertName.charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
-                                    {/* Badge de Superanfitrión */}
-                                    <div className="absolute -bottom-0.5 -right-0.5" style={{ height: '20px', width: '20px' }}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 14" aria-hidden="true" role="presentation" focusable="false" style={{ display: 'block', height: '20px', width: '20px' }}>
-                                            <linearGradient id="superhost-gradient-mobile" x1="8.5%" x2="92.18%" y1="17.16%" y2="17.16%">
-                                                <stop offset="0" stopColor="hsl(var(--brand))"></stop>
-                                                <stop offset=".5" stopColor="hsl(var(--brand-hover))"></stop>
-                                                <stop offset="1" stopColor="#004a99"></stop>
-                                            </linearGradient>
-                                            <path fill="url(#superhost-gradient-mobile)" d="M9.93 0c.88 0 1.6.67 1.66 1.52l.01.15v2.15c0 .54-.26 1.05-.7 1.36l-.13.08-3.73 2.17a3.4 3.4 0 1 1-2.48 0L.83 5.26A1.67 1.67 0 0 1 0 3.96L0 3.82V1.67C0 .79.67.07 1.52 0L1.67 0z"></path>
-                                            <path fill="url(#superhost-gradient-mobile)" d="M5.8 8.2a2.4 2.4 0 0 0-.16 4.8h.32a2.4 2.4 0 0 0-.16-4.8zM9.93 1H1.67a.67.67 0 0 0-.66.57l-.01.1v2.15c0 .2.1.39.25.52l.08.05L5.46 6.8c.1.06.2.09.29.1h.1l.1-.02.1-.03.09-.05 4.13-2.4c.17-.1.3-.29.32-.48l.01-.1V1.67a.67.67 0 0 0-.57-.66z"></path>
-                                        </svg>
-                                    </div>
+                                    <Avatar className="h-11 w-11 rounded-full">
+                                        <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-sm font-bold text-white">
+                                            {finalExpertName.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span
+                                        className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
+                                        aria-hidden
+                                    >
+                                        <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
+                                    </span>
                                 </button>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div 
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 400,
-                                        color: 'rgb(34, 34, 34)',
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
-                                    }}
-                                >
-                                    <div style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(34, 34, 34)', fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif' }}>
-                                        Revisor: {finalExpertName}
-                                        </div>
-                                    <div className="mt-1 hidden md:block" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif' }}>
-                                        Revisor verificado de inspecciono.com
-                                    </div>
-                                    <div className="mt-1 md:hidden" style={{ fontSize: '14px', lineHeight: '20px', fontWeight: 400, color: 'rgb(113, 113, 113)', fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif' }}>
-                                        Revisor verificado
-                                    </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>
+                                        {finalExpertName}
+                                    </p>
+                                    <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 ${SD_MOBILE_META_CLASS}`}>
+                                        <span>Revisor verificado</span>
+                                        {finalRating > 0 && finalReviews.length > 0 ? (
+                                            <>
+                                                <span className="text-[#d4d4d4]" aria-hidden>
+                                                    ·
+                                                </span>
+                                                <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-[#1c1c1c]">
+                                                    <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
+                                                    {finalRating.toFixed(1).replace('.', ',')}
+                                                    <span className="font-normal text-[#6a6a6a]">
+                                                        ({finalReviews.length})
+                                                    </span>
+                                                </span>
+                                            </>
+                                        ) : null}
+                                    </p>
                                 </div>
-                            </div>
-                            {/* Botón de Chat - Siempre visible */}
-                            <div className="flex-shrink-0">
                                 <Button
+                                    type="button"
                                     onClick={handleChatClick}
                                     variant="outline"
-                                    className="flex items-center gap-2 rounded-full border-gray-300 hover:border-gray-400"
+                                    size="sm"
+                                    className="h-9 shrink-0 gap-1.5 rounded-full border-[#e8e8e8] px-3 text-sm font-medium text-[#1c1c1c]"
                                 >
-                                    <MessageCircle className="w-4 h-4" />
-                                    <span>Chat</span>
+                                    <MessageCircle className="h-4 w-4" />
+                                    Chat
                                 </Button>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div className="my-3 border-t border-[#e8e8e8]" />
+                        </header>
 
-                        <div className={`mb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
+                            {finalAvailability && (
+                                <section
+                                    aria-label="Información para reservar"
+                                    className={SD_MOBILE_META_SECTION_CLASS}
+                                >
+                                    <ServiceDetailBookingMeta
+                                        layout="minimal"
+                                        embedded
+                                        showCoverage={false}
+                                        availability={finalAvailability}
+                                        timezone={finalService?.expert?.timezone}
+                                        isOnVacation={finalService?.expert?.isOnVacation}
+                                        rangeKm={expertRange || 25}
+                                        mapVariant="preview"
+                                        showAvailabilityHint={false}
+                                    />
+                                </section>
+                            )}
+
+                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} mt-0 w-full`}>
                             <div
-                                className="-mx-4 flex border-b border-[#e8e8e8] px-4"
+                                className="sd-tablist"
                                 role="tablist"
                                 aria-label="Información del servicio"
                             >
@@ -845,13 +740,9 @@ export function ServiceReviewPage({
                                 >
                                     Reseñas
                                     {finalReviews.length > 0 ? (
-                                                    <span 
-                                            className={`ml-1.5 tabular-nums font-normal ${
-                                                activeTab === 'reviews' ? 'text-[#6a6a6a]' : 'text-[#737373]'
-                                            }`}
-                                        >
-                                            ({finalReviews.length})
-                                                    </span>
+                                        <span className="ml-1 text-xs font-normal tabular-nums text-[#6a6a6a]">
+                                            {finalReviews.length}
+                                        </span>
                                     ) : null}
                                 </button>
                                                 </div>
@@ -861,12 +752,29 @@ export function ServiceReviewPage({
                                     id="sd-panel-about"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-about"
-                                    className="pt-6"
+                                    className={`${SD_MOBILE_INSET_STACK_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
                                 >
                                     {displayMainDescription ? (
-                                        <p className="whitespace-pre-line text-sm font-normal leading-relaxed text-[#6a6a6a]">
+                                        <p className="sd-body whitespace-pre-line">
                                             {displayMainDescription}
                                         </p>
+                                    ) : null}
+                                    {visibleDeliverableTypes.length > 0 ? (
+                                        <ServiceDetailDeliverablesGuide
+                                            items={finalDeliverableTypes}
+                                            variant="inline"
+                                        />
+                                    ) : null}
+                                    {expertLocation ? (
+                                        <ServiceDetailBookingMeta
+                                            layout="minimal"
+                                            embedded
+                                            showAvailability={false}
+                                            location={expertLocation}
+                                            locationLabel={expertLocationLabel || undefined}
+                                            rangeKm={expertRange || 25}
+                                            mapVariant="preview"
+                                        />
                                     ) : null}
                             </div>
                         )}
@@ -876,7 +784,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className="-mx-4 pt-6"
+                                    className={SD_MOBILE_TAB_PANEL_PT_CLASS}
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
@@ -889,6 +797,7 @@ export function ServiceReviewPage({
                                                                 </div>
                                                             )}
                                                         </div>
+                        </div>
                                                                                     </div>
                                                                             </div>
 
@@ -896,6 +805,12 @@ export function ServiceReviewPage({
                     price={getMobileFooterPriceLine(finalPrice)}
                     priceSuffix="por servicio"
                     priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
+                    trustNote={
+                        <>
+                            <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+                            Pago retenido hasta aprobar el informe
+                        </>
+                    }
                 >
                             {isAuthenticated ? (
                                 <button
@@ -948,23 +863,10 @@ export function ServiceReviewPage({
                         onImageLoad={handleImageLoad}
                         onImageLoadStart={handleImageLoadStart}
                     />
-                                {validImages.length > 0 && visibleDeliverableTypes.length > 0 && (
-                                    <ServiceDetailDeliverablesGuide
-                                        items={finalDeliverableTypes}
-                                        variant="overlay"
-                                    />
-                                )}
                             </div>
 
-                            {validImages.length === 0 && visibleDeliverableTypes.length > 0 && (
-                                <ServiceDetailDeliverablesGuide
-                                    items={finalDeliverableTypes}
-                                    variant="inline"
-                                />
-                            )}
-
                             {/* Experto */}
-                            <div className="flex items-center gap-3 rounded-xl border border-[#e8e8e8] bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                            <div className="flex items-center gap-3 rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
                                 <button
                                     type="button"
                                     className="relative shrink-0"
@@ -1021,12 +923,21 @@ export function ServiceReviewPage({
                                 </button>
                             </div>
 
-                            {displayMainDescription && (
-                            <section className="rounded-xl border border-[#e8e8e8] bg-white px-5 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                            {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
+                            <section className="rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
                                     <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
-                                    <p className="text-sm leading-[1.65] text-[#4a4a4a] whitespace-pre-line">
-                                        {displayMainDescription}
-                                    </p>
+                                    {displayMainDescription ? (
+                                        <p className="sd-body whitespace-pre-line">
+                                            {displayMainDescription}
+                                        </p>
+                                    ) : null}
+                                    {visibleDeliverableTypes.length > 0 ? (
+                                        <ServiceDetailDeliverablesGuide
+                                            items={finalDeliverableTypes}
+                                            variant="inline"
+                                            className={displayMainDescription ? 'mt-5' : ''}
+                                        />
+                                    ) : null}
                                 </section>
                             )}
 
@@ -1043,17 +954,17 @@ export function ServiceReviewPage({
                                 <section className="shrink-0">
                                     <p className="sd-section-label mb-2">Tu reserva</p>
                                     <div className="flex items-baseline gap-2">
-                                        <p className="text-[1.75rem] font-semibold leading-none tracking-tight text-[#1c1c1c]">
+                                        <p className="sd-price">
                                             {renderServicePrice(finalPrice)}
                                         </p>
                                         <p className="text-sm text-[#6a6a6a]">/ servicio</p>
                                     </div>
                                     <div className="mt-3 flex flex-col gap-1.5">
-                                        <p className="inline-flex items-center gap-2 text-xs text-[#4a4a4a]">
+                                        <p className="inline-flex items-center gap-2 text-xs text-[#6a6a6a]">
                                             <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
                                             Pago retenido hasta aprobar el informe
                                         </p>
-                                        <p className="inline-flex items-center gap-2 text-xs text-[#4a4a4a]">
+                                        <p className="inline-flex items-center gap-2 text-xs text-[#6a6a6a]">
                                             <Lock className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
                                             Sin cargo hasta confirmar con el experto
                                         </p>
@@ -1215,7 +1126,7 @@ export function ServiceReviewPage({
                                         lineHeight: '12px',
                                         fontWeight: 400,
                                         color: '#222222',
-                                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                        fontFamily: HP_FONT,
                                         letterSpacing: '0',
                                     }}
                                 >
@@ -1352,7 +1263,7 @@ export function ServiceReviewPage({
                                                 lineHeight: '12px',
                                                 fontWeight: 400,
                                                 color: '#222222',
-                                                fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                                                fontFamily: HP_FONT,
                                                 letterSpacing: '0',
                                             }}
                                         >

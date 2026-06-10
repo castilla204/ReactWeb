@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { getThumbUrl } from '../utils/imageCdn';
 // 🛡️ Round 28: símbolos de divisa derivados del helper unificado (cubre SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
 import { getCurrencySymbol } from '../utils/priceUtils';
 import { useHomepageWallQuery } from '../hooks/useHomepageWall';
@@ -27,15 +28,21 @@ interface ServiceCardProps {
   initialIsFavorite?: boolean;
   isMobile: boolean;
   isAuthenticated: boolean;
+  /** ⚡ true para las primeras tarjetas above-the-fold: su foto es el candidato a LCP
+      y debe cargar eager con prioridad alta, no lazy/low como el resto. */
+  priority?: boolean;
   onOpenService: (serviceId: number) => void;
   onToggleFavorite: (serviceId: number) => Promise<{ isFavorite: boolean; message: string } | null>;
 }
 
 // ✅ Memoizar ServiceCard para evitar re-renders innecesarios
-export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false, isMobile, isAuthenticated, onOpenService, onToggleFavorite }) => {
+export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, forceGuestFavorite = false, initialIsFavorite = false, isMobile, isAuthenticated, priority = false, onOpenService, onToggleFavorite }) => {
   const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
   const [imageIndex, setImageIndex] = useState(0);
   const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
+  // ⚡ Si el redimensionador de Cloudflare falla (no habilitado aún / cuota), volver
+  // a las URLs originales de Supabase para esta tarjeta.
+  const [cdnFailed, setCdnFailed] = useState(false);
   const { formatPriceWithSource, preferredCurrency } = useCurrency();
 
   // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
@@ -182,16 +189,19 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               {/* Imagen principal - Optimizada para webview */}
               <div className="relative w-full h-full">
                 <img
-                  src={imageUrls[imageIndex]}
+                  src={cdnFailed ? imageUrls[imageIndex] : getThumbUrl(imageUrls[imageIndex], 360)}
                   alt={service.serviceTypeName}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   style={{
                     display: 'block',
-                    contentVisibility: 'auto',
+                    ...(priority ? {} : { contentVisibility: 'auto' as const }),
                   }}
-                  loading="lazy"
+                  loading={priority ? 'eager' : 'lazy'}
                   decoding="async"
-                  fetchPriority="low"
+                  fetchPriority={priority ? 'high' : 'low'}
+                  onError={() => {
+                    if (!cdnFailed) setCdnFailed(true);
+                  }}
                 />
               </div>
               
@@ -231,17 +241,25 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       role="presentation"
                       aria-hidden="true"
                     >
-                      <img
-                        src="https://a0.muscache.com/pictures/airbnb-platform-assets/AirbnbPlatformAssets-email-dls-icons/original/c3c390ab-d1ab-4627-9cd7-608ac53b171e.png"
-                        alt=""
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          display: 'block',
-                          objectFit: 'contain',
-                        }}
+                      {/* ⚡ SVG inline (antes hotlink a a0.muscache.com — CDN de Airbnb:
+                          conexión third-party extra y riesgo de que bloqueen el hotlink). */}
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ display: 'block' }}
                         aria-hidden="true"
-                      />
+                      >
+                        <path
+                          d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.2l-4.78 2.51.91-5.32-3.86-3.77 5.34-.78L12 2z"
+                          fill="#E8B931"
+                          stroke="#C9971E"
+                          strokeWidth="0.75"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                     </div>
                     <span
                       style={hpType.badge}
@@ -529,6 +547,9 @@ interface HorizontalScrollSectionProps {
   services: SearchServiceDetailDto[];
   forceGuestFavorite?: boolean;
   isLastSection?: boolean;
+  /** ⚡ true en la primera sección (above the fold): sus 3 primeras fotos cargan
+      con prioridad alta (candidatas a LCP) y sin content-visibility diferido. */
+  priorityImages?: boolean;
   isMobile: boolean;
   isAuthenticated: boolean;
   onOpenService: (serviceId: number) => void;
@@ -542,6 +563,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   services,
   forceGuestFavorite = false,
   isLastSection = false,
+  priorityImages = false,
   isMobile,
   isAuthenticated,
   onOpenService,
@@ -609,11 +631,13 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   if (services.length === 0) return null;
 
   return (
-    <div 
+    <div
       className={isLastSection ? "" : ""} // ✅ Sin margen inferior adicional
       style={{
         contain: 'layout style paint',
-        contentVisibility: 'auto',
+        // ⚡ La primera sección se ve nada más cargar: content-visibility:auto ahí
+        // puede retrasar su pintado. Solo se aplica a las secciones bajo el fold.
+        ...(priorityImages ? {} : { contentVisibility: 'auto' as const }),
       }}
     >
       {/* Header sección */}
@@ -653,7 +677,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
             msOverflowStyle: 'none',
           }}
         >
-          {services.map((service) => (
+          {services.map((service, cardIndex) => (
             <div key={service.id} className="flex-shrink-0 scroll-smooth" style={{ scrollSnapAlign: 'start' }}>
               <ServiceCard
                 service={service}
@@ -661,6 +685,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                 initialIsFavorite={service.isFavorite ?? false}
                 isMobile={isMobile}
                 isAuthenticated={isAuthenticated}
+                priority={priorityImages && cardIndex < 3}
                 onOpenService={onOpenService}
                 onToggleFavorite={onToggleFavorite}
               />
@@ -751,6 +776,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
     ) &&
     prevProps.forceGuestFavorite === nextProps.forceGuestFavorite &&
     prevProps.isLastSection === nextProps.isLastSection &&
+    prevProps.priorityImages === nextProps.priorityImages &&
     prevProps.isMobile === nextProps.isMobile &&
     prevProps.isAuthenticated === nextProps.isAuthenticated
   );
@@ -909,6 +935,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
                 services={filteredServices}
                 forceGuestFavorite={index === 1}
                 isLastSection={isLastSection}
+                priorityImages={index === 0}
                 isMobile={isMobile}
                 isAuthenticated={isAuthenticated}
                 onOpenService={handleOpenService}

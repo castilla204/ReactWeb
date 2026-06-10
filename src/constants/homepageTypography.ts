@@ -141,8 +141,59 @@ export const SD_CHECKOUT_INNER_MAX_CLASS =
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6 xl:gap-7';
 
-/** Gutter horizontal móvil (mismo que `px-4` de SD_PAGE_INNER_MAX_CLASS) */
-export const SD_MOBILE_GUTTER_CLASS = 'px-4';
+/** Gutter horizontal móvil — 24px, alineado con cards desktop (px-5+) */
+export const SD_MOBILE_GUTTER_CLASS = 'px-6';
+
+/** Mapa preview en ficha móvil (cobertura) */
+export const SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS = 'h-24';
+
+/** Altura mínima reservada por LazyMount del mapa móvil (px) */
+export const SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX = 96;
+
+/** Separador interno del bloque reserva (mapa → disponibilidad) */
+export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
+  'border-t border-[#ebebeb] pt-2';
+
+/** Ritmo vertical entre bloques de la sheet móvil */
+export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
+
+/** Padding superior de la sheet tras el solape del hero (-mt-10 ya sube la card) */
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
+
+/**
+ * Ritmo vertical sheet móvil — 3 bandas, no padding simétrico en meta:
+ * 1) revisor + disponibilidad (un solo bloque, sin hueco entre ellos)
+ * 2) tabs (solo su propio py)
+ * 3) panel (pt moderado + space-y entre subsecciones)
+ */
+export const SD_MOBILE_HEADER_PB_CLASS = 'pb-3';
+/** Solo aire bajo pills, antes de la línea; sin pt (pegado al revisor) */
+export const SD_MOBILE_META_SECTION_CLASS = 'border-b border-[#ebebeb] pb-3';
+export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4';
+export const SD_MOBILE_SHEET_BOTTOM_CLASS = 'mb-6';
+
+/**
+ * Escala tipográfica móvil — tokens DESIGN.md:
+ * título página 20px (sd-page-title) · énfasis 14px/600 · cuerpo 14px · meta/caption 12px
+ */
+export const SD_MOBILE_EYEBROW_CLASS =
+  'text-xs font-medium leading-4 normal-case text-[#6a6a6a]';
+export const SD_MOBILE_EMPHASIS_CLASS =
+  'text-sm font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
+export const SD_MOBILE_BODY_CLASS =
+  'text-sm font-normal leading-[1.6] text-[#1c1c1c]';
+export const SD_MOBILE_META_CLASS =
+  'text-xs font-normal leading-4 text-[#6a6a6a]';
+/** @deprecated Usar SD_MOBILE_EYEBROW_CLASS o SD_MOBILE_SUBHEAD_CLASS */
+export const SD_MOBILE_LABEL_CLASS = SD_MOBILE_EYEBROW_CLASS;
+
+/** Subsecciones: Disponibilidad, Qué incluye, Cobertura — misma jerarquía */
+export const SD_MOBILE_SUBHEAD_CLASS =
+  'text-sm font-semibold leading-5 text-[#1c1c1c]';
+export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
+
+/** Stack vertical dentro del panel «Acerca del servicio» */
+export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-5';
 
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
@@ -152,7 +203,12 @@ export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
  * Barra ≈ py-3 + fila 48px + pb safe-area.
  */
 export const SD_MOBILE_SCROLL_PAD_CLASS =
-  'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]';
+  'pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]';
+
+/** Como SD_MOBILE_SCROLL_PAD_CLASS pero para la ficha de servicio, cuya barra
+ *  fija incluye la línea de escrow (≈20px más alta). */
+export const SD_MOBILE_SCROLL_PAD_TRUST_CLASS =
+  'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]';
 
 /** Offset superior botones flotantes (notch / Dynamic Island) */
 export const SD_MOBILE_FLOATING_TOP_CLASS =
@@ -173,14 +229,14 @@ export const CHATBOT_FAB_BOTTOM_STANDALONE_CLASS =
   'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]';
 
 /**
- * Ficha servicio / checkout: misma huella que SD_MOBILE_SCROLL_PAD_CLASS
- * (barra Reservar ≈ 5.5rem + safe-area) + 1.25rem de aire.
+ * Ficha servicio / checkout: huella de la barra Reservar más alta (ficha incluye
+ * línea de escrow ≈ 6.5rem + safe-area) + 1rem de aire.
  */
 export const CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS =
-  'bottom-[calc(5.5rem+1.25rem+env(safe-area-inset-bottom,0px))]';
+  'bottom-[calc(6.5rem+1rem+env(safe-area-inset-bottom,0px))]';
 
-/** Esquina inferior derecha en móvil (gutter px-4, igual que el layout) */
-export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-4';
+/** Esquina inferior derecha en móvil (gutter px-6, igual que el layout) */
+export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-6';
 
 /** CTA barra inferior móvil (más alto y legible que h-12 genérico) */
 export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';

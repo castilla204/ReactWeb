@@ -886,9 +886,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     </dl>
                                 </section>
 
-                                {/* Qué incluye — el componente inline ya renderiza su propio eyebrow "Incluye" */}
                                 {finalDeliverableTypes.length > 0 ? (
-                                    <section aria-label="Qué incluye este servicio">
+                                    <section className="pt-5" aria-labelledby="checkout-mobile-deliverables-heading">
                                         <ServiceDetailDeliverablesGuide
                                             items={finalDeliverableTypes}
                                             variant="inline"

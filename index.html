@@ -125,10 +125,13 @@
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- ✅ OPTIMIZACIONES PARA WEBVIEW: Preconnect a recursos externos -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://accounts.google.com" />
+    <!-- ⚡ Preconnects auditados: solo los CRÍTICOS de la home van como preconnect
+         (Chrome procesa preconnects en lotes de ~3, los extras compiten).
+         Manrope ahora se auto-hospeda (src/index.css) → fonts.googleapis y
+         fonts.gstatic ya no se usan.
+         accounts.google.com / api.mapbox.com / js.stripe.com solo se necesitan
+         en flujos concretos (login, mapas mapbox, checkout) — quedan en
+         `dns-prefetch` y se promueven a preconnect desde la ruta que los usa. -->
 
     <!-- ✅ API Backend: preconnect ahorra DNS+TCP+TLS (~150-280 ms) en el primer fetch del mapa -->
     <link rel="preconnect" href="https://newapi-yn9v.onrender.com" crossorigin />
@@ -136,30 +139,43 @@
     <link rel="preconnect" href="https://api.atrapo.io" crossorigin />
     <link rel="dns-prefetch" href="https://api.atrapo.io" />
 
-    <!-- ✅ CartoCDN: los tiles del mapa usan a/b/c/d.basemaps.cartocdn.com (sharding HTTP/1).
-         Pre-resolver los 4 subdominios ahorra ~200-500 ms en el primer pintado del mapa.
-         (El MapContainer ahora usa un solo host para HTTP/2, pero mantenemos los 4 por compatibilidad). -->
-    <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+    <!-- ✅ CartoCDN: SINGLE host. Con HTTP/2 multiplexing + connection coalescing
+         de Cloudflare, repartir entre a/b/c/d subdominios obligaba a 3 DNS+TLS
+         extra sin ganar paralelismo real. MapLibre multiplexa decenas de tiles
+         en una sola conexión H2. Refs en src/utils/mapTileUrls.ts. -->
     <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
-    <link rel="dns-prefetch" href="https://b.basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin />
-    <link rel="dns-prefetch" href="https://c.basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin />
-    <link rel="dns-prefetch" href="https://d.basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://d.basemaps.cartocdn.com" crossorigin />
+    <!-- ⚡ api.mapbox.com solo se necesita en rutas con Mapbox (chat / citas /
+         perfil-experto), NO en la home (la home usa MapLibre con Carto). El
+         preconnect se inyecta dinámicamente desde esas rutas para no robar
+         el cupo de pre-resolvers en la home. -->
     <link rel="dns-prefetch" href="https://api.mapbox.com" />
-    <link rel="preconnect" href="https://api.mapbox.com" crossorigin />
 
     <link rel="prefetch" href="/geo/ne_110m_land.geojson" as="fetch" crossorigin />
 
-    <!-- ✅ DNS Prefetch para APIs -->
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <!-- ⚡ Preload del hero (candidato a LCP) SOLO en la home. Preload **solo AVIF**:
+         el navegador que no lo soporta ignora el preload (warning benigno) y
+         descargará el WebP del <picture> al parsear el JSX — ~6% de tráfico
+         total. Inyectar dos preloads aquí duplicaría bytes para el 94% restante. -->
+    <script>
+      if (location.pathname === '/' || location.pathname === '/explorar') {
+        var lAvif = document.createElement('link');
+        lAvif.rel = 'preload'; lAvif.as = 'image';
+        lAvif.href = '/hero-expert.avif'; lAvif.type = 'image/avif';
+        lAvif.fetchPriority = 'high';
+        document.head.appendChild(lAvif);
+      }
+    </script>
+
+    <!-- ✅ DNS Prefetch para hosts terciarios (promovidos a preconnect bajo demanda) -->
     <link rel="dns-prefetch" href="https://accounts.google.com" />
+    <link rel="dns-prefetch" href="https://js.stripe.com" />
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- ⚡ Manrope auto-hospedada vía @fontsource-variable/manrope (src/index.css).
+         Se eliminó el <link> a fonts.googleapis.com — antes costaba 2 RTTs
+         (CSS de Google + WOFF2 en gstatic). Ahora un solo WOFF2 servido desde
+         el mismo dominio que el HTML, con conexión ya caliente. -->
 
     <!-- ✅ Optimizaciones para webview: reducir layout shifts -->
     <style>

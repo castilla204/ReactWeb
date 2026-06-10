@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { getSupabaseClient } from '../lib/supabase'
 import type { PresenceState } from '../types/chat.types'
 
 interface UseSupabasePresenceProps {
@@ -34,7 +34,7 @@ export function useSupabasePresence({
 
     const channelName = `presence:${conversationId}`
 
-    const channel = supabase.channel(channelName, {
+    const channel = getSupabaseClient().channel(channelName, {
       config: {
         presence: {
           key: userId.toString()
@@ -85,7 +85,7 @@ export function useSupabasePresence({
     return () => {
       if (channelRef.current) {
         channelRef.current.untrack()
-        supabase.removeChannel(channelRef.current)
+        getSupabaseClient().removeChannel(channelRef.current)
         channelRef.current = null
       }
       setIsConnected(false)

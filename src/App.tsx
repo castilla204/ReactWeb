@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe, Heart, User } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { NotificationCenter } from './components/NotificationCenter';
 import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
 // import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { TermsPage } from './pages/TermsPage';
-import { AdDetails } from './components/AdDetails';
-import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
-import { PaymentCancelPage } from './pages/PaymentCancelPage';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import {
@@ -36,8 +30,6 @@ import { isAdmin } from './utils/admin';
 
 import Background from './components/Background';
 import { HomepageDesktopTopBar } from './components/HomepageDesktopTopBar';
-import { AccountSettingsModal } from './components/AccountSettingsModal';
-import { LoginModal } from './components/LoginModal';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { RouteSuspense } from './components/RouteSuspense';
 import * as LazyPages from './routes/lazyPages';
@@ -53,13 +45,42 @@ import CountrySelector from './components/CountrySelector';
 import { CurrencySelector } from './components/CurrencySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { StatusPage } from './pages/StatusPage';
 import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
 import { ScrollToTop } from './components/ScrollToTop';
 import { CookieBanner } from './components/CookieBanner';
 import { ChatbotFab } from './components/ChatbotFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import erizoImg from './media/erizo.png';
+
+// ⚡ Componentes que NO se ven en el arranque, fuera del bundle inicial:
+// - Modales: solo se descargan la primera vez que se abren (patrón "montar al abrir").
+//   LoginModal era además el único consumidor eager de framer-motion → su chunk
+//   ya no se precarga en todas las páginas.
+// - Páginas de rutas secundarias (legales, pago, status, anuncios): mismo patrón
+//   que las 25 rutas ya migradas a routes/lazyPages.tsx.
+const NotificationCenter = lazy(() =>
+    import('./components/NotificationCenter').then((m) => ({ default: m.NotificationCenter })),
+);
+const AccountSettingsModal = lazy(() =>
+    import('./components/AccountSettingsModal').then((m) => ({ default: m.AccountSettingsModal })),
+);
+const LoginModal = lazy(() =>
+    import('./components/LoginModal').then((m) => ({ default: m.LoginModal })),
+);
+const PrivacyPolicy = lazy(() =>
+    import('./pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })),
+);
+const TermsPage = lazy(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage })));
+const AdDetails = lazy(() =>
+    import('./components/AdDetails').then((m) => ({ default: m.AdDetails })),
+);
+const PaymentSuccessPage = lazy(() =>
+    import('./pages/PaymentSuccessPage').then((m) => ({ default: m.PaymentSuccessPage })),
+);
+const PaymentCancelPage = lazy(() =>
+    import('./pages/PaymentCancelPage').then((m) => ({ default: m.PaymentCancelPage })),
+);
+const StatusPage = lazy(() => import('./pages/StatusPage').then((m) => ({ default: m.StatusPage })));
 
 const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
@@ -116,6 +137,15 @@ const AppContent: React.FC = () => {
     const [showAccountSettings, setShowAccountSettings] = useState(false);
     const [isHeaderLoginModalOpen, setIsHeaderLoginModalOpen] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState<string>('ES');
+
+    // ⚡ "Abierto alguna vez": permite no montar los modales lazy hasta su primer uso
+    // sin perder la animación de cierre en usos posteriores.
+    const notificationsEverOpened = useRef(false);
+    if (showNotifications) notificationsEverOpened.current = true;
+    const accountSettingsEverOpened = useRef(false);
+    if (showAccountSettings) accountSettingsEverOpened.current = true;
+    const headerLoginEverOpened = useRef(false);
+    if (isHeaderLoginModalOpen) headerLoginEverOpened.current = true;
 
     // 🛡️ Round 15 — R6 FIX: handler global de sesión expirada.
     // authService.clearTokens('session_expired') emite este evento cuando el refresh
@@ -484,14 +514,14 @@ const AppContent: React.FC = () => {
                         <Routes>
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
-                            <Route path="/privacy-policy.html" element={<PrivacyPolicy />} />
-                            <Route path="/terms.html" element={<TermsPage />} />
-                            <Route path="/status" element={<StatusPage />} />
-                            <Route path="/success" element={<PaymentSuccessPage />} />
-                            <Route path="/cancel" element={<PaymentCancelPage />} />
+                            <Route path="/privacy-policy.html" element={<RouteSuspense><PrivacyPolicy /></RouteSuspense>} />
+                            <Route path="/terms.html" element={<RouteSuspense><TermsPage /></RouteSuspense>} />
+                            <Route path="/status" element={<RouteSuspense><StatusPage /></RouteSuspense>} />
+                            <Route path="/success" element={<RouteSuspense><PaymentSuccessPage /></RouteSuspense>} />
+                            <Route path="/cancel" element={<RouteSuspense><PaymentCancelPage /></RouteSuspense>} />
                             {/* 🛡️ Round 15 — R5 FIX: ruta /login real. Antes navigate('/login') iba a 404. */}
                             <Route path="/login" element={<RouteSuspense><LazyPages.LoginPage /></RouteSuspense>} />
-                            <Route path="/ad/:id" element={<AdDetails onBack={() => window.history.back()} />} />
+                            <Route path="/ad/:id" element={<RouteSuspense><AdDetails onBack={() => window.history.back()} /></RouteSuspense>} />
                             
                             {/* Rutas de MFA */}
                             <Route 
@@ -547,14 +577,29 @@ const AppContent: React.FC = () => {
                 </main>
 
 
-                <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
-                <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
-                <LoginModal
-                    open={isHeaderLoginModalOpen}
-                    onOpenChange={setIsHeaderLoginModalOpen}
-                    initialTab="login"
-                    onSuccess={() => setIsHeaderLoginModalOpen(false)}
-                />
+                {/* ⚡ Los modales solo se montan (y descargan su chunk) tras la primera
+                    apertura; después permanecen montados para conservar la animación
+                    de cierre. */}
+                {notificationsEverOpened.current && (
+                    <Suspense fallback={null}>
+                        <NotificationCenter isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+                    </Suspense>
+                )}
+                {accountSettingsEverOpened.current && (
+                    <Suspense fallback={null}>
+                        <AccountSettingsModal isOpen={showAccountSettings} onClose={() => setShowAccountSettings(false)} />
+                    </Suspense>
+                )}
+                {headerLoginEverOpened.current && (
+                    <Suspense fallback={null}>
+                        <LoginModal
+                            open={isHeaderLoginModalOpen}
+                            onOpenChange={setIsHeaderLoginModalOpen}
+                            initialTab="login"
+                            onSuccess={() => setIsHeaderLoginModalOpen(false)}
+                        />
+                    </Suspense>
+                )}
                 <Toaster />
 
                 {/* 🍪 Round 9 — A9 FIX: LSSI-CE Spain exige consentimiento previo al uso de cookies

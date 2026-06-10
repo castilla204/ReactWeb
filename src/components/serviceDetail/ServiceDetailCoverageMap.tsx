@@ -2,6 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { capMapWorkers } from '../../lib/mapWorkers';
+capMapWorkers(maplibregl);
 import { Maximize2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
 import { boundsFromCircle, circlePolygonGeoJSON } from '../../utils/geoCircle';
