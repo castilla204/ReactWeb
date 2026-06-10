@@ -9,6 +9,12 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "cap:sync": "npm run build && npx cap sync",
     "cap:copy": "npx cap copy",
     "cap:update": "npx cap update",
@@ -23,6 +29,7 @@
     "@capacitor/ios": "^8.0.1",
     "@capacitor/status-bar": "^8.0.0",
     "@capgo/capacitor-social-login": "^8.2.17",
+    "@fontsource-variable/manrope": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
     "@microsoft/signalr": "^10.0.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -75,12 +82,14 @@
     "use-supercluster": "^1.2.0",
     "uuid": "^13.0.0",
     "vaul": "^1.1.2",
+    "web-vitals": "^5.3.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.1",
     "@capacitor/core": "^8.0.1",
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/vite": "^4.3.0",
     "@types/react": "^19.0.0",
@@ -93,11 +102,16 @@
     "eslint-plugin-react-refresh": "^0.5.0",
     "globals": "^17.0.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.3.0",
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0",
     "vite": "^7.0.0",
-    "vite-plugin-circular-dependency": "^0.6.0"
+    "vite-plugin-circular-dependency": "^0.6.0",
+    "vite-plugin-compression2": "^2.5.3",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^2.1.9",
+    "workbox-window": "^7.4.1"
   }
 }

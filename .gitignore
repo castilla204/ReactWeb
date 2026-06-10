@@ -60,3 +60,10 @@ android/local.properties
 *.iml
 *.tsbuildinfo
 .impeccable/
+
+# Playwright + Vitest artifacts
+tests-e2e/.auth/
+playwright-report/
+test-results/
+junit.xml
+coverage/

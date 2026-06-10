@@ -1,0 +1,133 @@
+# PR Checks — Frontend (React 19 + Vite 7)
+#
+# Diseñado para minimizar minutos GitHub Actions (free tier).
+# - Solo en pull_request (NO en push a main)
+# - Filtro `paths` excluye .md y configuraciones irrelevantes
+# - concurrency cancel-in-progress
+# - Single job sequential: lint + typecheck + unit + e2e smoke (chromium)
+# - Cache npm + Playwright browsers por versión
+#
+# Coste estimado:
+#   - sin E2E: ~2 min × 120 runs = 240 min/mes
+#   - con E2E chromium smoke: ~5 min × 120 runs = 600 min/mes
+# Plan Free: 2000 min/mes para repos privados.
+
+name: PR Checks (Frontend)
+
+on:
+  pull_request:
+    branches: [ main, develop, master ]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'vitest.config.ts'
+      - 'playwright.config.ts'
+      - 'tsconfig*.json'
+      - 'src/**'
+      - 'tests-e2e/**'
+      - 'public/**'
+      - '.github/workflows/pr-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: pr-checks-fe-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  test:
+    name: Lint + Unit + E2E smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint -- --max-warnings=0
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      # ── Playwright (smoke, solo chromium para ahorrar minutos) ───────────────
+      - name: Resolve Playwright version
+        id: pw-version
+        run: |
+          v=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test']?.version || 'none'")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: steps.pw-version.outputs.version != 'none'
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Install Playwright chromium
+        if: steps.pw-version.outputs.version != 'none'
+        run: |
+          if [ "${{ steps.pw-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Build (para preview)
+        run: npm run build
+
+      - name: Start preview server
+        run: |
+          nohup npx vite preview --port 5173 > preview.log 2>&1 &
+          echo $! > preview.pid
+
+      - name: Wait for preview
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://localhost:5173 > /dev/null; then echo "preview up"; exit 0; fi
+            sleep 2
+          done
+          cat preview.log
+          exit 1
+
+      - name: Run Playwright smoke (chromium-client only, @smoke tag)
+        if: steps.pw-version.outputs.version != 'none'
+        env:
+          CI: 'true'
+          E2E_BASE_URL: 'http://localhost:5173'
+        run: npx playwright test --project=setup --project=chromium-client --grep @smoke
+
+      - name: Upload Playwright report
+        if: always() && steps.pw-version.outputs.version != 'none'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 5
+
+      - name: Stop preview
+        if: always()
+        run: kill $(cat preview.pid) 2>/dev/null || true
