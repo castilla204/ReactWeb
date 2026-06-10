@@ -8,6 +8,7 @@ export const DESKTOP_HERO_SOFT_OVAL =
 /**
  * Hero móvil — fondo "plano técnico": rejilla de puntos + halo agua (mismo tono
  * que el cielo del mapa desktop #dce9f2). Sin azul de marca ni mapa interactivo.
+ * (Sigue usándose en ChatbotPanel; el hero de home usa foto real.)
  */
 export const MOBILE_HERO_DOT_GRID =
   'radial-gradient(circle at center, rgba(15,23,42,0.042) 0.65px, transparent 0.65px)';
@@ -17,3 +18,9 @@ export const MOBILE_HERO_SKY_GLOW =
 
 export const MOBILE_HERO_COPY_WASH =
   'linear-gradient(105deg, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.55) 48%, transparent 68%)';
+
+/** Foto hero móvil (public/hero-mobile-inspector.jpg) — viñeta izquierda para el copy */
+export const MOBILE_HERO_PHOTO_PATH = '/hero-mobile-inspector.jpg';
+
+export const MOBILE_HERO_PHOTO_OVERLAY =
+  'linear-gradient(95deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.92) 34%, rgba(255,255,255,0.55) 52%, rgba(255,255,255,0.12) 68%, transparent 82%)';
