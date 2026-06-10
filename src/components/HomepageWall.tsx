@@ -289,7 +289,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                 </div>
               )}
 
-              {/* Botón de favorito - Solo el corazón sin círculo */}
+              {/* Botón de favorito — solo con sesión iniciada */}
+              {isAuthenticated ? (
               <button
                 onClick={handleFavoriteClick}
                 className="absolute top-3 right-3 z-10"
@@ -327,6 +328,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                 </svg>
               </button>
+              ) : null}
 
               {/* Navegación de imágenes - Solo en desktop */}
               {hasMultipleImages && (
