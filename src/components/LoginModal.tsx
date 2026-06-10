@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 // 🛡️ Round 28 — Sprint 4: i18n para textos UI multi-idioma (ES/EN).
 import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -399,10 +399,14 @@ const LoginForm: React.FC<{
     const [password, setPassword] = useState('');
     const [showPwd, setShowPwd] = useState(false);
     const [busy, setBusy] = useState(false);
+    // Candado síncrono: con email sin verificar, cada login emite un OTP nuevo — un doble
+    // submit mandaba dos códigos distintos y el del primer email ya no valía.
+    const submitLockRef = useRef(false);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (busy) return;
+        if (submitLockRef.current || busy) return;
+        submitLockRef.current = true;
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.loginPassword}`, {
@@ -449,6 +453,7 @@ const LoginForm: React.FC<{
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red. Inténtalo de nuevo.');
         } finally {
+            submitLockRef.current = false;
             setBusy(false);
         }
     };
@@ -515,6 +520,9 @@ const RegisterForm: React.FC<{
     // Sin este checkbox, los T&C son inoponibles al consumidor y la defensa frente a
     // chargebacks queda comprometida (Stripe exige evidencia de "customer agreed").
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+    // Candado síncrono: un doble submit emitía DOS códigos OTP (dos emails con códigos
+    // distintos) y el usuario solía teclear el del primer email → "código incorrecto".
+    const submitLockRef = useRef(false);
 
     const strengthHint = (() => {
         if (password.length === 0) return null;
@@ -525,11 +533,12 @@ const RegisterForm: React.FC<{
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (busy) return;
+        if (submitLockRef.current || busy) return;
         if (!acceptedTerms) {
             toast.error('Debes aceptar los Términos y la Política de Privacidad.');
             return;
         }
+        submitLockRef.current = true;
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.register}`, {
@@ -568,6 +577,7 @@ const RegisterForm: React.FC<{
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red. Inténtalo de nuevo.');
         } finally {
+            submitLockRef.current = false;
             setBusy(false);
         }
     };
@@ -647,6 +657,11 @@ const OtpForm: React.FC<{
     const [busy, setBusy] = useState(false);
     const [resending, setResending] = useState(false);
     const [cooldown, setCooldown] = useState(30);
+    // Candados SÍNCRONOS: el state `busy` se actualiza de forma asíncrona y no evita dos
+    // llamadas en el mismo tick (auto-submit del 6º dígito + click/autofill del teclado).
+    // La 2ª petición llegaba al backend y devolvía el falso "este código ya se ha utilizado".
+    const submitLockRef = useRef(false);
+    const resendLockRef = useRef(false);
 
     useEffect(() => {
         // Countdown para botón "Reenviar".
@@ -657,8 +672,9 @@ const OtpForm: React.FC<{
     }, []);
 
     const submit = async (autoCode?: string) => {
-        const finalCode = autoCode ?? code;
-        if (busy || finalCode.length !== 6) return;
+        const finalCode = (autoCode ?? code).replace(/\D/g, '');
+        if (submitLockRef.current || busy || finalCode.length !== 6) return;
+        submitLockRef.current = true;
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.verifyEmail}`, {
@@ -698,12 +714,14 @@ const OtpForm: React.FC<{
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red.');
         } finally {
+            submitLockRef.current = false;
             setBusy(false);
         }
     };
 
     const resend = async () => {
-        if (resending || cooldown > 0) return;
+        if (resendLockRef.current || resending || cooldown > 0) return;
+        resendLockRef.current = true;
         setResending(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
@@ -718,11 +736,13 @@ const OtpForm: React.FC<{
                 return;
             }
             toast.success('Te hemos enviado un nuevo código.');
+            setCode('');
             onResend({ verificationToken: data.verificationToken, expiresAt: data.expiresAt });
             setCooldown(30);
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red.');
         } finally {
+            resendLockRef.current = false;
             setResending(false);
         }
     };
@@ -750,8 +770,11 @@ const OtpForm: React.FC<{
                     maxLength={6}
                     value={code}
                     onChange={(v) => {
-                        setCode(v);
-                        if (v.length === 6) submit(v);
+                        // Solo dígitos: pegar "123 456" o "123-456" dejaba caracteres que el
+                        // backend rechazaba aunque el usuario "veía" un código correcto.
+                        const clean = v.replace(/\D/g, '');
+                        setCode(clean);
+                        if (clean.length === 6) submit(clean);
                     }}
                     autoFocus
                 >
@@ -789,10 +812,13 @@ const ForgotPasswordForm: React.FC<{
 }> = ({ onCodeSent }) => {
     const [email, setEmail] = useState('');
     const [busy, setBusy] = useState(false);
+    // Candado síncrono: doble submit = dos códigos de reset distintos (ver RegisterForm).
+    const submitLockRef = useRef(false);
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (busy) return;
+        if (submitLockRef.current || busy) return;
+        submitLockRef.current = true;
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.forgotPassword}`, {
@@ -814,6 +840,7 @@ const ForgotPasswordForm: React.FC<{
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red.');
         } finally {
+            submitLockRef.current = false;
             setBusy(false);
         }
     };
@@ -854,6 +881,9 @@ const ResetPasswordForm: React.FC<{
     const [busy, setBusy] = useState(false);
     const [cooldown, setCooldown] = useState(30);
     const [resending, setResending] = useState(false);
+    // Candados síncronos contra doble submit/reenvío (ver OtpForm).
+    const submitLockRef = useRef(false);
+    const resendLockRef = useRef(false);
 
     useEffect(() => {
         const timer = setInterval(() => setCooldown(c => (c > 0 ? c - 1 : 0)), 1000);
@@ -862,7 +892,8 @@ const ResetPasswordForm: React.FC<{
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (busy || code.length !== 6 || newPwd.length < 8) return;
+        if (submitLockRef.current || busy || code.length !== 6 || newPwd.length < 8) return;
+        submitLockRef.current = true;
         setBusy(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resetPassword}`, {
@@ -890,12 +921,14 @@ const ResetPasswordForm: React.FC<{
         } catch (err: any) {
             toast.error(err?.message ?? 'Error de red.');
         } finally {
+            submitLockRef.current = false;
             setBusy(false);
         }
     };
 
     const resend = async () => {
-        if (resending || cooldown > 0) return;
+        if (resendLockRef.current || resending || cooldown > 0) return;
+        resendLockRef.current = true;
         setResending(true);
         try {
             const res = await capacitorFetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.resendOtp}`, {
@@ -910,9 +943,14 @@ const ResetPasswordForm: React.FC<{
                 return;
             }
             toast.success('Te hemos enviado un nuevo código.');
+            setCode('');
             onResend({ verificationToken: data.verificationToken, expiresAt: data.expiresAt });
             setCooldown(30);
+        } catch (err: any) {
+            // Antes faltaba el catch: un fallo de red dejaba una promesa rechazada sin manejar.
+            toast.error(err?.message ?? 'Error de red.');
         } finally {
+            resendLockRef.current = false;
             setResending(false);
         }
     };
@@ -923,7 +961,7 @@ const ResetPasswordForm: React.FC<{
                 Introduce el código que enviamos a <strong className="text-gray-900">{ctx.email}</strong> y tu nueva contraseña.
             </p>
             <div className="flex justify-center">
-                <InputOTP maxLength={6} value={code} onChange={setCode} autoFocus>
+                <InputOTP maxLength={6} value={code} onChange={(v) => setCode(v.replace(/\D/g, ''))} autoFocus>
                     <InputOTPGroup className="gap-2">
                         {[0, 1, 2, 3, 4, 5].map(i => (
                             <InputOTPSlot
