@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, FileText, Video, type LucideIcon } from 'lucide-react';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { getDeliverableDetail } from '../../utils/deliverableDetailContent';
 import {
@@ -20,6 +20,24 @@ function getDeliverableLabel(dt: ServiceDeliverableType): string {
   ).trim();
 }
 
+function getDeliverableKey(dt: ServiceDeliverableType): string {
+  return (dt.name || dt.displayName || dt.deliverableType?.name || '').toLowerCase();
+}
+
+function getDeliverableIcon(dt: ServiceDeliverableType): LucideIcon {
+  const key = getDeliverableKey(dt);
+  if (key.includes('video') || key.includes('vídeo')) return Video;
+  return FileText;
+}
+
+function getOverlayDeliverableLabel(dt: ServiceDeliverableType): string {
+  const key = getDeliverableKey(dt);
+  if (key.includes('pdf') || key.includes('informe')) return 'Informe';
+  if (key.includes('video') || key.includes('vídeo')) return 'Vídeo';
+  const full = getDeliverableLabel(dt);
+  return full.length > 14 ? `${full.slice(0, 12)}…` : full;
+}
+
 export function normalizeDeliverableTypes(
   items: ServiceDeliverableType[] | unknown[] | undefined | null
 ): ServiceDeliverableType[] {
@@ -30,13 +48,15 @@ export function normalizeDeliverableTypes(
 interface ServiceDetailDeliverablesGuideProps {
   items: ServiceDeliverableType[] | unknown[];
   variant?: 'overlay' | 'inline';
+  showHeading?: boolean;
   className?: string;
 }
 
-/** Chips de entregables sobre la galería; al pulsar se muestra qué incluye. */
+/** Entregables del servicio; al pulsar un chip se muestra qué incluye. */
 export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesGuideProps> = ({
   items,
   variant = 'overlay',
+  showHeading = true,
   className = '',
 }) => {
   const visible = normalizeDeliverableTypes(items);
@@ -59,22 +79,48 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     setOpen(true);
   };
 
-  const chipList = (
-    <ul className={`flex flex-wrap gap-2 ${isOverlay ? '' : ''}`}>
+  const overlayChipList = (
+    <ul className="sd-deliverable-guide-items">
       {visible.map((dt, idx) => {
-        const label = getDeliverableLabel(dt);
-        const chipClass = isOverlay ? 'sd-deliverable-chip' : 'sd-deliverable-chip-inline';
+        const label = getOverlayDeliverableLabel(dt);
+        const fullLabel = getDeliverableLabel(dt);
+        const Icon = getDeliverableIcon(dt);
         return (
-          <li key={dt.id ?? `${label}-${idx}`}>
+          <li key={dt.id ?? `${fullLabel}-${idx}`} className="sd-deliverable-guide-item">
             <button
               type="button"
-              className={`${chipClass} cursor-pointer transition-transform hover:brightness-[0.98] active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
-              style={isOverlay ? { animationDelay: `${60 + idx * 70}ms` } : undefined}
+              className="sd-deliverable-chip"
+              style={{ animationDelay: `${40 + idx * 50}ms` }}
+              onClick={(e) => openDetail(dt, e)}
+              aria-haspopup="dialog"
+              aria-expanded={open && active?.id === dt.id}
+              aria-label={`Ver qué incluye: ${fullLabel}`}
+            >
+              <Icon className="sd-deliverable-chip-icon" aria-hidden />
+              <span>{label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const surfaceChipList = (
+    <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+      {visible.map((dt, index) => {
+        const label = getDeliverableLabel(dt);
+        const Icon = getDeliverableIcon(dt);
+        return (
+          <li key={dt.id ?? `${label}-${index}`}>
+            <button
+              type="button"
+              className="sd-deliverable-chip-surface"
               onClick={(e) => openDetail(dt, e)}
               aria-haspopup="dialog"
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
+              <Icon className="sd-deliverable-chip-surface-icon" aria-hidden />
               <span>{label}</span>
             </button>
           </li>
@@ -127,19 +173,30 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           role="region"
           aria-labelledby="sd-deliverables-guide-label"
         >
-          <div className="sd-deliverable-guide-row">
-            <p
-              id="sd-deliverables-guide-label"
-              className="sd-deliverable-guide-label"
-              style={{ animationDelay: '0ms' }}
-            >
-              <span>Incluye</span>
-              {!isOnImage ? (
+          {isOnImage ? (
+            <div className="sd-deliverable-guide-strip">
+              <p
+                id="sd-deliverables-guide-label"
+                className="sd-deliverable-guide-label"
+                style={{ animationDelay: '0ms' }}
+              >
+                Incluye
+              </p>
+              {overlayChipList}
+            </div>
+          ) : (
+            <div className="sd-deliverable-guide-row">
+              <p
+                id="sd-deliverables-guide-label"
+                className="sd-deliverable-guide-label"
+                style={{ animationDelay: '0ms' }}
+              >
+                <span>Incluye</span>
                 <ChevronRight className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-              ) : null}
-            </p>
-            {chipList}
-          </div>
+              </p>
+              {overlayChipList}
+            </div>
+          )}
         </div>
         {detailModal}
       </>
@@ -148,12 +205,18 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
 
   return (
     <>
-      <div className={className} aria-label="Entregables incluidos">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6a6a6a]">
-          Incluye
-        </p>
-        {chipList}
-      </div>
+      <section
+        className={className}
+        aria-labelledby={showHeading ? 'sd-deliverables-heading' : undefined}
+        aria-label={showHeading ? undefined : 'Qué incluye este servicio'}
+      >
+        {showHeading ? (
+          <p id="sd-deliverables-heading" className="sd-section-label">
+            Qué incluye
+          </p>
+        ) : null}
+        {surfaceChipList}
+      </section>
       {detailModal}
     </>
   );

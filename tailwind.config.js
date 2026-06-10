@@ -19,6 +19,9 @@ export default {
                 ],
                 display: [
                     'Manrope',
+                    // ⚡ Fallback metric-adjusted (size-adjust en index.css) →
+                    // CLS ~0 cuando Manrope llega tras el primer pintado.
+                    '"Manrope Fallback"',
                     '"SF Pro Display"',
                     'system-ui',
                     '-apple-system',

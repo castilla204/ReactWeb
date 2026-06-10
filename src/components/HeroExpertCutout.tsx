@@ -1,6 +1,13 @@
 import React from 'react';
-import heroExpertImg from '../media/hero-expert-transparent.png';
 import { cn } from '../lib/utils';
+
+// ⚡ El hero es el candidato a LCP. Vive en public/ con nombre ESTABLE (sin hash)
+// para poder precargarlo desde index.html — antes (import hasheado dentro de un
+// chunk lazy) el navegador lo descubría tras 3 saltos de red: HTML → JS → chunk → img.
+// Variantes generadas por scripts/optimize-images.mjs:
+//   AVIF 26 KB · WebP 27 KB · PNG original 109 KB.
+const heroExpertAvif = '/hero-expert.avif';
+const heroExpertWebp = '/hero-expert.webp';
 
 const PRESETS = {
   compact: 'h-[152px] translate-y-[22%]',
@@ -24,17 +31,21 @@ export const HeroExpertCutout: React.FC<{
     className={cn('pointer-events-none shrink-0 self-end leading-[0]', wrapperClassName)}
     aria-hidden
   >
-    <img
-      src={heroExpertImg}
-      alt=""
-      className={cn(
-        'block w-auto max-w-none select-none',
-        'origin-bottom',
-        PRESETS[preset],
-        className,
-      )}
-      fetchPriority="high"
-      decoding="async"
-    />
+    <picture>
+      {/* AVIF gana ~5-20% sobre WebP a calidad equivalente; soporte ≥94% en 2026. */}
+      <source srcSet={heroExpertAvif} type="image/avif" />
+      <img
+        src={heroExpertWebp}
+        alt=""
+        className={cn(
+          'block w-auto max-w-none select-none',
+          'origin-bottom',
+          PRESETS[preset],
+          className,
+        )}
+        fetchPriority="high"
+        decoding="async"
+      />
+    </picture>
   </div>
 );

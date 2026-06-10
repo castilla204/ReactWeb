@@ -10,6 +10,8 @@ export interface MobileReserveFooterProps {
   /** Texto corto en la misma línea (ej. «por servicio») */
   priceSuffix?: React.ReactNode;
   priceAriaLabel?: string;
+  /** Línea de confianza sobre la fila precio+CTA (ej. escrow). Icono incluido por el caller. */
+  trustNote?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -20,10 +22,12 @@ export const MobileReserveFooter: React.FC<MobileReserveFooterProps> = ({
   price,
   priceSuffix,
   priceAriaLabel,
+  trustNote,
   children,
 }) => (
   <div className={SD_MOBILE_FOOTER_SHELL_CLASS}>
     <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
+      {trustNote ? <p className="sd-mobile-footer-trust">{trustNote}</p> : null}
       <div className="sd-mobile-footer-row">
         <div
           className="sd-mobile-footer-price-line min-w-0 flex-1"

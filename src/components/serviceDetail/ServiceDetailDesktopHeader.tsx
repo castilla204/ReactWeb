@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Heart, Share2, Star, User } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, Star, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { isAdmin } from '../../utils/admin';
 import { LoginModal } from '../LoginModal';
@@ -114,9 +114,6 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <button type="button" className="sd-icon-btn" aria-label="Compartir" disabled aria-disabled="true">
-                <Share2 className="h-4 w-4" />
-              </button>
               <button
                 type="button"
                 className="sd-icon-btn"
@@ -153,7 +150,7 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
           </div>
 
           <div className="pb-5 pt-3">
-            <h1 className="sd-page-title text-[1.75rem] leading-tight md:text-[2rem]">{title}</h1>
+            <h1 className="sd-page-title">{title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#6a6a6a]">
               {metaLine ? <span>{metaLine}</span> : null}
               {hasReviews && metaLine ? (

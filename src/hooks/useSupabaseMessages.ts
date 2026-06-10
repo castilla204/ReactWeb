@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react'
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { getSupabaseClient } from '../lib/supabase'
 import type { DBMessage, MessageDto, LegacyMessage, toLegacyMessage } from '../types/chat.types'
 
 interface UseSupabaseMessagesProps {
@@ -90,7 +90,7 @@ export function useSupabaseMessages({
     return () => {
       console.log(`🔌 [Supabase] Desuscribiéndose de mensajes de conversación ${conversationId}`)
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
+        getSupabaseClient().removeChannel(channelRef.current)
         channelRef.current = null
       }
     }

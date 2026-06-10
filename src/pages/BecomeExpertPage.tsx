@@ -14,7 +14,17 @@ import {
 } from '../components/becomeExpert/BecomeExpertShell';
 import { BecomeExpertPhotoField } from '../components/becomeExpert/BecomeExpertPhotoField';
 import { BecomeExpertTrustStrip } from '../components/becomeExpert/BecomeExpertTrustStrip';
-import { BecomeExpertCoverageMap } from '../components/becomeExpert/BecomeExpertCoverageMap';
+import { lazy, Suspense } from 'react';
+import { LazyMount } from '../components/Map/LazyMount';
+
+// ⚡ Mapa de cobertura del paso "Tu zona". Aparece tras varios campos del
+// formulario (below-the-fold inicial). Lazy → no descarga maplibre-gl hasta
+// que el contenedor se acerca al viewport.
+const BecomeExpertCoverageMap = lazy(() =>
+    import('../components/becomeExpert/BecomeExpertCoverageMap').then((m) => ({
+        default: m.BecomeExpertCoverageMap,
+    })),
+);
 import {
     formatPayoutCountryLabel,
     isSupportedPayoutCountry,
@@ -645,12 +655,16 @@ function BecomeExpertPage() {
                     )}
                 </div>
 
-                <BecomeExpertCoverageMap
-                    latitude={selectedLocation.lat}
-                    longitude={selectedLocation.lng}
-                    radiusKm={COVERAGE_RADIUS_KM}
-                    onLocationChange={applyLocation}
-                />
+                <LazyMount aspectRatio="16/9" minHeight={220}>
+                    <Suspense fallback={null}>
+                        <BecomeExpertCoverageMap
+                            latitude={selectedLocation.lat}
+                            longitude={selectedLocation.lng}
+                            radiusKm={COVERAGE_RADIUS_KM}
+                            onLocationChange={applyLocation}
+                        />
+                    </Suspense>
+                </LazyMount>
 
                 <div className="space-y-4 border-t border-[#ececec] p-4 sm:p-5">
                     <div className="flex items-baseline justify-between gap-3">

@@ -13,16 +13,24 @@ import { SEO } from '../components/SEO';
 import { FAQ_ITEMS } from '../content/faqContent';
 import { faqPageSchema } from '../utils/jsonLd';
 
+// ⚡ Los import() arrancan en cuanto se evalúa este módulo (en paralelo entre sí),
+// no cuando React monta cada <Suspense>. Antes cada lazy() esperaba a su render
+// → cascada de peticiones secuenciales y la página aparecía "por partes".
+const airbnbSearchBarPromise = import('../components/AirbnbSearchBar');
+const homepageWallPromise = import('../components/HomepageWall');
+const mobileBottomBarPromise = import('../components/MobileBottomBar');
+const desktopLandingPromise = import('../components/DesktopLanding');
+
 const AirbnbSearchBar = lazy(() =>
-  import('../components/AirbnbSearchBar').then((m) => ({ default: m.AirbnbSearchBar })),
+  airbnbSearchBarPromise.then((m) => ({ default: m.AirbnbSearchBar })),
 );
 const HomepageWall = lazy(() =>
-  import('../components/HomepageWall').then((m) => ({ default: m.HomepageWall })),
+  homepageWallPromise.then((m) => ({ default: m.HomepageWall })),
 );
 const MobileBottomBar = lazy(() =>
-  import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+  mobileBottomBarPromise.then((m) => ({ default: m.MobileBottomBar })),
 );
-const DesktopLanding = lazy(() => import('../components/DesktopLanding'));
+const DesktopLanding = lazy(() => desktopLandingPromise);
 
 const HomePage: React.FC = () => {
   const location = useLocation();

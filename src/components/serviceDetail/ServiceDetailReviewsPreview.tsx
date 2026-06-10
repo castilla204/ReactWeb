@@ -45,7 +45,7 @@ function MobileReviewsPreview({
   if (reviews.length === 0) {
     return (
       <section
-        className="sd-reviews-preview sd-reviews-preview--mobile w-full px-4"
+        className="sd-reviews-preview sd-reviews-preview--mobile w-full"
         aria-labelledby={hideHeading ? undefined : headingId}
       >
         <p className="text-sm leading-relaxed text-[#6a6a6a]">
@@ -61,7 +61,7 @@ function MobileReviewsPreview({
       aria-labelledby={hideHeading ? undefined : headingId}
     >
       {/* Widget global: nota media + distribución de todas las valoraciones */}
-      <div className="sd-reviews-preview-summary-mobile px-4">
+      <div className="sd-reviews-preview-summary-mobile">
         {showFeaturedBadge ? (
           <p className="mb-3">
             <span className="inline-flex rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#1c1c1c]">
@@ -78,7 +78,7 @@ function MobileReviewsPreview({
           }
         >
           <div className="min-w-0">
-            <p className="text-[2rem] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c]">
+            <p className="sd-rating-numeral">
               {ratingLabel}
             </p>
             <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-1" />
@@ -110,7 +110,7 @@ function MobileReviewsPreview({
           {previewReviews.map((review, idx) => {
             const key = review.id ?? `${review.createdAt}-${idx}`;
             return (
-              <li key={key} className="px-4">
+              <li key={key}>
                 <ServiceDetailReviewSnippet
                   review={review}
                   variant="mobile"
@@ -123,11 +123,9 @@ function MobileReviewsPreview({
         </ul>
       ) : null}
 
-      <div className="px-4">
-        <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-5 w-full justify-center">
-          {ctaLabel}
-        </button>
-      </div>
+      <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-5 w-full justify-center">
+        {ctaLabel}
+      </button>
     </section>
   );
 }
@@ -153,7 +151,7 @@ function DesktopReviewsPreview({
         <h2 id={headingId} className="hp-section-title mb-2">
           Reseñas
         </h2>
-        <p className="sd-body border-l-2 border-brand py-0 pl-3 text-sm leading-relaxed">
+        <p className="sd-body">
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
         </p>
       </section>
@@ -189,7 +187,7 @@ function DesktopReviewsPreview({
         className="sd-reviews-preview-summary mt-4 grid grid-cols-1 gap-6 md:grid-cols-[minmax(140px,auto)_minmax(0,1fr)] md:items-center md:gap-8 lg:grid-cols-[180px_1fr]"
       >
         <div className="flex flex-col md:items-center md:text-center lg:items-start lg:text-left">
-          <p className="text-[2.75rem] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c]">
+          <p className="sd-rating-numeral">
             {ratingLabel}
           </p>
           <ServiceDetailReviewStars rating={averageRating} size="md" className="mt-1.5" />

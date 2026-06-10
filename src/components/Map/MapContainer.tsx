@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, startTransition } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { capMapWorkers } from '../../lib/mapWorkers';
+capMapWorkers(maplibregl);
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 // ✅ Default import → activa React.memo del ClusteredMarkers. Antes (named import)
 //    cada hover/select sobre la lista forzaba el bucle remove+create de TODOS los markers.
@@ -181,7 +183,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     return true;
   }, []);
 
-  /** Sincroniza cámara al instante (clusters reactivos) */
+  /** Sincroniza cámara al instante (clusters reactivos).
+   *
+   * ⚡ `startTransition`: cada moveend/zoomend dispara el recálculo de clusters
+   * y el re-render de los markers DOM (caro). Sin transición, ese trabajo
+   * compite con el próximo paint y dispara INP malos en gestos continuos de
+   * pan/zoom. Con transición, React mantiene el hilo responsivo y el cluster
+   * sale en el siguiente idle.
+   */
   const syncCamera = useCallback(
     (map: maplibregl.Map) => {
       const bounds = map.getBounds();
@@ -190,8 +199,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       const ne = bounds.getNorthEast();
       const sw = bounds.getSouthWest();
-      setCameraBounds([sw.lng, sw.lat, ne.lng, ne.lat]);
-      setCameraZoom(zoom);
+      startTransition(() => {
+        setCameraBounds([sw.lng, sw.lat, ne.lng, ne.lat]);
+        setCameraZoom(zoom);
+      });
     },
     [validateBounds]
   );
@@ -218,10 +229,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       debounceTimerRef.current = setTimeout(() => {
         if (isDraggingRef.current) return;
-        setCurrentViewport({
-          northeast: { lat: ne.lat, lng: ne.lng },
-          southwest: { lat: sw.lat, lng: sw.lng },
-          zoom,
+        // ⚡ Transición: el fetch + render de la nueva lista de servicios es
+        // pesado. Sin transition, bloquea el primer paint tras el `moveend`
+        // y el INP sube. Con transition, React deja respirar al input antes
+        // de pintar la nueva tanda.
+        startTransition(() => {
+          setCurrentViewport({
+            northeast: { lat: ne.lat, lng: ne.lng },
+            southwest: { lat: sw.lat, lng: sw.lng },
+            zoom,
+          });
         });
       }, debounceMs);
     },
