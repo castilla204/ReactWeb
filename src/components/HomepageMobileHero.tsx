@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { HeroExpertCutout } from './HeroExpertCutout';
 import {
-  MOBILE_HERO_COPY_WASH,
-  MOBILE_HERO_DOT_GRID,
-  MOBILE_HERO_SKY_GLOW,
+  MOBILE_HERO_PHOTO_OVERLAY,
+  MOBILE_HERO_PHOTO_PATH,
 } from '../constants/homepageHeroMap';
 
 /**
- * Hero móvil — tipografía limpia + fondo plano técnico (rejilla + halo agua).
+ * Hero móvil — foto real a pantalla completa (mecánico inspeccionando motor a la derecha)
+ * + copy "Antes de comprar, que lo revise un experto" sobre viñeta blanca izquierda.
+ *
+ * Imagen: Unsplash (mecánico con llave en motor) — public/hero-mobile-inspector.jpg
  */
 export const HomepageMobileHero: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
@@ -16,34 +17,23 @@ export const HomepageMobileHero: React.FC = () => {
   return (
     <section
       data-homepage-hero
-      className="relative md:hidden overflow-hidden border-b border-[#e8e8e8] bg-gradient-to-b from-white to-[#fafafa]"
+      className={`relative md:hidden overflow-hidden border-b border-[#e8e8e8] ${
+        expanded ? 'min-h-[152px]' : ''
+      }`}
     >
-      <div
+      <img
+        src={MOBILE_HERO_PHOTO_PATH}
+        alt=""
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 opacity-60"
-        style={{
-          backgroundImage: MOBILE_HERO_DOT_GRID,
-          backgroundSize: '16px 16px',
-        }}
+        className="absolute inset-0 z-0 h-full w-full object-cover object-[78%_center]"
+        fetchPriority="high"
+        decoding="async"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{ background: MOBILE_HERO_SKY_GLOW }}
+        className="pointer-events-none absolute inset-0 z-[1]"
+        style={{ background: MOBILE_HERO_PHOTO_OVERLAY }}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{ background: MOBILE_HERO_COPY_WASH }}
-      />
-
-      {expanded && (
-        <HeroExpertCutout
-          wrapperClassName="absolute bottom-0 right-3 min-[390px]:right-4 z-[1]"
-          preset="mobile"
-          className="min-[390px]:!h-[158px]"
-        />
-      )}
 
       <div className="relative z-10">
         {!expanded && (
@@ -66,7 +56,7 @@ export const HomepageMobileHero: React.FC = () => {
         >
           <div className="overflow-hidden min-h-0">
             <div className="relative px-4 pt-3 pb-2">
-              <div className="relative z-[1] pr-[100px] min-[390px]:pr-[112px]">
+              <div className="relative z-[1] max-w-[72%] min-[390px]:max-w-[68%]">
                 <h1 className="hp-hero-title text-[1.3rem] min-[390px]:text-[1.45rem] leading-[1.12]">
                   Antes de comprar,{' '}
                   <span className="block whitespace-nowrap text-brand">que lo revise un experto</span>
