@@ -1,5 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
+import { capMapWorkers } from '../../lib/mapWorkers';
+capMapWorkers(maplibregl);
 import useSupercluster from 'use-supercluster';
 import { Service } from '../../hooks/useServiceLoader';
 // 🛡️ Round 28: símbolo correcto del servicio (£/CHF/kr) en lugar de € hardcoded en markers.

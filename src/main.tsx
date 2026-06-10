@@ -6,6 +6,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 // En producción, Vite tree-shake eliminará este código
 import { toast } from 'sonner'
 import App from './App.tsx'
+import { initRum } from './lib/rum'
+import { schedulePrefetchOfLikelyRoutes } from './lib/prefetchRoutes'
+import { registerServiceWorker } from './lib/registerSw'
 import { AuthProvider } from './contexts/AuthContext'
 import { CategoryProvider } from './contexts/CategoryContext'
 import { CurrencyProvider } from './contexts/CurrencyContext'
@@ -192,3 +195,16 @@ createRoot(rootElement, {
         </GoogleOAuthProvider>
     </StrictMode>,
 )
+
+// RUM (Core Web Vitals) — diferido a idle, no compite con la hidratación.
+// Capacitor nativo se descarta dentro de initRum (entorno no comparable a web).
+initRum()
+
+// Prefetch de chunks de rutas más probables desde la home (login, búsqueda,
+// become-expert…) cuando el hilo está libre. Hace que la primera navegación
+// salte sin esperar red.
+schedulePrefetchOfLikelyRoutes()
+
+// Service Worker (CacheFirst para assets hasheados, NetworkFirst para HTML).
+// Guard interno descarta Capacitor nativo y dev — solo web prod.
+registerServiceWorker()

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { getSupabaseClient } from '../lib/supabase'
 import { notifyTyping } from '../services/chatService'
 import type { TypingPayload } from '../types/chat.types'
 
@@ -43,7 +43,7 @@ export function useSupabaseTypingIndicator({
 
     const channelName = `typing:${conversationId}`
 
-    const channel = supabase
+    const channel = getSupabaseClient()
       .channel(channelName)
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
         const typingData = payload as TypingPayload
@@ -96,7 +96,7 @@ export function useSupabaseTypingIndicator({
       typingTimeouts.current.clear()
       
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
+        getSupabaseClient().removeChannel(channelRef.current)
         channelRef.current = null
       }
     }

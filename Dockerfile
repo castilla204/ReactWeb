@@ -24,9 +24,9 @@ USER node
 EXPOSE 80
 
 # Usar serve para servir los archivos estáticos
-# serve con -s sirve archivos estáticos primero, solo redirige a index.html si no existe
-# El problema puede ser caché del navegador o configuración del HTTPRoute
 # -s: single-page application mode (para React Router)
 # -l: puerto a escuchar
-# -n: no compression
+# -n: --no-clipboard (NO es "no compression"; eso seria -u). La compresion gzip
+#     esta ACTIVA. Los headers de cache se definen en dist/serve.json
+#     (copiado desde public/serve.json por el build de Vite).
 CMD ["serve", "-s", "dist", "-l", "80", "-n"]

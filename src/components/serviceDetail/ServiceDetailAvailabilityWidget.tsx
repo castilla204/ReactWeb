@@ -14,6 +14,8 @@ export interface ServiceDetailAvailabilityWidgetProps {
   showHeading?: boolean;
   /** No muestra fila inferior (horario/zona); útil si el horario va en la cabecera */
   hideScheduleRow?: boolean;
+  /** Celdas de día más bajas (ficha móvil compacta) */
+  dense?: boolean;
   className?: string;
 }
 
@@ -24,6 +26,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   variant = 'full',
   showHeading = true,
   hideScheduleRow = false,
+  dense = false,
   className = '',
 }) => {
   const activeDays = normalizeAvailabilityDays(availability.daysOfWeek);
@@ -32,7 +35,27 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const cellSize =
     variant === 'compact' || variant === 'sidebar'
       ? 'h-7 min-w-0 flex-1 text-[10px]'
-      : 'h-7 w-7 text-[11px]';
+      : 'h-7 w-7 text-xs';
+
+  const denseDaysRow = (
+    <div className="flex min-w-0 items-center gap-1">
+      {EXPERT_WEEK_DAYS.map((day) => {
+        const on = activeDays.has(day.key);
+        return (
+          <span
+            key={day.key}
+            title={`${day.label}${on ? '' : ' — no disponible'}`}
+            aria-pressed={on}
+            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none ${
+              on ? 'bg-brand text-white' : 'bg-[#f0f0f0] text-[#6a6a6a]'
+            }`}
+          >
+            {day.short}
+          </span>
+        );
+      })}
+    </div>
+  );
 
   const daysRow = (
     <div
@@ -47,14 +70,14 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
             key={day.key}
             title={`${day.label}${on ? '' : ' — no disponible'}`}
             aria-pressed={on}
-            className={`inline-flex items-center justify-center font-bold leading-none transition-colors ${cellSize} ${
+            className={`inline-flex items-center justify-center font-semibold leading-none transition-colors ${cellSize} ${
               variant === 'sidebar'
                 ? on
                   ? 'bg-brand text-white'
-                  : 'bg-white text-[#b8b8b8]'
+                  : 'bg-white text-[#6a6a6a]'
                 : on
                   ? 'rounded-md bg-brand text-white'
-                  : 'rounded-md bg-white text-[#c4c4c4]'
+                  : 'rounded-md bg-white text-[#6a6a6a]'
             }`}
           >
             {day.short}
@@ -80,7 +103,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
       <div className="flex shrink-0 items-center gap-1.5">
         {tzShort && (
           <span
-            className="max-w-[7rem] truncate text-[11px] text-[#9ca3af]"
+            className="max-w-[7rem] truncate text-xs text-[#737373]"
             title={timezone ?? undefined}
           >
             {tzShort}
@@ -97,6 +120,14 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
       </div>
     </div>
   );
+
+  if (dense) {
+    return (
+      <div className={`w-full ${className}`} role="group" aria-label={ariaLabel}>
+        {denseDaysRow}
+      </div>
+    );
+  }
 
   if (variant === 'sidebar') {
     return (
@@ -150,7 +181,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
       )}
 
       {tzShort && (
-        <span className="max-w-[6rem] truncate text-[10px] text-[#9ca3af]" title={timezone ?? undefined}>
+        <span className="max-w-[6rem] truncate text-xs text-[#737373]" title={timezone ?? undefined}>
           {tzShort}
         </span>
       )}

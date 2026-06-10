@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { capMapWorkers } from '../lib/mapWorkers';
+capMapWorkers(mapboxgl);
 import CountrySelector from './CountrySelector';
 import {
   searchMapboxAutocomplete,

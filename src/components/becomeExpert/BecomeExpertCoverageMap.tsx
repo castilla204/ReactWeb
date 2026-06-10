@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { capMapWorkers } from '../../lib/mapWorkers';
+capMapWorkers(maplibregl);
 import { AlertTriangle } from 'lucide-react';
 import { boundsFromCircle, circlePolygonGeoJSON } from '../../utils/geoCircle';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../../utils/mapTileUrls';

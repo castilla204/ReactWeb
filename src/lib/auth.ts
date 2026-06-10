@@ -12,7 +12,8 @@ export async function authenticateWithGoogle(accessToken: string, email: string,
 
 export function setAuthToken(token: string, user?: any) {
     localStorage.setItem('authToken', token);
-    void import('./supabase').then(({ updateSupabaseAuth }) => updateSupabaseAuth(token));
+    // ⚡ Eliminada la llamada a updateSupabaseAuth: es un no-op (el broadcast de
+    // Realtime no usa el JWT de la API) y el import descargaba el SDK entero.
     if (user) {
         // Asegurarse de guardar el usuario con las propiedades correctas (puede venir con Email/email, Role/role, Id/id)
         const userToStore = {

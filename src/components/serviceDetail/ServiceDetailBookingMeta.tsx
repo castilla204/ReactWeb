@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { ServiceDetailAvailabilityWidget } from './ServiceDetailAvailabilityWidget';
-import { ServiceDetailCoverageMap } from './ServiceDetailCoverageMap';
+import { LazyMount } from '../Map/LazyMount';
 import {
   type ExpertAvailabilityInput,
   formatAvailabilityTimeRange,
 } from '../../utils/expertAvailability';
-import { SD_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
+import {
+  SD_MOBILE_BOOKING_DIVIDER_CLASS,
+  SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS,
+  SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX,
+  SD_MOBILE_META_CLASS,
+  SD_MOBILE_SECTION_TITLE_CLASS,
+} from '../../constants/homepageTypography';
+
+const ServiceDetailCoverageMap = lazy(() =>
+  import('./ServiceDetailCoverageMap').then((m) => ({
+    default: m.ServiceDetailCoverageMap,
+  })),
+);
 
 export interface ServiceDetailBookingMetaProps {
   availability?: ExpertAvailabilityInput | null;
@@ -14,12 +26,16 @@ export interface ServiceDetailBookingMetaProps {
   location?: { latitude: number; longitude: number } | null;
   rangeKm?: number;
   locationLabel?: string | null;
-  /** card = aside desktop (plano, ancho completo); minimal = móvil */
+  /** card = aside desktop; minimal = móvil plano sin card anidada */
   layout?: 'card' | 'minimal';
   coverageFirst?: boolean;
   mapVariant?: 'preview' | 'interactive';
   mapClassName?: string;
   showAvailabilityHint?: boolean;
+  showCoverage?: boolean;
+  showAvailability?: boolean;
+  /** Sin padding horizontal extra (el padre ya tiene gutter) */
+  embedded?: boolean;
   className?: string;
 }
 
@@ -37,11 +53,18 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
   mapVariant = 'preview',
   mapClassName,
   showAvailabilityHint = true,
+  showCoverage = true,
+  showAvailability = true,
+  embedded = false,
   className = '',
 }) => {
   const hasAvailability = Boolean(availability);
   const hasCoverage = Boolean(location);
-  if (!hasAvailability && !hasCoverage) return null;
+  const renderCoverage = showCoverage && hasCoverage;
+  const renderAvailability = showAvailability && hasAvailability;
+  if (!renderCoverage && !renderAvailability) return null;
+
+  const minimalPadX = embedded ? 'px-0' : 'px-4';
 
   const radius = Math.max(5, rangeKm);
   const isMinimal = layout === 'minimal';
@@ -51,47 +74,57 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
       ? formatAvailabilityTimeRange(availability.startTime, availability.endTime)
       : null;
 
-  const defaultAsideMapClass =
-    'h-[148px] w-full rounded-lg border border-[#e8e8e8]';
+  const defaultAsideMapClass = 'h-[148px] w-full rounded-lg border border-[#e8e8e8]';
   const defaultMinimalMapClass =
-    'h-[84px] w-full rounded-none border-0';
+    `${SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS} w-full rounded-lg border border-[#ebebeb]`;
 
   const resolvedMapClassName =
     mapClassName ?? (isMinimal ? defaultMinimalMapClass : defaultAsideMapClass);
 
-  const coverageBlock = hasCoverage && location && (
+  const coverageBlock = renderCoverage && location && (
     isMinimal ? (
-      <div className="w-full">
+      <>
         <div
-          className={`mb-1.5 ${SD_MOBILE_GUTTER_CLASS} flex min-w-0 items-center gap-2 text-[11px] leading-tight text-[#9ca3af]`}
+          className={`flex min-w-0 items-center justify-between gap-2 ${minimalPadX}`}
           aria-label={
             locationLabel
               ? `Cobertura de ${radius} kilómetros en ${locationLabel}`
               : `Cobertura de ${radius} kilómetros`
           }
         >
-          <p className="shrink-0 whitespace-nowrap">
-            <span className="font-normal text-[#6a6a6a]">Cobertura</span>
-            <span>{` · ${radius} km`}</span>
-          </p>
+          <span className="shrink-0 whitespace-nowrap">
+            <span className={SD_MOBILE_SECTION_TITLE_CLASS}>Cobertura</span>
+            <span className={`${SD_MOBILE_META_CLASS} normal-case tracking-normal`}>
+              {` · ${radius} km`}
+            </span>
+          </span>
           {locationLabel ? (
             <span
-              className="min-w-0 flex-1 truncate text-end text-[#9ca3af]"
+              className={`min-w-0 flex-1 truncate text-end ${SD_MOBILE_META_CLASS}`}
               title={locationLabel}
             >
               {locationLabel}
             </span>
           ) : null}
         </div>
-        <ServiceDetailCoverageMap
-          latitude={location.latitude}
-          longitude={location.longitude}
-          rangeKm={radius}
-          variant={mapVariant}
-          expandable={mapVariant === 'preview'}
-          className={resolvedMapClassName}
-        />
-      </div>
+        <div className={`${minimalPadX} mt-2`}>
+          <LazyMount
+            className={SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS}
+            minHeight={SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX}
+          >
+            <Suspense fallback={null}>
+              <ServiceDetailCoverageMap
+                latitude={location.latitude}
+                longitude={location.longitude}
+                rangeKm={radius}
+                variant={mapVariant}
+                expandable={mapVariant === 'preview'}
+                className={resolvedMapClassName}
+              />
+            </Suspense>
+          </LazyMount>
+        </div>
+      </>
     ) : (
       <section className="w-full">
         <p className="mb-2.5 text-xs text-[#6a6a6a]">
@@ -105,66 +138,84 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           <span className="mx-1 text-[#d4d4d4]">·</span>
           <span>{radius} km</span>
         </p>
-        <ServiceDetailCoverageMap
-          latitude={location.latitude}
-          longitude={location.longitude}
-          rangeKm={radius}
-          variant={mapVariant}
-          expandable={mapVariant === 'preview'}
-          className={resolvedMapClassName}
-        />
+        <LazyMount aspectRatio="16/9" minHeight={180}>
+          <Suspense fallback={null}>
+            <ServiceDetailCoverageMap
+              latitude={location.latitude}
+              longitude={location.longitude}
+              rangeKm={radius}
+              variant={mapVariant}
+              expandable={mapVariant === 'preview'}
+              className={resolvedMapClassName}
+            />
+          </Suspense>
+        </LazyMount>
       </section>
     )
   );
 
-  const availabilityBlock = hasAvailability && availability && (
+  const availabilityBlock = renderAvailability && availability && (
     isMinimal ? (
-      <div className={`${SD_MOBILE_GUTTER_CLASS} pt-3`}>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="text-xs font-medium text-[#1c1c1c]">Disponibilidad</p>
-          <div className="flex shrink-0 items-center gap-2">
-            {availabilityTimeRange && (
+      <div
+        className={`${minimalPadX} ${
+          renderCoverage && coverageFirst ? SD_MOBILE_BOOKING_DIVIDER_CLASS : ''
+        }`}
+      >
+        <div
+          className="flex items-center justify-between gap-2"
+          aria-label={[
+            'Disponibilidad',
+            availabilityTimeRange,
+            isOnVacation ? 'vacaciones' : null,
+          ]
+            .filter(Boolean)
+            .join(', ')}
+        >
+          <ServiceDetailAvailabilityWidget
+            availability={availability}
+            timezone={timezone}
+            isOnVacation={isOnVacation}
+            variant="sidebar"
+            showHeading={false}
+            hideScheduleRow
+            dense
+            className="min-w-0 flex-1"
+          />
+          <div className="flex shrink-0 items-center gap-1.5">
+            {availabilityTimeRange ? (
               <span className="text-xs font-semibold tabular-nums text-brand">
                 {availabilityTimeRange}
               </span>
-            )}
-            {isOnVacation && (
+            ) : null}
+            {isOnVacation ? (
               <span
-                className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                className="rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-semibold text-amber-800"
                 title="El experto está de vacaciones"
               >
                 Vac.
               </span>
-            )}
+            ) : null}
           </div>
         </div>
-        <ServiceDetailAvailabilityWidget
-          availability={availability}
-          timezone={timezone}
-          isOnVacation={isOnVacation}
-          variant="sidebar"
-          showHeading={false}
-          hideScheduleRow
-        />
       </div>
     ) : (
       <section className="w-full">
         <div className="mb-2.5 flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-[#1c1c1c]">Disponibilidad</p>
           <div className="flex shrink-0 items-center gap-2">
-            {availabilityTimeRange && (
+            {availabilityTimeRange ? (
               <span className="text-xs font-semibold tabular-nums text-brand">
                 {availabilityTimeRange}
               </span>
-            )}
-            {isOnVacation && (
+            ) : null}
+            {isOnVacation ? (
               <span
                 className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
                 title="El experto está de vacaciones"
               >
                 Vac.
               </span>
-            )}
+            ) : null}
           </div>
         </div>
         <ServiceDetailAvailabilityWidget
@@ -175,11 +226,11 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           showHeading={false}
           hideScheduleRow
         />
-        {showAvailabilityHint && (
-          <p className="mt-2.5 text-[11px] leading-snug text-[#9ca3af]">
+        {showAvailabilityHint ? (
+          <p className="mt-2.5 text-xs leading-snug text-[#6a6a6a]">
             Tras reservar eliges día y hora dentro de este horario.
           </p>
-        )}
+        ) : null}
       </section>
     )
   );
@@ -192,7 +243,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     return (
       <div
         role="group"
-        aria-label="Información para reservar"
+        aria-label={renderAvailability ? 'Información para reservar' : 'Zona de cobertura'}
         className={`w-full ${className}`.trim()}
       >
         {coverageFirst ? (
@@ -210,7 +261,6 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     );
   }
 
-  /* Desktop aside: sin caja gris ni divide-y; secciones al 100% como en móvil */
   return (
     <div
       role="group"

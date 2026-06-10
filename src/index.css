@@ -2,6 +2,38 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* ⚡ Manrope auto-hospedada — subsets latin + latin-ext (cubren ES + UE).
+   Antes: <link> a fonts.googleapis.com + fonts.gstatic.com → 2 RTTs y 2 preconnects.
+   Ahora: WOFF2 servido desde el propio dominio (1 conexión ya abierta).
+   Variable font: un solo archivo cubre weights 400-700. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fontsource-variable/manrope/files/manrope-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Fallback metric-adjusted: minimiza el layout shift cuando la fuente real
+   carga. Valores aproximados para Manrope vs Arial (estable en es-ES). */
+@font-face {
+  font-family: 'Manrope Fallback';
+  src: local('Arial');
+  size-adjust: 102%;
+  ascent-override: 94%;
+  descent-override: 23%;
+  line-gap-override: 0%;
+}
+
 @keyframes pulse-sweep {
   0%, 100% {
     opacity: 0.5;
@@ -412,27 +444,38 @@
 
     .sd-page-title {
         @apply font-display text-xl font-semibold tracking-[-0.02em] text-[#1c1c1c] md:text-[1.65rem];
+        text-wrap: balance;
     }
 
     .sd-section-label {
-        @apply text-xs font-semibold uppercase tracking-[0.08em] text-[#6a6a6a] mb-2;
+        @apply mb-1.5 text-sm font-semibold leading-5 text-[#1c1c1c];
     }
 
     .sd-body {
-        @apply text-sm leading-snug text-[#6a6a6a];
+        @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-[#1c1c1c];
+        text-wrap: pretty;
+    }
+
+    /* Precio del aside / numeral de rating — único paso grande fuera de headline */
+    .sd-price {
+        @apply font-display text-[1.65rem] font-semibold leading-none tracking-[-0.01em] tabular-nums text-[#1c1c1c];
+    }
+
+    .sd-rating-numeral {
+        @apply font-display text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c] md:text-[2rem];
     }
 
     .sd-btn-primary {
-        @apply inline-flex items-center justify-center h-12 px-6 min-w-[140px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait;
+        @apply inline-flex items-center justify-center h-12 px-6 min-w-[140px] shrink-0 rounded-full bg-brand text-white text-sm font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait;
     }
 
     /* Barra fija móvil: ficha servicio + checkout */
     .sd-mobile-footer-inner {
-        @apply py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
+        @apply py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
     }
 
     .sd-mobile-footer-row {
-        @apply flex min-h-[48px] items-center justify-between gap-2;
+        @apply flex min-h-[44px] items-center justify-between gap-2;
     }
 
     .sd-mobile-footer-price-line {
@@ -440,7 +483,7 @@
     }
 
     .sd-mobile-footer-price {
-        @apply shrink-0 text-[17px] font-semibold leading-none tracking-[-0.02em] text-[#1c1c1c];
+        @apply shrink-0 text-lg font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#1c1c1c];
     }
 
     .sd-mobile-footer-price-sep {
@@ -448,27 +491,32 @@
     }
 
     .sd-mobile-footer-price-suffix {
-        @apply min-w-0 truncate text-sm font-normal text-[#6a6a6a];
+        @apply min-w-0 truncate text-xs font-normal text-[#6a6a6a];
+    }
+
+    .sd-mobile-footer-trust {
+        @apply mb-1.5 flex items-center gap-1.5 text-xs font-normal leading-4 text-[#6a6a6a];
     }
 
     .sd-mobile-footer-cta {
-        @apply inline-flex h-[48px] min-w-[7.5rem] max-w-[42vw] shrink-0 items-center justify-center rounded-full bg-brand px-5 text-base font-semibold leading-none text-white shadow-[0_4px_18px_hsl(var(--brand)/0.24)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
+        @apply inline-flex h-11 min-w-[7rem] max-w-[42vw] shrink-0 items-center justify-center rounded-full bg-brand px-4 text-sm font-semibold leading-none text-white shadow-[0_4px_18px_hsl(var(--brand)/0.24)] transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:cursor-wait disabled:opacity-75;
     }
 
     @media (min-width: 380px) {
         .sd-mobile-footer-cta {
-            min-width: 8.75rem;
-            padding-left: 1.75rem;
-            padding-right: 1.75rem;
-        }
-
-        .sd-mobile-footer-price {
-            font-size: 18px;
+            min-width: 8rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
         }
     }
 
     .sd-icon-btn {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] transition-colors hover:border-[#ccc] hover:bg-[#f9fafb] hover:text-[#1c1c1c];
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#737373] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] hover:text-[#1c1c1c];
+    }
+
+    /* Variante flotante móvil (sobre la foto del hero) — target táctil 44×44 */
+    .sd-icon-btn-float {
+        @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/95 text-[#1c1c1c] shadow-[0_1px_4px_rgba(15,23,42,0.1)] backdrop-blur-sm transition-colors active:bg-[#f4f4f4];
     }
 
     /* Galería móvil: puntos discretos sobre la foto */
@@ -477,7 +525,7 @@
     }
 
     .sd-gallery-dot {
-        @apply h-1 w-1 shrink-0 rounded-full border-0 bg-white/35 p-0 shadow-[0_0_0_0.5px_rgba(0,0,0,0.12)] transition-all duration-200;
+        @apply h-1.5 w-1.5 shrink-0 rounded-full border-0 bg-white/40 p-0 shadow-[0_0_0_0.5px_rgba(0,0,0,0.15)] transition-all duration-200;
     }
 
     .sd-gallery-dot.is-active {
@@ -505,31 +553,67 @@
         @apply flex w-full flex-wrap items-center gap-2;
     }
 
-    /* Ficha móvil: chips en la banda inferior de la foto (encima del solape -mt-10) */
+    /* Ficha móvil: cápsula compacta sobre la foto (encima del solape -mt-10) */
     .sd-deliverable-guide-on-image {
-        @apply absolute inset-x-0 bottom-0 z-20 flex flex-col items-start justify-end px-4;
-        /* 2.5rem = -mt-10 de la card; 0.75rem = respiro desde el borde de la foto */
-        padding-bottom: calc(2.5rem + 0.75rem);
+        @apply absolute inset-x-0 bottom-0 z-20 flex items-end justify-start px-4;
+        /* 2.5rem = -mt-10 de la card; 0.5rem = respiro desde el borde de la foto */
+        padding-bottom: calc(2.5rem + 0.5rem);
         pointer-events: none;
     }
 
-    .sd-deliverable-guide-on-image .sd-deliverable-guide-label {
-        @apply mb-1.5 rounded-md border border-white/25 bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white backdrop-blur-[6px];
-        text-shadow: none;
+    .sd-deliverable-guide-strip {
+        @apply pointer-events-auto inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-full border border-white/20 bg-black/35 px-1.5 py-0.5 shadow-[0_2px_8px_rgba(15,23,42,0.18)] backdrop-blur-md;
         opacity: 0;
-        animation: sd-deliverable-rise-from-sheet 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        animation: sd-deliverable-rise-from-sheet 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-guide-label {
+        @apply mb-0 shrink-0 px-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-white/75;
+        text-shadow: none;
+        opacity: 1;
+        animation: none;
+    }
+
+    .sd-deliverable-guide-items {
+        @apply m-0 flex list-none flex-wrap items-center gap-1.5 p-0;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-guide-items {
+        @apply gap-0;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-guide-item + .sd-deliverable-guide-item::before {
+        content: '';
+        @apply mx-0.5 h-2.5 w-px shrink-0 bg-white/25;
     }
 
     .sd-deliverable-guide-on-image .sd-deliverable-chip {
-        @apply pointer-events-auto inline-flex items-center rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_10px_rgba(15,23,42,0.14)] backdrop-blur-[10px] saturate-150;
-        opacity: 0;
-        animation: sd-deliverable-rise-from-sheet 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border-0 bg-transparent px-1 py-0.5 text-[10px] font-medium leading-none text-white shadow-none backdrop-blur-none;
+        opacity: 1;
+        animation: none;
+        transition: opacity 0.15s ease;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-chip:hover {
+        @apply opacity-90;
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-chip:active {
+        transform: scale(0.97);
+    }
+
+    .sd-deliverable-guide-on-image .sd-deliverable-chip:focus-visible {
+        @apply rounded-full outline outline-1 outline-offset-1 outline-white/80;
+    }
+
+    .sd-deliverable-chip-icon {
+        @apply h-2.5 w-2.5 shrink-0 opacity-80;
     }
 
     @keyframes sd-deliverable-rise-from-sheet {
         from {
             opacity: 0;
-            transform: translateY(2.5rem);
+            transform: translateY(1.5rem);
         }
         to {
             opacity: 1;
@@ -538,18 +622,25 @@
     }
 
     .sd-deliverable-chip-inline {
-        @apply inline-flex items-center rounded-full border border-[#e8e8e8]/90 bg-white/90 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-sm backdrop-blur-[8px];
+        @apply inline-flex items-center gap-1 rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c];
+    }
+
+    .sd-deliverable-chip-surface {
+        @apply inline-flex items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-[#fafafa] px-2.5 py-1.5 text-xs font-medium leading-4 text-[#1c1c1c] transition-colors hover:border-brand/25 hover:bg-brand/[0.03] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    .sd-deliverable-chip-surface-icon {
+        @apply h-3.5 w-3.5 shrink-0 text-brand;
     }
 
     @media (min-width: 1024px) {
         .sd-deliverable-guide-on-image {
-            @apply static inset-auto flex-col justify-end px-0;
+            @apply static inset-auto px-0;
             padding-bottom: 0;
         }
 
-        .sd-deliverable-guide-on-image .sd-deliverable-guide-label,
-        .sd-deliverable-guide-on-image .sd-deliverable-chip {
-            animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        .sd-deliverable-guide-on-image .sd-deliverable-guide-strip {
+            animation: sd-deliverable-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             transform: none;
         }
 
@@ -569,7 +660,13 @@
         }
 
         .sd-deliverable-guide:not(.sd-deliverable-guide-on-image) .sd-deliverable-guide-label {
-            @apply mb-0 shrink-0 rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[11px] font-semibold normal-case tracking-normal text-white backdrop-blur-sm;
+            @apply mb-0 shrink-0 rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-semibold normal-case tracking-normal text-white backdrop-blur-sm;
+        }
+
+        .sd-deliverable-guide:not(.sd-deliverable-guide-on-image) .sd-deliverable-chip {
+            @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/75 px-2 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
+            opacity: 0;
+            animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
     }
 
@@ -581,7 +678,7 @@
     }
 
     .sd-deliverable-chip {
-        @apply pointer-events-auto inline-flex items-center rounded-full border border-white/50 bg-white/70 px-3 py-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_10px_rgba(15,23,42,0.14)] backdrop-blur-[10px] saturate-150;
+        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/70 px-2 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
         opacity: 0;
         animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
@@ -589,7 +686,7 @@
     @keyframes sd-deliverable-rise {
         from {
             opacity: 0;
-            transform: translateY(1.25rem);
+            transform: translateY(0.75rem);
         }
         to {
             opacity: 1;
@@ -598,10 +695,10 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+        .sd-deliverable-guide-strip,
         .sd-deliverable-guide-label,
         .sd-deliverable-chip,
-        .sd-deliverable-guide-on-image .sd-deliverable-guide-label,
-        .sd-deliverable-guide-on-image .sd-deliverable-chip {
+        .sd-deliverable-guide-on-image .sd-deliverable-guide-strip {
             animation: none;
             opacity: 1;
             transform: translateY(0);
@@ -629,16 +726,21 @@
         @apply block min-w-0;
     }
 
+    /* Radio 16px = token {rounded.xl} de DESIGN.md (Tailwind rounded-2xl) */
     .sd-aside-card {
-        @apply rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.07)];
+        @apply rounded-2xl border border-[#e8e8e8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)];
     }
 
     .sd-tab {
-        @apply flex-1 py-3 text-center text-base transition-colors border-b-2 border-transparent text-[#6a6a6a] font-normal;
+        @apply flex-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#6a6a6a] font-normal transition-colors;
     }
 
     .sd-tab[data-active='true'] {
         @apply font-semibold text-[#1c1c1c] border-brand;
+    }
+
+    .sd-tablist {
+        @apply flex border-b border-[#ebebeb];
     }
 
 }
