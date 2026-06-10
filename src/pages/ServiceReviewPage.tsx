@@ -528,16 +528,18 @@ export function ServiceReviewPage({
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                     </div>
-                    <div className={`absolute right-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-                        <button
-                            onClick={() => setIsFavorite(!isFavorite)}
-                            className="sd-icon-btn-float"
-                            aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                            aria-pressed={isFavorite}
-                        >
-                            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
-                        </button>
-                    </div>
+                    {isAuthenticated ? (
+                        <div className={`absolute right-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
+                            <button
+                                onClick={() => setIsFavorite(!isFavorite)}
+                                className="sd-icon-btn-float"
+                                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                                aria-pressed={isFavorite}
+                            >
+                                <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
+                            </button>
+                        </div>
+                    ) : null}
                     <div className="relative w-full overflow-hidden">
                     {/* Carrusel de imágenes con indicadores */}
                     <div 

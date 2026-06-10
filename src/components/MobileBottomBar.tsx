@@ -276,69 +276,68 @@ export const MobileBottomBar: React.FC = () => {
           </div>
         </button>
 
-        {/* Wishlists - button */}
-        <button
-          type="button"
-          onClick={handleFavoritesClick}
-          onTouchEnd={handleFavoritesClick}
-          aria-current={wishlistsActive ? 'page' : undefined}
-          disabled={wishlistsActive}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: tabWidth,
-            height: '44px',
-            flexShrink: 0,
-            marginLeft: tabMargin,
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            color: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
-            cursor: wishlistsActive ? 'default' : 'pointer',
-            touchAction: 'manipulation',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {/* div._rz58lf5 - Contenedor del icono */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '4px',
-          }}>
-            {/* div._1xcgt9rg - Contenedor del SVG */}
+        {/* Favoritos — solo usuarios registrados (requiere sesión para guardar) */}
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleFavoritesClick}
+            onTouchEnd={handleFavoritesClick}
+            aria-current={wishlistsActive ? 'page' : undefined}
+            disabled={wishlistsActive}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: tabWidth,
+              height: '44px',
+              flexShrink: 0,
+              marginLeft: tabMargin,
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              color: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
+              cursor: wishlistsActive ? 'default' : 'pointer',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              marginBottom: '4px',
             }}>
-              <svg
-                viewBox="0 0 32 32"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                role="presentation"
-                focusable="false"
-                style={{
-                  display: 'block',
-                  fill: 'none',
-                  height: '24px',
-                  width: '24px',
-                  stroke: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
-                  strokeWidth: '2',
-                  overflow: 'visible',
-                }}
-              >
-                <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0988-2.11677c-1.3995-1.4098-3.2332-2.11573-5.06783-2.11573-1.83364 0-3.66831.70593-5.06683 2.11573-1.39955 1.41083-2.09984 3.25926-2.09984 5.10877 0 7.2244 7.16667 13.2241 14.3333 18.1088z"></path>
-              </svg>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <svg
+                  viewBox="0 0 32 32"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                  role="presentation"
+                  focusable="false"
+                  style={{
+                    display: 'block',
+                    fill: 'none',
+                    height: '24px',
+                    width: '24px',
+                    stroke: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
+                    strokeWidth: '2',
+                    overflow: 'visible',
+                  }}
+                >
+                  <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0988-2.11677c-1.3995-1.4098-3.2332-2.11573-5.06783-2.11573-1.83364 0-3.66831.70593-5.06683 2.11573-1.39955 1.41083-2.09984 3.25926-2.09984 5.10877 0 7.2244 7.16667 13.2241 14.3333 18.1088z"></path>
+                </svg>
+              </div>
             </div>
-          </div>
-          {/* div._1xhupxb - Texto */}
-          <div style={tabLabelStyle(wishlistsActive)}>
-            Favoritos
-          </div>
-        </button>
+            <div style={tabLabelStyle(wishlistsActive)}>
+              Favoritos
+            </div>
+          </button>
+        )}
 
         {/* Ayuda — invitados y registrados */}
         <button

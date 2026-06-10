@@ -114,17 +114,21 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                type="button"
-                className="sd-icon-btn"
-                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                aria-pressed={isFavorite}
-                onClick={onToggleFavorite}
-              >
-                <Heart className={cn('h-4 w-4', isFavorite && 'fill-brand text-brand')} />
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    type="button"
+                    className="sd-icon-btn"
+                    aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                    aria-pressed={isFavorite}
+                    onClick={onToggleFavorite}
+                  >
+                    <Heart className={cn('h-4 w-4', isFavorite && 'fill-brand text-brand')} />
+                  </button>
 
-              <span className="mx-0.5 hidden h-5 w-px bg-[#e5e7eb] sm:block" aria-hidden />
+                  <span className="mx-0.5 hidden h-5 w-px bg-[#e5e7eb] sm:block" aria-hidden />
+                </>
+              ) : null}
 
               {userIsAdmin && (
                 <button

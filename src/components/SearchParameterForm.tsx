@@ -345,7 +345,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     </div>
                                 )}
 
-                                {/* Botón de favorito - Estilo exacto de HomepageWall */}
+                                {/* Botón de favorito — solo con sesión iniciada */}
+                                {isAuthenticated ? (
                                 <button
                                     onClick={handleFavoriteClick}
                                     className="absolute top-3 right-3 z-10"
@@ -383,6 +384,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                                     </svg>
                                 </button>
+                                ) : null}
 
                                 {/* Navegación de imágenes - Solo en desktop */}
                                 {hasMultipleImages && (
@@ -535,7 +537,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                         </div>
 
                         <div className={MAP_CARD_MOBILE_COMPACT_INFO_CLASS}>
-                            <div className="min-w-0 pr-10">
+                            <div className={`min-w-0 ${isAuthenticated ? 'pr-10' : 'pr-0'}`}>
                                 <div className="flex items-center gap-1.5">
                                     <p className="truncate text-[10px] font-semibold uppercase tracking-[0.085em] text-brand">
                                         {serviceTypeLabel}
@@ -568,26 +570,28 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                             </div>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={handleFavoriteClick}
-                            aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                            className={MAP_CARD_MOBILE_FAV_BTN_CLASS}
-                        >
-                            <svg
-                                viewBox="0 0 32 32"
-                                aria-hidden
-                                style={{
-                                    height: 22,
-                                    width: 22,
-                                    fill: isFavorite ? 'hsl(var(--brand))' : 'rgba(0,0,0,0.45)',
-                                    stroke: isFavorite ? 'hsl(var(--brand))' : 'rgba(255,255,255,0.95)',
-                                    strokeWidth: 2,
-                                }}
+                        {isAuthenticated ? (
+                            <button
+                                type="button"
+                                onClick={handleFavoriteClick}
+                                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                                className={MAP_CARD_MOBILE_FAV_BTN_CLASS}
                             >
-                                <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                            </svg>
-                        </button>
+                                <svg
+                                    viewBox="0 0 32 32"
+                                    aria-hidden
+                                    style={{
+                                        height: 22,
+                                        width: 22,
+                                        fill: isFavorite ? 'hsl(var(--brand))' : 'rgba(0,0,0,0.45)',
+                                        stroke: isFavorite ? 'hsl(var(--brand))' : 'rgba(255,255,255,0.95)',
+                                        strokeWidth: 2,
+                                    }}
+                                >
+                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
+                                </svg>
+                            </button>
+                        ) : null}
                     </div>
                 </div>
             </a>
@@ -636,7 +640,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 </div>
                             )}
 
-                            {/* Botón de favorito — touch target 44×44 (HIG) con corazón 24×24 dentro */}
+                            {isAuthenticated ? (
                             <button
                                 onClick={handleFavoriteClick}
                                 aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
@@ -672,6 +676,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
                                 </svg>
                             </button>
+                            ) : null}
 
                             {/* Indicadores de imágenes */}
                             {hasMultipleImages && (
