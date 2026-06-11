@@ -143,6 +143,20 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
             }}
           >
+            {title && (
+              <div className="flex shrink-0 items-center justify-between border-b border-[#ebebeb] px-4 pb-2.5 pt-3">
+                <h2 className="text-base font-semibold leading-snug text-[#1c1c1c]">{title}</h2>
+                <DrawerClose asChild>
+                  <button
+                    type="button"
+                    className="rounded-md p-1.5 text-[#717171] opacity-80 transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="Cerrar"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </DrawerClose>
+              </div>
+            )}
             {children}
           </div>
         </DrawerContent>
@@ -153,7 +167,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   // Usar Dialog (popup) en PC
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+        <DialogContent
         className={cn(
           "!flex !flex-col !gap-0 overflow-hidden p-0 md:max-h-[min(90vh,640px)] md:max-w-[700px] lg:max-w-[800px] [&>button]:hidden",
           className,
@@ -167,6 +181,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           gap: 0
         }}
         hideCloseButton={true}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {title && !hideDialogHeader && (
           <DialogHeader
@@ -187,7 +202,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="shrink-0 rounded-md p-1.5 text-[#717171] opacity-80 ring-offset-background transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className="shrink-0 rounded-md p-1.5 text-[#717171] opacity-80 ring-offset-background transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   aria-label="Cerrar"
                 >
                   <X className="h-5 w-5" />
