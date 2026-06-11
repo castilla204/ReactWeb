@@ -2,65 +2,104 @@ import React from 'react';
 import { Star } from 'lucide-react';
 import type { ReviewRatingBucket } from '../../utils/reviewRatingDistribution';
 
+export type ReviewHistogramVariant = 'default' | 'compact' | 'mobile';
+
 interface ServiceDetailReviewHistogramProps {
   distribution: ReviewRatingBucket[];
   total: number;
+  /** @deprecated Usar variant */
   compact?: boolean;
+  variant?: ReviewHistogramVariant;
+  /** Ocultar % en vista compacta móvil (referencia marketplace) */
+  showPercent?: boolean;
+  /** Más alto en pestaña móvil de la ficha */
+  emphasis?: 'default' | 'prominent';
 }
 
 export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogramProps> = ({
   distribution,
   total,
   compact = false,
+  variant,
+  showPercent = true,
+  emphasis = 'default',
 }) => {
+  const resolvedVariant: ReviewHistogramVariant =
+    variant ?? (compact ? 'compact' : 'default');
+  const isMobile = resolvedVariant === 'mobile';
+  const isCompact = resolvedVariant === 'compact';
+  const isProminent = isMobile && emphasis === 'prominent';
   const maxCount = Math.max(...distribution.map((b) => b.count), 1);
+  const hidePercent = isMobile && !showPercent;
 
   return (
     <div
-      className={`flex flex-col ${compact ? 'gap-1' : 'gap-1.5'}`}
+      className={`flex flex-col ${
+        isProminent
+          ? 'gap-2.5'
+          : isMobile
+            ? hidePercent
+              ? 'gap-1.5'
+              : 'gap-2'
+            : isCompact
+              ? 'gap-1'
+              : 'gap-1.5'
+      }`}
       role="img"
       aria-label={`Distribución de ${total} valoraciones`}
     >
       {distribution.map(({ star, count, percent }) => {
-        const barWidth = count > 0 ? Math.max(8, (count / maxCount) * 100) : 0;
+        const barWidth = count > 0 ? Math.max(6, (count / maxCount) * 100) : 0;
         return (
           <div
             key={star}
-            className={`grid items-center gap-2 ${
-              compact
-                ? 'grid-cols-[1.5rem_1fr_2rem]'
-                : 'grid-cols-[2.75rem_1fr_1.75rem]'
+            className={`grid items-center ${
+              isMobile
+                ? hidePercent
+                  ? `grid-cols-[0.75rem_minmax(0,1fr)] ${isProminent ? 'gap-2.5' : 'gap-2'}`
+                  : 'grid-cols-[0.625rem_minmax(0,1fr)_2rem] gap-2'
+                : isCompact
+                  ? 'grid-cols-[1.5rem_1fr_2rem] gap-2'
+                  : 'grid-cols-[2.75rem_1fr_1.75rem] gap-2'
             }`}
           >
             <span
-              className={`flex items-center gap-0.5 text-[#6a6a6a] ${
-                compact ? 'text-[10px]' : 'text-xs'
+              className={`tabular-nums ${
+                isMobile
+                  ? `${isProminent ? 'text-xs' : 'text-[11px]'} font-medium leading-none text-[#717171]`
+                  : `flex items-center gap-0.5 text-[#6a6a6a] ${isCompact ? 'text-[10px]' : 'text-xs'}`
               }`}
             >
               <span className="sr-only">{star} estrellas</span>
               <span aria-hidden>{star}</span>
-              <Star
-                className={`fill-[#1c1c1c] text-[#1c1c1c] ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
-                aria-hidden
-              />
+              {!isMobile ? (
+                <Star
+                  className={`fill-[#1c1c1c] text-[#1c1c1c] ${isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
+                  aria-hidden
+                />
+              ) : null}
             </span>
             <div
-              className={`overflow-hidden rounded-full bg-[#ebebeb] ${
-                compact ? 'h-1' : 'h-1.5'
+              className={`overflow-hidden rounded-full bg-[#dddddd] ${
+                isProminent ? 'h-2.5' : isMobile ? 'h-[7px]' : isCompact ? 'h-1' : 'h-1.5'
               }`}
             >
               <div
-                className="h-full rounded-full bg-[#1c1c1c] transition-[width] duration-300"
+                className={`h-full rounded-full transition-[width] duration-300 ${
+                  count > 0 ? 'bg-[#222222]' : 'bg-transparent'
+                }`}
                 style={{ width: `${barWidth}%` }}
               />
             </div>
-            <span
-              className={`text-right tabular-nums text-[#6a6a6a] ${
-                compact ? 'text-[10px]' : 'text-[11px]'
-              }`}
-            >
-              {percent > 0 ? `${percent}%` : '—'}
-            </span>
+            {!hidePercent ? (
+              <span
+                className={`text-right tabular-nums text-[#717171] ${
+                  isMobile ? 'text-[11px]' : isCompact ? 'text-[10px]' : 'text-[11px]'
+                }`}
+              >
+                {percent > 0 ? `${percent}%` : '—'}
+              </span>
+            ) : null}
           </div>
         );
       })}

@@ -72,9 +72,9 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
 
   return (
     <>
-      <header className="sticky top-0 z-50 hidden border-b border-[#e8e8e8]/70 bg-[#fafafa]/92 backdrop-blur-md lg:block">
+      <header className="sticky top-0 z-50 hidden border-b border-[#e8e8e8] bg-white/95 backdrop-blur-md lg:block">
         <div className={SD_PAGE_INNER_MAX_CLASS}>
-          <div className="flex min-h-[48px] items-center justify-between gap-3 py-2">
+          <div className="flex min-h-[56px] items-center justify-between gap-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               <button type="button" onClick={onBack} className="sd-icon-btn shrink-0" aria-label="Volver">
                 <ArrowLeft className="h-4 w-4" strokeWidth={2.1} />

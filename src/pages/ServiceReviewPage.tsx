@@ -4,14 +4,10 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
-    Shield,
     Heart,
-    Lock,
-    BadgeCheck,
     Image,
+    Shield,
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -35,17 +31,21 @@ import {
   SD_MOBILE_HEADER_PB_CLASS,
   SD_MOBILE_INSET_STACK_CLASS,
   SD_MOBILE_META_CLASS,
-  SD_MOBILE_AVAILABILITY_PB_CLASS,
-  SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
+  SD_MOBILE_META_SECTION_CLASS,
+  SD_MOBILE_SCROLL_PAD_CLASS,
+  SD_MOBILE_SHEET_BOTTOM_CLASS,
   SD_MOBILE_SHEET_DIVIDER_CLASS,
+  SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_PAGE_GRID_CLASS,
+  SD_DESKTOP_CONTENT_STACK_CLASS,
+  SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS,
   SD_DESKTOP_ASIDE_MAX_H_CLASS,
   SD_DESKTOP_STICKY_TOP_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../constants/homepageTypography';
-import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
+import { ServiceDetailDesktopPhotoMapHero } from '../components/serviceDetail/ServiceDetailDesktopPhotoMapHero';
 import {
     ServiceDetailDeliverablesGuide,
     normalizeDeliverableTypes,
@@ -55,6 +55,8 @@ import { ServiceDetailReviewsPreview } from '../components/serviceDetail/Service
 import { getCountryName } from '../utils/countries';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
+import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
+import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
 import { LoginModal } from '../components/LoginModal';
 
 interface ServiceReviewPageProps {
@@ -291,7 +293,6 @@ export function ServiceReviewPage({
         return dayMap[day] || day.charAt(0);
     };
     
-    // Estado para el tab activo en móvil
     const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
 
     // Estado para "Mostrar más" en reviews
@@ -329,6 +330,26 @@ export function ServiceReviewPage({
         };
     });
     const finalCompletedSearches = finalService?.completedSearches || 0;
+
+    const finalServiceTitle =
+        finalService?.serviceTypeName ||
+        (finalService as any)?.ServiceTypeName ||
+        finalService?.categoryName ||
+        (finalService as any)?.CategoryName ||
+        'Servicio de inspección';
+
+    const serviceHeadlineMeta = [
+        expertLocationLabel || null,
+        finalRating > 0
+            ? `${Number(finalRating).toFixed(1).replace(/\.0$/, '')}${
+                  finalReviews.length > 0 ? ` · ${finalReviews.length} reseñas` : ''
+              }`
+            : finalReviews.length > 0
+              ? `${finalReviews.length} reseñas`
+              : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
     
     const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
     const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
@@ -518,7 +539,7 @@ export function ServiceReviewPage({
                             className="sd-icon-btn-float"
                             aria-label="Volver"
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2} />
                         </button>
                     </div>
                     {isAuthenticated ? (
@@ -529,7 +550,10 @@ export function ServiceReviewPage({
                                 aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                                 aria-pressed={isFavorite}
                             >
-                                <Heart className={`w-5 h-5 ${isFavorite ? 'fill-brand text-brand' : ''}`} />
+                                <Heart
+                                    className={`h-[18px] w-[18px] ${isFavorite ? 'fill-brand text-brand' : 'text-[#222222]'}`}
+                                    strokeWidth={2}
+                                />
                             </button>
                         </div>
                     ) : null}
@@ -614,61 +638,41 @@ export function ServiceReviewPage({
                     )}
 
                             </div>
-                            
+
                     <div
-                        className={`relative -mt-10 z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
+                        className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS}`}
                     >
                         <div className={SD_MOBILE_GUTTER_CLASS}>
-                        <header
-                            className={
-                                finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-5'
-                            }
-                        >
-                            <div className="flex items-start gap-2.5">
-                                <button
-                                    type="button"
-                                    aria-label={`${finalExpertName} es revisor verificado de inspecciono.com`}
-                                    className="relative h-11 w-11 shrink-0 border-none bg-transparent p-0"
-                                    onClick={() => {
+                            <ServiceDetailPageHeadline
+                                title={finalServiceTitle}
+                                meta={serviceHeadlineMeta || null}
+                                className="mb-3"
+                            />
+                            <header
+                                className={
+                                    finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-3'
+                                }
+                            >
+                                <ServiceDetailExpertHostRow
+                                    variant="mobile"
+                                    expertName={finalExpertName}
+                                    expertPicture={finalExpertPicture}
+                                    completedSearches={finalCompletedSearches}
+                                    rating={finalRating > 0 ? finalRating : undefined}
+                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
+                                    onAvatarClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
                                         }
                                     }}
-                                >
-                                    <Avatar className="h-11 w-11 rounded-full">
-                                        <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-sm font-bold text-white">
-                                            {finalExpertName.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                    <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>
-                                        {finalExpertName}
-                                    </p>
-                                    <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 ${SD_MOBILE_META_CLASS}`}>
-                                        <span className="inline-flex items-center gap-1">
-                                            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2.5} aria-hidden />
-                                            Revisor verificado
-                                        </span>
-                                    </p>
-                                </div>
-                                <Button
-                                    type="button"
-                                    onClick={handleChatClick}
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-0.5 h-9 shrink-0 rounded-full border-[#e8e8e8] px-3.5 text-sm font-medium text-[#1c1c1c]"
-                                >
-                                    Chat
-                                </Button>
-                            </div>
-                        </header>
+                                    onChatClick={handleChatClick}
+                                />
+                            </header>
 
                             {finalAvailability ? (
                                 <section
                                     aria-label="Información para reservar"
-                                    className={SD_MOBILE_AVAILABILITY_PB_CLASS}
+                                    className={SD_MOBILE_META_SECTION_CLASS}
                                 >
                                     <ServiceDetailBookingMeta
                                         layout="minimal"
@@ -683,47 +687,44 @@ export function ServiceReviewPage({
                                     />
                                 </section>
                             ) : null}
-                        </div>
 
-                        <div className={SD_MOBILE_SHEET_DIVIDER_CLASS} aria-hidden />
+                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} mt-0 w-full`}>
+                            <div
+                                className="sd-tablist w-full"
+                                role="tablist"
+                                aria-label="Información del servicio"
+                            >
+                            <button
+                                type="button"
+                                role="tab"
+                                id="sd-tab-about"
+                                aria-controls="sd-panel-about"
+                                aria-selected={activeTab === 'about'}
+                                data-active={activeTab === 'about' ? 'true' : undefined}
+                                onClick={() => setActiveTab('about')}
+                                className="sd-tab"
+                            >
+                                Acerca del servicio
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                id="sd-tab-reviews"
+                                aria-controls="sd-panel-reviews"
+                                aria-selected={activeTab === 'reviews'}
+                                data-active={activeTab === 'reviews' ? 'true' : undefined}
+                                onClick={() => setActiveTab('reviews')}
+                                className="sd-tab"
+                            >
+                                Reseñas
+                                {finalReviews.length > 0 ? (
+                                    <span className="text-xs font-normal tabular-nums text-[#6a6a6a]">
+                                        {finalReviews.length}
+                                    </span>
+                                ) : null}
+                            </button>
+                            </div>
 
-                        <div
-                            className="sd-tablist w-full"
-                            role="tablist"
-                            aria-label="Información del servicio"
-                        >
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    id="sd-tab-about"
-                                    aria-controls="sd-panel-about"
-                                    aria-selected={activeTab === 'about'}
-                                    data-active={activeTab === 'about' ? 'true' : undefined}
-                                    onClick={() => setActiveTab('about')}
-                                    className="sd-tab"
-                                >
-                                    Acerca del servicio
-                                </button>
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    id="sd-tab-reviews"
-                                    aria-controls="sd-panel-reviews"
-                                    aria-selected={activeTab === 'reviews'}
-                                    data-active={activeTab === 'reviews' ? 'true' : undefined}
-                                    onClick={() => setActiveTab('reviews')}
-                                    className="sd-tab"
-                                >
-                                    Reseñas
-                                    {finalReviews.length > 0 ? (
-                                        <span className="text-xs font-normal tabular-nums text-[#6a6a6a]">
-                                            {finalReviews.length}
-                                        </span>
-                                    ) : null}
-                                </button>
-                        </div>
-
-                        <div className={SD_MOBILE_GUTTER_CLASS}>
                             {activeTab === 'about' && (
                                 <div
                                     id="sd-panel-about"
@@ -776,17 +777,12 @@ export function ServiceReviewPage({
                         </div>
                     </div>
             </div>
+            </div>
 
                 <MobileReserveFooter
                     price={getMobileFooterPriceLine(finalPrice)}
                     priceSuffix="por servicio"
                     priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
-                    trustNote={
-                        <>
-                            <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                            Pago retenido hasta aprobar el informe
-                        </>
-                    }
                 >
                             {isAuthenticated ? (
                                 <button
@@ -808,157 +804,181 @@ export function ServiceReviewPage({
                 </MobileReserveFooter>
             </div>
 
-            {/* ========== DESKTOP — topbar homepage + grid (galería columna izquierda) ========== */}
-            <div className="service-detail-desktop hidden lg:block min-h-screen bg-[#fafafa]">
+            {/* ========== DESKTOP — galería full-width + grid contenido / aside ========== */}
+            <div className="service-detail-desktop hidden lg:block min-h-screen bg-white">
                 <ServiceDetailDesktopHeader
                     onBack={onBack}
                     isFavorite={isFavorite}
                     onToggleFavorite={() => setIsFavorite(!isFavorite)}
                 />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-3 lg:pt-4`}>
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-14 pt-5 lg:pt-6`}>
+                    <ServiceDetailDesktopPhotoMapHero
+                        className="mb-6 lg:mb-8"
+                        images={validImages}
+                        onOpen={handleImageClick}
+                        loadingImages={loadingImages}
+                        failedImages={failedImages}
+                        onImageError={handleImageError}
+                        onImageLoad={handleImageLoad}
+                        onImageLoadStart={handleImageLoadStart}
+                        location={expertLocation}
+                        locationLabel={expertLocationLabel || undefined}
+                        rangeKm={expertRange || 25}
+                    />
+
                     <div className={SD_PAGE_GRID_CLASS}>
-                        <div className="relative min-w-0 lg:col-start-1 lg:row-start-1">
-                            <ServiceDetailDesktopGallery
-                                images={validImages}
-                                onOpen={handleImageClick}
-                                loadingImages={loadingImages}
-                                failedImages={failedImages}
-                                onImageError={handleImageError}
-                                onImageLoad={handleImageLoad}
-                                onImageLoadStart={handleImageLoadStart}
-                            />
-                        </div>
-
-                        <aside
-                            className={`min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}
-                        >
-                            <article
-                                className={`sd-aside-card flex flex-col overflow-y-auto ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
-                            >
-                                <section className="shrink-0">
-                                    <p className="sd-section-label mb-2">Tu reserva</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <p className="sd-price">
-                                            {renderServicePrice(finalPrice)}
-                                        </p>
-                                        <p className="text-sm text-[#6a6a6a]">/ servicio</p>
-                                    </div>
-                                    <div className="mt-3 flex flex-col gap-1.5">
-                                        <p className="inline-flex items-center gap-2 text-xs text-[#6a6a6a]">
-                                            <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                                            Pago retenido hasta aprobar el informe
-                                        </p>
-                                        <p className="inline-flex items-center gap-2 text-xs text-[#6a6a6a]">
-                                            <Lock className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                                            Sin cargo hasta confirmar con el experto
-                                        </p>
-                                    </div>
-                                </section>
-
-                                {(finalAvailability || expertLocation) && (
-                                    <section className="mt-4 w-full min-h-0 flex-1">
-                                        <ServiceDetailBookingMeta
-                                            layout="card"
-                                            availability={finalAvailability ?? undefined}
-                                            timezone={finalService?.expert?.timezone}
-                                            isOnVacation={finalService?.expert?.isOnVacation}
-                                            location={expertLocation ?? undefined}
-                                            locationLabel={expertLocationLabel || undefined}
-                                            rangeKm={expertRange || 25}
-                                            mapVariant="preview"
-                                        />
-                                    </section>
-                                )}
-
-                                <footer className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
-                                    {isAuthenticated ? (
-                                        <button
-                                            type="button"
-                                            onClick={handleReserveClick}
-                                            className="sd-btn-primary w-full min-w-0"
-                                        >
-                                            Reservar
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={openLoginForCheckout}
-                                            className="sd-btn-primary w-full min-w-0"
-                                        >
-                                            Inicia sesión para reservar
-                                        </button>
-                                    )}
-                                </footer>
-                            </article>
-                        </aside>
-
-                        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2 lg:space-y-6">
-                            {/* Experto */}
-                            <div className="flex items-center gap-3 rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
-                                <button
-                                    type="button"
-                                    className="relative shrink-0"
-                                    onClick={() => finalExpertPicture && setIsExpertPhotoOpen(true)}
-                                    aria-label={`Ver foto de ${finalExpertName}`}
-                                >
-                                    <Avatar className="h-11 w-11 rounded-full ring-2 ring-white">
-                                        <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-white text-sm">
-                                            {finalExpertName.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-[#1c1c1c]">{finalExpertName}</p>
-                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
-                                        <span className="inline-flex items-center gap-1">
-                                            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2.5} aria-hidden />
-                                            Revisor verificado
-                                        </span>
-                                        {finalCompletedSearches > 0 ? (
-                                            <>
-                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
-                                                <span>{finalCompletedSearches} trabajos</span>
-                                            </>
-                                        ) : null}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleChatClick}
-                                    className="sd-btn-secondary shrink-0 rounded-full px-3.5"
-                                >
-                                    Chat
-                                </button>
-                            </div>
+                        <div className={`min-w-0 lg:col-start-1 ${SD_DESKTOP_CONTENT_STACK_CLASS}`}>
+                            <header>
+                                <ServiceDetailPageHeadline
+                                    title={finalServiceTitle}
+                                    locationLabel={expertLocationLabel || undefined}
+                                    rating={finalRating > 0 ? finalRating : undefined}
+                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
+                                />
+                                <ServiceDetailExpertHostRow
+                                    variant="desktop"
+                                    expertName={finalExpertName}
+                                    expertPicture={finalExpertPicture}
+                                    completedSearches={finalCompletedSearches}
+                                    onAvatarClick={() => {
+                                        if (finalExpertPicture) {
+                                            setIsExpertPhotoOpen(true);
+                                        }
+                                    }}
+                                    onChatClick={handleChatClick}
+                                />
+                            </header>
 
                             {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
-                            <section className="rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
-                                    <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
+                                <section>
                                     {displayMainDescription ? (
-                                        <p className="sd-body whitespace-pre-line">
-                                            {displayMainDescription}
-                                        </p>
+                                        <>
+                                            <h2 className="hp-section-title mb-4">Acerca del servicio</h2>
+                                            <p className="sd-body whitespace-pre-line">
+                                                {displayMainDescription}
+                                            </p>
+                                        </>
                                     ) : null}
                                     {visibleDeliverableTypes.length > 0 ? (
                                         <ServiceDetailDeliverablesGuide
                                             items={finalDeliverableTypes}
                                             variant="inline"
+                                            presentation="chips"
+                                            showHeading={!displayMainDescription}
                                             className={displayMainDescription ? 'mt-5' : ''}
                                         />
                                     ) : null}
                                 </section>
                             )}
-
-                            <ServiceDetailReviewsPreview
-                              variant="desktop"
-                              reviews={finalReviews}
-                              averageRating={finalRating}
-                              onShowAll={() => setReviewsModalOpen(true)}
-                            />
                         </div>
+
+                        <aside
+                            className={`min-w-0 lg:col-start-2 lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}
+                        >
+                            {(() => {
+                                const desktopPriceInfo = getServicePriceInfo(finalPrice);
+                                return (
+                                    <article
+                                        className={`sd-aside-card flex flex-col ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
+                                    >
+                                        <div className="flex gap-3 pb-1">
+                                            {validImages[0] ? (
+                                                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
+                                                    <img
+                                                        src={validImages[0]}
+                                                        alt={finalServiceTitle}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : null}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="sd-aside-summary-title line-clamp-2">
+                                                    {finalServiceTitle}
+                                                </p>
+                                                <p className="sd-aside-summary-meta mt-0.5 truncate">
+                                                    con {finalExpertName}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <section className="shrink-0 border-t border-[#ebebeb] py-4">
+                                            <p className="text-xs leading-snug text-[#6a6a6a]">
+                                                Precio · impuestos incluidos
+                                            </p>
+                                            <p className="sd-aside-price mt-0.5">
+                                                {desktopPriceInfo.wasConverted ? (
+                                                    <>
+                                                        <span className="mr-0.5 text-base font-medium text-brand">
+                                                            ≈
+                                                        </span>
+                                                        {desktopPriceInfo.converted}
+                                                    </>
+                                                ) : (
+                                                    desktopPriceInfo.display
+                                                )}
+                                            </p>
+                                            {desktopPriceInfo.wasConverted ? (
+                                                <p className="mt-1 text-[11px] text-[#6a6a6a]">
+                                                    {desktopPriceInfo.sourceFormatted}
+                                                </p>
+                                            ) : null}
+                                        </section>
+
+                                        {finalAvailability && (
+                                            <section className="border-t border-[#ebebeb] py-4">
+                                                <ServiceDetailBookingMeta
+                                                    layout="card"
+                                                    showCoverage={false}
+                                                    showAvailabilityHint={false}
+                                                    availability={finalAvailability}
+                                                    timezone={finalService?.expert?.timezone}
+                                                    isOnVacation={finalService?.expert?.isOnVacation}
+                                                />
+                                            </section>
+                                        )}
+
+                                        <footer className="mt-auto space-y-2.5 border-t border-[#ebebeb] pt-4">
+                                            {isAuthenticated ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleReserveClick}
+                                                    className="sd-aside-cta"
+                                                >
+                                                    Reservar
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={openLoginForCheckout}
+                                                    className="sd-aside-cta"
+                                                >
+                                                    Inicia sesión para continuar
+                                                </button>
+                                            )}
+                                            <p className="flex items-center justify-center gap-1.5 text-center text-xs leading-relaxed text-[#6a6a6a]">
+                                                <Shield
+                                                    className="h-3.5 w-3.5 shrink-0 text-brand"
+                                                    aria-hidden
+                                                />
+                                                Pago retenido hasta aprobar el informe
+                                            </p>
+                                        </footer>
+                                    </article>
+                                );
+                            })()}
+                        </aside>
                     </div>
+
+                    <section className={SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS}>
+                        <ServiceDetailReviewsPreview
+                            variant="desktop"
+                            layout="full"
+                            reviews={finalReviews}
+                            averageRating={finalRating}
+                            onShowAll={() => setReviewsModalOpen(true)}
+                        />
+                    </section>
                 </div>
             </div>
 

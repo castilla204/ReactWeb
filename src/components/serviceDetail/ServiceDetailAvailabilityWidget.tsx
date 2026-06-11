@@ -10,7 +10,7 @@ export interface ServiceDetailAvailabilityWidgetProps {
   availability: ExpertAvailabilityInput;
   timezone?: string | null;
   isOnVacation?: boolean;
-  variant?: 'compact' | 'full' | 'sidebar';
+  variant?: 'compact' | 'full' | 'sidebar' | 'mobile';
   showHeading?: boolean;
   /** No muestra fila inferior (horario/zona); útil si el horario va en la cabecera */
   hideScheduleRow?: boolean;
@@ -33,12 +33,26 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const timeRange = formatAvailabilityTimeRange(availability.startTime, availability.endTime);
   const tzShort = timezone?.split('/').pop()?.replace(/_/g, ' ') ?? null;
   const cellSize =
-    variant === 'compact' || variant === 'sidebar'
-      ? 'h-8 min-w-0 flex-1 text-[11px]'
-      : 'h-7 w-7 text-xs';
+    variant === 'sidebar'
+      ? 'h-7 min-w-0 flex-1 text-[10px]'
+      : variant === 'mobile'
+        ? 'h-9 min-w-0 flex-1 text-xs'
+        : variant === 'compact'
+        ? 'h-8 min-w-0 flex-1 text-[11px]'
+        : 'h-7 w-7 text-xs';
+
+  const activeDayClass =
+    'bg-white font-semibold text-[#1c1c1c] ring-1 ring-inset ring-brand';
+  const inactiveDayClass = 'bg-[#fafafa] font-medium text-[#6a6a6a]';
+  const sidebarActiveDayClass =
+    'bg-white font-semibold text-[#1c1c1c] ring-1 ring-inset ring-brand';
+  const sidebarInactiveDayClass =
+    'bg-[#fafafa] font-medium text-[#9ca3af]';
+  const mobileActiveDayClass = 'bg-brand font-semibold text-white';
+  const mobileInactiveDayClass = 'bg-[#f0f0f0] font-medium text-[#b0b0b0]';
 
   const denseDaysRow = (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="flex min-w-0 flex-1 items-center justify-between gap-0.5">
       {EXPERT_WEEK_DAYS.map((day) => {
         const on = activeDays.has(day.key);
         return (
@@ -46,8 +60,8 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
             key={day.key}
             title={`${day.label}${on ? '' : ' — no disponible'}`}
             aria-pressed={on}
-            className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none ${
-              on ? 'bg-brand text-white' : 'bg-[#f0f0f0] text-[#6a6a6a]'
+            className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${
+              on ? mobileActiveDayClass : mobileInactiveDayClass
             }`}
           >
             {day.short}
@@ -59,25 +73,28 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
 
   const daysRow = (
     <div
-      className={`flex w-full items-stretch gap-px overflow-hidden rounded-lg bg-[#e8e8e8] p-px ${
-        variant === 'sidebar' ? 'rounded-xl' : 'border border-[#ebebeb] bg-[#fafafa] p-0.5 gap-0.5'
+      className={`flex w-full items-stretch overflow-hidden rounded-md ${
+        variant === 'sidebar'
+          ? 'gap-1 border border-[#e5e7eb] bg-white p-1'
+          : 'gap-0.5 rounded-lg border border-[#ebebeb] bg-[#fafafa] p-0.5'
       }`}
     >
       {EXPERT_WEEK_DAYS.map((day) => {
         const on = activeDays.has(day.key);
+        const isSidebar = variant === 'sidebar';
         return (
           <span
             key={day.key}
             title={`${day.label}${on ? '' : ' — no disponible'}`}
             aria-pressed={on}
-            className={`inline-flex items-center justify-center font-semibold leading-none transition-colors ${cellSize} ${
-              variant === 'sidebar'
+            className={`inline-flex items-center justify-center rounded leading-none transition-colors ${cellSize} ${
+              isSidebar
                 ? on
-                  ? 'bg-brand text-white'
-                  : 'bg-white text-[#6a6a6a]'
+                  ? sidebarActiveDayClass
+                  : sidebarInactiveDayClass
                 : on
-                  ? 'rounded-md bg-brand text-white'
-                  : 'rounded-md bg-white text-[#6a6a6a]'
+                  ? activeDayClass
+                  : inactiveDayClass
             }`}
           >
             {day.short}
@@ -94,7 +111,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const scheduleRow = (
     <div className="flex items-center justify-between gap-2">
       {timeRange ? (
-        <span className="text-sm font-semibold tabular-nums tracking-tight text-brand">
+        <span className="text-sm font-semibold tabular-nums tracking-tight text-[#1c1c1c]">
           {timeRange}
         </span>
       ) : (
@@ -129,14 +146,60 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
     );
   }
 
+  const circleDaysRow = (
+    <div className="flex w-full items-center justify-between gap-0.5">
+      {EXPERT_WEEK_DAYS.map((day) => {
+        const on = activeDays.has(day.key);
+        return (
+          <span
+            key={day.key}
+            title={`${day.label}${on ? '' : ' — no disponible'}`}
+            aria-pressed={on}
+            className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none ${
+              on ? mobileActiveDayClass : mobileInactiveDayClass
+            }`}
+          >
+            {day.short}
+          </span>
+        );
+      })}
+    </div>
+  );
+
   if (variant === 'sidebar') {
     return (
-      <div className={`w-full ${hideScheduleRow ? '' : 'space-y-2.5'} ${className}`} role="group" aria-label={ariaLabel}>
+      <div className={`w-full ${hideScheduleRow ? '' : 'space-y-2'} ${className}`} role="group" aria-label={ariaLabel}>
         {showHeading && (
-          <p className="mb-2 text-xs font-semibold text-[#1c1c1c]">Disponibilidad</p>
+          <p className="mb-2 text-xs font-medium text-[#6a6a6a]">Disponibilidad</p>
         )}
-        {daysRow}
+        {circleDaysRow}
         {!hideScheduleRow && scheduleRow}
+      </div>
+    );
+  }
+
+  if (variant === 'mobile') {
+    return (
+      <div
+        className={`flex w-full items-center justify-between gap-1.5 ${className}`}
+        role="group"
+        aria-label={ariaLabel}
+      >
+        {EXPERT_WEEK_DAYS.map((day) => {
+          const on = activeDays.has(day.key);
+          return (
+            <span
+              key={day.key}
+              title={`${day.label}${on ? '' : ' — no disponible'}`}
+              aria-pressed={on}
+              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] leading-none transition-colors ${
+                on ? mobileActiveDayClass : mobileInactiveDayClass
+              }`}
+            >
+              {day.short}
+            </span>
+          );
+        })}
       </div>
     );
   }
@@ -159,8 +222,8 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
               key={day.key}
               title={`${day.label}${on ? '' : ' — no disponible'}`}
               aria-pressed={on}
-              className={`inline-flex items-center justify-center rounded-md font-bold leading-none transition-colors ${cellSize} ${
-                on ? 'bg-brand text-white' : 'bg-white text-[#c4c4c4]'
+              className={`inline-flex items-center justify-center rounded-md font-semibold leading-none transition-colors ${cellSize} ${
+                on ? activeDayClass : 'bg-white font-medium text-[#c4c4c4]'
               }`}
             >
               {day.short}
@@ -174,7 +237,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
           <span className="hidden sm:inline text-[#d4d4d4]" aria-hidden>
             ·
           </span>
-          <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-brand">
+          <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-[#1c1c1c]">
             {timeRange}
           </span>
         </>
@@ -188,7 +251,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
 
       {isOnVacation && (
         <span
-          className="rounded bg-amber-100 px-1.5 py-px text-[10px] font-semibold text-amber-800"
+          className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
           title="El experto está de vacaciones"
         >
           Vac.

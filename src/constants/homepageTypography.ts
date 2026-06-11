@@ -120,9 +120,9 @@ export const hpType = {
   },
 } as const;
 
-/** Mismos márgenes que HomepageWall */
+/** Mismos márgenes que HomepageWall — desktop un poco más contenido */
 export const SD_PAGE_INNER_MAX_CLASS =
-  'mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-10';
+  'mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8';
 
 /** Cifras de cobertura en hero (alineado con FAQ / HomePresentation) */
 export const HP_HERO_COVERAGE = {
@@ -130,16 +130,44 @@ export const HP_HERO_COVERAGE = {
   expertsMin: 500,
 } as const;
 
-/** Contenido + barra lateral reserva (galería y aside comparten fila 1) */
+/** Contenido + aside (título dentro de la columna izquierda, alineado con aside) */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_auto] lg:gap-8 xl:gap-10';
+  'grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-12 lg:gap-y-0';
 
-/** Sticky del aside — header compacto (~52px) + 12px de aire */
-export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3.25rem+0.75rem)]';
+/** Ritmo vertical secciones desktop */
+export const SD_DESKTOP_SECTION_PY_CLASS = 'py-0';
+
+/** Bloque principal bajo el hero — aire entre bloques, sin líneas largas */
+export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-9';
+
+/** Fila experto desktop — plana, línea inferior (sin caja gris) */
+export const SD_DESKTOP_HOST_ROW_CLASS =
+  'mt-5 border-b border-[#ebebeb] pb-6';
+
+/** Reseñas desktop — ancho completo bajo el grid (sin borde aquí; lo pone el componente) */
+export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS = 'mt-10 w-full';
+
+/** Hero desktop 50/50 fotos + mapa — compacto, no dominar el viewport */
+export const SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS = 'h-[min(340px,32vh)]';
+export const SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX = 280;
+
+/** Aside reserva desktop */
+export const SD_ASIDE_KICKER_CLASS =
+  'text-xs font-medium leading-4 text-[#6a6a6a]';
+
+export const SD_ASIDE_SECTION_LABEL_CLASS =
+  'text-xs font-medium text-[#6a6a6a]';
+
+/** Sticky del aside — header ~56px + 16px de aire */
+export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3.5rem+1rem)]';
 
 /** Altura máx. aside reserva en desktop */
 export const SD_DESKTOP_ASIDE_MAX_H_CLASS =
-  'lg:max-h-[calc(100dvh-4.5rem)]';
+  'lg:max-h-[calc(100dvh-4.75rem)]';
+
+/** Mapa preview en aside desktop (paridad checkout h-36) */
+export const SD_ASIDE_MAP_PREVIEW_HEIGHT_CLASS = 'h-36';
+export const SD_ASIDE_MAP_PREVIEW_MIN_HEIGHT_PX = 144;
 
 /** Checkout desktop — ancho contenido tipo marketplace, márgenes estándar */
 export const SD_CHECKOUT_INNER_MAX_CLASS =
@@ -150,6 +178,9 @@ export const SD_CHECKOUT_GRID_CLASS =
 
 /** Gutter horizontal móvil — 20px (375px: aire sin apretar Chat/CTA) */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
+
+/** Solape de la card blanca sobre el hero */
+export const SD_MOBILE_SHEET_OVERLAP_CLASS = '-mt-10';
 
 /** Mapa preview en ficha móvil (cobertura) */
 export const SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS = 'h-24';
@@ -164,15 +195,20 @@ export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
 /** Ritmo vertical entre bloques de la sheet móvil */
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 
-/** Padding superior de la sheet tras el solape del hero (-mt-10 ya sube la card) */
-export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-5';
+/** Padding superior de la sheet tras el solape del hero */
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
 
 /** Aire bajo fila revisor cuando sigue disponibilidad */
 export const SD_MOBILE_HEADER_PB_CLASS = 'pb-3';
-/** Aire bajo pills de disponibilidad (el separador full-bleed va después) */
-export const SD_MOBILE_AVAILABILITY_PB_CLASS = 'pb-4';
+
+/** Bloque disponibilidad bajo el host */
+export const SD_MOBILE_META_SECTION_CLASS = 'border-b border-[#ebebeb] pb-3';
+
 /** Línea entre bloque reserva y tabs — siempre a ancho completo */
 export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'border-b border-[#ebebeb]';
+
+/** Margen bajo tabs en la sheet */
+export const SD_MOBILE_SHEET_BOTTOM_CLASS = 'mb-6';
 /** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
 export const SD_MOBILE_BOOKING_LABEL_CLASS =
   'text-xs font-medium leading-4 text-[#6a6a6a]';
@@ -234,12 +270,9 @@ export const CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS = 'bottom-[calc(65px+1.25rem)
 export const CHATBOT_FAB_BOTTOM_STANDALONE_CLASS =
   'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]';
 
-/**
- * Ficha servicio / checkout: huella de la barra Reservar más alta (ficha incluye
- * línea de escrow ≈ 6.5rem + safe-area) + 1rem de aire.
- */
+/** Ficha servicio: barra Reservar compacta + 1rem de aire */
 export const CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS =
-  'bottom-[calc(6.5rem+1rem+env(safe-area-inset-bottom,0px))]';
+  'bottom-[calc(5.25rem+1rem+env(safe-area-inset-bottom,0px))]';
 
 /** Esquina inferior derecha en móvil (alineado con gutter px-5) */
 export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-5';

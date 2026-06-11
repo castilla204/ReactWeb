@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Headset, X } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -49,6 +49,7 @@ export const ChatbotFab: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
   const [panelKey, setPanelKey] = useState(0);
+  const fabRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const { width } = useWindowSize();
   const isMobile = width === 0 || width < 768;
@@ -66,6 +67,21 @@ export const ChatbotFab: React.FC = () => {
     window.addEventListener('cookieConsentChanged', onConsent);
     return () => window.removeEventListener('cookieConsentChanged', onConsent);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.dataset.drawerOpen = 'chatbot';
+      fabRef.current?.blur();
+    } else if (document.body.dataset.drawerOpen === 'chatbot') {
+      delete document.body.dataset.drawerOpen;
+    }
+
+    return () => {
+      if (document.body.dataset.drawerOpen === 'chatbot') {
+        delete document.body.dataset.drawerOpen;
+      }
+    };
+  }, [isOpen]);
 
   const handleOpenChange = (open: boolean) => {
     if (open) setPanelKey((k) => k + 1);
@@ -89,12 +105,15 @@ export const ChatbotFab: React.FC = () => {
           open={isOpen}
           onOpenChange={handleOpenChange}
           shouldScaleBackground={false}
+          handleOnly
+          autoFocus
         >
           <DrawerContent
             className={cn(
               'flex min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 bg-white p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]',
               !keyboardLayout && 'h-[92dvh] max-h-[92dvh]',
             )}
+            noOverlay
             style={
               keyboardLayout
                 ? {
@@ -137,16 +156,19 @@ export const ChatbotFab: React.FC = () => {
 
       <div
         className={cn(
-          'fixed z-[55] flex flex-col items-end gap-3 font-display',
+          'fixed z-[55] flex flex-col items-end gap-3 font-display transition-opacity duration-200',
           CHATBOT_FAB_RIGHT_MOBILE_CLASS,
           'md:right-6',
           `${mobileBottomClass} md:bottom-6`,
-          isOpen && 'pointer-events-none opacity-0',
+          isOpen && 'pointer-events-none invisible opacity-0',
         )}
+        aria-hidden={isOpen}
       >
         <button
+          ref={fabRef}
           type="button"
           onClick={toggleOpen}
+          tabIndex={isOpen ? -1 : 0}
           className={cn(
             'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-white',
             'shadow-[0_4px_16px_hsl(var(--brand)/0.22)] ring-2 ring-white',
