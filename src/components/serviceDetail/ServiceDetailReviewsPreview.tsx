@@ -65,42 +65,39 @@ function MobileReviewsPreview({
     >
       <div className="sd-reviews-preview-summary-mobile">
         {showFeaturedBadge ? (
-          <p className="mb-3">
+          <p className="mb-2">
             <span className="inline-flex rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#1c1c1c]">
               Valoración destacada
             </span>
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-          <p className="text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
-          {!showHistogram ? (
-            <ServiceDetailReviewStars rating={averageRating} size="md" className="w-full basis-full" />
-          ) : null}
-        </div>
-
         {showHistogram ? (
-          <div className="mt-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+            <div className="shrink-0">
+              <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
+              <p className="mt-0.5 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+            </div>
             <ServiceDetailReviewHistogram
               distribution={distribution}
               total={reviews.length}
               variant="mobile"
               showPercent={false}
-              emphasis="prominent"
             />
           </div>
         ) : (
-          <p className="mt-3 text-xs leading-relaxed text-[#717171]">
-            {reviews.length === 1
-              ? 'Basada en una opinión verificada.'
-              : 'Aún hay pocas opiniones para mostrar la distribución por estrellas.'}
-          </p>
+          <div>
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
+              <p className="text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+            </div>
+            <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-2" />
+          </div>
         )}
       </div>
 
       {previewReviews.length > 0 ? (
-        <ul className="mt-6 w-full divide-y divide-[#ebebeb] border-t border-[#ebebeb]">
+        <ul className="mt-4 w-full divide-y divide-[#ebebeb] border-t border-[#ebebeb]">
           {previewReviews.map((review, idx) => {
             const key = review.id ?? `${review.createdAt}-${idx}`;
             return (
@@ -109,7 +106,7 @@ function MobileReviewsPreview({
                   review={review}
                   variant="mobile"
                   onClick={onShowAll}
-                  className="py-4"
+                  className="py-3"
                 />
               </li>
             );
@@ -117,7 +114,7 @@ function MobileReviewsPreview({
         </ul>
       ) : null}
 
-      <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-5 w-full justify-center">
+      <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-4 w-full justify-center">
         {ctaLabel}
       </button>
     </section>
