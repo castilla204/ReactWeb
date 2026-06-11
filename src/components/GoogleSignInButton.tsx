@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
@@ -12,8 +12,10 @@ import {
   renderGoogleButton,
   subscribeGoogleAuthSuccess,
 } from '../lib/googleIdentity';
+import { cn } from '../lib/utils';
+
 const GoogleIcon = ({ compact }: { compact?: boolean }) => (
-    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24">
+    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" aria-hidden>
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -27,9 +29,22 @@ interface GoogleSignInButtonProps {
     onSuccess?: () => void;
     /** Round 19: texto opcional del botón. Default "Iniciar Sesión" (legacy). Usar "Google" en grids 2-col. */
     label?: string;
+    /** Remonta el botón nativo cuando el contenedor es visible (p. ej. modal abierto). */
+    active?: boolean;
 }
 
-export const GoogleSignInButton = ({ className = '', variant = 'default', onSuccess, label = 'Iniciar Sesión' }: GoogleSignInButtonProps) => {
+const compactClasses =
+    'h-10 w-full text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 transition-colors';
+const defaultClasses =
+    'w-full h-11 text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 transition-colors';
+
+export const GoogleSignInButton = ({
+    className = '',
+    variant = 'default',
+    onSuccess,
+    label = 'Iniciar Sesión',
+    active = true,
+}: GoogleSignInButtonProps) => {
     const [isReady, setIsReady] = useState(false);
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
@@ -38,6 +53,32 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
     const buttonRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const isNative = Capacitor.isNativePlatform();
+    const shellClasses = variant === 'compact' ? compactClasses : defaultClasses;
+
+    const mountButton = useCallback(async () => {
+        if (isNative || !active || !buttonRef.current || !wrapperRef.current) return;
+
+        const ready = await ensureGoogleIdentityReady();
+        if (!ready || !buttonRef.current || !wrapperRef.current) {
+            logGoogleOriginHintOnce();
+            setIsReady(false);
+            return;
+        }
+
+        const width = Math.round(wrapperRef.current.getBoundingClientRect().width);
+        renderGoogleButton(buttonRef.current, {
+            type: 'standard',
+            theme: 'outline',
+            size: variant === 'compact' ? 'medium' : 'large',
+            text: 'signin_with',
+            width: width > 0 ? width : undefined,
+        });
+
+        window.setTimeout(() => {
+            const renderedButton = buttonRef.current?.querySelector('div[role="button"], iframe');
+            setIsReady(!!renderedButton);
+        }, 200);
+    }, [active, isNative, variant]);
 
     useEffect(() => {
         if (isNative) {
@@ -45,34 +86,19 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
             return;
         }
 
-        let cancelled = false;
-
-        const mountButton = async () => {
-            if (!buttonRef.current) return;
-
-            const ready = await ensureGoogleIdentityReady();
-            if (cancelled || !buttonRef.current) return;
-
-            if (!ready) {
-                logGoogleOriginHintOnce();
-                return;
+        if (!active) {
+            setIsReady(false);
+            if (buttonRef.current) {
+                buttonRef.current.innerHTML = '';
             }
+            return;
+        }
 
-            renderGoogleButton(buttonRef.current, {
-                type: 'standard',
-                theme: 'outline',
-                size: variant === 'compact' ? 'medium' : 'large',
-                text: 'signin_with',
-            });
-
-            window.setTimeout(() => {
-                if (cancelled) return;
-                const renderedButton = buttonRef.current?.querySelector('div[role="button"]');
-                setIsReady(!!renderedButton);
-            }, 150);
-        };
-
-        void mountButton();
+        let cancelled = false;
+        const timer = window.setTimeout(() => {
+            if (cancelled) return;
+            void mountButton();
+        }, 80);
 
         const unsubscribeSuccess = subscribeGoogleAuthSuccess(() => {
             onSuccess?.();
@@ -80,36 +106,35 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
 
         return () => {
             cancelled = true;
+            window.clearTimeout(timer);
             unsubscribeSuccess();
         };
-    }, [variant, isNative, onSuccess]);
+    }, [active, isNative, mountButton, onSuccess]);
 
-    // Función para autenticación nativa
     const handleNativeSignIn = async () => {
         try {
             setIsAuthenticating(true);
             setAuthStep('Iniciando sesión con Google...');
-            
+
             const result = await nativeAuthService.signInWithGoogle();
-            
+
             if (!result.success) {
                 throw new Error('Authentication failed');
             }
-            
+
             setAuthStep('Configurando sesión...');
             const token = authService.getAccessToken();
-            
+
             updateUser(result.user, token, () => {
                 console.log('✅ [GoogleSignIn Native] Usuario y token actualizados');
             });
-            
-            // Verificar MFA si es necesario
+
             if (token) {
                 setAuthStep('Verificando seguridad...');
                 const { RoleChecker } = await import('../utils/roleChecker');
                 const userRole = RoleChecker.getUserRole(token);
                 const requiresMfa = RoleChecker.requiresMfa(userRole);
-                
+
                 if (requiresMfa) {
                     const { mfaService } = await import('../services/mfaService');
                     try {
@@ -124,14 +149,13 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                     }
                 }
             }
-            
+
             setAuthStep('¡Inicio de sesión exitoso!');
-            if (onSuccess) {
-                onSuccess();
-            }
-        } catch (error: any) {
+            onSuccess?.();
+        } catch (error: unknown) {
             console.error('❌ [GoogleSignIn Native] Error:', error);
-            const errorMessage = error?.message || 'Error al iniciar sesión. Inténtalo de nuevo.';
+            const errorMessage =
+                error instanceof Error ? error.message : 'Error al iniciar sesión. Inténtalo de nuevo.';
             toast.error(errorMessage, { duration: 5000 });
             setAuthStep('');
         } finally {
@@ -139,96 +163,29 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
         }
     };
 
-    // Función para hacer clic en el botón renderizado de Google (igual que en el paso 2)
-    const handleCustomClick = () => {
-        // Si es nativo, usar autenticación nativa
-        if (isNative) {
-            handleNativeSignIn();
-            return;
-        }
-        
-        if (!isReady || !buttonRef.current) {
-            console.warn('Google Sign-In not ready yet');
-            return;
-        }
-
-        // Buscar el botón renderizado de Google (igual que en ServiceReviewPage)
-        const googleButton = buttonRef.current.querySelector('div[role="button"]') as HTMLElement;
-        if (googleButton) {
-            // Crear y dispatchar eventos para máxima compatibilidad (especialmente en móvil)
-            const events = ['mousedown', 'mouseup', 'click'];
-            events.forEach(eventType => {
-                const event = new MouseEvent(eventType, {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window
-                });
-                googleButton.dispatchEvent(event);
-            });
-            
-            // También hacer clic directo
-            googleButton.click();
-            
-            // Para móvil, intentar eventos táctiles también
-            if ('ontouchstart' in window) {
-                const touchEvents = ['touchstart', 'touchend'];
-                touchEvents.forEach(eventType => {
-                    try {
-                        const touchEvent = new TouchEvent(eventType, {
-                            bubbles: true,
-                            cancelable: true
-                        } as TouchEventInit);
-                        googleButton.dispatchEvent(touchEvent);
-                    } catch (e) {
-                        // TouchEvent puede no estar disponible en algunos navegadores
-                    }
-                });
-            }
-        } else {
-            // Fallback: usar prompt si el botón no está disponible
-            if (window.google?.accounts?.id?.prompt) {
-                window.google.accounts.id.prompt();
-            }
+    const handleWebFallbackClick = () => {
+        if (isReady) return;
+        void mountButton();
+        if (window.google?.accounts?.id?.prompt) {
+            window.google.accounts.id.prompt();
         }
     };
 
-    // Para ambas variantes, usar botón personalizado que activa el botón nativo oculto
-    // Esto asegura que funcione correctamente incluso cuando el componente está oculto inicialmente
-    const compactClasses =
-        'h-10 w-full text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
-    const defaultClasses =
-        'w-full h-11 text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
-
     return (
-        <div className="relative" ref={wrapperRef}>
-            {/* Botón nativo de Google oculto - siempre renderizado para funcionalidad */}
-            <div 
-                ref={buttonRef} 
-                className="absolute opacity-0 pointer-events-none" 
-                style={{ 
-                    position: 'absolute', 
-                    opacity: 0, 
-                    pointerEvents: 'none', 
-                    zIndex: -1,
-                    width: variant === 'compact' ? '1px' : '100%',
-                    height: variant === 'compact' ? '1px' : 'auto',
-                    overflow: 'hidden'
-                }}
-            ></div>
-            {/* Botón personalizado visible */}
-            <button
-                onClick={handleCustomClick}
-                disabled={!isReady || isAuthenticating}
-                className={`${variant === 'compact' ? compactClasses : defaultClasses} ${className} ${isAuthenticating ? 'opacity-75 cursor-wait' : ''}`}
+        <div className={cn('relative w-full', className)} ref={wrapperRef}>
+            {/* Capa visual — el clic real va al iframe de Google encima (web) */}
+            <div
+                className={cn(
+                    shellClasses,
+                    'pointer-events-none select-none',
+                    (!isReady || isAuthenticating) && 'opacity-60',
+                )}
+                aria-hidden
             >
                 {isAuthenticating ? (
                     <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span className="flex items-center gap-1">
-                            <span className="loading-dot" style={{ animationDelay: '0ms' }}>.</span>
-                            <span className="loading-dot" style={{ animationDelay: '150ms' }}>.</span>
-                            <span className="loading-dot" style={{ animationDelay: '300ms' }}>.</span>
-                        </span>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>{authStep || 'Conectando…'}</span>
                     </>
                 ) : (
                     <>
@@ -236,26 +193,44 @@ export const GoogleSignInButton = ({ className = '', variant = 'default', onSucc
                         <span className="truncate">{label}</span>
                     </>
                 )}
-            </button>
-            <style>{`
-                .loading-dot {
-                    display: inline-block;
-                    animation: wave 1.4s ease-in-out infinite;
-                    font-size: 1.2em;
-                    line-height: 1;
-                }
-                @keyframes wave {
-                    0%, 60%, 100% {
-                        transform: translateY(0);
-                        opacity: 0.7;
-                    }
-                    30% {
-                        transform: translateY(-10px);
-                        opacity: 1;
-                    }
-                }
-            `}</style>
+            </div>
+
+            {isNative ? (
+                <button
+                    type="button"
+                    onClick={handleNativeSignIn}
+                    disabled={isAuthenticating}
+                    className={cn(
+                        'absolute inset-0 z-[2] rounded-lg',
+                        isAuthenticating && 'cursor-wait opacity-75',
+                    )}
+                    aria-label={label}
+                />
+            ) : (
+                <>
+                    <div
+                        ref={buttonRef}
+                        className={cn(
+                            'absolute inset-0 z-[2] overflow-hidden opacity-[0.011]',
+                            '[&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full',
+                            !isReady && 'pointer-events-none',
+                        )}
+                        aria-hidden={isReady}
+                    />
+                    {!isReady && active && (
+                        <button
+                            type="button"
+                            onClick={handleWebFallbackClick}
+                            className="absolute inset-0 z-[1] rounded-lg"
+                            aria-label={`${label} — cargando`}
+                        />
+                    )}
+                </>
+            )}
+
+            {isAuthenticating && (
+                <div className="absolute inset-0 z-[3] cursor-wait rounded-lg bg-white/80" aria-hidden />
+            )}
         </div>
     );
 };
-
