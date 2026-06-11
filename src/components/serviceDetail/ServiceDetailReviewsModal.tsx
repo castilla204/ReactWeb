@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { useWindowSize } from '../../hooks/useWindowSize';
+import { SD_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
 import {
   ServiceDetailReviewsSection,
   type ServiceReviewItem,
@@ -28,62 +29,92 @@ interface ServiceDetailReviewsModalProps {
   onOpenReviewImage?: (reviewKey: string | number, imageIndex: number) => void;
 }
 
-function ReviewsSummaryBar({
+const DESKTOP_REVIEWS_PANEL_CLASS =
+  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(480px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-[#ebebeb] bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[480px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none';
+
+function ReviewsDrawerHeader({
+  expertName,
+  reviewCount,
+  onClose,
+  layout,
+}: {
+  expertName?: string;
+  reviewCount: number;
+  onClose: () => void;
+  layout: 'mobile' | 'desktop';
+}) {
+  const isDesktop = layout === 'desktop';
+  const subtitle =
+    expertName?.trim() ||
+    (reviewCount === 1 ? '1 opinión verificada' : `${reviewCount} opiniones verificadas`);
+
+  return (
+    <header
+      className={`sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#ebebeb] bg-white ${
+        isDesktop ? 'px-6 py-4' : 'px-5 pb-3 pt-1'
+      }`}
+    >
+      <div className="min-w-0 pr-3">
+        <p className="truncate text-lg font-semibold leading-tight text-[#222222]">Reseñas</p>
+        <p className="mt-0.5 truncate text-sm text-[#717171]">{subtitle}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#222222]"
+        aria-label="Cerrar reseñas"
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+    </header>
+  );
+}
+
+function ReviewsDrawerSummary({
   averageRating,
   reviewCount,
   reviews,
-  variant = 'inline',
 }: {
   averageRating: number;
   reviewCount: number;
   reviews: ServiceReviewItem[];
-  /** panel: drawer / panel lateral — tipografía cómoda, un solo borde bajo el resumen */
-  variant?: 'inline' | 'panel';
 }) {
   const display = formatRatingDisplay(averageRating);
   const distribution = useMemo(() => computeReviewRatingDistribution(reviews), [reviews]);
   const showBars = reviewCount >= 3;
-  const isPanel = variant === 'panel';
+  const opinionsLabel =
+    reviewCount === 1 ? '1 opinión verificada' : `${reviewCount} opiniones verificadas`;
 
   return (
-    <div
-      className={
-        isPanel
-          ? 'shrink-0 border-b border-[#e8e8e8] bg-white px-5 py-4 lg:px-6 lg:py-5'
-          : 'shrink-0 border-b border-[#e8e8e8] bg-[#fafafa] px-5 py-3.5'
-      }
-    >
-      <div className={`flex items-start ${isPanel ? 'gap-5' : 'gap-4'}`}>
-        <div className="shrink-0">
-          <p
-            className={
-              isPanel
-                ? 'text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-[#1c1c1c]'
-                : 'text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#1c1c1c]'
-            }
-          >
-            {display}
-          </p>
-          <ServiceDetailReviewStars
-            rating={averageRating}
-            size={isPanel ? 'lg' : 'md'}
-            className={isPanel ? 'mt-1.5' : 'mt-1'}
-          />
-          <p className={`mt-1.5 text-[#6a6a6a] ${isPanel ? 'text-sm' : 'text-xs'}`}>
-            {reviewCount === 1 ? '1 opinión verificada' : `${reviewCount} opiniones verificadas`}
-          </p>
-        </div>
-
-        {showBars ? (
-          <div className={`min-w-0 flex-1 ${isPanel ? 'pt-1' : 'pt-0.5'}`}>
-            <ServiceDetailReviewHistogram
-              distribution={distribution}
-              total={reviewCount}
-              compact={!isPanel}
-            />
+    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-4 lg:px-6">
+      {showBars ? (
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5">
+          <div className="shrink-0">
+            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-[#222222]">
+                {display}
+              </span>
+              <span className="text-xs leading-snug text-[#717171]">{opinionsLabel}</span>
+            </p>
           </div>
-        ) : null}
-      </div>
+          <ServiceDetailReviewHistogram
+            distribution={distribution}
+            total={reviewCount}
+            variant="mobile"
+            showPercent={false}
+          />
+        </div>
+      ) : (
+        <div>
+          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-[#222222]">
+              {display}
+            </span>
+            <span className="text-xs leading-snug text-[#717171]">{opinionsLabel}</span>
+          </p>
+          <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-2" />
+        </div>
+      )}
     </div>
   );
 }
@@ -94,12 +125,12 @@ function ReviewsListBody({
   expandedReviews,
   onToggleExpand,
   onOpenReviewImage,
-  density = 'default',
+  className = '',
 }: Pick<
   ServiceDetailReviewsModalProps,
   'reviews' | 'averageRating' | 'expandedReviews' | 'onToggleExpand' | 'onOpenReviewImage'
 > & {
-  density?: 'default' | 'compact' | 'drawer';
+  className?: string;
 }) {
   return (
     <ServiceDetailReviewsSection
@@ -110,8 +141,8 @@ function ReviewsListBody({
       onOpenReviewImage={onOpenReviewImage}
       hideHeading
       headingId="sd-reviews-modal-heading"
-      density={density}
-      className="!mt-0 !border-t-0 !pt-0"
+      density="drawer"
+      className={`!mt-0 !border-t-0 !pt-0 ${className}`}
     />
   );
 }
@@ -129,57 +160,42 @@ export const ServiceDetailReviewsModal: React.FC<ServiceDetailReviewsModalProps>
 }) => {
   const { width } = useWindowSize();
   const isMobile = width > 0 ? width < 1024 : false;
+  const handleClose = () => onOpenChange(false);
 
   if (isMobile) {
     return (
       <ResponsiveModal
         open={open}
         onOpenChange={onOpenChange}
-        title="Reseñas"
-        description={
-          expertName
-            ? `Opiniones sobre ${expertName}`
-            : 'Opiniones de clientes verificadas'
-        }
-        drawerMaxHeight="min(90dvh, calc(100dvh - env(safe-area-inset-bottom)))"
-        snapPoints={[0.9]}
-        drawerClassName="rounded-t-none shadow-[0_-4px_24px_rgba(0,0,0,0.12)]"
-        dialogHeaderClassName="border-[#e8e8e8] bg-white px-4 pb-2.5 pt-3.5"
-        dialogClassName="md:!max-w-[520px] rounded-xl border border-[#e8e8e8] shadow-[0_12px_48px_rgba(0,0,0,0.14)]"
+        drawerMaxHeight="min(92dvh, calc(100dvh - env(safe-area-inset-bottom)))"
+        snapPoints={[0.92]}
+        drawerClassName="rounded-t-[20px] border-0 shadow-[0_-8px_32px_rgba(0,0,0,0.14)]"
       >
-        <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#ebebeb] bg-white px-5 pb-3 pt-1">
-          <div className="min-w-0 pr-3">
-            <p className="truncate text-lg font-semibold leading-tight text-[#1c1c1c]">Reseñas</p>
-            {expertName ? (
-              <p className="truncate text-sm text-[#6a6a6a]">{expertName}</p>
-            ) : (
-              <p className="text-sm text-[#6a6a6a]">Opiniones de clientes verificadas</p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c]"
-            aria-label="Cerrar reseñas"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </header>
-        <ReviewsSummaryBar
-          averageRating={averageRating}
-          reviewCount={reviews.length}
-          reviews={reviews}
-          variant="panel"
-        />
-        <div className="px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-0">
-          <ReviewsListBody
-            reviews={reviews}
-            averageRating={averageRating}
-            expandedReviews={expandedReviews}
-            onToggleExpand={onToggleExpand}
-            onOpenReviewImage={onOpenReviewImage}
-            density="drawer"
+        <div className="flex min-h-0 flex-col bg-white font-display">
+          <ReviewsDrawerHeader
+            layout="mobile"
+            expertName={expertName}
+            reviewCount={reviews.length}
+            onClose={handleClose}
           />
+          {reviews.length > 0 ? (
+            <ReviewsDrawerSummary
+              averageRating={averageRating}
+              reviewCount={reviews.length}
+              reviews={reviews}
+            />
+          ) : null}
+          <div
+            className={`pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-1 ${SD_MOBILE_GUTTER_CLASS}`}
+          >
+            <ReviewsListBody
+              reviews={reviews}
+              averageRating={averageRating}
+              expandedReviews={expandedReviews}
+              onToggleExpand={onToggleExpand}
+              onOpenReviewImage={onOpenReviewImage}
+            />
+          </div>
         </div>
       </ResponsiveModal>
     );
@@ -190,49 +206,35 @@ export const ServiceDetailReviewsModal: React.FC<ServiceDetailReviewsModalProps>
       <DialogContent
         hideCloseButton
         overlayClassName="bg-black/40"
-        className="fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(480px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-[#ebebeb] bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[480px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none"
+        className={DESKTOP_REVIEWS_PANEL_CLASS}
       >
         <DialogTitle className="sr-only">Reseñas</DialogTitle>
         <DialogDescription className="sr-only">
           {reviews.length} opiniones de clientes
         </DialogDescription>
 
-        <header className="flex shrink-0 items-center justify-between border-b border-[#ebebeb] bg-white px-6 py-4">
-          <div className="min-w-0 pr-3">
-            <p className="truncate text-lg font-semibold leading-tight text-[#1c1c1c]">Reseñas</p>
-            {expertName ? (
-              <p className="truncate text-sm text-[#6a6a6a]">{expertName}</p>
-            ) : (
-              <p className="text-sm text-[#6a6a6a]">Opiniones de clientes verificadas</p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c]"
-            aria-label="Cerrar reseñas"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </header>
+        <ReviewsDrawerHeader
+          layout="desktop"
+          expertName={expertName}
+          reviewCount={reviews.length}
+          onClose={handleClose}
+        />
 
         {reviews.length > 0 ? (
-          <ReviewsSummaryBar
+          <ReviewsDrawerSummary
             averageRating={averageRating}
             reviewCount={reviews.length}
             reviews={reviews}
-            variant="panel"
           />
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 pb-8 pt-0">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 pb-8 pt-1">
           <ReviewsListBody
             reviews={reviews}
             averageRating={averageRating}
             expandedReviews={expandedReviews}
             onToggleExpand={onToggleExpand}
             onOpenReviewImage={onOpenReviewImage}
-            density="drawer"
           />
         </div>
       </DialogContent>

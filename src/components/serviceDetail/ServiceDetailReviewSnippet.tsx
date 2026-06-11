@@ -9,7 +9,7 @@ interface ServiceDetailReviewSnippetProps {
   review: ServiceReviewItem;
   className?: string;
   onClick?: () => void;
-  variant?: 'default' | 'mobile';
+  variant?: 'default' | 'mobile' | 'desktop';
 }
 
 export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProps> = ({
@@ -19,13 +19,14 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
   variant = 'default',
 }) => {
   const isMobile = variant === 'mobile';
+  const isDesktop = variant === 'desktop';
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set());
   const reviewText = (review.description || review.comment || '').trim();
   const clientName = review.client?.name?.trim() || 'Cliente';
   const initial = clientName.charAt(0).toUpperCase();
   const dateLabel = formatReviewMonthYear(review.createdAt);
   const rating = getReviewStarRating(review);
-  const images = review.imageUrls?.slice(0, 2) ?? [];
+  const images = review.imageUrls?.slice(0, 4) ?? [];
 
   const Wrapper = onClick ? 'button' : 'article';
   const wrapperProps = onClick
@@ -35,7 +36,9 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
         className: `sd-reviews-preview-item group w-full text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c] ${
           isMobile
             ? 'touch-manipulation active:bg-[#f9fafb]'
-            : 'hover:bg-[#fafafa]'
+            : isDesktop
+              ? 'rounded-none hover:opacity-90'
+              : 'hover:bg-[#fafafa]'
         } ${className}`,
       }
     : {
@@ -44,10 +47,10 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
 
   return (
     <Wrapper {...wrapperProps}>
-      <header className={`flex items-center gap-3 ${isMobile ? 'mb-2' : 'mb-2.5'}`}>
+      <header className={`flex items-center gap-2.5 ${isMobile ? 'mb-2' : 'mb-2'}`}>
         <Avatar
           className={`shrink-0 rounded-full border border-[#e8e8e8] ${
-            isMobile ? 'h-9 w-9' : 'h-10 w-10'
+            isMobile ? 'h-9 w-9' : isDesktop ? 'h-9 w-9' : 'h-10 w-10'
           }`}
         >
           <AvatarImage src={review.client?.profilePictureUrl} alt="" />
@@ -56,19 +59,29 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-[#1c1c1c]">{clientName}</p>
+          <p className="truncate text-sm font-semibold text-[#222222]">
+            {clientName}
+          </p>
           {dateLabel ? (
             <p className="text-xs text-[#6a6a6a]">{dateLabel}</p>
           ) : null}
         </div>
       </header>
 
-      <ServiceDetailReviewStars rating={rating} className={isMobile ? 'mb-1.5' : 'mb-2'} />
+      <ServiceDetailReviewStars
+        rating={rating}
+        size={isDesktop ? 'sm' : undefined}
+        className={isMobile ? 'mb-1.5' : 'mb-2'}
+      />
 
       {reviewText ? (
         <p
-          className={`text-sm leading-relaxed text-[#1c1c1c] ${
-            isMobile ? 'line-clamp-3' : 'line-clamp-4'
+          className={`leading-relaxed text-[#484848] ${
+            isDesktop
+              ? 'line-clamp-4 text-sm leading-[1.65]'
+              : isMobile
+                ? 'line-clamp-3 text-sm'
+                : 'line-clamp-4 text-sm text-[#1c1c1c]'
           }`}
         >
           {reviewText}
@@ -76,14 +89,14 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
       ) : null}
 
       {images.length > failedImages.size ? (
-        <div className={`flex gap-1.5 ${isMobile ? 'mt-2' : 'mt-2.5'}`}>
+        <div className={`sd-review-images-row ${isMobile ? 'mt-2' : 'mt-2.5'}`}>
           {images.map((img, idx) =>
             failedImages.has(idx) ? null : (
               <img
                 key={idx}
                 src={img}
                 alt=""
-                className={`rounded-md border border-[#e8e8e8] object-cover bg-[#f5f5f5] ${
+                className={`shrink-0 rounded-md border border-[#e8e8e8] object-cover bg-[#f5f5f5] ${
                   isMobile ? 'h-11 w-11' : 'h-12 w-12'
                 }`}
                 loading="lazy"

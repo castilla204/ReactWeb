@@ -439,13 +439,14 @@
     }
 
     .service-detail-desktop {
-        @apply text-[#1c1c1c] bg-[#fafafa];
+        @apply text-[#1c1c1c] bg-white;
     }
 
     .sd-page-title {
         @apply font-display text-xl font-semibold tracking-[-0.02em] text-[#1c1c1c] md:text-[1.65rem];
         text-wrap: balance;
     }
+
 
     .sd-section-label {
         @apply mb-1.5 text-sm font-semibold leading-5 text-[#1c1c1c];
@@ -454,6 +455,26 @@
     .sd-body {
         @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-[#1c1c1c];
         text-wrap: pretty;
+    }
+
+    .service-detail-desktop .sd-page-title {
+        @apply lg:text-[1.5rem] lg:leading-[1.28] text-[#222222];
+    }
+
+    .service-detail-desktop .sd-body {
+        @apply max-w-[62ch] text-[0.9375rem] leading-[1.7] text-[#484848];
+    }
+
+    .service-detail-desktop .hp-section-title {
+        @apply text-[1.125rem] leading-[1.35] font-semibold text-[#222222];
+    }
+
+    .service-detail-desktop .sd-rating-numeral {
+        @apply text-[1.625rem] md:text-[1.625rem];
+    }
+
+    .service-detail-desktop .sd-deliverable-list {
+        @apply max-w-lg rounded-xl border border-[#ebebeb] bg-[#fafafa];
     }
 
     /* Precio del aside / numeral de rating — único paso grande fuera de headline */
@@ -514,9 +535,9 @@
         @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#737373] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] hover:text-[#1c1c1c];
     }
 
-    /* Variante flotante móvil (sobre la foto del hero) — target táctil 44×44 */
+    /* Flotantes hero móvil — disco blanco plano (listing), sin borde tipo juguete */
     .sd-icon-btn-float {
-        @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/95 text-[#1c1c1c] shadow-[0_1px_4px_rgba(15,23,42,0.1)] backdrop-blur-sm transition-colors active:bg-[#f4f4f4];
+        @apply inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white p-0 text-[#222222] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-opacity active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
     }
 
     /* Galería móvil: puntos discretos sobre la foto */
@@ -710,33 +731,140 @@
     }
 
     .sd-reviews-preview {
-        @apply border-t border-[#e8e8e8] pt-5 lg:pt-6;
+        @apply border-t border-[#e8e8e8] py-8 lg:py-10;
     }
 
-    /* Móvil (tab Reseñas): plano salvo el widget resumen global arriba */
+    .sd-reviews-preview--desktop {
+        @apply border-0 py-0;
+    }
+
+    .sd-reviews-preview--desktop-full {
+        @apply border-t border-[#ebebeb] pt-10;
+    }
+
+    .sd-reviews-preview--desktop-full .sd-reviews-preview-summary {
+        @apply w-full;
+    }
+
+    .sd-reviews-preview-full-row {
+        @apply w-full;
+    }
+
+    /* Móvil scroll: plano, sin borde superior duplicado */
     .sd-reviews-preview--mobile {
-        @apply border-0 bg-transparent p-0 shadow-none;
+        @apply border-0 bg-transparent p-0 pt-0 shadow-none;
     }
 
     .sd-reviews-preview-summary-mobile {
-        @apply w-full border-0 bg-transparent p-0;
+        @apply w-full rounded-xl bg-[#fafafa] px-4 py-4;
+    }
+
+    .sd-reviews-mobile-score {
+        @apply font-display text-[3rem] font-semibold leading-none tracking-tight;
+    }
+
+    .sd-reviews-drawer-summary {
+        @apply w-full;
+    }
+
+    .sd-review-images-row {
+        @apply flex w-full max-w-full flex-row flex-nowrap items-center gap-1.5 overflow-x-auto [-webkit-overflow-scrolling:touch];
+    }
+
+    .sd-review-images-row__thumb {
+        @apply inline-flex shrink-0 p-0;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .sd-reviews-preview--mobile .sd-btn-secondary {
+        @apply h-11 text-sm;
     }
 
     .sd-reviews-preview-item {
         @apply block min-w-0;
     }
 
-    /* Radio 16px = token {rounded.xl} de DESIGN.md (Tailwind rounded-2xl) */
+    /* Aside reserva desktop — paridad checkout */
     .sd-aside-card {
-        @apply rounded-2xl border border-[#e8e8e8] bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)];
+        @apply rounded-2xl border border-[#e8e8e8] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.06)];
+    }
+
+    .service-detail-desktop .sd-aside-card {
+        @apply gap-0 p-5;
+    }
+
+    .sd-aside-price {
+        @apply font-display text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#222222];
+    }
+
+    .service-detail-desktop .sd-aside-price {
+        @apply text-[1.5rem];
+    }
+
+    .service-detail-desktop .sd-aside-summary-title {
+        @apply text-sm font-semibold leading-snug text-[#222222];
+    }
+
+    .service-detail-desktop .sd-aside-summary-meta {
+        @apply text-xs text-[#6a6a6a];
+    }
+
+    .sd-aside-cta {
+        @apply inline-flex h-10 w-full items-center justify-center rounded-full bg-brand text-sm font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.99] disabled:cursor-wait disabled:opacity-60;
+    }
+
+    .service-detail-desktop .sd-aside-cta {
+        @apply h-10 text-sm;
+    }
+
+    .service-detail-desktop .sd-deliverable-chip-surface {
+        @apply px-2.5 py-1.5 text-xs leading-snug;
+    }
+
+    .service-detail-desktop .sd-btn-secondary {
+        @apply h-10 px-4 text-sm;
+    }
+
+    .sd-gallery-shell {
+        @apply overflow-hidden rounded-xl bg-[#f0f0f0];
+    }
+
+    .sd-gallery-cell {
+        @apply group relative block h-full w-full cursor-pointer overflow-hidden bg-[#f0f0f0] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    .sd-gallery-cell-overlay {
+        @apply pointer-events-none absolute inset-0 z-[1] bg-black/0 transition-colors duration-200 group-hover:bg-black/[0.06];
+    }
+
+    .sd-deliverable-list {
+        @apply m-0 list-none divide-y divide-[#ebebeb] border-y border-[#ebebeb] p-0;
+    }
+
+    .sd-deliverable-list-item-btn {
+        @apply flex w-full items-center gap-3 py-3.5 text-left transition-colors hover:bg-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+    }
+
+    .sd-deliverable-list-icon {
+        @apply h-4 w-4 shrink-0 text-[#6a6a6a];
+    }
+
+    .sd-deliverable-list-label {
+        @apply min-w-0 flex-1 text-sm font-medium leading-snug text-[#1c1c1c];
+    }
+
+    .sd-deliverable-list-chevron {
+        @apply h-4 w-4 shrink-0 text-[#9ca3af];
     }
 
     .sd-tab {
-        @apply flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#6a6a6a] font-normal transition-colors;
+        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#717171] font-normal transition-colors;
     }
 
     .sd-tab[data-active='true'] {
-        @apply font-semibold text-[#1c1c1c] border-brand;
+        @apply -mb-px border-[#222222] font-semibold text-[#222222];
     }
 
     .sd-tablist {
@@ -744,6 +872,13 @@
     }
 
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .service-detail-desktop [class*='hover:brightness'] {
+        transition: none !important;
+    }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
     [data-homepage-hero],

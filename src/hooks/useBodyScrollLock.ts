@@ -1,6 +1,39 @@
 import { useEffect, useRef } from 'react';
 import { isFilePickerActive, extendFilePickerGuardIfDrawerOpen } from '../utils/filePickerGuard';
 
+function isElementVisible(el: HTMLElement): boolean {
+    const styles = window.getComputedStyle(el);
+    return (
+        styles.display !== 'none' &&
+        styles.visibility !== 'hidden' &&
+        styles.opacity !== '0'
+    );
+}
+
+/** Detecta capas modales abiertas (Radix Dialog, Vaul drawer, drawers con dataset). */
+function hasOpenModalLayers(): boolean {
+    if (document.body.dataset.drawerOpen) {
+        return true;
+    }
+
+    const selectors = [
+        '[role="dialog"][data-state="open"]:not([aria-hidden="true"])',
+        '[data-vaul-drawer][data-state="open"]',
+        '[data-vaul-overlay][data-state="open"]',
+    ];
+
+    for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        for (const el of elements) {
+            if (isElementVisible(el as HTMLElement)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 /**
  * Hook para manejar el bloqueo del scroll del body de forma segura
  * Previene que el body quede bloqueado si el componente se desmonta inesperadamente
@@ -71,10 +104,7 @@ export function useBodyScrollSafety() {
                 return;
             }
 
-            const hasOpenModals = document.querySelectorAll(
-                '[role="dialog"][data-state="open"]:not([aria-hidden="true"]), ' +
-                '[data-vaul-drawer][data-state="open"]:not([aria-hidden="true"])'
-            ).length;
+            const hasOpenModals = hasOpenModalLayers();
             
             // Verificar overlays visibles de Stripe
             const stripeOverlays = document.querySelectorAll('[class*="fixed"][class*="inset-0"][class*="z-[9999]"]');
@@ -100,7 +130,7 @@ export function useBodyScrollSafety() {
                 }
             });
             
-            if (hasOpenModals === 0 && !hasVisibleStripeOverlay && !hasVisibleOtherOverlay && document.body.style.overflow === 'hidden') {
+            if (!hasOpenModals && !hasVisibleStripeOverlay && !hasVisibleOtherOverlay && document.body.style.overflow === 'hidden') {
                 // Si no hay modales abiertos pero el body está bloqueado, restaurarlo
                 console.warn('[BodyScrollSafety] Restoring body scroll - no modals detected');
                 document.body.style.overflow = '';
@@ -169,13 +199,10 @@ export function useBodyScrollSafety() {
                     }
                 });
                 
-                // Verificar si hay modales realmente abiertos
-                const hasRealModals = document.querySelectorAll(
-                    '[role="dialog"][data-state="open"]:not([aria-hidden="true"]), ' +
-                    '[data-vaul-drawer][data-state="open"]:not([aria-hidden="true"])'
-                ).length;
-                
-                if ((hasBlockingOverlay || hasRealModals === 0) && document.body.style.overflow === 'hidden') {
+                const hasRealModals = hasOpenModalLayers();
+
+                // No tocar el scroll mientras un modal/drawer está abierto
+                if (!hasRealModals && (hasBlockingOverlay || document.body.style.overflow === 'hidden')) {
                     console.warn('[BodyScrollSafety] Detected blocked click - restoring body scroll');
                     restoreBody();
                 }

@@ -208,19 +208,20 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
   }, [latitude, longitude, rangeKm, ready, fitPadding, maxFitZoom]);
 
   const isFlush = className.includes('rounded-none');
+  const fillsParent = className.includes('h-full');
 
   return (
     <div
       ref={wrapperRef}
       className={`relative overflow-hidden ${
-        isPreview ? 'bg-[#eef2f5]' : 'bg-[#dce9f2]'
+        isPreview ? 'bg-[#f5f5f5]' : 'bg-[#eef2f2]'
       } ${
         isFlush
           ? isPreview
             ? 'border-0'
             : 'border-[#ebebeb]'
-          : 'rounded-lg border border-[#dbe8f5]'
-      } ${isPreview && !isFlush ? '' : ''} ${className}`.trim()}
+          : 'rounded-lg border border-[#e8e8e8]'
+      } ${fillsParent ? 'min-h-0' : ''} ${className}`.trim()}
     >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {isPreview && (
@@ -290,13 +291,15 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
     );
   }
 
+  const fillsParent = className.includes('h-full');
+
   return (
     <>
-      <div className="relative">
+      <div className={`relative ${fillsParent ? 'h-full min-h-0' : ''}`}>
         <div
           role="button"
           tabIndex={0}
-          className="w-full cursor-pointer"
+          className={`w-full cursor-pointer ${fillsParent ? 'h-full min-h-0' : ''}`}
           onClick={openFullscreen}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {

@@ -56,6 +56,8 @@ export function normalizeDeliverableTypes(
 interface ServiceDetailDeliverablesGuideProps {
   items: ServiceDeliverableType[] | unknown[];
   variant?: 'overlay' | 'inline';
+  /** chips = pills (móvil/checkout); list = filas editoriales (ficha desktop) */
+  presentation?: 'chips' | 'list';
   showHeading?: boolean;
   className?: string;
 }
@@ -134,6 +136,7 @@ function DeliverableDetailContent({
 export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesGuideProps> = ({
   items,
   variant = 'overlay',
+  presentation = 'chips',
   showHeading = true,
   className = '',
 }) => {
@@ -202,6 +205,31 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             >
               <Icon className="sd-deliverable-chip-surface-icon" aria-hidden />
               <span>{label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const surfaceList = (
+    <ul className="sd-deliverable-list">
+      {visible.map((dt, index) => {
+        const label = getDeliverableLabel(dt);
+        const Icon = getDeliverableIcon(dt);
+        return (
+          <li key={dt.id ?? `${label}-${index}`}>
+            <button
+              type="button"
+              className="sd-deliverable-list-item-btn"
+              onClick={(e) => openDetail(dt, e)}
+              aria-haspopup="dialog"
+              aria-expanded={open && active?.id === dt.id}
+              aria-label={`Ver qué incluye: ${label}`}
+            >
+              <Icon className="sd-deliverable-list-icon" aria-hidden />
+              <span className="sd-deliverable-list-label">{label}</span>
+              <ChevronRight className="sd-deliverable-list-chevron" aria-hidden />
             </button>
           </li>
         );
@@ -288,11 +316,11 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
         aria-label={showHeading ? undefined : 'Qué incluye este servicio'}
       >
         {showHeading ? (
-          <p id="sd-deliverables-heading" className="sd-section-label">
+          <p id="sd-deliverables-heading" className="sd-section-label mb-3">
             Qué incluye
           </p>
         ) : null}
-        {surfaceChipList}
+        {presentation === 'list' ? surfaceList : surfaceChipList}
       </section>
       {detailModal}
     </>
