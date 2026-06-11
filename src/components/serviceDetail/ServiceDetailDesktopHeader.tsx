@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Heart, Star, User } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { isAdmin } from '../../utils/admin';
 import { LoginModal } from '../LoginModal';
@@ -12,14 +12,8 @@ import erizoImg from '../../media/erizo.png';
 
 interface ServiceDetailDesktopHeaderProps {
   onBack: () => void;
-  title: string;
-  expertName: string;
-  locationLabel?: string;
-  averageRating?: number;
-  reviewCount?: number;
   isFavorite: boolean;
   onToggleFavorite: () => void;
-  onReviewsClick?: () => void;
 }
 
 const ServiceDetailNotificationsBell: React.FC = () => {
@@ -52,14 +46,8 @@ const ServiceDetailNotificationsBell: React.FC = () => {
 
 export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProps> = ({
   onBack,
-  title,
-  expertName,
-  locationLabel,
-  averageRating = 0,
-  reviewCount = 0,
   isFavorite,
   onToggleFavorite,
-  onReviewsClick,
 }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -82,14 +70,11 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
     }
   };
 
-  const metaLine = [expertName, locationLabel].filter(Boolean).join(' · ');
-  const hasReviews = averageRating > 0 && reviewCount > 0;
-
   return (
     <>
       <header className="sticky top-0 z-50 hidden border-b border-[#e8e8e8]/70 bg-[#fafafa]/92 backdrop-blur-md lg:block">
         <div className={SD_PAGE_INNER_MAX_CLASS}>
-          <div className="flex min-h-[52px] items-center justify-between gap-3 pt-2">
+          <div className="flex min-h-[48px] items-center justify-between gap-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               <button type="button" onClick={onBack} className="sd-icon-btn shrink-0" aria-label="Volver">
                 <ArrowLeft className="h-4 w-4" strokeWidth={2.1} />
@@ -150,33 +135,6 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
                 <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
                 <span className="hidden xl:inline">{isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}</span>
               </button>
-            </div>
-          </div>
-
-          <div className="pb-5 pt-3">
-            <h1 className="sd-page-title">{title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#6a6a6a]">
-              {metaLine ? <span>{metaLine}</span> : null}
-              {hasReviews && metaLine ? (
-                <span className="text-[#d4d4d4]" aria-hidden>
-                  ·
-                </span>
-              ) : null}
-              {hasReviews ? (
-                <button
-                  type="button"
-                  onClick={onReviewsClick}
-                  className="inline-flex items-center gap-1 transition-colors hover:text-[#1c1c1c]"
-                >
-                  <Star className="h-3.5 w-3.5 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
-                  <span className="font-semibold tabular-nums text-[#1c1c1c]">
-                    {averageRating.toFixed(1).replace('.', ',')}
-                  </span>
-                  <span className="underline-offset-2 hover:underline">
-                    ({reviewCount} reseña{reviewCount !== 1 ? 's' : ''})
-                  </span>
-                </button>
-              ) : null}
             </div>
           </div>
         </div>

@@ -2,12 +2,13 @@ import React, { Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
-import { HeroExpertCutout } from './HeroExpertCutout';
 import { HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
 import {
+  DESKTOP_HERO_BANNER_MASK,
   DESKTOP_HERO_MAP_OVERLAY_PADDING,
   DESKTOP_HERO_SOFT_OVAL,
 } from '../constants/homepageHeroMap';
+import { HeroBannerPhoto } from './HeroBannerPhoto';
 import { HomepageHeroTrustLines } from './HomepageHeroTrustLines';
 
 const ExpertsAreaMap = lazy(() =>
@@ -29,7 +30,7 @@ interface HomepageDesktopKayakProps {
 }
 
 const HeroMapLoadingPlaceholder: React.FC = () => (
-  <div className="absolute inset-0 bg-[#fafafa] overflow-hidden" aria-hidden>
+  <div className="absolute inset-0 overflow-hidden bg-[#fafafa]" aria-hidden>
     <div className="absolute inset-0 animate-pulse bg-[#f0f4f7]/80" />
   </div>
 );
@@ -62,17 +63,6 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             ipLandingResolved={ipLandingResolved}
             hideCornerStats
             showCityMarkers={false}
-            /* 🌍 Red global de expertos como decoración del hero:
-                 - `showExpertSparkles`: activa los destellos de colores (estaba apagado por defecto).
-                 - `sparkleRegion='global'`: usa la lista completa (~130 ciudades) en vez del subset Europa.
-                 - `sparkleDensity='spread'`: rejilla 14×10 en globo / 10×6 en mercator → puntos
-                   repartidos por todo el canvas, no amontonados en Iberia.
-                 El culling de hemisferio se hace en expertSparkleVisibility — ningún punto del lado
-                 opuesto del planeta se pinta durante el intro globe.
-                 🔧 v4: `sparkleTwinkle` retirado porque las keyframes empiezan Y terminan en
-                 opacity:0, lo que hacía a la mayoría de puntos invisibles durante gran parte del
-                 ciclo. Para retomar el parpadeo habría que rehacer las keyframes (mínimo 0.6 de
-                 opacidad) — pendiente para otra iteración. */
             showExpertSparkles
             sparkleRegion="global"
             sparkleDensity="spread"
@@ -88,12 +78,17 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
 
       <div className="pointer-events-none relative z-10 h-full w-full overflow-visible">
         <div
-          className="pointer-events-none absolute bottom-0 z-[6]"
-          style={{ left: expertLeft }}
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 z-[6] overflow-hidden"
+          style={{
+            width: textBlockLeft,
+            WebkitMaskImage: DESKTOP_HERO_BANNER_MASK,
+            maskImage: DESKTOP_HERO_BANNER_MASK,
+          }}
         >
-          <HeroExpertCutout
-            preset="desktop-hero"
-            className="!h-[400px] md:!h-[460px] lg:!h-[500px] xl:!h-[520px]"
+          <HeroBannerPhoto
+            className="h-full w-full -scale-x-100"
+            imgClassName="h-full w-full min-w-[520px] object-cover object-right"
           />
         </div>
 

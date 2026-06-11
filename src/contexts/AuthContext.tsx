@@ -55,13 +55,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         try {
                             const renewed = await authService.refreshAccessToken();
                             if (!renewed) {
-                                console.log('❌ [AuthContext] No se pudo renovar el token - Refresh token expirado o inválido');
-                                setUser(null);
-                                setIsAuthenticated(false);
-                                setIsLoading(false);
-                                return;
+                                // Distinguir fallo DEFINITIVO de TRANSITORIO: si el refresh fue
+                                // rechazado por el servidor (401), authService ya borró los tokens.
+                                // Si falló por red/5xx (p.ej. cold start de Render al abrir la app),
+                                // los tokens siguen ahí y authService reintenta con backoff —
+                                // restauramos la sesión optimistamente en vez de forzar re-login.
+                                if (!authService.getRefreshToken()) {
+                                    console.log('❌ [AuthContext] No se pudo renovar el token - Refresh token expirado o inválido');
+                                    setUser(null);
+                                    setIsAuthenticated(false);
+                                    setIsLoading(false);
+                                    return;
+                                }
+                                console.warn('⚠️ [AuthContext] Renovación fallida por error transitorio; sesión restaurada, authService reintentará.');
+                            } else {
+                                console.log('✅ [AuthContext] Token renovado exitosamente');
                             }
-                            console.log('✅ [AuthContext] Token renovado exitosamente');
                         } catch (error) {
                             console.error('❌ [AuthContext] Error al renovar token:', error);
                             setUser(null);

@@ -9,6 +9,7 @@ import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import erizoImg from '../media/erizo.png';
 import {
   SD_PAGE_INNER_MAX_CLASS,
+  SD_CHECKOUT_INNER_MAX_CLASS,
   MAP_STEP_TOPBAR_SHELL_CLASS,
   MAP_STEP_TOPBAR_INNER_CLASS,
   MAP_STEP_TOPBAR_PILL_ACTIVE,
@@ -224,8 +225,8 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   );
 
   const leftControl = onBack ? (
-    isCheckout && pageTitle ? (
-      <div className="flex min-w-0 items-center gap-3">
+    isCheckout ? (
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onBack}
@@ -234,9 +235,26 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         >
           <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
         </button>
-        <h1 className="truncate font-display text-lg font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]">
-          {pageTitle}
-        </h1>
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/');
+          }}
+          className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-0.5"
+          aria-label="Inspecciono — inicio"
+        >
+          <img
+            src={erizoImg}
+            alt=""
+            className="h-8 w-8 -scale-x-100 shrink-0 object-contain sm:h-9 sm:w-9"
+            style={{ imageRendering: '-webkit-optimize-contrast' }}
+          />
+          <span className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[#222]">
+            Inspecciono
+          </span>
+        </a>
+        {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
       </div>
     ) : isMap ? (
       <button
@@ -359,7 +377,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
               ? MAP_STEP_TOPBAR_INNER_CLASS
               : isMap
                 ? 'flex min-h-12 w-full items-center justify-between gap-3 px-4 md:px-5 lg:px-6'
-                : `${isCheckout ? 'max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8' : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
+                : `${isCheckout ? `${SD_CHECKOUT_INNER_MAX_CLASS} mx-auto` : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
           }
         >
           {leftControl}

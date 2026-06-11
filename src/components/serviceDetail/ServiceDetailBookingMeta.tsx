@@ -9,6 +9,7 @@ import {
   SD_MOBILE_BOOKING_DIVIDER_CLASS,
   SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS,
   SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX,
+  SD_MOBILE_BOOKING_LABEL_CLASS,
   SD_MOBILE_META_CLASS,
   SD_MOBILE_SECTION_TITLE_CLASS,
 } from '../../constants/homepageTypography';
@@ -154,36 +155,28 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     )
   );
 
+  const tzShort = timezone?.split('/').pop()?.replace(/_/g, ' ') ?? null;
+
   const availabilityBlock = renderAvailability && availability && (
     isMinimal ? (
       <div
-        className={`${minimalPadX} ${
+        className={`space-y-3 ${minimalPadX} ${
           renderCoverage && coverageFirst ? SD_MOBILE_BOOKING_DIVIDER_CLASS : ''
         }`}
+        aria-label={[
+          'Disponibilidad',
+          availabilityTimeRange,
+          tzShort,
+          isOnVacation ? 'vacaciones' : null,
+        ]
+          .filter(Boolean)
+          .join(', ')}
       >
-        <div
-          className="flex items-center justify-between gap-2"
-          aria-label={[
-            'Disponibilidad',
-            availabilityTimeRange,
-            isOnVacation ? 'vacaciones' : null,
-          ]
-            .filter(Boolean)
-            .join(', ')}
-        >
-          <ServiceDetailAvailabilityWidget
-            availability={availability}
-            timezone={timezone}
-            isOnVacation={isOnVacation}
-            variant="sidebar"
-            showHeading={false}
-            hideScheduleRow
-            dense
-            className="min-w-0 flex-1"
-          />
-          <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className={SD_MOBILE_BOOKING_LABEL_CLASS}>Disponibilidad</span>
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
             {availabilityTimeRange ? (
-              <span className="text-xs font-semibold tabular-nums text-brand">
+              <span className="whitespace-nowrap text-xs font-semibold tabular-nums text-brand">
                 {availabilityTimeRange}
               </span>
             ) : null}
@@ -197,6 +190,15 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
             ) : null}
           </div>
         </div>
+        <ServiceDetailAvailabilityWidget
+          availability={availability}
+          timezone={timezone}
+          isOnVacation={isOnVacation}
+          variant="sidebar"
+          showHeading={false}
+          hideScheduleRow
+          className="w-full"
+        />
       </div>
     ) : (
       <section className="w-full">

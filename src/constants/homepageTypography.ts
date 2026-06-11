@@ -130,19 +130,26 @@ export const HP_HERO_COVERAGE = {
   expertsMin: 500,
 } as const;
 
-/** Contenido + barra lateral reserva */
+/** Contenido + barra lateral reserva (galería y aside comparten fila 1) */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 xl:gap-10';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_auto] lg:gap-8 xl:gap-10';
 
-/** Checkout desktop: más ancho útil y columnas más unidas */
+/** Sticky del aside — header compacto (~52px) + 12px de aire */
+export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3.25rem+0.75rem)]';
+
+/** Altura máx. aside reserva en desktop */
+export const SD_DESKTOP_ASIDE_MAX_H_CLASS =
+  'lg:max-h-[calc(100dvh-4.5rem)]';
+
+/** Checkout desktop — ancho contenido tipo marketplace, márgenes estándar */
 export const SD_CHECKOUT_INNER_MAX_CLASS =
-  'mx-auto w-full max-w-[min(90rem,calc(100vw-2.5rem))] px-4 md:px-6 lg:px-8';
+  'mx-auto w-full max-w-[72rem] px-5 lg:px-8';
 
 export const SD_CHECKOUT_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6 xl:gap-7';
+  'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6';
 
-/** Gutter horizontal móvil — 24px, alineado con cards desktop (px-5+) */
-export const SD_MOBILE_GUTTER_CLASS = 'px-6';
+/** Gutter horizontal móvil — 20px (375px: aire sin apretar Chat/CTA) */
+export const SD_MOBILE_GUTTER_CLASS = 'px-5';
 
 /** Mapa preview en ficha móvil (cobertura) */
 export const SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS = 'h-24';
@@ -158,19 +165,18 @@ export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 
 /** Padding superior de la sheet tras el solape del hero (-mt-10 ya sube la card) */
-export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-5';
 
-/**
- * Ritmo vertical sheet móvil — 3 bandas, no padding simétrico en meta:
- * 1) revisor + disponibilidad (un solo bloque, sin hueco entre ellos)
- * 2) tabs (solo su propio py)
- * 3) panel (pt moderado + space-y entre subsecciones)
- */
+/** Aire bajo fila revisor cuando sigue disponibilidad */
 export const SD_MOBILE_HEADER_PB_CLASS = 'pb-3';
-/** Solo aire bajo pills, antes de la línea; sin pt (pegado al revisor) */
-export const SD_MOBILE_META_SECTION_CLASS = 'border-b border-[#ebebeb] pb-3';
-export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4';
-export const SD_MOBILE_SHEET_BOTTOM_CLASS = 'mb-6';
+/** Aire bajo pills de disponibilidad (el separador full-bleed va después) */
+export const SD_MOBILE_AVAILABILITY_PB_CLASS = 'pb-4';
+/** Línea entre bloque reserva y tabs — siempre a ancho completo */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'border-b border-[#ebebeb]';
+/** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
+export const SD_MOBILE_BOOKING_LABEL_CLASS =
+  'text-xs font-medium leading-4 text-[#6a6a6a]';
+export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4 pb-6';
 
 /**
  * Escala tipográfica móvil — tokens DESIGN.md:
@@ -235,8 +241,8 @@ export const CHATBOT_FAB_BOTTOM_STANDALONE_CLASS =
 export const CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS =
   'bottom-[calc(6.5rem+1rem+env(safe-area-inset-bottom,0px))]';
 
-/** Esquina inferior derecha en móvil (gutter px-6, igual que el layout) */
-export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-6';
+/** Esquina inferior derecha en móvil (alineado con gutter px-5) */
+export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-5';
 
 /** CTA barra inferior móvil (más alto y legible que h-12 genérico) */
 export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
