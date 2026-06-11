@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-    Star,
     ArrowLeft,
     ChevronLeft,
     ChevronRight,
     X,
     Shield,
     Heart,
-    MessageCircle,
     Lock,
     BadgeCheck,
     Image,
@@ -16,7 +14,6 @@ import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import { useServices, Service } from '../hooks/useServices';
-import { useServiceTypes } from '../hooks/useServiceTypes';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { persistServiceReturnPath, resolveServiceReturnPath } from '../utils/servicePageNavigation';
@@ -38,12 +35,14 @@ import {
   SD_MOBILE_HEADER_PB_CLASS,
   SD_MOBILE_INSET_STACK_CLASS,
   SD_MOBILE_META_CLASS,
-  SD_MOBILE_META_SECTION_CLASS,
+  SD_MOBILE_AVAILABILITY_PB_CLASS,
   SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
-  SD_MOBILE_SHEET_BOTTOM_CLASS,
+  SD_MOBILE_SHEET_DIVIDER_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_PAGE_GRID_CLASS,
+  SD_DESKTOP_ASIDE_MAX_H_CLASS,
+  SD_DESKTOP_STICKY_TOP_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../constants/homepageTypography';
 import { ServiceDetailDesktopGallery } from '../components/serviceDetail/ServiceDetailDesktopGallery';
@@ -112,7 +111,6 @@ export function ServiceReviewPage({
     const [showPreHireChat, setShowPreHireChat] = useState(false);
     const [showLoginDialog, setShowLoginDialog] = useState(false);
     const carouselRef = useRef<HTMLDivElement>(null);
-    const { serviceTypes } = useServiceTypes();
     
     // Obtener token y userId para el chat
     const token = authService.getAccessToken() || '';
@@ -335,11 +333,6 @@ export function ServiceReviewPage({
     const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
     const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
 
-    const serviceTypeName =
-        finalService?.serviceTypeName ||
-        serviceTypes.find(st => st.id === (finalService?.serviceTypeId || serviceTypeId))?.name ||
-        'Inspección pre-compra';
-
     // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
     // muestran el mismo precio del mismo servicio con el mismo formato (16,50 €).
@@ -519,7 +512,7 @@ export function ServiceReviewPage({
                 <div className="relative w-full">
                     {/* Botones sobre la foto: absolutos dentro del hero → se van con el scroll,
                         nunca colisionan con la sheet. Target táctil 44×44. */}
-                    <div className={`absolute left-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
+                    <div className={`absolute left-5 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
                         <button
                             onClick={onBack}
                             className="sd-icon-btn-float"
@@ -529,7 +522,7 @@ export function ServiceReviewPage({
                         </button>
                     </div>
                     {isAuthenticated ? (
-                        <div className={`absolute right-4 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
+                        <div className={`absolute right-5 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
                             <button
                                 onClick={() => setIsFavorite(!isFavorite)}
                                 className="sd-icon-btn-float"
@@ -626,15 +619,12 @@ export function ServiceReviewPage({
                         className={`relative -mt-10 z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
                     >
                         <div className={SD_MOBILE_GUTTER_CLASS}>
-                        <h1 className="sd-page-title mb-3">
-                            {serviceTypeName}
-                        </h1>
                         <header
                             className={
-                                finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-3'
+                                finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-5'
                             }
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-start gap-2.5">
                                 <button
                                     type="button"
                                     aria-label={`${finalExpertName} es revisor verificado de inspecciono.com`}
@@ -651,33 +641,16 @@ export function ServiceReviewPage({
                                             {finalExpertName.charAt(0)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <span
-                                        className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
-                                        aria-hidden
-                                    >
-                                        <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
-                                    </span>
                                 </button>
                                 <div className="min-w-0 flex-1">
                                     <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>
                                         {finalExpertName}
                                     </p>
                                     <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 ${SD_MOBILE_META_CLASS}`}>
-                                        <span>Revisor verificado</span>
-                                        {finalRating > 0 && finalReviews.length > 0 ? (
-                                            <>
-                                                <span className="text-[#d4d4d4]" aria-hidden>
-                                                    ·
-                                                </span>
-                                                <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-[#1c1c1c]">
-                                                    <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
-                                                    {finalRating.toFixed(1).replace('.', ',')}
-                                                    <span className="font-normal text-[#6a6a6a]">
-                                                        ({finalReviews.length})
-                                                    </span>
-                                                </span>
-                                            </>
-                                        ) : null}
+                                        <span className="inline-flex items-center gap-1">
+                                            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2.5} aria-hidden />
+                                            Revisor verificado
+                                        </span>
                                     </p>
                                 </div>
                                 <Button
@@ -685,18 +658,17 @@ export function ServiceReviewPage({
                                     onClick={handleChatClick}
                                     variant="outline"
                                     size="sm"
-                                    className="h-9 shrink-0 gap-1.5 rounded-full border-[#e8e8e8] px-3 text-sm font-medium text-[#1c1c1c]"
+                                    className="mt-0.5 h-9 shrink-0 rounded-full border-[#e8e8e8] px-3.5 text-sm font-medium text-[#1c1c1c]"
                                 >
-                                    <MessageCircle className="h-4 w-4" />
                                     Chat
                                 </Button>
                             </div>
                         </header>
 
-                            {finalAvailability && (
+                            {finalAvailability ? (
                                 <section
                                     aria-label="Información para reservar"
-                                    className={SD_MOBILE_META_SECTION_CLASS}
+                                    className={SD_MOBILE_AVAILABILITY_PB_CLASS}
                                 >
                                     <ServiceDetailBookingMeta
                                         layout="minimal"
@@ -710,27 +682,29 @@ export function ServiceReviewPage({
                                         showAvailabilityHint={false}
                                     />
                                 </section>
-                            )}
+                            ) : null}
+                        </div>
 
-                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} mt-0 w-full`}>
-                            <div
-                                className="sd-tablist"
-                                role="tablist"
-                                aria-label="Información del servicio"
-                            >
-                            <button
+                        <div className={SD_MOBILE_SHEET_DIVIDER_CLASS} aria-hidden />
+
+                        <div
+                            className="sd-tablist w-full"
+                            role="tablist"
+                            aria-label="Información del servicio"
+                        >
+                                <button
                                     type="button"
                                     role="tab"
                                     id="sd-tab-about"
                                     aria-controls="sd-panel-about"
                                     aria-selected={activeTab === 'about'}
                                     data-active={activeTab === 'about' ? 'true' : undefined}
-                                onClick={() => setActiveTab('about')}
+                                    onClick={() => setActiveTab('about')}
                                     className="sd-tab"
                                 >
-                                Acerca del servicio
-                            </button>
-                                    <button 
+                                    Acerca del servicio
+                                </button>
+                                <button
                                     type="button"
                                     role="tab"
                                     id="sd-tab-reviews"
@@ -742,13 +716,14 @@ export function ServiceReviewPage({
                                 >
                                     Reseñas
                                     {finalReviews.length > 0 ? (
-                                        <span className="ml-1 text-xs font-normal tabular-nums text-[#6a6a6a]">
+                                        <span className="text-xs font-normal tabular-nums text-[#6a6a6a]">
                                             {finalReviews.length}
                                         </span>
                                     ) : null}
                                 </button>
-                                                </div>
+                        </div>
 
+                        <div className={SD_MOBILE_GUTTER_CLASS}>
                             {activeTab === 'about' && (
                                 <div
                                     id="sd-panel-about"
@@ -778,8 +753,8 @@ export function ServiceReviewPage({
                                             mapVariant="preview"
                                         />
                                     ) : null}
-                            </div>
-                        )}
+                                </div>
+                            )}
 
                             {activeTab === 'reviews' && (
                                 <div
@@ -796,12 +771,11 @@ export function ServiceReviewPage({
                                         averageRating={finalRating}
                                         onShowAll={() => setReviewsModalOpen(true)}
                                     />
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                </div>
+                            )}
                         </div>
-                                                                                    </div>
-                                                                            </div>
+                    </div>
+            </div>
 
                 <MobileReserveFooter
                     price={getMobileFooterPriceLine(finalPrice)}
@@ -838,121 +812,30 @@ export function ServiceReviewPage({
             <div className="service-detail-desktop hidden lg:block min-h-screen bg-[#fafafa]">
                 <ServiceDetailDesktopHeader
                     onBack={onBack}
-                    title={serviceTypeName}
-                    expertName={finalExpertName}
-                    locationLabel={
-                        [expertCity, expertCountry ? getCountryName(expertCountry) : '']
-                            .filter(Boolean)
-                            .join(', ') || undefined
-                    }
-                    averageRating={finalRating}
-                    reviewCount={finalReviews.length}
                     isFavorite={isFavorite}
                     onToggleFavorite={() => setIsFavorite(!isFavorite)}
-                    onReviewsClick={() => setReviewsModalOpen(true)}
                 />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-2 lg:pt-4`}>
-                    <div className={`${SD_PAGE_GRID_CLASS}`}>
-                        <div className="min-w-0 space-y-5 lg:space-y-6">
-                            <div className="relative">
-                    <ServiceDetailDesktopGallery
-                        images={validImages}
-                        onOpen={handleImageClick}
-                        loadingImages={loadingImages}
-                        failedImages={failedImages}
-                        onImageError={handleImageError}
-                        onImageLoad={handleImageLoad}
-                        onImageLoadStart={handleImageLoadStart}
-                    />
-                            </div>
-
-                            {/* Experto */}
-                            <div className="flex items-center gap-3 rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
-                                <button
-                                    type="button"
-                                    className="relative shrink-0"
-                                    onClick={() => finalExpertPicture && setIsExpertPhotoOpen(true)}
-                                    aria-label={`Ver foto de ${finalExpertName}`}
-                                >
-                                    <Avatar className="h-11 w-11 rounded-full ring-2 ring-white">
-                                        <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
-                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-white text-sm">
-                                            {finalExpertName.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <span
-                                        className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
-                                        aria-hidden
-                                    >
-                                        <BadgeCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
-                                    </span>
-                                </button>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-[#1c1c1c]">{finalExpertName}</p>
-                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
-                                        <span className="inline-flex items-center gap-1">
-                                            <BadgeCheck className="h-3 w-3 text-brand" aria-hidden />
-                                            Revisor verificado
-                                        </span>
-                                        {finalRating > 0 && finalReviews.length > 0 ? (
-                                            <>
-                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
-                                                <span className="inline-flex items-center gap-0.5 tabular-nums text-[#1c1c1c]">
-                                                    <Star className="h-3 w-3 fill-[#1c1c1c] text-[#1c1c1c]" aria-hidden />
-                                                    {finalRating.toFixed(1).replace('.', ',')}
-                                                    <span className="font-normal text-[#6a6a6a]">
-                                                        ({finalReviews.length})
-                                                    </span>
-                                                </span>
-                                            </>
-                                        ) : null}
-                                        {finalCompletedSearches > 0 ? (
-                                            <>
-                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
-                                                <span>{finalCompletedSearches} trabajos</span>
-                                            </>
-                                        ) : null}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleChatClick}
-                                    className="sd-btn-secondary shrink-0 rounded-full px-3.5"
-                                >
-                                    <MessageCircle className="h-4 w-4" />
-                                    <span className="hidden xl:inline">Chat</span>
-                                </button>
-                            </div>
-
-                            {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
-                            <section className="rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
-                                    <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
-                                    {displayMainDescription ? (
-                                        <p className="sd-body whitespace-pre-line">
-                                            {displayMainDescription}
-                                        </p>
-                                    ) : null}
-                                    {visibleDeliverableTypes.length > 0 ? (
-                                        <ServiceDetailDeliverablesGuide
-                                            items={finalDeliverableTypes}
-                                            variant="inline"
-                                            className={displayMainDescription ? 'mt-5' : ''}
-                                        />
-                                    ) : null}
-                                </section>
-                            )}
-
-                            <ServiceDetailReviewsPreview
-                              variant="desktop"
-                              reviews={finalReviews}
-                              averageRating={finalRating}
-                              onShowAll={() => setReviewsModalOpen(true)}
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-3 lg:pt-4`}>
+                    <div className={SD_PAGE_GRID_CLASS}>
+                        <div className="relative min-w-0 lg:col-start-1 lg:row-start-1">
+                            <ServiceDetailDesktopGallery
+                                images={validImages}
+                                onOpen={handleImageClick}
+                                loadingImages={loadingImages}
+                                failedImages={failedImages}
+                                onImageError={handleImageError}
+                                onImageLoad={handleImageLoad}
+                                onImageLoadStart={handleImageLoadStart}
                             />
                         </div>
 
-                        <aside className="lg:sticky lg:top-[7.5rem] lg:self-start">
-                            <article className="sd-aside-card flex max-h-[calc(100dvh-8.5rem)] flex-col overflow-y-auto">
+                        <aside
+                            className={`min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}
+                        >
+                            <article
+                                className={`sd-aside-card flex flex-col overflow-y-auto ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
+                            >
                                 <section className="shrink-0">
                                     <p className="sd-section-label mb-2">Tu reserva</p>
                                     <div className="flex items-baseline gap-2">
@@ -989,26 +872,92 @@ export function ServiceReviewPage({
                                 )}
 
                                 <footer className="mt-4 shrink-0 border-t border-[#e8e8e8] pt-4">
-                                {isAuthenticated ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleReserveClick}
-                                        className="sd-btn-primary w-full min-w-0"
-                                    >
-                                        Reservar
-                                    </button>
-                                ) : (
+                                    {isAuthenticated ? (
                                         <button
                                             type="button"
-                                        onClick={openLoginForCheckout}
-                                        className="sd-btn-primary w-full min-w-0"
+                                            onClick={handleReserveClick}
+                                            className="sd-btn-primary w-full min-w-0"
                                         >
-                                        Inicia sesión para reservar
+                                            Reservar
                                         </button>
-                                )}
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={openLoginForCheckout}
+                                            className="sd-btn-primary w-full min-w-0"
+                                        >
+                                            Inicia sesión para reservar
+                                        </button>
+                                    )}
                                 </footer>
                             </article>
                         </aside>
+
+                        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2 lg:space-y-6">
+                            {/* Experto */}
+                            <div className="flex items-center gap-3 rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
+                                <button
+                                    type="button"
+                                    className="relative shrink-0"
+                                    onClick={() => finalExpertPicture && setIsExpertPhotoOpen(true)}
+                                    aria-label={`Ver foto de ${finalExpertName}`}
+                                >
+                                    <Avatar className="h-11 w-11 rounded-full ring-2 ring-white">
+                                        <AvatarImage src={finalExpertPicture} alt={finalExpertName} />
+                                        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-white text-sm">
+                                            {finalExpertName.charAt(0)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </button>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-[#1c1c1c]">{finalExpertName}</p>
+                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#6a6a6a]">
+                                        <span className="inline-flex items-center gap-1">
+                                            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2.5} aria-hidden />
+                                            Revisor verificado
+                                        </span>
+                                        {finalCompletedSearches > 0 ? (
+                                            <>
+                                                <span className="text-[#d4d4d4]" aria-hidden>·</span>
+                                                <span>{finalCompletedSearches} trabajos</span>
+                                            </>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleChatClick}
+                                    className="sd-btn-secondary shrink-0 rounded-full px-3.5"
+                                >
+                                    Chat
+                                </button>
+                            </div>
+
+                            {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
+                            <section className="rounded-2xl border border-[#e8e8e8] bg-white p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)]">
+                                    <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
+                                    {displayMainDescription ? (
+                                        <p className="sd-body whitespace-pre-line">
+                                            {displayMainDescription}
+                                        </p>
+                                    ) : null}
+                                    {visibleDeliverableTypes.length > 0 ? (
+                                        <ServiceDetailDeliverablesGuide
+                                            items={finalDeliverableTypes}
+                                            variant="inline"
+                                            className={displayMainDescription ? 'mt-5' : ''}
+                                        />
+                                    ) : null}
+                                </section>
+                            )}
+
+                            <ServiceDetailReviewsPreview
+                              variant="desktop"
+                              reviews={finalReviews}
+                              averageRating={finalRating}
+                              onShowAll={() => setReviewsModalOpen(true)}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

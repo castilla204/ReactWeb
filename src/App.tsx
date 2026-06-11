@@ -120,7 +120,7 @@ const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
 const AppContent: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, isAuthenticated, signOut } = useAuth();
+    const { user, isAuthenticated, signOut, setUser } = useAuth();
     
     // Debug de ruta (opt-in en desarrollo)
     useEffect(() => {
@@ -156,6 +156,9 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         const handleSessionExpired = (event: Event) => {
             const detail = (event as CustomEvent<{ returnTo?: string }>).detail;
+            // Limpiar también el estado React: sin esto el header seguía mostrando al
+            // usuario como logueado sobre tokens ya borrados.
+            setUser(null);
             toast.error('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
             // Solo redirigir si no estamos ya en una ruta pública sin auth
             const currentPath = window.location.pathname;
@@ -169,7 +172,7 @@ const AppContent: React.FC = () => {
         };
         window.addEventListener('auth:session-expired', handleSessionExpired);
         return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
-    }, [navigate]);
+    }, [navigate, setUser]);
 
     // Inicializar servicios de seguridad
     useEffect(() => {
