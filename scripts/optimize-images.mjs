@@ -81,6 +81,7 @@ for (const [file, maxSide, kind] of targets) {
 // overhead del contenedor.
 const heroVariants = [
   { src: `${PUBLIC}/hero-expert.webp`, base: `${PUBLIC}/hero-expert` },
+  { src: `${MEDIA}/imagenbanner.webp`, base: `${MEDIA}/imagenbanner` },
 ];
 
 const kbCount = (n) => `${Math.round(n / 1024)}KB`;

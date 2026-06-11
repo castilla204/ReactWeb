@@ -35,8 +35,15 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
   }, [messages, isLoading, error]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+    if (isDesktop) inputRef.current?.focus();
   }, []);
+
+  const handleInputFocus = () => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+    });
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -219,6 +226,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
             rows={1}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            onFocus={handleInputFocus}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -227,7 +235,8 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
             }}
             placeholder="Escribe tu pregunta…"
             disabled={isLoading}
-            className="min-h-[44px] max-h-24 flex-1 resize-none rounded-2xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5 text-sm leading-5 text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/35 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15 disabled:opacity-60"
+            enterKeyHint="send"
+            className="min-h-[44px] max-h-24 flex-1 resize-none rounded-2xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5 text-base leading-5 text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/35 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15 disabled:opacity-60 md:text-sm"
             aria-label="Tu pregunta"
           />
           <button

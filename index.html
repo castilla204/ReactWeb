@@ -2,7 +2,7 @@
 <html lang="es-ES">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 
     <!-- Security Meta Tags -->
     <!-- ✅ X-Frame-Options se configura en headers HTTP (nginx.conf y vite.config.ts), no funciona como meta tag -->
@@ -153,19 +153,7 @@
 
     <link rel="prefetch" href="/geo/ne_110m_land.geojson" as="fetch" crossorigin />
 
-    <!-- ⚡ Preload del hero (candidato a LCP) SOLO en la home. Preload **solo AVIF**:
-         el navegador que no lo soporta ignora el preload (warning benigno) y
-         descargará el WebP del <picture> al parsear el JSX — ~6% de tráfico
-         total. Inyectar dos preloads aquí duplicaría bytes para el 94% restante. -->
-    <script>
-      if (location.pathname === '/' || location.pathname === '/explorar') {
-        var lAvif = document.createElement('link');
-        lAvif.rel = 'preload'; lAvif.as = 'image';
-        lAvif.href = '/hero-mobile-inspector.jpg'; lAvif.type = 'image/jpeg';
-        lAvif.fetchPriority = 'high';
-        document.head.appendChild(lAvif);
-      }
-    </script>
+    <!-- Hero LCP: imagen importada vía Vite (src/media/imagenbanner.png) con fetchPriority en el componente. -->
 
     <!-- ✅ DNS Prefetch para hosts terciarios (promovidos a preconnect bajo demanda) -->
     <link rel="dns-prefetch" href="https://accounts.google.com" />

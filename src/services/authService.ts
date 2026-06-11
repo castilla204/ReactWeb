@@ -19,6 +19,8 @@ class AuthService {
     private refreshTimeout: NodeJS.Timeout | null = null;
     // ✅ BEST PRACTICE: Prevenir race conditions en token refresh
     private refreshPromise: Promise<boolean> | null = null;
+    // Nº de reintentos consecutivos de refresh fallidos por causa transitoria (red/5xx)
+    private refreshRetryCount = 0;
     // ✅ Cola de requests pendientes esperando verificación MFA
     private pendingMfaRequests: Array<{ url: string; options: RequestInit; resolve: (response: Response) => void; reject: (error: any) => void }> = [];
 
@@ -30,6 +32,26 @@ class AuthService {
         if (typeof window !== 'undefined') {
             this.initFromStorage();
             this.setupAxiosInterceptor();
+
+            // 🛡️ Sincronización entre pestañas: con rotación de refresh tokens, si otra
+            // pestaña renueva, la copia en memoria de ESTA pestaña queda obsoleta y su
+            // próximo refresh usaría un token ya rotado (→ reuse-detection en el backend).
+            // El evento 'storage' solo dispara en las pestañas que NO hicieron el cambio.
+            window.addEventListener('storage', (e) => {
+                if (e.key !== null && e.key !== 'accessToken' && e.key !== 'refreshToken') return;
+                const access = localStorage.getItem('accessToken');
+                const refresh = localStorage.getItem('refreshToken');
+                this.accessToken = access;
+                this.refreshToken = refresh;
+                if (access && refresh) {
+                    this.refreshRetryCount = 0;
+                    this.scheduleTokenRefresh();
+                } else if (this.refreshTimeout) {
+                    // Otra pestaña cerró sesión: detener renovaciones aquí también.
+                    clearTimeout(this.refreshTimeout);
+                    this.refreshTimeout = null;
+                }
+            });
         }
     }
 
@@ -127,6 +149,20 @@ class AuthService {
         // Guardar también en el formato antiguo para compatibilidad
         localStorage.setItem('authToken', accessToken);
 
+        // Persistir la expiración del access token — AuthContext la lee al restaurar
+        // sesión (antes esta clave se leía pero NUNCA se escribía: check muerto).
+        try {
+            const decoded: any = jwtDecode(accessToken);
+            if (decoded?.exp) {
+                localStorage.setItem('accessTokenExpiresAt', new Date(decoded.exp * 1000).toISOString());
+            }
+        } catch {
+            // Token no decodificable: el flujo de refresh sigue funcionando sin la clave.
+        }
+
+        // Un set de tokens exitoso resetea el backoff de reintentos de refresh.
+        this.refreshRetryCount = 0;
+
         if (typeof window !== 'undefined') {
             window.dispatchEvent(
                 new CustomEvent('auth:token-updated', {
@@ -137,11 +173,14 @@ class AuthService {
     }
 
     getAccessToken(): string | null {
-        return this.accessToken || localStorage.getItem('accessToken');
+        // localStorage primero: es la fuente compartida entre pestañas. La copia en
+        // memoria solo es fallback (p.ej. localStorage bloqueado). Con el orden inverso,
+        // una pestaña seguía usando tokens ya rotados por otra.
+        return localStorage.getItem('accessToken') || this.accessToken;
     }
 
     getRefreshToken(): string | null {
-        return this.refreshToken || localStorage.getItem('refreshToken');
+        return localStorage.getItem('refreshToken') || this.refreshToken;
     }
 
     // ============================================
@@ -195,7 +234,10 @@ class AuthService {
             try {
                 const refreshToken = this.getRefreshToken();
                 if (!refreshToken) {
-                    throw new Error('No refresh token available');
+                    // Sin refresh token no hay sesión que mantener: limpieza silenciosa
+                    // (no es una "sesión expirada" — nunca hubo sesión completa).
+                    this.clearTokens();
+                    return false;
                 }
 
                 const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.auth.refreshToken}`, {
@@ -207,7 +249,7 @@ class AuthService {
                 });
 
                 if (!response.ok) {
-                    if (response.status === 401) {
+                    if (response.status === 401 || response.status === 403) {
                         // 🛡️ Round 15 — R6 FIX: indicar 'session_expired' para que clearTokens
                         // emita el evento global que App.tsx escuchará → toast + redirect /login
                         // con returnTo. Antes era silencioso ("dejar que los componentes manejen
@@ -216,14 +258,29 @@ class AuthService {
                         this.clearTokens('session_expired');
                         return false;
                     }
-                    throw new Error('Failed to refresh token');
+                    // 🛡️ FIX sesión-zombi: un 5xx/429 (cold start de Render, gateway timeout)
+                    // NO invalida el refresh token — sigue siendo válido en el servidor.
+                    // Antes este caso acababa en logout() → tokens borrados sin evento → UI
+                    // "autenticada" donde toda llamada daba 401 hasta cerrar sesión a mano.
+                    // Conservamos los tokens y reintentamos con backoff.
+                    console.warn(`[AuthService] Refresh devolvió ${response.status}; reintentando con backoff.`);
+                    this.scheduleRefreshRetry();
+                    return false;
                 }
 
                 const data = await response.json();
 
-                if (data.accessToken && data.refreshToken) {
+                // 🛡️ FIX CRÍTICO: la API serializa en PascalCase (Program.cs:
+                // PropertyNamingPolicy = null → "AccessToken"/"RefreshToken"). Este código
+                // solo leía camelCase → la condición NUNCA se cumplía y el refresh llevaba
+                // roto desde siempre: cada sesión moría al expirar el access token y el
+                // usuario tenía que cerrar sesión y volver a entrar. Aceptamos ambos casings.
+                const newAccessToken = data.accessToken ?? data.AccessToken;
+                const newRefreshToken = data.refreshToken ?? data.RefreshToken;
+
+                if (newAccessToken && newRefreshToken) {
                     // ✅ Backend devuelve NUEVOS access y refresh tokens (rotación)
-                    this.setTokens(data.accessToken, data.refreshToken);
+                    this.setTokens(newAccessToken, newRefreshToken);
 
                     // Programar próxima renovación
                     this.scheduleTokenRefresh();
@@ -232,10 +289,16 @@ class AuthService {
                     return true;
                 }
 
+                console.warn('[AuthService] Respuesta de refresh sin tokens; reintentando con backoff.');
+                this.scheduleRefreshRetry();
                 return false;
             } catch (error) {
-                console.error('Error refreshing token:', error);
-                this.logout();
+                // Error de red (offline, timeout, DNS): igual que el 5xx — el token sigue
+                // siendo válido; conservar sesión y reintentar. NUNCA logout() aquí: además
+                // de borrar tokens localmente, revocaba en el servidor un refresh token
+                // perfectamente válido por un fallo puntual de red.
+                console.warn('[AuthService] Refresh falló por error de red; reintentando con backoff.', error);
+                this.scheduleRefreshRetry();
                 return false;
             } finally {
                 // Limpiar promise después de un delay para permitir que otros requests la reutilicen
@@ -246,6 +309,26 @@ class AuthService {
         })();
 
         return this.refreshPromise;
+    }
+
+    /**
+     * Reintento con backoff para fallos transitorios del refresh. Mientras el access
+     * token siga vigente las llamadas funcionan con normalidad; si ya expiró, el
+     * interceptor de 401 también dispara el refresh en la siguiente llamada del usuario.
+     * No hay tope de reintentos: si el refresh token deja de ser válido el servidor
+     * responderá 401 y clearTokens('session_expired') cortará el ciclo.
+     */
+    private scheduleRefreshRetry() {
+        const delays = [5_000, 15_000, 30_000, 60_000, 120_000];
+        const delay = delays[Math.min(this.refreshRetryCount, delays.length - 1)];
+        this.refreshRetryCount++;
+
+        if (this.refreshTimeout) {
+            clearTimeout(this.refreshTimeout);
+        }
+        this.refreshTimeout = setTimeout(() => {
+            this.refreshAccessToken();
+        }, delay);
     }
 
     // ============================================

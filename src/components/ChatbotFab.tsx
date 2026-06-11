@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { ChatbotPanel } from './supportChat/ChatbotPanel';
 import { Drawer, DrawerContent } from './ui/drawer';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
+import { useMobileDrawerKeyboard } from '../hooks/useMobileDrawerKeyboard';
 import { useWindowSize } from '../hooks/useWindowSize';
 import {
   CHATBOT_FAB_BOTTOM_STANDALONE_CLASS,
@@ -13,7 +14,13 @@ import {
   CHATBOT_FAB_RIGHT_MOBILE_CLASS,
 } from '../constants/homepageTypography';
 
-const HIDDEN_PATH_PREFIXES = ['/admin', '/chat-pre-contratacion', '/mis-mensajes'];
+const HIDDEN_PATH_PREFIXES = [
+  '/admin',
+  '/chat-pre-contratacion',
+  '/mis-mensajes',
+  '/service/',
+  '/checkout/',
+];
 
 const TAB_BAR_PATHS = new Set(['/', '/explorar', '/busquedas', '/como-funciona']);
 
@@ -45,6 +52,7 @@ export const ChatbotFab: React.FC = () => {
   const location = useLocation();
   const { width } = useWindowSize();
   const isMobile = width === 0 || width < 768;
+  const keyboardLayout = useMobileDrawerKeyboard(isMobile && isOpen);
 
   const isHidden = HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path));
   const mobileBottomClass = getMobileBottomClass(location.pathname);
@@ -83,7 +91,21 @@ export const ChatbotFab: React.FC = () => {
           shouldScaleBackground={false}
         >
           <DrawerContent
-            className="flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 bg-white p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]"
+            className={cn(
+              'flex min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 bg-white p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]',
+              !keyboardLayout && 'h-[92dvh] max-h-[92dvh]',
+            )}
+            style={
+              keyboardLayout
+                ? {
+                    height: keyboardLayout.height,
+                    maxHeight: keyboardLayout.height,
+                    top: keyboardLayout.top,
+                    bottom: 'auto',
+                    transform: 'none',
+                  }
+                : undefined
+            }
             title="Asistente de Inspecciono"
             description="Respuestas sobre la plataforma"
           >

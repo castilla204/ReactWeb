@@ -181,12 +181,17 @@ class MFAService {
                 throw error;
             }
 
-            if (responseData.accessToken && responseData.refreshToken) {
+            // 🛡️ FIX: la API serializa PascalCase (VerifyMfaResponseDto → "AccessToken").
+            // Solo se leía camelCase → el verify devolvía isValid:false aunque el servidor
+            // hubiera aceptado el código. Aceptamos ambos casings.
+            const accessToken = responseData.accessToken ?? responseData.AccessToken;
+            const refreshToken = responseData.refreshToken ?? responseData.RefreshToken;
+            if (accessToken && refreshToken) {
                 return {
                     isValid: true,
-                    accessToken: responseData.accessToken,
-                    refreshToken: responseData.refreshToken,
-                    message: responseData.message,
+                    accessToken,
+                    refreshToken,
+                    message: responseData.message ?? responseData.Message,
                 };
             }
 

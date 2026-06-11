@@ -34,7 +34,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const tzShort = timezone?.split('/').pop()?.replace(/_/g, ' ') ?? null;
   const cellSize =
     variant === 'compact' || variant === 'sidebar'
-      ? 'h-7 min-w-0 flex-1 text-[10px]'
+      ? 'h-8 min-w-0 flex-1 text-[11px]'
       : 'h-7 w-7 text-xs';
 
   const denseDaysRow = (
@@ -60,7 +60,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const daysRow = (
     <div
       className={`flex w-full items-stretch gap-px overflow-hidden rounded-lg bg-[#e8e8e8] p-px ${
-        variant === 'sidebar' ? '' : 'border border-[#ebebeb] bg-[#fafafa] p-0.5 gap-0.5'
+        variant === 'sidebar' ? 'rounded-xl' : 'border border-[#ebebeb] bg-[#fafafa] p-0.5 gap-0.5'
       }`}
     >
       {EXPERT_WEEK_DAYS.map((day) => {

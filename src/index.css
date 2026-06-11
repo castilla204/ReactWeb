@@ -732,7 +732,7 @@
     }
 
     .sd-tab {
-        @apply flex-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#6a6a6a] font-normal transition-colors;
+        @apply flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#6a6a6a] font-normal transition-colors;
     }
 
     .sd-tab[data-active='true'] {
@@ -740,7 +740,7 @@
     }
 
     .sd-tablist {
-        @apply flex border-b border-[#ebebeb];
+        @apply flex w-full border-b border-[#ebebeb];
     }
 
 }
