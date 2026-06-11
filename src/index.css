@@ -868,11 +868,11 @@
     }
 
     .sd-tab[data-active='true'] {
-        @apply -mb-px border-[#222222] font-semibold text-[#222222];
+        @apply border-[#222222] font-semibold text-[#222222];
     }
 
     .sd-tablist {
-        @apply flex w-full border-b border-[#ebebeb];
+        @apply flex w-full shadow-[inset_0_-1px_0_0_#ebebeb];
     }
 
 }
