@@ -77,8 +77,8 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
               'animate-in fade-in-0 slide-in-from-bottom-3 duration-300',
             ),
       )}
-      role="dialog"
-      aria-label="Asistente de Inspecciono"
+      aria-label={isDrawer ? undefined : 'Asistente de Inspecciono'}
+      role={isDrawer ? undefined : 'dialog'}
     >
       {/* Header */}
       <div className="relative shrink-0 overflow-hidden border-b border-[#ebebeb] px-4 py-3.5">

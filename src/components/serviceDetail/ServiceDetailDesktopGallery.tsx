@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image } from 'lucide-react';
+import { Image, LayoutGrid } from 'lucide-react';
+import { SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS } from '../../constants/homepageTypography';
 
 interface ServiceDetailDesktopGalleryProps {
   images: string[];
@@ -9,11 +10,16 @@ interface ServiceDetailDesktopGalleryProps {
   onImageError: (url: string) => void;
   onImageLoad: (url: string) => void;
   onImageLoadStart: (url: string) => void;
+  /** split = mitad izquierda del hero (mosaico adaptado al ancho reducido) */
+  layout?: 'default' | 'split';
+  className?: string;
 }
 
-const SHELL = 'overflow-hidden rounded-2xl border border-[#e8e8e8] shadow-[0_2px_12px_rgba(15,23,42,0.05)]';
-/** Altura contenida: la galería vive en la columna izquierda del grid, no a ancho completo */
-const HEIGHT = 'h-[min(400px,42vh)]';
+const GAP = 'gap-1';
+
+function resolveShellHeight(className: string): string {
+  return className.includes('h-full') ? 'h-full' : SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS;
+}
 
 export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryProps> = ({
   images,
@@ -23,14 +29,28 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   onImageError,
   onImageLoad,
   onImageLoadStart,
+  layout = 'default',
+  className = '',
 }) => {
-  const cell = (src: string, alt: string, idx: number, className: string, eager = false) => (
+  const shellHeight = resolveShellHeight(className);
+  const isSplit = layout === 'split';
+
+  const cell = (
+    src: string,
+    alt: string,
+    idx: number,
+    cellClassName: string,
+    eager = false,
+    overlay?: React.ReactNode,
+  ) => (
     <button
       type="button"
       key={`${src}-${idx}`}
-      className={`relative bg-[#f0f0f0] text-left ${className}`}
+      className={`sd-gallery-cell ${cellClassName}`}
       onClick={() => onOpen(idx)}
+      aria-label={alt}
     >
+      <span className="sd-gallery-cell-overlay" aria-hidden />
       {loadingImages.has(src) && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#f5f5f5]">
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#ddd] border-t-brand" />
@@ -39,18 +59,39 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
       <img
         src={src}
         alt={alt}
-        className={`h-full w-full object-cover ${loadingImages.has(src) ? 'opacity-0' : 'opacity-100'}`}
+        className={`h-full w-full object-cover transition-opacity duration-300 ${
+          loadingImages.has(src) ? 'opacity-0' : 'opacity-100'
+        }`}
         onError={() => onImageError(src)}
         onLoad={() => onImageLoad(src)}
         onLoadStart={() => onImageLoadStart(src)}
         loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
       />
+      {overlay}
     </button>
   );
 
+  const showAllButton =
+    images.length > 1 ? (
+      <button
+        type="button"
+        onClick={() => onOpen(0)}
+        className={`absolute z-20 inline-flex items-center gap-1.5 rounded-lg border border-[#222222] bg-white font-semibold text-[#222222] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-colors hover:bg-[#f7f7f7] active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          isSplit ? 'bottom-3 right-3 px-3 py-2 text-xs' : 'bottom-4 right-4 gap-2 px-4 py-2.5 text-sm'
+        }`}
+        aria-label={`Ver las ${images.length} fotos del servicio`}
+      >
+        <LayoutGrid className={`shrink-0 ${isSplit ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} strokeWidth={2} aria-hidden />
+        Ver las {images.length} fotos
+      </button>
+    ) : null;
+
   if (images.length === 0) {
     return (
-      <div className={`flex ${HEIGHT} items-center justify-center ${SHELL} bg-[#f7f7f7]`}>
+      <div
+        className={`sd-gallery-shell relative flex ${shellHeight} items-center justify-center border border-[#e8e8e8] ${className}`}
+      >
         <div className="text-center">
           <Image className="mx-auto mb-2 h-8 w-8 text-[#a3a3a3]" strokeWidth={1.5} />
           <p className="text-sm text-[#6a6a6a]">Sin imágenes</p>
@@ -60,24 +101,52 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   }
 
   if (images.length === 1) {
-    return <div className={SHELL}>{cell(images[0], 'Imagen', 0, `block w-full ${HEIGHT}`, true)}</div>;
+    return (
+      <div className={`sd-gallery-shell relative ${shellHeight} ${className}`}>
+        {cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true)}
+      </div>
+    );
   }
 
   if (images.length === 2) {
+    const twoColClass = isSplit
+      ? 'grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]'
+      : 'grid-cols-2';
+
     return (
-      <div className={`grid ${HEIGHT} grid-cols-2 gap-px ${SHELL} bg-[#e8e8e8]`}>
-        {cell(images[0], 'Imagen 1', 0, 'h-full', true)}
-        {cell(images[1], 'Imagen 2', 1, 'h-full')}
+      <div className={`relative h-full min-h-0 ${className}`}>
+        <div className={`sd-gallery-shell grid ${shellHeight} ${twoColClass} ${GAP}`}>
+          {cell(images[0], 'Imagen 1', 0, 'h-full min-h-0', true)}
+          {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
+        </div>
+        {showAllButton}
       </div>
     );
   }
 
   if (images.length === 3) {
     return (
-      <div className={`grid ${HEIGHT} grid-cols-3 gap-px ${SHELL} bg-[#e8e8e8]`}>
-        {cell(images[0], 'Imagen 1', 0, 'col-span-2 row-span-2 h-full', true)}
-        {cell(images[1], 'Imagen 2', 1, 'h-full')}
-        {cell(images[2], 'Imagen 3', 2, 'h-full')}
+      <div className={`relative h-full min-h-0 ${className}`}>
+        <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+          {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+          {cell(images[1], 'Imagen 2', 1, 'col-span-2 h-full min-h-0')}
+          {cell(images[2], 'Imagen 3', 2, 'col-span-2 h-full min-h-0')}
+        </div>
+        {showAllButton}
+      </div>
+    );
+  }
+
+  if (images.length === 4) {
+    return (
+      <div className={`relative h-full min-h-0 ${className}`}>
+        <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+          {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+          {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
+          {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
+          {cell(images[3], 'Imagen 4', 3, 'col-span-2 h-full min-h-0')}
+        </div>
+        {showAllButton}
       </div>
     );
   }
@@ -85,26 +154,29 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   const extras = images.length - 5;
 
   return (
-    <div className={`grid ${HEIGHT} grid-cols-4 grid-rows-2 gap-px ${SHELL} bg-[#e8e8e8]`}>
-      {cell(images[0], 'Principal', 0, 'col-span-2 row-span-2 h-full', true)}
-      {cell(images[1], 'Imagen 2', 1, 'h-full')}
-      {cell(images[2], 'Imagen 3', 2, 'h-full')}
-      {images.length >= 5 ? (
-        <button
-          type="button"
-          className="relative h-full bg-[#f0f0f0]"
-          onClick={() => onOpen(4)}
-        >
-          <img src={images[4]} alt="" className="h-full w-full object-cover" loading="lazy" />
-          {extras > 0 && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium text-white">
+    <div className={`relative h-full min-h-0 ${className}`}>
+      <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+        {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+        {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
+        {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
+        {cell(images[3], 'Imagen 4', 3, 'h-full min-h-0')}
+        {cell(
+          images[4],
+          extras > 0 ? `Imagen 5 y ${extras} más` : 'Imagen 5',
+          4,
+          'h-full min-h-0',
+          false,
+          extras > 0 ? (
+            <span
+              className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center bg-black/45 text-base font-semibold text-white"
+              aria-hidden
+            >
               +{extras}
             </span>
-          )}
-        </button>
-      ) : (
-        images[3] && cell(images[3], 'Imagen 4', 3, 'h-full')
-      )}
+          ) : undefined,
+        )}
+      </div>
+      {showAllButton}
     </div>
   );
 };

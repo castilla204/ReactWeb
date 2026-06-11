@@ -33,7 +33,7 @@ export function computeReviewRatingDistribution(
   });
 }
 
-/** Dos reseñas representativas: la más reciente y otra con más contenido (si difiere). */
+/** Reseñas representativas: recientes + la más extensa, hasta `count`. */
 export function pickPreviewReviews(
   reviews: ServiceReviewItem[],
   count = 2,
@@ -45,18 +45,27 @@ export function pickPreviewReviews(
   const byDate = [...withText].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
-  const newest = byDate[0];
   const longest = [...withText].sort((a, b) => {
     const lenA = (a.description || a.comment || '').length;
     const lenB = (b.description || b.comment || '').length;
     return lenB - lenA;
   })[0];
 
-  const newestKey = newest.id ?? newest.createdAt;
-  const longestKey = longest.id ?? longest.createdAt;
-  if (newestKey === longestKey) {
-    return byDate.slice(0, count);
+  const picked: ServiceReviewItem[] = [];
+  const seen = new Set<string>();
+  const add = (review: ServiceReviewItem) => {
+    const key = String(review.id ?? review.createdAt);
+    if (seen.has(key)) return;
+    seen.add(key);
+    picked.push(review);
+  };
+
+  add(byDate[0]);
+  add(longest);
+  for (const review of byDate) {
+    if (picked.length >= count) break;
+    add(review);
   }
 
-  return [newest, longest].slice(0, count);
+  return picked.slice(0, count);
 }
