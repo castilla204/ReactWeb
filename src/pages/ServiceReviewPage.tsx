@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     ArrowLeft,
     ChevronLeft,
@@ -23,7 +23,6 @@ import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFo
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
-  HP_FONT,
   SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_EMPHASIS_CLASS,
@@ -57,6 +56,8 @@ import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDesc
 import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
+import { ServiceDetailMobileHeroCarousel } from '../components/serviceDetail/ServiceDetailMobileHeroCarousel';
+import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
 import { LoginModal } from '../components/LoginModal';
 
 interface ServiceReviewPageProps {
@@ -103,16 +104,12 @@ export function ServiceReviewPage({
     
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
-    const [mobileImageIndex, setMobileImageIndex] = useState(0);
-    const touchStartX = useRef<number | null>(null);
-    const touchEndX = useRef<number | null>(null);
     const [isFavorite, setIsFavorite] = useState(false);
     const [isExpertPhotoOpen, setIsExpertPhotoOpen] = useState(false);
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
     const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
     const [showPreHireChat, setShowPreHireChat] = useState(false);
     const [showLoginDialog, setShowLoginDialog] = useState(false);
-    const carouselRef = useRef<HTMLDivElement>(null);
     
     // Obtener token y userId para el chat
     const token = authService.getAccessToken() || '';
@@ -408,60 +405,6 @@ export function ServiceReviewPage({
         setIsLightboxOpen(true);
     };
 
-    const handleLightboxNavigation = (direction: 'prev' | 'next') => {
-        if (direction === 'prev') {
-            setLightboxIndex(prev => (prev === 0 ? validImages.length - 1 : prev - 1));
-        } else {
-            setLightboxIndex(prev => (prev === validImages.length - 1 ? 0 : prev + 1));
-        }
-    };
-
-    // Handlers para swipe
-    const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartX.current = e.touches[0].clientX;
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        touchEndX.current = e.touches[0].clientX;
-    };
-
-    const handleTouchEnd = () => {
-        if (!touchStartX.current || !touchEndX.current) return;
-        
-        const distance = touchStartX.current - touchEndX.current;
-        const minSwipeDistance = 50;
-
-        if (Math.abs(distance) > minSwipeDistance) {
-            if (distance > 0) {
-                // Swipe izquierda - siguiente
-                handleLightboxNavigation('next');
-            } else {
-                // Swipe derecha - anterior
-                handleLightboxNavigation('prev');
-            }
-        }
-
-        touchStartX.current = null;
-        touchEndX.current = null;
-    };
-
-    useEffect(() => {
-        if (!isLightboxOpen || validImages.length <= 1) return;
-
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                handleLightboxNavigation('prev');
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                handleLightboxNavigation('next');
-            }
-        };
-
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isLightboxOpen, validImages.length]);
-
     // Funciones para manejar el lightbox de imágenes de reseñas
     const handleReviewLightboxNavigation = (reviewId: number, direction: 'prev' | 'next', totalImages: number) => {
         setReviewLightboxIndex(prev => {
@@ -473,41 +416,6 @@ export function ServiceReviewPage({
             }
         });
     };
-
-    // Navegación del carrusel móvil mejorada
-    const handleMobileCarouselScroll = useCallback(() => {
-        if (carouselRef.current) {
-            const scrollLeft = carouselRef.current.scrollLeft;
-            const width = carouselRef.current.offsetWidth;
-            const newIndex = Math.round(scrollLeft / width);
-            if (newIndex >= 0 && newIndex < validImages.length) {
-                setMobileImageIndex(prevIndex => {
-                    if (prevIndex !== newIndex) {
-                        return newIndex;
-                    }
-                    return prevIndex;
-                });
-            }
-        }
-    }, [validImages.length]);
-
-    const scrollMobileCarouselTo = useCallback((index: number) => {
-        const carousel = carouselRef.current;
-        if (!carousel || index < 0 || index >= validImages.length) return;
-        carousel.scrollTo({ left: index * carousel.offsetWidth, behavior: 'smooth' });
-        setMobileImageIndex(index);
-    }, [validImages.length]);
-
-    // Inicializar listener del carrusel móvil
-    useEffect(() => {
-        const carousel = carouselRef.current;
-        if (carousel) {
-            carousel.addEventListener('scroll', handleMobileCarouselScroll);
-            return () => {
-                carousel.removeEventListener('scroll', handleMobileCarouselScroll);
-            };
-        }
-    }, [handleMobileCarouselScroll]);
 
     const heroImage = validImages[0] || '';
     const gridImages = validImages.slice(1, 5);
@@ -558,85 +466,15 @@ export function ServiceReviewPage({
                         </div>
                     ) : null}
                     <div className="relative w-full overflow-hidden">
-                    {/* Carrusel de imágenes con indicadores */}
-                    <div 
-                        ref={carouselRef}
-                        className="relative w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                        onScroll={handleMobileCarouselScroll}
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                        <div className="flex">
-                            {validImages.length > 0 ? validImages.map((img, idx) => (
-                                <button
-                                    type="button"
-                                    key={idx}
-                                    className="relative block w-full flex-shrink-0 aspect-[4/3] border-0 bg-gradient-to-br from-gray-100 to-gray-200 p-0 snap-start overflow-hidden cursor-pointer text-left active:scale-[0.98] transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                                    onClick={() => handleImageClick(idx)}
-                                    aria-label={`Abrir imagen ${idx + 1} de ${validImages.length}`}
-                                >
-                                    {loadingImages.has(img) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
-                                            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
-                                    <img 
-                                        src={img} 
-                                        alt={`Imagen ${idx + 1} del servicio`} 
-                                        className={`w-full h-full object-cover transition-opacity duration-300 ${
-                                            loadingImages.has(img) ? 'opacity-0' : 'opacity-100'
-                                        }`}
-                                        onError={() => handleImageError(img)}
-                                        onLoad={() => handleImageLoad(img)}
-                                        onLoadStart={() => handleImageLoadStart(img)}
-                                        loading="lazy"
-                                    />
-                                    {failedImages.has(img) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                                            <div className="text-center px-4">
-                                                <Image className="w-12 h-12 text-gray-400 mx-auto mb-2" strokeWidth={1.5} />
-                                                <p className="text-xs text-gray-500 font-medium">Imagen no disponible</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </button>
-                            )) : (
-                                <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 flex items-center justify-center">
-                                    <div className={`text-center ${SD_MOBILE_GUTTER_CLASS}`}>
-                                        <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-                                            <Image className="w-10 h-10 text-gray-400" strokeWidth={1.5} />
-                                        </div>
-                                        <p className="text-base font-medium text-gray-700 mb-1">Sin imágenes disponibles</p>
-                                        <p className="text-sm text-gray-500">Este servicio aún no tiene fotos</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {validImages.length > 1 && (
-                        <div
-                            className="sd-gallery-dots"
-                            role="tablist"
-                            aria-label="Fotos del servicio"
-                        >
-                            {validImages.map((_, dotIndex) => (
-                                <button
-                                    key={dotIndex}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={dotIndex === mobileImageIndex}
-                                    aria-label={`Foto ${dotIndex + 1} de ${validImages.length}`}
-                                    className={`sd-gallery-dot${dotIndex === mobileImageIndex ? ' is-active' : ''}`}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        scrollMobileCarouselTo(dotIndex);
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
-
+                    <ServiceDetailMobileHeroCarousel
+                        images={validImages}
+                        loadingImages={loadingImages}
+                        failedImages={failedImages}
+                        onImageError={handleImageError}
+                        onImageLoad={handleImageLoad}
+                        onImageLoadStart={handleImageLoadStart}
+                        onOpenImage={handleImageClick}
+                    />
                             </div>
 
                     <div
@@ -982,151 +820,18 @@ export function ServiceReviewPage({
                 </div>
             </div>
 
-            {/* Lightbox */}
-            <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-                <DialogContent 
-                    className="max-w-full w-full h-full p-0 bg-transparent border-none animate-in fade-in-0 zoom-in-95 duration-200"
-                    overlayClassName="bg-black/80"
-                    hideCloseButton={true}
-                    onPointerDownOutside={(e) => {
-                        // Permitir cerrar al hacer clic fuera
-                        setIsLightboxOpen(false);
-                    }}
-                    onEscapeKeyDown={() => setIsLightboxOpen(false)}
-                >
-                    <DialogTitle className="sr-only">Foto {lightboxIndex + 1} de {validImages.length} del servicio</DialogTitle>
-                    <DialogDescription className="sr-only">Imagen ampliada del servicio</DialogDescription>
-                    <button
-                        type="button"
-                        onClick={() => setIsLightboxOpen(false)}
-                        className="absolute top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-lg transition-colors hover:bg-gray-100"
-                        aria-label="Cerrar galería"
-                    >
-                        <X className="h-5 w-5 text-gray-700" />
-                    </button>
-                    {validImages.length > 1 && (
-                        <>
-                            <button
-                                type="button"
-                                onClick={() => handleLightboxNavigation('prev')}
-                                className="absolute left-4 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white/90 shadow-lg backdrop-blur-sm"
-                                aria-label="Imagen anterior"
-                            >
-                                <ChevronLeft className="h-6 w-6 text-gray-800" strokeWidth={2.5} />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleLightboxNavigation('next')}
-                                className="absolute right-4 top-1/2 z-50 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white/90 shadow-lg backdrop-blur-sm"
-                                aria-label="Imagen siguiente"
-                            >
-                                <ChevronRight className="h-6 w-6 text-gray-800" strokeWidth={2.5} />
-                            </button>
-                        </>
-                    )}
-                    <div 
-                        className="relative w-full h-full flex items-center justify-center pointer-events-auto"
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        onClick={(e) => {
-                            // Cerrar si se hace clic fuera de la imagen
-                            if (e.target === e.currentTarget) {
-                                setIsLightboxOpen(false);
-                            }
-                        }}
-                    >
-                        <div 
-                            className="w-full h-full flex items-center justify-center"
-                        >
-                            {validImages[lightboxIndex] ? (
-                                <>
-                                    {loadingImages.has(validImages[lightboxIndex]) && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
-                                            <div className="w-12 h-12 border-3 border-white/50 border-t-white rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
-                                    <img
-                                        key={lightboxIndex}
-                                        src={validImages[lightboxIndex]}
-                                        alt={`Foto ${lightboxIndex + 1} del servicio`}
-                                        className={`w-full h-full object-contain transition-all duration-300 ease-in-out ${
-                                            loadingImages.has(validImages[lightboxIndex]) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-                                        }`}
-                                        onError={() => handleImageError(validImages[lightboxIndex])}
-                                        onLoad={() => handleImageLoad(validImages[lightboxIndex])}
-                                        onLoadStart={() => handleImageLoadStart(validImages[lightboxIndex])}
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                    {failedImages.has(validImages[lightboxIndex]) && (
-                                        <div className="text-center text-white">
-                                            <Image className="w-16 h-16 mx-auto mb-3 opacity-75" strokeWidth={1.5} />
-                                            <p className="text-sm">Imagen no disponible</p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="text-center text-white">
-                                    <Image className="w-16 h-16 mx-auto mb-3 opacity-75" strokeWidth={1.5} />
-                                    <p className="text-sm">No hay imágenes disponibles</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {validImages.length > 1 && (
-                            <div 
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10"
-                                style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    paddingTop: '4px',
-                                    paddingBottom: '4px',
-                                    paddingLeft: '8px',
-                                    paddingRight: '8px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                    backdropFilter: 'blur(4px)',
-                                    borderRadius: '8px',
-                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
-                                <span
-                                    style={{
-                                        fontSize: '10px',
-                                        lineHeight: '12px',
-                                        fontWeight: 400,
-                                        color: '#222222',
-                                        fontFamily: HP_FONT,
-                                        letterSpacing: '0',
-                                    }}
-                                >
-                                {lightboxIndex + 1} / {validImages.length}
-                                </span>
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '3px',
-                                    }}
-                                >
-                                    {validImages.map((_, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="rounded-full transition-all"
-                                            style={{
-                                                height: '3px',
-                                                width: idx === lightboxIndex ? '12px' : '3px',
-                                                backgroundColor: idx === lightboxIndex ? '#222222' : 'rgba(34, 34, 34, 0.4)',
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <ServiceDetailPhotoLightbox
+                open={isLightboxOpen}
+                onOpenChange={setIsLightboxOpen}
+                images={validImages}
+                index={lightboxIndex}
+                onIndexChange={setLightboxIndex}
+                loadingImages={loadingImages}
+                failedImages={failedImages}
+                onImageError={handleImageError}
+                onImageLoad={handleImageLoad}
+                onImageLoadStart={handleImageLoadStart}
+            />
 
             <ServiceDetailReviewsModal
                 open={reviewsModalOpen}
