@@ -86,16 +86,12 @@ function ReviewsDrawerSummary({
     reviewCount === 1 ? '1 opinión verificada' : `${reviewCount} opiniones verificadas`;
 
   return (
-    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-4 lg:px-6">
+    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-3 lg:px-6">
       {showBars ? (
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
           <div className="shrink-0">
-            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-[#222222]">
-                {display}
-              </span>
-              <span className="text-xs leading-snug text-[#717171]">{opinionsLabel}</span>
-            </p>
+            <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{display}</p>
+            <p className="mt-0.5 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
           </div>
           <ServiceDetailReviewHistogram
             distribution={distribution}
@@ -106,12 +102,10 @@ function ReviewsDrawerSummary({
         </div>
       ) : (
         <div>
-          <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-[2rem] font-semibold tabular-nums leading-none tracking-tight text-[#222222]">
-              {display}
-            </span>
-            <span className="text-xs leading-snug text-[#717171]">{opinionsLabel}</span>
-          </p>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{display}</p>
+            <p className="text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+          </div>
           <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-2" />
         </div>
       )}
