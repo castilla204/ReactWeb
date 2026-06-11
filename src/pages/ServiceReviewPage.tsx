@@ -762,7 +762,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className={SD_MOBILE_TAB_PANEL_PT_CLASS}
+                                    className="pb-6 pt-3"
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"

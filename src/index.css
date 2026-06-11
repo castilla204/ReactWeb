@@ -750,9 +750,9 @@
         @apply w-full;
     }
 
-    /* Móvil scroll: plano, sin borde superior duplicado */
-    .sd-reviews-preview--mobile {
-        @apply border-0 bg-transparent p-0 pt-0 shadow-none;
+    /* Móvil scroll: plano, sin borde superior duplicado bajo tabs */
+    .sd-reviews-preview.sd-reviews-preview--mobile {
+        @apply border-0 border-t-0 bg-transparent p-0 pt-0 shadow-none;
     }
 
     .sd-reviews-preview-summary-mobile {
@@ -872,7 +872,7 @@
     }
 
     .sd-tablist {
-        @apply flex w-full shadow-[inset_0_-1px_0_0_#ebebeb];
+        @apply flex w-full;
     }
 
 }
