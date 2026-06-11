@@ -177,7 +177,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                                 <TabsContent value="login" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                                     <div className="flex w-full flex-col gap-2.5">
-                                        <SocialButtonsRow onSuccess={handleSuccess} />
+                                        <SocialButtonsRow onSuccess={handleSuccess} active={open} />
                                         <Separator />
                                         <LoginForm
                                             onSuccess={handleSuccess}
@@ -192,7 +192,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                                 <TabsContent value="register" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                                     <div className="flex w-full flex-col gap-2.5">
-                                        <SocialButtonsRow onSuccess={handleSuccess} />
+                                        <SocialButtonsRow onSuccess={handleSuccess} active={open} />
                                         <Separator />
                                         <RegisterForm
                                             onCodeSent={(ctx) => {
@@ -375,14 +375,14 @@ const Separator: React.FC = () => (
     </div>
 );
 
-const SocialButtonsRow: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+const SocialButtonsRow: React.FC<{ onSuccess: () => void; active: boolean }> = ({ onSuccess, active }) => {
     // 🎨 Round 19: Google + Apple en MISMA LÍNEA (grid 2-col).
     // AppleSignInButton ahora SIEMPRE renderiza — disabled con tag "Próx." en web/Android
     // (hasta completar Apple Developer setup: Service ID + .p8 key), habilitado en iOS/macOS.
     // Así el usuario ve que la opción existe y entiende que estará disponible pronto.
     return (
         <div className="grid w-full max-w-full grid-cols-2 gap-2">
-            <GoogleSignInButton variant="compact" onSuccess={onSuccess} label="Google" />
+            <GoogleSignInButton variant="compact" onSuccess={onSuccess} label="Google" active={active} />
             <AppleSignInButton variant="compact" onSuccess={onSuccess} />
         </div>
     );
