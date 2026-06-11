@@ -832,11 +832,15 @@
     }
 
     .sd-gallery-cell {
-        @apply group relative block h-full w-full cursor-pointer overflow-hidden bg-[#f0f0f0] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+        @apply relative block h-full w-full cursor-pointer overflow-hidden bg-[#f0f0f0] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
     }
 
     .sd-gallery-cell-overlay {
-        @apply pointer-events-none absolute inset-0 z-[1] bg-black/0 transition-colors duration-200 group-hover:bg-black/[0.06];
+        @apply pointer-events-none absolute inset-0 z-[1] bg-black/0 transition-colors duration-200;
+    }
+
+    .sd-gallery-cell:hover .sd-gallery-cell-overlay {
+        background-color: rgb(0 0 0 / 0.06);
     }
 
     .sd-deliverable-list {
