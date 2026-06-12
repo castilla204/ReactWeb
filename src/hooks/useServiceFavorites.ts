@@ -139,6 +139,8 @@ export const useServiceFavorites = () => {
                                 profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
                                 country: (service.Expert || service.expert).Country || (service.Expert || service.expert).country,
                                 city: (service.Expert || service.expert).City || (service.Expert || service.expert).city,
+                                // ?? (no ||): 0 = "solo en su taller" es un valor válido.
+                                workRadiusKm: (service.Expert || service.expert).WorkRadiusKm ?? (service.Expert || service.expert).workRadiusKm,
                             } : undefined,
                             completedSearches: service.CompletedSearches || service.completedSearches || 0,
                             averageRating: service.AverageRating || service.averageRating || 0,
