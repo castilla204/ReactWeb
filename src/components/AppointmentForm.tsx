@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { MapPin, FileText, Clock, AlertCircle, CalendarIcon, Globe } from 'lucide-react';
 import DatePicker from 'react-datepicker';
@@ -40,6 +40,12 @@ interface AppointmentFormProps {
     longitude: number;
   } | null;
   expertRange?: number | null;
+  /**
+   * Radio de trabajo del EXPERTO en km (0 = solo en su taller/punto fijo).
+   * Con 0, la ubicación de la cita se prefija al taller del experto y el
+   * cliente no puede elegir otra (el mapa se muestra bloqueado).
+   */
+  expertWorkRadiusKm?: number | null;
   expertAvailability?: CurrentExpertAvailabilityDto | null;
   /**
    * ✅ INTERNACIONALIZACIÓN: Timezone del lugar donde se presta el servicio
@@ -64,6 +70,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   error: externalError = null,
   expertLocation,
   expertRange,
+  expertWorkRadiusKm,
   expertAvailability,
   serviceTimezone, // ✅ Timezone del servicio (donde se presta)
   expertCountry // ✅ País del experto
@@ -115,6 +122,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   } | null>(null);
   
   const [errors, setErrors] = useState<string[]>([]);
+
+  // ✅ SOLO TALLER: con WorkRadiusKm = 0 la cita se hace en el punto fijo del experto.
+  // La ubicación va prefijada a sus coordenadas, el mapa se muestra pero bloqueado y
+  // el cliente no puede elegir otra dirección.
+  const isWorkshopOnly = expertWorkRadiusKm === 0 && !!expertLocation;
+
+  useEffect(() => {
+    if (!isWorkshopOnly || !expertLocation) return;
+    const address = 'Taller del experto (punto fijo)';
+    setSelectedLocation({
+      address,
+      latitude: expertLocation.latitude,
+      longitude: expertLocation.longitude,
+    });
+    setFormData(prev => ({
+      ...prev,
+      location: address,
+      latitude: expertLocation.latitude,
+      longitude: expertLocation.longitude,
+    }));
+    form.setValue('location', address);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWorkshopOnly, expertLocation?.latitude, expertLocation?.longitude]);
 
   // Función para validar si una fecha/hora está dentro del horario del experto
   const isDateTimeWithinAvailability = (date: string, time: string): boolean => {
@@ -546,8 +576,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                                 field.onChange(e);
                         setFormData({ ...formData, location: e.target.value });
                       }}
-                      placeholder="Escribe la dirección o selecciona en el mapa..."
-                      disabled={isLoading}
+                      placeholder={isWorkshopOnly ? 'Taller del experto (punto fijo)' : 'Escribe la dirección o selecciona en el mapa...'}
+                      disabled={isLoading || isWorkshopOnly}
+                      readOnly={isWorkshopOnly}
                               autoComplete="off"
                               className="h-11 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
                             />
@@ -727,13 +758,23 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
             {/* Columna derecha - Mapa */}
               <div className="space-y-4">
+                  {isWorkshopOnly && (
+                    <Alert className="border-blue-200 bg-blue-50">
+                      <MapPin className="h-4 w-4 text-blue-600" />
+                      <AlertTitle className="text-blue-900">La cita es en el taller del experto</AlertTitle>
+                      <AlertDescription className="text-blue-800">
+                        Este experto trabaja solo en su punto fijo, así que la ubicación ya está
+                        fijada en el mapa y no es necesario elegirla. Te desplazarás tú a su taller.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div className="h-[500px] rounded-lg border border-border relative">
                 <AppointmentMap
                   onLocationSelect={handleLocationSelect}
                   initialLocation={selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } : undefined}
-                  disabled={isLoading}
+                  disabled={isLoading || isWorkshopOnly}
                   expertLocation={expertLocation}
-                  expertRange={expertRange}
+                  expertRange={isWorkshopOnly ? 0 : expertRange}
                   expertCountry={expertCountry}
                   className="w-full h-full"
                 />
