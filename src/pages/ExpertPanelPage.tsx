@@ -51,6 +51,7 @@ import { useStripeLoginLink } from '../hooks/useStripeLoginLink';
 import { useVacationMode } from '../hooks/useVacationMode';
 import { readWorkRadiusKm } from '../utils/workRadius';
 import { PhoneStatusCard } from '../components/expertPanel/PhoneStatusCard';
+import { ProfileCompletionCard } from '../components/expertPanel/ProfileCompletionCard';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
@@ -1657,6 +1658,10 @@ export function ExpertPanelPage() {
                                                     </p>
                                                 );
                                             })()}
+                                            {/* 🧩 STRIPE-FIRST: checklist de perfil — no visible hasta completar */}
+                                            <div className="mt-1.5">
+                                                <ProfileCompletionCard profile={profile} onEdit={() => setShowProfileEditForm(true)} />
+                                            </div>
                                             {/* 📱 SMS-CENTRAL: estado del teléfono (móvil/fijo) + verificación OTP */}
                                             <PhoneStatusCard className="mt-1.5" />
                                     <div className="space-y-1.5">
