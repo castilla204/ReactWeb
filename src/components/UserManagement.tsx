@@ -11,6 +11,10 @@ interface User {
     email: string;
     phoneNumber: string | null;
     phoneVerified: boolean;
+    /** "mobile" | "landline" | "voip" | "unknown" | null (sin clasificar) */
+    phoneLineType?: string | null;
+    /** "stripe_kyc" | "checkout" | "otp" | null */
+    phoneVerificationSource?: string | null;
     isBlocked: boolean;
     createdAt: string;
     searchCount: number;
@@ -150,6 +154,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                 <tr className="bg-gray-50 border-b border-gray-200">
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Searches</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
@@ -186,6 +191,37 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                                     </span>
                                                 )}
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {/* 📱 SMS-CENTRAL: teléfono + tipo de línea + origen, visible para admin.
+                                                Lectura defensiva de ambos casings (PascalCase/camelCase). */}
+                                            {(() => {
+                                                const raw = user as Record<string, unknown>;
+                                                const phone = (raw.phoneNumber ?? raw.PhoneNumber) as string | null;
+                                                const lineType = (raw.phoneLineType ?? raw.PhoneLineType) as string | null;
+                                                const verified = Boolean(raw.phoneVerified ?? raw.PhoneVerified);
+                                                const source = (raw.phoneVerificationSource ?? raw.PhoneVerificationSource) as string | null;
+                                                if (!phone) return <span className="text-sm text-gray-400">—</span>;
+                                                return (
+                                                    <div className="text-sm">
+                                                        <div className="text-gray-900">{phone}</div>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            {lineType === 'landline' ? (
+                                                                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Fijo · sin SMS</span>
+                                                            ) : lineType === 'mobile' ? (
+                                                                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Móvil</span>
+                                                            ) : (
+                                                                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{lineType || 'sin clasificar'}</span>
+                                                            )}
+                                                            {verified ? (
+                                                                <span className="text-xs text-green-700" title={`Verificado vía ${source || 'desconocido'}`}>✓ {source || 'verificado'}</span>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">sin verificar</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2 text-sm text-gray-900">
