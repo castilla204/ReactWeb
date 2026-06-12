@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     ArrowLeft,
     ChevronLeft,
@@ -23,7 +23,6 @@ import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFo
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
-  SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_EMPHASIS_CLASS,
   SD_MOBILE_GUTTER_CLASS,
@@ -58,6 +57,7 @@ import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceD
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
+import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
 import { LoginModal } from '../components/LoginModal';
 
@@ -111,6 +111,8 @@ export function ServiceReviewPage({
     const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
     const [showPreHireChat, setShowPreHireChat] = useState(false);
     const [showLoginDialog, setShowLoginDialog] = useState(false);
+    const [mobileTopBarCompact, setMobileTopBarCompact] = useState(false);
+    const mobileHeroRef = useRef<HTMLDivElement>(null);
     
     // Obtener token y userId para el chat
     const token = authService.getAccessToken() || '';
@@ -353,6 +355,21 @@ export function ServiceReviewPage({
     ]
         .filter(Boolean)
         .join(' · ');
+
+    useEffect(() => {
+        const hero = mobileHeroRef.current;
+        if (!hero) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setMobileTopBarCompact(!entry.isIntersecting || entry.intersectionRatio < 0.35);
+            },
+            { threshold: [0, 0.35, 0.6, 1] },
+        );
+
+        observer.observe(hero);
+        return () => observer.disconnect();
+    }, [serviceId, finalService?.id]);
     
     const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
     const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
@@ -443,34 +460,26 @@ export function ServiceReviewPage({
                 
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
             <div className="lg:hidden">
-                {/* Hero móvil: chips anclados al borde inferior de la foto */}
-                <div className="relative w-full">
-                    {/* Botones sobre la foto: absolutos dentro del hero → se van con el scroll,
-                        nunca colisionan con la sheet. Target táctil 44×44. */}
-                    <div className={`absolute left-5 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-                        <button
-                            onClick={onBack}
-                            className="sd-icon-btn-float"
-                            aria-label="Volver"
-                        >
-                            <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2} />
-                        </button>
-                    </div>
-                    {isAuthenticated ? (
-                        <div className={`absolute right-5 z-30 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-                            <button
-                                onClick={() => setIsFavorite(!isFavorite)}
-                                className="sd-icon-btn-float"
-                                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                                aria-pressed={isFavorite}
-                            >
-                                <Heart
-                                    className={`h-[18px] w-[18px] ${isFavorite ? 'fill-brand text-brand' : 'text-[#222222]'}`}
-                                    strokeWidth={2}
-                                />
-                            </button>
-                        </div>
-                    ) : null}
+                <ServiceDetailMobileTopBar
+                    mode="compact"
+                    title={finalServiceTitle}
+                    onBack={onBack}
+                    showCompact={mobileTopBarCompact}
+                    showFavorite={isAuthenticated}
+                    isFavorite={isFavorite}
+                    onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                />
+
+                <div className="relative w-full" ref={mobileHeroRef}>
+                    <ServiceDetailMobileTopBar
+                        mode="floating"
+                        title={finalServiceTitle}
+                        onBack={onBack}
+                        showCompact={mobileTopBarCompact}
+                        showFavorite={isAuthenticated}
+                        isFavorite={isFavorite}
+                        onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                    />
                     <div className="relative w-full overflow-hidden">
                         <ServiceDetailMobilePhotoMapHero
                             images={validImages}
@@ -493,13 +502,9 @@ export function ServiceReviewPage({
                             <ServiceDetailPageHeadline
                                 title={finalServiceTitle}
                                 meta={serviceHeadlineMeta || null}
-                                className="mb-3"
+                                className="mb-4"
                             />
-                            <header
-                                className={
-                                    finalAvailability ? SD_MOBILE_HEADER_PB_CLASS : 'pb-3'
-                                }
-                            >
+                            <header className={SD_MOBILE_HEADER_PB_CLASS}>
                                 <ServiceDetailExpertHostRow
                                     variant="mobile"
                                     expertName={finalExpertName}
@@ -534,10 +539,11 @@ export function ServiceReviewPage({
                                     />
                                 </section>
                             ) : null}
+                        </div>
 
-                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} mt-0 w-full`}>
+                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} ${SD_MOBILE_SHEET_DIVIDER_CLASS}`}>
                             <div
-                                className="sd-tablist w-full"
+                                className={`sd-tablist w-full ${SD_MOBILE_GUTTER_CLASS}`}
                                 role="tablist"
                                 aria-label="Información del servicio"
                             >
@@ -577,7 +583,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-about"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-about"
-                                    className={`${SD_MOBILE_INSET_STACK_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
+                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_INSET_STACK_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
                                 >
                                     {displayMainDescription ? (
                                         <p className="sd-body whitespace-pre-line">
@@ -615,7 +621,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className="pb-6 pt-3"
+                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
@@ -629,7 +635,6 @@ export function ServiceReviewPage({
                             )}
                         </div>
                     </div>
-            </div>
             </div>
 
                 <MobileReserveFooter

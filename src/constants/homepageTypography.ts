@@ -198,17 +198,17 @@ export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 /** Padding superior de la sheet tras el solape del hero */
 export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
 
-/** Aire bajo fila revisor cuando sigue disponibilidad */
-export const SD_MOBILE_HEADER_PB_CLASS = 'pb-3';
+/** Aire bajo fila revisor */
+export const SD_MOBILE_HEADER_PB_CLASS = 'pb-4';
 
-/** Bloque disponibilidad bajo el host */
-export const SD_MOBILE_META_SECTION_CLASS = 'border-b border-[#ebebeb] pb-3';
+/** Bloque disponibilidad bajo el host (sin borde; el divisor va antes de tabs) */
+export const SD_MOBILE_META_SECTION_CLASS = 'pb-4';
 
-/** Línea entre bloque reserva y tabs — siempre a ancho completo */
-export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'border-b border-[#ebebeb]';
+/** Línea full-bleed entre bloque superior y tabs */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'border-t border-[#ebebeb]';
 
-/** Margen bajo tabs en la sheet */
-export const SD_MOBILE_SHEET_BOTTOM_CLASS = 'mb-6';
+/** Contenedor tabs + panel (sin margen extra al final) */
+export const SD_MOBILE_SHEET_BOTTOM_CLASS = '';
 /** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
 export const SD_MOBILE_BOOKING_LABEL_CLASS =
   'text-xs font-medium leading-4 text-[#6a6a6a]';
@@ -235,7 +235,7 @@ export const SD_MOBILE_SUBHEAD_CLASS =
 export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
 
 /** Stack vertical dentro del panel «Acerca del servicio» */
-export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-5';
+export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-4';
 
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
@@ -255,6 +255,18 @@ export const SD_MOBILE_SCROLL_PAD_TRUST_CLASS =
 /** Offset superior botones flotantes (notch / Dynamic Island) */
 export const SD_MOBILE_FLOATING_TOP_CLASS =
   'top-[max(1rem,env(safe-area-inset-top,0px))]';
+
+/** Shell flotante — anclado al hero (absolute), no al viewport */
+export const SD_MOBILE_TOPBAR_FLOATING_SHELL_CLASS =
+  'pointer-events-none absolute inset-x-0 top-0 z-30 transition-opacity duration-300';
+
+export const SD_MOBILE_TOPBAR_FLOATING_INNER_CLASS = `pointer-events-auto flex items-center justify-between ${SD_MOBILE_GUTTER_CLASS} pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))]`;
+
+/** Barra compacta al hacer scroll — back + título + favorito */
+export const SD_MOBILE_TOPBAR_COMPACT_SHELL_CLASS =
+  'fixed inset-x-0 top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(15,23,42,0.04)] transition-[transform,opacity] duration-300 ease-out';
+
+export const SD_MOBILE_TOPBAR_COMPACT_INNER_CLASS = `flex min-h-12 items-center gap-3 ${SD_MOBILE_GUTTER_CLASS} pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top,0px))]`;
 
 /** Shell barra fija móvil */
 export const SD_MOBILE_FOOTER_SHELL_CLASS =

@@ -65,7 +65,7 @@ function MobileReviewsPreview({
     >
       <div className="sd-reviews-preview-summary-mobile">
         {showFeaturedBadge ? (
-          <p className="mb-2">
+          <p className="mb-3 text-center">
             <span className="inline-flex rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#1c1c1c]">
               Valoración destacada
             </span>
@@ -73,25 +73,31 @@ function MobileReviewsPreview({
         ) : null}
 
         {showHistogram ? (
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-            <div className="shrink-0">
+          <div className="sd-reviews-preview-summary-mobile__stats">
+            <div className="sd-reviews-preview-summary-mobile__score">
               <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-              <p className="mt-0.5 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+              <p className="mt-1 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+              <ServiceDetailReviewStars
+                rating={averageRating}
+                size="sm"
+                className="mt-2 justify-center"
+              />
             </div>
-            <ServiceDetailReviewHistogram
-              distribution={distribution}
-              total={reviews.length}
-              variant="mobile"
-              showPercent={false}
-            />
+            <div className="sd-reviews-preview-summary-mobile__bars">
+              <ServiceDetailReviewHistogram
+                distribution={distribution}
+                total={reviews.length}
+                variant="mobile"
+                showPercent={false}
+                emphasis="prominent"
+              />
+            </div>
           </div>
         ) : (
-          <div>
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-              <p className="text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
-            </div>
-            <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-2" />
+          <div className="sd-reviews-preview-summary-mobile__score">
+            <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
+            <p className="mt-1 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+            <ServiceDetailReviewStars rating={averageRating} size="sm" className="mt-2 justify-center" />
           </div>
         )}
       </div>
