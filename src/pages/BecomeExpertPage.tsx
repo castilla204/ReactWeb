@@ -26,9 +26,12 @@ const BecomeExpertCoverageMap = lazy(() =>
     })),
 );
 import {
+    SUPPORTED_PAYOUT_COUNTRIES,
     formatPayoutCountryLabel,
     isSupportedPayoutCountry,
 } from '../constants/stripeConnectCountries';
+import { setAuthToken } from '../lib/auth';
+import { API_CONFIG } from '../config/api';
 import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
@@ -195,6 +198,11 @@ function BecomeExpertPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isRelocating, profile?.currentAvailability]);
     const [currentStep, setCurrentStep] = useState(1);
+
+    // 🧩 STRIPE-FIRST: estado del alta mínima (solo país) para usuarios nuevos.
+    const [fastPathCountry, setFastPathCountry] = useState('ES');
+    const [fastPathSubmitting, setFastPathSubmitting] = useState(false);
+    const [fastPathError, setFastPathError] = useState<string | null>(null);
     // 🛡️ MUD-AA: derivado — si eres expert y profile no cargó, está checking.
     const isCheckingOnboarding = isAlreadyExpert && !profile;
     const setIsCheckingOnboarding = (_value: boolean) => { /* derived, no-op for compat */ };
@@ -971,6 +979,101 @@ function BecomeExpertPage() {
     //    Una vez `submitted=true` (acabas de completar el formulario) o estás siendo
     //    redirigido como experto pendiente, el shell debe ocultar el botón "Completar
     //    registro" — porque ya no hay nada que enviar, solo conectar Stripe.
+    // ─────────────────────────────────────────────────────────────────────────
+    // 🧩 STRIPE-FIRST: para altas NUEVAS (no experto aún, no mudanza) saltamos el
+    // wizard largo: solo eliges PAÍS (inmutable en Stripe) y conectas Stripe ya.
+    // El resto del perfil (foto, descripción, ubicación, disponibilidad) se rellena
+    // después en el panel de experto — y NO eres visible hasta completarlo.
+    // El wizard completo se conserva para el flujo de mudanza (isRelocating).
+    // ─────────────────────────────────────────────────────────────────────────
+    if (!isAlreadyExpert && !isRelocating) {
+        const sortedCountries = Array.from(SUPPORTED_PAYOUT_COUNTRIES)
+            .sort((a, b) => formatPayoutCountryLabel(a).localeCompare(formatPayoutCountryLabel(b), 'es'));
+        const submitMinimal = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) { navigate('/login'); return; }
+            setFastPathSubmitting(true); setFastPathError(null);
+            try {
+                const res = await fetch(`${API_CONFIG.baseUrl}/api/User/become-expert-minimal`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country: fastPathCountry }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data?.message || 'No se pudo completar el alta.');
+                // JWT fresco con rol Expert; recargamos para que la página derive el
+                // estado "experto sin Stripe" y muestre el bloque Conecta Stripe.
+                if (data?.token) setAuthToken(data.token);
+                window.location.reload();
+            } catch (e: unknown) {
+                setFastPathError((e as Error)?.message || 'No se pudo completar el alta.');
+                setFastPathSubmitting(false);
+            }
+        };
+        return (
+            <>
+            <SEO
+                title="Hazte experto en Inspecciono · Cobra inspecciones pre-compra | Inspecciono"
+                description="Conecta tu cuenta de pagos con Stripe en minutos y completa tu perfil después."
+                canonical="/become-expert"
+            />
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-10">
+                <div className="w-full max-w-lg bg-white rounded-2xl border border-[#e8e8e8] shadow-sm p-6 sm:p-8 space-y-5">
+                    <div className="space-y-1.5">
+                        <h1 className="text-2xl font-bold text-[#1c1c1c]">Hazte experto</h1>
+                        <p className="text-sm text-[#6a6a6a] leading-relaxed">
+                            Empezamos por lo importante: tu <strong>cuenta de pagos</strong> con Stripe.
+                            Después completarás tu perfil (foto, descripción, ubicación) en tu panel —
+                            no serás visible para clientes hasta completarlo.
+                        </p>
+                    </div>
+
+                    <ol className="text-sm text-[#444] space-y-1.5">
+                        <li>1️⃣ Elige tu país y conecta Stripe (verificación de identidad y cobros).</li>
+                        <li>2️⃣ Completa tu perfil en el panel de experto.</li>
+                        <li>3️⃣ Publica tus servicios y empieza a recibir contrataciones.</li>
+                    </ol>
+
+                    <div className="space-y-1.5">
+                        <label htmlFor="fast-country" className="text-sm font-semibold text-[#1c1c1c]">
+                            País donde cobrarás
+                        </label>
+                        <select
+                            id="fast-country"
+                            value={fastPathCountry}
+                            onChange={(e) => setFastPathCountry(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-[#d4d4d4] bg-white px-3 text-sm"
+                        >
+                            {sortedCountries.map((code) => (
+                                <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-amber-700">
+                            ⚠️ El país de la cuenta de Stripe no se puede cambiar después. Elige donde
+                            resides/cobras de verdad.
+                        </p>
+                    </div>
+
+                    {fastPathError && (
+                        <p className="text-sm text-red-600">{fastPathError}</p>
+                    )}
+
+                    <button
+                        onClick={submitMinimal}
+                        disabled={fastPathSubmitting}
+                        className="w-full h-12 rounded-lg bg-[#635bff] hover:bg-[#5851e6] text-white font-semibold transition-colors disabled:opacity-60"
+                    >
+                        {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe →'}
+                    </button>
+                    <button onClick={() => navigate(-1)} className="w-full text-sm text-[#6a6a6a] hover:text-[#1c1c1c]">
+                        Volver
+                    </button>
+                </div>
+            </div>
+            </>
+        );
+    }
+
     return (
         <>
         <SEO
