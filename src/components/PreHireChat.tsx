@@ -287,9 +287,18 @@ export const PreHireChat = ({
   // Inicializar mensajes desde la conversación
   useEffect(() => {
     if (conversation?.messages) {
-      // Ordenar mensajes por fecha
+      // Ordenar mensajes por fecha. Con el polling de respaldo siempre activo,
+      // preservamos los mensajes optimistas aún en vuelo (el refetch del servidor
+      // todavía no los incluye y los borraría hasta que termine el POST).
       const sortedMessages = sortMessagesByDate(conversation.messages);
-      setMessages(sortedMessages);
+      setMessages((prev) => {
+        const pendingOptimistic = prev.filter(
+          (m) => m.isOptimistic && !sortedMessages.some((s) => s.id === m.id)
+        );
+        return pendingOptimistic.length
+          ? sortMessagesByDate([...sortedMessages, ...pendingOptimistic])
+          : sortedMessages;
+      });
     }
   }, [conversation]);
 
@@ -442,13 +451,29 @@ export const PreHireChat = ({
     };
   }, [conversation?.id, token, userId, hasAccess, onConnectionChange, supabase]);
 
-  // Polling si Realtime no está conectado
+  // ✅ TIEMPO REAL ROBUSTO: polling de respaldo SIEMPRE activo — rápido (4s) sin
+  // Realtime, lento (15s) como red de seguridad con Realtime. Antes solo corría
+  // cuando isConnected era false, pero el broadcast del backend a Supabase puede
+  // fallar en silencio con el canal SUBSCRIBED → el receptor no veía los mensajes
+  // hasta recargar ("solo una dirección"). Además, al recuperar foco/visibilidad/
+  // conexión se refresca al instante para recuperar lo perdido.
   useEffect(() => {
-    if (!conversation?.id || !hasAccess || isConnected) return;
+    if (!conversation?.id || !hasAccess) return;
     const interval = setInterval(() => {
       void refetchRef.current();
-    }, 5000);
-    return () => clearInterval(interval);
+    }, isConnected ? 15000 : 4000);
+    const onWake = () => {
+      if (document.visibilityState === 'visible') void refetchRef.current();
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
+    window.addEventListener('online', onWake);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
+      window.removeEventListener('online', onWake);
+    };
   }, [conversation?.id, hasAccess, isConnected]);
 
   // Marcar mensajes entrantes como leídos (no en vista admin: no debe afectar al cliente/experto)
