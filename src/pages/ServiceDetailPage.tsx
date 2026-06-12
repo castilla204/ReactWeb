@@ -10,6 +10,7 @@ import {
   persistServiceReturnPath,
   resolveServiceReturnPath,
 } from '../utils/servicePageNavigation';
+import { parseHireSearchLocationFromRouteState, persistHireSearchLocation } from '../utils/hireSearchContext';
 import { SEO } from '../components/SEO';
 import { serviceSchema, breadcrumbSchema } from '../utils/jsonLd';
 
@@ -152,6 +153,10 @@ const ServiceDetailPage: React.FC = () => {
     const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
     if (returnTo) {
       persistServiceReturnPath(returnTo);
+    }
+    const hireFromState = parseHireSearchLocationFromRouteState(location.state);
+    if (hireFromState) {
+      persistHireSearchLocation(hireFromState);
     }
   }, [location.state]);
 

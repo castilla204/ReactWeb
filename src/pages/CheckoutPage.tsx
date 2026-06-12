@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Globe, ChevronDown, Shield } from 'lucide-react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
@@ -13,86 +13,37 @@ import { formatPriceNumber } from '../utils/priceUtils';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
-import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
-import {
-  ESCROW_CHECKOUT_INTRO,
-  ESCROW_CHECKOUT_STEPS,
-  ESCROW_TRUST_TAGLINE,
-} from '../constants/escrowCopy';
-import {
-    ServiceDetailDeliverablesGuide,
-    normalizeDeliverableTypes,
-} from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
-import { ServiceDetailCoverageMap } from '../components/serviceDetail/ServiceDetailCoverageMap';
+import { CheckoutSummaryTable } from '../components/checkout/CheckoutSummaryTable';
+import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAside';
+import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
+import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
+import { CheckoutLegalNotices } from '../components/checkout/CheckoutLegalNotices';
+import { normalizeDeliverableTypes } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
-import { readWorkRadiusKm } from '../utils/workRadius';
+import { resolveCheckoutLocation, persistHireSearchLocation } from '../utils/hireSearchContext';
+import { resolveExpertWorkRadiusKm } from '../utils/workRadius';
+import { PhoneStatusCard, usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
+import { getCountryName } from '../utils/countries';
 import {
     HP_FONT,
-    HP_LINK_UNDERLINE_CLASS,
-    SD_MOBILE_FOOTER_CTA_CLASS,
-    SD_MOBILE_GUTTER_CLASS,
-    SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
+    SD_CHECKOUT_MOBILE_CTA_CLASS,
+    SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
+    SD_CHECKOUT_MOBILE_TITLE_CLASS,
+    SD_CHECKOUT_MOBILE_HEADER_CLASS,
+    SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS,
+    SD_CHECKOUT_MOBILE_BACK_BTN_CLASS,
     SD_CHECKOUT_GRID_CLASS,
     SD_CHECKOUT_INNER_MAX_CLASS,
-    SD_DESKTOP_ASIDE_MAX_H_CLASS,
-    SD_DESKTOP_STICKY_TOP_CLASS,
+    HP_LINK_UNDERLINE_CLASS,
+    hpCheckoutTitleUnderlineStyle,
 } from '../constants/homepageTypography';
-import erizoImg from '../media/erizo.png';
 
 interface CheckoutPageProps {}
-
-const checkoutRowLabelClass = 'text-sm font-semibold leading-[18px] text-[#1c1c1c]';
-const checkoutRowValueClass = 'text-sm leading-snug text-[#6a6a6a]';
-const checkoutDividerClass = 'h-px bg-[#e8e8e8]';
-const checkoutNoticeBoxClass = 'mt-3 rounded border border-[#e8e8e8] bg-[#fafafa] p-2';
-const checkoutNoticeTextClass = 'text-[11px] leading-[14px] text-[#6a6a6a]';
-
-function CheckoutLegalNotices({
-    sourceCurrency,
-    collapsible = false,
-    defaultOpen = false,
-}: {
-    sourceCurrency: string;
-    collapsible?: boolean;
-    defaultOpen?: boolean;
-}) {
-    const body = (
-        <>
-            <p className="text-xs leading-relaxed text-[#595959]">
-                <strong className="text-[#1c1c1c]">Aviso de conversión bancaria:</strong> El cargo final lo realiza Stripe en {sourceCurrency}.
-                Tu banco puede aplicar tasas de cambio y comisiones distintas, por lo que el importe cobrado puede variar ligeramente de la estimación mostrada.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-[#595959]">
-                <strong className="text-[#1c1c1c]">Cancelación gratuita:</strong> Si cancelas antes de que el experto comience la revisión, recibirás un reembolso completo.{' '}
-                <a
-                    href="/terms.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-[#1c1c1c] underline decoration-brand underline-offset-2 hover:no-underline"
-                >
-                    Ver condiciones
-                </a>
-            </p>
-        </>
-    );
-
-    if (!collapsible) {
-        return <div className={checkoutNoticeBoxClass}>{body}</div>;
-    }
-
-    return (
-        <details className="mt-3 group" defaultOpen={defaultOpen}>
-            <summary className="cursor-pointer list-none text-xs font-semibold text-[#1c1c1c] underline-offset-2 hover:underline [&::-webkit-details-marker]:hidden">
-                Información legal y condiciones
-            </summary>
-            <div className={`${checkoutNoticeBoxClass} mt-2`}>{body}</div>
-        </details>
-    );
-}
 
 export function CheckoutPage({}: CheckoutPageProps) {
     const { serviceId } = useParams<{ serviceId: string }>();
     const navigate = useNavigate();
+    const routerLocation = useLocation();
     const { isAuthenticated } = useAuth();
     const { fetchApi } = useApi();
     const { createSearchWithHire } = useSearch();
@@ -200,6 +151,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     latitude: expert.Latitude || expert.latitude,
                                     longitude: expert.Longitude || expert.longitude,
                                     locationRange: expert.LocationRange || expert.locationRange,
+                                    workRadiusKm: expert.WorkRadiusKm ?? expert.workRadiusKm,
                                     stripeStatus: (() => {
                                         const raw = expert.StripeStatus ?? expert.stripeStatus;
                                         if (typeof raw === 'string') return raw;
@@ -265,9 +217,19 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const sourceCurrency = service?.priceCurrency || 'EUR';
     const formatPriceDisplay = (amount: number) => formatPriceWithSource(amount, sourceCurrency, preferredCurrency);
 
+    // 📱 OBLIGATORIO: móvil verificado para contratar (el backend también lo exige
+    // con errorCode PHONE_VERIFICATION_REQUIRED — esto lo hace visible ANTES de pagar).
+    const phoneStatusQuery = usePhoneStatus(isAuthenticated);
+    const phoneSmsCapable = Boolean(phoneStatusQuery.data?.smsCapable);
+    const phoneStatusLoaded = !phoneStatusQuery.isLoading;
+
     const handlePayment = async () => {
         if (!service) {
             showToast('error', 'Error: Servicio no disponible');
+            return;
+        }
+        if (phoneStatusLoaded && !phoneSmsCapable) {
+            showToast('error', 'Necesitas un móvil verificado para contratar: te avisamos por SMS de citas e informes.');
             return;
         }
 
@@ -297,6 +259,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
         setIsSubmitting(true);
 
         try {
+            const hireSearchLocation = resolveCheckoutLocation(routerLocation.state, {
+                city: service.expert?.city,
+                country: service.expert?.country,
+                countryName: service.expert?.country ? getCountryName(service.expert.country) : null,
+                latitude: service.expert?.latitude,
+                longitude: service.expert?.longitude,
+            });
+            if (hireSearchLocation) persistHireSearchLocation(hireSearchLocation);
+
             // 🛡️ Round 10 — P-A FIX: log sólo en dev (en prod expone IDs y URLs Stripe).
             if (import.meta.env.DEV) {
                 console.log('🔵 Creando búsqueda con contratación para servicio:', service.id);
@@ -322,8 +293,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
             const parameterData = {
                 keywords: truncateForMetadata(service.serviceTypeName || 'Servicio', 100),
                 userSearch: truncateForMetadata(service.conditions || service.serviceTypeDescription || ''),
-                latitude: service.expert?.latitude?.toString() || null,
-                longitude: service.expert?.longitude?.toString() || null,
+                latitude: hireSearchLocation?.latitude ?? service.expert?.latitude?.toString() ?? null,
+                longitude: hireSearchLocation?.longitude ?? service.expert?.longitude?.toString() ?? null,
                 locationRange: service.expert?.locationRange || 25,
                 frequency: 24,
                 category: service.categoryId || 0,
@@ -335,7 +306,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 modelId: null,
                 serviceTypeId: service.serviceTypeId || null,
                 platformIds: [1, 2],
-                locationName: service.expert?.country || 'España',
+                locationName:
+                    hireSearchLocation?.locationName ??
+                    service.expert?.city ??
+                    service.expert?.country ??
+                    'España',
             };
 
             // Usar createSearchWithHire (igual que en SearchForm.tsx)
@@ -414,7 +389,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // fuera de ES. Solución honesta: mostrar solo el TOTAL; el desglose base/IVA real va en la factura post-pago.
     const finalTotal = finalPrice;
     const finalDeliverableTypes = normalizeDeliverableTypes(service.selectedDeliverableTypes);
-    const finalImages = service.imageUrls || [];
     const finalExpertName = service.expert?.user?.name || 'Experto';
     const finalServiceTypeName = service.serviceTypeName || 'Servicio';
     const expertStripeStatus = service.expert?.stripeStatus;
@@ -422,17 +396,17 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const expertCanReceivePayments =
         !expertStripeStatus || allowedStripeStatuses.includes(expertStripeStatus);
     const desktopPriceInfo = formatPriceDisplay(finalTotal);
-    const expertLatRaw = service.expert?.latitude ?? service.expertLatitude;
-    const expertLngRaw = service.expert?.longitude ?? service.expertLongitude;
-    const expertLat = expertLatRaw != null ? Number(expertLatRaw) : NaN;
-    const expertLng = expertLngRaw != null ? Number(expertLngRaw) : NaN;
-    const hasExpertCoords = Number.isFinite(expertLat) && Number.isFinite(expertLng);
-    // Rango de trabajo elegido por el experto: 0 = solo en su taller (válido); si el
-    // campo no viene (cache antigua), fallback al legacy locationRange / 25 km.
-    const expertWorkRadius = readWorkRadiusKm(service.expert);
-    const expertRangeKm = expertWorkRadius !== null
-        ? expertWorkRadius
-        : Math.max(5, Number(service.expert?.locationRange) || 25);
+    const hireSearchLocation = resolveCheckoutLocation(routerLocation.state, {
+        city: service.expert?.city,
+        country: service.expert?.country,
+        countryName: service.expert?.country ? getCountryName(service.expert.country) : null,
+        latitude: service.expert?.latitude,
+        longitude: service.expert?.longitude,
+    });
+    const checkoutLocationLabel = hireSearchLocation?.locationName ?? null;
+    const expertWorkRadiusKm = resolveExpertWorkRadiusKm(service);
+    const timezoneLabel = formatTimezoneFriendly(service.expert?.timezone) || null;
+    const isProcessing = isSubmitting || createSearchWithHire.isPending;
 
     const handleBack = () => {
         if (serviceId) {
@@ -449,356 +423,149 @@ export function CheckoutPage({}: CheckoutPageProps) {
     return (
         <>
             {/* Versión Desktop */}
-            <div className="hidden min-h-screen bg-[#fafafa] lg:block">
+            <div className="checkout-page hidden min-h-screen bg-[#fafafa] lg:block">
                 <HomepageDesktopTopBar
                     variant="checkout"
                     onBack={handleBack}
                     pageTitle="Confirmar y pagar"
                 />
-                <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-10 pt-3`}>
-                    <p className="mb-4 text-sm text-[#6a6a6a]">{ESCROW_CHECKOUT_INTRO}</p>
-
+                <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-12 pt-8`}>
                     <div className={SD_CHECKOUT_GRID_CLASS}>
-                        <main className="min-w-0">
-                            <div className="divide-y divide-[#ebebeb] rounded-xl border border-[#e8e8e8] bg-white p-5">
-                                <section aria-labelledby="checkout-booking-heading" className="pb-4">
-                                    <h2 id="checkout-booking-heading" className="text-xs font-medium text-[#6a6a6a]">
-                                        Tu reserva
-                                    </h2>
-                                    <p className="mt-1.5 text-sm text-[#1c1c1c]">
-                                        <span className="font-medium">{finalServiceTypeName}</span>
-                                        <span className="text-[#6a6a6a]"> · {finalExpertName}</span>
-                                    </p>
-                                    <p className="mt-2 text-xs text-[#6a6a6a]">
-                                        {serviceDuration}
-                                        {service?.categoryName ? ` · ${service.categoryName}` : ''}
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={handleBack}
-                                        className={`mt-2 text-xs font-medium text-brand ${HP_LINK_UNDERLINE_CLASS}`}
-                                    >
-                                        Ver ficha del servicio
-                                    </button>
-                                </section>
-
-                                {finalDeliverableTypes.length > 0 ? (
-                                    <section
-                                        className="py-4 [&_.sd-section-label]:mb-2 [&_.sd-section-label]:text-xs [&_.sd-section-label]:font-medium [&_.sd-section-label]:text-[#6a6a6a]"
-                                        aria-label="Qué incluye este servicio"
-                                    >
-                                        <ServiceDetailDeliverablesGuide
-                                            items={finalDeliverableTypes}
-                                            variant="inline"
-                                            showHeading
-                                        />
-                                    </section>
-                                ) : null}
-
-                                <section className="py-4" aria-labelledby="checkout-steps-heading">
-                                    <h2 id="checkout-steps-heading" className="text-xs font-medium text-[#6a6a6a]">
-                                        Al reservar
-                                    </h2>
-                                    <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#6a6a6a]">
-                                        {ESCROW_CHECKOUT_STEPS.map((text, index) => (
-                                            <li key={text} className="flex gap-2">
-                                                <span className="shrink-0 font-medium tabular-nums text-[#1c1c1c]">
-                                                    {index + 1}.
-                                                </span>
-                                                <span>{text}</span>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                </section>
-
-                                {hasExpertCoords ? (
-                                    <section className="pt-4" aria-labelledby="checkout-coverage-heading">
-                                        <h2 id="checkout-coverage-heading" className="text-xs font-medium text-[#6a6a6a]">
-                                            Cobertura · {expertRangeKm === 0 ? 'Solo en su taller' : `${expertRangeKm} km`}
-                                        </h2>
-                                        <ServiceDetailCoverageMap
-                                            latitude={expertLat}
-                                            longitude={expertLng}
-                                            rangeKm={expertRangeKm}
-                                            variant="preview"
-                                            expandable
-                                            className="mt-2 h-36 w-full rounded-lg border border-[#e8e8e8]"
-                                        />
-                                    </section>
-                                ) : null}
-                            </div>
+                        <main className="min-w-0 space-y-5">
+                            <CheckoutSummaryTable
+                                serviceName={finalServiceTypeName}
+                                expertName={finalExpertName}
+                                durationLabel={serviceDuration}
+                                categoryName={service?.categoryName}
+                                locationLabel={checkoutLocationLabel}
+                                locationRangeKm={expertWorkRadiusKm}
+                                deliverables={finalDeliverableTypes}
+                                includePrice={false}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                className={`text-sm font-medium text-brand ${HP_LINK_UNDERLINE_CLASS}`}
+                            >
+                                Ver ficha del servicio
+                            </button>
                         </main>
 
-                        <aside className={`lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}>
-                            <article
-                                className={`flex flex-col overflow-hidden rounded-xl border border-[#e8e8e8] bg-white p-5 shadow-sm ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
-                            >
-                                <div className="flex gap-3">
-                                    {finalImages[0] ? (
-                                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
-                                            <img
-                                                src={finalImages[0]}
-                                                alt={finalServiceTypeName}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </div>
-                                    ) : null}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium text-[#1c1c1c]">
-                                            {finalServiceTypeName}
-                                        </p>
-                                        <p className="mt-0.5 truncate text-xs text-[#6a6a6a]">{finalExpertName}</p>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 border-t border-[#ebebeb] pt-4">
-                                    <p className="text-xs text-[#6a6a6a]">Total · impuestos incluidos</p>
-                                    <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#1c1c1c]">
-                                        {desktopPriceInfo.wasConverted ? (
-                                            <>
-                                                <span className="mr-0.5 text-base font-medium text-brand">≈</span>
-                                                {desktopPriceInfo.converted}
-                                            </>
-                                        ) : (
-                                            desktopPriceInfo.display
-                                        )}
-                                    </p>
-                                    {desktopPriceInfo.wasConverted ? (
-                                        <p className="mt-1 text-[11px] text-[#6a6a6a]">
-                                            {desktopPriceInfo.sourceFormatted} · cargo en {sourceCurrency}
-                                        </p>
-                                    ) : null}
-                                    {showPriceDetails ? (
-                                        <p className="mt-2 text-[11px] leading-relaxed text-[#6a6a6a]">
-                                            El IVA se calcula en Stripe según tu país de facturación.
-                                        </p>
-                                    ) : null}
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPriceDetails(!showPriceDetails)}
-                                        className="mt-2 inline-flex items-center gap-0.5 text-[11px] font-medium text-[#6a6a6a] hover:text-[#1c1c1c]"
-                                        aria-expanded={showPriceDetails}
-                                    >
-                                        <ChevronDown
-                                            aria-hidden
-                                            className={`h-3 w-3 transition-transform ${showPriceDetails ? 'rotate-180' : ''}`}
-                                        />
-                                        {showPriceDetails ? 'Ocultar' : 'Detalles de precio'}
-                                    </button>
-                                </div>
-
-                                {(() => {
-                                    const tzLabel = formatTimezoneFriendly(service.expert?.timezone);
-                                    if (!tzLabel) return null;
-                                    return (
-                                        <p className="mt-3 flex items-center gap-1.5 text-[11px] text-[#6a6a6a]">
-                                            <Globe className="h-3 w-3 shrink-0 text-brand" aria-hidden />
-                                            Horario: {tzLabel}
-                                        </p>
-                                    );
-                                })()}
-
-                                <footer className="mt-4 space-y-2 border-t border-[#ebebeb] pt-4">
-                                    {!expertCanReceivePayments ? (
-                                        <p className="text-xs text-amber-800">
-                                            Este experto no puede recibir contrataciones ahora.
-                                        </p>
-                                    ) : null}
-                                    <button
-                                        onClick={handlePayment}
-                                        disabled={
-                                            !expertCanReceivePayments ||
-                                            isSubmitting ||
-                                            createSearchWithHire.isPending
-                                        }
-                                        type="button"
-                                        aria-busy={isSubmitting || createSearchWithHire.isPending}
-                                        className="inline-flex h-10 w-full items-center justify-center rounded-full bg-brand text-sm font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-wait disabled:opacity-75"
-                                    >
-                                        {isSubmitting || createSearchWithHire.isPending
-                                            ? 'Procesando...'
-                                            : 'Reservar'}
-                                    </button>
-                                    <p className="text-center text-[11px] leading-relaxed text-[#6a6a6a]">
-                                        Redirección a Stripe para completar el pago.
-                                    </p>
-                                    <CheckoutLegalNotices
-                                        sourceCurrency={sourceCurrency}
-                                        collapsible
-                                        defaultOpen={false}
-                                    />
-                                </footer>
-                            </article>
-                        </aside>
+                        <CheckoutPaymentAside
+                            priceDisplay={
+                                desktopPriceInfo.wasConverted ? (
+                                    <>
+                                        <span className="mr-0.5 text-base font-medium text-brand">≈</span>
+                                        {desktopPriceInfo.converted}
+                                    </>
+                                ) : (
+                                    desktopPriceInfo.display
+                                )
+                            }
+                            priceSubline={
+                                desktopPriceInfo.wasConverted ? (
+                                    <>
+                                        {desktopPriceInfo.sourceFormatted} · cargo en {sourceCurrency}
+                                    </>
+                                ) : undefined
+                            }
+                            showPriceDetails={showPriceDetails}
+                            onTogglePriceDetails={() => setShowPriceDetails(!showPriceDetails)}
+                            timezoneLabel={timezoneLabel}
+                            canPay={expertCanReceivePayments}
+                            isProcessing={isProcessing}
+                            onPay={handlePayment}
+                            legalNotices={
+                                <CheckoutLegalNotices
+                                    sourceCurrency={sourceCurrency}
+                                    collapsible
+                                    defaultOpen={false}
+                                    variant="plain"
+                                />
+                            }
+                        />
                     </div>
                 </div>
             </div>
 
             {/* Versión Móvil */}
-            <div className="min-h-screen bg-[#fafafa] lg:hidden">
-                <div className={SD_MOBILE_SCROLL_PAD_TRUST_CLASS}>
-                    <header
-                        className={`${SD_MOBILE_GUTTER_CLASS} pb-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]`}
-                    >
-                        <div className="flex items-center gap-2">
+            <div className="checkout-page min-h-screen bg-white lg:hidden">
+                <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
+                    <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
+                        <div className={SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS}>
                             <button
                                 type="button"
                                 onClick={handleBack}
-                                className="sd-icon-btn shrink-0"
+                                className={SD_CHECKOUT_MOBILE_BACK_BTN_CLASS}
                                 aria-label="Volver"
                             >
                                 <ArrowLeft className="h-5 w-5" aria-hidden />
                             </button>
-                            <a
-                                href="/"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate('/');
-                                }}
-                                className="inline-flex min-w-0 items-center gap-2"
-                                aria-label="Inspecciono — inicio"
-                            >
-                                <img
-                                    src={erizoImg}
-                                    alt=""
-                                    className="h-8 w-8 -scale-x-100 shrink-0 object-contain"
-                                    style={{ imageRendering: '-webkit-optimize-contrast' }}
-                                />
-                                <span className="truncate text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                                    Inspecciono
+                            <h1 className="min-w-0 flex-1">
+                                <span className={SD_CHECKOUT_MOBILE_TITLE_CLASS}>
+                                    Confirmar y pagar
+                                    <span
+                                        aria-hidden
+                                        className="checkout-mobile-title-underline"
+                                        style={hpCheckoutTitleUnderlineStyle}
+                                    />
                                 </span>
-                            </a>
+                            </h1>
                         </div>
-                        <h1 className="sr-only">Confirmar y pagar</h1>
-                        <p className="mt-3 text-sm text-[#6a6a6a]">{ESCROW_CHECKOUT_INTRO}</p>
                     </header>
 
-                    <div className={`${SD_MOBILE_GUTTER_CLASS} space-y-4 pb-4`}>
-                        <div className="divide-y divide-[#ebebeb] rounded-xl border border-[#e8e8e8] bg-white p-5">
-                            <section className="pb-4" aria-labelledby="checkout-mobile-service-heading">
-                                <div className="flex gap-3">
-                                    {finalImages[0] ? (
-                                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
-                                            <img
-                                                src={finalImages[0]}
-                                                alt={finalServiceTypeName}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </div>
-                                    ) : null}
-                                    <div className="min-w-0 flex-1">
-                                        <h2
-                                            id="checkout-mobile-service-heading"
-                                            className="text-sm font-medium text-[#1c1c1c]"
-                                        >
-                                            {finalServiceTypeName}
-                                        </h2>
-                                        <p className="mt-0.5 text-xs text-[#6a6a6a]">{finalExpertName}</p>
-                                        <p className="mt-2 text-xs text-[#6a6a6a]">
-                                            {serviceDuration}
-                                            {service?.categoryName ? ` · ${service.categoryName}` : ''}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleBack}
-                                    className={`mt-3 text-xs font-medium text-brand ${HP_LINK_UNDERLINE_CLASS}`}
-                                >
-                                    Ver ficha del servicio
-                                </button>
-                            </section>
-
-                            {finalDeliverableTypes.length > 0 ? (
-                                <section
-                                    className="py-4 [&_.sd-section-label]:mb-2 [&_.sd-section-label]:text-xs [&_.sd-section-label]:font-medium [&_.sd-section-label]:text-[#6a6a6a]"
-                                    aria-label="Qué incluye este servicio"
-                                >
-                                    <ServiceDetailDeliverablesGuide
-                                        items={finalDeliverableTypes}
-                                        variant="inline"
-                                        showHeading
-                                    />
-                                </section>
-                            ) : null}
-
-                            <section className="py-4" aria-labelledby="checkout-mobile-steps-heading">
-                                <h2
-                                    id="checkout-mobile-steps-heading"
-                                    className="text-xs font-medium text-[#6a6a6a]"
-                                >
-                                    Al reservar
-                                </h2>
-                                <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#6a6a6a]">
-                                    {ESCROW_CHECKOUT_STEPS.map((text, index) => (
-                                        <li key={text} className="flex gap-2">
-                                            <span className="shrink-0 font-medium tabular-nums text-[#1c1c1c]">
-                                                {index + 1}.
-                                            </span>
-                                            <span>{text}</span>
-                                        </li>
-                                    ))}
-                                </ol>
-                            </section>
-
-                            {hasExpertCoords ? (
-                                <section className="pt-4" aria-labelledby="checkout-mobile-coverage-heading">
-                                    <h2
-                                        id="checkout-mobile-coverage-heading"
-                                        className="text-xs font-medium text-[#6a6a6a]"
-                                    >
-                                        Cobertura · {expertRangeKm === 0 ? 'Solo en su taller' : `${expertRangeKm} km`}
-                                    </h2>
-                                    <ServiceDetailCoverageMap
-                                        latitude={expertLat}
-                                        longitude={expertLng}
-                                        rangeKm={expertRangeKm}
-                                        variant="preview"
-                                        expandable
-                                        className="mt-2 h-36 w-full rounded-lg border border-[#e8e8e8]"
-                                    />
-                                </section>
-                            ) : null}
-                        </div>
-
-                        <CheckoutLegalNotices
-                            sourceCurrency={sourceCurrency}
-                            collapsible
-                            defaultOpen={false}
-                        />
-                    </div>
+                    {(() => {
+                        const priceInfo = formatPriceDisplay(finalTotal);
+                        return (
+                            <CheckoutMobileSheet
+                                serviceName={finalServiceTypeName}
+                                durationLabel={serviceDuration}
+                                categoryName={service?.categoryName}
+                                locationLabel={checkoutLocationLabel}
+                                locationRangeKm={expertWorkRadiusKm}
+                                timezoneLabel={timezoneLabel}
+                                deliverables={finalDeliverableTypes}
+                                priceDisplay={
+                                    priceInfo.wasConverted ? (
+                                        <>
+                                            <span className="mr-0.5 text-sm font-medium text-brand">≈</span>
+                                            {priceInfo.converted}
+                                        </>
+                                    ) : (
+                                        priceInfo.display
+                                    )
+                                }
+                                priceSubline={
+                                    priceInfo.wasConverted
+                                        ? `${priceInfo.sourceFormatted} · cargo en ${sourceCurrency}`
+                                        : undefined
+                                }
+                                showPriceDetails={showPriceDetails}
+                                onTogglePriceDetails={() => setShowPriceDetails(!showPriceDetails)}
+                            />
+                        );
+                    })()}
                 </div>
 
-                {(() => {
-                    const priceInfo = formatPriceDisplay(finalTotal);
-                    return (
-                        <MobileReserveFooter
-                            price={priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
-                            priceSuffix="total"
-                            priceAriaLabel={`Precio total ${priceInfo.display}`}
-                            trustNote={
-                                <>
-                                    <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                                    {ESCROW_TRUST_TAGLINE}
-                                </>
-                            }
-                        >
-                            <button
-                                onClick={handlePayment}
-                                disabled={
-                                    !expertCanReceivePayments ||
-                                    isSubmitting ||
-                                    createSearchWithHire.isPending
-                                }
-                                type="button"
-                                aria-busy={isSubmitting || createSearchWithHire.isPending}
-                                className={SD_MOBILE_FOOTER_CTA_CLASS}
-                            >
-                                {isSubmitting || createSearchWithHire.isPending ? 'Procesando...' : 'Reservar'}
-                            </button>
-                        </MobileReserveFooter>
-                    );
-                })()}
+                {/* 📱 OBLIGATORIO: sin móvil verificado no se puede contratar — el flujo de
+                    verificación se hace aquí mismo, sin salir del checkout. */}
+                {phoneStatusLoaded && !phoneSmsCapable && (
+                    <div className="mx-auto w-full max-w-2xl px-4 pb-4">
+                        <PhoneStatusCard context="client" />
+                    </div>
+                )}
+
+                <CheckoutMobileStickyFooter>
+                    <button
+                        onClick={handlePayment}
+                        disabled={!expertCanReceivePayments || isProcessing || (phoneStatusLoaded && !phoneSmsCapable)}
+                        type="button"
+                        aria-busy={isProcessing}
+                        className={SD_CHECKOUT_MOBILE_CTA_CLASS}
+                    >
+                        {isProcessing ? 'Procesando...' : (phoneStatusLoaded && !phoneSmsCapable) ? 'Verifica tu móvil para reservar' : 'Reservar'}
+                    </button>
+                </CheckoutMobileStickyFooter>
             </div>
 
             {isSubmitting && (

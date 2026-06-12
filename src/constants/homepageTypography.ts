@@ -55,6 +55,18 @@ export const hpTitleUnderlineBarStyle = {
   opacity: 0.85,
 };
 
+/** Subrayado checkout móvil — pegado al texto, barra fina */
+export const hpCheckoutTitleUnderlineStyle = {
+  position: 'absolute' as const,
+  bottom: '-3px',
+  left: 0,
+  right: 0,
+  height: '3px',
+  background: HP_TITLE_UNDERLINE_GRADIENT,
+  borderRadius: '9999px',
+  boxShadow: '0 2px 8px hsl(var(--brand) / 0.28)',
+};
+
 /** Clase Tailwind para enlaces subrayados de marca */
 export const HP_LINK_UNDERLINE_CLASS =
   'underline decoration-brand underline-offset-2 hover:no-underline transition-all';
@@ -174,9 +186,91 @@ export const SD_CHECKOUT_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[72rem] px-5 lg:px-8';
 
 export const SD_CHECKOUT_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-12 lg:gap-y-0';
 
-/** Gutter horizontal móvil — 20px (375px: aire sin apretar Chat/CTA) */
+/** Título visible checkout desktop */
+export const SD_CHECKOUT_PAGE_TITLE_CLASS =
+  'text-lg font-semibold leading-tight tracking-[-0.02em] text-[#222222]';
+
+/** Título checkout móvil — compacto, alineado con topbar de ficha */
+export const SD_CHECKOUT_MOBILE_TITLE_CLASS =
+  'relative inline-block font-display text-xl font-semibold leading-tight tracking-[-0.02em] text-[#222222]';
+
+/** Gutter checkout móvil — 24px (más aire que ficha genérica) */
+export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-6';
+
+/** Cabecera checkout móvil — fila back + título con gutter y safe-area */
+export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
+  'border-b border-[#ebebeb] pb-5 pt-[max(1rem,env(safe-area-inset-top,0px))] ' +
+  SD_CHECKOUT_MOBILE_GUTTER_CLASS;
+
+export const SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS =
+  'flex min-h-12 items-center gap-3';
+
+export const SD_CHECKOUT_MOBILE_BACK_BTN_CLASS =
+  'sd-icon-btn h-10 w-10 shrink-0';
+
+/** Etiqueta de fila checkout móvil */
+export const SD_CHECKOUT_MOBILE_LABEL_CLASS =
+  'text-xs font-medium leading-4 text-[#6a6a6a]';
+
+/** Valor principal de fila checkout móvil */
+export const SD_CHECKOUT_MOBILE_VALUE_CLASS =
+  'text-sm font-normal leading-snug text-[#222222]';
+
+/** Meta secundaria (rango, notas) */
+export const SD_CHECKOUT_MOBILE_META_CLASS =
+  'text-xs font-normal leading-relaxed text-[#6a6a6a]';
+
+/** Gutter + ritmo vertical filas checkout móvil (legacy full-bleed) */
+export const SD_CHECKOUT_MOBILE_ROW_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-[#ebebeb] py-4`;
+
+/** Contenedor tabla resumen — estilo Airbnb */
+export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} py-4`;
+
+export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
+  'overflow-hidden rounded-xl border border-[#dddddd] bg-white';
+
+export const SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS =
+  'flex items-start justify-between gap-4 border-b border-[#ebebeb] px-4 py-3.5 last:border-b-0';
+
+export const SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS =
+  'shrink-0 text-sm font-normal text-[#222222]';
+
+export const SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS =
+  'min-w-0 max-w-[62%] text-end text-sm font-normal leading-snug text-[#222222]';
+
+export const SD_CHECKOUT_MOBILE_TABLE_VALUE_META_CLASS =
+  'mt-0.5 block text-xs leading-snug text-[#6a6a6a]';
+
+export const SD_CHECKOUT_MOBILE_NOTES_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-[#ebebeb] py-4`;
+
+/** Fila de confianza checkout móvil — icono + una línea */
+export const SD_CHECKOUT_MOBILE_TRUST_ITEM_CLASS =
+  'flex items-start gap-3 text-sm font-normal leading-snug text-[#222222]';
+
+export const SD_CHECKOUT_MOBILE_TRUST_ICON_CLASS =
+  'mt-0.5 h-4 w-4 shrink-0 text-brand';
+
+export const SD_CHECKOUT_MOBILE_LEGAL_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} py-4`;
+
+/** Scroll checkout móvil — footer con nota + CTA */
+export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
+  'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]';
+
+/** Footer checkout móvil — borde fino, sin sombra (patrón Airbnb) */
+export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
+  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#dddddd] bg-white';
+
+/** CTA checkout móvil a ancho completo — negro tipo Airbnb */
+export const SD_CHECKOUT_MOBILE_CTA_CLASS =
+  'inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#222222] text-base font-semibold text-white transition-colors hover:bg-black active:scale-[0.99] disabled:cursor-wait disabled:opacity-60';
+
+/** Gutter horizontal móvil — 20px */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
 
 /** Solape de la card blanca sobre el hero */

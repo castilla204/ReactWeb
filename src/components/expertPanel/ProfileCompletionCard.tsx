@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle2, Circle, EyeOff, ArrowRight } from 'lucide-react';
+import { usePhoneStatus } from './PhoneStatusCard';
 
 /**
  * 🧩 STRIPE-FIRST: checklist de "Completa tu perfil" en el panel del experto.
@@ -19,6 +20,7 @@ interface ProfileLike {
 }
 
 export function ProfileCompletionCard({ profile, onEdit }: { profile: ProfileLike | null | undefined; onEdit: () => void }) {
+    const phoneStatus = usePhoneStatus(Boolean(profile));
     if (!profile) return null;
     const raw = profile as Record<string, unknown>;
     const pick = (a: string, b: string) => (raw[a] ?? raw[b]) as unknown;
@@ -27,11 +29,13 @@ export function ProfileCompletionCard({ profile, onEdit }: { profile: ProfileLik
     const hasDescription = String((pick('description', 'Description') as string | null) ?? '').trim().length >= 10;
     const hasLocation = Boolean(String((pick('latitude', 'Latitude') as string | null) ?? '').trim());
     const hasAvailability = Boolean(pick('currentAvailability', 'CurrentAvailability'));
+    const hasMobile = Boolean(phoneStatus.data?.smsCapable);
 
     const items: Array<{ label: string; done: boolean; required: boolean }> = [
         { label: 'Foto de perfil', done: hasPhoto, required: true },
         { label: 'Descripción (mín. 10 caracteres)', done: hasDescription, required: true },
         { label: 'Ubicación de tu taller/zona', done: hasLocation, required: true },
+        { label: 'Móvil verificado (avisos por SMS)', done: hasMobile, required: true },
         { label: 'Disponibilidad horaria', done: hasAvailability, required: false },
     ];
 
