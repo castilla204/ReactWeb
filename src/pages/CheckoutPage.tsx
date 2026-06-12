@@ -15,6 +15,11 @@ import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import {
+  ESCROW_CHECKOUT_INTRO,
+  ESCROW_CHECKOUT_STEPS,
+  ESCROW_TRUST_TAGLINE,
+} from '../constants/escrowCopy';
+import {
     ServiceDetailDeliverablesGuide,
     normalizeDeliverableTypes,
 } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
@@ -451,9 +456,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     pageTitle="Confirmar y pagar"
                 />
                 <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-10 pt-3`}>
-                    <p className="mb-4 text-sm text-[#6a6a6a]">
-                        Revisa los datos y continúa al pago. El importe queda retenido hasta que apruebes el informe.
-                    </p>
+                    <p className="mb-4 text-sm text-[#6a6a6a]">{ESCROW_CHECKOUT_INTRO}</p>
 
                     <div className={SD_CHECKOUT_GRID_CLASS}>
                         <main className="min-w-0">
@@ -497,11 +500,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         Al reservar
                                     </h2>
                                     <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#6a6a6a]">
-                                        {[
-                                            'Pago seguro en Stripe.',
-                                            'Importe retenido hasta aprobar el informe.',
-                                            'Coordinas fecha y lugar por chat (mín. 24 h).',
-                                        ].map((text, index) => (
+                                        {ESCROW_CHECKOUT_STEPS.map((text, index) => (
                                             <li key={text} className="flex gap-2">
                                                 <span className="shrink-0 font-medium tabular-nums text-[#1c1c1c]">
                                                     {index + 1}.
@@ -671,10 +670,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             </a>
                         </div>
                         <h1 className="sr-only">Confirmar y pagar</h1>
-                        <p className="mt-3 text-sm text-[#6a6a6a]">
-                            Revisa los datos y continúa al pago. El importe queda retenido hasta que apruebes el
-                            informe.
-                        </p>
+                        <p className="mt-3 text-sm text-[#6a6a6a]">{ESCROW_CHECKOUT_INTRO}</p>
                     </header>
 
                     <div className={`${SD_MOBILE_GUTTER_CLASS} space-y-4 pb-4`}>
@@ -734,11 +730,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     Al reservar
                                 </h2>
                                 <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-[#6a6a6a]">
-                                    {[
-                                        'Pago seguro en Stripe.',
-                                        'Importe retenido hasta aprobar el informe.',
-                                        'Coordinas fecha y lugar por chat (mín. 24 h).',
-                                    ].map((text, index) => (
+                                    {ESCROW_CHECKOUT_STEPS.map((text, index) => (
                                         <li key={text} className="flex gap-2">
                                             <span className="shrink-0 font-medium tabular-nums text-[#1c1c1c]">
                                                 {index + 1}.
@@ -787,7 +779,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             trustNote={
                                 <>
                                     <Shield className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-                                    Pago retenido hasta aprobar el informe
+                                    {ESCROW_TRUST_TAGLINE}
                                 </>
                             }
                         >

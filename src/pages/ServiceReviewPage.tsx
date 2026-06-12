@@ -20,6 +20,7 @@ import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
+import { ESCROW_TRUST_TAGLINE } from '../constants/escrowCopy';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
@@ -672,7 +673,7 @@ export function ServiceReviewPage({
 
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-14 pt-5 lg:pt-6`}>
                     <ServiceDetailDesktopPhotoMapHero
-                        className="mb-6 lg:mb-8"
+                        className="mb-5 lg:mb-6"
                         images={validImages}
                         onOpen={handleImageClick}
                         loadingImages={loadingImages}
@@ -712,7 +713,7 @@ export function ServiceReviewPage({
                                 <section>
                                     {displayMainDescription ? (
                                         <>
-                                            <h2 className="hp-section-title mb-4">Acerca del servicio</h2>
+                                            <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
                                             <p className="sd-body whitespace-pre-line">
                                                 {displayMainDescription}
                                             </p>
@@ -724,7 +725,7 @@ export function ServiceReviewPage({
                                             variant="inline"
                                             presentation="chips"
                                             showHeading={!displayMainDescription}
-                                            className={displayMainDescription ? 'mt-5' : ''}
+                                            className={displayMainDescription ? 'mt-4' : ''}
                                         />
                                     ) : null}
                                 </section>
@@ -819,7 +820,7 @@ export function ServiceReviewPage({
                                                     className="h-3.5 w-3.5 shrink-0 text-brand"
                                                     aria-hidden
                                                 />
-                                                Pago retenido hasta aprobar el informe
+                                                {ESCROW_TRUST_TAGLINE}
                                             </p>
                                         </footer>
                                     </article>

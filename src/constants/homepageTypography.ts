@@ -132,20 +132,20 @@ export const HP_HERO_COVERAGE = {
 
 /** Contenido + aside (título dentro de la columna izquierda, alineado con aside) */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-12 lg:gap-y-0';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-10 lg:gap-y-0';
 
 /** Ritmo vertical secciones desktop */
 export const SD_DESKTOP_SECTION_PY_CLASS = 'py-0';
 
-/** Bloque principal bajo el hero — aire entre bloques, sin líneas largas */
-export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-9';
+/** Bloque principal bajo el hero */
+export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-6';
 
 /** Fila experto desktop — plana, línea inferior (sin caja gris) */
 export const SD_DESKTOP_HOST_ROW_CLASS =
-  'mt-5 border-b border-[#ebebeb] pb-6';
+  'mt-4 border-b border-[#ebebeb] pb-5';
 
-/** Reseñas desktop — ancho completo bajo el grid (sin borde aquí; lo pone el componente) */
-export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS = 'mt-10 w-full';
+/** Reseñas desktop — aire respecto al bloque superior; el separador lo pone el componente */
+export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS = 'mt-10 w-full lg:mt-12';
 
 /** Hero desktop 50/50 fotos + mapa — compacto, no dominar el viewport */
 export const SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS = 'h-[min(340px,32vh)]';
