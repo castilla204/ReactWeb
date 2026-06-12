@@ -182,30 +182,27 @@ function buildCartoStyle(): maplibregl.StyleSpecification {
  * 🔧 v7-globo: zoom 1.25 → 0.45. A 1.25 el planeta quedaba pegado a cámara
  * y se veía más bien como un casquete; a 0.45 se aprecia el "efecto globo
  * terráqueo" con esfera completa, curvatura del horizonte, espacio negro
- * alrededor. Pitch un poco menos agresivo (58 → 42) para que la rotación
- * de la Tierra se note mejor sin tanto picado.
+ * alrededor. Pitch moderado para globo reconocible sin picado excesivo.
  */
 const GLOBE_INTRO = {
   center: [0, 18] as [number, number],
   zoom: 0.45,
-  pitch: 42,
-  bearing: -22,
+  pitch: 28,
+  bearing: -14,
 } as const;
 
 /** Vista regional tras el vuelo desde el globo (fallback España).
  *
- * 🔧 v7-globo-stay: pitch 28 → 52. Antes la cámara post-landing quedaba casi
- * cenital sobre Iberia y, combinado con la conmutación a mercator, mataba la
- * sensación 3D. Con pitch 52 mantenemos el horizonte visible al fondo y, junto
- * con el cambio de NO conmutar a mercator (ver flyToLanding más abajo), se ve
- * la curvatura del planeta detrás de Iberia → "el globo no se aplana al final".
+ * Pitch moderado: curvatura del globo visible sin inclinación extrema (~52°
+ * se sentía demasiado girado). Con ~32° el mapa queda más legible y profesional
+ * manteniendo profundidad 3D en proyección globe.
  */
 const HERO_CAMERA = {
   center: [-4.0, 39.6] as [number, number],
   zoom: 4.1,
-  pitch: 52,
+  pitch: 32,
   bearing: 0,
-  maxPitch: 70,
+  maxPitch: 48,
 } as const;
 
 /** Hero móvil: mundo estático en franja lateral — sin globo ni vuelo regional */
@@ -480,9 +477,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         return;
       }
 
-      // 🔧 v7-globo-stay: animamos Y nos quedamos en globe (sin mercator final).
-      // El zoom de la última frame del flyTo cae a `landingZoom` (~2.05), con pitch
-      // alto la curvatura sigue siendo visible al fondo de Iberia.
+      // Animación regional en globe: pitch final moderado — curvatura sin exceso de inclinación.
       const globeFlyZoom = Math.max(GLOBE_INTRO.zoom, Math.min(landingZoom + 0.35, 3.2));
       targetMap.flyTo({
         center,
@@ -490,8 +485,8 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         pitch: HERO_CAMERA.pitch,
         bearing: HERO_CAMERA.bearing,
         duration: LANDING_FLY_MS,
-        speed: 1.1,
-        curve: 1.3,
+        speed: 1.05,
+        curve: 1.15,
         essential: true,
       });
 

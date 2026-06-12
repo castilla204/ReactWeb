@@ -49,7 +49,7 @@ function PhotoCell({
     <button
       type="button"
       onClick={() => onOpen(index)}
-      className="relative h-full w-full min-h-0 overflow-hidden border-0 bg-[#1c1c1c] p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80"
+      className="relative h-full w-full min-h-0 overflow-hidden border-0 bg-[#1c1c1c] p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97]"
       aria-label={alt}
     >
       {loadingImages.has(src) ? (
@@ -109,7 +109,6 @@ function MobileHeroPhotoStack({
 
   if (images.length === 1) {
     return (
-      <div className="h-full w-full">
       <PhotoCell
         src={images[0]}
         index={0}
@@ -122,7 +121,6 @@ function MobileHeroPhotoStack({
         onOpen={onOpenImage}
         eager
       />
-      </div>
     );
   }
 
@@ -183,7 +181,8 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
   const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
 
   return (
-    <div className="grid aspect-[4/3] w-full grid-cols-2 bg-[#1c1c1c]">
+    <div className="relative grid aspect-[4/3] w-full grid-cols-2 bg-[#1c1c1c]">
+      <div className="sd-mobile-hero-top-scrim" aria-hidden />
       <div className="relative min-h-0 min-w-0 overflow-hidden">
         <MobileHeroPhotoStack
           images={images}

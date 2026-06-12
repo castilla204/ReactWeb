@@ -535,9 +535,18 @@
         @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#737373] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] hover:text-[#1c1c1c];
     }
 
-    /* Flotantes hero móvil — disco blanco plano (listing), sin borde tipo juguete */
+    /* Flotantes hero móvil — disco blanco plano (legacy) */
     .sd-icon-btn-float {
         @apply inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white p-0 text-[#222222] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-opacity active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
+    }
+
+    /* Top bar móvil ficha — píldoras glass (alineado con mapa/búsqueda) */
+    .sd-mobile-topbar-btn {
+        @apply inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white/95 p-0 text-[#1c1c1c] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md transition-[transform,background-color,opacity] duration-150 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80;
+    }
+
+    .sd-mobile-hero-top-scrim {
+        @apply pointer-events-none absolute inset-x-0 top-0 z-[5] h-24 bg-gradient-to-b from-black/35 via-black/12 to-transparent;
     }
 
     /* Galería móvil — carrusel horizontal con snap */
@@ -547,6 +556,16 @@
 
     .sd-gallery-hero-track {
         @apply flex w-full snap-x snap-mandatory overflow-x-auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sd-gallery-hero-slide {
+        scroll-snap-stop: always;
+    }
+
+    .sd-gallery-hero-scrim {
+        @apply pointer-events-none;
     }
 
     .sd-gallery-hero-empty {
@@ -772,6 +791,18 @@
         @apply w-full pb-4;
     }
 
+    .sd-reviews-preview-summary-mobile__stats {
+        @apply mx-auto flex w-full max-w-[17.5rem] flex-col items-center gap-4;
+    }
+
+    .sd-reviews-preview-summary-mobile__score {
+        @apply w-full text-center;
+    }
+
+    .sd-reviews-preview-summary-mobile__bars {
+        @apply w-full;
+    }
+
     .sd-reviews-mobile-score {
         @apply font-display text-[1.75rem] font-semibold leading-none tracking-tight;
     }
@@ -877,7 +908,7 @@
     }
 
     .sd-tab {
-        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-3.5 text-center text-sm leading-5 text-[#717171] font-normal transition-colors;
+        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-4 text-center text-sm leading-5 text-[#717171] font-normal transition-colors;
     }
 
     .sd-tab[data-active='true'] {
