@@ -1527,6 +1527,16 @@ export function ExpertPanelPage() {
                             onEditProfile={() => setShowProfileEditForm(true)}
                         />
 
+                        {/* 🧩 STRIPE-FIRST + 📱 SMS-CENTRAL: requisitos para ser visible y operar.
+                            Visibles en TODOS los viewports, arriba del todo: perfil completo y
+                            móvil verificado son OBLIGATORIOS (gate en backend). */}
+                        {(profile || true) && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                <ProfileCompletionCard profile={profile} onEdit={() => setShowProfileEditForm(true)} />
+                                <PhoneStatusCard />
+                            </div>
+                        )}
+
                         {/* 🛡️ Round 28 MUD-BP: banner persistente Stripe cuando hay warnings
                             pero el panel sigue accesible. Antes solo se mostraba un micro-badge
                             en sidebar — el experto no entendía que tenía que actuar. Ahora
@@ -1658,12 +1668,7 @@ export function ExpertPanelPage() {
                                                     </p>
                                                 );
                                             })()}
-                                            {/* 🧩 STRIPE-FIRST: checklist de perfil — no visible hasta completar */}
-                                            <div className="mt-1.5">
-                                                <ProfileCompletionCard profile={profile} onEdit={() => setShowProfileEditForm(true)} />
-                                            </div>
-                                            {/* 📱 SMS-CENTRAL: estado del teléfono (móvil/fijo) + verificación OTP */}
-                                            <PhoneStatusCard className="mt-1.5" />
+                                            {/* 🧩 checklist y teléfono se muestran arriba del panel (todos los viewports) */}
                                     <div className="space-y-1.5">
                                         <button
                                             onClick={() => setShowProfileEditForm(true)}

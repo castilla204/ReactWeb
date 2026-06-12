@@ -10,6 +10,8 @@
 
 export const MAX_WORK_RADIUS_KM = 200;
 export const DEFAULT_WORK_RADIUS_KM = 100;
+/** Rango por defecto en búsquedas (SearchParameterForm). */
+export const SEARCH_DEFAULT_RADIUS_KM = 25;
 
 /**
  * Lee WorkRadiusKm de un objeto experto (cualquier casing).
@@ -25,7 +27,55 @@ export function readWorkRadiusKm(expert: unknown): number | null {
   return value;
 }
 
+/** Legacy locationRange del experto o del servicio. */
+export function readLegacyLocationRange(source: unknown): number | null {
+  const s = source as {
+    locationRange?: unknown;
+    LocationRange?: unknown;
+    expert?: { locationRange?: unknown; LocationRange?: unknown } | null;
+  } | null | undefined;
+  const raw =
+    s?.locationRange ??
+    s?.LocationRange ??
+    s?.expert?.locationRange ??
+    s?.expert?.LocationRange;
+  if (raw === null || raw === undefined) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return value;
+}
+
+/**
+ * Rango efectivo: WorkRadiusKm → locationRange legacy → fallback de búsqueda.
+ * Acepta el servicio completo o el objeto experto.
+ */
+export function resolveExpertWorkRadiusKm(
+  source: unknown,
+  fallbackKm: number = SEARCH_DEFAULT_RADIUS_KM,
+): number {
+  const expert = (source as { expert?: unknown } | null | undefined)?.expert ?? source;
+  const workRadius = readWorkRadiusKm(expert);
+  if (workRadius !== null) return workRadius;
+  const legacy =
+    readLegacyLocationRange(source) ?? readLegacyLocationRange(expert);
+  if (legacy !== null) return legacy;
+  return fallbackKm;
+}
+
+/** Etiqueta de cobertura para filas de checkout / ficha. */
+export function formatWorkRadiusCoverageLabel(km: number): string {
+  return km === 0 ? 'Solo en su taller' : `${Math.max(5, km)} km de radio`;
+}
+
 /** Etiqueta corta para badges: "Solo en su taller" o "Hasta 50 km". */
 export function formatWorkRadius(km: number): string {
   return km === 0 ? 'Solo en su taller' : `Hasta ${km} km`;
+}
+
+/** Ubicación + rango de cobertura (una línea). */
+export function formatLocationWithWorkRadius(
+  locationName: string,
+  rangeKm: number,
+): string {
+  return `${locationName} · ${formatWorkRadiusCoverageLabel(rangeKm)}`;
 }

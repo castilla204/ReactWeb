@@ -21,6 +21,7 @@ import { API_CONFIG } from '../config/api';
 import CountrySelector from '../components/CountrySelector';
 import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
+import { persistHireSearchLocation } from '../utils/hireSearchContext';
 import { Footer } from '../components/Footer';
 import { MapPageSkeleton } from '../components/ui/map-page-skeleton';
 
@@ -450,6 +451,18 @@ const SearchCreationPage: React.FC = () => {
         // Ensure strictMatchOnly is always false
         const updatedParameters = { ...parameters, strictMatchOnly: false };
         setSearchParameters(updatedParameters);
+
+        const locationName =
+            typeof (parameters as { locationName?: string }).locationName === 'string'
+                ? (parameters as { locationName?: string }).locationName!.trim()
+                : '';
+        if (locationName || parameters.latitude) {
+            persistHireSearchLocation({
+                locationName: locationName || 'Ubicación seleccionada',
+                latitude: parameters.latitude ?? null,
+                longitude: parameters.longitude ?? null,
+            });
+        }
         
         // Si viene el servicio seleccionado, guardarlo y pasar al siguiente paso (ServiceReviewPage)
         if (parameters.serviceId) {
