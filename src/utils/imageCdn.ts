@@ -24,7 +24,7 @@ const CDN_ZONE = 'https://inspecciono.com';
  *
  * @param width ancho CSS máximo al que se pinta; se pide 2x para retina.
  */
-export function getThumbUrl(url: string | null | undefined, width: number, quality = 75): string {
+export function getThumbUrl(url: string | null | undefined, width: number, quality = 85): string {
   if (!url) return '';
   // Solo URLs http(s) absolutas; data:/blob:/relativas se devuelven tal cual.
   if (!/^https?:\/\//i.test(url)) return url;

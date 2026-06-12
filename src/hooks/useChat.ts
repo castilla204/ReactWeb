@@ -156,7 +156,17 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         enabled: !!user && (!!searchHireId || !!searchId),
         retry: (failureCount, err) => failureCount < 3 && !err.message.includes('401') && !err.message.includes('Search hire not found'),
-        refetchInterval: () => (isConnectedRef.current ? false : 5000),
+        // ✅ TIEMPO REAL ROBUSTO: el polling de respaldo está SIEMPRE activo.
+        // Antes era `isConnected ? false : 5000` y tenía dos agujeros que dejaban el
+        // chat "en una sola dirección" hasta recargar:
+        //  1) el broadcast del backend a Supabase puede fallar en silencio (catch en
+        //     ChatController) con el canal SUBSCRIBED → nadie refresca jamás;
+        //  2) React Query NO ejecuta refetchInterval con la pestaña en segundo plano
+        //     por defecto → el receptor sin foco no recibía nada.
+        refetchInterval: () => (isConnectedRef.current ? 15000 : 4000),
+        refetchIntervalInBackground: true,
+        refetchOnWindowFocus: 'always',
+        refetchOnReconnect: 'always',
     });
 
     refetchConversationRef.current = refetch;
