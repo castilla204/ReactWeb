@@ -1001,9 +1001,18 @@ function BecomeExpertPage() {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data?.message || 'No se pudo completar el alta.');
-                // JWT fresco con rol Expert; recargamos para que la página derive el
-                // estado "experto sin Stripe" y muestre el bloque Conecta Stripe.
-                if (data?.token) setAuthToken(data.token);
+                // JWT fresco con rol Expert. CRÍTICO: el AuthContext lee el usuario de
+                // localStorage['userData'], NO del token — hay que actualizar AHÍ el rol,
+                // o tras recargar el usuario seguiría como Client y volvería a este selector.
+                const updatedUser = { ...(user || {}), role: 'Expert', Role: 'Expert' };
+                if (data?.token) {
+                    setAuthToken(data.token, updatedUser);
+                } else {
+                    localStorage.setItem('userData', JSON.stringify(updatedUser));
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                }
+                // Recargamos para que la página derive el estado "experto sin Stripe"
+                // y muestre el bloque Conecta Stripe.
                 window.location.reload();
             } catch (e: unknown) {
                 setFastPathError((e as Error)?.message || 'No se pudo completar el alta.');
