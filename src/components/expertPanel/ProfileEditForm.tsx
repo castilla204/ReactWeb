@@ -41,8 +41,19 @@ const defaultCenter = {
     lng: -3.7038,
 };
 
-// Radio de cobertura del experto (en km) — equivalente a los 100 000 m del círculo de Google Maps.
-const COVERAGE_RADIUS_KM = 100;
+// Radio de trabajo por defecto (en km) si el perfil aún no tiene WorkRadiusKm (backend default = 100).
+const DEFAULT_WORK_RADIUS_KM = 100;
+// Límite máximo del radio de trabajo configurable (igual que la validación del backend).
+const MAX_WORK_RADIUS_KM = 200;
+
+// Lee el radio de trabajo del perfil aceptando ambos casings (la API serializa PascalCase).
+function readWorkRadiusKm(profile: unknown): number {
+    const p = profile as { workRadiusKm?: unknown; WorkRadiusKm?: unknown } | null | undefined;
+    const raw = p?.workRadiusKm ?? p?.WorkRadiusKm;
+    const value = Number(raw);
+    if (Number.isFinite(value) && value >= 0 && value <= MAX_WORK_RADIUS_KM) return value;
+    return DEFAULT_WORK_RADIUS_KM;
+}
 
 // 🛡️ Round 28: colores azules translúcidos heredados del círculo de Google Maps original.
 const CIRCLE_FILL_COLOR = '#1e40af';
@@ -61,6 +72,7 @@ interface ProfileEditFormProps {
         createdAt: string;
         latitude?: number | string;
         longitude?: number | string;
+        workRadiusKm?: number;
         currentAvailability?: CurrentExpertAvailabilityDto | null;
     };
     onProfileUpdated: () => void;
@@ -137,6 +149,9 @@ export function ProfileEditForm({
 
     const [selectedLocation, setSelectedLocation] = useState(initialLocation);
 
+    // Rango de trabajo del experto: 0 = solo en su taller/punto fijo, máx 200 km.
+    const [workRadiusKm, setWorkRadiusKm] = useState<number>(() => readWorkRadiusKm(profile));
+
     useEffect(() => {
         const justOpened = showEditForm && !prevShowEditFormRef.current;
         prevShowEditFormRef.current = showEditForm;
@@ -188,6 +203,7 @@ export function ProfileEditForm({
                 : defaultCenter;
 
         setSelectedLocation(newLocation);
+        setWorkRadiusKm(readWorkRadiusKm(profile));
 
         // 🛡️ Round 28: recentrar el mapa al abrir el formulario.
         const map = mapRef.current;
@@ -304,15 +320,18 @@ export function ProfileEditForm({
         }
     };
 
-    // 🛡️ Round 28: GeoJSON del círculo de cobertura — se recalcula cuando cambia la ubicación.
+    // 🛡️ Round 28: GeoJSON del círculo de cobertura — se recalcula cuando cambia la ubicación
+    // o el rango elegido. Con rango 0 (solo taller) no se dibuja círculo, solo el marcador.
     const coverageGeoJSON = useMemo(
         () =>
-            circlePolygonGeoJSON(
-                selectedLocation.lng,
-                selectedLocation.lat,
-                COVERAGE_RADIUS_KM,
-            ),
-        [selectedLocation.lat, selectedLocation.lng],
+            workRadiusKm > 0
+                ? circlePolygonGeoJSON(
+                      selectedLocation.lng,
+                      selectedLocation.lat,
+                      workRadiusKm,
+                  )
+                : null,
+        [selectedLocation.lat, selectedLocation.lng, workRadiusKm],
     );
 
     // 🛡️ Round 28: click en el mapa → fijar ubicación + sincronizar inputs y limpiar errores.
@@ -375,6 +394,7 @@ export function ProfileEditForm({
                 longitude: formData.longitude,
                 profilePicture: profilePicture || undefined,
                 availability: availabilityData,
+                workRadiusKm,
             });
 
             setShowEditForm(false);
@@ -448,6 +468,7 @@ export function ProfileEditForm({
                 : defaultCenter;
 
         setSelectedLocation(resetLocation);
+        setWorkRadiusKm(readWorkRadiusKm(profile));
 
         // 🛡️ Round 28: recentrar el mapa al resetear.
         const map = mapRef.current;
@@ -755,25 +776,28 @@ export function ProfileEditForm({
                                             >
                                                 <NavigationControl position="top-right" showCompass={false} />
 
-                                                {/* 🛡️ Round 28: círculo de cobertura como Source GeoJSON + 2 capas (fill + line) en azul translúcido. */}
-                                                <Source id="coverage" type="geojson" data={coverageGeoJSON}>
-                                                    <Layer
-                                                        id="coverage-fill"
-                                                        type="fill"
-                                                        paint={{
-                                                            'fill-color': CIRCLE_FILL_COLOR,
-                                                            'fill-opacity': CIRCLE_FILL_OPACITY,
-                                                        }}
-                                                    />
-                                                    <Layer
-                                                        id="coverage-line"
-                                                        type="line"
-                                                        paint={{
-                                                            'line-color': CIRCLE_LINE_COLOR,
-                                                            'line-width': CIRCLE_LINE_WIDTH,
-                                                        }}
-                                                    />
-                                                </Source>
+                                                {/* 🛡️ Round 28: círculo de cobertura como Source GeoJSON + 2 capas (fill + line) en azul translúcido.
+                                                    Con rango 0 (solo taller) no hay círculo: solo el marcador del punto fijo. */}
+                                                {coverageGeoJSON && (
+                                                    <Source id="coverage" type="geojson" data={coverageGeoJSON}>
+                                                        <Layer
+                                                            id="coverage-fill"
+                                                            type="fill"
+                                                            paint={{
+                                                                'fill-color': CIRCLE_FILL_COLOR,
+                                                                'fill-opacity': CIRCLE_FILL_OPACITY,
+                                                            }}
+                                                        />
+                                                        <Layer
+                                                            id="coverage-line"
+                                                            type="line"
+                                                            paint={{
+                                                                'line-color': CIRCLE_LINE_COLOR,
+                                                                'line-width': CIRCLE_LINE_WIDTH,
+                                                            }}
+                                                        />
+                                                    </Source>
+                                                )}
 
                                                 {/* 🛡️ Round 28: marker draggable con el mismo div azul #1e40af de antes. */}
                                                 <Marker
@@ -819,9 +843,42 @@ export function ProfileEditForm({
                             <div className="flex items-start gap-2">
                                             <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                                             <p className="text-xs text-muted-foreground leading-relaxed">
-                                                Haz clic en el mapa o arrastra el marcador para seleccionar tu ubicación. El círculo azul representa un rango de {COVERAGE_RADIUS_KM} km.
+                                                {workRadiusKm === 0
+                                                    ? 'Haz clic en el mapa o arrastra el marcador para fijar tu taller. Con rango 0 km, los clientes se desplazan a tu punto fijo.'
+                                                    : `Haz clic en el mapa o arrastra el marcador para seleccionar tu ubicación. El círculo azul representa tu rango de trabajo de ${workRadiusKm} km.`}
                                             </p>
                                         </div>
+                                    </div>
+
+                                    {/* Rango de trabajo del experto */}
+                                    <div className="space-y-2 pt-1">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="workRadius" className="text-sm font-semibold">
+                                                Rango de trabajo
+                                            </Label>
+                                            <span className={`text-sm font-medium ${workRadiusKm === 0 ? 'text-blue-700' : 'text-foreground'}`}>
+                                                {workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} km`}
+                                            </span>
+                                        </div>
+                                        <input
+                                            id="workRadius"
+                                            type="range"
+                                            min={0}
+                                            max={MAX_WORK_RADIUS_KM}
+                                            step={5}
+                                            value={workRadiusKm}
+                                            onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                                            className="w-full h-2 rounded-lg accent-blue-700 cursor-pointer"
+                                            aria-valuetext={workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} kilómetros`}
+                                        />
+                                        <div className="flex justify-between text-[11px] text-muted-foreground">
+                                            <span>Solo en mi taller</span>
+                                            <span>{MAX_WORK_RADIUS_KM} km</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                            Distancia máxima a la que te desplazas desde tu punto fijo. Elige 0 km si solo
+                                            atiendes en tu taller. Tu rango se muestra a los clientes en todas las páginas.
+                                        </p>
                                     </div>
                             </div>
                         </div>

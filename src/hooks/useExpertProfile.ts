@@ -16,6 +16,7 @@ interface UpdateExpertProfileData {
     longitude: string;
     profilePicture?: File;
     availability?: AvailabilityFormData;  // Opcional: solo se actualiza si se incluye
+    workRadiusKm?: number;                // 0 = solo en su taller, máx 200; si no se envía se conserva
 }
 
 export function useExpertProfile() {
@@ -39,6 +40,10 @@ export function useExpertProfile() {
             
             if (data.profilePicture) {
                 formData.append('profilePicture', data.profilePicture);
+            }
+
+            if (typeof data.workRadiusKm === 'number') {
+                formData.append('WorkRadiusKm', String(data.workRadiusKm));
             }
 
             // ✅ CRÍTICO: Si se incluye disponibilidad, agregar todos los campos

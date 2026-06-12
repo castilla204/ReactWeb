@@ -176,6 +176,8 @@ function BecomeExpertPage() {
         startTime: '09:00',
         endTime: '18:00',
     });
+    // Rango de trabajo elegido por el experto: 0 = solo en su taller/punto fijo, máx 200 km.
+    const [workRadiusKm, setWorkRadiusKm] = useState<number>(COVERAGE_RADIUS_KM);
     // 🛡️ MUD-AG: prefill availability con la disponibilidad del país anterior.
     // ExpertProfile.currentAvailability viene del backend con startTime/endTime en HH:mm:ss
     // (TimeSpan); cortamos a HH:mm que es lo que el <input type="time"> usa.
@@ -230,6 +232,12 @@ function BecomeExpertPage() {
         }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [availability]);
+
+    // Sincronizar el rango de trabajo con el formData del submit.
+    useEffect(() => {
+        setFormData(prev => ({ ...prev, workRadiusKm }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [workRadiusKm]);
 
     // 🛡️ Round 28: helper centralizado para actualizar ubicación, marker, círculo y formData.
     // Reemplaza al antiguo `updateLocationAndMap` + `onMapClick` + `handleMapClick`.
@@ -660,11 +668,42 @@ function BecomeExpertPage() {
                         <BecomeExpertCoverageMap
                             latitude={selectedLocation.lat}
                             longitude={selectedLocation.lng}
-                            radiusKm={COVERAGE_RADIUS_KM}
+                            radiusKm={workRadiusKm}
                             onLocationChange={applyLocation}
                         />
                     </Suspense>
                 </LazyMount>
+
+                {/* Rango de trabajo del experto (0 = solo en su taller) */}
+                <div className="space-y-2 border-t border-[#ececec] p-4 sm:p-5">
+                    <div className="flex items-baseline justify-between gap-3">
+                        <label htmlFor="be-work-radius" className="text-sm font-semibold text-[#1c1c1c]">
+                            Rango de trabajo
+                        </label>
+                        <span className="text-sm font-medium text-[#1c1c1c]">
+                            {workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} km`}
+                        </span>
+                    </div>
+                    <input
+                        id="be-work-radius"
+                        type="range"
+                        min={0}
+                        max={200}
+                        step={5}
+                        value={workRadiusKm}
+                        onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                        className="w-full h-2 rounded-lg accent-blue-700 cursor-pointer"
+                        aria-valuetext={workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} kilómetros`}
+                    />
+                    <div className="flex justify-between text-[11px] text-[#9ca3af]">
+                        <span>Solo en mi taller</span>
+                        <span>200 km</span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-[#6a6a6a]">
+                        Distancia máxima a la que te desplazas desde tu punto fijo. Elige 0 km si solo atiendes
+                        en tu taller. Podrás cambiarlo después desde tu perfil.
+                    </p>
+                </div>
 
                 <div className="space-y-4 border-t border-[#ececec] p-4 sm:p-5">
                     <div className="flex items-baseline justify-between gap-3">

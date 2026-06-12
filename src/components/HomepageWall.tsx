@@ -8,6 +8,7 @@ import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } fro
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
 import { Star, ChevronRight, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { readWorkRadiusKm, formatWorkRadius } from '../utils/workRadius';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
@@ -462,6 +463,17 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
                 </>
               )}
+              {(() => {
+                // Rango de trabajo elegido por el experto (0 = solo en su taller).
+                const workRadius = readWorkRadiusKm(service.expert);
+                if (workRadius === null) return null;
+                return (
+                  <>
+                    <span className="truncate">{formatWorkRadius(workRadius)}</span>
+                    <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                  </>
+                );
+              })()}
               <span className="truncate">{availabilityInfo}</span>
             </div>
           </div>

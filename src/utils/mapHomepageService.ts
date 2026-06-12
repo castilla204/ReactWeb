@@ -39,6 +39,8 @@ export function mapHomepageServiceToDetail(
           reviews: [],
           country: String(expertRaw.Country ?? expertRaw.country ?? ''),
           city: (expertRaw.City ?? expertRaw.city ?? null) as string | null,
+          // ?? (no ||): 0 = "solo en su taller" es un valor válido.
+          workRadiusKm: (expertRaw.WorkRadiusKm ?? expertRaw.workRadiusKm) as number | undefined,
           currentAvailability: availabilityRaw
             ? {
                 id: 0,

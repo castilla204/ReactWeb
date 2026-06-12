@@ -72,7 +72,11 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
 
   const minimalPadX = embedded ? 'px-0' : 'px-4';
 
-  const radius = Math.max(5, rangeKm);
+  // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
+  // distinta y el mapa dibuja solo el pin, sin círculo.
+  const isWorkshopOnly = rangeKm === 0;
+  const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
+  const radiusLabel = isWorkshopOnly ? 'Solo en su taller' : `${radius} km de radio`;
   const isMinimal = layout === 'minimal';
 
   const availabilityTimeRange =
@@ -94,15 +98,17 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           <div
             className={`flex min-w-0 items-center justify-between gap-2 ${minimalPadX}`}
             aria-label={
-              locationLabel
-                ? `Cobertura de ${radius} kilómetros en ${locationLabel}`
-                : `Cobertura de ${radius} kilómetros`
+              isWorkshopOnly
+                ? (locationLabel ? `Atiende solo en su taller en ${locationLabel}` : 'Atiende solo en su taller')
+                : locationLabel
+                  ? `Cobertura de ${radius} kilómetros en ${locationLabel}`
+                  : `Cobertura de ${radius} kilómetros`
             }
           >
             <span className="shrink-0 whitespace-nowrap">
               <span className={SD_MOBILE_SECTION_TITLE_CLASS}>Cobertura</span>
               <span className={`${SD_MOBILE_META_CLASS} normal-case tracking-normal`}>
-                {` · ${radius} km`}
+                {isWorkshopOnly ? ' · Solo en su taller' : ` · ${radius} km`}
               </span>
             </span>
             {locationLabel ? (
@@ -122,7 +128,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
                 ·
               </span>
             ) : null}
-            <span>{radius} km de radio</span>
+            <span>{radiusLabel}</span>
           </p>
         )}
         <div className={`${minimalPadX} ${hideSectionTitle ? 'mt-3' : 'mt-2'}`}>
@@ -153,7 +159,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
               ·
             </span>
           ) : null}
-          <span className="font-normal text-[#6a6a6a]">{radius} km de radio</span>
+          <span className="font-normal text-[#6a6a6a]">{radiusLabel}</span>
         </p>
         <LazyMount aspectRatio="16/9" minHeight={SD_ASIDE_MAP_PREVIEW_MIN_HEIGHT_PX}>
           <Suspense fallback={null}>

@@ -69,6 +69,8 @@ export interface ExpertProfileResponse {
     createdAt: string;
     latitude: string;
     longitude: string;
+    /** Radio de trabajo en km: 0 = solo en su taller/punto fijo, máx 200. */
+    workRadiusKm?: number;
     stripeStatus: StripeStatus;
     stripeStatusDetails: string | null;
     onboardingCompleted: boolean;
