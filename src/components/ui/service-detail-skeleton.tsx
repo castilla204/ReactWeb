@@ -1,12 +1,13 @@
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import {
-  SD_MOBILE_FLOATING_TOP_CLASS,
   SD_MOBILE_FOOTER_SHELL_CLASS,
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_SCROLL_PAD_CLASS,
   SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
+  SD_MOBILE_TOPBAR_FLOATING_INNER_CLASS,
+  SD_MOBILE_TOPBAR_FLOATING_SHELL_CLASS,
   SD_PAGE_GRID_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../../constants/homepageTypography';
@@ -16,14 +17,13 @@ export function ServiceDetailSkeleton() {
     <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
       <div className="min-h-screen bg-[#fafafa]">
         <div className="lg:hidden">
-          <div className={`fixed left-5 z-50 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-            <Skeleton height={44} width={44} borderRadius="50%" />
-          </div>
-          <div className={`fixed right-5 z-50 ${SD_MOBILE_FLOATING_TOP_CLASS}`}>
-            <Skeleton height={44} width={44} borderRadius="50%" />
-          </div>
-
           <div className="relative w-full">
+            <div className={`${SD_MOBILE_TOPBAR_FLOATING_SHELL_CLASS} opacity-100`}>
+              <div className={SD_MOBILE_TOPBAR_FLOATING_INNER_CLASS}>
+                <Skeleton height={44} width={44} borderRadius="50%" />
+                <Skeleton height={44} width={44} borderRadius="50%" />
+              </div>
+            </div>
             <div className="grid aspect-[4/3] w-full grid-cols-2">
               <Skeleton height="100%" width="100%" borderRadius={0} className="!h-full min-h-[240px]" />
               <Skeleton height="100%" width="100%" borderRadius={0} className="!h-full min-h-[240px]" />
@@ -31,8 +31,8 @@ export function ServiceDetailSkeleton() {
             <div
               className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} rounded-t-2xl bg-white ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)]`}
             >
-              <div className={`${SD_MOBILE_GUTTER_CLASS} pb-4`}>
-                <Skeleton height={26} width="75%" className="mb-3" />
+              <div className={SD_MOBILE_GUTTER_CLASS}>
+                <Skeleton height={26} width="75%" className="mb-4" />
                 <div className="mb-4 flex items-center gap-3">
                   <Skeleton height={44} width={44} borderRadius="50%" />
                   <div className="flex-1">
@@ -41,7 +41,7 @@ export function ServiceDetailSkeleton() {
                   </div>
                   <Skeleton height={36} width={72} borderRadius={9999} />
                 </div>
-                <div className="flex items-center justify-between gap-2 border-b border-[#ebebeb] pb-3">
+                <div className="flex items-center justify-between gap-2 pb-4">
                   <div className="flex flex-1 gap-1">
                     {[...Array(7)].map((_, idx) => (
                       <Skeleton key={idx} height={28} className="flex-1" borderRadius={6} />
@@ -50,12 +50,14 @@ export function ServiceDetailSkeleton() {
                   <Skeleton height={14} width={72} />
                 </div>
               </div>
-              <div className={`flex border-b border-[#ebebeb] ${SD_MOBILE_GUTTER_CLASS}`}>
-                <Skeleton height={44} width="50%" borderRadius={0} />
-                <Skeleton height={44} width="50%" borderRadius={0} />
-              </div>
-              <div className={`pt-4 pb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
-                <Skeleton height={14} count={4} className="mb-2" />
+              <div className="border-t border-[#ebebeb]">
+                <div className={`flex ${SD_MOBILE_GUTTER_CLASS}`}>
+                  <Skeleton height={48} width="50%" borderRadius={0} />
+                  <Skeleton height={48} width="50%" borderRadius={0} />
+                </div>
+                <div className={`pt-4 pb-6 ${SD_MOBILE_GUTTER_CLASS}`}>
+                  <Skeleton height={14} count={4} className="mb-2" />
+                </div>
               </div>
             </div>
           </div>
