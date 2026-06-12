@@ -18,6 +18,8 @@ interface ExpertProfile {
     isOnVacation: boolean;
     latitude?: string;
     longitude?: string;
+    /** Radio de trabajo en km: 0 = solo en su taller/punto fijo, máx 200. */
+    workRadiusKm?: number;
     // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
     country?: string | null;
     // 🛡️ Round 28 MUD-W: si !null, el experto está en proceso de mudanza
@@ -136,6 +138,8 @@ export function useExpert() {
                 isOnVacation: data.isOnVacation ?? data.IsOnVacation ?? false,
                 latitude: data.latitude ?? data.Latitude ?? null,
                 longitude: data.longitude ?? data.Longitude ?? null,
+                // ?? (no ||): 0 = "solo en su taller" es un valor válido.
+                workRadiusKm: data.workRadiusKm ?? data.WorkRadiusKm ?? undefined,
                 // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
                 country: data.country ?? data.Country ?? null,
                 // 🛡️ MUD-W: relocation signal del backend (defensive: ambas casings).

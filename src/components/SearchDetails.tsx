@@ -2991,6 +2991,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                             : null
                     }
                     expertRange={serviceInfo?.locationRange || null}
+                    // Radio de trabajo del EXPERTO (0 = solo en su taller → ubicación prefijada).
+                    // ?? para no perder el 0; acepta ambos casings por si la respuesta no pasó por el hook.
+                    expertWorkRadiusKm={
+                        serviceInfo?.expertWorkRadiusKm
+                        ?? (serviceInfo as any)?.ExpertWorkRadiusKm
+                        ?? null
+                    }
                     // ✅ NUEVO: País y timezone del experto
                     expertCountry={
                         search?.searchHire?.expertCountry || 

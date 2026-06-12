@@ -52,7 +52,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
   const mobileInactiveDayClass = 'bg-[#f0f0f0] font-medium text-[#b0b0b0]';
 
   const denseDaysRow = (
-    <div className="flex min-w-0 flex-1 items-center justify-between gap-0.5">
+    <div className="flex shrink-0 items-center gap-1">
       {EXPERT_WEEK_DAYS.map((day) => {
         const on = activeDays.has(day.key);
         return (
@@ -60,7 +60,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
             key={day.key}
             title={`${day.label}${on ? '' : ' — no disponible'}`}
             aria-pressed={on}
-            className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] leading-none ${
+            className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] leading-none ${
               on ? mobileActiveDayClass : mobileInactiveDayClass
             }`}
           >
@@ -140,7 +140,7 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
 
   if (dense) {
     return (
-      <div className={`w-full ${className}`} role="group" aria-label={ariaLabel}>
+      <div className={`shrink-0 ${className}`} role="group" aria-label={ariaLabel}>
         {denseDaysRow}
       </div>
     );

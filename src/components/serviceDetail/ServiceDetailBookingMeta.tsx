@@ -187,7 +187,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
         }`}
       >
         <div
-          className="flex items-center justify-between gap-2"
+          className="flex items-center gap-3"
           aria-label={[
             'Disponibilidad',
             availabilityTimeRange,
@@ -204,9 +204,8 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
             showHeading={false}
             hideScheduleRow
             dense
-            className="min-w-0 flex-1"
           />
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {availabilityTimeRange ? (
               <span className="text-xs font-semibold tabular-nums text-[#1c1c1c]">
                 {availabilityTimeRange}
