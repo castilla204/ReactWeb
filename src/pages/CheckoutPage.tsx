@@ -20,6 +20,7 @@ import {
 } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { ServiceDetailCoverageMap } from '../components/serviceDetail/ServiceDetailCoverageMap';
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
+import { readWorkRadiusKm } from '../utils/workRadius';
 import {
     HP_FONT,
     HP_LINK_UNDERLINE_CLASS,
@@ -421,7 +422,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const expertLat = expertLatRaw != null ? Number(expertLatRaw) : NaN;
     const expertLng = expertLngRaw != null ? Number(expertLngRaw) : NaN;
     const hasExpertCoords = Number.isFinite(expertLat) && Number.isFinite(expertLng);
-    const expertRangeKm = Math.max(5, Number(service.expert?.locationRange) || 25);
+    // Rango de trabajo elegido por el experto: 0 = solo en su taller (válido); si el
+    // campo no viene (cache antigua), fallback al legacy locationRange / 25 km.
+    const expertWorkRadius = readWorkRadiusKm(service.expert);
+    const expertRangeKm = expertWorkRadius !== null
+        ? expertWorkRadius
+        : Math.max(5, Number(service.expert?.locationRange) || 25);
 
     const handleBack = () => {
         if (serviceId) {
@@ -509,7 +515,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 {hasExpertCoords ? (
                                     <section className="pt-4" aria-labelledby="checkout-coverage-heading">
                                         <h2 id="checkout-coverage-heading" className="text-xs font-medium text-[#6a6a6a]">
-                                            Cobertura · {expertRangeKm} km
+                                            Cobertura · {expertRangeKm === 0 ? 'Solo en su taller' : `${expertRangeKm} km`}
                                         </h2>
                                         <ServiceDetailCoverageMap
                                             latitude={expertLat}
@@ -749,7 +755,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         id="checkout-mobile-coverage-heading"
                                         className="text-xs font-medium text-[#6a6a6a]"
                                     >
-                                        Cobertura · {expertRangeKm} km
+                                        Cobertura · {expertRangeKm === 0 ? 'Solo en su taller' : `${expertRangeKm} km`}
                                     </h2>
                                     <ServiceDetailCoverageMap
                                         latitude={expertLat}

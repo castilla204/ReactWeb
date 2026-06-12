@@ -13,6 +13,8 @@ interface FormData {
     latitude: string;
     longitude: string;
     availability?: AvailabilityFormData;
+    /** Radio de trabajo en km: 0 = solo en su taller, máx 200. Si no se envía, el backend usa 100. */
+    workRadiusKm?: number;
 }
 
 interface MapLocation {
@@ -155,6 +157,10 @@ export function useBecomeExpert(options: UseBecomeExpertOptions = {}): UseBecome
             }
             data.append('Latitude', formData.latitude);
             data.append('Longitude', formData.longitude);
+
+            if (typeof formData.workRadiusKm === 'number') {
+                data.append('WorkRadiusKm', String(formData.workRadiusKm));
+            }
 
             // Incluir disponibilidad si está presente
             if (formData.availability && formData.availability.daysOfWeek.length > 0) {

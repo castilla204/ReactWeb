@@ -52,6 +52,7 @@ import {
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
+import { readWorkRadiusKm } from '../utils/workRadius';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
@@ -261,11 +262,16 @@ export function ServiceReviewPage({
             : Number(expertLng)
     } : null;
     
-    const expertRange = finalService?.expert?.locationRange 
-        || (finalService as any)?.locationRange 
-        || (finalService as any)?.LocationRange
-        || locationRange 
-        || null;
+    // Rango de trabajo elegido por el experto (0 = solo en su taller, válido).
+    // Prioriza WorkRadiusKm sobre el legacy locationRange.
+    const expertWorkRadius = readWorkRadiusKm(finalService?.expert);
+    const expertRange = expertWorkRadius !== null
+        ? expertWorkRadius
+        : (finalService?.expert?.locationRange
+            || (finalService as any)?.locationRange
+            || (finalService as any)?.LocationRange
+            || locationRange
+            || null);
     const expertCountry = finalService?.expert?.country || null;
 
     const expertLocationLabel = (() => {
@@ -519,7 +525,7 @@ export function ServiceReviewPage({
                                         availability={finalAvailability}
                                         timezone={finalService?.expert?.timezone}
                                         isOnVacation={finalService?.expert?.isOnVacation}
-                                        rangeKm={expertRange || 25}
+                                        rangeKm={expertRange ?? 25}
                                         mapVariant="preview"
                                         showAvailabilityHint={false}
                                     />
@@ -588,7 +594,7 @@ export function ServiceReviewPage({
                                             showAvailability={false}
                                             location={expertLocation}
                                             locationLabel={expertLocationLabel || undefined}
-                                            rangeKm={expertRange || 25}
+                                            rangeKm={expertRange ?? 25}
                                             mapVariant="preview"
                                         />
                                     ) : null}
@@ -662,7 +668,7 @@ export function ServiceReviewPage({
                         onImageLoadStart={handleImageLoadStart}
                         location={expertLocation}
                         locationLabel={expertLocationLabel || undefined}
-                        rangeKm={expertRange || 25}
+                        rangeKm={expertRange ?? 25}
                     />
 
                     <div className={SD_PAGE_GRID_CLASS}>

@@ -41,6 +41,8 @@ export interface SearchServiceHomepageDto {
     ProfilePictureUrl: string;
     Country: string;
     City?: string | null; // ✅ NUEVO: Ciudad del experto
+    /** Radio de trabajo en km: 0 = solo en su taller/punto fijo, máx 200. */
+    WorkRadiusKm?: number;
     Availability?: HomepageExpertAvailabilityDto | null; // ✅ NUEVO: Horario del experto
   };
   CompletedSearches: number;
@@ -97,6 +99,8 @@ export interface ExpertProfileDto {
   timezone?: string;
   country?: string;
   city?: string | null; // ✅ NUEVO: Ciudad del experto
+  /** Radio de trabajo en km: 0 = solo en su taller/punto fijo, máx 200. */
+  workRadiusKm?: number;
 }
 
 export interface ReviewDto {

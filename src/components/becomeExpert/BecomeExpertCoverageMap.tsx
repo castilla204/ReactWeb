@@ -74,7 +74,9 @@ export function BecomeExpertCoverageMap({
 
         const lng = longitude;
         const lat = latitude;
-        const radius = Math.max(5, radiusKm);
+        // radiusKm === 0: solo taller → sin círculo (radio pequeño solo para encuadre).
+        const isWorkshopOnly = radiusKm === 0;
+        const radius = isWorkshopOnly ? 3 : Math.max(5, radiusKm);
 
         const init = () => {
             if (cancelled || mapRef.current || wrapper.clientWidth < 2 || wrapper.clientHeight < 2) return;
@@ -119,21 +121,23 @@ export function BecomeExpertCoverageMap({
                 const onLoad = () => {
                     if (cancelled || !map) return;
 
-                    const circle = circlePolygonGeoJSON(lng, lat, radius);
-                    if (!map.getSource('coverage')) {
-                        map.addSource('coverage', { type: 'geojson', data: circle });
-                        map.addLayer({
-                            id: 'coverage-fill',
-                            type: 'fill',
-                            source: 'coverage',
-                            paint: { 'fill-color': MAP_THEME.brand, 'fill-opacity': 0.15 },
-                        });
-                        map.addLayer({
-                            id: 'coverage-line',
-                            type: 'line',
-                            source: 'coverage',
-                            paint: { 'line-color': MAP_THEME.brandStroke, 'line-width': 2 },
-                        });
+                    if (!isWorkshopOnly) {
+                        const circle = circlePolygonGeoJSON(lng, lat, radius);
+                        if (!map.getSource('coverage')) {
+                            map.addSource('coverage', { type: 'geojson', data: circle });
+                            map.addLayer({
+                                id: 'coverage-fill',
+                                type: 'fill',
+                                source: 'coverage',
+                                paint: { 'fill-color': MAP_THEME.brand, 'fill-opacity': 0.15 },
+                            });
+                            map.addLayer({
+                                id: 'coverage-line',
+                                type: 'line',
+                                source: 'coverage',
+                                paint: { 'line-color': MAP_THEME.brandStroke, 'line-width': 2 },
+                            });
+                        }
                     }
 
                     const pin = document.createElement('div');
@@ -201,10 +205,13 @@ export function BecomeExpertCoverageMap({
 
         const lng = longitude;
         const lat = latitude;
-        const radius = Math.max(5, radiusKm);
-        const circle = circlePolygonGeoJSON(lng, lat, radius);
-        const src = map.getSource('coverage') as maplibregl.GeoJSONSource | undefined;
-        src?.setData(circle);
+        const isWorkshopOnly = radiusKm === 0;
+        const radius = isWorkshopOnly ? 3 : Math.max(5, radiusKm);
+        if (!isWorkshopOnly) {
+            const circle = circlePolygonGeoJSON(lng, lat, radius);
+            const src = map.getSource('coverage') as maplibregl.GeoJSONSource | undefined;
+            src?.setData(circle);
+        }
         markerRef.current?.setLngLat([lng, lat]);
         map.resize();
         map.fitBounds(boundsFromCircle(lng, lat, radius), {

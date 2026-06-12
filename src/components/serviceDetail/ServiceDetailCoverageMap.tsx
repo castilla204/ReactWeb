@@ -77,7 +77,10 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
 
     const lng = longitude;
     const lat = latitude;
-    const radius = Math.max(5, rangeKm);
+    // rangeKm === 0: el experto atiende solo en su taller → sin círculo, solo el pin
+    // (radio pequeño únicamente para encuadrar el mapa alrededor del punto).
+    const isWorkshopOnly = rangeKm === 0;
+    const radius = isWorkshopOnly ? 3 : Math.max(5, rangeKm);
 
     const init = () => {
       if (cancelled || mapRef.current || wrapper.clientWidth < 2) return;
@@ -122,29 +125,31 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
       const onLoad = () => {
         if (cancelled || !map) return;
 
-        const circle = circlePolygonGeoJSON(lng, lat, radius);
-        if (!map.getSource('coverage')) {
-          map.addSource('coverage', { type: 'geojson', data: circle });
-          map.addLayer({
-            id: 'coverage-fill',
-            type: 'fill',
-            source: 'coverage',
-            paint: {
-              'fill-color': isPreview ? MAP_THEME.brandFillPreview : MAP_THEME.brand,
-              'fill-opacity': isPreview ? 1 : 0.16,
-            },
-          });
-          map.addLayer({
-            id: 'coverage-line',
-            type: 'line',
-            source: 'coverage',
-            paint: {
-              'line-color': isPreview ? MAP_THEME.brandStrokePreview : MAP_THEME.brandStroke,
-              'line-width': isPreview ? 1.25 : 2.5,
-            },
-          });
-        } else {
-          (map.getSource('coverage') as maplibregl.GeoJSONSource).setData(circle);
+        if (!isWorkshopOnly) {
+          const circle = circlePolygonGeoJSON(lng, lat, radius);
+          if (!map.getSource('coverage')) {
+            map.addSource('coverage', { type: 'geojson', data: circle });
+            map.addLayer({
+              id: 'coverage-fill',
+              type: 'fill',
+              source: 'coverage',
+              paint: {
+                'fill-color': isPreview ? MAP_THEME.brandFillPreview : MAP_THEME.brand,
+                'fill-opacity': isPreview ? 1 : 0.16,
+              },
+            });
+            map.addLayer({
+              id: 'coverage-line',
+              type: 'line',
+              source: 'coverage',
+              paint: {
+                'line-color': isPreview ? MAP_THEME.brandStrokePreview : MAP_THEME.brandStroke,
+                'line-width': isPreview ? 1.25 : 2.5,
+              },
+            });
+          } else {
+            (map.getSource('coverage') as maplibregl.GeoJSONSource).setData(circle);
+          }
         }
 
         const pin = document.createElement('div');
@@ -195,10 +200,13 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
     if (!map || !ready) return;
     const lng = longitude;
     const lat = latitude;
-    const radius = Math.max(5, rangeKm);
-    const circle = circlePolygonGeoJSON(lng, lat, radius);
-    const src = map.getSource('coverage') as maplibregl.GeoJSONSource | undefined;
-    src?.setData(circle);
+    const isWorkshopOnly = rangeKm === 0;
+    const radius = isWorkshopOnly ? 3 : Math.max(5, rangeKm);
+    if (!isWorkshopOnly) {
+      const circle = circlePolygonGeoJSON(lng, lat, radius);
+      const src = map.getSource('coverage') as maplibregl.GeoJSONSource | undefined;
+      src?.setData(circle);
+    }
     markerRef.current?.setLngLat([lng, lat]);
     map.fitBounds(boundsFromCircle(lng, lat, radius), {
       padding: fitPadding,
@@ -307,7 +315,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
               openFullscreen();
             }
           }}
-          aria-label={`Ampliar mapa de cobertura, radio ${radius} km`}
+          aria-label={rangeKm === 0 ? 'Ampliar mapa: el experto atiende en su taller' : `Ampliar mapa de cobertura, radio ${radius} km`}
         >
           {previewMap}
         </div>
@@ -339,7 +347,9 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#e8e8e8] px-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[#1c1c1c]">Zona de cobertura</p>
-              <p className="text-xs text-[#6a6a6a]">Radio de {radius} km desde el experto</p>
+              <p className="text-xs text-[#6a6a6a]">
+                {rangeKm === 0 ? 'El experto atiende solo en su taller (punto fijo)' : `Radio de ${radius} km desde el experto`}
+              </p>
             </div>
             <button
               type="button"
@@ -363,7 +373,9 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
           </div>
 
           <p className="shrink-0 border-t border-[#e8e8e8] bg-[#fafafa] px-4 py-2.5 text-center text-[11px] text-[#6a6a6a]">
-            El área azul es donde el experto puede atender. Puedes mover y hacer zoom en el mapa.
+            {rangeKm === 0
+              ? 'El marcador indica el taller del experto: las inspecciones se realizan en ese punto fijo.'
+              : 'El área azul es donde el experto puede atender. Puedes mover y hacer zoom en el mapa.'}
           </p>
         </DialogContent>
       </Dialog>

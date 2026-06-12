@@ -123,6 +123,8 @@ const ServiceDetailPage: React.FC = () => {
                 latitude: (service.Expert || service.expert).Latitude || (service.Expert || service.expert).latitude,
                 longitude: (service.Expert || service.expert).Longitude || (service.Expert || service.expert).longitude,
                 locationRange: (service.Expert || service.expert).LocationRange || (service.Expert || service.expert).locationRange,
+                // ?? (no ||): 0 = "solo en su taller" es un valor válido.
+                workRadiusKm: (service.Expert || service.expert).WorkRadiusKm ?? (service.Expert || service.expert).workRadiusKm,
               } : null,
               expertLatitude: service.ExpertLatitude || service.expertLatitude,
               expertLongitude: service.ExpertLongitude || service.expertLongitude,

@@ -49,6 +49,7 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { useStripeLoginLink } from '../hooks/useStripeLoginLink';
 import { useVacationMode } from '../hooks/useVacationMode';
+import { readWorkRadiusKm } from '../utils/workRadius';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
@@ -1645,6 +1646,16 @@ export function ExpertPanelPage() {
                                         </div>
                                     </div>
                                             <p className="text-xs text-slate-500 line-clamp-1">{profile.description}</p>
+                                            {(() => {
+                                                // Rango de trabajo elegido (0 = solo taller). Acepta ambos casings.
+                                                const wr = readWorkRadiusKm(profile);
+                                                if (wr === null) return null;
+                                                return (
+                                                    <p className="text-xs text-slate-500">
+                                                        Rango: <span className="font-medium text-slate-700">{wr === 0 ? 'Solo en mi taller' : `${wr} km`}</span>
+                                                    </p>
+                                                );
+                                            })()}
                                     <div className="space-y-1.5">
                                         <button
                                             onClick={() => setShowProfileEditForm(true)}
