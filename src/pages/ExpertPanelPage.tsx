@@ -50,6 +50,7 @@ import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { useStripeLoginLink } from '../hooks/useStripeLoginLink';
 import { useVacationMode } from '../hooks/useVacationMode';
 import { readWorkRadiusKm } from '../utils/workRadius';
+import { PhoneStatusCard } from '../components/expertPanel/PhoneStatusCard';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
@@ -1656,6 +1657,8 @@ export function ExpertPanelPage() {
                                                     </p>
                                                 );
                                             })()}
+                                            {/* 📱 SMS-CENTRAL: estado del teléfono (móvil/fijo) + verificación OTP */}
+                                            <PhoneStatusCard className="mt-1.5" />
                                     <div className="space-y-1.5">
                                         <button
                                             onClick={() => setShowProfileEditForm(true)}
