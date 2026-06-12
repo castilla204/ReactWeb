@@ -34,12 +34,12 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
 
   return (
     <div
-      className={`flex flex-col ${
+      className={`flex w-full flex-col ${
         isProminent
           ? 'gap-2.5'
           : isMobile
             ? hidePercent
-              ? 'gap-1.5'
+              ? 'gap-0.5'
               : 'gap-2'
             : isCompact
               ? 'gap-1'
@@ -56,7 +56,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             className={`grid items-center ${
               isMobile
                 ? hidePercent
-                  ? `grid-cols-[0.75rem_minmax(0,1fr)] ${isProminent ? 'gap-2.5' : 'gap-2'}`
+                  ? `grid-cols-[0.625rem_minmax(0,1fr)] ${isProminent ? 'gap-x-2.5 gap-y-1' : 'gap-x-2 gap-y-1'}`
                   : 'grid-cols-[0.625rem_minmax(0,1fr)_2rem] gap-2'
                 : isCompact
                   ? 'grid-cols-[1.5rem_1fr_2rem] gap-2'
@@ -66,7 +66,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             <span
               className={`tabular-nums ${
                 isMobile
-                  ? `${isProminent ? 'text-xs' : 'text-[11px]'} font-medium leading-none text-[#717171]`
+                  ? `${isProminent ? 'text-xs' : 'text-[10px]'} font-medium leading-none text-[#717171]`
                   : `flex items-center gap-0.5 text-[#6a6a6a] ${isCompact ? 'text-[10px]' : 'text-xs'}`
               }`}
             >
@@ -81,7 +81,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             </span>
             <div
               className={`overflow-hidden rounded-full bg-[#dddddd] ${
-                isProminent ? 'h-2.5' : isMobile ? 'h-[7px]' : isCompact ? 'h-1' : 'h-1.5'
+                isProminent ? 'h-2.5' : isMobile ? (hidePercent ? 'h-[7px]' : 'h-[7px]') : isCompact ? 'h-1' : 'h-1.5'
               }`}
             >
               <div

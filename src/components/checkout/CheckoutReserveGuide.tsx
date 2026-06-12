@@ -8,8 +8,7 @@ export const CheckoutReserveHint: React.FC<{ className?: string }> = ({ classNam
   >
     <p>
       <span className="font-semibold text-[#1c1c1c]">Al reservar</span> confirmas la contratación y
-      pasas a un pago seguro con Stripe. El importe queda retenido y no se libera al experto hasta que
-      apruebes el informe.
+      pagas con Stripe. El experto no cobra hasta que revises el informe y des el visto bueno.
     </p>
     <p>
       Después coordinas fecha, hora y lugar por chat (mínimo 24&nbsp;h de antelación, dentro del

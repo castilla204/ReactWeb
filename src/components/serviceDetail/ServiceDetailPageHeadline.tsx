@@ -31,7 +31,7 @@ export const ServiceDetailPageHeadline: React.FC<ServiceDetailPageHeadlineProps>
     <header className={className}>
       <h1 className="sd-page-title">{title}</h1>
       {hasStructuredMeta ? (
-        <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] lg:mt-2.5 lg:text-sm lg:leading-snug text-[#6a6a6a]">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] lg:mt-2 lg:text-sm lg:leading-snug text-[#6a6a6a]">
           {locationLabel ? <span>{locationLabel}</span> : null}
           {locationLabel && (ratingLabel || reviewCount) ? (
             <span className="text-[#d4d4d4]" aria-hidden>
