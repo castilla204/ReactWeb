@@ -1,8 +1,11 @@
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useApi } from './useApi';
 import { useAuth } from '../contexts/AuthContext';
 import { API_CONFIG } from '../config/api';
+import { getSupabaseClient } from '../lib/supabase';
 
 export interface Notification {
     id: string;
@@ -159,6 +162,71 @@ function parseUnreadCount(response: unknown): number {
     return typeof count === 'number' ? count : 0;
 }
 
+// 🔔 NOTIF-RT: refcount por canal — la campana está montada dos veces (top bar
+// desktop + bottom bar móvil) y no queremos suscripciones duplicadas al mismo canal.
+const activeNotifChannels = new Map<string, { count: number; channel: RealtimeChannel }>();
+
+/**
+ * 🔔 NOTIF-RT: suscripción Supabase Realtime a las notificaciones del usuario
+ * (canal `notifications:user:{id}`; los admins escuchan además `notifications:admins`).
+ * El backend emite un trigger MÍNIMO (id + timestamp) al crear cada notificación;
+ * aquí solo invalidamos las queries — el contenido siempre se lee del endpoint
+ * autenticado. El polling de 30s del badge queda como respaldo si el realtime cae.
+ */
+export function useNotificationsRealtime(enabled: boolean) {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const rawUser = user as { id?: number; Id?: number; role?: string; Role?: string } | null;
+    const userId = Number(rawUser?.id ?? rawUser?.Id ?? 0);
+    const isAdmin = String(rawUser?.role ?? rawUser?.Role ?? '').toLowerCase() === 'admin';
+
+    useEffect(() => {
+        if (!enabled || !userId) return;
+
+        const client = getSupabaseClient();
+        const channelNames = [
+            `notifications:user:${userId}`,
+            ...(isAdmin ? ['notifications:admins'] : []),
+        ];
+
+        const onNewNotification = () => {
+            void queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_KEY });
+            void queryClient.invalidateQueries({ queryKey: USER_NOTIFICATIONS_LIST_KEY });
+            if (isAdmin) {
+                void queryClient.invalidateQueries({ queryKey: [ADMIN_NOTIFICATIONS_QUERY_KEY] });
+            }
+        };
+
+        const subscribedNames: string[] = [];
+        for (const name of channelNames) {
+            const existing = activeNotifChannels.get(name);
+            if (existing) {
+                existing.count += 1;
+                subscribedNames.push(name);
+                continue;
+            }
+            const channel = client
+                .channel(name)
+                .on('broadcast', { event: 'new_notification' }, onNewNotification)
+                .subscribe();
+            activeNotifChannels.set(name, { count: 1, channel });
+            subscribedNames.push(name);
+        }
+
+        return () => {
+            for (const name of subscribedNames) {
+                const entry = activeNotifChannels.get(name);
+                if (!entry) continue;
+                entry.count -= 1;
+                if (entry.count <= 0) {
+                    activeNotifChannels.delete(name);
+                    void client.removeChannel(entry.channel);
+                }
+            }
+        };
+    }, [enabled, userId, isAdmin, queryClient]);
+}
+
 /** Solo contador (badge). No carga la lista paginada. */
 export function useUnreadNotificationCount(options?: { enabled?: boolean }) {
     const { fetchApi } = useApi();
@@ -167,6 +235,10 @@ export function useUnreadNotificationCount(options?: { enabled?: boolean }) {
     const onAdminRoute = location.pathname.startsWith('/admin');
     const enabled =
         options?.enabled ?? (isAuthenticated && !onAdminRoute);
+
+    // 🔔 NOTIF-RT: la campana se vuelve reactiva — el broadcast invalida el contador
+    // y la lista al instante; el polling de 30s queda como red de seguridad.
+    useNotificationsRealtime(enabled);
 
     return useQuery({
         queryKey: NOTIFICATIONS_UNREAD_COUNT_KEY,
@@ -177,6 +249,7 @@ export function useUnreadNotificationCount(options?: { enabled?: boolean }) {
         enabled,
         refetchInterval: enabled ? 30000 : false,
         refetchIntervalInBackground: false,
+        refetchOnWindowFocus: 'always',
         retry: false,
     });
 }
