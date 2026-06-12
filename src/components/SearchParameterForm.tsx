@@ -35,6 +35,7 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
+import { persistHireSearchLocation, readHireSearchLocation, snapshotHireSearchLocation } from '../utils/hireSearchContext';
 import {
     hpIconButtonClass,
     hpTitleUnderlineBarStyle,
@@ -100,6 +101,8 @@ interface MapServiceCardProps {
     initialIsFavorite?: boolean; // Estado inicial desde check-multiple
     /** Centro del mapa para calcular distancia del experto (móvil). Opcional. */
     mapCenter?: { lat: number; lng: number } | null;
+    /** Persiste la ubicación de búsqueda antes de ir a la ficha. */
+    onNavigateToService?: () => void;
 }
 
 const getExpertDisplayName = (service: any): string =>
@@ -147,7 +150,7 @@ const getServiceCoords = (service: any): { lat: number | null; lng: number | nul
     return { lat: Number.isFinite(lat) ? lat : null, lng: Number.isFinite(lng) ? lng : null };
 };
 
-const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelected, isHovered = false, onSelect, initialIsFavorite = false, mapCenter = null }) => {
+const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelected, isHovered = false, onSelect, initialIsFavorite = false, mapCenter = null, onNavigateToService }) => {
     const [imageIndex, setImageIndex] = useState(0);
     const { isAuthenticated } = useAuth();
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
@@ -191,8 +194,15 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
     const handleCardClick = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        onNavigateToService?.();
         const returnTo = `${location.pathname}${location.search}`;
-        navigate(`/service/${serviceId}`, { state: { returnTo } });
+        const hireSearchLocation = readHireSearchLocation();
+        navigate(`/service/${serviceId}`, {
+            state: {
+                returnTo,
+                ...(hireSearchLocation ? { hireSearchLocation } : {}),
+            },
+        });
     };
     
     const handleFavoriteClick = async (e: React.MouseEvent) => {
@@ -776,6 +786,7 @@ const MapServiceCard = memo(
         prev.isHovered === next.isHovered &&
         prev.initialIsFavorite === next.initialIsFavorite &&
         prev.onSelect === next.onSelect &&
+        prev.onNavigateToService === next.onNavigateToService &&
         // Comparación por referencia: selectedLocation es estable salvo cambio real
         prev.mapCenter === next.mapCenter,
 );
@@ -1249,6 +1260,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     locationName: getCountryName(selectedCountry) || '',
                 }));
                 setSelectedLocation({ lat: countryCoords.lat, lng: countryCoords.lng });
+                persistHireSearchLocation({
+                    locationName: getCountryName(selectedCountry) || 'Ubicación seleccionada',
+                    latitude: countryCoords.lat.toString(),
+                    longitude: countryCoords.lng.toString(),
+                });
             }
         }
     }, [selectedCountry]);
@@ -1743,6 +1759,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             ...(address && { address }),
             locationName // ✅ NUEVO: Rellenar automáticamente el nombre de ubicación
         }));
+
+        const persistedName =
+            locationName ||
+            (address ? extractCityAndPostalCode(address) : '') ||
+            'Ubicación seleccionada';
+        persistHireSearchLocation({
+            locationName: persistedName,
+            latitude: newLocation.lat.toString(),
+            longitude: newLocation.lng.toString(),
+        });
         // El mapa se actualiza automáticamente con MapContainer
     };
     useEffect(() => {
@@ -1934,6 +1960,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     };
     // Ref para el contenedor del sidebar (lista de servicios)
     const sidebarRef = useRef<HTMLDivElement>(null);
+
+    const persistCurrentSearchLocation = useCallback(() => {
+        const locationName = (formData.locationName || searchAddress || '').trim();
+        const latitude = selectedLocation?.lat.toString() || formData.latitude || null;
+        const longitude = selectedLocation?.lng.toString() || formData.longitude || null;
+        const snapshot = snapshotHireSearchLocation(
+            locationName || 'Ubicación seleccionada',
+            latitude,
+            longitude,
+        );
+        if (snapshot) persistHireSearchLocation(snapshot);
+    }, [formData.locationName, formData.latitude, formData.longitude, searchAddress, selectedLocation]);
+
+    useEffect(() => {
+        if (!formData.latitude || !formData.longitude) return;
+        persistCurrentSearchLocation();
+    }, [formData.latitude, formData.longitude, formData.locationName, searchAddress, persistCurrentSearchLocation]);
     
     // ✅ useCallback con deps estables: la referencia es la misma entre renders,
     //    así MapServiceCard memoizado no se re-renderiza al cambiar otras props del padre.
@@ -1983,6 +2026,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             setError('Error: No se encontró el servicio seleccionado.');
             return;
         }
+        persistCurrentSearchLocation();
         const searchParameterData = {
             category: selectedCategory,
             keywords: formData.keywords || initialKeywords,
@@ -2062,6 +2106,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     isSelected={isSelected}
                                                     isHovered={isHovered}
                                                     onSelect={handleServiceSelect}
+                                                    onNavigateToService={persistCurrentSearchLocation}
                                                     initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                                 />
                                             </div>
@@ -2402,6 +2447,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     service={service}
                                                     isSelected={isSelected}
                                                     onSelect={handleServiceSelect}
+                                                    onNavigateToService={persistCurrentSearchLocation}
                                                     initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                                     mapCenter={selectedLocation}
                                                 />
@@ -2625,6 +2671,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                 service={service}
                                                 isSelected={isSelected}
                                                 onSelect={handleServiceSelect}
+                                                onNavigateToService={persistCurrentSearchLocation}
                                                 initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
                                             />
                                         );

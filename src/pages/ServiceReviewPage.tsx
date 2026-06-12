@@ -6,13 +6,13 @@ import {
     X,
     Heart,
     Image,
-    Shield,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { persistServiceReturnPath, resolveServiceReturnPath } from '../utils/servicePageNavigation';
+import { readHireSearchLocation, persistHireSearchLocation, parseHireSearchLocationFromRouteState } from '../utils/hireSearchContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
@@ -20,7 +20,7 @@ import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
-import { ESCROW_TRUST_TAGLINE } from '../constants/escrowCopy';
+import { EscrowTrustLine } from '../components/EscrowTrustLine';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
@@ -406,6 +406,11 @@ export function ServiceReviewPage({
         );
     };
 
+    useEffect(() => {
+        const fromState = parseHireSearchLocationFromRouteState(location.state);
+        if (fromState) persistHireSearchLocation(fromState);
+    }, [location.state]);
+
     const handleReserveClick = () => {
         const checkoutPath = getCheckoutPath();
         if (!checkoutPath) {
@@ -421,7 +426,34 @@ export function ServiceReviewPage({
         persistServiceReturnPath(
             resolveServiceReturnPath((location.state as { returnTo?: string } | null)?.returnTo),
         );
-        navigate(checkoutPath, { replace: false });
+
+        const expertLat =
+            latitude?.toString() ??
+            finalService?.expert?.latitude?.toString() ??
+            (finalService as any)?.Expert?.Latitude?.toString() ??
+            null;
+        const expertLng =
+            longitude?.toString() ??
+            finalService?.expert?.longitude?.toString() ??
+            (finalService as any)?.Expert?.Longitude?.toString() ??
+            null;
+
+        const hireSearchLocation =
+            readHireSearchLocation() ??
+            (expertLocationLabel
+                ? {
+                      locationName: expertLocationLabel,
+                      latitude: expertLat,
+                      longitude: expertLng,
+                  }
+                : null);
+
+        if (hireSearchLocation) persistHireSearchLocation(hireSearchLocation);
+
+        navigate(checkoutPath, {
+            replace: false,
+            state: hireSearchLocation ? { hireSearchLocation } : undefined,
+        });
     };
 
     const handleImageClick = (index: number) => {
@@ -815,13 +847,7 @@ export function ServiceReviewPage({
                                                     Inicia sesión para continuar
                                                 </button>
                                             )}
-                                            <p className="flex items-center justify-center gap-1.5 text-center text-xs leading-relaxed text-[#6a6a6a]">
-                                                <Shield
-                                                    className="h-3.5 w-3.5 shrink-0 text-brand"
-                                                    aria-hidden
-                                                />
-                                                {ESCROW_TRUST_TAGLINE}
-                                            </p>
+                                            <EscrowTrustLine align="center" />
                                         </footer>
                                     </article>
                                 );
