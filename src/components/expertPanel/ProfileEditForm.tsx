@@ -513,7 +513,9 @@ export function ProfileEditForm({
             shouldScaleBackground={false}
         >
             <DrawerContent
-                className="max-h-[96vh] flex flex-col md:max-h-[90vh] md:h-[90vh]"
+                // 🎨 PÁGINA COMPLETA: ya no parece un drawer — ocupa toda la pantalla,
+                // sin bordes redondeados, con header fijo y preview en vivo (xl).
+                className="h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col"
                 onOpenAutoFocus={(e) => e.preventDefault()}
                 onCloseAutoFocus={(e) => e.preventDefault()}
                 // 🛡️ Round 28 MUD-T: si el target está dentro del wizard de mudanza
@@ -538,7 +540,7 @@ export function ProfileEditForm({
                 }}
                 onEscapeKeyDown={(e) => e.preventDefault()}
             >
-                <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[96vh] md:max-h-[90vh] md:h-[90vh]">
+                <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[100dvh]">
                     <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                         <div className="flex items-center justify-between">
                             <DrawerTitle className="text-lg sm:text-xl font-semibold">Editar Perfil de Experto</DrawerTitle>
@@ -549,7 +551,7 @@ export function ProfileEditForm({
                     </DrawerHeader>
                     {/* Contenido: móvil en columna única con scroll, desktop en dos columnas sin scroll */}
                     <div className="px-4 sm:px-6 py-4 sm:py-6 md:py-5 flex-1 min-h-0 overflow-y-auto md:overflow-y-hidden">
-                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:grid md:grid-cols-2 md:gap-6 lg:gap-8 md:items-start space-y-4 sm:space-y-5 md:space-y-0 md:h-full md:overflow-y-auto md:pr-2">
+                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-6 lg:gap-8 md:items-start space-y-4 sm:space-y-5 md:space-y-0 md:h-full md:overflow-y-auto md:pr-2">
                             {/* Columna izquierda - Información del perfil */}
                             <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
                         {/* Imagen de perfil */}
@@ -883,8 +885,66 @@ export function ProfileEditForm({
                             </div>
                         </div>
 
+                            {/* 👁️ PREVISUALIZACIÓN EN VIVO (xl): cómo te verá el cliente */}
+                            <div className="hidden xl:block">
+                                <div className="sticky top-2 space-y-2">
+                                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Así te verán los clientes</Label>
+                                    <div className="rounded-2xl border border-[#e8e8e8] bg-white shadow-sm overflow-hidden">
+                                        {/* Cabecera tipo ficha */}
+                                        <div className="p-4 flex items-center gap-3 border-b border-[#f0f0f0]">
+                                            {previewUrl || (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl ? (
+                                                <img
+                                                    src={previewUrl || (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || ''}
+                                                    alt="Vista previa"
+                                                    className="w-12 h-12 rounded-full object-cover border border-[#e8e8e8]"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                                                    <User className="w-6 h-6 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-[#1c1c1c] truncate">Tu ficha de experto</p>
+                                                <p className="text-xs text-[#6a6a6a]">
+                                                    {workRadiusKm === 0 ? 'Solo en su taller' : `Hasta ${workRadiusKm} km`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {/* Descripción en vivo */}
+                                        <div className="p-4 space-y-3">
+                                            <p className={`text-[13px] leading-relaxed ${formData.description.trim() ? 'text-[#444]' : 'text-[#b0b0b0] italic'}`}>
+                                                {formData.description.trim() || 'Tu descripción aparecerá aquí…'}
+                                            </p>
+                                            {/* Disponibilidad en vivo */}
+                                            <div className="flex flex-wrap gap-1">
+                                                {VALID_DAYS_OF_WEEK.map((day) => {
+                                                    const active = availability.daysOfWeek.includes(day);
+                                                    return (
+                                                        <span key={day}
+                                                            className={`w-6 h-6 rounded-full text-[10px] font-semibold inline-flex items-center justify-center ${active ? 'bg-[#0066CC] text-white' : 'bg-[#f3f4f6] text-[#b0b0b0]'}`}>
+                                                            {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES].substring(0, 1)}
+                                                        </span>
+                                                    );
+                                                })}
+                                                {availability.daysOfWeek.length > 0 && (
+                                                    <span className="ml-1 text-[11px] text-[#6a6a6a] self-center">
+                                                        {availability.startTime}–{availability.endTime}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-[#9ca3af]">
+                                                📍 {typeof selectedLocation.lat === 'number' ? `${selectedLocation.lat.toFixed(3)}, ${selectedLocation.lng.toFixed(3)}` : 'Sin ubicación'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                        La vista se actualiza en vivo mientras editas. Guarda para publicar los cambios.
+                                    </p>
+                                </div>
+                            </div>
+
                         {formErrors.general && (
-                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2 space-y-3">
+                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2 xl:col-span-3 space-y-3">
                                     <div>{formErrors.general}</div>
                                     {/* 🛡️ Round 28 MUD-Q: CTA inline al wizard de mudanza
                                         cuando el backend rechaza por STRIPE_COUNTRY_LOCKED.
