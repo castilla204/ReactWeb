@@ -291,6 +291,9 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
     map.on('load', () => {
       resizeMap();
+      // radius === 0: el experto atiende solo en su taller (punto fijo) → no hay zona
+      // elegible que dibujar: ni círculo ni máscara, solo el marcador del taller.
+      if (memoizedCoordinates.radius > 0) {
       // 1) Círculo de cobertura
       const circleRing = buildCirclePolygon(
         memoizedCoordinates.lng,
@@ -365,6 +368,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         },
         LAYER_CIRCLE_LINE, // insertar debajo de la línea del círculo
       );
+      } // fin if (radius > 0)
 
       // 3) Marker del experto
       if (

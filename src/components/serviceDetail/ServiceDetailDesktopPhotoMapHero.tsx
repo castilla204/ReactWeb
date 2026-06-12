@@ -39,7 +39,10 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   rangeKm = 25,
   className = '',
 }) => {
-  const radius = Math.max(5, rangeKm);
+  // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
+  // distinta y el mapa dibuja solo el pin, sin círculo de cobertura.
+  const isWorkshopOnly = rangeKm === 0;
+  const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
 
   return (
     <div
@@ -83,7 +86,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
                 />
               </Suspense>
             </div>
-            {(locationLabel || radius) && (
+            {(locationLabel || radius || isWorkshopOnly) && (
               <div
                 className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] bg-gradient-to-t from-black/50 via-black/20 to-transparent px-3 pb-3 pt-8"
                 aria-hidden
@@ -91,7 +94,9 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
                 <p className="text-sm font-semibold text-white">
                   {locationLabel || 'Zona del experto'}
                 </p>
-                <p className="mt-0.5 text-xs text-white/85">Cobertura · {radius} km de radio</p>
+                <p className="mt-0.5 text-xs text-white/85">
+                  {isWorkshopOnly ? 'Solo en su taller · el cliente se desplaza' : `Cobertura · ${radius} km de radio`}
+                </p>
               </div>
             )}
           </>

@@ -42,6 +42,8 @@ export interface ServiceInfo {
   expertLatitude: number | null;
   expertLongitude: number | null;
   locationRange: number | null;
+  /** Radio de trabajo del EXPERTO en km (0 = solo en su taller/punto fijo). */
+  expertWorkRadiusKm?: number | null;
   // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
   expertTimezone: string | null; // Timezone del experto al momento de contratar
   expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)
@@ -261,6 +263,8 @@ export interface AppointmentDto {
   expertLatitude: number | null;
   expertLongitude: number | null;
   locationRange: number | null;
+  /** Radio de trabajo del EXPERTO en km (0 = solo en su taller/punto fijo). */
+  expertWorkRadiusKm?: number | null;
 }
 
 export interface AppointmentTimerDto {

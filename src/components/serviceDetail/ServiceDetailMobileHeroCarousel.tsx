@@ -99,12 +99,19 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
       </div>
 
       {images.length > 1 ? (
-        <>
-          <div className="sd-gallery-hero-scrim pointer-events-none" aria-hidden />
-          <div className="sd-gallery-hero-counter" aria-live="polite">
-            {activeIndex + 1} / {images.length}
-          </div>
-        </>
+        <div
+          className="pointer-events-none absolute left-1/2 top-[max(1rem,env(safe-area-inset-top,0px))] z-20 flex -translate-x-1/2 gap-1.5"
+          aria-hidden
+        >
+          {images.map((_, idx) => (
+            <span
+              key={idx}
+              className={`h-1.5 w-1.5 rounded-full bg-white transition-opacity ${
+                idx === activeIndex ? 'opacity-100' : 'opacity-40'
+              }`}
+            />
+          ))}
+        </div>
       ) : null}
     </div>
   );
