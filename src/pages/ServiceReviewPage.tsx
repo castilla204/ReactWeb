@@ -57,7 +57,7 @@ import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDesc
 import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
-import { ServiceDetailMobileHeroCarousel } from '../components/serviceDetail/ServiceDetailMobileHeroCarousel';
+import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
 import { LoginModal } from '../components/LoginModal';
 
@@ -472,16 +472,19 @@ export function ServiceReviewPage({
                         </div>
                     ) : null}
                     <div className="relative w-full overflow-hidden">
-                    <ServiceDetailMobileHeroCarousel
-                        images={validImages}
-                        loadingImages={loadingImages}
-                        failedImages={failedImages}
-                        onImageError={handleImageError}
-                        onImageLoad={handleImageLoad}
-                        onImageLoadStart={handleImageLoadStart}
-                        onOpenImage={handleImageClick}
-                    />
-                            </div>
+                        <ServiceDetailMobilePhotoMapHero
+                            images={validImages}
+                            loadingImages={loadingImages}
+                            failedImages={failedImages}
+                            onImageError={handleImageError}
+                            onImageLoad={handleImageLoad}
+                            onImageLoadStart={handleImageLoadStart}
+                            onOpenImage={handleImageClick}
+                            location={expertLocation}
+                            locationLabel={expertLocationLabel || undefined}
+                            rangeKm={expertRange ?? 25}
+                        />
+                    </div>
 
                     <div
                         className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS}`}
@@ -588,15 +591,21 @@ export function ServiceReviewPage({
                                         />
                                     ) : null}
                                     {expertLocation ? (
-                                        <ServiceDetailBookingMeta
-                                            layout="minimal"
-                                            embedded
-                                            showAvailability={false}
-                                            location={expertLocation}
-                                            locationLabel={expertLocationLabel || undefined}
-                                            rangeKm={expertRange ?? 25}
-                                            mapVariant="preview"
-                                        />
+                                        <p className={`${SD_MOBILE_META_CLASS} text-[#6a6a6a]`}>
+                                            {expertLocationLabel ? (
+                                                <span>{expertLocationLabel}</span>
+                                            ) : null}
+                                            {expertLocationLabel ? (
+                                                <span className="mx-1.5 text-[#d4d4d4]" aria-hidden>
+                                                    ·
+                                                </span>
+                                            ) : null}
+                                            <span>
+                                                {(expertRange ?? 25) === 0
+                                                    ? 'Solo en su taller'
+                                                    : `Cobertura ${expertRange ?? 25} km`}
+                                            </span>
+                                        </p>
                                     ) : null}
                                 </div>
                             )}

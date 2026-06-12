@@ -24,7 +24,10 @@ export function ServiceDetailSkeleton() {
           </div>
 
           <div className="relative w-full">
-            <Skeleton height={280} width="100%" borderRadius={0} className="aspect-[4/3] !h-auto min-h-[240px]" />
+            <div className="grid aspect-[4/3] w-full grid-cols-2">
+              <Skeleton height="100%" width="100%" borderRadius={0} className="!h-full min-h-[240px]" />
+              <Skeleton height="100%" width="100%" borderRadius={0} className="!h-full min-h-[240px]" />
+            </div>
             <div
               className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} rounded-t-2xl bg-white ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-2px_14px_rgba(15,23,42,0.07)]`}
             >
