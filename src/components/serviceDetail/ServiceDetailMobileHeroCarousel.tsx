@@ -10,6 +10,8 @@ interface ServiceDetailMobileHeroCarouselProps {
   onImageLoad: (url: string) => void;
   onImageLoadStart: (url: string) => void;
   onOpenImage: (index: number) => void;
+  /** Mitad izquierda del hero foto+mapa */
+  layout?: 'full' | 'split';
 }
 
 export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCarouselProps> = ({
@@ -20,7 +22,9 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
   onImageLoad,
   onImageLoadStart,
   onOpenImage,
+  layout = 'full',
 }) => {
+  const isSplit = layout === 'split';
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -42,7 +46,11 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
 
   if (images.length === 0) {
     return (
-      <div className="sd-gallery-hero-empty aspect-[4/3] w-full bg-[#f5f5f5]">
+      <div
+        className={`sd-gallery-hero-empty w-full bg-[#f5f5f5] ${
+          isSplit ? 'h-full' : 'aspect-[4/3]'
+        }`}
+      >
         <div className={`flex h-full flex-col items-center justify-center text-center ${SD_MOBILE_GUTTER_CLASS}`}>
           <Image className="mb-2 h-10 w-10 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
           <p className="text-sm font-medium text-[#484848]">Sin imágenes disponibles</p>
@@ -52,10 +60,16 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
   }
 
   return (
-    <div className="sd-gallery-hero relative w-full overflow-hidden bg-[#1c1c1c]">
+    <div
+      className={`sd-gallery-hero relative overflow-hidden bg-[#1c1c1c] ${
+        isSplit ? 'h-full w-full' : 'w-full'
+      }`}
+    >
       <div
         ref={carouselRef}
-        className="sd-gallery-hero-track scrollbar-hide flex w-full snap-x snap-mandatory overflow-x-auto"
+        className={`sd-gallery-hero-track scrollbar-hide flex snap-x snap-mandatory overflow-x-auto ${
+          isSplit ? 'h-full w-full' : 'w-full'
+        }`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         aria-roledescription="carrusel"
         aria-label="Fotos del servicio"
@@ -64,7 +78,9 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
           <button
             type="button"
             key={`${img}-${idx}`}
-            className="sd-gallery-hero-slide relative aspect-[4/3] w-full shrink-0 snap-start overflow-hidden border-0 bg-[#1c1c1c] p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80"
+            className={`sd-gallery-hero-slide relative shrink-0 snap-start overflow-hidden border-0 bg-[#1c1c1c] p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 ${
+              isSplit ? 'h-full w-full' : 'aspect-[4/3] w-full'
+            }`}
             onClick={() => onOpenImage(idx)}
             aria-label={`Ver foto ${idx + 1} de ${images.length}`}
           >
