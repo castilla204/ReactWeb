@@ -30,8 +30,8 @@ import {
     formatPayoutCountryLabel,
     isSupportedPayoutCountry,
 } from '../constants/stripeConnectCountries';
-import { setAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
+import { authService } from '../services/authService';
 import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
@@ -990,7 +990,7 @@ function BecomeExpertPage() {
         const sortedCountries = Array.from(SUPPORTED_PAYOUT_COUNTRIES)
             .sort((a, b) => formatPayoutCountryLabel(a).localeCompare(formatPayoutCountryLabel(b), 'es'));
         const submitMinimal = async () => {
-            const token = localStorage.getItem('authToken');
+            const token = authService.getAccessToken();
             if (!token) { navigate('/login'); return; }
             setFastPathSubmitting(true); setFastPathError(null);
             try {
@@ -1001,18 +1001,29 @@ function BecomeExpertPage() {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data?.message || 'No se pudo completar el alta.');
-                // JWT fresco con rol Expert. CRÍTICO: el AuthContext lee el usuario de
-                // localStorage['userData'], NO del token — hay que actualizar AHÍ el rol,
-                // o tras recargar el usuario seguiría como Client y volvería a este selector.
-                const updatedUser = { ...(user || {}), role: 'Expert', Role: 'Expert' };
-                if (data?.token) {
-                    setAuthToken(data.token, updatedUser);
-                } else {
-                    localStorage.setItem('userData', JSON.stringify(updatedUser));
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
-                }
-                // Recargamos para que la página derive el estado "experto sin Stripe"
-                // y muestre el bloque Conecta Stripe.
+
+                // CRÍTICO: el rol ya cambió a Expert en BD, pero el access token en uso
+                // sigue diciendo Client → el endpoint expert-onboarding daría 403. Pedimos
+                // un token FRESCO vía el refresh estándar (lee el rol actual de BD y lo
+                // guarda en las claves correctas de authService: accessToken + userData).
+                await authService.refreshAccessToken();
+                const freshToken = authService.getAccessToken();
+
+                // 🧩 STRIPE-FIRST: ir DIRECTO al onboarding de Stripe (sin pantalla
+                // intermedia). Creamos la cuenta Connect y redirigimos a su URL de KYC.
+                try {
+                    const onbRes = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.subscription.expertOnboarding}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${freshToken}`, 'Content-Type': 'application/json' },
+                    });
+                    const onb = await onbRes.json().catch(() => ({}));
+                    if (onbRes.ok && onb?.url) {
+                        window.location.href = onb.url; // → formulario de Stripe
+                        return;
+                    }
+                } catch { /* si falla, caemos al bloque manual de la página */ }
+
+                // Fallback: recargar y mostrar el bloque "Conecta Stripe" con su botón.
                 window.location.reload();
             } catch (e: unknown) {
                 setFastPathError((e as Error)?.message || 'No se pudo completar el alta.');
