@@ -255,10 +255,13 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
 export interface ServiceDetailCoverageMapProps extends CoverageMapCanvasProps {
   /** Miniatura clicable + modal pantalla completa */
   expandable?: boolean;
+  /** Evita solaparse con controles flotantes del hero móvil */
+  expandButtonPosition?: 'top' | 'bottom';
 }
 
 export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> = ({
   expandable = false,
+  expandButtonPosition = 'top',
   rangeKm,
   className = '',
   variant = 'interactive',
@@ -325,7 +328,9 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             e.stopPropagation();
             openFullscreen();
           }}
-          className="absolute right-2 top-2 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#e5e7eb] bg-white/95 text-[#334155] shadow-sm transition-colors hover:bg-white active:scale-95"
+          className={`absolute right-2 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#e5e7eb] bg-white/95 text-[#334155] shadow-sm transition-colors hover:bg-white active:scale-95 ${
+            expandButtonPosition === 'bottom' ? 'bottom-2' : 'top-2'
+          }`}
           aria-label="Ampliar mapa a pantalla completa"
         >
           <Maximize2 className="h-3.5 w-3.5" aria-hidden />
