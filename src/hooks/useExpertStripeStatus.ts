@@ -72,6 +72,8 @@ const getStatusInfo = (
                 return "Hemos rechazado tu cuenta desde nuestra plataforma por incumplimiento de nuestros términos. Contacta con nuestro soporte para apelar.";
             case "rejected.platform_other":
                 return "Hemos rechazado tu cuenta desde nuestra plataforma. Contacta con nuestro soporte para más información.";
+            case "platform_paused":
+                return "La verificación de pagos está pausada. Contacta con soporte para conocer cuándo podrás continuar.";
             default:
                 return "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente.";
         }
@@ -344,7 +346,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: !isPermanent,
-                message: getMessage(rejectedMessage),
+                message: rejectedMessage,
                 action: isPermanent ? "contact" : "retry",
                 buttonText: isPermanent
                     ? i18n.t('stripe.status.rejected.buttonContact')

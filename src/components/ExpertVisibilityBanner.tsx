@@ -147,7 +147,7 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
             severity: 'warning',
             icon: FileText,
             title: 'Aún no eres visible — completa tu perfil',
-            body: `Tus servicios NO aparecen en búsquedas porque falta ${faltan}. Complétalo en "Completa tu perfil" y serás visible automáticamente.`,
+            body: `Tus servicios NO aparecen en búsquedas porque falta ${faltan}. Complétalo en la configuración del perfil y serás visible automáticamente.`,
             cta: onEditProfile ? { label: 'Completar perfil', onClick: onEditProfile } : undefined,
         };
     } else if (phoneSmsCapable === false) {
@@ -156,7 +156,7 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
             severity: 'warning',
             icon: AlertTriangle,
             title: 'Aún no eres visible — verifica tu móvil',
-            body: 'Tus servicios NO aparecen en búsquedas hasta que verifiques un MÓVIL (los avisos de citas e informes con plazos van por SMS y un fijo no los recibe). Hazlo en la tarjeta "Móvil verificado" de este panel: tardas un minuto.',
+            body: 'Tus servicios NO aparecen en búsquedas hasta que verifiques un móvil. Los avisos de citas e informes van por SMS. Complétalo en el paso "Móvil" de la configuración del perfil.',
         };
     } else if (servicesCount === 0) {
         reason = {
@@ -174,41 +174,30 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
         };
     }
 
-    // Estilos por severidad (fondo blanco siempre, color solo en icono + título).
-    const iconColor =
-        reason.severity === 'ok' ? 'text-emerald-600'
-        : reason.severity === 'error' ? 'text-red-600'
-        : reason.severity === 'warning' ? 'text-orange-600'
-        : 'text-blue-600';
-    const titleColor =
-        reason.severity === 'ok' ? 'text-emerald-700'
-        : reason.severity === 'error' ? 'text-red-700'
-        : reason.severity === 'warning' ? 'text-orange-700'
-        : 'text-blue-700';
     const ariaRole = reason.severity === 'error' ? 'alert' : 'status';
     const ariaLive = reason.severity === 'error' ? 'assertive' : 'polite';
     const Icon = reason.icon;
     const isHidden = reason.severity !== 'ok';
     const StatusIcon = isHidden ? EyeOff : Eye;
+    const barClass = isHidden ? 'expert-visibility-bar expert-visibility-bar--hidden' : 'expert-visibility-bar expert-visibility-bar--ok';
 
     return (
         <div
-            className="mb-4 flex items-start gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm"
+            className={`mb-4 ${barClass}`}
             role={ariaRole}
             aria-live={ariaLive}
         >
-            <div className={`flex items-center gap-1 flex-shrink-0 ${iconColor}`}>
-                <StatusIcon className="h-5 w-5 mt-0.5" />
-                <Icon className="h-4 w-4 mt-1 opacity-70" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                {isHidden ? <StatusIcon className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
             </div>
             <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${titleColor}`}>{reason.title}</p>
-                <p className="mt-1 text-sm text-gray-700 leading-snug">{reason.body}</p>
+                <p className="text-sm font-medium text-foreground">{reason.title}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground leading-snug">{reason.body}</p>
                 {reason.cta && (
                     <button
                         type="button"
                         onClick={reason.cta.onClick}
-                        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-hover transition-colors"
+                        className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand hover:text-brand-hover transition-colors"
                     >
                         {reason.cta.label} →
                     </button>

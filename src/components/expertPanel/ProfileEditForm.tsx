@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { CheckCircle, Loader2, XCircle, Upload, User, MapPin, X, Clock, Plane } from 'lucide-react';
-// 🛡️ Round 28: migración Google Maps → Mapbox (react-map-gl@^7 + mapbox-gl@^3).
-import Map, {
+import { Loader2, Upload, X, Plane, Search } from 'lucide-react';
+import MapGL, {
     Marker,
-    NavigationControl,
     Source,
     Layer,
     type MapRef,
@@ -14,39 +12,67 @@ import Map, {
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { circlePolygonGeoJSON } from '../../utils/geoCircle';
+import { getCartoVoyagerNoLabelsTiles } from '../../utils/mapTileUrls';
+import {
+    searchMapboxAutocomplete,
+    reverseGeocodeMapbox,
+    type MapboxFeature,
+} from '../../utils/mapboxGeocoding';
 import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
-import { VALID_DAYS_OF_WEEK, DAY_NAMES_ES, CurrentExpertAvailabilityDto } from '../../types/stripe';
+import { VALID_DAYS_OF_WEEK, CurrentExpertAvailabilityDto } from '../../types/stripe';
 import {
     Drawer,
     DrawerContent,
-    DrawerHeader,
     DrawerTitle,
 } from '../ui/drawer';
 import { Button } from '../ui/button';
-import { Label } from '../ui/label';
-import { Separator } from '../ui/separator';
+import type { ProfileStep } from './profileSteps';
+import '../../styles/expert-profile-form.css';
 
-// 🛡️ Round 28: token Mapbox vía env var (preferido VITE_MAPBOX_PUBLIC_TOKEN; fallback al usado por mapboxGeocoding).
 const MAPBOX_TOKEN =
     import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN ||
     import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
     '';
 
-// 🛡️ Round 28: estilo Mapbox claro, equivalente visual a los estilos custom anteriores de Google Maps.
-const MAPBOX_STYLE = 'mapbox://styles/mapbox/light-v11';
+const MAP_SKY_COLOR = '#e6ecf2';
 
-// Centro fallback (Madrid) sólo si el experto aún no tiene coords guardadas.
-const defaultCenter = {
-    lat: 40.4168,
-    lng: -3.7038,
-};
+function buildCartoMapStyle() {
+    return {
+        version: 8 as const,
+        sources: {
+            carto: {
+                type: 'raster' as const,
+                tiles: getCartoVoyagerNoLabelsTiles(),
+                tileSize: 256,
+                attribution: '© OpenStreetMap · CARTO',
+            },
+        },
+        layers: [
+            { id: 'sky-bg', type: 'background' as const, paint: { 'background-color': MAP_SKY_COLOR } },
+            { id: 'carto', type: 'raster' as const, source: 'carto', paint: { 'raster-opacity': 1 } },
+        ],
+    };
+}
 
-// Radio de trabajo por defecto (en km) si el perfil aún no tiene WorkRadiusKm (backend default = 100).
+const defaultCenter = { lat: 40.4168, lng: -3.7038 };
 const DEFAULT_WORK_RADIUS_KM = 100;
-// Límite máximo del radio de trabajo configurable (igual que la validación del backend).
 const MAX_WORK_RADIUS_KM = 200;
 
-// Lee el radio de trabajo del perfil aceptando ambos casings (la API serializa PascalCase).
+const CIRCLE_FILL_COLOR = '#0066CC';
+const CIRCLE_FILL_OPACITY = 0.12;
+const CIRCLE_LINE_COLOR = 'rgba(0, 102, 204, 0.55)';
+const CIRCLE_LINE_WIDTH = 2;
+
+const DAY_LETTER: Record<string, string> = {
+    Monday: 'L',
+    Tuesday: 'M',
+    Wednesday: 'X',
+    Thursday: 'J',
+    Friday: 'V',
+    Saturday: 'S',
+    Sunday: 'D',
+};
+
 function readWorkRadiusKm(profile: unknown): number {
     const p = profile as { workRadiusKm?: unknown; WorkRadiusKm?: unknown } | null | undefined;
     const raw = p?.workRadiusKm ?? p?.WorkRadiusKm;
@@ -55,15 +81,16 @@ function readWorkRadiusKm(profile: unknown): number {
     return DEFAULT_WORK_RADIUS_KM;
 }
 
-// 🛡️ Round 28: colores azules translúcidos heredados del círculo de Google Maps original.
-const CIRCLE_FILL_COLOR = '#1e40af';
-const CIRCLE_FILL_OPACITY = 0.15;
-const CIRCLE_LINE_COLOR = 'rgba(30, 64, 175, 0.5)';
-const CIRCLE_LINE_WIDTH = 2;
+function formatTimeFromTimeSpan(timeSpan: string): string {
+    if (!timeSpan) return '';
+    const parts = timeSpan.split(':');
+    return `${parts[0]}:${parts[1]}`;
+}
 
 interface ProfileEditFormProps {
-    showEditForm: boolean;
-    setShowEditForm: (value: boolean) => void;
+    showEditForm?: boolean;
+    setShowEditForm?: (value: boolean) => void;
+    embedded?: boolean;
     profile: {
         id: number;
         profilePictureUrl?: string;
@@ -76,20 +103,38 @@ interface ProfileEditFormProps {
         currentAvailability?: CurrentExpertAvailabilityDto | null;
     };
     onProfileUpdated: () => void;
+    profileSetup?: {
+        steps: ProfileStep[];
+        complete: boolean;
+        pendingRequired: number;
+        onOpenSetup?: () => void;
+    };
 }
 
 export function ProfileEditForm({
-    showEditForm,
+    showEditForm = false,
     setShowEditForm,
+    embedded = false,
     profile,
     onProfileUpdated,
+    profileSetup: _profileSetup,
 }: ProfileEditFormProps) {
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const prevShowEditFormRef = useRef(false);
     const localPreviewBlobRef = useRef<string | null>(null);
-    // 🛡️ Round 28: ref tipada de react-map-gl; permite recentrar/animar tras cambios.
     const mapRef = useRef<MapRef | null>(null);
+    const mapCanvasRef = useRef<HTMLDivElement>(null);
+    const addressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const addressSearchAbortRef = useRef<AbortController | null>(null);
+    const addressSearchFromUserRef = useRef(false);
+    const addressInputFocusedRef = useRef(false);
+    const appliedAddressRef = useRef('');
+    const addressSearchCacheRef = useRef(new Map<string, MapboxFeature[]>());
+
+    const ADDRESS_SEARCH_DEBOUNCE_MS = 450;
+    const ADDRESS_SEARCH_MIN_CHARS = 3;
+    const ADDRESS_SEARCH_CACHE_MAX = 24;
 
     const [formData, setFormData] = useState({
         description: profile?.description || '',
@@ -97,32 +142,22 @@ export function ProfileEditForm({
         longitude: profile?.longitude?.toString() || '',
     });
 
-    // Formatear tiempo de TimeSpan (HH:mm:ss) a HH:mm
-    const formatTimeFromTimeSpan = (timeSpan: string): string => {
-        if (!timeSpan) return '';
-        const parts = timeSpan.split(':');
-        return `${parts[0]}:${parts[1]}`;
-    };
-
-    // ✅ CRÍTICO: Inicializar disponibilidad desde el perfil con transformación correcta
     const initialAvailability: AvailabilityFormData = profile?.currentAvailability ? {
         daysOfWeek: (() => {
-            // Manejar tanto camelCase como PascalCase
             const days = profile?.currentAvailability?.daysOfWeek ??
-                        (profile?.currentAvailability as any)?.DaysOfWeek ??
-                        [];
-            console.log('🔍 ProfileEditForm: Initial availability daysOfWeek:', days);
+                (profile?.currentAvailability as { DaysOfWeek?: string[] })?.DaysOfWeek ??
+                [];
             return Array.isArray(days) ? days : [];
         })(),
         startTime: formatTimeFromTimeSpan(
             profile?.currentAvailability?.startTime ??
-            (profile?.currentAvailability as any)?.StartTime ??
-            ''
+            (profile?.currentAvailability as { StartTime?: string })?.StartTime ??
+            '',
         ),
         endTime: formatTimeFromTimeSpan(
             profile?.currentAvailability?.endTime ??
-            (profile?.currentAvailability as any)?.EndTime ??
-            ''
+            (profile?.currentAvailability as { EndTime?: string })?.EndTime ??
+            '',
         ),
     } : {
         daysOfWeek: [],
@@ -131,13 +166,10 @@ export function ProfileEditForm({
     };
 
     const [availability, setAvailability] = useState<AvailabilityFormData>(initialAvailability);
-
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
-    // ✅ Inicializar previewUrl como null, se actualizará en useEffect
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
-    // 🛡️ Round 28: centro inicial = coords del experto si existen; si no, Madrid.
     const initialLocation = useMemo(() => {
         const lat = Number(profile?.latitude);
         const lng = Number(profile?.longitude);
@@ -148,17 +180,215 @@ export function ProfileEditForm({
     }, [profile?.latitude, profile?.longitude]);
 
     const [selectedLocation, setSelectedLocation] = useState(initialLocation);
-
-    // Rango de trabajo del experto: 0 = solo en su taller/punto fijo, máx 200 km.
+    const selectedLocationRef = useRef(selectedLocation);
     const [workRadiusKm, setWorkRadiusKm] = useState<number>(() => readWorkRadiusKm(profile));
+    const [addressQuery, setAddressQuery] = useState('');
+    const [addressResults, setAddressResults] = useState<MapboxFeature[]>([]);
+    const [showAddressResults, setShowAddressResults] = useState(false);
+    const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
+
+    const cartoMapStyle = useMemo(() => buildCartoMapStyle(), []);
+    const [mapCanRender, setMapCanRender] = useState(false);
+    const [mapHeight, setMapHeight] = useState(260);
 
     useEffect(() => {
-        const justOpened = showEditForm && !prevShowEditFormRef.current;
-        prevShowEditFormRef.current = showEditForm;
+        selectedLocationRef.current = selectedLocation;
+    }, [selectedLocation]);
 
-        if (!showEditForm || !profile || !justOpened) {
-            return;
+    const setAddressQueryProgrammatic = useCallback((text: string) => {
+        addressSearchFromUserRef.current = false;
+        addressSearchAbortRef.current?.abort();
+        if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+        appliedAddressRef.current = text.trim();
+        setAddressQuery(text);
+        setAddressResults([]);
+        setShowAddressResults(false);
+        setAddressSearchError(null);
+    }, []);
+
+    const applyLocation = useCallback((lat: number, lng: number, addressText?: string) => {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        setSelectedLocation({ lat, lng });
+        setFormData((prev) => ({
+            ...prev,
+            latitude: lat.toString(),
+            longitude: lng.toString(),
+        }));
+        setFormErrors((prev) => ({ ...prev, latitude: '', longitude: '' }));
+        if (addressText) setAddressQueryProgrammatic(addressText);
+        const zoom = workRadiusKm > 0 ? 10 : 14;
+        mapRef.current?.flyTo({ center: [lng, lat], zoom, duration: 800 });
+    }, [workRadiusKm, setAddressQueryProgrammatic]);
+
+    const syncAddressFromCoords = useCallback(async (lat: number, lng: number) => {
+        if (!MAPBOX_TOKEN) return;
+        try {
+            const feature = await reverseGeocodeMapbox(lat, lng, { language: 'es' });
+            if (feature?.address) setAddressQueryProgrammatic(feature.address);
+        } catch { /* noop */ }
+    }, [setAddressQueryProgrammatic]);
+
+    const handleAddressSelect = useCallback((item: MapboxFeature) => {
+        if (item.lat == null || item.lng == null) return;
+        addressSearchFromUserRef.current = false;
+        addressSearchAbortRef.current?.abort();
+        if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+        appliedAddressRef.current = (item.address || item.place_name || '').trim();
+        setAddressResults([]);
+        setShowAddressResults(false);
+        setAddressSearchError(null);
+        applyLocation(item.lat, item.lng, item.address || item.place_name);
+    }, [applyLocation]);
+
+    useEffect(() => {
+        if (!MAPBOX_TOKEN) return;
+        const lat = Number(initialLocation.lat);
+        const lng = Number(initialLocation.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        void syncAddressFromCoords(lat, lng);
+    }, [initialLocation.lat, initialLocation.lng, syncAddressFromCoords]);
+
+    const resizeMap = useCallback(() => {
+        mapRef.current?.resize();
+    }, []);
+
+    useLayoutEffect(() => {
+        const canvas = mapCanvasRef.current;
+        if (!canvas) return undefined;
+
+        const syncMapLayout = () => {
+            const height = Math.round(canvas.getBoundingClientRect().height);
+            const width = Math.round(canvas.getBoundingClientRect().width);
+            if (width > 0 && height > 0) {
+                setMapHeight(height);
+                setMapCanRender(true);
+                window.requestAnimationFrame(() => {
+                    mapRef.current?.resize();
+                });
+            }
+        };
+
+        syncMapLayout();
+        const delayed = window.setTimeout(syncMapLayout, 120);
+        const delayedAgain = window.setTimeout(syncMapLayout, 420);
+        const observer = new ResizeObserver(syncMapLayout);
+        observer.observe(canvas);
+        window.addEventListener('resize', syncMapLayout);
+
+        return () => {
+            window.clearTimeout(delayed);
+            window.clearTimeout(delayedAgain);
+            observer.disconnect();
+            window.removeEventListener('resize', syncMapLayout);
+        };
+    }, []);
+
+    useEffect(() => {
+        const canvas = mapCanvasRef.current;
+        if (!canvas) return undefined;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    resizeMap();
+                }
+            },
+            { threshold: 0.15 },
+        );
+        observer.observe(canvas);
+        return () => observer.disconnect();
+    }, [resizeMap]);
+
+    useEffect(() => {
+        if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+
+        if (!addressSearchFromUserRef.current) {
+            addressSearchAbortRef.current?.abort();
+            return undefined;
         }
+
+        const query = addressQuery.trim();
+        if (query.length < ADDRESS_SEARCH_MIN_CHARS) {
+            addressSearchAbortRef.current?.abort();
+            setAddressResults([]);
+            setShowAddressResults(false);
+            setAddressSearchError(null);
+            return undefined;
+        }
+
+        const applied = appliedAddressRef.current.trim();
+        if (applied && query === applied) {
+            setAddressResults([]);
+            setShowAddressResults(false);
+            setAddressSearchError(null);
+            return undefined;
+        }
+
+        const cacheKey = query.toLowerCase();
+        const cached = addressSearchCacheRef.current.get(cacheKey);
+        if (cached) {
+            setAddressResults(cached);
+            setShowAddressResults(addressInputFocusedRef.current && cached.length > 0);
+            setAddressSearchError(null);
+            return undefined;
+        }
+
+        addressDebounceRef.current = setTimeout(async () => {
+            if (!addressSearchFromUserRef.current) return;
+
+            const debouncedQuery = addressQuery.trim();
+            if (debouncedQuery.length < ADDRESS_SEARCH_MIN_CHARS || debouncedQuery !== query) return;
+
+            const cachedAfterWait = addressSearchCacheRef.current.get(debouncedQuery.toLowerCase());
+            if (cachedAfterWait) {
+                setAddressResults(cachedAfterWait);
+                setShowAddressResults(addressInputFocusedRef.current && cachedAfterWait.length > 0);
+                return;
+            }
+
+            addressSearchAbortRef.current?.abort();
+            const controller = new AbortController();
+            addressSearchAbortRef.current = controller;
+            try {
+                setAddressSearchError(null);
+                const results = await searchMapboxAutocomplete(debouncedQuery, {
+                    language: 'es',
+                    signal: controller.signal,
+                    proximity: {
+                        lat: selectedLocationRef.current.lat,
+                        lng: selectedLocationRef.current.lng,
+                    },
+                });
+                if (controller.signal.aborted || !addressSearchFromUserRef.current) return;
+
+                const cache = addressSearchCacheRef.current;
+                if (cache.size >= ADDRESS_SEARCH_CACHE_MAX) {
+                    const oldestKey = cache.keys().next().value;
+                    if (oldestKey) cache.delete(oldestKey);
+                }
+                cache.set(debouncedQuery.toLowerCase(), results);
+
+                setAddressResults(results);
+                setShowAddressResults(addressInputFocusedRef.current && results.length > 0);
+            } catch (err: unknown) {
+                if ((err as DOMException)?.name === 'AbortError') return;
+                if (!addressSearchFromUserRef.current) return;
+                setAddressSearchError(err instanceof Error ? err.message : 'Error en la búsqueda');
+                setAddressResults([]);
+                setShowAddressResults(false);
+            }
+        }, ADDRESS_SEARCH_DEBOUNCE_MS);
+
+        return () => {
+            if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+        };
+    }, [addressQuery]);
+
+    useEffect(() => {
+        const isOpen = embedded || showEditForm;
+        const justOpened = isOpen && !prevShowEditFormRef.current;
+        prevShowEditFormRef.current = isOpen;
+        if (!isOpen || !profile || !justOpened) return;
 
         setFormData({
             description: profile.description || '',
@@ -167,69 +397,54 @@ export function ProfileEditForm({
         });
         setProfilePicture(null);
         setFormErrors({});
-
-        const profileImageUrl = (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || null;
+        const profileImageUrl = (profile as { ProfilePictureUrl?: string }).ProfilePictureUrl || profile.profilePictureUrl || null;
         setPreviewUrl(profileImageUrl);
 
         const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
             daysOfWeek: (() => {
                 const days = profile.currentAvailability?.daysOfWeek ??
-                    (profile.currentAvailability as any)?.DaysOfWeek ??
-                    [];
+                    (profile.currentAvailability as { DaysOfWeek?: string[] })?.DaysOfWeek ?? [];
                 return Array.isArray(days) ? days : [];
             })(),
             startTime: formatTimeFromTimeSpan(
                 profile.currentAvailability.startTime ??
-                (profile.currentAvailability as any)?.StartTime ??
-                ''
+                (profile.currentAvailability as { StartTime?: string })?.StartTime ?? '',
             ),
             endTime: formatTimeFromTimeSpan(
                 profile.currentAvailability.endTime ??
-                (profile.currentAvailability as any)?.EndTime ??
-                ''
+                (profile.currentAvailability as { EndTime?: string })?.EndTime ?? '',
             ),
-        } : {
-            daysOfWeek: [],
-            startTime: '09:00',
-            endTime: '18:00',
-        };
+        } : { daysOfWeek: [], startTime: '09:00', endTime: '18:00' };
         setAvailability(newAvailability);
 
         const lat = Number(profile.latitude);
         const lng = Number(profile.longitude);
-        const newLocation =
-            Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
-                ? { lat, lng }
-                : defaultCenter;
-
+        const newLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+            ? { lat, lng }
+            : defaultCenter;
         setSelectedLocation(newLocation);
         setWorkRadiusKm(readWorkRadiusKm(profile));
+        void syncAddressFromCoords(newLocation.lat, newLocation.lng);
+        mapRef.current?.flyTo({ center: [newLocation.lng, newLocation.lat], duration: 0 });
+    }, [embedded, showEditForm, profile?.id, syncAddressFromCoords]);
 
-        // 🛡️ Round 28: recentrar el mapa al abrir el formulario.
-        const map = mapRef.current;
-        if (map) {
-            map.flyTo({ center: [newLocation.lng, newLocation.lat], duration: 0 });
-        }
-    }, [showEditForm, profile?.id]);
-
-    useBodyScrollLock(showEditForm);
+    useBodyScrollLock(showEditForm && !embedded);
 
     useEffect(() => {
-        if (showEditForm) {
+        if (!embedded && showEditForm) {
             document.body.dataset.drawerOpen = 'profile';
         } else if (document.body.dataset.drawerOpen === 'profile') {
             delete document.body.dataset.drawerOpen;
         }
         return () => {
-            if (document.body.dataset.drawerOpen === 'profile') {
-                delete document.body.dataset.drawerOpen;
-            }
+            if (document.body.dataset.drawerOpen === 'profile') delete document.body.dataset.drawerOpen;
         };
-    }, [showEditForm]);
+    }, [showEditForm, embedded]);
+
+    const closeEditor = () => setShowEditForm?.(false);
 
     const validateForm = () => {
         const errors: { [key: string]: string } = {};
-
         if (!formData.description.trim()) {
             errors.description = 'La descripción es requerida';
         } else if (formData.description.length < 10) {
@@ -237,45 +452,31 @@ export function ProfileEditForm({
         } else if (formData.description.length > 500) {
             errors.description = 'La descripción no puede superar los 500 caracteres';
         }
-
         if (!formData.latitude) {
             errors.latitude = 'La latitud es requerida';
         } else {
             const lat = parseFloat(formData.latitude);
-            if (isNaN(lat) || lat < -90 || lat > 90) {
-                errors.latitude = 'La latitud debe estar entre -90 y 90';
-            }
+            if (isNaN(lat) || lat < -90 || lat > 90) errors.latitude = 'La latitud debe estar entre -90 y 90';
         }
-
         if (!formData.longitude) {
             errors.longitude = 'La longitud es requerida';
         } else {
             const lng = parseFloat(formData.longitude);
-            if (isNaN(lng) || lng < -180 || lng > 180) {
-                errors.longitude = 'La longitud debe estar entre -180 y 180';
-            }
+            if (isNaN(lng) || lng < -180 || lng > 180) errors.longitude = 'La longitud debe estar entre -180 y 180';
         }
-
-        if (availability.daysOfWeek.length === 0) {
-            errors.availability = 'Selecciona al menos un día de disponibilidad';
-        } else if (!availability.startTime || !availability.endTime) {
-            errors.availability = 'Debes especificar hora de inicio y fin';
-        } else {
-            const [startH, startM] = availability.startTime.split(':').map(Number);
-            const [endH, endM] = availability.endTime.split(':').map(Number);
-
-            if (Number.isNaN(startH) || Number.isNaN(endH)) {
-                errors.availability = 'Horario de disponibilidad no válido';
+        if (availability.daysOfWeek.length > 0) {
+            if (!availability.startTime || !availability.endTime) {
+                errors.availability = 'Debes especificar hora de inicio y fin';
             } else {
-                const startMinutes = startH * 60 + startM;
-                const endMinutes = endH * 60 + endM;
-
-                if (startMinutes >= endMinutes) {
+                const [startH, startM] = availability.startTime.split(':').map(Number);
+                const [endH, endM] = availability.endTime.split(':').map(Number);
+                if (Number.isNaN(startH) || Number.isNaN(endH)) {
+                    errors.availability = 'Horario de disponibilidad no válido';
+                } else if (startH * 60 + startM >= endH * 60 + endM) {
                     errors.availability = 'La hora de inicio debe ser anterior a la hora de fin';
                 }
             }
         }
-
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -283,28 +484,21 @@ export function ProfileEditForm({
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         if (file.size > 5 * 1024 * 1024) {
             setFormErrors(prev => ({ ...prev, profilePicture: 'La imagen no puede superar los 5MB' }));
             return;
         }
-
         if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
             setFormErrors(prev => ({ ...prev, profilePicture: 'Solo se permiten imágenes JPG, JPEG y PNG' }));
             return;
         }
-
-        if (localPreviewBlobRef.current) {
-            URL.revokeObjectURL(localPreviewBlobRef.current);
-        }
+        if (localPreviewBlobRef.current) URL.revokeObjectURL(localPreviewBlobRef.current);
         const blobUrl = URL.createObjectURL(file);
         localPreviewBlobRef.current = blobUrl;
         setProfilePicture(file);
         setPreviewUrl(blobUrl);
         setFormErrors(prev => ({ ...prev, profilePicture: '' }));
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const openFilePicker = useCallback(() => {
@@ -315,110 +509,52 @@ export function ProfileEditForm({
     const removeImage = () => {
         setProfilePicture(null);
         setPreviewUrl(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    // 🛡️ Round 28: GeoJSON del círculo de cobertura — se recalcula cuando cambia la ubicación
-    // o el rango elegido. Con rango 0 (solo taller) no se dibuja círculo, solo el marcador.
     const coverageGeoJSON = useMemo(
-        () =>
-            workRadiusKm > 0
-                ? circlePolygonGeoJSON(
-                      selectedLocation.lng,
-                      selectedLocation.lat,
-                      workRadiusKm,
-                  )
-                : null,
+        () => workRadiusKm > 0
+            ? circlePolygonGeoJSON(selectedLocation.lng, selectedLocation.lat, workRadiusKm)
+            : null,
         [selectedLocation.lat, selectedLocation.lng, workRadiusKm],
     );
 
-    // 🛡️ Round 28: click en el mapa → fijar ubicación + sincronizar inputs y limpiar errores.
     const handleMapClick = useCallback((e: MapMouseEvent) => {
         const { lng, lat } = e.lngLat;
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        applyLocation(lat, lng);
+        void syncAddressFromCoords(lat, lng);
+    }, [applyLocation, syncAddressFromCoords]);
 
-        const newLocation = { lat, lng };
-        setSelectedLocation(newLocation);
-        setFormData(prev => ({
-            ...prev,
-            latitude: lat.toString(),
-            longitude: lng.toString(),
-        }));
-        setFormErrors(prev => ({
-            ...prev,
-            latitude: '',
-            longitude: '',
-        }));
-    }, []);
-
-    // 🛡️ Round 28: marker arrastrable — al soltarlo, persistimos coords.
     const handleMarkerDragEnd = useCallback((e: MarkerDragEvent) => {
         const { lng, lat } = e.lngLat;
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
-        const newLocation = { lat, lng };
-        setSelectedLocation(newLocation);
-        setFormData(prev => ({
-            ...prev,
-            latitude: lat.toString(),
-            longitude: lng.toString(),
-        }));
-        setFormErrors(prev => ({
-            ...prev,
-            latitude: '',
-            longitude: '',
-        }));
-    }, []);
+        applyLocation(lat, lng);
+        void syncAddressFromCoords(lat, lng);
+    }, [applyLocation, syncAddressFromCoords]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!validateForm()) {
-            return;
-        }
-
+        if (!validateForm()) return;
         try {
-            // Incluir disponibilidad solo si hay días seleccionados
-            const availabilityData = availability;
-
-            console.log('🔍 ProfileEditForm: Submitting with availability:', availabilityData);
-            console.log('🔍 ProfileEditForm: daysOfWeek to send:', availabilityData?.daysOfWeek);
-            console.log('🔍 ProfileEditForm: startTime to send:', availabilityData?.startTime);
-            console.log('🔍 ProfileEditForm: endTime to send:', availabilityData?.endTime);
-
             await updateExpertProfile({
                 description: formData.description.trim(),
                 latitude: formData.latitude,
                 longitude: formData.longitude,
                 profilePicture: profilePicture || undefined,
-                availability: availabilityData,
+                availability,
                 workRadiusKm,
             });
-
-            setShowEditForm(false);
+            if (!embedded) setShowEditForm?.(false);
             onProfileUpdated();
-
             window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: {
-                    type: 'success',
-                    message: 'Perfil actualizado exitosamente',
-                },
+                detail: { type: 'success', message: 'Perfil actualizado exitosamente' },
             }));
-        } catch (error: any) {
-            console.error('Error updating profile:', error);
-            // 🛡️ Round 28 MUD-2: distinguir STRIPE_COUNTRY_LOCKED para guiar al experto al
-            // flujo de mudanza (cerrar cuenta + re-registrarse) en vez de mostrar texto plano.
-            // El backend devuelve errorCode + detectedCountry; el hook los propaga en el Error.
-            if (error?.errorCode === 'STRIPE_COUNTRY_LOCKED') {
-                const detected = error?.detectedCountry ? ` (${error.detectedCountry})` : '';
-                setFormErrors({
-                    general: error.message,
-                    // Marcador especial para que el componente pueda mostrar CTA al wizard de mudanza.
-                    relocationRequired: 'true',
-                });
-                // Notificación destacada con call-to-action.
+        } catch (error: unknown) {
+            const err = error as { message?: string; errorCode?: string; detectedCountry?: string };
+            if (err?.errorCode === 'STRIPE_COUNTRY_LOCKED') {
+                const detected = err?.detectedCountry ? ` (${err.detectedCountry})` : '';
+                setFormErrors({ general: err.message, relocationRequired: 'true' });
                 window.dispatchEvent(new CustomEvent('showNotification', {
                     detail: {
                         type: 'warning',
@@ -426,13 +562,10 @@ export function ProfileEditForm({
                         duration: 12000,
                     },
                 }));
-            } else if (error?.errorCode === 'COUNTRY_NOT_SUPPORTED') {
-                setFormErrors({
-                    general: error.message,
-                    countryNotSupported: 'true',
-                });
+            } else if (err?.errorCode === 'COUNTRY_NOT_SUPPORTED') {
+                setFormErrors({ general: err.message, countryNotSupported: 'true' });
             } else {
-                setFormErrors({ general: error.message || 'Error al actualizar el perfil' });
+                setFormErrors({ general: err.message || 'Error al actualizar el perfil' });
             }
         }
     };
@@ -446,579 +579,372 @@ export function ProfileEditForm({
         setProfilePicture(null);
         setPreviewUrl(null);
         setFormErrors({});
-
-        // Resetear disponibilidad
         const resetAvailability: AvailabilityFormData = profile.currentAvailability ? {
             daysOfWeek: profile.currentAvailability.daysOfWeek || [],
             startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
             endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
-        } : {
-            daysOfWeek: [],
-            startTime: '09:00',
-            endTime: '18:00',
-        };
+        } : { daysOfWeek: [], startTime: '09:00', endTime: '18:00' };
         setAvailability(resetAvailability);
-
-        // Resetear la ubicación del mapa
         const lat = Number(profile.latitude);
         const lng = Number(profile.longitude);
-        const resetLocation =
-            Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
-                ? { lat, lng }
-                : defaultCenter;
-
+        const resetLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+            ? { lat, lng }
+            : defaultCenter;
         setSelectedLocation(resetLocation);
         setWorkRadiusKm(readWorkRadiusKm(profile));
-
-        // 🛡️ Round 28: recentrar el mapa al resetear.
-        const map = mapRef.current;
-        if (map) {
-            map.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
-        }
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
+        mapRef.current?.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const toggleDay = (day: string) => {
-        console.log('🔍 toggleDay called with day:', day);
-        setAvailability(prev => {
-            const newDays = prev.daysOfWeek.includes(day)
+        setAvailability(prev => ({
+            ...prev,
+            daysOfWeek: prev.daysOfWeek.includes(day)
                 ? prev.daysOfWeek.filter(d => d !== day)
-                : [...prev.daysOfWeek, day];
-            console.log('🔍 toggleDay: Previous days:', prev.daysOfWeek);
-            console.log('🔍 toggleDay: New days:', newDays);
-            return {
-                ...prev,
-                daysOfWeek: newDays
-            };
-        });
+                : [...prev.daysOfWeek, day],
+        }));
     };
 
-    if (!profile) {
-        return null;
-    }
+    const profileImageUrl = previewUrl
+        || (profile as { ProfilePictureUrl?: string })?.ProfilePictureUrl
+        || profile.profilePictureUrl
+        || null;
 
-    return (
-        <Drawer
-            open={showEditForm}
-            onOpenChange={(open) => {
-                if (open && !showEditForm) {
-                    setShowEditForm(true);
-                }
-            }}
-            dismissible={false}
-            repositionInputs={false}
-            shouldScaleBackground={false}
-        >
-            <DrawerContent
-                // 🎨 PÁGINA COMPLETA: ya no parece un drawer — ocupa toda la pantalla,
-                // sin bordes redondeados, con header fijo y preview en vivo (xl).
-                className="h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onCloseAutoFocus={(e) => e.preventDefault()}
-                // 🛡️ Round 28 MUD-T: si el target está dentro del wizard de mudanza
-                // (portal renderizado en body con [data-relocation-wizard]), dejar pasar
-                // — el wizard tiene su propio modal y su propia overlay. Sin esto,
-                // Vaul bloquea TODOS los clicks "fuera" del DrawerContent y el wizard
-                // queda interactivamente muerto (visible pero clicks inertes).
-                onPointerDownOutside={(e) => {
-                    const target = e.target as HTMLElement | null;
-                    if (target?.closest('[data-relocation-wizard]')) return; // dejar pasar
-                    e.preventDefault();
-                }}
-                onInteractOutside={(e) => {
-                    const target = e.target as HTMLElement | null;
-                    if (target?.closest('[data-relocation-wizard]')) return;
-                    e.preventDefault();
-                }}
-                onFocusOutside={(e) => {
-                    const target = e.target as HTMLElement | null;
-                    if (target?.closest('[data-relocation-wizard]')) return;
-                    e.preventDefault();
-                }}
-                onEscapeKeyDown={(e) => e.preventDefault()}
+    const descLength = formData.description.length;
+
+    if (!profile) return null;
+
+    const saveButton = (
+        <Button type="button" className="pf-btn-save" onClick={handleSubmit} disabled={isUpdating}>
+            {isUpdating ? (
+                <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Guardando…</>
+            ) : 'Guardar'}
+        </Button>
+    );
+
+    const saveButtonBar = (
+        <Button type="button" className="pf-btn-save pf-btn-save--bar" onClick={handleSubmit} disabled={isUpdating}>
+            {isUpdating ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Guardando…</>
+            ) : 'Guardar'}
+        </Button>
+    );
+
+    const mobileFooterActions = (
+        <div className="pf-editor-footer-actions">
+            <Button
+                type="button"
+                variant="ghost"
+                className="pf-btn-clear"
+                onClick={resetForm}
+                aria-label="Limpiar formulario"
             >
-                <div className="mx-auto w-full max-w-7xl flex flex-col h-full max-h-[100dvh]">
-                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                            <DrawerTitle className="text-lg sm:text-xl font-semibold">Editar Perfil de Experto</DrawerTitle>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowEditForm(false)}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </DrawerHeader>
-                    {/* Contenido: móvil en columna única con scroll, desktop en dos columnas sin scroll */}
-                    <div className="px-4 sm:px-6 py-4 sm:py-6 md:py-5 flex-1 min-h-0 overflow-y-auto md:overflow-y-hidden">
-                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-6 lg:gap-8 md:items-start space-y-4 sm:space-y-5 md:space-y-0 md:h-full md:overflow-y-auto md:pr-2">
-                            {/* Columna izquierda - Información del perfil */}
-                            <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
-                        {/* Imagen de perfil */}
-                                <div className="space-y-2">
-                                    <Label>Foto de perfil</Label>
-                                    <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0 relative">
-                                    {(() => {
-                                        // ✅ Priorizar previewUrl (imagen nueva seleccionada), luego ProfilePictureUrl del nivel superior
-                                        // ✅ IMPORTANTE: Usar ProfilePictureUrl (PascalCase) del objeto principal, NO del objeto User
-                                        const imageUrl = previewUrl ||
-                                                       (profile as any)?.ProfilePictureUrl ||
-                                                       profile.profilePictureUrl ||
-                                                       null;
-                                        console.log('🔍 ProfileEditForm (render): imageUrl:', imageUrl);
-                                        console.log('🔍 ProfileEditForm (render): previewUrl:', previewUrl);
-                                        console.log('🔍 ProfileEditForm (render): profile.profilePictureUrl:', profile.profilePictureUrl);
+                Limpiar
+            </Button>
+            {saveButtonBar}
+        </div>
+    );
 
-                                        if (imageUrl) {
-                                            return (
-                                                <>
-                                                    <img
-                                                        src={imageUrl}
-                                                        alt="Profile"
-                                                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
-                                                        onError={(e) => {
-                                                            // ✅ Si la imagen falla al cargar, ocultar y mostrar placeholder
-                                                            console.error('❌ ProfileEditForm: Error loading image:', imageUrl);
-                                                            e.currentTarget.style.display = 'none';
-                                                            const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
-                                                            if (placeholder) {
-                                                                placeholder.style.display = 'flex';
-                                                            }
-                                                        }}
-                                                    />
-                                                    <div className="w-20 h-20 bg-muted rounded-full items-center justify-center hidden">
-                                                        <User className="w-10 h-10 text-muted-foreground" />
-                                                    </div>
-                                                </>
-                                            );
-                                        }
-                                        return (
-                                            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
-                                                <User className="w-10 h-10 text-muted-foreground" />
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                            type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                            onClick={openFilePicker}
-                                        >
-                                                    <Upload className="w-4 h-4 mr-2" />
-                                            Cambiar
-                                                </Button>
+    const editorCard = (
+        <div className="pf-editor-stack">
+            {embedded && (
+                <div className="pf-settings-card pf-settings-card--meta">
+                    <header className="pf-card-header pf-card-header--actions pf-editor-save-desktop">
+                        <div className="pf-editor-bar-end">{saveButton}</div>
+                    </header>
+                </div>
+            )}
+
+            <form className="pf-form pf-form--stacked" onSubmit={handleSubmit}>
+                <div className="pf-settings-card pf-settings-card--content">
+                    <div className="pf-form-body">
+                        <div className="pf-form-grid">
+                    <section id="pf-section-about" className="pf-section pf-section--about">
+                        <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
+                            <span className="pf-about-composer__meta">{descLength}/500</span>
+                            <div className="pf-about-composer__photo">
+                                    <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
+                                        {profileImageUrl ? (
+                                            <img src={profileImageUrl} alt="" />
+                                        ) : (
+                                            <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
+                                        )}
+                                        <span className="pf-avatar-overlay" aria-hidden>
+                                            <Upload className="h-4 w-4" />
+                                        </span>
+                                    </button>
+                                    <div className="pf-about-composer__actions">
+                                        <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
+                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                        </button>
                                         {(previewUrl || profilePicture) && (
-                                                    <Button
-                                                type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                onClick={removeImage}
-                                            >
-                                                        <XCircle className="w-4 h-4 mr-2" />
+                                            <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
                                                 Quitar
-                                                    </Button>
+                                            </button>
                                         )}
                                     </div>
-                                            <p className="text-xs text-muted-foreground">PNG, JPG (máx. 5MB)</p>
                                     <input
                                         ref={fileInputRef}
                                         type="file"
                                         accept="image/jpeg,image/png,image/jpg"
                                         onChange={handleImageSelect}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            markFilePickerOpening();
-                                        }}
+                                        onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
                                         className="hidden"
                                     />
+                                    {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
                                 </div>
-                            </div>
-                            {formErrors.profilePicture && (
-                                        <p className="text-sm text-destructive">{formErrors.profilePicture}</p>
-                            )}
-                        </div>
-
-                                <Separator />
-
-                        {/* Descripción */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">
-                                Descripción ({formData.description.length}/500)
-                                    </Label>
-                            <textarea
-                                        id="description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className={`flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y ${
-                                            formErrors.description ? 'border-destructive' : ''
-                                }`}
-                                rows={4}
-                                maxLength={500}
-                                placeholder="Describe tu experiencia y servicios como experto..."
-                                required
+                                <textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    rows={5}
+                                    maxLength={500}
+                                    placeholder="Cuéntales a tus clientes quién eres, tu experiencia y en qué te especializas…"
+                                    className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
+                                    required
                             />
-                            {formErrors.description && (
-                                        <p className="text-sm text-destructive">{formErrors.description}</p>
-                            )}
                         </div>
-
-                                <Separator className="md:hidden" />
-
-                                {/* Disponibilidad horaria */}
-                                <div className="space-y-3">
-                                    <div className="space-y-1.5">
-                                        <Label className="flex items-center gap-2 text-sm font-semibold">
-                                            <Clock className="w-4 h-4 text-muted-foreground" />
-                                            Disponibilidad horaria
-                                            <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground pl-6">
-                                            Define los días y horarios en los que estarás disponible para recibir contrataciones.
-                                        </p>
-                                    </div>
-
-                                    {/* Días de la semana */}
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-medium text-muted-foreground">Días de trabajo</Label>
-                                        <div className="grid grid-cols-7 gap-1.5">
-                                            {VALID_DAYS_OF_WEEK.map(day => {
-                                                const isSelected = availability.daysOfWeek.includes(day);
-                                                return (
-                                                    <Button
-                                                        key={day}
-                                                        type="button"
-                                                        variant={isSelected ? "default" : "outline"}
-                                                        size="sm"
-                                                        onClick={() => toggleDay(day)}
-                                                        className={`text-xs font-medium transition-all ${
-                                                            isSelected
-                                                                ? "bg-primary text-primary-foreground shadow-sm"
-                                                                : "hover:bg-accent"
-                                                        }`}
-                                                    >
-                                                        {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES].substring(0, 2)}
-                                                    </Button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Horario */}
-                                    {availability.daysOfWeek.length > 0 && (
-                                        <div className="grid grid-cols-2 gap-3 pt-1">
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor="startTime" className="text-xs font-medium text-muted-foreground">Hora de inicio</Label>
-                                                <input
-                                                    id="startTime"
-                                                    type="time"
-                                                    value={availability.startTime}
-                                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                    required={availability.daysOfWeek.length > 0}
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor="endTime" className="text-xs font-medium text-muted-foreground">Hora de fin</Label>
-                                                <input
-                                                    id="endTime"
-                                                    type="time"
-                                                    value={availability.endTime}
-                                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                                                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                                    required={availability.daysOfWeek.length > 0}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {formErrors.availability && (
-                                        <p className="text-sm text-destructive mt-1">{formErrors.availability}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Columna derecha - Ubicación */}
-                            <div className="md:space-y-4 md:space-y-5 space-y-4 sm:space-y-5">
-                                <Separator className="md:hidden" />
-
-                                {/* Ubicación con mapa */}
-                                <div className="space-y-2">
-                                    <Label>Ubicación del servicio</Label>
-
-                                    {/* 🛡️ Round 28: si falta el token, mostrar mensaje claro en lugar de un mapa roto. */}
-                                    {!MAPBOX_TOKEN ? (
-                                        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
-                                            <p className="text-sm text-destructive">
-                                                Falta configurar <code className="font-mono">VITE_MAPBOX_PUBLIC_TOKEN</code>. El mapa no puede cargarse.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="border border-border rounded-lg overflow-hidden shadow-sm">
-                                            {/* 🛡️ Round 28: Map de react-map-gl/mapbox con marker draggable + círculo GeoJSON. */}
-                                            <Map
-                                                ref={mapRef}
-                                                mapboxAccessToken={MAPBOX_TOKEN}
-                                                initialViewState={{
-                                                    longitude: initialLocation.lng,
-                                                    latitude: initialLocation.lat,
-                                                    zoom: 6,
-                                                }}
-                                                style={{ width: '100%', height: 240 }}
-                                                mapStyle={MAPBOX_STYLE}
-                                                onClick={handleMapClick}
-                                                cursor="pointer"
-                                                attributionControl={false}
-                                                dragRotate={false}
-                                                pitchWithRotate={false}
-                                                touchPitch={false}
-                                            >
-                                                <NavigationControl position="top-right" showCompass={false} />
-
-                                                {/* 🛡️ Round 28: círculo de cobertura como Source GeoJSON + 2 capas (fill + line) en azul translúcido.
-                                                    Con rango 0 (solo taller) no hay círculo: solo el marcador del punto fijo. */}
-                                                {coverageGeoJSON && (
-                                                    <Source id="coverage" type="geojson" data={coverageGeoJSON}>
-                                                        <Layer
-                                                            id="coverage-fill"
-                                                            type="fill"
-                                                            paint={{
-                                                                'fill-color': CIRCLE_FILL_COLOR,
-                                                                'fill-opacity': CIRCLE_FILL_OPACITY,
-                                                            }}
-                                                        />
-                                                        <Layer
-                                                            id="coverage-line"
-                                                            type="line"
-                                                            paint={{
-                                                                'line-color': CIRCLE_LINE_COLOR,
-                                                                'line-width': CIRCLE_LINE_WIDTH,
-                                                            }}
-                                                        />
-                                                    </Source>
-                                                )}
-
-                                                {/* 🛡️ Round 28: marker draggable con el mismo div azul #1e40af de antes. */}
-                                                <Marker
-                                                    longitude={selectedLocation.lng}
-                                                    latitude={selectedLocation.lat}
-                                                    draggable
-                                                    onDragEnd={handleMarkerDragEnd}
-                                                    anchor="center"
-                                                >
-                                                    <div
-                                                        style={{
-                                                            width: 18,
-                                                            height: 18,
-                                                            borderRadius: '50%',
-                                                            background: '#1e40af',
-                                                            border: '2px solid #ffffff',
-                                                            boxShadow: '0 2px 6px rgba(30, 64, 175, 0.4)',
-                                                            cursor: 'grab',
-                                                        }}
-                                                        aria-label="Marcador de ubicación del experto"
-                                                    />
-                                                </Marker>
-                                            </Map>
-                                        </div>
-                                    )}
-
-                            {/* Mostrar coordenadas seleccionadas */}
-                                    <div className="text-xs text-muted-foreground">
-                                <span>Ubicación seleccionada: </span>
-                                <span className="font-mono">
-                                    {typeof selectedLocation.lat === 'number' ? selectedLocation.lat.toFixed(6) : '0.000000'}, {typeof selectedLocation.lng === 'number' ? selectedLocation.lng.toFixed(6) : '0.000000'}
-                                </span>
-                            </div>
-
-                            {(formErrors.latitude || formErrors.longitude) && (
-                                        <p className="text-sm text-destructive">
-                                    {formErrors.latitude || formErrors.longitude}
-                                </p>
-                            )}
-
-                        {/* Información de ubicación */}
-                                    <div className="bg-muted/30 border border-border/50 rounded-md p-2.5">
-                            <div className="flex items-start gap-2">
-                                            <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                                {workRadiusKm === 0
-                                                    ? 'Haz clic en el mapa o arrastra el marcador para fijar tu taller. Con rango 0 km, los clientes se desplazan a tu punto fijo.'
-                                                    : `Haz clic en el mapa o arrastra el marcador para seleccionar tu ubicación. El círculo azul representa tu rango de trabajo de ${workRadiusKm} km.`}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Rango de trabajo del experto */}
-                                    <div className="space-y-2 pt-1">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="workRadius" className="text-sm font-semibold">
-                                                Rango de trabajo
-                                            </Label>
-                                            <span className={`text-sm font-medium ${workRadiusKm === 0 ? 'text-blue-700' : 'text-foreground'}`}>
-                                                {workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} km`}
-                                            </span>
-                                        </div>
-                                        <input
-                                            id="workRadius"
-                                            type="range"
-                                            min={0}
-                                            max={MAX_WORK_RADIUS_KM}
-                                            step={5}
-                                            value={workRadiusKm}
-                                            onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
-                                            className="w-full h-2 rounded-lg accent-blue-700 cursor-pointer"
-                                            aria-valuetext={workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} kilómetros`}
-                                        />
-                                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                                            <span>Solo en mi taller</span>
-                                            <span>{MAX_WORK_RADIUS_KM} km</span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Distancia máxima a la que te desplazas desde tu punto fijo. Elige 0 km si solo
-                                            atiendes en tu taller. Tu rango se muestra a los clientes en todas las páginas.
-                                        </p>
-                                    </div>
-                            </div>
-                        </div>
-
-                            {/* 👁️ PREVISUALIZACIÓN EN VIVO (xl): cómo te verá el cliente */}
-                            <div className="hidden xl:block">
-                                <div className="sticky top-2 space-y-2">
-                                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Así te verán los clientes</Label>
-                                    <div className="rounded-2xl border border-[#e8e8e8] bg-white shadow-sm overflow-hidden">
-                                        {/* Cabecera tipo ficha */}
-                                        <div className="p-4 flex items-center gap-3 border-b border-[#f0f0f0]">
-                                            {previewUrl || (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl ? (
-                                                <img
-                                                    src={previewUrl || (profile as any)?.ProfilePictureUrl || profile.profilePictureUrl || ''}
-                                                    alt="Vista previa"
-                                                    className="w-12 h-12 rounded-full object-cover border border-[#e8e8e8]"
-                                                />
-                                            ) : (
-                                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                                                    <User className="w-6 h-6 text-muted-foreground" />
-                                                </div>
-                                            )}
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-[#1c1c1c] truncate">Tu ficha de experto</p>
-                                                <p className="text-xs text-[#6a6a6a]">
-                                                    {workRadiusKm === 0 ? 'Solo en su taller' : `Hasta ${workRadiusKm} km`}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {/* Descripción en vivo */}
-                                        <div className="p-4 space-y-3">
-                                            <p className={`text-[13px] leading-relaxed ${formData.description.trim() ? 'text-[#444]' : 'text-[#b0b0b0] italic'}`}>
-                                                {formData.description.trim() || 'Tu descripción aparecerá aquí…'}
-                                            </p>
-                                            {/* Disponibilidad en vivo */}
-                                            <div className="flex flex-wrap gap-1">
-                                                {VALID_DAYS_OF_WEEK.map((day) => {
-                                                    const active = availability.daysOfWeek.includes(day);
-                                                    return (
-                                                        <span key={day}
-                                                            className={`w-6 h-6 rounded-full text-[10px] font-semibold inline-flex items-center justify-center ${active ? 'bg-[#0066CC] text-white' : 'bg-[#f3f4f6] text-[#b0b0b0]'}`}>
-                                                            {DAY_NAMES_ES[day as keyof typeof DAY_NAMES_ES].substring(0, 1)}
-                                                        </span>
-                                                    );
-                                                })}
-                                                {availability.daysOfWeek.length > 0 && (
-                                                    <span className="ml-1 text-[11px] text-[#6a6a6a] self-center">
-                                                        {availability.startTime}–{availability.endTime}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-[11px] text-[#9ca3af]">
-                                                📍 {typeof selectedLocation.lat === 'number' ? `${selectedLocation.lat.toFixed(3)}, ${selectedLocation.lng.toFixed(3)}` : 'Sin ubicación'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                        La vista se actualiza en vivo mientras editas. Guarda para publicar los cambios.
-                                    </p>
-                                </div>
-                            </div>
-
-                        {formErrors.general && (
-                                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm border border-destructive/20 md:col-span-2 xl:col-span-3 space-y-3">
-                                    <div>{formErrors.general}</div>
-                                    {/* 🛡️ Round 28 MUD-Q: CTA inline al wizard de mudanza
-                                        cuando el backend rechaza por STRIPE_COUNTRY_LOCKED.
-                                        Antes el usuario tenía que ir a leer dónde estaba
-                                        "Mudarme a otro país" — ahora un click lo abre aquí. */}
-                                    {formErrors.relocationRequired === 'true' && (
-                                        <Button
-                                            type="button"
-                                            variant="default"
-                                            size="sm"
-                                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                                            onClick={() => {
-                                                // 🛡️ Round 28 MUD-U: cerrar el Drawer del
-                                                // ProfileEditForm ANTES de abrir el wizard.
-                                                // Vaul/Radix marca todo lo demás como inert/
-                                                // aria-hidden cuando el drawer está abierto,
-                                                // así que el wizard (en portal a body) se ve
-                                                // pero NO recibe eventos. Cerramos el drawer
-                                                // y dispatchamos un evento global para que
-                                                // ExpertPanelPage (sin drawer encima) abra
-                                                // el wizard tras un tick.
-                                                setShowEditForm(false);
-                                                setTimeout(() => {
-                                                    window.dispatchEvent(new CustomEvent('openExpertRelocationWizard'));
-                                                }, 50);
-                                            }}
-                                        >
-                                            <Plane className="w-4 h-4 mr-2" />
-                                            Iniciar asistente de mudanza
-                                        </Button>
-                                    )}
+                        {formErrors.description && (
+                            <div className="pf-about-errors">
+                                <p className="pf-error">{formErrors.description}</p>
                             </div>
                         )}
-                    </div>
-                </div>
+                    </section>
 
-                    <Separator className="flex-shrink-0" />
-
-                    {/* Botones de acción - Fijos en la parte inferior */}
-                    <div className="px-4 sm:px-6 pt-3 pb-4 sm:py-4 bg-background border-t border-border flex-shrink-0 flex flex-row justify-end gap-3 md:sticky md:bottom-0 md:z-10">
-                        <div className="max-w-3xl mx-auto w-full md:max-w-none md:flex md:justify-end md:w-full">
-                            <div className="flex flex-row gap-3 w-full md:ml-auto">
-                                <Button
-                            type="button"
-                                    variant="outline"
-                            onClick={() => {
-                                setShowEditForm(false);
-                                resetForm();
-                            }}
-                                    className="flex-1 md:flex-none md:w-auto"
-                        >
-                            Cancelar
-                                </Button>
-                                <Button
-                            onClick={handleSubmit}
-                            disabled={isUpdating}
-                                    className="flex-1 md:flex-none md:w-auto"
-                        >
-                            {isUpdating ? (
-                                <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Actualizando...
-                                </>
+                    <section id="pf-section-zone" className="pf-section pf-section--zone">
+                        <div className="pf-section-fields">
+                            {!MAPBOX_TOKEN ? (
+                                <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
                             ) : (
-                                <>
-                                            <CheckCircle className="w-4 h-4 mr-2" />
-                                    Actualizar Perfil
-                                </>
+                                <div className="pf-map-panel">
+                                    <div className="pf-map-search">
+                                        <div className="pf-map-search-bar">
+                                            <Search className="pf-map-search-icon" aria-hidden />
+                                            <input
+                                                id="work-address-search"
+                                                type="text"
+                                                value={addressQuery}
+                                                onChange={(e) => {
+                                                    addressSearchFromUserRef.current = true;
+                                                    setShowAddressResults(false);
+                                                    setAddressQuery(e.target.value);
+                                                }}
+                                                onFocus={() => {
+                                                    addressInputFocusedRef.current = true;
+                                                    if (
+                                                        addressSearchFromUserRef.current
+                                                        && addressResults.length > 0
+                                                        && addressQuery.trim() !== appliedAddressRef.current.trim()
+                                                    ) {
+                                                        setShowAddressResults(true);
+                                                    }
+                                                }}
+                                                onBlur={() => {
+                                                    addressInputFocusedRef.current = false;
+                                                    window.setTimeout(() => setShowAddressResults(false), 150);
+                                                }}
+                                                placeholder="Buscar dirección…"
+                                                autoComplete="off"
+                                                className="pf-map-search-input"
+                                            />
+                                        </div>
+                                        {showAddressResults && addressResults.length > 0 && (
+                                            <ul className="pf-map-search-results" role="listbox">
+                                                {addressResults.map((item) => (
+                                                    <li key={item.id} role="option">
+                                                        <button
+                                                            type="button"
+                                                            className="pf-map-search-result"
+                                                            onMouseDown={(e) => e.preventDefault()}
+                                                            onClick={() => handleAddressSelect(item)}
+                                                        >
+                                                            {item.address || item.place_name}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+
+                                    <div className="pf-map-canvas" ref={mapCanvasRef}>
+                                        <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
+                                            {mapCanRender && (
+                                                <MapGL
+                                                    ref={mapRef}
+                                                    mapboxAccessToken={MAPBOX_TOKEN}
+                                                    initialViewState={{ longitude: initialLocation.lng, latitude: initialLocation.lat, zoom: 6 }}
+                                                    style={{ width: '100%', height: mapHeight }}
+                                                    mapStyle={cartoMapStyle as never}
+                                                    onClick={handleMapClick}
+                                                    onLoad={resizeMap}
+                                                    onResize={resizeMap}
+                                                    cursor="pointer"
+                                                    attributionControl={false}
+                                                    dragRotate={false}
+                                                    pitchWithRotate={false}
+                                                    touchPitch={false}
+                                                >
+                                                    {coverageGeoJSON && (
+                                                        <Source id="coverage" type="geojson" data={coverageGeoJSON}>
+                                                            <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
+                                                            <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
+                                                        </Source>
+                                                    )}
+                                                    <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
+                                                        <div className="pf-map-pin" />
+                                                    </Marker>
+                                                </MapGL>
+                                            )}
+                                        </div>
+
+                                        <div className="pf-map-canvas__ui">
+                                            <div className="pf-map-radius">
+                                                <input
+                                                    id="workRadius"
+                                                    type="range"
+                                                    min={0}
+                                                    max={MAX_WORK_RADIUS_KM}
+                                                    step={5}
+                                                    value={workRadiusKm}
+                                                    onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                                                    className="pf-range"
+                                                    aria-label="Radio de trabajo"
+                                                    style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
+                                                />
+                                                <span className="pf-map-radius-val">{workRadiusKm === 0 ? 'Solo taller' : `${workRadiusKm} km`}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
-                                </Button>
+                            {addressSearchError && <p className="pf-error">{addressSearchError}</p>}
+                            {(formErrors.latitude || formErrors.longitude) && (
+                                <p className="pf-error">{formErrors.latitude || formErrors.longitude}</p>
+                            )}
+                        </div>
+                    </section>
+                    </div>
                     </div>
                 </div>
-            </div>
+
+                <div className="pf-settings-card pf-settings-card--schedule">
+                    <section id="pf-section-schedule" className="pf-schedule-block">
+                    <div className="pf-availability-row">
+                        <span className="pf-label">Disponibilidad <span className="pf-section-tag">Opcional</span></span>
+                        <div className="pf-days" role="group" aria-label="Días de atención">
+                            {VALID_DAYS_OF_WEEK.map(day => {
+                                const isSelected = availability.daysOfWeek.includes(day);
+                                return (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        aria-pressed={isSelected}
+                                        className={`pf-day${isSelected ? ' pf-day--on' : ''}`}
+                                        onClick={() => toggleDay(day)}
+                                    >
+                                        {DAY_LETTER[day] ?? day[0]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {availability.daysOfWeek.length > 0 ? (
+                            <div className="pf-time-row">
+                                <input
+                                    id="startTime"
+                                    type="time"
+                                    className="pf-input pf-input--time"
+                                    value={availability.startTime}
+                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
+                                />
+                                <span className="pf-time-sep">—</span>
+                                <input
+                                    id="endTime"
+                                    type="time"
+                                    className="pf-input pf-input--time"
+                                    value={availability.endTime}
+                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
+                                />
+                            </div>
+                        ) : (
+                            <p className="pf-schedule-empty">Selecciona días para definir horario</p>
+                        )}
+                    </div>
+                    {formErrors.availability && <p className="pf-error">{formErrors.availability}</p>}
+                    </section>
+                </div>
+
+                {formErrors.general && (
+                    <div className="pf-alert">
+                        <div>{formErrors.general}</div>
+                        {formErrors.relocationRequired === 'true' && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                className="pf-btn-save mt-2"
+                                onClick={() => {
+                                    closeEditor();
+                                    setTimeout(() => window.dispatchEvent(new CustomEvent('openExpertRelocationWizard')), 50);
+                                }}
+                            >
+                                <Plane className="w-4 h-4 mr-2" />
+                                Iniciar asistente de mudanza
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </form>
         </div>
+    );
+
+    if (embedded) {
+        return (
+            <div className="pf-editor pf-editor--embedded">
+                <div className="pf-editor-body">
+                    <div className="pf-editor-frame">{editorCard}</div>
+                </div>
+                <footer className="pf-editor-footer pf-editor-save-mobile">{mobileFooterActions}</footer>
+            </div>
+        );
+    }
+
+    return (
+        <Drawer
+            open={showEditForm}
+            onOpenChange={(open) => { if (open && !showEditForm) setShowEditForm?.(true); }}
+            dismissible={false}
+            repositionInputs={false}
+            shouldScaleBackground={false}
+        >
+            <DrawerContent
+                className="h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                onPointerDownOutside={(e) => {
+                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
+                    e.preventDefault();
+                }}
+                onInteractOutside={(e) => {
+                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
+                    e.preventDefault();
+                }}
+                onFocusOutside={(e) => {
+                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
+                    e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
+                <header className="pf-drawer-header">
+                    <DrawerTitle asChild><h2>Editar perfil</h2></DrawerTitle>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={closeEditor} aria-label="Cerrar">
+                        <X className="h-4 w-4" />
+                    </Button>
+                </header>
+                <div className="pf-drawer-body">
+                    <div className="pf-editor-frame">{editorCard}</div>
+                </div>
+                <footer className="pf-drawer-footer">
+                    {mobileFooterActions}
+                </footer>
             </DrawerContent>
         </Drawer>
     );
