@@ -11,6 +11,11 @@ interface ExpertVisibilityBannerProps {
     latitude: string | number | null | undefined;
     longitude: string | number | null | undefined;
     servicesCount: number;
+    /** 🧩 Coordinado con el gate del backend: foto y descripción son obligatorias. */
+    hasPhoto?: boolean;
+    hasDescription?: boolean;
+    /** 📱 Móvil verificado (no fijo). undefined = aún cargando (no se evalúa). */
+    phoneSmsCapable?: boolean;
     onOpenStripe?: () => void;
     onDisableVacation?: () => void;
     onEditProfile?: () => void;
@@ -41,8 +46,14 @@ interface ExpertVisibilityBannerProps {
  *   4. isOnVacation → "Modo vacaciones activo"
  *   5. !country → "Configura tu país"
  *   6. (!latitude || !longitude) → "Sin ubicación en mapa"
- *   7. servicesCount === 0 → "Crea tu primer servicio"
- *   8. caso OK → confirmación verde "Visible en búsquedas"
+ *   7. !hasPhoto || !hasDescription → "Completa tu perfil" (gate backend)
+ *   8. !phoneSmsCapable → "Verifica tu móvil" (gate backend)
+ *   9. servicesCount === 0 → "Crea tu primer servicio"
+ *  10. caso OK → confirmación verde "Visible en búsquedas"
+ *
+ * ⚠️ COORDINACIÓN: los pasos 1-8 replican EXACTAMENTE el Where de visibilidad de
+ * SearchServiceService.cs (y GET /api/User/expert-visibility). Si el backend añade
+ * o quita un requisito, este banner y ProfileCompletionCard deben actualizarse.
  */
 export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
     stripeStatus,
@@ -52,6 +63,9 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
     latitude,
     longitude,
     servicesCount,
+    hasPhoto,
+    hasDescription,
+    phoneSmsCapable,
     onOpenStripe,
     onDisableVacation,
     onEditProfile
@@ -122,6 +136,27 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
             title: 'Sin ubicación en mapa — tus servicios están ocultos',
             body: 'Tu perfil no tiene coordenadas válidas. El mapa de búsqueda no puede mostrarte a clientes sin una ubicación. Edita tu perfil y selecciona tu zona en el mapa.',
             cta: onEditProfile ? { label: 'Añadir ubicación', onClick: onEditProfile } : undefined,
+        };
+    } else if (hasPhoto === false || hasDescription === false) {
+        // 🧩 Coordinado con el gate del backend: sin foto o descripción NO se aparece.
+        const faltan = [
+            hasPhoto === false ? 'tu foto de perfil' : null,
+            hasDescription === false ? 'tu descripción' : null,
+        ].filter(Boolean).join(' y ');
+        reason = {
+            severity: 'warning',
+            icon: FileText,
+            title: 'Aún no eres visible — completa tu perfil',
+            body: `Tus servicios NO aparecen en búsquedas porque falta ${faltan}. Complétalo en "Completa tu perfil" y serás visible automáticamente.`,
+            cta: onEditProfile ? { label: 'Completar perfil', onClick: onEditProfile } : undefined,
+        };
+    } else if (phoneSmsCapable === false) {
+        // 📱 Coordinado con el gate del backend: sin móvil verificado NO se aparece.
+        reason = {
+            severity: 'warning',
+            icon: AlertTriangle,
+            title: 'Aún no eres visible — verifica tu móvil',
+            body: 'Tus servicios NO aparecen en búsquedas hasta que verifiques un MÓVIL (los avisos de citas e informes con plazos van por SMS y un fijo no los recibe). Hazlo en la tarjeta "Móvil verificado" de este panel: tardas un minuto.',
         };
     } else if (servicesCount === 0) {
         reason = {

@@ -111,42 +111,44 @@ export function ServicesTab({
     };
 
     return (
-        <div className="p-3 sm:p-6">
+        <div className="p-3 sm:p-6 expert-animate-in">
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div>
-                    <h2 className="text-base sm:text-lg font-semibold">Mis Servicios</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">Gestiona tus servicios activos</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Mis Servicios</h2>
+                    <p className="text-sm text-slate-500 mt-1">Gestiona tus servicios activos y mantén tu perfil actualizado</p>
                 </div>
             </div>
 
             {isLoadingServices ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                <div className="flex items-center justify-center py-16">
+                    <div className="text-center">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
+                        <p className="text-sm text-slate-500">Cargando servicios...</p>
+                    </div>
                 </div>
             ) : servicesError ? (
-                <div className="text-center py-12 bg-destructive/10 text-destructive rounded-md border border-destructive/20">
-                    <p>Error al cargar servicios: {servicesError.message}</p>
+                <div className="text-center py-12 bg-red-50 text-red-700 rounded-xl border border-red-100">
+                    <p className="font-medium">Error al cargar servicios</p>
+                    <p className="text-sm mt-1 text-red-600">{servicesError.message}</p>
                 </div>
             ) : services.length === 0 ? (
-                <Empty className="py-12">
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <Package className="w-7 h-7 text-slate-500" />
-                        </EmptyMedia>
-                        <EmptyTitle>No tienes servicios activos</EmptyTitle>
-                        <EmptyDescription>Crea tu primer servicio para empezar a recibir solicitudes de clientes</EmptyDescription>
-                        <EmptyContent>
-                            <Button 
-                                onClick={() => setShowServiceForm(true)}
-                                variant="default"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Crear servicio
-                            </Button>
-                        </EmptyContent>
-                    </EmptyHeader>
-                </Empty>
+                <div className="py-12">
+                    <div className="max-w-md mx-auto text-center">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border border-blue-100">
+                            <Package className="w-10 h-10 text-blue-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-2">No tienes servicios activos</h3>
+                        <p className="text-sm text-slate-500 mb-6">Crea tu primer servicio para empezar a recibir solicitudes de clientes</p>
+                        <Button
+                            onClick={() => setShowServiceForm(true)}
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-sm"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Crear primer servicio
+                        </Button>
+                    </div>
+                </div>
             ) : (
                 <div className="space-y-4">
                     {/* Header con botón de crear servicio */}
