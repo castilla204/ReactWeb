@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard } from 'lucid
 import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
+    BecomeExpertFastPathShell,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
     BE_DAY_ACTIVE,
@@ -1034,62 +1035,76 @@ function BecomeExpertPage() {
             <>
             <SEO
                 title="Hazte experto en Inspecciono · Cobra inspecciones pre-compra | Inspecciono"
-                description="Conecta tu cuenta de pagos con Stripe en minutos y completa tu perfil después."
+                description="Mecánico, perito o técnico: revisiones presenciales y online antes de comprar. Conecta Stripe y completa tu perfil."
                 canonical="/become-expert"
             />
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-10">
-                <div className="w-full max-w-lg bg-white rounded-2xl border border-[#e8e8e8] shadow-sm p-6 sm:p-8 space-y-5">
-                    <div className="space-y-1.5">
-                        <h1 className="text-2xl font-bold text-[#1c1c1c]">Hazte experto</h1>
-                        <p className="text-sm text-[#6a6a6a] leading-relaxed">
-                            Empezamos por lo importante: tu <strong>cuenta de pagos</strong> con Stripe.
-                            Después completarás tu perfil (foto, descripción, ubicación) en tu panel —
-                            no serás visible para clientes hasta completarlo.
+            <BecomeExpertFastPathShell
+                onBack={() => navigate(-1)}
+                footer={
+                    <button
+                        type="button"
+                        onClick={submitMinimal}
+                        disabled={fastPathSubmitting}
+                        aria-busy={fastPathSubmitting}
+                        className="sd-btn-primary inline-flex h-11 w-full items-center justify-center px-5 disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                    >
+                        {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
+                    </button>
+                }
+            >
+                <div className="be-fast-form">
+                    <header className="hidden max-w-md space-y-2 lg:block">
+                        <p className="be-fast-form-kicker">Pagos</p>
+                        <h2 className="be-fast-form-title">Cuenta Stripe</h2>
+                        <p className="be-fast-form-lead">
+                            Elige el país donde cobrarás. Después completarás perfil, zona y servicios en el panel;
+                            no serás visible para clientes hasta entonces.
                         </p>
-                    </div>
+                    </header>
 
-                    <ol className="text-sm text-[#444] space-y-1.5">
-                        <li>1️⃣ Elige tu país y conecta Stripe (verificación de identidad y cobros).</li>
-                        <li>2️⃣ Completa tu perfil en el panel de experto.</li>
-                        <li>3️⃣ Publica tus servicios y empieza a recibir contrataciones.</li>
-                    </ol>
-
-                    <div className="space-y-1.5">
-                        <label htmlFor="fast-country" className="text-sm font-semibold text-[#1c1c1c]">
-                            País donde cobrarás
+                    <div className="be-fast-form-field">
+                        <label htmlFor="fast-country" className="be-fast-form-label">
+                            País de la cuenta
                         </label>
                         <select
                             id="fast-country"
                             value={fastPathCountry}
                             onChange={(e) => setFastPathCountry(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-[#d4d4d4] bg-white px-3 text-sm"
+                            className={`${BE_INPUT_CLASS} be-fast-select`}
                         >
                             {sortedCountries.map((code) => (
                                 <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
                             ))}
                         </select>
-                        <p className="text-xs text-amber-700">
-                            ⚠️ El país de la cuenta de Stripe no se puede cambiar después. Elige donde
-                            resides/cobras de verdad.
+                        <p className="be-fast-form-hint">
+                            No se puede cambiar después. Elige donde resides y cobras habitualmente.
                         </p>
                     </div>
 
                     {fastPathError && (
-                        <p className="text-sm text-red-600">{fastPathError}</p>
+                        <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
                     )}
 
-                    <button
-                        onClick={submitMinimal}
-                        disabled={fastPathSubmitting}
-                        className="w-full h-12 rounded-lg bg-[#635bff] hover:bg-[#5851e6] text-white font-semibold transition-colors disabled:opacity-60"
-                    >
-                        {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe →'}
-                    </button>
-                    <button onClick={() => navigate(-1)} className="w-full text-sm text-[#6a6a6a] hover:text-[#1c1c1c]">
-                        Volver
-                    </button>
+                    <div className="hidden max-w-md flex-col gap-3 pt-1 lg:flex">
+                        <button
+                            type="button"
+                            onClick={submitMinimal}
+                            disabled={fastPathSubmitting}
+                            aria-busy={fastPathSubmitting}
+                            className="sd-btn-primary inline-flex h-11 w-full items-center justify-center px-5 disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                        >
+                            {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="h-10 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+                        >
+                            Volver
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </BecomeExpertFastPathShell>
             </>
         );
     }

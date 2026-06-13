@@ -32,8 +32,13 @@ export const LoginPage = lazyDefault(() => import('../pages/LoginPage'));
 export const SearchCreationPage = lazyDefault(() => import('../pages/SearchCreationPage'));
 export const SearchesPage = lazyDefault(() => import('../pages/SearchesPage'));
 export const BecomeExpertPage = lazyDefault(() => import('../pages/BecomeExpertPage'));
+const importExpertPanelPage = () => import('../pages/ExpertPanelPage');
+const expertPanelWarmup =
+  typeof window !== 'undefined' && window.location.pathname === '/expert-panel'
+    ? importExpertPanelPage()
+    : null;
 export const ExpertPanelPage = lazyNamed(
-  () => import('../pages/ExpertPanelPage'),
+  () => expertPanelWarmup ?? importExpertPanelPage(),
   'ExpertPanelPage',
 );
 export const StripeOnboardingReturnPage = lazyNamed(

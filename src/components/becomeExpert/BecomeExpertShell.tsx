@@ -1,5 +1,7 @@
 import React from 'react';
 import { ArrowLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
+import { HeroBannerPhoto } from '../HeroBannerPhoto';
+import { MOBILE_HERO_PHOTO_SCRIM } from '../../constants/homepageHeroMap';
 import {
     HP_PANEL_GRADIENT,
     SD_MOBILE_FOOTER_SHELL_CLASS,
@@ -81,13 +83,19 @@ export function BecomeExpertProgress({
 export function BecomeExpertStepHeader({
     title,
     description,
+    compact = false,
 }: {
     title: string;
     description: string;
+    compact?: boolean;
 }) {
     return (
-        <header className="space-y-1.5">
-            <h2 className="font-display text-base font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] sm:text-lg">
+        <header className={`hidden space-y-1.5 lg:block ${compact ? 'lg:space-y-1' : ''}`}>
+            <h2
+                className={`font-display font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] ${
+                    compact ? 'text-lg' : 'text-base sm:text-lg'
+                }`}
+            >
                 {title}
             </h2>
             <p className="text-sm leading-relaxed text-[#6a6a6a]">{description}</p>
@@ -289,3 +297,130 @@ export const BE_INPUT_CLASS =
 
 export const BE_DAY_ACTIVE = 'bg-brand/[0.1] text-brand font-semibold';
 export const BE_DAY_IDLE = 'bg-[#f5f5f5] text-[#444] hover:bg-[#ebebeb]';
+
+const FAST_PATH_STEPS = [
+    'Elige tu país y conecta Stripe',
+    'Completa tu perfil y zona en el panel',
+    'Publica servicios y recibe encargos',
+] as const;
+
+const FAST_PATH_INTRO =
+    'Mecánico, perito, agente o técnico: en Inspecciono haces revisiones presenciales y online antes de comprar — coches, viviendas, motos y más. Defines tu zona, publicas servicios y cobras cada encargo con Stripe.';
+
+/** Intro móvil con foto hero de la homepage. */
+export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="space-y-4 lg:hidden">
+            <button
+                type="button"
+                onClick={onBack}
+                className="text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+            >
+                Volver
+            </button>
+
+            <div className="relative -mx-5 aspect-square overflow-hidden border-y border-[#e8e8e8]">
+                <HeroBannerPhoto imgClassName="object-cover object-[68%_38%]" />
+            </div>
+
+            <div className="space-y-2">
+                <h1 className="font-display text-[1.35rem] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c]">
+                    Hazte experto
+                </h1>
+                <p className="text-[14px] leading-relaxed text-[#6a6a6a]">{FAST_PATH_INTRO}</p>
+            </div>
+
+            <ol className="space-y-1.5 text-[13px] leading-relaxed text-[#6a6a6a]" aria-label="Pasos del alta">
+                {FAST_PATH_STEPS.map((step, index) => (
+                    <li key={step}>
+                        {index + 1}. {step}
+                    </li>
+                ))}
+            </ol>
+        </div>
+    );
+}
+
+/** Shell Stripe-first — sin banner móvil; contexto en el scroll. */
+export function BecomeExpertFastPathShell({
+    onBack,
+    children,
+    footer,
+}: {
+    onBack: () => void;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+}) {
+    const scrollPad = footer
+        ? SD_MOBILE_SCROLL_PAD_CLASS
+        : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]';
+
+    return (
+        <div className="become-expert-wizard be-fast-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#fafafa] font-display text-[#1c1c1c] lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(420px,640px)] xl:grid-cols-[minmax(320px,1fr)_680px]">
+            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] lg:flex lg:flex-col lg:justify-between">
+                <div className="absolute inset-0">
+                    <HeroBannerPhoto imgClassName="object-cover object-right" />
+                </div>
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: MOBILE_HERO_PHOTO_SCRIM }}
+                />
+
+                <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-10 xl:p-12">
+                    <div>
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className={`${hpIconButtonClass} bg-white/90 backdrop-blur-sm ${FOCUS_RING}`}
+                            aria-label="Volver al inicio"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </button>
+                        <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+                            Programa de expertos
+                        </p>
+                        <h1 className="mt-3 max-w-md font-display text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#1c1c1c] xl:text-[2rem]">
+                            Tu experiencia, en ingresos
+                        </h1>
+                        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#444]">
+                            {FAST_PATH_INTRO}
+                        </p>
+                        <ol className="mt-8 max-w-md space-y-2.5" aria-label="Pasos del alta">
+                            {FAST_PATH_STEPS.map((step, index) => (
+                                <li key={step} className="text-sm leading-relaxed text-[#444]">
+                                    {index + 1}. {step}
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                    <p className="mt-8 max-w-md shrink-0 text-xs leading-relaxed text-[#6a6a6a]">
+                        Pagos con Stripe. Tus datos solo se usan para verificar tu perfil.
+                    </p>
+                </div>
+            </aside>
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:h-full">
+                <main
+                    id="become-expert-main"
+                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad}`}
+                >
+                    <div
+                        className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-4 lg:max-w-none lg:px-10 lg:py-8 xl:px-12`}
+                    >
+                        <BecomeExpertFastPathIntro onBack={onBack} />
+                        <div className="mt-5 border-t border-[#ececec] pt-5 lg:mt-0 lg:border-t-0 lg:pt-10">{children}</div>
+                    </div>
+                </main>
+
+                {footer && (
+                    <footer className={`${SD_MOBILE_FOOTER_SHELL_CLASS} shrink-0 lg:hidden`}>
+                        <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
+                            {footer}
+                        </div>
+                    </footer>
+                )}
+            </div>
+        </div>
+    );
+}
