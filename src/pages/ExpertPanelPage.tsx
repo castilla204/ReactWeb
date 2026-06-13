@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell, Settings2, ExternalLink } from 'lucide-react';
 import '../styles/expert-panel.css';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+/* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
+import '../styles/expert-profile-form.css';
+import '../styles/expert-service-form.css';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
     Drawer,
     DrawerContent,
@@ -39,7 +40,6 @@ import { StripeStatusCard } from '../components/StripeStatusCard';
 // 🛡️ Round 28 MUD-BP: banner persistente cuando hay warnings Stripe pero el panel
 // sigue accesible. Antes era código muerto; ahora se monta arriba del main content.
 import { StripeStatusBanner } from '../components/StripeStatusBanner';
-import { ExpertVisibilityBanner } from '../components/ExpertVisibilityBanner';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 // 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
@@ -50,19 +50,15 @@ import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useStripeAccountLink } from '../hooks/useStripeAccountLink';
 import { useStripeLoginLink } from '../hooks/useStripeLoginLink';
 import { useVacationMode } from '../hooks/useVacationMode';
-import { readWorkRadiusKm } from '../utils/workRadius';
-import { PhoneStatusCard, usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
-import { ProfileCompletionCard } from '../components/expertPanel/ProfileCompletionCard';
+import { usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
+import { ProfileSetupWizard, useProfileSetupState } from '../components/expertPanel/ProfileSetupWizard';
+import { isFiscalStepComplete } from '../components/expertPanel/profileSteps';
+import { ExpertPanelStatusPill } from '../components/expertPanel/ExpertPanelStatusPill';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
-/** Mapbox solo al abrir edición de perfil — evita bloquear la carga del panel */
-const ProfileEditForm = lazy(() =>
-    import('../components/expertPanel/ProfileEditForm').then((mod) => ({
-        default: mod.ProfileEditForm,
-    })),
-);
+import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
 
 interface Hire {
     id: number;
@@ -120,20 +116,21 @@ export function ExpertPanelPage() {
 
     // Leer el tab desde los query params, por defecto 'services'
     const tabFromUrl = searchParams.get('tab');
-    const initialTab = (tabFromUrl === 'hires' || tabFromUrl === 'services' || tabFromUrl === 'messages') ? tabFromUrl : 'services';
-    const [activeTab, setActiveTab] = useState<'services' | 'hires' | 'messages'>(initialTab as 'services' | 'hires' | 'messages');
+    type ExpertTab = 'setup' | 'profile' | 'services' | 'hires' | 'messages';
+    const validTabs: ExpertTab[] = ['setup', 'profile', 'services', 'hires', 'messages'];
+    const initialTab: ExpertTab = validTabs.includes(tabFromUrl as ExpertTab) ? tabFromUrl as ExpertTab : 'services';
+    const [activeTab, setActiveTab] = useState<ExpertTab>(initialTab);
     
-    // Sincronizar el tab con la URL cuando cambia
     useEffect(() => {
-        if (tabFromUrl && (tabFromUrl === 'hires' || tabFromUrl === 'services' || tabFromUrl === 'messages')) {
-            setActiveTab(tabFromUrl as 'services' | 'hires' | 'messages');
+        if (tabFromUrl && validTabs.includes(tabFromUrl as ExpertTab)) {
+            setActiveTab(tabFromUrl as ExpertTab);
         }
     }, [tabFromUrl]);
     
-    // Actualizar la URL cuando cambia el tab
-    const handleTabChange = (value: string) => {
-        setActiveTab(value as 'services' | 'hires' | 'messages');
+    const handleTabChange = (value: ExpertTab) => {
+        setActiveTab(value);
         setSearchParams({ tab: value });
+        setSidebarOpen(false);
     };
     const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -155,7 +152,6 @@ export function ExpertPanelPage() {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [existingImagesWithIds, setExistingImagesWithIds] = useState<ServiceImage[]>([]); // Imágenes con IDs
     const [imagesToDelete, setImagesToDelete] = useState<number[]>([]); // IDs de imágenes a eliminar
-    const [showProfileEditForm, setShowProfileEditForm] = useState(false);
     const [filters, setFilters] = useState<{
         clientName: string;
         status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
@@ -203,6 +199,7 @@ export function ExpertPanelPage() {
     // (react-query la deduplica). El banner de visibilidad lo necesita porque el backend
     // OCULTA los servicios sin móvil verificado: banner y checklist deben contar lo mismo.
     const phoneStatusQuery = usePhoneStatus(Boolean(profile));
+    const smsCapable = Boolean(phoneStatusQuery.data?.smsCapable);
 
     // 🛡️ MUD-DO — cargar hires SIEMPRE, no solo cuando el tab está activo.
     // ANTES: { enabled: activeTab === 'hires' } → en el tab "services" hires=[]
@@ -216,6 +213,36 @@ export function ExpertPanelPage() {
 
     const stripeHook = useExpertStripeStatus();
     const { status: stripeStatus, loading: isLoadingStripeStatus, error: stripeStatusError, refetch: refetchStripeStatus } = stripeHook;
+
+    const stripeContext = {
+        stripeStatus: stripeStatus?.stripeStatus ?? (profile as { stripeStatus?: unknown })?.stripeStatus,
+        onboardingCompleted: (stripeStatus as { onboardingCompleted?: boolean })?.onboardingCompleted ?? profile?.onboardingCompleted,
+        stripeAccountId: (stripeStatus as { stripeAccountId?: string })?.stripeAccountId ?? profile?.stripeAccountId,
+    };
+    const { steps: profileSetupSteps, complete: profileSetupComplete, pendingRequired } = useProfileSetupState(profile, smsCapable, stripeContext);
+
+    useEffect(() => {
+        if (activeTab === 'profile') {
+            fetchProfile(true, { silent: true });
+        }
+    }, [activeTab]);
+
+    // Perfil incompleto → abrir pestaña Configuración por defecto
+    useEffect(() => {
+        if (!profile || profileSetupComplete) return;
+        if (!tabFromUrl) {
+            setActiveTab('setup');
+            setSearchParams({ tab: 'setup' }, { replace: true });
+        }
+    }, [profile?.id, profileSetupComplete, tabFromUrl, setSearchParams]);
+
+    useEffect(() => {
+        if (profileSetupComplete && activeTab === 'setup') {
+            setActiveTab('services');
+            setSearchParams({ tab: 'services' }, { replace: true });
+        }
+    }, [profileSetupComplete, activeTab, setSearchParams]);
+
     const { data: notificationUnreadCount = 0 } = useUnreadNotificationCount();
     const { modalState, hideModal } = useStripeStatusModal();
     const { openAccountLink, isLoading: isAccountLinkLoading } = useStripeAccountLink();
@@ -657,6 +684,29 @@ export function ExpertPanelPage() {
         setImagesToDelete([]); // Resetear imágenes a eliminar
         setFormErrors({});
         setShowServiceForm(true);
+    };
+
+    const clearServiceForm = () => {
+        if (editingService) {
+            handleEditService(editingService);
+            return;
+        }
+        setFormData({
+            categoryId: '',
+            serviceTypeId: '',
+            price: '',
+            conditions: '',
+            durationInHours: '24',
+            selectedDeliverableTypes: [],
+        });
+        setSelectedImages([]);
+        setExistingImages([]);
+        setExistingImagesWithIds([]);
+        setImagesToDelete([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+        setFormErrors({});
     };
 
     const handleUpdateService = async (e: React.FormEvent) => {
@@ -1127,36 +1177,17 @@ export function ExpertPanelPage() {
     if (!canAccessPanel && stripeStatus !== null) {
         return (
             <>
-                <div className="min-h-screen bg-background relative overflow-hidden">
-                    {/* Fondo decorativo sutil para PC */}
-                    <div className="hidden lg:block absolute inset-0">
-                        {/* Patrón de puntos sutiles */}
-                        <div className="absolute inset-0 opacity-[0.02]" style={{
-                            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
-                            backgroundSize: '40px 40px'
-                        }}></div>
-                        
-                        {/* Gradientes sutiles */}
-                        <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-gray-50/30 to-transparent"></div>
-                        <div className="absolute bottom-0 right-0 w-full h-1/3 bg-gradient-to-t from-gray-50/20 to-transparent"></div>
-                        
-                        {/* Elementos decorativos muy sutiles */}
-                        <div className="absolute top-32 left-32 w-96 h-96 bg-gradient-to-br from-blue-50/40 to-transparent rounded-full filter blur-3xl"></div>
-                        <div className="absolute bottom-32 right-32 w-96 h-96 bg-gradient-to-tl from-indigo-50/30 to-transparent rounded-full filter blur-3xl"></div>
-                    </div>
-                    
-                    <div className="relative z-10 px-6 py-8">
-                        <div className="max-w-4xl mx-auto">
-                            <button
-                                onClick={() => navigate('/')}
-                                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                                <span className="text-sm">Volver</span>
-                            </button>
+                <div className="min-h-screen bg-[#fafafa]">
+                    <div className="mx-auto max-w-lg px-4 py-5 sm:px-5 sm:py-6">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/')}
+                            className="mb-5 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+                        >
+                            Volver
+                        </button>
 
-                            <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[calc(100vh-300px)]">
-                            <StripeStatusCard
+                        <StripeStatusCard
                             stripe={stripeHook}
                             isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
                             onSetupStripe={async () => {
@@ -1229,8 +1260,6 @@ export function ExpertPanelPage() {
                                 );
                             }}
                         />
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <StripeLoadingOverlay 
@@ -1246,631 +1275,323 @@ export function ExpertPanelPage() {
         localStorage.setItem('stripe-verification-banner-dismissed', 'true');
     };
 
+    const unreadHires = hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0);
+    const tabTitles: Record<ExpertTab, string> = {
+        setup: 'Configuración',
+        profile: 'Mi perfil',
+        services: 'Servicios',
+        hires: 'Contrataciones',
+        messages: 'Mensajes',
+    };
+
+    const tabSubtitles: Record<ExpertTab, string> = {
+        setup: 'Requisitos para activar tu perfil público',
+        profile: 'Foto, descripción y disponibilidad',
+        services: 'Publica y edita los servicios que ofreces',
+        hires: 'Seguimiento de trabajos y contrataciones',
+        messages: 'Conversaciones con tus clientes',
+    };
+
+    const openStripeDashboard = async () => {
+        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+            && stripeStatus?.onboardingCompleted === true;
+        try {
+            await (isApprovedNow ? openLoginLink() : openAccountLink());
+        } catch (error) {
+            console.error('Error opening Stripe link:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: {
+                    type: 'error',
+                    message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
+                },
+            }));
+        }
+    };
+
+    const visibilityNote = !profileSetupComplete
+        ? 'Tus servicios no aparecen en búsquedas hasta completar los requisitos obligatorios.'
+        : null;
+
+    const stripeNote = stripeContext && !isFiscalStepComplete(stripeContext) && stripeStatus?.stripeStatus
+        ? (stripeStatus as { statusMessage?: string; stripeStatusDetails?: string }).statusMessage
+            || (stripeStatus as { stripeStatusDetails?: string }).stripeStatusDetails
+            || 'Hay datos pendientes en tu cuenta de pagos.'
+        : null;
+
     return (
-        <div className="expert-panel-layout flex">
-            {/* Sidebar fijo - Modern Dashboard */}
-            <aside className={`fixed inset-y-0 left-0 z-[60] w-72 expert-sidebar transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-            }`}>
-                <div className="flex flex-col h-full">
-                    {/* Sidebar Header - Gradient with profile */}
-                    <div className="expert-sidebar-header px-6 pt-6 pb-4">
-                        <div className="relative flex items-center gap-3">
-                            {profile?.profilePictureUrl ? (
-                                <img
-                                    src={profile.profilePictureUrl}
-                                    alt="Profile"
-                                    className="expert-profile-avatar"
-                                />
-                            ) : (
-                                <div className="expert-profile-avatar-fallback">
-                                    <User className="w-5 h-5 text-white" />
-                                </div>
-                            )}
-                            <div className="relative z-10 flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
-                                <p className="text-xs text-white/70 truncate">Experto Verificado</p>
-                            </div>
-                            <div className="relative z-10">
-                                <div className="expert-status-dot" />
-                            </div>
+        <div className="expert-panel-layout">
+            {sidebarOpen && (
+                <div className="expert-sidebar-overlay lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden />
+            )}
+
+            <aside className={`expert-sidebar ${sidebarOpen ? 'expert-sidebar--open' : ''}`}>
+                <div className="expert-sidebar-brand">
+                    {profile?.profilePictureUrl ? (
+                        <img src={profile.profilePictureUrl} alt="" className="expert-profile-avatar" />
+                    ) : (
+                        <div className="expert-profile-avatar-fallback">
+                            <User className="w-4 h-4" />
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden h-8 w-8 absolute top-4 right-4 text-white hover:bg-white/20"
-                            onClick={() => setSidebarOpen(false)}
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
+                    )}
+                    <div className="min-w-0 flex-1">
+                        <p className="expert-sidebar-name">{user?.name}</p>
+                        <p className="expert-sidebar-role">Experto</p>
                     </div>
+                    <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(false)}>
+                        <X className="w-4 h-4" />
+                    </Button>
+                </div>
 
-                    {/* Sidebar Content */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                        {/* Navigation Tabs - Modern Pill Style */}
-                        <div className="expert-tabs-modern">
-                            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                                <TabsList className="w-full grid grid-cols-3">
-                                    <TabsTrigger value="services" className="flex items-center gap-1.5 justify-center">
-                                        <Package className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Servicios</span>
-                                        <span className="sm:hidden">Serv.</span>
-                                    </TabsTrigger>
-                                    <TabsTrigger value="hires" className="flex items-center gap-1.5 justify-center relative">
-                                        <Briefcase className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Contrataciones</span>
-                                        <span className="sm:hidden">Cont.</span>
-                                        {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0) > 0 && (
-                                            <Badge variant="destructive" className="ml-1 h-4 min-w-[16px] px-1 text-[10px]">
-                                                {hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0)}
-                                            </Badge>
-                                        )}
-                                    </TabsTrigger>
-                                    <TabsTrigger value="messages" className="flex items-center gap-1.5 justify-center relative">
-                                        <MessageCircle className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Mensajes</span>
-                                        <span className="sm:hidden">Msg.</span>
-                                    </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-
-                        {/* Quick Actions */}
-                        <div className="expert-nav-section-label">Acciones rápidas</div>
-                        <div className="space-y-1">
-                            <Button
-                                variant="ghost"
-                                className="expert-action-btn"
-                                onClick={() => setShowProfileEditForm(true)}
-                            >
-                                <div className="expert-action-icon expert-action-icon-blue">
-                                    <User className="w-3.5 h-3.5" />
-                                </div>
-                                Editar perfil
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className={`expert-action-btn ${profile?.isOnVacation ? 'expert-action-btn-vacation' : ''}`}
-                                onClick={() => setShowVacationModal(true)}
-                            >
-                                <div className={`expert-action-icon ${profile?.isOnVacation ? 'expert-action-icon-orange' : 'expert-action-icon-blue'}`}>
-                                    {profile?.isOnVacation ? <PlaneTakeoff className="w-3.5 h-3.5" /> : <Plane className="w-3.5 h-3.5" />}
-                                </div>
-                                {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
-                            </Button>
-                        </div>
-
-                        {/* Stripe Status Card */}
-                        <div className="expert-stripe-card">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="expert-stripe-label">Estado de Pagos</span>
-                                {(() => {
-                                    const s = stripeStatus?.stripeStatus;
-                                    const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
-                                    const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
-                                                   || s === STRIPE_STATUS.UNDER_REVIEW
-                                                   || s === STRIPE_STATUS.REQUIREMENTS_DUE
-                                                   || s === STRIPE_STATUS.RESTRICTED_SOON
-                                                   || s === STRIPE_STATUS.ACTION_REQUIRED;
-                                    if (isOk) {
-                                        return (
-                                            <div className="expert-status-indicator">
-                                                <div className="expert-status-dot-sm active" />
-                                                <span className="text-xs font-medium text-emerald-700">Activo</span>
-                                            </div>
-                                        );
-                                    }
-                                    if (isWarning) {
-                                        return (
-                                            <div className="expert-status-indicator">
-                                                <div className="expert-status-dot-sm warning" />
-                                                <span className="text-xs font-medium text-amber-700">Atención</span>
-                                            </div>
-                                        );
-                                    }
-                                    return (
-                                        <div className="expert-status-indicator">
-                                            <div className="expert-status-dot-sm blocked" />
-                                            <span className="text-xs font-medium text-rose-700">Bloqueado</span>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                            <Button
-                                variant="ghost"
-                                className="expert-stripe-btn"
-                                onClick={async () => {
-                                    const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
-                                                       && stripeStatus?.onboardingCompleted === true;
-                                    try {
-                                        await (isApprovedNow ? openLoginLink() : openAccountLink());
-                                    } catch (error) {
-                                        console.error('Error opening Stripe link:', error);
-                                        window.dispatchEvent(new CustomEvent('showNotification', {
-                                            detail: {
-                                                type: 'error',
-                                                message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
-                                            },
-                                        }));
-                                    }
-                                }}
-                            >
-                                <CheckCircle className="w-3 h-3 mr-1.5" />
-                                Acceder al Panel
-                            </Button>
-                        </div>
-
-                        {/* Country badge */}
-                        {profile?.country && (
-                            <div className="flex items-center justify-between px-3 py-1.5">
-                                <span className="text-[11px] text-muted-foreground">País de la cuenta</span>
-                                <Badge variant="outline" className="text-[10px] py-0">
-                                    {profile.country}
-                                </Badge>
-                            </div>
-                        )}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="expert-action-btn text-muted-foreground"
-                            onClick={() => setShowRelocationWizard(true)}
+                <nav className="expert-sidebar-nav" aria-label="Panel de experto">
+                    {!profileSetupComplete && (
+                        <button
+                            type="button"
+                            className={`expert-nav-item ${activeTab === 'setup' ? 'expert-nav-item--active' : ''}`}
+                            onClick={() => handleTabChange('setup')}
                         >
-                            <div className="expert-action-icon expert-action-icon-orange">
-                                <Plane className="w-3.5 h-3.5" />
-                            </div>
-                            Mudarme a otro país
-                        </Button>
+                            <Settings2 />
+                            Configuración
+                            {pendingRequired > 0 && <span className="expert-nav-badge">{pendingRequired}</span>}
+                        </button>
+                    )}
+                    <p className="expert-nav-section-label">Panel</p>
+                    <button
+                        type="button"
+                        className={`expert-nav-item ${activeTab === 'profile' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('profile')}
+                    >
+                        <User />
+                        Mi perfil
+                    </button>
+                    <button
+                        type="button"
+                        className={`expert-nav-item ${activeTab === 'services' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('services')}
+                    >
+                        <Package />
+                        Servicios
+                    </button>
+                    <button
+                        type="button"
+                        className={`expert-nav-item ${activeTab === 'hires' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('hires')}
+                    >
+                        <Briefcase />
+                        Contrataciones
+                        {unreadHires > 0 && <span className="expert-nav-badge">{unreadHires > 9 ? '9+' : unreadHires}</span>}
+                    </button>
+                    <button
+                        type="button"
+                        className={`expert-nav-item ${activeTab === 'messages' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('messages')}
+                    >
+                        <MessageCircle />
+                        Mensajes
+                    </button>
+                </nav>
 
-                        {/* Statistics Section */}
-                        <div className="expert-nav-section-label mt-4">Estadísticas</div>
-                        <div className="expert-stats-section">
-                            <div className="expert-stat-card services">
-                                <div className="expert-stat-info">
-                                    <div className="expert-stat-icon services">
-                                        <Package className="w-4 h-4" />
-                                    </div>
-                                    <span className="expert-stat-label">Servicios</span>
-                                </div>
-                                <span className="expert-stat-value services">{services.length}</span>
-                            </div>
-                            <div className="expert-stat-card hires">
-                                <div className="expert-stat-info">
-                                    <div className="expert-stat-icon hires">
-                                        <Briefcase className="w-4 h-4" />
-                                    </div>
-                                    <span className="expert-stat-label">Contrataciones</span>
-                                </div>
-                                <span className="expert-stat-value hires">{hiresPagination?.totalCount ?? hires.length}</span>
-                            </div>
-                            <div className="expert-stat-card active">
-                                <div className="expert-stat-info">
-                                    <div className="expert-stat-icon active">
-                                        <CheckCircle className="w-4 h-4" />
-                                    </div>
-                                    <span className="expert-stat-label">Activos</span>
-                                </div>
-                                <span className="expert-stat-value active">{activeHires.length}</span>
-                            </div>
+                <div className="expert-sidebar-footer">
+                    <p className="expert-nav-section-label">Cuenta</p>
+                    <button type="button" className="expert-nav-item" onClick={() => void openStripeDashboard()}>
+                        <ExternalLink />
+                        Panel de pagos
+                    </button>
+                    <button type="button" className="expert-nav-item" onClick={() => setShowVacationModal(true)}>
+                        {profile?.isOnVacation ? <PlaneTakeoff /> : <Plane />}
+                        {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
+                    </button>
+                    {profile?.country && (
+                        <div className="expert-sidebar-meta">
+                            <span>País</span>
+                            <Badge variant="outline" className="text-[10px] py-0">{profile.country}</Badge>
                         </div>
-                    </div>
+                    )}
+                    <button type="button" className="expert-nav-item" onClick={() => setShowRelocationWizard(true)}>
+                        <Plane />
+                        Cambiar país
+                    </button>
                 </div>
             </aside>
 
-            {/* Overlay para móvil */}
-            {sidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Contenido principal */}
-            <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-                {/* Header limpio */}
-                <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="flex h-14 items-center gap-4 px-4 sm:px-6">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden"
-                            onClick={() => setSidebarOpen(true)}
-                        >
-                            <Menu className="w-5 h-5" />
-                        </Button>
-                        <div className="flex items-center gap-4 flex-1">
-                            <h1 className="text-lg font-semibold">
-                                {activeTab === 'services' ? 'Servicios' : activeTab === 'hires' ? 'Contrataciones' : 'Mensajes sin contratación'}
-                            </h1>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="relative"
-                            onClick={() => {
-                                const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
-                                if (open) open();
-                            }}
-                            aria-label="Notificaciones"
-                        >
-                            <Bell className="w-5 h-5" />
-                            {notificationUnreadCount > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                                    {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
-                                </span>
-                            )}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/')}
-                            className="hidden sm:flex"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Volver
-                        </Button>
-                        </div>
+            <div className="expert-main">
+                <header className="expert-topbar">
+                    <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+                        <Menu className="w-5 h-5" />
+                    </Button>
+                    <div className="expert-topbar-heading">
+                        <h1 className="expert-topbar-title">{tabTitles[activeTab]}</h1>
+                        <p className="expert-topbar-subtitle">{tabSubtitles[activeTab]}</p>
+                    </div>
+                    <div className="expert-topbar-spacer" />
+                    <ExpertPanelStatusPill
+                        stripeStatus={stripeStatus?.stripeStatus}
+                        onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean })?.onboardingCompleted ?? profile?.onboardingCompleted}
+                        isOnVacation={profile?.isOnVacation}
+                        country={profile?.country}
+                        latitude={(profile as { latitude?: string | number })?.latitude}
+                        longitude={(profile as { longitude?: string | number })?.longitude}
+                        servicesCount={services?.length ?? 0}
+                        hasPhoto={profile ? Boolean(String((profile as { profilePictureUrl?: string; ProfilePictureUrl?: string })?.profilePictureUrl ?? (profile as { ProfilePictureUrl?: string })?.ProfilePictureUrl ?? '').trim()) : undefined}
+                        hasDescription={profile ? String((profile as { description?: string; Description?: string })?.description ?? (profile as { Description?: string })?.Description ?? '').trim().length >= 10 : undefined}
+                        phoneSmsCapable={phoneStatusQuery.data ? Boolean(phoneStatusQuery.data.smsCapable) : undefined}
+                    />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative"
+                        onClick={() => {
+                            const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
+                            if (open) open();
+                        }}
+                        aria-label="Notificaciones"
+                    >
+                        <Bell className="w-5 h-5" />
+                        {notificationUnreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                                {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                            </span>
+                        )}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="hidden sm:flex">
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Volver
+                    </Button>
                 </header>
 
-                {/* Main Content */}
-                <main className="flex-1 overflow-y-auto">
-                    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-                        {/* 🛡️ Round 29 MUD-DE — Banner ÚNICO de visibilidad real del experto.
-                            Above-the-fold y SIEMPRE presente — le dice si sus servicios SON o
-                            NO son visibles a clientes, y por qué. Cubre el gap crítico
-                            detectado por la auditoría de 5 agentes: el experto puede tener
-                            servicio IsActive=true pero estar oculto del mapa por StripeStatus
-                            invisible (caso real del usuario con ActionRequired). DSA Art. 17
-                            obliga a comunicar visibility restrictions. */}
-                        <ExpertVisibilityBanner
-                            stripeStatus={stripeStatus?.stripeStatus}
-                            onboardingCompleted={(stripeStatus as any)?.onboardingCompleted ?? profile?.onboardingCompleted}
-                            isOnVacation={profile?.isOnVacation}
-                            country={profile?.country}
-                            latitude={(profile as any)?.latitude}
-                            longitude={(profile as any)?.longitude}
-                            servicesCount={services?.length ?? 0}
-                            hasPhoto={profile ? Boolean(String((profile as any)?.profilePictureUrl ?? (profile as any)?.ProfilePictureUrl ?? '').trim()) : undefined}
-                            hasDescription={profile ? String((profile as any)?.description ?? (profile as any)?.Description ?? '').trim().length >= 10 : undefined}
-                            phoneSmsCapable={phoneStatusQuery.data ? Boolean(phoneStatusQuery.data.smsCapable) : undefined}
-                            onOpenStripe={async () => { await openAccountLink(); }}
-                            onDisableVacation={() => setShowVacationModal(true)}
-                            onEditProfile={() => setShowProfileEditForm(true)}
+                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}`}>
+                    {activeTab === 'setup' && profile ? (
+                        <ProfileSetupWizard
+                            profile={profile}
+                            onEditProfile={() => handleTabChange('profile')}
+                            onOpenStripe={openStripeDashboard}
+                            visibilityNote={visibilityNote}
+                            stripeNote={stripeNote}
+                            stripeContext={stripeContext}
                         />
-
-                        {/* 🧩 STRIPE-FIRST + 📱 SMS-CENTRAL: requisitos para ser visible y operar.
-                            Visibles en TODOS los viewports, arriba del todo: perfil completo y
-                            móvil verificado son OBLIGATORIOS (gate en backend). */}
-                        {(profile || true) && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                                <ProfileCompletionCard profile={profile} onEdit={() => setShowProfileEditForm(true)} />
-                                <PhoneStatusCard />
-                            </div>
-                        )}
-
-                        {/* 🛡️ Round 28 MUD-BP: banner persistente Stripe cuando hay warnings
-                            pero el panel sigue accesible. Antes solo se mostraba un micro-badge
-                            en sidebar — el experto no entendía que tenía que actuar. Ahora
-                            arriba, fondo BLANCO (preferencia usuario), no descartable. */}
-                        {stripeStatus && stripeStatus.stripeStatus && (
-                            <StripeStatusBanner
-                                stripeStatus={stripeStatus.stripeStatus}
-                                statusMessage={(stripeStatus as any).statusMessage || stripeStatus.stripeStatusDetails || ''}
-                                canCreateServices={(stripeStatus as any).canCreateServices !== false}
-                                canReceivePayments={(stripeStatus as any).canReceivePayments !== false}
-                                futureDueAtIso={(stripeStatus as any).stripeFutureDueAt ?? null}
-                                onOpenStripe={async () => { await openAccountLink(); }}
-                            />
-                        )}
-
-                        {/* Información móvil - solo visible en móvil */}
-                        <div className="lg:hidden space-y-3">
-                            {/* Estado de pagos y perfil en una fila */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Estado de pagos compacto con Card */}
-                                {/* 🛡️ Round 12 — D4 FIX: badge condicional sobre stripeStatus (móvil). */}
-                                <Card>
-                                    <CardContent className="p-3 space-y-2">
-                                        {(() => {
-                                            const s = stripeStatus?.stripeStatus;
-                                            const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
-                                            // 🛡️ Round 29 FIX-UNDER-REVIEW: incluir UNDER_REVIEW como warning (mismo trato que PendingVerification).
-                                            const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
-                                                           || s === STRIPE_STATUS.UNDER_REVIEW
-                                                           || s === STRIPE_STATUS.REQUIREMENTS_DUE
-                                                           || s === STRIPE_STATUS.RESTRICTED_SOON
-                                                           || s === STRIPE_STATUS.ACTION_REQUIRED;
-                                            const dotClass = isOk ? 'bg-emerald-500' : isWarning ? 'bg-amber-500' : 'bg-rose-500';
-                                            const badgeClass = isOk
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                : isWarning
-                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                    : 'bg-rose-50 text-rose-700 border-rose-200';
-                                            const label = isOk ? 'Activo' : isWarning ? 'Atención' : 'Bloqueado';
-                                            const subtitle = isOk ? 'Cuenta verificada' : isWarning ? 'Revisa tu cuenta Stripe' : 'No puedes cobrar';
-                                            return (
-                                                <>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <div className={`w-1.5 h-1.5 ${dotClass} rounded-full`}></div>
-                                                        <Badge variant="outline" className={`${badgeClass} text-xs px-1.5 py-0`}>
-                                                            {label}
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="text-xs text-slate-500">{subtitle}</p>
-                                                </>
-                                            );
-                                        })()}
-                                <button
-                                    onClick={async () => {
-                                        // 🛡️ Round 29 — FIX-DASH-LINK: Approved + onboardingCompleted → Express Dashboard;
-                                        // resto → KYC onboarding. Idéntico al prop onAccessDashboard de StripeStatusCard.
-                                        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
-                                                           && stripeStatus?.onboardingCompleted === true;
-                                        try {
-                                            await (isApprovedNow ? openLoginLink() : openAccountLink());
-                                        } catch (error) {
-                                            console.error('Error opening Stripe link:', error);
-                                            window.dispatchEvent(new CustomEvent('showNotification', {
-                                                detail: {
-                                                    type: 'error',
-                                                    message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
-                                                },
-                                            }));
-                                        }
-                                    }}
-                                            className="w-full px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-emerald-200 font-medium"
-                                >
-                                    <CheckCircle className="w-3 h-3" />
-                                            Panel
-                                </button>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Perfil compacto con Card */}
-                            {profile && (
-                                    <Card>
-                                        <CardContent className="p-3 space-y-2">
-                                            <div className="flex items-center gap-2">
-                                        {profile.profilePictureUrl ? (
-                                            <img
-                                                src={profile.profilePictureUrl}
-                                                alt="Profile"
-                                                        className="w-8 h-8 rounded-full object-cover border border-slate-200"
-                                            />
-                                        ) : (
-                                                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center border border-slate-200">
-                                                        <User className="w-4 h-4 text-white" />
-                                            </div>
+                    ) : activeTab === 'profile' && profile ? (
+                        <ProfileEditForm
+                            embedded
+                            profile={profile as any}
+                            onProfileUpdated={() => fetchProfile(true, { silent: true })}
+                            profileSetup={{
+                                steps: profileSetupSteps,
+                                complete: profileSetupComplete,
+                                pendingRequired,
+                                onOpenSetup: !profileSetupComplete ? () => handleTabChange('setup') : undefined,
+                            }}
+                        />
+                    ) : (
+                    <div className="expert-workspace-inner">
+                            <div className={`expert-panel-surface expert-tab-content${showServiceForm && activeTab === 'services' ? ' expert-panel-surface--service-editor' : ''}`}>
+                                {activeTab !== 'setup' && activeTab !== 'services' && stripeStatus?.stripeStatus && !(showServiceForm && activeTab === 'services') && (
+                                    <div className="px-5 pt-4">
+                                        <StripeStatusBanner
+                                            stripeStatus={stripeStatus.stripeStatus}
+                                            statusMessage={(stripeStatus as { statusMessage?: string; stripeStatusDetails?: string }).statusMessage || (stripeStatus as { stripeStatusDetails?: string }).stripeStatusDetails || ''}
+                                            canCreateServices={(stripeStatus as { canCreateServices?: boolean }).canCreateServices !== false}
+                                            canReceivePayments={(stripeStatus as { canReceivePayments?: boolean }).canReceivePayments !== false}
+                                            futureDueAtIso={(stripeStatus as { stripeFutureDueAt?: string | null }).stripeFutureDueAt ?? null}
+                                            onOpenStripe={openStripeDashboard}
+                                        />
+                                    </div>
+                                )}
+                                {activeTab === 'services' ? (
+                                    <ServicesTab
+                                        activeTab="services"
+                                        services={services}
+                                        isLoadingServices={isLoadingServices}
+                                        servicesError={servicesError}
+                                        showServiceForm={showServiceForm}
+                                        setShowServiceForm={(value) => {
+                                            if (value && !showServiceForm) resetForm();
+                                            setShowServiceForm(value);
+                                        }}
+                                        currentImageIndex={currentImageIndex}
+                                        goToPreviousImage={goToPreviousImage}
+                                        goToNextImage={goToNextImage}
+                                        categories={categories}
+                                        deleteService={deleteService}
+                                        isDeletingService={isDeletingService}
+                                        onEditService={handleEditService}
+                                        stripeStatus={stripeStatus?.stripeStatus}
+                                        onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean })?.onboardingCompleted ?? profile?.onboardingCompleted}
+                                        isOnVacation={profile?.isOnVacation}
+                                        hasLocation={Boolean(
+                                            (profile as { latitude?: string | number })?.latitude != null && (profile as { latitude?: string | number })?.latitude !== ''
+                                            && (profile as { longitude?: string | number })?.longitude != null && (profile as { longitude?: string | number })?.longitude !== '',
                                         )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
-                                                    {/* 🛡️ Round 12 — D4 FIX: badge ✓ solo si APPROVED; ⏳ si warning; ⚠ si bloqueado */}
-                                                    {(() => {
-                                                        const s = stripeStatus?.stripeStatus;
-                                                        const isOk = s === STRIPE_STATUS.APPROVED && stripeStatus?.onboardingCompleted;
-                                                        // 🛡️ Round 29 FIX-UNDER-REVIEW: incluir UNDER_REVIEW como warning (símbolo ⏳).
-                                                        const isWarning = s === STRIPE_STATUS.PENDING_VERIFICATION
-                                                                       || s === STRIPE_STATUS.UNDER_REVIEW
-                                                                       || s === STRIPE_STATUS.REQUIREMENTS_DUE
-                                                                       || s === STRIPE_STATUS.RESTRICTED_SOON
-                                                                       || s === STRIPE_STATUS.ACTION_REQUIRED;
-                                                        const cls = isOk
-                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                            : isWarning
-                                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                                : 'bg-rose-50 text-rose-700 border-rose-200';
-                                                        const symbol = isOk ? '✓' : isWarning ? '⏳' : '⚠';
-                                                        return (
-                                                            <Badge variant="outline" className={`mt-0.5 ${cls} text-xs px-1.5 py-0`}>
-                                                                {symbol}
-                                                            </Badge>
-                                                        );
-                                                    })()}
-                                        </div>
-                                    </div>
-                                            <p className="text-xs text-slate-500 line-clamp-1">{profile.description}</p>
-                                            {(() => {
-                                                // Rango de trabajo elegido (0 = solo taller). Acepta ambos casings.
-                                                const wr = readWorkRadiusKm(profile);
-                                                if (wr === null) return null;
-                                                return (
-                                                    <p className="text-xs text-slate-500">
-                                                        Rango: <span className="font-medium text-slate-700">{wr === 0 ? 'Solo en mi taller' : `${wr} km`}</span>
-                                                    </p>
-                                                );
-                                            })()}
-                                            {/* 🧩 checklist y teléfono se muestran arriba del panel (todos los viewports) */}
-                                    <div className="space-y-1.5">
-                                        <button
-                                            onClick={() => setShowProfileEditForm(true)}
-                                                    className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border border-slate-200 font-medium"
-                                        >
-                                            <User className="w-3 h-3" />
-                                            Editar
-                                        </button>
-                                        <button
-                                            onClick={() => setShowVacationModal(true)}
-                                                    className={`w-full px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-center gap-1.5 border font-medium ${
-                                                profile.isOnVacation 
-                                                    ? 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200' 
-                                                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                                            }`}
-                                        >
-                                            {profile.isOnVacation ? (
-                                                <PlaneTakeoff className="w-3 h-3" />
-                                            ) : (
-                                                <Plane className="w-3 h-3" />
-                                            )}
-                                            {profile.isOnVacation ? 'Activar' : 'Vacaciones'}
-                                        </button>
-                                    </div>
-                                        </CardContent>
-                                    </Card>
-                            )}
+                                        profileIncomplete={!profileSetupComplete}
+                                        onGoToSetup={() => handleTabChange('setup')}
+                                        serviceEditor={showServiceForm ? (
+                                            <ServiceForm
+                                                onClose={() => {
+                                                    scheduleFormReset();
+                                                    setShowServiceForm(false);
+                                                }}
+                                                onClearForm={clearServiceForm}
+                                                selectedImages={selectedImages}
+                                                setSelectedImages={setSelectedImages}
+                                                formErrors={formErrors}
+                                                setFormErrors={setFormErrors}
+                                                formData={formData}
+                                                setFormData={setFormData}
+                                                handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
+                                                removeImage={removeImage}
+                                                handleCreateService={handleCreateService}
+                                                serviceTypes={serviceTypes}
+                                                isLoadingServiceTypes={isLoadingServiceTypes}
+                                                isCreatingService={isCreatingService}
+                                                categories={categories}
+                                                categoriesLoading={categoriesLoading}
+                                                categoriesError={categoriesError}
+                                                editingService={editingService}
+                                                handleUpdateService={handleUpdateService}
+                                                isUpdatingService={isUpdatingService}
+                                                existingImages={existingImages}
+                                                setExistingImages={setExistingImages}
+                                                existingImagesWithIds={existingImagesWithIds}
+                                                imagesToDelete={imagesToDelete}
+                                                setImagesToDelete={setImagesToDelete}
+                                                expertCountry={profile?.country ?? null}
+                                                expertPreview={{
+                                                    name: user?.name || 'Tu perfil',
+                                                    profilePictureUrl: (profile as { profilePictureUrl?: string })?.profilePictureUrl,
+                                                    city: (profile as { city?: string })?.city,
+                                                    country: profile?.country,
+                                                    latitude: (profile as { latitude?: string | number })?.latitude,
+                                                    longitude: (profile as { longitude?: string | number })?.longitude,
+                                                    workRadiusKm: (profile as { workRadiusKm?: number })?.workRadiusKm,
+                                                }}
+                                            />
+                                        ) : undefined}
+                                    />
+                                ) : activeTab === 'hires' ? (
+                                    <HiresTab
+                                        activeTab="hires"
+                                        hireTab={hireTab}
+                                        hires={hires}
+                                        isLoadingHires={isLoadingHires}
+                                        hiresError={hiresError}
+                                        filters={filters}
+                                        setHireTab={setHireTab}
+                                        setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as typeof filters.status })}
+                                        handleViewHire={handleViewHire}
+                                        categories={categories}
+                                        pagination={hiresPagination}
+                                        onPageChange={setHiresPage}
+                                        onPageSizeChange={setHiresPageSize}
+                                    />
+                                ) : (
+                                    <PreHireConversationsTab
+                                        token={getAuthToken() || ''}
+                                        userId={user?.id || user?.Id || 0}
+                                    />
+                                )}
                             </div>
-                        </div>
-
-                        {/* Contenido principal - Estilo Dashboard-01 */}
-                        <div className="space-y-6">
-                            {/* Cards de métricas */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                                        <CardTitle className="text-xs sm:text-sm font-medium">Total Servicios</CardTitle>
-                                        <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                    </CardHeader>
-                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                                        <div className="text-lg sm:text-2xl font-bold">{services.length}</div>
-                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                                            Servicios activos en tu cuenta
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                                        <CardTitle className="text-xs sm:text-sm font-medium">Contrataciones</CardTitle>
-                                        <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                    </CardHeader>
-                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                                        <div className="text-lg sm:text-2xl font-bold">{hiresPagination?.totalCount ?? hires.length}</div>
-                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                                            Total de contrataciones recibidas
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
-                                        <CardTitle className="text-xs sm:text-sm font-medium">Activos</CardTitle>
-                                        <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-                                    </CardHeader>
-                                    <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                                        <div className="text-lg sm:text-2xl font-bold">{activeHires.length}</div>
-                                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 hidden sm:block">
-                                            Activas en la página actual
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            {/* Contenido de pestañas */}
-                            <Card className="border-border">
-                                <CardContent className="p-0">
-                                    {activeTab === 'services' ? (
-                                <ServicesTab
-                                    activeTab={activeTab}
-                                    services={services}
-                                    isLoadingServices={isLoadingServices}
-                                    servicesError={servicesError}
-                                    showServiceForm={showServiceForm}
-                                    setShowServiceForm={(value) => {
-                                        if (value) {
-                                            // Solo resetear si el drawer no está abierto (para evitar conflictos)
-                                            if (!showServiceForm) {
-                                                resetForm(); // Resetear cuando se abre para crear nuevo servicio
-                                            }
-                                        }
-                                        setShowServiceForm(value);
-                                    }}
-                                    currentImageIndex={currentImageIndex}
-                                    goToPreviousImage={goToPreviousImage}
-                                    goToNextImage={goToNextImage}
-                                    categories={categories}
-                                    deleteService={deleteService}
-                                    isDeletingService={isDeletingService}
-                                    onEditService={handleEditService}
-                                    // 🛡️ MUD-DF: contexto para badge real de visibilidad por servicio.
-                                    stripeStatus={stripeStatus?.stripeStatus}
-                                    onboardingCompleted={(stripeStatus as any)?.onboardingCompleted ?? profile?.onboardingCompleted}
-                                    isOnVacation={profile?.isOnVacation}
-                                    hasLocation={Boolean(
-                                        (profile as any)?.latitude !== null && (profile as any)?.latitude !== undefined && (profile as any)?.latitude !== '' &&
-                                        (profile as any)?.longitude !== null && (profile as any)?.longitude !== undefined && (profile as any)?.longitude !== ''
-                                    )}
-                                />
-                                    ) : activeTab === 'hires' ? (
-                                <HiresTab
-                                    activeTab={activeTab}
-                                    hireTab={hireTab}
-                                    hires={hires}
-                                    isLoadingHires={isLoadingHires}
-                                    hiresError={hiresError}
-                                    filters={filters}
-                                    setHireTab={setHireTab}
-                                    setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as any })}
-                                    handleViewHire={handleViewHire}
-                                    categories={categories}
-                                    pagination={hiresPagination}
-                                    onPageChange={setHiresPage}
-                                    onPageSizeChange={setHiresPageSize}
-                                />
-                                    ) : (
-                                <PreHireConversationsTab
-                                    token={getAuthToken() || ''}
-                                    userId={user?.id || user?.Id || 0}
-                                />
-                                    )}
-                                </CardContent>
-                            </Card>
-                            </div>
-                        </div>
-                </main>
-                    
-                    {/* Formularios modales */}
-                    <ServiceForm
-                        showServiceForm={showServiceForm}
-                        setShowServiceForm={(value) => {
-                            if (!value) {
-                                scheduleFormReset();
-                            }
-                            setShowServiceForm(value);
-                        }}
-                        selectedImages={selectedImages}
-                        setSelectedImages={setSelectedImages}
-                        formErrors={formErrors}
-                        setFormErrors={setFormErrors}
-                        formData={formData}
-                        setFormData={setFormData}
-                        handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
-                        removeImage={removeImage}
-                        handleCreateService={handleCreateService}
-                        serviceTypes={serviceTypes}
-                        isLoadingServiceTypes={isLoadingServiceTypes}
-                        isCreatingService={isCreatingService}
-                        categories={categories}
-                        categoriesLoading={categoriesLoading}
-                        categoriesError={categoriesError}
-                        editingService={editingService}
-                        handleUpdateService={handleUpdateService}
-                        isUpdatingService={isUpdatingService}
-                        existingImages={existingImages}
-                        setExistingImages={setExistingImages}
-                        existingImagesWithIds={existingImagesWithIds}
-                        imagesToDelete={imagesToDelete}
-                        setImagesToDelete={setImagesToDelete}
-                        // 🛡️ Round 28: el form deriva el símbolo de moneda del país del experto.
-                        expertCountry={profile?.country ?? null}
-                    />
-                    {profile && showProfileEditForm && (
-                        <Suspense
-                            fallback={
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/25">
-                                    <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden />
-                                    <span className="sr-only">Cargando editor de perfil</span>
-                                </div>
-                            }
-                        >
-                            <ProfileEditForm
-                                showEditForm={showProfileEditForm}
-                                setShowEditForm={(value) => {
-                                    if (value && !showProfileEditForm) {
-                                        fetchProfile(true, { silent: true });
-                                    }
-                                    setShowProfileEditForm(value);
-                                }}
-                                profile={profile as any}
-                                onProfileUpdated={() => fetchProfile(true, { silent: true })}
-                            />
-                        </Suspense>
+                    </div>
                     )}
+                </main>
+
             </div>
             
             {/* Modal de estado de Stripe */}

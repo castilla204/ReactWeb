@@ -1,4 +1,5 @@
-import { Bell, X, ArrowRight, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import {
@@ -6,17 +7,102 @@ import {
     useUnreadNotificationCount,
     USER_NOTIFICATIONS_LIST_KEY,
     NOTIFICATIONS_UNREAD_COUNT_KEY,
+    type Notification,
 } from '../hooks/useNotifications';
 import { API_CONFIG } from '../config/api';
-import { useEffect, useRef } from 'react';
 import { ErrorDisplay } from './ErrorDisplay';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import {
+    getNotificationDisplay,
+    getNotificationTone,
+    getNotificationToneClass,
+} from '../utils/notificationTypeMeta';
+import '../styles/notification-center.css';
 
 export interface NotificationCenterProps {
     isOpen: boolean;
     onClose: () => void;
+}
+
+function NotificationItem({
+    notification,
+    onClose,
+}: {
+    notification: Notification;
+    onClose: () => void;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const isUnread = !notification.read;
+    const tone = getNotificationTone(notification.type, notification.title);
+    const toneClass = getNotificationToneClass(tone);
+    const { headline, body } = getNotificationDisplay(
+        notification.title || 'Notificación',
+        notification.message,
+    );
+    const isLongHeadline = headline.length > 160;
+    const isLongBody = body != null && body.length > 160;
+
+    return (
+        <li
+            className={`nc-item ${toneClass}${body ? '' : ' nc-item--headline-only'}${isUnread ? ' nc-item--unread' : ' nc-item--read'}${expanded ? ' nc-item--expanded' : ''}`}
+        >
+            <div className="nc-item-head">
+                <h3 className="nc-item-title">{headline}</h3>
+                {notification.createdAt && (
+                    <time className="nc-item-date" dateTime={notification.createdAt}>
+                        {formatNotificationDate(notification.createdAt)}
+                    </time>
+                )}
+            </div>
+
+            {body && <p className="nc-item-message">{body}</p>}
+
+            {(isLongHeadline || isLongBody) && !expanded && (
+                <button
+                    type="button"
+                    className="nc-item-expand"
+                    onClick={() => setExpanded(true)}
+                >
+                    Ver más
+                </button>
+            )}
+
+            {notification.imageUrl && (
+                <div className="nc-item-image">
+                    <img src={notification.imageUrl} alt="" loading="lazy" />
+                </div>
+            )}
+
+            {notification.url && (
+                <a
+                    href={notification.url}
+                    target={notification.url.startsWith('/') ? '_self' : '_blank'}
+                    rel={notification.url.startsWith('/') ? undefined : 'noopener noreferrer'}
+                    className="nc-item-link"
+                    onClick={notification.url.startsWith('/') ? onClose : undefined}
+                >
+                    Ver detalles
+                </a>
+            )}
+        </li>
+    );
+}
+
+function formatNotificationDate(createdAt: string) {
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return '';
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+    if (diffDays < 7) {
+        return date.toLocaleDateString('es-ES', { weekday: 'short' });
+    }
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
@@ -47,7 +133,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         },
     });
 
-    // Al abrir: marcar todas como leídas una sola vez (sin refetch manual ni ráfaga)
     useEffect(() => {
         if (!isOpen) {
             markedAllOnOpenRef.current = false;
@@ -59,7 +144,6 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         }
     }, [isOpen, unreadCount, markAllAsReadMutation.isPending]);
 
-    // Infinite scroll
     useEffect(() => {
         if (!isOpen) return;
 
@@ -69,7 +153,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                     fetchNextPage();
                 }
             },
-            { threshold: 0.1 }
+            { threshold: 0.1 },
         );
 
         const sentinel = scrollSentinelRef.current;
@@ -78,57 +162,72 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage, isOpen]);
 
-    const formatNotificationDate = (createdAt: string) => {
-        const date = new Date(createdAt);
-        if (Number.isNaN(date.getTime())) return '';
-        return date.toLocaleDateString('es-ES', {
-            day: 'numeric',
-            month: 'short',
-        });
-    };
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, onClose]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-50 flex items-start justify-end animate-in fade-in duration-200">
-            <div className="absolute inset-0" onClick={onClose} />
+        <div className="nc-overlay" role="presentation">
+            <button
+                type="button"
+                className="nc-overlay-backdrop"
+                onClick={onClose}
+                aria-label="Cerrar notificaciones"
+            />
 
-            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-gray-100">
-                <div className="flex-none px-6 py-5 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-                                Notificaciones
-                            </h2>
-                            {unreadCount > 0 && (
-                                <Badge
-                                    variant="secondary"
-                                    className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100/50"
-                                >
-                                    {unreadCount} nuevas
-                                </Badge>
-                            )}
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={onClose}
-                            className="h-8 w-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </Button>
+            <aside className="nc-drawer" role="dialog" aria-modal="true" aria-labelledby="nc-drawer-title">
+                <header className="nc-header">
+                    <div className="nc-header-text">
+                        <h2 id="nc-drawer-title" className="nc-header-title">
+                            Notificaciones
+                        </h2>
+                        <p className="nc-header-subtitle">
+                            Avisos de cuenta, pagos, contrataciones y mensajes
+                        </p>
+                        {unreadCount > 0 && (
+                            <div className="nc-header-meta">
+                                <span className="nc-unread-badge">
+                                    {unreadCount} sin leer
+                                </span>
+                            </div>
+                        )}
                     </div>
-                </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="nc-close-btn h-8 w-8"
+                        aria-label="Cerrar"
+                    >
+                        <X className="w-4 h-4" />
+                    </Button>
+                </header>
 
-                <ScrollArea className="flex-1 bg-white">
-                    <div className="px-6 py-4 space-y-4">
+                <ScrollArea className="nc-body">
+                    <div className="nc-body-inner">
                         {isLoading && notifications.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                                <span className="text-sm text-gray-500 font-medium">Cargando...</span>
+                            <div className="nc-state">
+                                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" aria-hidden />
+                                <p className="nc-state-text mt-3">Cargando avisos…</p>
                             </div>
                         ) : error ? (
-                            <div className="p-4">
+                            <div className="nc-error-wrap">
                                 <ErrorDisplay
                                     message={
                                         error instanceof Error
@@ -141,93 +240,32 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                 />
                             </div>
                         ) : notifications.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 border border-gray-100">
-                                    <Bell className="w-8 h-8 text-gray-300" />
-                                </div>
-                                <h3 className="text-base font-semibold text-gray-900 mb-1">
-                                    Todo al día
-                                </h3>
-                                <p className="text-sm text-gray-500 max-w-[200px]">
+                            <div className="nc-state">
+                                <p className="nc-state-title">Todo al día</p>
+                                <p className="nc-state-text">
                                     No tienes notificaciones pendientes en este momento.
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <ul className="nc-list">
                                 {notifications.map((notification) => (
-                                    <div
+                                    <NotificationItem
                                         key={notification.id || `${notification.title}-${notification.createdAt}`}
-                                        className={`group relative p-4 rounded-xl transition-all duration-200 border ${
-                                            !notification.read
-                                                ? 'bg-blue-50/30 border-blue-100 shadow-sm'
-                                                : 'bg-white border-gray-100 hover:border-gray-200'
-                                        }`}
-                                    >
-                                        <div className="flex gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between gap-4 mb-1">
-                                                    <h3
-                                                        className={`text-[15px] font-semibold leading-snug ${
-                                                            !notification.read
-                                                                ? 'text-gray-900'
-                                                                : 'text-gray-700'
-                                                        }`}
-                                                    >
-                                                        {notification.title || 'Notificación'}
-                                                    </h3>
-                                                    {notification.createdAt && (
-                                                        <span className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0 font-medium">
-                                                            {formatNotificationDate(notification.createdAt)}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p className="text-[14px] text-gray-600 leading-relaxed mb-3">
-                                                    {notification.message}
-                                                </p>
-
-                                                {notification.imageUrl && (
-                                                    <div className="mb-3 rounded-lg overflow-hidden border border-gray-100 shadow-sm max-w-[200px]">
-                                                        <img
-                                                            src={notification.imageUrl}
-                                                            alt=""
-                                                            className="w-full h-24 object-cover hover:scale-105 transition-transform duration-500"
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                {notification.url && (
-                                                    <div className="flex items-center gap-3 pt-1">
-                                                        <a
-                                                            href={notification.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center text-[13px] font-medium text-blue-600 hover:text-blue-700 transition-colors group/link"
-                                                        >
-                                                            Ver detalles
-                                                            <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover/link:translate-x-0.5" />
-                                                        </a>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {!notification.read && (
-                                                <div className="absolute top-5 right-5 w-2 h-2 bg-blue-500 rounded-full shadow-sm ring-2 ring-blue-50" />
-                                            )}
-                                        </div>
-                                    </div>
+                                        notification={notification}
+                                        onClose={onClose}
+                                    />
                                 ))}
 
-                                <div ref={scrollSentinelRef} className="py-4 flex justify-center w-full">
+                                <li ref={scrollSentinelRef} className="nc-load-more" aria-hidden>
                                     {isFetchingNextPage && (
-                                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                                        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
                                     )}
-                                </div>
-                            </div>
+                                </li>
+                            </ul>
                         )}
                     </div>
                 </ScrollArea>
-            </div>
+            </aside>
         </div>
     );
 }

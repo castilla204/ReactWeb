@@ -1,9 +1,6 @@
 import React from 'react';
-import { AlertTriangle, ExternalLink, Clock } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Clock, Info } from 'lucide-react';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
-// 🛡️ Round 28 MUD-CJ: arrays compartidos de severidad. Antes el banner tenía
-// copias locales que generaban drift si alguien añadía un STRIPE_STATUS nuevo
-// (helpers Card/Modal lo pintaban, banner lo silenciaba con return null).
 import { STRIPE_WARNING_STATES, STRIPE_ERROR_STATES, STRIPE_INFO_STATES } from '../utils/stripeStatusStyles';
 import { isStaleSuccessDetail } from '../utils/stripeMessageSanitizer';
 
@@ -16,19 +13,6 @@ interface StripeStatusBannerProps {
     onOpenStripe?: () => void;
 }
 
-/**
- * 🛡️ Round 28 MUD-BP — Banner persistente en ExpertPanel cuando hay warnings Stripe.
- *
- * Antes: este componente era código muerto (nunca se importaba en ningún sitio).
- * Estados warning (RequirementsDue, RestrictedSoon, ActionRequired, RequirementsPastDue,
- * PendingVerification con datos pendientes) solo se reflejaban en un micro-badge del
- * sidebar — el experto no entendía que tenía que ir a Stripe ya.
- *
- * Ahora: el panel lo monta arriba siempre que stripeStatus esté en estado warning, NO
- * descartable (preferencia usuario MUD-BP — la dismissibilidad anterior con localStorage
- * era anti-patrón para alertas críticas). Fondo BLANCO siempre (preferencia usuario).
- * Severidad se distingue por el color del icono + texto, no por bg.
- */
 export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     stripeStatus,
     statusMessage,
@@ -37,37 +21,23 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
     futureDueAtIso,
     onOpenStripe
 }) => {
-    // 🛡️ MUD-BZ: PendingVerification es DISTINTO de los demás warnings. Stripe está
-    // REVISANDO documentos que ya subiste — el experto NO tiene nada que hacer ahora,
-    // solo esperar. Title naranja urgente + CTA "resolver" lo invita a ir a Stripe
-    // donde no encuentra nada → frustración + tickets soporte. Categorizar como INFO
-    // (azul-gris, sin CTA accionable) o no mostrar si puede operar normalmente.
-    // 🛡️ MUD-DA + MUD-DB: PENDING (onboarding incompleto) se gestiona desde la Card
-    // del panel ("⏳ Continuar Verificación"). No tiene sentido pintar también un
-    // banner aquí (genera mensaje contradictorio + ruido visual). Early return.
-    // Antes el fallback `!canCreateServices && !canReceivePayments` engañaba al
-    // banner pintándolo ROJO incluso con MUD-DA quitado PENDING de INFO_STATES —
-    // por eso el fix MUD-DA solo no funcionaba.
+    // Pending gestionado desde StripeStatusCard; no duplicar aquí.
     if (stripeStatus === STRIPE_STATUS.PENDING) return null;
 
-    // 🛡️ MUD-CJ + MUD-CO: usar los 3 arrays exportados (single source of truth con
-    // Card/Modal). Single source of truth para Banner + Card + Modal.
-    const isError = STRIPE_ERROR_STATES.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
-    const isInfo = STRIPE_INFO_STATES.includes(stripeStatus) && !isError;
+    const isError   = STRIPE_ERROR_STATES.includes(stripeStatus) || (!canCreateServices && !canReceivePayments);
+    const isInfo    = STRIPE_INFO_STATES.includes(stripeStatus) && !isError;
     const isWarning = STRIPE_WARNING_STATES.includes(stripeStatus) && !isError && !isInfo;
 
     if (!isError && !isWarning && !isInfo) return null;
 
-    // Colores SOLO en icono + texto, fondo blanco siempre.
-    const iconColor = isError ? 'text-red-600' : (isInfo ? 'text-blue-600' : 'text-orange-600');
-    const titleColor = isError ? 'text-red-700' : (isInfo ? 'text-blue-700' : 'text-orange-700');
+    const severity = isError ? 'error' : isInfo ? 'info' : 'warning';
+
     const title = isError
         ? 'Tu cuenta de pagos necesita atención urgente'
         : isInfo
             ? 'Stripe está revisando tu cuenta'
             : 'Hay datos pendientes en tu cuenta de pagos';
 
-    // Calcular plazo legible.
     let deadlineText: string | null = null;
     if (futureDueAtIso) {
         try {
@@ -82,43 +52,27 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
         } catch { /* ignore */ }
     }
 
+    const IconComponent = isInfo ? Info : AlertTriangle;
+
     return (
         <div
-            className="mb-4 flex items-start gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm"
+            className={`ep-alert ep-alert--${severity}`}
             role={isError ? 'alert' : 'status'}
             aria-live={isError ? 'assertive' : 'polite'}
         >
-            <AlertTriangle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${iconColor}`} />
-            <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${titleColor}`}>
+            <IconComponent className="ep-alert-icon h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden />
+            <div className="ep-alert-body">
+                <p className="ep-alert-title">
                     {title}
                     {deadlineText && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-gray-600">
-                            <Clock className="h-3 w-3" />
+                        <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium opacity-80">
+                            <Clock className="h-3 w-3" aria-hidden />
                             {deadlineText}
                         </span>
                     )}
                 </p>
-                {/*
-                  🛡️ LOTE D · D-22 — Sin dangerouslySetInnerHTML.
-                  ANTES: el banner aplicaba un regex `**bold**` → `<strong>` para soportar
-                  un mini-markdown que el backend NUNCA emite. Toda la lista de defaults en
-                  useExpertStripeStatus.getStatusInfo y los `StatusDetails` que construye
-                  BuildStatusDetails en SubscriptionController son texto plano. dangerouslySetInnerHTML
-                  abría una puerta de XSS si en el futuro alguien añade un mensaje con HTML
-                  no escapado (p.ej. nombres de campos con `<`/`>`). Sin uso real → texto plano.
-                */}
-                {/*
-                  🛡️ MUD-DJ — Defensa contra stripeStatusDetails STALE en el banner.
-                  Antes MUD-CZ aplicó esta defensa en getStatusInfo() del hook, pero el
-                  banner recibe el statusMessage RAW del backend → si el detail está
-                  desactualizado ("Tu cuenta está activa" mientras status=ActionRequired),
-                  el banner naranja muestra texto verde = contradicción.
-                  Si detectamos stale, ocultamos el cuerpo y dejamos solo el título +
-                  CTA (más honesto que mostrar contradicción).
-                */}
                 {!isStaleSuccessDetail(stripeStatus, statusMessage) && (
-                    <p className="mt-1 text-sm text-gray-700 leading-snug">
+                    <p className="ep-alert-desc">
                         {statusMessage}
                     </p>
                 )}
@@ -126,10 +80,10 @@ export const StripeStatusBanner: React.FC<StripeStatusBannerProps> = ({
                     <button
                         type="button"
                         onClick={onOpenStripe}
-                        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:text-brand-hover transition-colors"
+                        className="ep-alert-cta"
                     >
-                        Resolver ahora en Stripe
-                        <ExternalLink className="h-3.5 w-3.5" />
+                        Resolver en Stripe
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                     </button>
                 )}
             </div>

@@ -1,29 +1,23 @@
-import { Search, Loader2, MessageCircle, Calendar, CircleDollarSign, Tag } from 'lucide-react';
-// ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
-import StatusBadge from '../StatusBadge';
+import { useMemo, useState } from 'react';
 import { getStatusInfoWithFallback } from '../../utils/statusUtils';
-import { Card, CardContent, CardHeader } from '../ui/card';
-import { Button } from '../ui/button';
-import { Label } from '../ui/label';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
+import { Input } from '../ui/input';
+import { Skeleton } from '../ui/skeleton';
 import { Pagination } from '../Pagination';
 import { getPriceDisplay } from '../../utils/priceUtils';
 import { TERMINAL_SEARCH_HIRE_STATUSES } from '../../constants/hireStatuses';
 
-interface Hire { 
-    id: number; 
-    searchId: number | null; 
-    client: { name: string; email: string } | null; 
-    service: { categoryId: number }; 
-    serviceType: { name: string } | null; 
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert'; 
-    createdAt: string; 
+interface Hire {
+    id: number;
+    searchId: number | null;
+    client: { name: string; email: string } | null;
+    service: { categoryId: number };
+    serviceType: { name: string } | null;
+    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
+    createdAt: string;
     amount: number;
-    // NUEVOS CAMPOS DEL BACKEND
     searchTitle?: string | null;
     searchDescription?: string | null;
     unreadMessagesCount: number;
-    // ✅ NUEVO: statusInfo del backend
     statusInfo?: {
         id: number;
         statusType: string;
@@ -40,32 +34,120 @@ interface Hire {
     };
 }
 
-interface HiresTabProps { activeTab: 'services' | 'hires'; hireTab: 'active' | 'inactive'; hires: Hire[]; isLoadingHires: boolean; hiresError: Error | null; filters: { clientName: string; status: string; dateFrom: string; dateTo: string }; setHireTab: (value: 'active' | 'inactive') => void; setFilters: (value: { clientName: string; status: string; dateFrom: string; dateTo: string }) => void; handleViewHire: (hireId: number | null) => void; categories: { id: number; name: string }[] | undefined; pagination?: { page: number; pageSize: number; totalCount: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean } | null; onPageChange?: (page: number) => void; onPageSizeChange?: (pageSize: number) => void; }
+interface HiresTabProps {
+    activeTab: 'services' | 'hires';
+    hireTab: 'active' | 'inactive';
+    hires: Hire[];
+    isLoadingHires: boolean;
+    hiresError: Error | null;
+    filters: { clientName: string; status: string; dateFrom: string; dateTo: string };
+    setHireTab: (value: 'active' | 'inactive') => void;
+    setFilters: (value: { clientName: string; status: string; dateFrom: string; dateTo: string }) => void;
+    handleViewHire: (hireId: number | null) => void;
+    categories: { id: number; name: string }[] | undefined;
+    pagination?: {
+        page: number;
+        pageSize: number;
+        totalCount: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    } | null;
+    onPageChange?: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+}
 
-export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError, filters, setHireTab, setFilters, handleViewHire, categories, pagination, onPageChange, onPageSizeChange, }: HiresTabProps) {
+type StatusTone = 'active' | 'done' | 'dispute' | 'cancelled' | 'neutral';
+
+function isActiveHire(hire: Hire): boolean {
+    if (hire.statusInfo) return !hire.statusInfo.isFinalizationStatus;
+    return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
+}
+
+function isCompletedStatus(statusValue: string): boolean {
+    return ['completed', 'dispute_resolved', 'dispute_resolved_client', 'dispute_resolved_expert'].includes(statusValue);
+}
+
+function getStatusTone(statusValue: string): StatusTone {
+    if (isCompletedStatus(statusValue)) return 'done';
+    if (statusValue === 'cancelled') return 'cancelled';
+    if (statusValue === 'disputed' || statusValue === 'transfer_failed') return 'dispute';
+    if (statusValue === 'pending' || statusValue === 'awaiting_client_decision') return 'active';
+    return 'neutral';
+}
+
+function formatHireDate(createdAt: string): string {
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function clientInitials(name?: string | null): string {
+    const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function hasActiveFilters(filters: HiresTabProps['filters']): boolean {
+    return Boolean(filters.clientName || filters.status || filters.dateFrom || filters.dateTo);
+}
+
+function HireRowSkeleton() {
+    return (
+        <li className="expert-hire-row expert-hire-row--skeleton" aria-hidden>
+            <Skeleton className="expert-hire-avatar" />
+            <div className="expert-hire-main">
+                <Skeleton className="h-4 w-32 rounded" />
+                <Skeleton className="h-3 w-48 rounded mt-2" />
+            </div>
+            <Skeleton className="h-4 w-16 rounded hidden sm:block" />
+        </li>
+    );
+}
+
+export function HiresTab({
+    activeTab,
+    hireTab,
+    hires,
+    isLoadingHires,
+    hiresError,
+    filters,
+    setHireTab,
+    setFilters,
+    handleViewHire,
+    categories,
+    pagination,
+    onPageChange,
+    onPageSizeChange,
+}: HiresTabProps) {
+    const [filtersOpen, setFiltersOpen] = useState(hasActiveFilters(filters));
+
     if (!activeTab || activeTab !== 'hires') return null;
 
-    // ✅ NUEVA LÓGICA: Usar isFinalizationStatus del statusInfo del backend
-    const activeHires = hires.filter((hire) => {
-        // Si hay statusInfo, usar isFinalizationStatus del backend
-        if (hire.statusInfo) {
-            return !hire.statusInfo.isFinalizationStatus;
-        }
-        // Fallback: usar status directamente (no hay statusInfo disponible)
-            return ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status);
-    });
-    
-    const inactiveHires = hires.filter((hire) => {
-        // Si hay statusInfo, usar isFinalizationStatus del backend
-        if (hire.statusInfo) {
-            return hire.statusInfo.isFinalizationStatus;
-        }
-        // Fallback: usar status directamente (no hay statusInfo disponible)
-        return (TERMINAL_SEARCH_HIRE_STATUSES as readonly string[]).includes(hire.status);
-    });
-    const filteredHires = (hireTab === 'active' ? activeHires : inactiveHires).filter((hire) => {
-        const matchesClient = !filters.clientName || (hire.client?.name || '').toLowerCase().includes(filters.clientName.toLowerCase());
-        // ✅ Usar statusInfo.statusValue cuando esté disponible para comparar con el filtro
+    const activeHires = useMemo(() => hires.filter(isActiveHire), [hires]);
+    const inactiveHires = useMemo(
+        () => hires.filter((hire) => !isActiveHire(hire)),
+        [hires],
+    );
+
+    const completedCount = useMemo(
+        () => hires.filter((h) => isCompletedStatus(h.statusInfo?.statusValue || h.status)).length,
+        [hires],
+    );
+
+    const totalRevenue = useMemo(
+        () => hires
+            .filter((h) => isCompletedStatus(h.statusInfo?.statusValue || h.status))
+            .reduce((sum, h) => sum + (h.amount || 0), 0),
+        [hires],
+    );
+
+    const pool = hireTab === 'active' ? activeHires : inactiveHires;
+
+    const filteredHires = useMemo(() => pool.filter((hire) => {
+        const matchesClient = !filters.clientName
+            || (hire.client?.name || '').toLowerCase().includes(filters.clientName.toLowerCase());
         const hireStatus = hire.statusInfo?.statusValue || hire.status;
         const matchesStatus = !filters.status || hireStatus === filters.status;
         const hireDate = new Date(hire.createdAt);
@@ -73,270 +155,253 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
         const toDate = filters.dateTo ? new Date(filters.dateTo) : null;
         const matchesDate = (!fromDate || hireDate >= fromDate) && (!toDate || hireDate <= toDate);
         return matchesClient && matchesStatus && matchesDate;
-    });
+    }), [pool, filters]);
+
+    const totalUnread = filteredHires.reduce((n, h) => n + (h.unreadMessagesCount || 0), 0);
+    const filtersActive = hasActiveFilters(filters);
+
+    const clearFilters = () => {
+        setFilters({ clientName: '', status: '', dateFrom: '', dateTo: '' });
+    };
+
+    const switchTab = (tab: 'active' | 'inactive') => {
+        setHireTab(tab);
+        clearFilters();
+        setFiltersOpen(false);
+    };
 
     return (
-        <div className="p-3 sm:p-6 space-y-6">
-            {/* Header con pestañas - usando Tabs de shadcn */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Contrataciones</h2>
-                        <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
-                            Gestiona tus contrataciones activas e inactivas
+        <div className="expert-hires">
+            <header className="expert-hires-toolbar">
+                <div className="expert-hires-toolbar-text">
+                    <p className="expert-hires-toolbar-title">
+                        {hires.length === 0
+                            ? 'Seguimiento de trabajos con clientes'
+                            : `${hires.length} contratación${hires.length === 1 ? '' : 'es'}`}
+                    </p>
+                    {totalUnread > 0 && (
+                        <p className="expert-hires-toolbar-note">
+                            {totalUnread} mensaje{totalUnread === 1 ? '' : 's'} sin leer en esta vista
                         </p>
-                    </div>
-                    {(() => {
-                        const totalUnreadMessages = filteredHires.reduce((total, hire) => total + hire.unreadMessagesCount, 0);
-                        return totalUnreadMessages > 0 && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full border border-primary/20">
-                                <MessageCircle className="w-4 h-4" />
-                                <span className="text-sm font-medium">{totalUnreadMessages}</span>
-                            </div>
-                        );
-                    })()}
+                    )}
                 </div>
-                <Tabs value={hireTab} onValueChange={(value: string) => {
-                    setHireTab(value as 'active' | 'inactive');
-                    setFilters({ clientName: '', status: '', dateFrom: '', dateTo: '' });
-                }}>
-                    <TabsList className="w-full sm:w-auto">
-                        <TabsTrigger value="active" className="flex-1 sm:flex-none">
-                            <span className="hidden sm:inline">Activas</span>
-                            <span className="sm:hidden">Act.</span>
-                            <span className="ml-2">({activeHires.length})</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="inactive" className="flex-1 sm:flex-none">
-                            <span className="hidden sm:inline">Inactivas</span>
-                            <span className="sm:hidden">Inact.</span>
-                            <span className="ml-2">({inactiveHires.length})</span>
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
-            </div>
+            </header>
 
-            {/* Filtros mejorados con shadcn */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <h3 className="text-sm font-semibold">Filtros</h3>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="client-filter" className="text-xs">Filtrar por cliente</Label>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                <input
-                                    id="client-filter"
-                                    type="text"
-                                    placeholder="Nombre del cliente..."
-                                    value={filters.clientName}
-                                    onChange={(e) => setFilters({ ...filters, clientName: e.target.value })}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="status-filter" className="text-xs">Estado</Label>
-                            <select
-                                id="status-filter"
-                                value={filters.status}
-                                onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-                                className="w-full px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                            >
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="awaiting_client_decision">Esperando Decisión</option>
-                                <option value="disputed">Disputado</option>
-                                <option value="completed">Completado</option>
-                                <option value="cancelled">Cancelado</option>
-                                <option value="transfer_failed">Transferencia Fallida</option>
-                                <option value="dispute_resolved_client">Disputa Resuelta (Cliente)</option>
-                                <option value="dispute_resolved_expert">Disputa Resuelta (Experto)</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="date-from" className="text-xs">Fecha desde</Label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                <input
-                                    id="date-from"
-                                    type="date"
-                                    value={filters.dateFrom}
-                                    onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="date-to" className="text-xs">Fecha hasta</Label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                                <input
-                                    id="date-to"
-                                    type="date"
-                                    value={filters.dateTo}
-                                    onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                />
-                            </div>
-                        </div>
+            {!isLoadingHires && !hiresError && hires.length > 0 && (
+                <div className="expert-hires-stats expert-hires-stats--inline">
+                    <div className="expert-hires-stat">
+                        <span className="expert-hires-stat-value expert-hires-stat-value--active">{activeHires.length}</span>
+                        <span className="expert-hires-stat-label">Activas</span>
                     </div>
-                </CardContent>
-            </Card>
-
-            {isLoadingHires ? (
-                <Card>
-                    <CardContent className="py-12">
-                        <div className="flex flex-col items-center justify-center gap-3">
-                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                            <p className="text-sm text-muted-foreground">Cargando contrataciones...</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : hiresError ? (
-                <Card className="border-destructive/50">
-                    <CardContent className="py-12">
-                        <div className="text-center space-y-2">
-                            <p className="text-sm font-medium text-destructive">Error al cargar contrataciones</p>
-                            <p className="text-xs text-muted-foreground">{hiresError.message}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : filteredHires.length === 0 ? (
-                <Card>
-                    <CardContent className="py-12">
-                        <div className="text-center space-y-3">
-                            <Search className="w-12 h-12 text-muted-foreground mx-auto opacity-50" />
-                            <div>
-                                <p className="text-sm font-medium text-foreground">
-                                    No hay contrataciones {hireTab === 'active' ? 'activas' : 'inactivas'}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {filters.clientName || filters.status || filters.dateFrom || filters.dateTo
-                                        ? 'Intenta ajustar los filtros'
-                                        : 'No tienes contrataciones en este momento'}
-                                </p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="space-y-2">
-                    {filteredHires.map((hire) => (
-                        <Card key={hire.id} className="hover:shadow-sm transition-shadow">
-                            <CardContent className="p-4">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                    {/* Información principal - lado izquierdo */}
-                                    <div className="flex-1 min-w-0 flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                                        {/* Avatar y cliente */}
-                                        <div className="flex items-center gap-3 flex-shrink-0">
-                                            <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                                                <span className="text-xs font-semibold text-primary">
-                                                    {hire.client?.name?.charAt(0).toUpperCase() || '?'}
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-foreground">{hire.client?.name || 'Cliente desconocido'}</span>
-                                                {hire.unreadMessagesCount > 0 && (
-                                                    <div className="flex items-center gap-1 mt-0.5">
-                                                        <MessageCircle className="w-3 h-3 text-primary" />
-                                                        <span className="text-xs text-primary font-medium">{hire.unreadMessagesCount}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Título y descripción */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-sm font-semibold text-foreground line-clamp-1">
-                                                    {hire.serviceType?.name || hire.searchTitle || 'Sin título'}
-                                                </h3>
-                                            </div>
-                                            {hire.searchDescription && (
-                                                <p className="text-xs text-muted-foreground line-clamp-1">
-                                                    {hire.searchDescription}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Información detallada en fila compacta */}
-                                        <div className="flex items-center gap-4 text-xs flex-wrap">
-                                            <div className="flex items-center gap-1.5">
-                                                <Tag className="w-3 h-3 text-muted-foreground" />
-                                                <span className="text-muted-foreground">Servicio:</span>
-                                                <span className="font-medium text-foreground">
-                                                    {categories?.find(c => c.id === hire.service.categoryId)?.name || 'Sin categoría'}
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar className="w-3 h-3 text-muted-foreground" />
-                                                <span className="font-medium text-foreground">
-                                                    {new Date(hire.createdAt).toLocaleDateString('es-ES', {
-                                                        day: '2-digit',
-                                                        month: '2-digit',
-                                                        year: 'numeric'
-                                                    })}
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-1.5">
-                                                {/* 🛡️ Round 28: icon de moneda genérico — el símbolo lo añade Intl en formattedTotal */}
-                                                <CircleDollarSign className="w-3 h-3 text-muted-foreground" />
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-foreground">
-                                                        {getPriceDisplay(hire).formattedTotal}
-                                                    </span>
-                                                    {getPriceDisplay(hire).hasTaxInfo && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Impuestos incluidos
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Estado y botón - lado derecho */}
-                                    <div className="flex items-center gap-3 flex-shrink-0 w-full sm:w-auto sm:pl-4 border-t sm:border-t-0 border-border pt-3 sm:pt-0">
-                                        <StatusBadge
-                                            statusInfo={getStatusInfoWithFallback(
-                                                hire.statusInfo,
-                                                hire.status
-                                            )}
-                                            size="sm"
-                                        />
-                                        <Button
-                                            onClick={() => handleViewHire(hire.id)}
-                                            variant={hire.unreadMessagesCount > 0 ? "default" : "outline"}
-                                            size="sm"
-                                            className="w-full sm:w-auto"
-                                        >
-                                            {hire.unreadMessagesCount > 0 ? (
-                                                <>
-                                                    <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
-                                                    Ver Mensajes
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Search className="w-3.5 h-3.5 mr-1.5" />
-                                                    Ver Contratación
-                                                </>
-                                            )}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    <div className="expert-hires-stat">
+                        <span className="expert-hires-stat-value">{inactiveHires.length}</span>
+                        <span className="expert-hires-stat-label">Inactivas</span>
+                    </div>
+                    <div className="expert-hires-stat">
+                        <span className="expert-hires-stat-value expert-hires-stat-value--done">{completedCount}</span>
+                        <span className="expert-hires-stat-label">Completadas</span>
+                    </div>
+                    <div className="expert-hires-stat">
+                        <span className="expert-hires-stat-value expert-hires-stat-value--revenue">
+                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(totalRevenue)}
+                        </span>
+                        <span className="expert-hires-stat-label">Facturado</span>
+                    </div>
                 </div>
             )}
 
-            {/* Paginación */}
-            {pagination && onPageChange && onPageSizeChange && (
-                <div className="mt-6">
+            <div className="expert-hires-controls">
+                <div className="expert-hires-segment" role="tablist" aria-label="Tipo de contrataciones">
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={hireTab === 'active'}
+                        className={`expert-hires-segment-btn${hireTab === 'active' ? ' expert-hires-segment-btn--active' : ''}`}
+                        onClick={() => switchTab('active')}
+                    >
+                        Activas
+                        <span className="expert-hires-segment-count">{activeHires.length}</span>
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected={hireTab === 'inactive'}
+                        className={`expert-hires-segment-btn${hireTab === 'inactive' ? ' expert-hires-segment-btn--active' : ''}`}
+                        onClick={() => switchTab('inactive')}
+                    >
+                        Inactivas
+                        <span className="expert-hires-segment-count">{inactiveHires.length}</span>
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    className={`expert-hires-filters-toggle${filtersOpen ? ' expert-hires-filters-toggle--open' : ''}${filtersActive ? ' expert-hires-filters-toggle--active' : ''}`}
+                    onClick={() => setFiltersOpen((v) => !v)}
+                    aria-expanded={filtersOpen}
+                >
+                    Filtros
+                    {filtersActive && <span className="expert-hires-filters-dot" aria-hidden />}
+                </button>
+            </div>
+
+            {filtersOpen && (
+                <div className="expert-hires-filters">
+                    <div className="expert-hires-filters-grid">
+                        <div className="expert-hires-filter">
+                            <label htmlFor="hire-client-filter">Cliente</label>
+                            <Input
+                                id="hire-client-filter"
+                                type="search"
+                                placeholder="Nombre del cliente"
+                                value={filters.clientName}
+                                onChange={(e) => setFilters({ ...filters, clientName: e.target.value })}
+                                className="expert-hires-filter-input"
+                            />
+                        </div>
+                        <div className="expert-hires-filter">
+                            <label htmlFor="hire-status-filter">Estado</label>
+                            <select
+                                id="hire-status-filter"
+                                className="expert-hires-filter-select"
+                                value={filters.status}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                            >
+                                <option value="">Todos</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="awaiting_client_decision">Esperando decisión</option>
+                                <option value="disputed">Disputado</option>
+                                <option value="completed">Completado</option>
+                                <option value="cancelled">Cancelado</option>
+                                <option value="transfer_failed">Transferencia fallida</option>
+                                <option value="dispute_resolved_client">Disputa resuelta (cliente)</option>
+                                <option value="dispute_resolved_expert">Disputa resuelta (experto)</option>
+                            </select>
+                        </div>
+                        <div className="expert-hires-filter">
+                            <label htmlFor="hire-date-from">Desde</label>
+                            <input
+                                id="hire-date-from"
+                                type="date"
+                                className="expert-hires-filter-select"
+                                value={filters.dateFrom}
+                                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                            />
+                        </div>
+                        <div className="expert-hires-filter">
+                            <label htmlFor="hire-date-to">Hasta</label>
+                            <input
+                                id="hire-date-to"
+                                type="date"
+                                className="expert-hires-filter-select"
+                                value={filters.dateTo}
+                                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    {filtersActive && (
+                        <button type="button" className="expert-hires-clear-filters" onClick={clearFilters}>
+                            Limpiar filtros
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {isLoadingHires ? (
+                <ul className="expert-hires-list" aria-busy="true" aria-label="Cargando contrataciones">
+                    {[0, 1, 2].map((i) => (
+                        <HireRowSkeleton key={i} />
+                    ))}
+                </ul>
+            ) : hiresError ? (
+                <div className="expert-hires-state expert-hires-state--error" role="alert">
+                    <p className="expert-hires-state-title">No se pudieron cargar las contrataciones</p>
+                    <p className="expert-hires-state-text">{hiresError.message}</p>
+                </div>
+            ) : hires.length === 0 ? (
+                <div className="expert-hires-state" role="status">
+                    <p className="expert-hires-state-title">Sin contrataciones todavía</p>
+                    <p className="expert-hires-state-text">
+                        Cuando un cliente contrate uno de tus servicios, aparecerá aquí para que puedas
+                        seguir el estado, los mensajes y los pagos.
+                    </p>
+                </div>
+            ) : filteredHires.length === 0 ? (
+                <div className="expert-hires-state" role="status">
+                    <p className="expert-hires-state-title">
+                        No hay contrataciones {hireTab === 'active' ? 'activas' : 'inactivas'} con estos filtros
+                    </p>
+                    <button type="button" className="expert-hires-clear-filters expert-hires-clear-filters--standalone" onClick={clearFilters}>
+                        Limpiar filtros
+                    </button>
+                </div>
+            ) : (
+                <ul className="expert-hires-list" aria-label={`Contrataciones ${hireTab === 'active' ? 'activas' : 'inactivas'}`}>
+                    {filteredHires.map((hire) => {
+                        const statusValue = hire.statusInfo?.statusValue || hire.status;
+                        const statusInfo = getStatusInfoWithFallback(hire.statusInfo, hire.status);
+                        const statusLabel = statusInfo?.displayName || statusValue;
+                        const tone = getStatusTone(statusValue);
+                        const categoryName =
+                            categories?.find((c) => c.id === hire.service.categoryId)?.name || 'Sin categoría';
+                        const title = hire.serviceType?.name || hire.searchTitle || 'Contratación';
+                        const price = getPriceDisplay(hire);
+                        const clientName = hire.client?.name || 'Cliente';
+                        const unread = hire.unreadMessagesCount || 0;
+
+                        return (
+                            <li
+                                key={hire.id}
+                                className={`expert-hire-row expert-hire-row--${tone}${unread > 0 ? ' expert-hire-row--unread' : ''}`}
+                            >
+                                <span className="expert-hire-avatar" aria-hidden>
+                                    {clientInitials(clientName)}
+                                </span>
+
+                                <div className="expert-hire-main">
+                                    <div className="expert-hire-head">
+                                        <h3 className="expert-hire-client">{clientName}</h3>
+                                        <span className={`expert-hire-status expert-hire-status--${tone}`}>
+                                            {statusLabel}
+                                        </span>
+                                    </div>
+                                    <p className="expert-hire-title">{title}</p>
+                                    <p className="expert-hire-meta">
+                                        {categoryName}
+                                        <span className="expert-hire-meta-sep" aria-hidden>·</span>
+                                        {formatHireDate(hire.createdAt)}
+                                    </p>
+                                    {hire.searchDescription && (
+                                        <p className="expert-hire-desc">{hire.searchDescription}</p>
+                                    )}
+                                    {unread > 0 && (
+                                        <p className="expert-hire-unread">
+                                            {unread} mensaje{unread === 1 ? '' : 's'} sin leer
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="expert-hire-side">
+                                    <span className="expert-hire-price">{price.formattedTotal}</span>
+                                    {price.hasTaxInfo && (
+                                        <span className="expert-hire-price-note">IVA incl.</span>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="expert-hire-action"
+                                        onClick={() => handleViewHire(hire.id)}
+                                    >
+                                        {unread > 0 ? 'Ver mensajes' : 'Ver detalle'}
+                                    </button>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+
+            {pagination && onPageChange && onPageSizeChange && filteredHires.length > 0 && (
+                <div className="expert-hires-pagination">
                     <Pagination
                         page={pagination.page}
                         pageSize={pagination.pageSize}
@@ -351,5 +416,4 @@ export function HiresTab({ activeTab, hireTab, hires, isLoadingHires, hiresError
             )}
         </div>
     );
-
 }
