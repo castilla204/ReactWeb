@@ -39,6 +39,7 @@ import {
   SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_PAGE_GRID_CLASS,
   SD_DESKTOP_CONTENT_STACK_CLASS,
+  SD_DESKTOP_HEADER_STACK_CLASS,
   SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS,
   SD_DESKTOP_ASIDE_MAX_H_CLASS,
   SD_DESKTOP_STICKY_TOP_CLASS,
@@ -228,6 +229,7 @@ export function ServiceReviewPage({
     const finalExpertName = finalService?.expert?.user?.name || expertName || 'Experto';
     // ✅ CORRECTO: Usar profilePictureUrl del nivel superior del experto, NO de user (que siempre es null)
     const finalExpertPicture = finalService?.expert?.profilePictureUrl || expertProfilePicture;
+    const finalExpertDescription = (finalService?.expert?.description || '').trim();
     const finalPrice = finalService?.price || servicePrice || 0;
     
     const expertCity = finalService?.expert?.city || null;
@@ -703,9 +705,9 @@ export function ServiceReviewPage({
                     onToggleFavorite={() => setIsFavorite(!isFavorite)}
                 />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-14 pt-5 lg:pt-6`}>
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-4 lg:pt-5`}>
                     <ServiceDetailDesktopPhotoMapHero
-                        className="mb-5 lg:mb-6"
+                        className="mb-4 lg:mb-5"
                         images={validImages}
                         onOpen={handleImageClick}
                         loadingImages={loadingImages}
@@ -720,7 +722,7 @@ export function ServiceReviewPage({
 
                     <div className={SD_PAGE_GRID_CLASS}>
                         <div className={`min-w-0 lg:col-start-1 ${SD_DESKTOP_CONTENT_STACK_CLASS}`}>
-                            <header>
+                            <header className={SD_DESKTOP_HEADER_STACK_CLASS}>
                                 <ServiceDetailPageHeadline
                                     title={finalServiceTitle}
                                     locationLabel={expertLocationLabel || undefined}
@@ -731,6 +733,7 @@ export function ServiceReviewPage({
                                     variant="desktop"
                                     expertName={finalExpertName}
                                     expertPicture={finalExpertPicture}
+                                    expertDescription={finalExpertDescription}
                                     completedSearches={finalCompletedSearches}
                                     onAvatarClick={() => {
                                         if (finalExpertPicture) {
@@ -745,7 +748,7 @@ export function ServiceReviewPage({
                                 <section>
                                     {displayMainDescription ? (
                                         <>
-                                            <h2 className="hp-section-title mb-3">Acerca del servicio</h2>
+                                            <h2 className="hp-section-title mb-2.5">Acerca del servicio</h2>
                                             <p className="sd-body whitespace-pre-line">
                                                 {displayMainDescription}
                                             </p>
@@ -773,24 +776,13 @@ export function ServiceReviewPage({
                                     <article
                                         className={`sd-aside-card flex flex-col ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
                                     >
-                                        <div className="flex gap-3 pb-1">
-                                            {validImages[0] ? (
-                                                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
-                                                    <img
-                                                        src={validImages[0]}
-                                                        alt={finalServiceTitle}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
-                                            ) : null}
-                                            <div className="min-w-0 flex-1">
-                                                <p className="sd-aside-summary-title line-clamp-2">
-                                                    {finalServiceTitle}
-                                                </p>
-                                                <p className="sd-aside-summary-meta mt-0.5 truncate">
-                                                    con {finalExpertName}
-                                                </p>
-                                            </div>
+                                        <div className="pb-1">
+                                            <p className="sd-aside-summary-title line-clamp-2">
+                                                {finalServiceTitle}
+                                            </p>
+                                            <p className="sd-aside-summary-meta mt-0.5 truncate">
+                                                con {finalExpertName}
+                                            </p>
                                         </div>
 
                                         <section className="shrink-0 border-t border-[#ebebeb] py-4">

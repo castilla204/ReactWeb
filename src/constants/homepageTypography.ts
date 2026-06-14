@@ -132,9 +132,9 @@ export const hpType = {
   },
 } as const;
 
-/** Mismos márgenes que HomepageWall — desktop un poco más contenido */
+/** Mismos márgenes que HomepageWall — desktop contenido más ancho, gutters ajustados */
 export const SD_PAGE_INNER_MAX_CLASS =
-  'mx-auto w-full max-w-[1280px] px-4 md:px-6 lg:px-8';
+  'mx-auto w-full max-w-[1280px] px-4 md:px-5 lg:px-6';
 
 /** Cifras de cobertura en hero (alineado con FAQ / HomePresentation) */
 export const HP_HERO_COVERAGE = {
@@ -150,11 +150,31 @@ export const SD_PAGE_GRID_CLASS =
 export const SD_DESKTOP_SECTION_PY_CLASS = 'py-0';
 
 /** Bloque principal bajo el hero */
-export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-6';
+export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-5';
 
-/** Fila experto desktop — plana, línea inferior (sin caja gris) */
+/** Cabecera ficha desktop: título + host */
+export const SD_DESKTOP_HEADER_STACK_CLASS = 'flex flex-col';
+
+/** Fila experto desktop — separador inferior, ritmo compacto */
 export const SD_DESKTOP_HOST_ROW_CLASS =
   'mt-4 border-b border-[#ebebeb] pb-5';
+
+/** Nombre del experto en desktop — 14px / 600, alineado con escala móvil */
+export const SD_DESKTOP_HOST_NAME_CLASS =
+  'truncate text-sm font-semibold leading-5 tracking-[-0.01em] text-[#222222]';
+
+/** Bio del experto en desktop — 14px meta, una línea a ancho completo */
+export const SD_DESKTOP_HOST_BIO_CLASS =
+  'mt-0.5 min-w-0 w-full truncate text-sm font-normal leading-5 text-[#6a6a6a]';
+
+/** Columna nombre + bio — reserva aire antes del botón Chat */
+export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 pr-6';
+
+/** Layout interno fila host desktop */
+export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-center gap-3';
+
+/** Separación extra del botón Chat en desktop */
+export const SD_DESKTOP_HOST_CHAT_CLASS = 'ml-2 shrink-0';
 
 /** Reseñas desktop — aire respecto al bloque superior; el separador lo pone el componente */
 export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS = 'mt-10 w-full lg:mt-12';

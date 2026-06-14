@@ -1015,11 +1015,6 @@
         outline: none;
     }
     
-    /* Remove selection outline */
-    *::selection {
-        background-color: transparent;
-    }
-    
     /* Evitar artefactos visuales puntuales de Radix */
     [data-radix-collection-item],
     [data-radix-focus-guard],

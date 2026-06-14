@@ -329,46 +329,42 @@ export function ExpertPanelPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stripeStatus?.stripeStatus, stripeStatus?.onboardingCompleted, hasClearedCache]);
 
+    // 🛡️ Fuente única de verdad para "este usuario es experto". El rol puede llegar
+    // en distintas formas (string 'Expert'/'expert'/'EXPERT', numérico 1, PascalCase
+    // `Role`, o solo en el JWT). ANTES, la guardia de redirección usaba esta detección
+    // permisiva pero el fetch del perfil exigía `user?.role === 'Expert'` exacto: el
+    // usuario entraba al panel pero el perfil nunca se cargaba → "No se encontró tu
+    // perfil de experto" hasta pulsar "Recargar" a mano. Ahora ambos usan lo mismo.
+    const isExpert = React.useMemo(() => {
+        if (!user) return false;
+        const userRole = (user as any).role ?? (user as any).Role;
+        if (userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT'
+            || userRole === 1 || userRole === '1' || userRole === UserRole.Expert) {
+            return true;
+        }
+        try {
+            const token = getAuthToken();
+            if (token && RoleChecker.getUserRole(token) === UserRole.Expert) return true;
+        } catch (error) {
+            console.warn('[ExpertPanelPage] Error checking role from token:', error);
+        }
+        return false;
+    }, [user]);
+
     useEffect(() => {
         console.log('ExpertPanelPage State:', { user, profile, isLoadingProfile, profileError, hires });
-        
-        // ✅ Verificación robusta del rol - similar a MobileProfileMenu
-        if (user) {
-            const userRole = user.role || user.Role;
-            const isExpertByRole = userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1 || userRole === UserRole.Expert;
-            
-            // Si no se detecta por el rol del objeto user, verificar el token
-            let isExpertByToken = false;
-            try {
-                const token = getAuthToken();
-                if (token) {
-                    const roleFromToken = RoleChecker.getUserRole(token);
-                    isExpertByToken = roleFromToken === UserRole.Expert;
-                }
-            } catch (error) {
-                console.warn('[ExpertPanelPage] Error checking role from token:', error);
-            }
-            
-            const isExpert = isExpertByRole || isExpertByToken;
-            
-            console.log('[ExpertPanelPage] Role check:', { 
-                userRole, 
-                isExpertByRole, 
-                isExpertByToken, 
-                isExpert 
-            });
-            
-            if (!isExpert) {
-                console.log('User is not Expert, redirecting to become-expert');
-                navigate('/become-expert');
-            }
+
+        // ✅ Verificación robusta del rol — si no es experto (ni por user ni por token), fuera.
+        if (user && !isExpert) {
+            console.log('User is not Expert, redirecting to become-expert');
+            navigate('/become-expert');
         }
-    }, [user, navigate]);
+    }, [user, isExpert, navigate]);
 
     // ✅ Optimización: Solo fetch si realmente no hay profile y no está cargando
     // NO incluir fetchProfile en dependencias para evitar ejecuciones múltiples
     useEffect(() => {
-        if (user?.role === 'Expert' && !profile && !isLoadingProfile && !profileError) {
+        if (isExpert && !profile && !isLoadingProfile && !profileError) {
             // ✅ CRÍTICO: Verificar que el token esté disponible antes de hacer requests
             const token = getAuthToken();
             if (!token) {
@@ -385,7 +381,7 @@ export function ExpertPanelPage() {
             return () => clearTimeout(timeoutId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role, profile, isLoadingProfile, profileError]);
+    }, [isExpert, profile, isLoadingProfile, profileError]);
 
     useEffect(() => {
         selectedImagesRef.current = selectedImages;
@@ -440,10 +436,15 @@ export function ExpertPanelPage() {
             errors.serviceTypeId = 'El tipo de servicio es requerido';
         }
 
-        // Validar conditions
+        // Validar conditions (descripción del servicio): entre 400 y 1000 caracteres
         const conditions = formData.conditions;
         if (!conditions || (typeof conditions === 'string' && conditions.trim() === '')) {
             errors.conditions = 'Las condiciones son requeridas';
+        } else {
+            const conditionsLength = String(conditions).trim().length;
+            if (conditionsLength < 400 || conditionsLength > 1000) {
+                errors.conditions = 'La descripción del servicio debe tener entre 400 y 1000 caracteres';
+            }
         }
 
         // Validar price
@@ -1050,7 +1051,12 @@ export function ExpertPanelPage() {
         );
     }
 
-    if (isLoadingProfile && !profile) {
+    // 🛡️ Mostrar spinner mientras el perfil de un experto aún no ha llegado (cargando
+    // O pendiente de que el fetch arranque tras el pequeño delay del token). Antes solo
+    // cubría `isLoadingProfile`, dejando una ventana (profile null + isLoadingProfile
+    // false) en la que se colaba la pantalla "No se encontró tu perfil". Si la carga
+    // falla de verdad, profileError se setea y caemos al bloque de error de abajo.
+    if (!profile && !profileError && (isLoadingProfile || isExpert)) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />

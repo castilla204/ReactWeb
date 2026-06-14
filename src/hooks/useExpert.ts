@@ -1,8 +1,29 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
+import { RoleChecker, UserRole } from '../utils/roleChecker';
 import { API_CONFIG } from '../config/api';
 import { ExpertProfileResponse, OnboardingStatusResponse, CurrentExpertAvailabilityDto, StripeStatus } from '../types/stripe';
+
+// 🛡️ El rol del experto llega en formas distintas según el origen (login, sesión
+// restaurada, PascalCase del backend, o solo en el JWT). La guardia de acceso del
+// panel ya es permisiva; el cargador del perfil debe usar EXACTAMENTE el mismo
+// criterio. Si no, el usuario entra al panel pero `fetchProfile` nunca se dispara
+// y se queda en "No se encontró tu perfil" hasta pulsar "Recargar" a mano.
+const userIsExpert = (user: any): boolean => {
+    const role = user?.role ?? user?.Role;
+    if (role === 'Expert' || role === 'expert' || role === 'EXPERT'
+        || role === 1 || role === '1' || role === UserRole.Expert) {
+        return true;
+    }
+    try {
+        const token = getAuthToken();
+        if (token && RoleChecker.getUserRole(token) === UserRole.Expert) return true;
+    } catch {
+        /* token ausente o inválido: no es experto por token */
+    }
+    return false;
+};
 
 interface ExpertProfile {
     id: number;
@@ -597,7 +618,10 @@ export function useExpert() {
     
     useEffect(() => {
         // ✅ Solo ejecutar una vez cuando el usuario es Expert y no se ha inicializado
-        if (user?.role === 'Expert' && !hasInitializedRef.current && !initializationInProgressRef.current) {
+        // 🛡️ Detección permisiva del rol (ver userIsExpert): el rol puede ser numérico,
+        // PascalCase, o venir solo en el JWT. Antes exigía `user?.role === 'Expert'`
+        // exacto y el perfil no se cargaba para esos casos.
+        if (userIsExpert(user) && !hasInitializedRef.current && !initializationInProgressRef.current) {
             initializationInProgressRef.current = true;
             hasInitializedRef.current = true;
             console.log('🚀 useExpert: Initial load (only once)');
@@ -623,7 +647,9 @@ export function useExpert() {
             // No cargar searches aquí - se cargan con useExpertHires hook
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role]); // Solo depender del role, no de las funciones
+    }, [user]); // 🛡️ Depender de `user` completo: si el rol llega vacío y luego el
+    // usuario se puebla (sesión restaurada / token-only), `user?.role` no cambiaría
+    // y el efecto no re-ejecutaría. hasInitializedRef evita cargas duplicadas.
 
     // 🛡️ LOTE D · D-17 — Polling Stripe CONSOLIDADO en useExpertStripeStatus.
     //
