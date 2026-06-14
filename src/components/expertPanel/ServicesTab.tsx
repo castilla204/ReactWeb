@@ -101,7 +101,9 @@ function stripHtmlToText(raw: string): string {
 function ServiceRowSkeleton() {
     return (
         <li className="expert-service-row expert-service-row--skeleton" aria-hidden>
-            <Skeleton className="expert-service-media expert-service-thumb !rounded-none" />
+            <div className="expert-service-media">
+                <Skeleton className="expert-service-thumb !rounded-none" />
+            </div>
             <div className="expert-service-body">
                 <Skeleton className="h-4 w-44 rounded" />
                 <Skeleton className="h-3 w-full max-w-md rounded mt-2" />
