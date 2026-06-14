@@ -22,7 +22,7 @@ import { normalizeDeliverableTypes } from '../components/serviceDetail/ServiceDe
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
 import { resolveCheckoutLocation, persistHireSearchLocation } from '../utils/hireSearchContext';
 import { resolveExpertWorkRadiusKm } from '../utils/workRadius';
-import { PhoneStatusCard, usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
+// Verificación de móvil/SMS: NO se exige al cliente para contratar (solo a expertos).
 import { getCountryName } from '../utils/countries';
 import {
     HP_FONT,
@@ -217,19 +217,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const sourceCurrency = service?.priceCurrency || 'EUR';
     const formatPriceDisplay = (amount: number) => formatPriceWithSource(amount, sourceCurrency, preferredCurrency);
 
-    // 📱 OBLIGATORIO: móvil verificado para contratar (el backend también lo exige
-    // con errorCode PHONE_VERIFICATION_REQUIRED — esto lo hace visible ANTES de pagar).
-    const phoneStatusQuery = usePhoneStatus(isAuthenticated);
-    const phoneSmsCapable = Boolean(phoneStatusQuery.data?.smsCapable);
-    const phoneStatusLoaded = !phoneStatusQuery.isLoading;
-
     const handlePayment = async () => {
         if (!service) {
             showToast('error', 'Error: Servicio no disponible');
-            return;
-        }
-        if (phoneStatusLoaded && !phoneSmsCapable) {
-            showToast('error', 'Necesitas un móvil verificado para contratar: te avisamos por SMS de citas e informes.');
             return;
         }
 
@@ -547,23 +537,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     })()}
                 </div>
 
-                {/* 📱 OBLIGATORIO: sin móvil verificado no se puede contratar — el flujo de
-                    verificación se hace aquí mismo, sin salir del checkout. */}
-                {phoneStatusLoaded && !phoneSmsCapable && (
-                    <div className="mx-auto w-full max-w-2xl px-4 pb-4">
-                        <PhoneStatusCard context="client" />
-                    </div>
-                )}
-
                 <CheckoutMobileStickyFooter>
                     <button
                         onClick={handlePayment}
-                        disabled={!expertCanReceivePayments || isProcessing || (phoneStatusLoaded && !phoneSmsCapable)}
+                        disabled={!expertCanReceivePayments || isProcessing}
                         type="button"
                         aria-busy={isProcessing}
                         className={SD_CHECKOUT_MOBILE_CTA_CLASS}
                     >
-                        {isProcessing ? 'Procesando...' : (phoneStatusLoaded && !phoneSmsCapable) ? 'Verifica tu móvil para reservar' : 'Reservar'}
+                        {isProcessing ? 'Procesando...' : 'Reservar'}
                     </button>
                 </CheckoutMobileStickyFooter>
             </div>
