@@ -390,7 +390,7 @@ function BecomeExpertPage() {
         switch (currentStep) {
             case 1:
                 // 🛡️ MUD-AG: para mudanza, la foto preservada cuenta como válida.
-                return (!!formData.profilePicture || !!existingProfilePictureUrl) && descriptionTrimLen >= 50;
+                return (!!formData.profilePicture || !!existingProfilePictureUrl) && descriptionTrimLen >= 30 && descriptionTrimLen <= 60;
             case 2: {
                 if (!(formData.latitude && formData.longitude)) return false;
                 if (detectingCountry || !detectedCountry?.supported) return false;
@@ -412,7 +412,7 @@ function BecomeExpertPage() {
             case 1: {
                 const missing: string[] = [];
                 if (!formData.profilePicture && !existingProfilePictureUrl) missing.push('añade una foto');
-                if (descriptionTrimLen < 50) missing.push('escribe al menos 50 caracteres en tu descripción');
+                if (descriptionTrimLen < 30 || descriptionTrimLen > 60) missing.push('escribe entre 30 y 60 caracteres en tu descripción');
                 return missing.length ? `Para continuar: ${missing.join(' y ')}.` : null;
             }
             case 2: {
@@ -814,22 +814,23 @@ function BecomeExpertPage() {
                                         value={formData.description}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                                         className={`${BE_INPUT_CLASS} mt-3 min-h-[120px] resize-y leading-relaxed sm:min-h-[140px] ${
-                                            stepAttempted[1] && descriptionTrimLen < 50 ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/25' : ''
+                                            stepAttempted[1] && (descriptionTrimLen < 30 || descriptionTrimLen > 60) ? 'border-amber-400 focus:border-amber-500 focus:ring-amber-500/25' : ''
                                         }`}
                                         rows={5}
                                         placeholder="Ej.: 8 años revisando vehículos de ocasión. Informes detallados para compradores y concesionarios…"
                                         required
-                                        minLength={50}
-                                        aria-invalid={stepAttempted[1] && descriptionTrimLen < 50}
+                                        minLength={30}
+                                        maxLength={60}
+                                        aria-invalid={stepAttempted[1] && (descriptionTrimLen < 30 || descriptionTrimLen > 60)}
                                     />
                                     <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-                                        <span className="text-[#6a6a6a]">Mínimo 50 caracteres (sin espacios al inicio o final)</span>
+                                        <span className="text-[#6a6a6a]">Entre 30 y 60 caracteres (sin espacios al inicio o final)</span>
                                         <span
                                             className={`font-semibold tabular-nums ${
-                                                descriptionTrimLen >= 50 ? 'text-brand' : 'text-[#9ca3af]'
+                                                descriptionTrimLen >= 30 && descriptionTrimLen <= 60 ? 'text-brand' : 'text-[#9ca3af]'
                                             }`}
                                         >
-                                            {descriptionTrimLen}/50
+                                            {descriptionTrimLen}/60
                                         </span>
                                     </div>
                                     {stepAttempted[1] && !formData.profilePicture && !existingProfilePictureUrl && (
@@ -860,7 +861,7 @@ function BecomeExpertPage() {
                             {[
                                 { ok: !!formData.profilePicture || !!existingProfilePictureUrl, label: 'Foto de perfil' },
                                 {
-                                    ok: descriptionTrimLen >= 50,
+                                    ok: descriptionTrimLen >= 30 && descriptionTrimLen <= 60,
                                     label: `Descripción (${descriptionTrimLen} caracteres)`,
                                 },
                                 {

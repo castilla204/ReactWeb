@@ -467,7 +467,7 @@ export function ServiceForm({
             category: Boolean(formData.categoryId),
             type: Boolean(formData.serviceTypeId),
             price: Boolean(formData.price) && !Number.isNaN(price) && price > 0,
-            conditions: formData.conditions.trim().length > 0,
+            conditions: formData.conditions.trim().length >= 400 && formData.conditions.trim().length <= 1000,
             duration: durationOk,
             images: heroImages.length > 0,
         };
@@ -821,10 +821,16 @@ export function ServiceForm({
                                             value={formData.conditions}
                                             onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
                                             className={`sf-textarea${formErrors.conditions ? ' sf-textarea--error' : ''}`}
-                                            rows={3}
+                                            rows={6}
                                             placeholder="Qué incluye el servicio y qué debe saber el cliente antes de contratar."
                                             required
+                                            minLength={400}
+                                            maxLength={1000}
                                         />
+                                        <div className="sf-field-meta">
+                                            <span className="sf-hint">Entre 400 y 1000 caracteres (sin espacios al inicio o final).</span>
+                                            <span className="sf-counter">{formData.conditions.trim().length}/1000</span>
+                                        </div>
                                         {formErrors.conditions && <p className="sf-error">{formErrors.conditions}</p>}
                                     </div>
                                 </div>
