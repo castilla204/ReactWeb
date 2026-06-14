@@ -128,18 +128,11 @@ export function ServiceEditorDesktopPreview({
 
                     <aside className="min-w-0 sf-desktop-preview-aside">
                         <article className={`sd-aside-card flex flex-col ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}>
-                            <div className="flex gap-3 pb-1">
-                                {images[0] ? (
-                                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
-                                        <img src={images[0]} alt="" className="h-full w-full object-cover" />
-                                    </div>
-                                ) : null}
-                                <div className="min-w-0 flex-1">
-                                    <p className="sd-aside-summary-title line-clamp-2">{title}</p>
-                                    <p className="sd-aside-summary-meta mt-0.5 truncate">
-                                        con {expert.name || 'tu perfil'}
-                                    </p>
-                                </div>
+                            <div className="pb-1">
+                                <p className="sd-aside-summary-title line-clamp-2">{title}</p>
+                                <p className="sd-aside-summary-meta mt-0.5 truncate">
+                                    con {expert.name || 'tu perfil'}
+                                </p>
                             </div>
 
                             <section className="shrink-0 border-t border-[#ebebeb] py-4">

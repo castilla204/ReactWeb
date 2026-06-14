@@ -447,10 +447,11 @@ export function ProfileEditForm({
         const errors: { [key: string]: string } = {};
         if (!formData.description.trim()) {
             errors.description = 'La descripción es requerida';
-        } else if (formData.description.length < 10) {
-            errors.description = 'La descripción debe tener al menos 10 caracteres';
-        } else if (formData.description.length > 500) {
-            errors.description = 'La descripción no puede superar los 500 caracteres';
+        } else {
+            const descTrimLen = formData.description.trim().length;
+            if (descTrimLen < 30 || descTrimLen > 60) {
+                errors.description = 'La descripción del experto debe tener entre 30 y 60 caracteres';
+            }
         }
         if (!formData.latitude) {
             errors.latitude = 'La latitud es requerida';
@@ -661,7 +662,7 @@ export function ProfileEditForm({
                         <div className="pf-form-grid">
                     <section id="pf-section-about" className="pf-section pf-section--about">
                         <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
-                            <span className="pf-about-composer__meta">{descLength}/500</span>
+                            <span className="pf-about-composer__meta">{descLength}/60</span>
                             <div className="pf-about-composer__photo">
                                     <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
                                         {profileImageUrl ? (
@@ -698,7 +699,8 @@ export function ProfileEditForm({
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={5}
-                                    maxLength={500}
+                                    minLength={30}
+                                    maxLength={60}
                                     placeholder="Cuéntales a tus clientes quién eres, tu experiencia y en qué te especializas…"
                                     className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
                                     required

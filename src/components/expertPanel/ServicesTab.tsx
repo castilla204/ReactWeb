@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2, Plus, Search } from 'lucide-react';
 import { formatCurrency } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -101,12 +101,12 @@ function stripHtmlToText(raw: string): string {
 function ServiceRowSkeleton() {
     return (
         <li className="expert-service-row expert-service-row--skeleton" aria-hidden>
-            <Skeleton className="expert-service-thumb" />
-            <div className="expert-service-main">
-                <Skeleton className="h-4 w-40 rounded" />
-                <Skeleton className="h-3 w-full max-w-sm rounded mt-2" />
+            <Skeleton className="expert-service-media expert-service-thumb !rounded-none" />
+            <div className="expert-service-body">
+                <Skeleton className="h-4 w-44 rounded" />
+                <Skeleton className="h-3 w-full max-w-md rounded mt-2" />
             </div>
-            <Skeleton className="h-4 w-16 rounded hidden sm:block" />
+            <Skeleton className="h-8 w-20 rounded hidden sm:block" />
         </li>
     );
 }
@@ -207,41 +207,43 @@ export function ServicesTab({
 
             {!isLoadingServices && !servicesError && services.length > 0 && (
                 <header className="expert-services-bar">
-                    <div className="expert-services-bar-controls">
+                    <label className="expert-services-search-wrap">
+                        <Search aria-hidden className="expert-services-search-icon" />
                         <Input
                             type="search"
-                            placeholder="Buscar por categoría, tipo o descripción"
+                            placeholder="Buscar servicios…"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="expert-services-search"
                         />
-                        <select
-                            id="services-sort"
-                            className="expert-services-sort"
-                            value={`${sortField}-${sortDir}`}
-                            onChange={(e) => {
-                                const [field, dir] = e.target.value.split('-') as [SortField, SortDir];
-                                setSortField(field);
-                                setSortDir(dir);
-                            }}
-                            aria-label="Ordenar servicios"
-                        >
-                            <option value="category-asc">Categoría A–Z</option>
-                            <option value="category-desc">Categoría Z–A</option>
-                            <option value="price-asc">Precio menor</option>
-                            <option value="price-desc">Precio mayor</option>
-                            <option value="duration-asc">Duración menor</option>
-                            <option value="duration-desc">Duración mayor</option>
-                        </select>
-                        <Button
-                            onClick={() => setShowServiceForm(true)}
-                            size="sm"
-                            className="expert-btn-brand expert-services-add"
-                            disabled={profileIncomplete}
-                        >
-                            Nuevo servicio
-                        </Button>
-                    </div>
+                    </label>
+                    <select
+                        id="services-sort"
+                        className="expert-services-sort"
+                        value={`${sortField}-${sortDir}`}
+                        onChange={(e) => {
+                            const [field, dir] = e.target.value.split('-') as [SortField, SortDir];
+                            setSortField(field);
+                            setSortDir(dir);
+                        }}
+                        aria-label="Ordenar servicios"
+                    >
+                        <option value="category-asc">Categoría A–Z</option>
+                        <option value="category-desc">Categoría Z–A</option>
+                        <option value="price-asc">Precio menor</option>
+                        <option value="price-desc">Precio mayor</option>
+                        <option value="duration-asc">Duración menor</option>
+                        <option value="duration-desc">Duración mayor</option>
+                    </select>
+                    <Button
+                        onClick={() => setShowServiceForm(true)}
+                        size="sm"
+                        className="expert-btn-brand expert-services-add"
+                        disabled={profileIncomplete}
+                    >
+                        <Plus aria-hidden className="expert-services-add-icon" />
+                        Nuevo
+                    </Button>
                 </header>
             )}
 
@@ -303,7 +305,7 @@ export function ServicesTab({
                                     key={service.id}
                                     className={`expert-service-row expert-service-row--${vis.tone}`}
                                 >
-                                    <div className="expert-service-thumb-wrap">
+                                    <div className="expert-service-media">
                                         {imageUrl ? (
                                             <img
                                                 src={imageUrl}
@@ -313,17 +315,23 @@ export function ServicesTab({
                                             />
                                         ) : (
                                             <span className="expert-service-thumb expert-service-thumb--empty" aria-hidden>
-                                                {categoryName.slice(0, 2).toUpperCase()}
+                                                {categoryName.slice(0, 1).toUpperCase()}
                                             </span>
                                         )}
                                     </div>
 
-                                    <div className="expert-service-main">
+                                    <div className="expert-service-body">
                                         <div className="expert-service-head">
-                                            <h3 className="expert-service-title">{categoryName}</h3>
-                                            {serviceTypeName && (
-                                                <span className="expert-service-type">{serviceTypeName}</span>
-                                            )}
+                                            <h3 className="expert-service-title">
+                                                {categoryName}
+                                                {serviceTypeName && (
+                                                    <span className="expert-service-type">{serviceTypeName}</span>
+                                                )}
+                                            </h3>
+                                            <span className={`expert-service-status expert-service-status--${vis.tone}`}>
+                                                <span className="expert-service-status-dot" aria-hidden />
+                                                {vis.label}
+                                            </span>
                                         </div>
                                         {descriptionText && (
                                             <p className="expert-service-desc">{descriptionText}</p>
@@ -333,35 +341,34 @@ export function ServicesTab({
                                         )}
                                     </div>
 
-                                    <div className="expert-service-aside">
-                                        <span className={`expert-service-status expert-service-status--${vis.tone}`}>
-                                            {vis.label}
-                                        </span>
-                                        <div className="expert-service-meta">
+                                    <div className="expert-service-end">
+                                        <div className="expert-service-price-block">
                                             <span className="expert-service-price">
                                                 {formatCurrency(service.price, currencyCode)}
                                             </span>
-                                            <span className="expert-service-price-note">IVA incl.</span>
-                                            {service.durationInHours != null && service.durationInHours > 0 && (
-                                                <span className="expert-service-duration">
-                                                    {service.durationInHours} h
-                                                </span>
-                                            )}
+                                            <span className="expert-service-price-sub">
+                                                IVA incl.
+                                                {service.durationInHours != null && service.durationInHours > 0 && (
+                                                    <> · {service.durationInHours} h</>
+                                                )}
+                                            </span>
                                         </div>
                                         <div className="expert-service-actions">
                                             <button
                                                 type="button"
                                                 className="expert-service-action"
                                                 onClick={() => onEditService?.(service)}
+                                                aria-label={`Editar ${categoryName}`}
                                             >
-                                                Editar
+                                                <Pencil aria-hidden className="expert-service-action-icon" />
                                             </button>
                                             <button
                                                 type="button"
                                                 className="expert-service-action expert-service-action--danger"
                                                 onClick={() => setDeleteTargetId(service.id)}
+                                                aria-label={`Eliminar ${categoryName}`}
                                             >
-                                                Eliminar
+                                                <Trash2 aria-hidden className="expert-service-action-icon" />
                                             </button>
                                         </div>
                                     </div>

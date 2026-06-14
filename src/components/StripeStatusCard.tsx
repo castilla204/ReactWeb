@@ -33,7 +33,7 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     className = '',
     isLoadingOnboarding = false,
 }) => {
-    const { status, loading, error, refetch, syncStatus, statusInfo, isPolling } = stripe;
+    const { status, loading, error, refetch, syncStatus, statusInfo } = stripe;
 
     if (loading) {
         return (
@@ -93,7 +93,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     const requirements = parseRequirements(status.stripeStatusDetails || '');
     const showActionButton =
         status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false;
-    const isBusy = loading || isLoadingOnboarding || isPolling;
+    // 🐛 FIX: NO incluir `isPolling` aquí. El polling es un refresco silencioso de fondo
+    // que está activo de forma permanente mientras la cuenta sigue en un estado de
+    // POLLING_STATUSES (p.ej. RequirementsPastDue). Si se incluye, el botón queda
+    // deshabilitado y atascado en "Cargando…" indefinidamente y el experto nunca puede
+    // pulsar el CTA para completar los requisitos en Stripe. El busy del botón solo debe
+    // reflejar una acción en curso del usuario (fetch inicial o apertura del enlace de Stripe).
+    const isBusy = loading || isLoadingOnboarding;
 
     return (
         <div className={`stripe-status-panel ${className}`}>
