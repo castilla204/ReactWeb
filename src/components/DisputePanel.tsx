@@ -461,9 +461,9 @@ const DisputeCard: React.FC<{
                   Experto respondió
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
                   <Clock className="w-3 h-3" />
-                  Tiempo agotado
+                  Sin respuesta · resuélvela tú
                 </span>
               )}
             </div>
@@ -792,7 +792,7 @@ const DisputeDetails: React.FC<{
                           </p>
                         ) : (
                           <p className="text-sm font-medium text-orange-800">
-                            {dispute.expertResponse ? 'El experto ya respondió' : 'El experto ya no puede responder'}
+                            {dispute.expertResponse ? 'El experto ya respondió' : 'El experto no respondió (era opcional) · pendiente de tu resolución manual'}
                           </p>
                         )}
                       </div>
