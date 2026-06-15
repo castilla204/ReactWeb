@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
 // 🛡️ Round 28: helper unificado de símbolos de divisa (cubre EUR/USD/GBP/CHF/CAD/SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
 import { getCurrencySymbol } from '../utils/priceUtils';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, Clock, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle, SlidersHorizontal } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
@@ -37,55 +37,23 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
 import { persistHireSearchLocation, readHireSearchLocation, snapshotHireSearchLocation } from '../utils/hireSearchContext';
 import {
-    hpIconButtonClass,
     hpTitleUnderlineBarStyle,
     MAP_CARD_BODY_CLASS,
-    MAP_CARD_CHIP_CLASS,
-    MAP_CARD_EYEBROW_CLASS,
-    MAP_CARD_HOOK_CLASS,
+    MAP_CARD_META_LINE_CLASS,
     MAP_CARD_IMAGE_CLASS,
-    MAP_CARD_IMAGE_TOP_CLASS,
     MAP_CARD_NAME_CLASS,
     MAP_CARD_PRICE_CLASS,
     MAP_CARD_PRICE_SUFFIX_CLASS,
     MAP_CARD_BADGE_CLASS,
-    MAP_CARD_DESKTOP_SHADOW,
-    MAP_CARD_DESKTOP_SHADOW_ACTIVE,
-    MAP_CARD_DESKTOP_SHADOW_HOVER,
-    MAP_CARD_DESKTOP_SHADOW_HOVERED,
     MAP_DESKTOP_GRID_CLASS,
     MAP_DESKTOP_LIST_CELL_CLASS,
     MAP_DESKTOP_LIST_CLASS,
     MAP_DESKTOP_MAP_INNER_CLASS,
     MAP_DESKTOP_MAP_WRAP_CLASS,
     MAP_DESKTOP_PANEL_HEADER_CLASS,
-    MAP_DESKTOP_PANEL_HEADER_META_CLASS,
-    MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS,
-    MAP_DESKTOP_PANEL_HEADER_META_STRONG_CLASS,
-    MAP_DESKTOP_PANEL_HEADER_TITLE_CLASS,
     MAP_DESKTOP_SCROLL_CLASS,
     MAP_DESKTOP_SPLIT_CLASS,
-    MAP_META_CHIP_CLASS,
-    MAP_META_CHIP_MUTED_CLASS,
-    MAP_MOBILE_DRAWER_HEADER_CLASS,
-    MAP_MOBILE_DRAWER_HANDLE_WRAP_CLASS,
-    MAP_MOBILE_DRAWER_HANDLE_CLASS,
-    MAP_MOBILE_META_ROW_CLASS,
-    MAP_MOBILE_META_STRONG_CLASS,
-    MAP_MOBILE_META_SEP_CLASS,
-    MAP_MOBILE_FILTER_ROW_CLASS,
-    MAP_MOBILE_FILTER_CHIP_CLASS,
-    MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS,
     MAP_MOBILE_LIST_CLASS,
-    MAP_PAGE_SUBTITLE_MOBILE_CLASS,
-    MAP_PAGE_TITLE_MOBILE_CLASS,
-    MAP_CARD_MOBILE_COMPACT_WRAP_CLASS,
-    MAP_CARD_MOBILE_COMPACT_IMG_CLASS,
-    MAP_CARD_MOBILE_COMPACT_INFO_CLASS,
-    MAP_CARD_MOBILE_NAME_CLASS,
-    MAP_CARD_MOBILE_META_CLASS,
-    MAP_CARD_MOBILE_PRICE_CLASS,
-    MAP_CARD_MOBILE_FAV_BTN_CLASS,
     SD_MOBILE_GUTTER_CLASS,
 } from '../constants/homepageTypography';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
@@ -313,12 +281,12 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 style={{ width: '100%', textDecoration: 'none', color: 'inherit' }}
             >
                 <div
-                    className={`relative w-full rounded-2xl bg-white transition-all duration-200 ${
+                    className={`relative w-full overflow-hidden rounded-2xl bg-white transition-all duration-200 ${
                         isSelected
-                            ? `ring-2 ring-brand ${MAP_CARD_DESKTOP_SHADOW_ACTIVE}`
+                            ? 'ring-2 ring-brand shadow-[0_8px_24px_rgba(16,24,40,0.10)]'
                             : isHovered
-                              ? `${MAP_CARD_DESKTOP_SHADOW_HOVERED} ring-1 ring-brand/15`
-                              : `${MAP_CARD_DESKTOP_SHADOW} ${MAP_CARD_DESKTOP_SHADOW_HOVER}`
+                              ? '-translate-y-0.5 shadow-[0_2px_4px_rgba(16,24,40,0.06),0_14px_32px_rgba(16,24,40,0.13)]'
+                              : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
                     }`}
                 >
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
@@ -336,21 +304,19 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 via-black/10 to-transparent" aria-hidden />
                                 </div>
 
-                                {/* Badge "Recomendamos" - Estilo exacto de HomepageWall */}
-                                {isGuestFavorite && (
-                                    <div className="absolute left-3 top-3 z-10">
-                                        <span className={MAP_CARD_BADGE_CLASS} aria-label="Recomendamos">
-                                            Recomendamos
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {/* Badge "Recomendación del viajero" cuando está seleccionado */}
-                                {isSelected && (
+                                {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
+                                {isSelected ? (
                                     <div className="absolute left-3 top-3 z-10">
                                         <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
                                             <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
                                             Seleccionado
+                                        </span>
+                                    </div>
+                                ) : isGuestFavorite && (
+                                    <div className="absolute left-3 top-3 z-10">
+                                        <span className={`${MAP_CARD_BADGE_CLASS} gap-1`} aria-label="Mejor valorado">
+                                            <Star className="h-3 w-3 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
+                                            Mejor valorado
                                         </span>
                                     </div>
                                 )}
@@ -381,10 +347,10 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         focusable="false"
                                         style={{
                                             display: 'block',
-                                            fill: isFavorite ? 'hsl(var(--brand))' : 'rgba(0, 0, 0, 0.5)',
+                                            fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
                                             height: '24px',
                                             width: '24px',
-                                            stroke: isFavorite ? 'hsl(var(--brand))' : 'rgba(255, 255, 255, 0.8)',
+                                            stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
                                             strokeWidth: '2',
                                             overflow: 'visible',
                                             margin: '0',
@@ -468,7 +434,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                             <div 
                                                 className="w-full h-full flex items-center justify-center"
                                                 style={{
-                                                    backgroundColor: '#3b82f6',
+                                                    backgroundColor: '#5b6b7e',
                                                     color: 'white',
                                                     fontSize: '14px',
                                                     fontWeight: 600,
@@ -490,10 +456,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                     <MapServiceCardInfo
                         serviceTypeLabel={serviceTypeLabel}
                         expertName={expertName}
-                        cardHook={cardHook}
                         cityLabel={cityLabel}
-                        availabilityInfo={availabilityInfo}
-                        isGuestFavorite={isGuestFavorite}
                         averageRating={service.averageRating || 0}
                         totalReviews={totalReviews}
                         price={price}
@@ -505,121 +468,22 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
         );
     }
     
-    // Móvil — DOS layouts:
-    //  · NO seleccionado → COMPACTO (96×96 imagen izquierda + info derecha) → densidad alta
-    //  · seleccionado    → HERO (imagen 16:10 arriba + info abajo) → destacado visual
-    const coords = getServiceCoords(service);
-    const distance = distanceKm(mapCenter, coords);
-    const distanceLabel = distance != null ? formatDistanceKm(distance) : null;
-
-    if (!isSelected) {
-        const metaParts: string[] = [];
-        if (distanceLabel) metaParts.push(distanceLabel);
-        if (cityLabel) metaParts.push(cityLabel);
-        if (availabilityInfo && availabilityInfo !== 'Flexible') metaParts.push(availabilityInfo);
-
-        return (
-            <a
-                href={`/service/${serviceId}`}
-                onClick={handleCardClick}
-                className="block w-full cursor-pointer"
-                style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-                <div className="relative w-full overflow-hidden rounded-2xl bg-white border border-[#ebebeb] shadow-sm transition-colors active:bg-[#fafafa]">
-                    <div className={MAP_CARD_MOBILE_COMPACT_WRAP_CLASS}>
-                        <div className={MAP_CARD_MOBILE_COMPACT_IMG_CLASS}>
-                            {imageUrls.length > 0 ? (
-                                <img
-                                    src={imageUrls[0]}
-                                    alt={service.serviceTypeName || 'Servicio'}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center text-[10px] text-[#9aa0a6]">
-                                    Sin imagen
-                                </div>
-                            )}
-                            {isGuestFavorite && (
-                                <span className="absolute left-1 top-1 inline-flex items-center rounded-md bg-white/95 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#1c1c1c] shadow-sm">
-                                    Top
-                                </span>
-                            )}
-                        </div>
-
-                        <div className={MAP_CARD_MOBILE_COMPACT_INFO_CLASS}>
-                            <div className={`min-w-0 ${isAuthenticated ? 'pr-10' : 'pr-0'}`}>
-                                <div className="flex items-center gap-1.5">
-                                    <p className="truncate text-[10px] font-semibold uppercase tracking-[0.085em] text-brand">
-                                        {serviceTypeLabel}
-                                    </p>
-                                    {service.averageRating > 0 && (
-                                        <span className="ml-auto inline-flex shrink-0 items-center gap-0.5 leading-none">
-                                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                                            <span className="text-[11.5px] font-semibold tabular-nums text-[#1c1c1c]">
-                                                {service.averageRating.toFixed(1).replace('.', ',')}
-                                            </span>
-                                            {totalReviews > 0 && (
-                                                <span className="text-[10.5px] font-normal text-[#9aa0a6] tabular-nums">
-                                                    ({totalReviews})
-                                                </span>
-                                            )}
-                                        </span>
-                                    )}
-                                </div>
-                                <h3 className={MAP_CARD_MOBILE_NAME_CLASS}>{expertName}</h3>
-                                {metaParts.length > 0 && (
-                                    <p className={MAP_CARD_MOBILE_META_CLASS}>
-                                        {metaParts.join(' · ')}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="mt-1 flex items-baseline gap-1">
-                                <span className={MAP_CARD_MOBILE_PRICE_CLASS}>{price}</span>
-                                <span className="text-[12px] font-normal text-[#6a6a6a]">/ servicio</span>
-                            </div>
-                        </div>
-
-                        {isAuthenticated ? (
-                            <button
-                                type="button"
-                                onClick={handleFavoriteClick}
-                                aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                                className={MAP_CARD_MOBILE_FAV_BTN_CLASS}
-                            >
-                                <svg
-                                    viewBox="0 0 32 32"
-                                    aria-hidden
-                                    style={{
-                                        height: 22,
-                                        width: 22,
-                                        fill: isFavorite ? 'hsl(var(--brand))' : 'rgba(0,0,0,0.45)',
-                                        stroke: isFavorite ? 'hsl(var(--brand))' : 'rgba(255,255,255,0.95)',
-                                        strokeWidth: 2,
-                                    }}
-                                >
-                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                                </svg>
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
-            </a>
-        );
-    }
-
-    // Layout HERO — solo cuando isSelected es true
+    // Móvil — misma tarjeta elevada (boxed) que desktop.
     return (
         <a
             href={`/service/${serviceId}`}
             onClick={handleCardClick}
-            className="block w-full cursor-pointer"
+            className="group block w-full cursor-pointer active:opacity-95"
             style={{ textDecoration: 'none', color: 'inherit' }}
         >
             <div
-                className="relative w-full overflow-hidden rounded-2xl bg-white ring-2 ring-brand shadow-md transition-shadow"
+                className={`relative w-full overflow-hidden rounded-2xl bg-white transition-shadow duration-200 ${
+                    isSelected
+                        ? 'ring-2 ring-brand shadow-[0_8px_24px_rgba(16,24,40,0.10)]'
+                        : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
+                }`}
             >
-                <div className={MAP_CARD_IMAGE_TOP_CLASS}>
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#eceff3]">
                     {imageUrls.length > 0 ? (
                         <>
                             {/* Imagen principal — sin scale en móvil */}
@@ -633,19 +497,19 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 via-black/10 to-transparent" aria-hidden />
                             </div>
 
-                            {isGuestFavorite && (
-                                <div className="absolute left-3 top-3 z-10">
-                                    <span className={MAP_CARD_BADGE_CLASS} aria-label="Recomendamos">
-                                        Recomendamos
-                                    </span>
-                                </div>
-                            )}
-
-                            {isSelected && (
+                            {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
+                            {isSelected ? (
                                 <div className="absolute left-3 top-3 z-10">
                                     <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
                                         <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
                                         Seleccionado
+                                    </span>
+                                </div>
+                            ) : isGuestFavorite && (
+                                <div className="absolute left-3 top-3 z-10">
+                                    <span className={`${MAP_CARD_BADGE_CLASS} gap-1`} aria-label="Mejor valorado">
+                                        <Star className="h-3 w-3 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
+                                        Mejor valorado
                                     </span>
                                 </div>
                             )}
@@ -673,10 +537,10 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     focusable="false"
                                     style={{
                                         display: 'block',
-                                        fill: isFavorite ? 'hsl(var(--brand))' : 'rgba(0, 0, 0, 0.5)',
+                                        fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
                                         height: '24px',
                                         width: '24px',
-                                        stroke: isFavorite ? 'hsl(var(--brand))' : 'rgba(255, 255, 255, 0.85)',
+                                        stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.85)',
                                         strokeWidth: '2',
                                         overflow: 'visible',
                                         margin: '0',
@@ -736,7 +600,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         <div 
                                             className="w-full h-full flex items-center justify-center"
                                             style={{
-                                                backgroundColor: 'hsl(var(--brand))',
+                                                backgroundColor: '#5b6b7e',
                                                 color: 'white',
                                                 fontSize: '14px',
                                                 fontWeight: 600,
@@ -758,10 +622,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 <MapServiceCardInfo
                     serviceTypeLabel={serviceTypeLabel}
                     expertName={expertName}
-                    cardHook={cardHook}
                     cityLabel={cityLabel}
-                    availabilityInfo={availabilityInfo}
-                    isGuestFavorite={isGuestFavorite}
                     averageRating={service.averageRating || 0}
                     totalReviews={totalReviews}
                     price={price}
@@ -809,9 +670,9 @@ const getMapOverviewZoom = (countryCode: string): number =>
 //    Con la implementación custom (motion value + spring), el drag es 1:1 con el
 //    dedo; los snaps SOLO se aplican al soltar, así que el snap intermedio no
 //    se siente como "tramo" durante el gesto.
-const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.30, 0.50, 0.92];
-const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 30% – ver mapa
-const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 50% – posición inicial
+const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.14, 0.55, 0.92];
+const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 14% – solo tirador + "N expertos" (reposo)
+const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 55% – al pulsar "Ver opciones" o un pin
 const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[2];     // 92% – pantalla casi completa
 
 function MapPanelHeader({
@@ -856,27 +717,10 @@ function MapPanelHeader({
     );
 }
 
-type MobileSortKey = 'relevance' | 'price-asc' | 'price-desc' | 'rating';
-
-const MOBILE_SORT_LABEL: Record<MobileSortKey, string> = {
-    'relevance': 'Relevancia',
-    'price-asc': 'Precio: menor',
-    'price-desc': 'Precio: mayor',
-    'rating': 'Mejor valorado',
-};
-
 interface MapMobileDrawerHeaderProps {
     count: number;
     locationLabel?: string | null;
     rangeKm?: number;
-    sortKey?: MobileSortKey;
-    priceActive?: boolean;
-    ratingActive?: boolean;
-    onOpenSort?: () => void;
-    onOpenPrice?: () => void;
-    onOpenRating?: () => void;
-    /** Callback para minimizar el drawer (peek). El header dibuja el X inline. */
-    onMinimize?: () => void;
 }
 
 /**
@@ -893,13 +737,6 @@ function MapMobileDrawerHeader({
     count,
     locationLabel,
     rangeKm = 25,
-    sortKey = 'relevance',
-    priceActive = false,
-    ratingActive = false,
-    onOpenSort,
-    onOpenPrice,
-    onOpenRating,
-    onMinimize,
 }: MapMobileDrawerHeaderProps) {
     /*
      * Layout REDISEÑADO (método radicalmente distinto):
@@ -915,62 +752,25 @@ function MapMobileDrawerHeader({
      * No hay absolute, no hay X, no hay solapamiento posible.
      */
     return (
-        <div className="px-4 pt-2 pb-4 flex flex-col gap-4">
-            {/* 1. Handle — decorativo, drag-down para minimizar */}
-            <div className="flex justify-center" aria-hidden>
-                <span className="h-1 w-10 rounded-full bg-[#d8d8d8]" />
+        <div
+            className="relative px-5 pt-2.5 pb-3"
+            /* Tinte degradado azul→ámbar muy sutil de marca en el header del drawer. */
+            style={{ background: 'linear-gradient(to right, rgba(0,102,204,0.11) 0%, rgba(245,158,11,0.11) 100%)' }}
+        >
+            {/* Handle — afordancia de arrastre con rebote sutil (indica que se puede subir) */}
+            <div className="mb-2.5 flex justify-center" aria-hidden>
+                <span className="drawer-handle-hint h-1.5 w-11 rounded-full bg-[#cfcfcf]" />
             </div>
 
-            {/* 2. FILTROS — elemento primario del drawer (lo más actionable).
-                py-1 (padding vertical) para garantizar que la sombra de los chips
-                no se recorta arriba/abajo y respiran claramente. */}
-            <div
-                className="flex items-center gap-2 overflow-x-auto -mx-4 px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                role="group"
-                aria-label="Filtros rápidos"
-            >
-                <button
-                    type="button"
-                    data-no-drag
-                    onClick={onOpenSort}
-                    className={sortKey !== 'relevance' ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <span>Ordenar: {MOBILE_SORT_LABEL[sortKey]}</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-                <button
-                    type="button"
-                    data-no-drag
-                    onClick={onOpenPrice}
-                    className={priceActive ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <span>Precio</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-                <button
-                    type="button"
-                    data-no-drag
-                    onClick={onOpenRating}
-                    className={ratingActive ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <Star className="h-3 w-3" aria-hidden />
-                    <span>Valoración</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-            </div>
-
-            {/* 3. META — caption sutil al final, jerarquía secundaria */}
-            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0 text-[11.5px] font-medium leading-[1.2] text-[#9aa0a6] font-display">
-                <span className="font-semibold text-[#1c1c1c] tabular-nums">{count}</span>
-                <span>{count === 1 ? 'experto' : 'expertos'}</span>
-                {locationLabel && (
-                    <>
-                        <span aria-hidden>·</span>
-                        <span className="truncate max-w-[180px]">{locationLabel}</span>
-                    </>
-                )}
-                <span aria-hidden>·</span>
-                <span className="shrink-0 tabular-nums">~{rangeKm} km</span>
+            {/* Titular de resultados — mismo tono que desktop */}
+            <h2 className="font-display text-[16px] font-semibold leading-tight tracking-[-0.01em] text-[#222222]">
+                {count} {count === 1 ? 'experto disponible' : 'expertos disponibles'}
+                {locationLabel ? (
+                    <span className="font-normal text-[#717171]"> en {locationLabel}</span>
+                ) : null}
+            </h2>
+            <p className="mt-0.5 font-display text-[12.5px] font-normal leading-snug text-[#8a8a8a]">
+                En un radio de ~{rangeKm} km · desliza para ver la lista
             </p>
         </div>
     );
@@ -1038,23 +838,11 @@ function MapDesktopPanelHeader({
     expertCount,
     locationLabel,
     rangeKm,
-    sortKey = 'relevance',
-    priceActive = false,
-    ratingActive = false,
-    onOpenSort,
-    onOpenPrice,
-    onOpenRating,
 }: {
     hasLocation: boolean;
     expertCount?: number;
     locationLabel?: string;
     rangeKm?: number;
-    sortKey?: MobileSortKey;
-    priceActive?: boolean;
-    ratingActive?: boolean;
-    onOpenSort?: () => void;
-    onOpenPrice?: () => void;
-    onOpenRating?: () => void;
 }) {
     if (!hasLocation) {
         return (
@@ -1068,56 +856,19 @@ function MapDesktopPanelHeader({
 
     return (
         <header className={MAP_DESKTOP_PANEL_HEADER_CLASS}>
-            {/* Fila de filtros chips + meta inline (compacta, sin h2/eyebrow) */}
-            <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                    type="button"
-                    onClick={onOpenSort}
-                    className={sortKey !== 'relevance' ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <span>Ordenar: {MOBILE_SORT_LABEL[sortKey]}</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-                <button
-                    type="button"
-                    onClick={onOpenPrice}
-                    className={priceActive ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <span>Precio</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-                <button
-                    type="button"
-                    onClick={onOpenRating}
-                    className={ratingActive ? MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS : MAP_MOBILE_FILTER_CHIP_CLASS}
-                >
-                    <Star className="h-3 w-3" aria-hidden />
-                    <span>Valoración</span>
-                    <ChevronUp className="h-3 w-3 rotate-180 opacity-70" strokeWidth={2.5} aria-hidden />
-                </button>
-            </div>
-
-            {/* Meta row — separador delgado bajo los filtros, con N expertos · zona · radio */}
-            <p className={`${MAP_DESKTOP_PANEL_HEADER_META_CLASS} pt-2`}>
-                {typeof expertCount === 'number' && (
-                    <>
-                        <span className={MAP_DESKTOP_PANEL_HEADER_META_STRONG_CLASS}>{expertCount}</span>
-                        <span>{expertCount === 1 ? 'experto' : 'expertos'}</span>
-                    </>
-                )}
-                {locationLabel && (
-                    <>
-                        <span className={MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS} aria-hidden>·</span>
-                        <span className="truncate max-w-[260px]">{locationLabel}</span>
-                    </>
-                )}
-                {rangeKm && (
-                    <>
-                        <span className={MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS} aria-hidden>·</span>
-                        <span>~{rangeKm} km</span>
-                    </>
-                )}
-            </p>
+            <h2 className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+                {typeof expertCount === 'number'
+                    ? `${expertCount} ${expertCount === 1 ? 'experto disponible' : 'expertos disponibles'}`
+                    : 'Expertos disponibles'}
+                {locationLabel ? (
+                    <span className="font-normal text-[#717171]"> en {locationLabel}</span>
+                ) : null}
+            </h2>
+            {rangeKm ? (
+                <p className="mt-1 font-display text-[13px] font-normal leading-snug text-[#717171]">
+                    En un radio de ~{rangeKm} km · toca un experto para verlo en el mapa
+                </p>
+            ) : null}
         </header>
     );
 }
@@ -1125,10 +876,7 @@ function MapDesktopPanelHeader({
 type MapServiceCardInfoProps = {
     serviceTypeLabel: string;
     expertName: string;
-    cardHook: string;
     cityLabel: string | null;
-    availabilityInfo: string;
-    isGuestFavorite: boolean;
     averageRating: number;
     totalReviews: number;
     price: string;
@@ -1139,55 +887,38 @@ type MapServiceCardInfoProps = {
 function MapServiceCardInfo({
     serviceTypeLabel,
     expertName,
-    cardHook,
     cityLabel,
-    availabilityInfo,
-    isGuestFavorite,
     averageRating,
     totalReviews,
     price,
     priceWasConverted,
     priceSourceFormatted,
 }: MapServiceCardInfoProps) {
+    // Meta: "Tipo de servicio · Ciudad" (como en la vista previa elegida).
+    const metaLine = [serviceTypeLabel, cityLabel].filter(Boolean).join(' · ');
     return (
         <div className={MAP_CARD_BODY_CLASS}>
-            <p className={`${MAP_CARD_EYEBROW_CLASS} mb-1`}>{serviceTypeLabel}</p>
-            <div className="mb-1.5 flex items-start justify-between gap-2">
+            <div className="flex items-baseline justify-between gap-2">
                 <h3 className={MAP_CARD_NAME_CLASS}>{expertName}</h3>
-                {averageRating > 0 && (
-                    <div className="flex shrink-0 items-center gap-1 leading-none">
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                        <span className="text-[12.5px] font-semibold tabular-nums text-[#1c1c1c]">
+                {averageRating > 0 ? (
+                    <span className="flex shrink-0 items-center gap-1 text-[13px] leading-5 text-[#222222]">
+                        <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
+                        <span className="font-semibold tabular-nums">
                             {averageRating.toFixed(1).replace('.', ',')}
                         </span>
                         {totalReviews > 0 && (
-                            <span className="text-[11px] font-normal text-[#9aa0a6] tabular-nums">({totalReviews})</span>
+                            <span className="font-normal text-[#717171] tabular-nums">({totalReviews})</span>
                         )}
-                    </div>
+                    </span>
+                ) : (
+                    <span className="shrink-0 text-[12px] font-medium text-[#717171]">Nuevo</span>
                 )}
             </div>
-            <p className={`${MAP_CARD_HOOK_CLASS} mb-1.5`}>{cardHook}</p>
-            <div className="mb-2 flex flex-wrap gap-1.5">
-                {cityLabel && (
-                    <span className={MAP_CARD_CHIP_CLASS}>
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        {cityLabel}
-                    </span>
-                )}
-                <span className={MAP_CARD_CHIP_CLASS}>
-                    <Clock className="h-3 w-3 shrink-0" />
-                    {availabilityInfo}
-                </span>
-                {isGuestFavorite && (
-                    <span className="inline-flex items-center rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand">
-                        Top valorado
-                    </span>
-                )}
-            </div>
-            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
+            {metaLine && <p className={MAP_CARD_META_LINE_CLASS}>{metaLine}</p>}
+            <div className="mt-2 flex items-baseline gap-1">
                 <span className={MAP_CARD_PRICE_CLASS}>{price}</span>
                 {priceWasConverted && priceSourceFormatted && (
-                    <span className="text-xs font-normal text-[#6a6a6a]">{priceSourceFormatted}</span>
+                    <span className="text-xs font-normal text-[#717171]">{priceSourceFormatted}</span>
                 )}
                 <span className={MAP_CARD_PRICE_SUFFIX_CLASS}>/ servicio</span>
             </div>
@@ -1370,7 +1101,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // ✅ Posición inicial: 0 (cerrado) - El drawer no se abre automáticamente
     const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0);
     const [mobileDrawerSnap, setMobileDrawerSnap] = useState<number | string | null>(
-        initialIsMobile ? MOBILE_MAP_SNAP_DEPLOYED : MOBILE_MAP_SNAP_PEEK,
+        MOBILE_MAP_SNAP_PEEK,
     );
 
     const isMobileDrawerDeployed =
@@ -1432,7 +1163,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             // ✅ En móvil solo refetch cuando el drawer está desplegado.
             //    Antes era `isMobileDevice || ...` (siempre true en móvil) → refetch
             //    durante el drag del drawer cuando el mapa se movía bajo el dedo.
-            (isMobileDevice ? isMobileDrawerDeployed : true),
+            (isMobileDevice ? isMobileDrawerDeployed : true) &&
+            // ✅ FALLBACK-ONLY: `allServicesCombined` (más abajo) PRIORIZA `mapServices`
+            //    (viewport del mapa) y DESCARTA lo que devuelve este hook cuando el mapa
+            //    tiene resultados. Sin este gate, cada cambio de filtro disparaba una
+            //    segunda llamada a /SearchService/map-experts EN PARALELO con la del mapa
+            //    cuya respuesta se tiraba → llamada duplicada. Ahora solo pedimos los
+            //    servicios por radio cuando el mapa no devuelve nada (fallback real).
+            mapServices.length === 0,
     });
    
     // ✅ Dispara `onServicesReady` una sola vez cuando la primera carga finalice.
@@ -1634,7 +1372,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         setIsDrawerOpen(true);
         setIsDrawerVisible(true);
         if (!drawerMountedRef.current && !wasManuallyClosed) {
-            setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
+            // Reposo = peek (solo tirador + meta). El usuario sube el drawer con el
+            // tirador o el botón flotante "Ver N opciones".
+            setMobileDrawerSnap(MOBILE_MAP_SNAP_PEEK);
             drawerMountedRef.current = true;
         }
     }, [isMobileDevice, wasManuallyClosed]);
@@ -2056,6 +1796,23 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             {/* Main Layout — lista | mapa (sola fila bajo la topbar; el mapa nace pegado
                 a la topbar y ocupa 100dvh-52px). La microcabecera editorial vive DENTRO
                 del scroll de la lista para no robar altura al mapa. */}
+            {/* Cabecera de resultados — todo el ancho, encima del split. Así lista y
+                mapa nacen a la misma altura (el mapa ya no sube hasta la topbar). */}
+            {!isMobileDevice && (
+                <div className="hidden lg:block">
+                    <MapDesktopPanelHeader
+                        hasLocation={!!(formData.latitude && formData.longitude)}
+                        expertCount={formData.latitude && formData.longitude ? services.length : undefined}
+                        locationLabel={
+                            formData.locationName ||
+                            searchAddress ||
+                            getCountryName(selectedCountry) ||
+                            undefined
+                        }
+                        rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
+                    />
+                </div>
+            )}
             <div className={MAP_DESKTOP_SPLIT_CLASS}>
                 {/* Cards con scroll */}
                 <div className={MAP_DESKTOP_LIST_CELL_CLASS}>
@@ -2064,27 +1821,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         className={MAP_DESKTOP_SCROLL_CLASS}
                         data-sidebar-scroll
                     >
-                        {!isMobileDevice && (
-                            <div className="px-5 xl:px-6">
-                                <MapDesktopPanelHeader
-                                    hasLocation={!!(formData.latitude && formData.longitude)}
-                                    expertCount={formData.latitude && formData.longitude ? services.length : undefined}
-                                    locationLabel={
-                                        formData.locationName ||
-                                        searchAddress ||
-                                        getCountryName(selectedCountry) ||
-                                        undefined
-                                    }
-                                    rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
-                                    sortKey="relevance"
-                                    priceActive={filters.priceRange[0] > 0 || filters.priceRange[1] < 100000}
-                                    ratingActive={filters.rating > 0}
-                                    onOpenSort={() => { /* TODO: sheet de orden */ }}
-                                    onOpenPrice={() => { /* TODO: sheet de precio */ }}
-                                    onOpenRating={() => { /* TODO: sheet de valoración */ }}
-                                />
-                            </div>
-                        )}
                         {formData.latitude && formData.longitude && (
                             <div className={MAP_DESKTOP_LIST_CLASS}>
                             {reorderedServices.length > 0 ? (
@@ -2415,13 +2151,6 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     null
                                 }
                                 rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
-                                sortKey="relevance"
-                                priceActive={filters.priceRange[0] > 0 || filters.priceRange[1] < 100000}
-                                ratingActive={filters.rating > 0}
-                                onOpenSort={() => { /* TODO: BottomSheet de orden */ }}
-                                onOpenPrice={() => { /* TODO: BottomSheet de precio */ }}
-                                onOpenRating={() => { /* TODO: BottomSheet de valoración */ }}
-                                onMinimize={collapseMobileDrawer}
                             />
                         }
                         className="lg:hidden"

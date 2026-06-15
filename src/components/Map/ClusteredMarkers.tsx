@@ -134,15 +134,49 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     const size = Math.min(80, Math.max(40, 36 + Math.log2(pointCount || 1) * 8));
     el.style.width = `${size}px`;
     el.style.height = `${size}px`;
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
     el.style.borderRadius = '9999px';
+    // Marca sólida (sin degradado) + borde blanco → limpio y profesional.
     el.style.background = 'hsl(var(--brand))';
     el.style.color = '#fff';
     el.style.border = '2px solid #fff';
     el.style.fontWeight = '700';
+    el.style.fontSize = size >= 56 ? '15px' : '13px';
     el.style.cursor = 'pointer';
-    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+    // Sombra neutra de contacto, sin glow de color.
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.20), 0 1px 2px rgba(0,0,0,0.12)';
     el.textContent = String(pointCount ?? 0);
     el.setAttribute('aria-label', `Cluster con ${pointCount} servicios`);
+  };
+
+  // Estilo visual del pill de precio en sus 3 estados. Único punto de verdad para
+  // que init (applyServiceStyle) y update (updateServiceVisualState) no diverjan.
+  // Estilo Airbnb: pin blanco con texto tinta; el seleccionado se rellena de marca.
+  //  · reposo    → blanco, texto tinta, hairline gris, sombra neutra
+  //  · hover     → blanco, borde gris más marcado, leve scale
+  //  · selected  → relleno de marca sólido, texto blanco
+  const applyPillVisual = (
+    inner: HTMLSpanElement,
+    isSelected: boolean,
+    isHovered: boolean
+  ) => {
+    inner.style.borderStyle = 'solid';
+    inner.style.borderWidth = isSelected ? '0' : '1px';
+    inner.style.borderColor = isSelected
+      ? 'transparent'
+      : isHovered
+        ? '#9aa0a6'
+        : '#d9d9d9';
+    inner.style.background = isSelected ? 'hsl(var(--brand))' : '#fff';
+    inner.style.color = isSelected ? '#fff' : '#1c1c1c';
+    inner.style.boxShadow = isSelected
+      ? '0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14)'
+      : isHovered
+        ? '0 3px 10px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.10)'
+        : '0 1px 2px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.08)';
+    inner.style.transform = isSelected ? 'scale(1.04)' : isHovered ? 'scale(1.06)' : 'scale(1)';
   };
 
   const applyServiceStyle = (
@@ -182,17 +216,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       inner.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease';
       el.appendChild(inner);
     }
-    inner.style.borderStyle = 'solid';
-    inner.style.borderWidth = isSelected ? '0' : isHovered ? '2px' : '1.5px';
-    inner.style.borderColor = isSelected ? 'transparent' : isHovered ? 'hsl(var(--brand))' : '#e5e5e5';
-    inner.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
-    inner.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
-    inner.style.boxShadow = isSelected
-      ? '0 4px 16px hsl(var(--brand) / 0.45)'
-      : isHovered
-        ? '0 4px 14px hsl(var(--brand) / 0.28)'
-        : '0 2px 6px rgba(0,0,0,0.25)';
-    inner.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
+    applyPillVisual(inner, isSelected, isHovered);
     inner.textContent = service.price > 0
       ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
       : 'Consultar';
@@ -208,17 +232,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
   ) => {
     const inner = el.firstElementChild as HTMLSpanElement | null;
     if (!inner || inner.dataset.role !== 'pill') return;
-    inner.style.borderStyle = 'solid';
-    inner.style.borderWidth = isSelected ? '0' : isHovered ? '2px' : '1.5px';
-    inner.style.borderColor = isSelected ? 'transparent' : isHovered ? 'hsl(var(--brand))' : '#e5e5e5';
-    inner.style.background = isSelected ? 'hsl(var(--brand))' : isHovered ? '#eef4fc' : '#fff';
-    inner.style.color = isSelected ? '#fff' : isHovered ? 'hsl(var(--brand))' : '#222';
-    inner.style.boxShadow = isSelected
-      ? '0 4px 16px hsl(var(--brand) / 0.45)'
-      : isHovered
-        ? '0 4px 14px hsl(var(--brand)/0.28)'
-        : '0 2px 6px rgba(0,0,0,0.25)';
-    inner.style.transform = isHovered ? 'scale(1.06)' : 'scale(1)';
+    applyPillVisual(inner, isSelected, isHovered);
   };
 
   /**
