@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search } from 'lucide-react';
+import { Loader2, Upload, X, Plane, Search, Check } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -27,6 +27,44 @@ import {
 } from '../ui/drawer';
 import { Button } from '../ui/button';
 import type { ProfileStep } from './profileSteps';
+
+function ProfileEditorStatusBadge({
+    complete,
+    pendingRequired,
+    onOpenSetup,
+}: {
+    complete: boolean;
+    pendingRequired: number;
+    onOpenSetup?: () => void;
+}) {
+    if (complete) {
+        return (
+            <div className="pf-profile-badge pf-profile-badge--ok" role="status">
+                <span className="pf-profile-badge__dot" aria-hidden />
+                <span className="pf-profile-badge__icon" aria-hidden>
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
+                </span>
+                <span className="pf-profile-badge__text">
+                    <span className="pf-profile-badge__eyebrow">Estado</span>
+                    Verificado y activo
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="pf-profile-badge pf-profile-badge--pending" role="status">
+            <span className="pf-profile-badge__text">
+                Faltan {pendingRequired} requisito{pendingRequired === 1 ? '' : 's'} obligatorio{pendingRequired === 1 ? '' : 's'}
+            </span>
+            {onOpenSetup ? (
+                <button type="button" className="pf-profile-badge__link" onClick={onOpenSetup}>
+                    Completar
+                </button>
+            ) : null}
+        </div>
+    );
+}
 import '../../styles/expert-profile-form.css';
 
 const MAPBOX_TOKEN =
@@ -117,7 +155,7 @@ export function ProfileEditForm({
     embedded = false,
     profile,
     onProfileUpdated,
-    profileSetup: _profileSetup,
+    profileSetup,
 }: ProfileEditFormProps) {
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -646,11 +684,73 @@ export function ProfileEditForm({
         </div>
     );
 
+    const scheduleBlock = (variant: 'hero' | 'card') => (
+        <section
+            id={variant === 'hero' ? 'pf-section-schedule-hero' : 'pf-section-schedule'}
+            className={`pf-schedule-block pf-schedule-block--${variant}`}
+            aria-label="Disponibilidad horaria"
+        >
+            <div className={`pf-availability-row${variant === 'hero' ? ' pf-availability-row--hero' : ' pf-availability-row--card'}`}>
+                <div className="pf-days" role="group" aria-label="Días de atención">
+                    {VALID_DAYS_OF_WEEK.map(day => {
+                        const isSelected = availability.daysOfWeek.includes(day);
+                        return (
+                            <button
+                                key={day}
+                                type="button"
+                                aria-pressed={isSelected}
+                                className={`pf-day${isSelected ? ' pf-day--on' : ''}${variant === 'hero' ? ' pf-day--hero' : ''}`}
+                                onClick={() => toggleDay(day)}
+                            >
+                                {DAY_LETTER[day] ?? day[0]}
+                            </button>
+                        );
+                    })}
+                </div>
+                {availability.daysOfWeek.length > 0 ? (
+                    <div className={`pf-time-row${variant === 'hero' ? ' pf-time-row--hero' : ''}`}>
+                        <input
+                            id={variant === 'hero' ? 'startTimeHero' : 'startTime'}
+                            type="time"
+                            className={`pf-input pf-input--time${variant === 'hero' ? ' pf-input--time-hero' : ''}`}
+                            value={availability.startTime}
+                            onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
+                            aria-label="Hora de inicio"
+                        />
+                        <span className="pf-time-sep">—</span>
+                        <input
+                            id={variant === 'hero' ? 'endTimeHero' : 'endTime'}
+                            type="time"
+                            className={`pf-input pf-input--time${variant === 'hero' ? ' pf-input--time-hero' : ''}`}
+                            value={availability.endTime}
+                            onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
+                            aria-label="Hora de fin"
+                        />
+                    </div>
+                ) : (
+                    <p className={`pf-schedule-empty${variant === 'hero' ? ' pf-schedule-empty--hero' : ''}`}>
+                        {variant === 'hero' ? 'Selecciona los días en los que atiendes' : 'Selecciona días para definir horario'}
+                    </p>
+                )}
+            </div>
+            {formErrors.availability && <p className="pf-error">{formErrors.availability}</p>}
+        </section>
+    );
+
     const editorCard = (
         <div className="pf-editor-stack">
             {embedded && (
                 <div className="pf-settings-card pf-settings-card--meta">
-                    <header className="pf-card-header pf-card-header--actions pf-editor-save-desktop">
+                    <header className="pf-card-header pf-card-header--actions pf-card-header--toolbar pf-editor-save-desktop">
+                        {profileSetup ? (
+                            <div className="pf-editor-bar-start">
+                                <ProfileEditorStatusBadge
+                                    complete={profileSetup.complete}
+                                    pendingRequired={profileSetup.pendingRequired}
+                                    onOpenSetup={profileSetup.onOpenSetup}
+                                />
+                            </div>
+                        ) : null}
                         <div className="pf-editor-bar-end">{saveButton}</div>
                     </header>
                 </div>
@@ -662,38 +762,74 @@ export function ProfileEditForm({
                         <div className="pf-form-grid">
                     <section id="pf-section-about" className="pf-section pf-section--about">
                         <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
-                            <span className="pf-about-composer__meta">{descLength}/60</span>
-                            <div className="pf-about-composer__photo">
-                                    <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
-                                        {profileImageUrl ? (
-                                            <img src={profileImageUrl} alt="" />
-                                        ) : (
-                                            <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
-                                        )}
-                                        <span className="pf-avatar-overlay" aria-hidden>
-                                            <Upload className="h-4 w-4" />
-                                        </span>
-                                    </button>
-                                    <div className="pf-about-composer__actions">
-                                        <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
-                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
-                                        </button>
-                                        {(previewUrl || profilePicture) && (
-                                            <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
-                                                Quitar
-                                            </button>
-                                        )}
+                            <div className="pf-about-composer__head">
+                                {embedded && profileSetup && (
+                                    <div className="pf-editor-status-mobile">
+                                        <ProfileEditorStatusBadge
+                                            complete={profileSetup.complete}
+                                            pendingRequired={profileSetup.pendingRequired}
+                                            onOpenSetup={profileSetup.onOpenSetup}
+                                        />
                                     </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/jpg"
-                                        onChange={handleImageSelect}
-                                        onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
-                                        className="hidden"
-                                    />
-                                    {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
+                                )}
+                                <div className="pf-about-composer__photo">
+                                    <div className="pf-about-composer__label pf-photo-composer__label">
+                                        Foto de perfil
+                                        <span id="photo-hint" className="pf-about-composer__label-hint">
+                                            Tu foto actual.
+                                        </span>
+                                    </div>
+                                    <div className="pf-photo-composer__body" aria-describedby="photo-hint">
+                                        <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
+                                            {profileImageUrl ? (
+                                                <img src={profileImageUrl} alt="" />
+                                            ) : (
+                                                <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
+                                            )}
+                                            <span className="pf-avatar-overlay" aria-hidden>
+                                                <Upload className="h-4 w-4" />
+                                            </span>
+                                        </button>
+                                        <div className="pf-about-composer__actions">
+                                            <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
+                                                {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                            </button>
+                                            {(previewUrl || profilePicture) && (
+                                                <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
+                                                    Quitar
+                                                </button>
+                                            )}
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/jpg"
+                                            onChange={handleImageSelect}
+                                            onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
+                                            className="hidden"
+                                        />
+                                        {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
+                                    </div>
                                 </div>
+                            </div>
+                            <div className="pf-schedule-composer">
+                                <div className="pf-about-composer__label pf-schedule-composer__label">
+                                    Disponibilidad horaria
+                                    <span id="schedule-hint" className="pf-about-composer__label-hint">
+                                        Opcional: indica los días y horas en los que puedes atender
+                                    </span>
+                                </div>
+                                <div className="pf-schedule-panel" aria-describedby="schedule-hint">
+                                    {scheduleBlock('hero')}
+                                </div>
+                            </div>
+                            <div className="pf-about-composer__copy">
+                                <label htmlFor="description" className="pf-about-composer__label">
+                                    Descripción profesional
+                                    <span id="description-hint" className="pf-about-composer__label-hint">
+                                        Quién eres y en qué te especializas (30–60 car.)
+                                    </span>
+                                </label>
                                 <textarea
                                     id="description"
                                     value={formData.description}
@@ -701,10 +837,13 @@ export function ProfileEditForm({
                                     rows={5}
                                     minLength={30}
                                     maxLength={60}
-                                    placeholder="Cuéntales a tus clientes quién eres, tu experiencia y en qué te especializas…"
+                                    placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
                                     className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
                                     required
-                            />
+                                    aria-describedby="description-hint"
+                                />
+                                <span className="pf-about-composer__meta">{descLength}/60</span>
+                            </div>
                         </div>
                         {formErrors.description && (
                             <div className="pf-about-errors">
@@ -719,109 +858,118 @@ export function ProfileEditForm({
                                 <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
                             ) : (
                                 <div className="pf-map-panel">
-                                    <div className="pf-map-search">
-                                        <div className="pf-map-search-bar">
-                                            <Search className="pf-map-search-icon" aria-hidden />
-                                            <input
-                                                id="work-address-search"
-                                                type="text"
-                                                value={addressQuery}
-                                                onChange={(e) => {
-                                                    addressSearchFromUserRef.current = true;
-                                                    setShowAddressResults(false);
-                                                    setAddressQuery(e.target.value);
-                                                }}
-                                                onFocus={() => {
-                                                    addressInputFocusedRef.current = true;
-                                                    if (
-                                                        addressSearchFromUserRef.current
-                                                        && addressResults.length > 0
-                                                        && addressQuery.trim() !== appliedAddressRef.current.trim()
-                                                    ) {
-                                                        setShowAddressResults(true);
-                                                    }
-                                                }}
-                                                onBlur={() => {
-                                                    addressInputFocusedRef.current = false;
-                                                    window.setTimeout(() => setShowAddressResults(false), 150);
-                                                }}
-                                                placeholder="Buscar dirección…"
-                                                autoComplete="off"
-                                                className="pf-map-search-input"
-                                            />
+                                    <div className="pf-zone-composer">
+                                        <div className="pf-about-composer__label pf-zone-composer__label">
+                                            Zona de trabajo
+                                            <span id="zone-hint" className="pf-about-composer__label-hint">
+                                                Busca tu dirección y ajusta el radio en el mapa.
+                                            </span>
                                         </div>
-                                        {showAddressResults && addressResults.length > 0 && (
-                                            <ul className="pf-map-search-results" role="listbox">
-                                                {addressResults.map((item) => (
-                                                    <li key={item.id} role="option">
-                                                        <button
-                                                            type="button"
-                                                            className="pf-map-search-result"
-                                                            onMouseDown={(e) => e.preventDefault()}
-                                                            onClick={() => handleAddressSelect(item)}
-                                                        >
-                                                            {item.address || item.place_name}
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-
-                                    <div className="pf-map-canvas" ref={mapCanvasRef}>
-                                        <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
-                                            {mapCanRender && (
-                                                <MapGL
-                                                    ref={mapRef}
-                                                    mapboxAccessToken={MAPBOX_TOKEN}
-                                                    initialViewState={{ longitude: initialLocation.lng, latitude: initialLocation.lat, zoom: 6 }}
-                                                    style={{ width: '100%', height: mapHeight }}
-                                                    mapStyle={cartoMapStyle as never}
-                                                    onClick={handleMapClick}
-                                                    onLoad={resizeMap}
-                                                    onResize={resizeMap}
-                                                    cursor="pointer"
-                                                    attributionControl={false}
-                                                    dragRotate={false}
-                                                    pitchWithRotate={false}
-                                                    touchPitch={false}
-                                                >
-                                                    {coverageGeoJSON && (
-                                                        <Source id="coverage" type="geojson" data={coverageGeoJSON}>
-                                                            <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
-                                                            <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
-                                                        </Source>
-                                                    )}
-                                                    <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
-                                                        <div className="pf-map-pin" />
-                                                    </Marker>
-                                                </MapGL>
+                                        <div className="pf-map-stage" aria-describedby="zone-hint">
+                                        <div className="pf-map-search">
+                                            <div className="pf-map-search-bar">
+                                                <Search className="pf-map-search-icon" aria-hidden />
+                                                <input
+                                                    id="work-address-search"
+                                                    type="text"
+                                                    value={addressQuery}
+                                                    onChange={(e) => {
+                                                        addressSearchFromUserRef.current = true;
+                                                        setShowAddressResults(false);
+                                                        setAddressQuery(e.target.value);
+                                                    }}
+                                                    onFocus={() => {
+                                                        addressInputFocusedRef.current = true;
+                                                        if (
+                                                            addressSearchFromUserRef.current
+                                                            && addressResults.length > 0
+                                                            && addressQuery.trim() !== appliedAddressRef.current.trim()
+                                                        ) {
+                                                            setShowAddressResults(true);
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        addressInputFocusedRef.current = false;
+                                                        window.setTimeout(() => setShowAddressResults(false), 150);
+                                                    }}
+                                                    placeholder="Buscar calle o dirección…"
+                                                    autoComplete="off"
+                                                    className="pf-map-search-input"
+                                                />
+                                            </div>
+                                            {showAddressResults && addressResults.length > 0 && (
+                                                <ul className="pf-map-search-results" role="listbox">
+                                                    {addressResults.map((item) => (
+                                                        <li key={item.id} role="option">
+                                                            <button
+                                                                type="button"
+                                                                className="pf-map-search-result"
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                onClick={() => handleAddressSelect(item)}
+                                                            >
+                                                                {item.address || item.place_name}
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             )}
                                         </div>
-
-                                        <div className="pf-map-canvas__ui">
-                                            <div className="pf-map-radius">
-                                                <input
-                                                    id="workRadius"
-                                                    type="range"
-                                                    min={0}
-                                                    max={MAX_WORK_RADIUS_KM}
-                                                    step={5}
-                                                    value={workRadiusKm}
-                                                    onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
-                                                    className="pf-range"
-                                                    aria-label="Radio de trabajo"
-                                                    style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
-                                                />
+                                        <div className="pf-map-canvas" ref={mapCanvasRef}>
+                                            <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
+                                                {mapCanRender && (
+                                                    <MapGL
+                                                        ref={mapRef}
+                                                        mapboxAccessToken={MAPBOX_TOKEN}
+                                                        initialViewState={{ longitude: initialLocation.lng, latitude: initialLocation.lat, zoom: 6 }}
+                                                        style={{ width: '100%', height: mapHeight }}
+                                                        mapStyle={cartoMapStyle as never}
+                                                        onClick={handleMapClick}
+                                                        onLoad={resizeMap}
+                                                        onResize={resizeMap}
+                                                        cursor="pointer"
+                                                        attributionControl={false}
+                                                        dragRotate={false}
+                                                        pitchWithRotate={false}
+                                                        touchPitch={false}
+                                                    >
+                                                        {coverageGeoJSON && (
+                                                            <Source id="coverage" type="geojson" data={coverageGeoJSON}>
+                                                                <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
+                                                                <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
+                                                            </Source>
+                                                        )}
+                                                        <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
+                                                            <div className="pf-map-pin" />
+                                                        </Marker>
+                                                    </MapGL>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="pf-map-radius">
+                                            <div className="pf-map-radius__head">
+                                                <span className="pf-map-radius-label">Radio de cobertura</span>
                                                 <span className="pf-map-radius-val">{workRadiusKm === 0 ? 'Solo taller' : `${workRadiusKm} km`}</span>
                                             </div>
+                                            <input
+                                                id="workRadius"
+                                                type="range"
+                                                min={0}
+                                                max={MAX_WORK_RADIUS_KM}
+                                                step={5}
+                                                value={workRadiusKm}
+                                                onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                                                className="pf-range"
+                                                aria-label="Radio de cobertura"
+                                                style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
+                                            />
+                                        </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                            {addressSearchError && <p className="pf-error">{addressSearchError}</p>}
+                            {addressSearchError && <p className="pf-error pf-zone-composer__error">{addressSearchError}</p>}
                             {(formErrors.latitude || formErrors.longitude) && (
-                                <p className="pf-error">{formErrors.latitude || formErrors.longitude}</p>
+                                <p className="pf-error pf-zone-composer__error">{formErrors.latitude || formErrors.longitude}</p>
                             )}
                         </div>
                     </section>
@@ -830,49 +978,13 @@ export function ProfileEditForm({
                 </div>
 
                 <div className="pf-settings-card pf-settings-card--schedule">
-                    <section id="pf-section-schedule" className="pf-schedule-block">
-                    <div className="pf-availability-row">
-                        <span className="pf-label">Disponibilidad <span className="pf-section-tag">Opcional</span></span>
-                        <div className="pf-days" role="group" aria-label="Días de atención">
-                            {VALID_DAYS_OF_WEEK.map(day => {
-                                const isSelected = availability.daysOfWeek.includes(day);
-                                return (
-                                    <button
-                                        key={day}
-                                        type="button"
-                                        aria-pressed={isSelected}
-                                        className={`pf-day${isSelected ? ' pf-day--on' : ''}`}
-                                        onClick={() => toggleDay(day)}
-                                    >
-                                        {DAY_LETTER[day] ?? day[0]}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {availability.daysOfWeek.length > 0 ? (
-                            <div className="pf-time-row">
-                                <input
-                                    id="startTime"
-                                    type="time"
-                                    className="pf-input pf-input--time"
-                                    value={availability.startTime}
-                                    onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                                />
-                                <span className="pf-time-sep">—</span>
-                                <input
-                                    id="endTime"
-                                    type="time"
-                                    className="pf-input pf-input--time"
-                                    value={availability.endTime}
-                                    onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                                />
-                            </div>
-                        ) : (
-                            <p className="pf-schedule-empty">Selecciona días para definir horario</p>
-                        )}
+                    <div className="pf-about-composer__label pf-schedule-composer__label pf-schedule-composer__label--card">
+                        Disponibilidad horaria
+                        <span className="pf-about-composer__label-hint">
+                            Opcional: indica los días y horas en los que puedes atender
+                        </span>
                     </div>
-                    {formErrors.availability && <p className="pf-error">{formErrors.availability}</p>}
-                    </section>
+                    {scheduleBlock('card')}
                 </div>
 
                 {formErrors.general && (

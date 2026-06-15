@@ -131,18 +131,6 @@ export function HiresTab({
         [hires],
     );
 
-    const completedCount = useMemo(
-        () => hires.filter((h) => isCompletedStatus(h.statusInfo?.statusValue || h.status)).length,
-        [hires],
-    );
-
-    const totalRevenue = useMemo(
-        () => hires
-            .filter((h) => isCompletedStatus(h.statusInfo?.statusValue || h.status))
-            .reduce((sum, h) => sum + (h.amount || 0), 0),
-        [hires],
-    );
-
     const pool = hireTab === 'active' ? activeHires : inactiveHires;
 
     const filteredHires = useMemo(() => pool.filter((hire) => {
@@ -172,45 +160,7 @@ export function HiresTab({
 
     return (
         <div className="expert-hires">
-            <header className="expert-hires-toolbar">
-                <div className="expert-hires-toolbar-text">
-                    <p className="expert-hires-toolbar-title">
-                        {hires.length === 0
-                            ? 'Seguimiento de trabajos con clientes'
-                            : `${hires.length} contratación${hires.length === 1 ? '' : 'es'}`}
-                    </p>
-                    {totalUnread > 0 && (
-                        <p className="expert-hires-toolbar-note">
-                            {totalUnread} mensaje{totalUnread === 1 ? '' : 's'} sin leer en esta vista
-                        </p>
-                    )}
-                </div>
-            </header>
-
-            {!isLoadingHires && !hiresError && hires.length > 0 && (
-                <div className="expert-hires-stats expert-hires-stats--inline">
-                    <div className="expert-hires-stat">
-                        <span className="expert-hires-stat-value expert-hires-stat-value--active">{activeHires.length}</span>
-                        <span className="expert-hires-stat-label">Activas</span>
-                    </div>
-                    <div className="expert-hires-stat">
-                        <span className="expert-hires-stat-value">{inactiveHires.length}</span>
-                        <span className="expert-hires-stat-label">Inactivas</span>
-                    </div>
-                    <div className="expert-hires-stat">
-                        <span className="expert-hires-stat-value expert-hires-stat-value--done">{completedCount}</span>
-                        <span className="expert-hires-stat-label">Completadas</span>
-                    </div>
-                    <div className="expert-hires-stat">
-                        <span className="expert-hires-stat-value expert-hires-stat-value--revenue">
-                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(totalRevenue)}
-                        </span>
-                        <span className="expert-hires-stat-label">Facturado</span>
-                    </div>
-                </div>
-            )}
-
-            <div className="expert-hires-controls">
+            <div className="expert-hires-bar">
                 <div className="expert-hires-segment" role="tablist" aria-label="Tipo de contrataciones">
                     <button
                         type="button"
@@ -220,7 +170,6 @@ export function HiresTab({
                         onClick={() => switchTab('active')}
                     >
                         Activas
-                        <span className="expert-hires-segment-count">{activeHires.length}</span>
                     </button>
                     <button
                         type="button"
@@ -230,9 +179,16 @@ export function HiresTab({
                         onClick={() => switchTab('inactive')}
                     >
                         Inactivas
-                        <span className="expert-hires-segment-count">{inactiveHires.length}</span>
                     </button>
                 </div>
+
+                {totalUnread > 0 && (
+                    <p className="expert-hires-bar-note">
+                        {totalUnread} sin leer
+                    </p>
+                )}
+
+                <div className="expert-hires-bar-spacer" aria-hidden />
 
                 <button
                     type="button"
@@ -336,6 +292,14 @@ export function HiresTab({
                     </button>
                 </div>
             ) : (
+                <>
+                {!isLoadingHires && !hiresError && filteredHires.length > 0 && (
+                    <div className="expert-hires-list-head" aria-hidden>
+                        <span className="expert-hires-list-head-label">Cliente</span>
+                        <span className="expert-hires-list-head-label">Contratación</span>
+                        <span className="expert-hires-list-head-label expert-hires-list-head-label--end">Importe</span>
+                    </div>
+                )}
                 <ul className="expert-hires-list" aria-label={`Contrataciones ${hireTab === 'active' ? 'activas' : 'inactivas'}`}>
                     {filteredHires.map((hire) => {
                         const statusValue = hire.statusInfo?.statusValue || hire.status;
@@ -371,9 +335,6 @@ export function HiresTab({
                                         <span className="expert-hire-meta-sep" aria-hidden>·</span>
                                         {formatHireDate(hire.createdAt)}
                                     </p>
-                                    {hire.searchDescription && (
-                                        <p className="expert-hire-desc">{hire.searchDescription}</p>
-                                    )}
                                     {unread > 0 && (
                                         <p className="expert-hire-unread">
                                             {unread} mensaje{unread === 1 ? '' : 's'} sin leer
@@ -398,6 +359,7 @@ export function HiresTab({
                         );
                     })}
                 </ul>
+                </>
             )}
 
             {pagination && onPageChange && onPageSizeChange && filteredHires.length > 0 && (

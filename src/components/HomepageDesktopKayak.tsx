@@ -97,11 +97,19 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
           style={{ paddingLeft: textBlockLeft, paddingRight: '1.25rem' }}
         >
           <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
-            <p className="hp-eyebrow mb-2">Inspección antes de comprar</p>
+            <p className="hp-eyebrow mb-2 inline-flex items-center">
+              <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#F59E0B]" aria-hidden="true"></span>
+              Inspección antes de comprar
+            </p>
 
             <h1 className="hp-hero-title-lg">
               Antes de comprar,
-              <span className="block text-brand">que lo revise un experto</span>
+              <span className="block text-brand">
+                que lo revise{' '}
+                <span className="underline decoration-[#F59E0B] decoration-[3px] underline-offset-[6px]">
+                  un experto
+                </span>
+              </span>
             </h1>
 
             <p className="hp-hero-body mt-3 max-w-[26rem] lg:text-base">

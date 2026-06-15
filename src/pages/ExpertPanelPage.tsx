@@ -53,7 +53,6 @@ import { useVacationMode } from '../hooks/useVacationMode';
 import { usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
 import { ProfileSetupWizard, useProfileSetupState } from '../components/expertPanel/ProfileSetupWizard';
 import { isFiscalStepComplete } from '../components/expertPanel/profileSteps';
-import { ExpertPanelStatusPill } from '../components/expertPanel/ExpertPanelStatusPill';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
@@ -1290,14 +1289,6 @@ export function ExpertPanelPage() {
         messages: 'Mensajes',
     };
 
-    const tabSubtitles: Record<ExpertTab, string> = {
-        setup: 'Requisitos para activar tu perfil público',
-        profile: 'Foto, descripción y disponibilidad',
-        services: 'Publica y edita los servicios que ofreces',
-        hires: 'Seguimiento de trabajos y contrataciones',
-        messages: 'Conversaciones con tus clientes',
-    };
-
     const openStripeDashboard = async () => {
         const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
             && stripeStatus?.onboardingCompleted === true;
@@ -1346,6 +1337,34 @@ export function ExpertPanelPage() {
                     <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(false)}>
                         <X className="w-4 h-4" />
                     </Button>
+                </div>
+
+                <div className="expert-sidebar-actions" aria-label="Acciones del panel">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative expert-sidebar-notify"
+                        onClick={() => {
+                            const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
+                            if (open) open();
+                        }}
+                        aria-label="Notificaciones"
+                    >
+                        <Bell className="w-4 h-4" />
+                        {notificationUnreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                                {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                            </span>
+                        )}
+                    </Button>
+                    <button
+                        type="button"
+                        className="expert-sidebar-back"
+                        onClick={() => navigate('/')}
+                    >
+                        <ArrowLeft className="w-4 h-4" aria-hidden />
+                        Volver
+                    </button>
                 </div>
 
                 <nav className="expert-sidebar-nav" aria-label="Panel de experto">
@@ -1421,50 +1440,39 @@ export function ExpertPanelPage() {
 
             <div className="expert-main">
                 <header className="expert-topbar">
-                    <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+                    <Button variant="ghost" size="icon" className="lg:hidden expert-topbar-menu" onClick={() => setSidebarOpen(true)}>
                         <Menu className="w-5 h-5" />
                     </Button>
                     <div className="expert-topbar-heading">
                         <h1 className="expert-topbar-title">{tabTitles[activeTab]}</h1>
-                        <p className="expert-topbar-subtitle">{tabSubtitles[activeTab]}</p>
                     </div>
                     <div className="expert-topbar-spacer" />
-                    <ExpertPanelStatusPill
-                        stripeStatus={stripeStatus?.stripeStatus}
-                        onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean })?.onboardingCompleted ?? profile?.onboardingCompleted}
-                        isOnVacation={profile?.isOnVacation}
-                        country={profile?.country}
-                        latitude={(profile as { latitude?: string | number })?.latitude}
-                        longitude={(profile as { longitude?: string | number })?.longitude}
-                        servicesCount={services?.length ?? 0}
-                        hasPhoto={profile ? Boolean(String((profile as { profilePictureUrl?: string; ProfilePictureUrl?: string })?.profilePictureUrl ?? (profile as { ProfilePictureUrl?: string })?.ProfilePictureUrl ?? '').trim()) : undefined}
-                        hasDescription={profile ? String((profile as { description?: string; Description?: string })?.description ?? (profile as { Description?: string })?.Description ?? '').trim().length >= 10 : undefined}
-                        phoneSmsCapable={phoneStatusQuery.data ? Boolean(phoneStatusQuery.data.smsCapable) : undefined}
-                    />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative"
-                        onClick={() => {
-                            const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
-                            if (open) open();
-                        }}
-                        aria-label="Notificaciones"
-                    >
-                        <Bell className="w-5 h-5" />
-                        {notificationUnreadCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
-                                {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
-                            </span>
-                        )}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="hidden sm:flex">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Volver
-                    </Button>
+                    <div className="expert-topbar-actions">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative expert-topbar-notify"
+                            onClick={() => {
+                                const open = (window as Window & { openNotificationCenter?: () => void }).openNotificationCenter;
+                                if (open) open();
+                            }}
+                            aria-label="Notificaciones"
+                        >
+                            <Bell className="w-5 h-5" />
+                            {notificationUnreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                                    {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                                </span>
+                            )}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="hidden sm:flex expert-topbar-back">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Volver
+                        </Button>
+                    </div>
                 </header>
 
-                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}`}>
+                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'hires' ? ' expert-workspace--hires' : ''}`}>
                     {activeTab === 'setup' && profile ? (
                         <ProfileSetupWizard
                             profile={profile}
