@@ -71,41 +71,50 @@ export function useServiceTypes() {
             try {
                 setIsLoading(true);
                 setError(null);
-                
+
                 const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.serviceTypes.list}`;
-                
-                // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
-                // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
-                
-                // ✅ Usar capacitorFetch que automáticamente usa CapacitorHttp en Capacitor (bypass CORS)
-                const { capacitorFetch } = await import('../utils/capacitorFetch');
-                
-                // ✅ Crear promise y guardarlo en cache para evitar llamadas duplicadas
-                const fetchPromise = capacitorFetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        // ✅ NO incluir Authorization header para endpoints públicos
-                    },
-                    signal: controller.signal,
-                }).then(async res => {
-                    clearTimeout(timeoutId);
-                    if (!res.ok) {
-                        // Verificar si la respuesta es HTML en lugar de JSON
-                        const contentType = res.headers.get('content-type');
-                        if (contentType && !contentType.includes('application/json')) {
-                            throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+
+                // ✅ CRÍTICO: registrar el promise en vuelo de forma SÍNCRONA, antes de
+                // cualquier `await`. Antes el `await import(capacitorFetch)` ocurría ANTES
+                // de asignar globalServiceTypesCache.promise, dejando una ventana donde el
+                // doble montaje de StrictMode (o dos consumidores concurrentes) colaba un
+                // 2º fetch a /ServiceType/public. Envolviendo todo en un IIFE y asignando
+                // el promise inmediatamente, la 2ª llamada reutiliza la petición en vuelo.
+                const fetchPromise: Promise<ServiceTypesResponse> = (async () => {
+                    // Endpoint público: NO enviar token. Timeout de 15s para no colgar.
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    try {
+                        // capacitorFetch usa CapacitorHttp en nativo (bypass CORS).
+                        const { capacitorFetch } = await import('../utils/capacitorFetch');
+                        const res = await capacitorFetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            signal: controller.signal,
+                        });
+                        clearTimeout(timeoutId);
+                        if (!res.ok) {
+                            const contentType = res.headers.get('content-type');
+                            if (contentType && !contentType.includes('application/json')) {
+                                throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                            }
+                            throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
                         }
-                        throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
+                        return res.json();
+                    } catch (e: any) {
+                        clearTimeout(timeoutId);
+                        if (e?.name === 'AbortError') {
+                            throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                        }
+                        throw e;
                     }
-                    return res.json();
-                });
-                
+                })();
+
                 globalServiceTypesCache.promise = fetchPromise;
-                
+
                 try {
                     const result: ServiceTypesResponse = await fetchPromise;
                     
@@ -130,12 +139,9 @@ export function useServiceTypes() {
                         throw new Error(result.message || 'Failed to fetch service types');
                     }
                 } catch (fetchError: any) {
-                    // ✅ Limpiar promise en caso de error
+                    // ✅ Limpiar promise en caso de error (el timeout/abort ya se maneja
+                    // dentro del IIFE). Re-lanzar para caer al fallback de abajo.
                     globalServiceTypesCache.promise = null;
-                    clearTimeout(timeoutId);
-                    if (fetchError.name === 'AbortError') {
-                        throw new Error('Request timeout: The server took too long to respond. Please try again.');
-                    }
                     throw fetchError;
                 }
             } catch (err) {

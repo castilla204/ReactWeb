@@ -57,7 +57,12 @@ export function useServiceLoader(
   // ✅ Monotonic request counter para descartar respuestas obsoletas que llegan tarde
   //    aunque la cancelación no fuese efectiva (más robusto que comparar timestamps).
   const requestIdRef = useRef<number>(0);
-  
+  // ⚡ Anti-flicker: clave del último conjunto de IDs servido. Si un refetch devuelve los
+  //    MISMOS servicios (las animaciones de apertura disparan 2-3 fetches idénticos), NO
+  //    reseteamos el estado → la referencia del array se mantiene → points/supercluster no se
+  //    recomputan y los markers no se desmontan/recrean (parpadeo).
+  const prevServicesKeyRef = useRef<string>('');
+
   const CACHE_TTL = options?.cacheTTL || 5 * 60 * 1000; // 5 minutos por defecto
   const MAX_CACHE_SIZE = 20; // Máximo de entradas en caché
   const enabled = options?.enabled !== false;
@@ -373,7 +378,13 @@ export function useServiceLoader(
         // ✅ Actualizar SOLO si esta sigue siendo la petición más reciente.
         //    Doble cinturón: signal.aborted + requestId monotónico.
         if (!signal.aborted && myRequestId === requestIdRef.current) {
-          setServices(uniqueServices);
+          // Solo actualizar si el CONJUNTO de IDs cambió de verdad → evita el churn de markers
+          // cuando varios refetch (apertura/settle de cámara) devuelven los mismos servicios.
+          const newKey = uniqueServices.map(s => s.id).sort((a, b) => a - b).join(',');
+          if (newKey !== prevServicesKeyRef.current) {
+            prevServicesKeyRef.current = newKey;
+            setServices(uniqueServices);
+          }
         }
 
       } catch (err: any) {

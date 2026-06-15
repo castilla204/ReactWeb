@@ -140,12 +140,12 @@ export function useServices({
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
         enabled: expertProfileId ? !!expertProfileId : ((categoryId ?? 0) > 0 && (serviceTypeId ?? 0) > 0 && !!latitude && !!longitude && (locationRange ?? 0) > 0),
-        staleTime: 30000, // ✅ Cache por 30 segundos para evitar llamadas repetidas
-        gcTime: 60000, // ✅ Mantener en caché por 60 segundos
-        refetchOnWindowFocus: true, // 🛡️ R31: refetch al volver al tab (servicios pueden cambiar)
-        refetchOnMount: 'always', // 🛡️ R31: refetch al montar si stale
-        refetchInterval: 60000, // 🛡️ R31: auto-refresh background cada 60s para no servir datos stale indefinidos
-        refetchIntervalInBackground: false, // pausar cuando el tab no está activo (ahorra recursos)
+        staleTime: 60000, // ✅ Cache por 60s: evita refetch en focus/montaje si los datos son recientes
+        gcTime: 120000, // ✅ Mantener en caché por 2 min
+        refetchOnWindowFocus: true, // 🛡️ R31: refetch al volver al tab, PERO solo si stale (>staleTime)
+        refetchOnMount: true, // respeta staleTime al montar (antes 'always' forzaba refetch siempre)
+        // refetchInterval eliminado: el polling de 60s + focus + mount-always disparaba
+        // 5-6 peticiones donde 1-2 bastan. Las mutaciones ya invalidan ['services'].
         queryFn: async () => {
             const token = getAuthToken();
             

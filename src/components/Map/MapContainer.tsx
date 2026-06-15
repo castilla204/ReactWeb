@@ -90,6 +90,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const lastBoundsKeyRef = useRef<string>('');
   const lastServicesKeyRef = useRef<string>('');
   const lastInitialCenterRef = useRef(initialCenter);
+  // ⚡ Carga: el debounce de viewport agrupa paneos/zooms rápidos del usuario. Pero en la
+  //    PRIMERA carga (y al cambiar de categoría/tipo) no hay gesto que agrupar, así que esos
+  //    500 ms son tiempo muerto antes de ver los primeros markers. Disparamos el primer fetch
+  //    de inmediato y dejamos el debounce sólo para los movimientos posteriores.
+  const isInitialFetchRef = useRef(true);
+  // Coalesce: evita encolar múltiples easeTo de pitch durante zoom/pan continuo.
+  const pitchEaseScheduledRef = useRef(false);
   const loaderEnabled = isMapLoaded && currentViewport !== null;
   const loaderOptions = useMemo(
     () => ({
@@ -106,6 +113,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     currentViewport,
     loaderOptions
   );
+
+  // Al cambiar categoría/tipo, el siguiente fetch vuelve a ser "inicial" (sin debounce).
+  useEffect(() => {
+    isInitialFetchRef.current = true;
+  }, [categoryId, serviceTypeId]);
 
   // Notificar cambios en el número de servicios
   useEffect(() => {
@@ -158,8 +170,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const getBoundsKey = useCallback((bounds: maplibregl.LngLatBounds, zoom: number): string => {
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
-    // Reducimos sensibilidad para evitar refetch por variaciones minimas de camara
-    return `${sw.lat.toFixed(4)},${sw.lng.toFixed(4)},${ne.lat.toFixed(4)},${ne.lng.toFixed(4)},${zoom.toFixed(2)}`;
+    // Reducimos sensibilidad para evitar refetch por variaciones minimas de camara.
+    // toFixed(3) (~110 m) en vez de (4) (~11 m): el settle de la cámara de apertura (proyección
+    // globe + easeTo de pitch) movía el 4º decimal y disparaba 2-3 map-experts redundantes.
+    return `${sw.lat.toFixed(3)},${sw.lng.toFixed(3)},${ne.lat.toFixed(3)},${ne.lng.toFixed(3)},${zoom.toFixed(2)}`;
   }, []);
 
   /**
@@ -238,6 +252,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         clearTimeout(debounceTimerRef.current);
       }
 
+      // Primer fetch (carga inicial / cambio de categoría) → sin retardo. Resto → debounce.
+      const delay = isInitialFetchRef.current ? 0 : debounceMs;
+      isInitialFetchRef.current = false;
+
       debounceTimerRef.current = setTimeout(() => {
         if (isDraggingRef.current) return;
         // ⚡ Transición: el fetch + render de la nueva lista de servicios es
@@ -251,7 +269,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             zoom,
           });
         });
-      }, debounceMs);
+      }, delay);
     },
     [validateBounds, getBoundsKey, debounceMs]
   );
@@ -274,7 +292,30 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const targetPitch = getSearchMapGlobePitch(map.getZoom(), isMobile);
       if (Math.abs(map.getPitch() - targetPitch) < 0.2) return;
       if (animate) {
-        map.easeTo({ pitch: targetPitch, bearing: 0, duration: 320 });
+        // ⚠️ Re-entrancy-fix: NUNCA llamar easeTo() síncronamente aquí. Esta función se
+        //    invoca desde onIdle (handlers de 'moveend'/'zoomend'), y maplibre dispara esos
+        //    eventos DENTRO de su propio _render(). Arrancar otra animación de cámara en ese
+        //    punto re-entra en el render loop → "Attempting to run(), but is already running"
+        //    y "this._onEaseFrame is not a function", que se repiten cada frame y CONGELAN el
+        //    mapa (no deja mover). Diferimos el easeTo a un macrotask fuera del despacho del
+        //    evento; la animación de pitch resultante es idéntica.
+        if (pitchEaseScheduledRef.current) return; // ya hay uno encolado → no duplicar
+        pitchEaseScheduledRef.current = true;
+        setTimeout(() => {
+          pitchEaseScheduledRef.current = false;
+          try {
+            // No arrancar el pitch mientras el usuario interactúa o hay otra animación en
+            // curso: evita easeTo que compiten y la re-entrancia. Cuando el mapa quede quieto,
+            // el siguiente 'moveend' (ya sin movimiento) ajustará el pitch.
+            if (map.isMoving() || map.isZooming() || map.isEasing()) return;
+            const t = getSearchMapGlobePitch(map.getZoom(), isMobile);
+            if (Math.abs(map.getPitch() - t) >= 0.2) {
+              map.easeTo({ pitch: t, bearing: 0, duration: 320 });
+            }
+          } catch {
+            // El mapa pudo desmontarse entre el evento y este tick; ignorar.
+          }
+        }, 0);
       } else {
         map.setPitch(targetPitch);
       }
@@ -298,7 +339,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       isMobile && typeof window !== 'undefined'
         ? {
             top: 56,
-            bottom: Math.round(window.innerHeight * 0.60),
+            // ⚡ 0.42 (antes 0.60): el 60% subía el centro tanto que los markers se amontonaban
+            //    en la franja superior (la queja "se ven arriba en los bordes") y obligaba a
+            //    cargar bastantes más tiles. 0.42 deja España por encima del drawer pero reparte
+            //    los markers por el área visible y baja el nº de tiles en móvil.
+            bottom: Math.round(window.innerHeight * 0.42),
             left: 20,
             right: 20,
           }
@@ -429,8 +474,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       }}
     >
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-      {/* Renderizar marcadores solo cuando el mapa esté cargado */}
-      {isMapLoaded && services.length > 0 && (
+      {/* Renderizar marcadores cuando el mapa esté cargado. Mantenemos la capa montada
+          también mientras `isRefreshing` aunque `services` quede vacío un instante: así un
+          refetch (cambio de categoría/viewport) no desmonta TODO el árbol de markers
+          —destruyendo entriesRef— para recrearlo entero al volver los datos (flicker). */}
+      {isMapLoaded && (services.length > 0 || isRefreshing) && (
         <ClusteredMarkers
           map={mapInstance}
           services={services}

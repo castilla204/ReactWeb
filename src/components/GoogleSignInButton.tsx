@@ -25,6 +25,8 @@ const GoogleIcon = ({ compact }: { compact?: boolean }) => (
 
 interface GoogleSignInButtonProps {
     className?: string;
+    /** Estilos del botón visible (no del wrapper). */
+    shellClassName?: string;
     variant?: 'default' | 'compact';
     onSuccess?: () => void;
     /** Round 19: texto opcional del botón. Default "Iniciar Sesión" (legacy). Usar "Google" en grids 2-col. */
@@ -33,13 +35,16 @@ interface GoogleSignInButtonProps {
     active?: boolean;
 }
 
+const OAUTH_RADIUS = 'rounded-xl';
+
 const compactClasses =
-    'h-10 w-full text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 transition-colors';
+    'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
 const defaultClasses =
-    'w-full h-11 text-sm font-medium text-[#222222] bg-white border border-[#dddddd] rounded-lg hover:bg-[#fafafa] hover:border-[#b0b0b0] active:bg-[#f5f5f5] flex items-center justify-center gap-2 transition-colors';
+    'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-sm font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
 
 export const GoogleSignInButton = ({
     className = '',
+    shellClassName = '',
     variant = 'default',
     onSuccess,
     label = 'Iniciar Sesión',
@@ -53,7 +58,11 @@ export const GoogleSignInButton = ({
     const buttonRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const isNative = Capacitor.isNativePlatform();
-    const shellClasses = variant === 'compact' ? compactClasses : defaultClasses;
+    const shellClasses = cn(
+        variant === 'compact' ? compactClasses : defaultClasses,
+        OAUTH_RADIUS,
+        shellClassName,
+    );
 
     const mountButton = useCallback(async () => {
         if (isNative || !active || !buttonRef.current || !wrapperRef.current) return;
@@ -69,8 +78,9 @@ export const GoogleSignInButton = ({
         renderGoogleButton(buttonRef.current, {
             type: 'standard',
             theme: 'outline',
-            size: variant === 'compact' ? 'medium' : 'large',
-            text: 'signin_with',
+            size: variant === 'compact' ? 'large' : 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
             width: width > 0 ? width : undefined,
         });
 
@@ -208,7 +218,8 @@ export const GoogleSignInButton = ({
                     onClick={handleNativeSignIn}
                     disabled={isAuthenticating}
                     className={cn(
-                        'absolute inset-0 z-[2] rounded-lg',
+                        'absolute inset-0 z-[2]',
+                        OAUTH_RADIUS,
                         isAuthenticating && 'cursor-wait opacity-75',
                     )}
                     aria-label={label}
@@ -217,18 +228,14 @@ export const GoogleSignInButton = ({
                 <>
                     <div
                         ref={buttonRef}
-                        className={cn(
-                            'absolute inset-0 z-[2] overflow-hidden opacity-[0.011]',
-                            '[&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full',
-                            !isReady && 'pointer-events-none',
-                        )}
+                        className={cn('absolute inset-0 z-[2] overflow-hidden opacity-[0.011]', OAUTH_RADIUS, '[&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full', !isReady && 'pointer-events-none')}
                         aria-hidden={isReady}
                     />
                     {!isReady && active && (
                         <button
                             type="button"
                             onClick={handleWebFallbackClick}
-                            className="absolute inset-0 z-[1] rounded-lg"
+                            className={cn('absolute inset-0 z-[1]', OAUTH_RADIUS)}
                             aria-label={`${label} — cargando`}
                         />
                     )}
@@ -236,7 +243,7 @@ export const GoogleSignInButton = ({
             )}
 
             {isAuthenticating && (
-                <div className="absolute inset-0 z-[3] cursor-wait rounded-lg bg-white/80" aria-hidden />
+                <div className={cn('absolute inset-0 z-[3] cursor-wait bg-white/80', OAUTH_RADIUS)} aria-hidden />
             )}
         </div>
     );

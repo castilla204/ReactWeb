@@ -1930,6 +1930,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             }, 100);
         }
     }, [isMobileDevice]);
+
+    // ⚡ Carga/render: props del mapa ESTABLES para no derrotar el React.memo de <MapContainer>.
+    //    Antes initialCenter/style/onServiceSelect se creaban inline en CADA render → MapContainer
+    //    re-renderizaba y re-disparaba sus effects de cámara sin necesidad. (initialZoom es un
+    //    número → compara por valor, no hace falta memoizarlo.)
+    const mapStyleFull = useMemo(() => ({ width: '100%', height: '100%' }), []);
+    const handleMapServiceSelect = useCallback(
+        (service: Service) => { handleServiceSelect(service.id); },
+        [handleServiceSelect],
+    );
+    const desktopInitialCenter = useMemo(() => {
+        if (selectedLocation) return selectedLocation;
+        const c = getCountryCoordinates(selectedCountry);
+        return c ? { lat: c.lat, lng: c.lng } : { lat: 40.4168, lng: -3.7038 };
+    }, [selectedLocation, selectedCountry]);
+    const mobileInitialCenter = useMemo(
+        () => selectedLocation || { lat: 42.5, lng: -3.7 },
+        [selectedLocation],
+    );
+
     const handleContinue = () => {
         if (!selectedService) {
             setError('Por favor, selecciona un servicio antes de continuar.');
@@ -2118,19 +2138,14 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                             <MapContainer
                                 categoryId={selectedCategory}
                                 serviceTypeId={serviceTypeId}
-                                initialCenter={selectedLocation || (() => {
-                                    const countryCoords = getCountryCoordinates(selectedCountry);
-                                    return countryCoords ? { lat: countryCoords.lat, lng: countryCoords.lng } : { lat: 40.4168, lng: -3.7038 };
-                                })()}
+                                initialCenter={desktopInitialCenter}
                                 initialZoom={getMapOverviewZoom(selectedCountry)}
                                 recenterMode="pan-only"
-                                onServiceSelect={(service: Service) => {
-                                    handleServiceSelect(service.id);
-                                }}
+                                onServiceSelect={handleMapServiceSelect}
                                 selectedServiceId={selectedService}
                                 hoveredServiceId={hoveredServiceId}
                                 isMobile={false}
-                                style={{ width: '100%', height: '100%' }}
+                                style={mapStyleFull}
                                 onMapLoad={onMapReady}
                                 onServicesCountChange={setMapServicesCount}
                                 onServicesChange={setMapServices}
@@ -2211,28 +2226,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <MapContainer
                                         categoryId={selectedCategory}
                                         serviceTypeId={serviceTypeId}
-                                        initialCenter={selectedLocation || (() => {
-                                            const countryCoords = getCountryCoordinates(selectedCountry);
-                                            return countryCoords ? { lat: 42.5, lng: -3.7 } : { lat: 42.5, lng: -3.7 };
-                                        })()}
+                                        initialCenter={mobileInitialCenter}
                                         initialZoom={(() => {
                                             const baseZoom = selectedLocation
                                                 ? getZoomLevel(parseInt(formData.locationRange || '25', 10))
                                                 : getMapOverviewZoom(selectedCountry);
-                                            // Un nivel menos de alejamiento que antes: mantiene contexto regional
-                                            // pero deja legibles las etiquetas de ciudades (Carto Voyager).
-                                            return Math.max(4, baseZoom - 1);
+                                            // ⚡ Carga móvil: quitada la penalización "-1". Abrir un nivel más
+                                            //    alejado multiplica x4 el nº de tiles (cada zoom = 2× por eje)
+                                            //    y en Fast 4G eso es la mayor parte de la lentitud en móvil.
+                                            return Math.max(4, baseZoom);
                                         })()}
                                         recenterMode="pan-only"
-                                        onServiceSelect={(service: Service) => {
-                                            // ✅ Convertir Service a formato esperado por handleServiceSelect
-                                            // El servicio ya está en mapServices, así que estará disponible en allServicesCombined
-                                            const serviceId = service.id;
-                                            handleServiceSelect(serviceId);
-                                        }}
+                                        onServiceSelect={handleMapServiceSelect}
                                         selectedServiceId={selectedService}
                                         isMobile={true}
-                                        style={{ width: '100%', height: '100%' }}
+                                        style={mapStyleFull}
                                         onMapLoad={onMapReady}
                                         onServicesCountChange={setMapServicesCount}
                                         onServicesChange={setMapServices}
