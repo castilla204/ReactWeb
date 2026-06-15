@@ -287,7 +287,9 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           role="dialog"
           aria-modal="false"
           className={cn(
-            "fixed inset-x-0 top-0 z-[9998] flex flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+            "fixed inset-x-0 top-0 z-[9998] flex flex-col overflow-hidden rounded-t-[28px] bg-white",
+            "shadow-[0_-1px_0_rgba(15,23,42,0.10),0_-10px_28px_rgba(15,23,42,0.12),0_-28px_72px_rgba(15,23,42,0.20)]",
+            "ring-1 ring-inset ring-black/[0.06]",
             className,
           )}
           style={{
@@ -303,7 +305,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           exit={{ y: closedY, transition: { duration: 0.22, ease: [0.32, 0.72, 0, 1] } }}
         >
           {headerContent ? (
-            <div className="relative shrink-0 border-b border-[#e8e8e8]">
+            <div className="relative shrink-0 border-b border-[#cfcfcf] bg-white shadow-[0_4px_14px_rgba(15,23,42,0.07)]">
               {headerContent}
               {/* X minimizar — solo si hideCloseButton=false. Cuando el headerContent
                   ya integra su propio botón de minimizar (caso MapMobileDrawerHeader),
@@ -341,7 +343,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
 
           <div
             ref={scrollRef}
-            className={`map-panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white font-display text-[#1c1c1c]`}
+            className={`map-panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#fafafa] font-display text-[#1c1c1c]`}
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             {children}
