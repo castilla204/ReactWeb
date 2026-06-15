@@ -429,12 +429,12 @@ export const hpCardText = {
 /** Paso mapa (crear-busqueda step=map) — gutters y márgenes unificados */
 export const MAP_DESKTOP_PANEL_GUTTER = 'px-5 xl:px-6';
 
-export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-4 pt-0`;
+export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-6 pt-4`;
 
 export const MAP_DESKTOP_GRID_CLASS =
-  // Antes: siempre 2 cols a partir de lg → en monitores grandes la lista respiraba
-  // poco y cada card era muy estrecha. Ahora: 2 cols en lg/xl, 3 cols en 2xl+.
-  'grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-4 xl:gap-5 2xl:grid-cols-3';
+  // 2 columnas estables en desktop: tarjetas elevadas con aire, nunca apretadas
+  // (3 cols dejaba cada card demasiado estrecha en monitores grandes).
+  'grid w-full grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-5 xl:gap-6';
 
 /**
  * Desktop: una sola fila lista + mapa bajo la topbar.
@@ -445,13 +445,15 @@ export const MAP_DESKTOP_GRID_CLASS =
  * Lista más ancha en pantallas grandes para encajar 3 cards/fila a partir de 2xl.
  */
 export const MAP_DESKTOP_SPLIT_CLASS =
-  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(480px,46vw,1040px)_minmax(0,1fr)]';
+  // Lista a la izquierda (acotada para 2 cols cómodas) + mapa protagonista a la derecha.
+  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(460px,44vw,780px)_minmax(0,1fr)]';
 
-/** Microcabecera DEL PANEL DE CARDS (no full-width). Vive dentro del scroll de
- *  la columna izquierda → no resta altura al mapa. Sticky para que el contexto
- *  ("Compara antes de reservar · N expertos · zona") quede pinned al hacer scroll. */
+/** Cabecera de resultados a TODO el ancho, encima del split → lista y mapa nacen
+ *  debajo, a la misma altura (el mapa ya no sube hasta la topbar).
+ *  Fondo degradado azul → amarillo (tintes de marca: azul #0066CC + ámbar #F59E0B),
+ *  suave para mantener legible el texto oscuro. */
 export const MAP_DESKTOP_PANEL_HEADER_CLASS =
-  'sticky top-0 z-10 -mx-5 mb-2 border-b border-[#f0f0f0] bg-white/95 px-5 pb-2.5 pt-3 backdrop-blur-sm xl:-mx-6 xl:px-6';
+  'shrink-0 border-b border-[#e6e3d8] bg-[linear-gradient(90deg,#cfe3f7_0%,#eaf1f0_46%,#fcecbb_100%)] px-6 pt-3.5 pb-3.5';
 
 export const MAP_DESKTOP_PANEL_HEADER_TITLE_CLASS =
   'font-display text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
@@ -513,10 +515,12 @@ export const MAP_DESKTOP_SCROLL_CLASS =
 /** Mapa — única fila bajo la topbar. Padding superior reducido para que el mapa
  *  arranque casi pegado a la topbar (antes pt-1.5 colaba bajo el header editorial). */
 export const MAP_DESKTOP_MAP_WRAP_CLASS =
-  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-4 pt-3 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-5 xl:pt-3.5';
+  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-6 xl:pt-4';
 
 export const MAP_DESKTOP_MAP_INNER_CLASS =
-  'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl';
+  // Mapa enmarcado como tarjeta: hairline + sombra suave; fondo #dce9f2 (mismo cielo
+  // que el mapa de la ficha) visible mientras cargan los tiles.
+  'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl bg-[#dce9f2] ring-1 ring-black/[0.06] shadow-[0_6px_24px_rgba(16,24,40,0.07)]';
 
 export const MAP_PAGE_TITLE_CLASS =
   'relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]';
@@ -555,13 +559,14 @@ export const MAP_MOBILE_FILTER_ROW_CLASS =
   //   superior puede dar la sensación de "tapar" la fila de filtros.
   'mt-3 flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 export const MAP_MOBILE_FILTER_CHIP_CLASS =
-  // h-10 (40px) en vez de h-8 (32px) → chips más altos, parecen botones reales.
-  // px-3.5 + gap-1.5 → más respiración interna. Sombra sutil para "salir" del fondo blanco.
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white ring-1 ring-[#dcdcdc] px-3.5 h-10 text-[13px] font-semibold text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors active:bg-[#f4f4f4] font-display';
+  // Reposo: blanco con hairline gris neutro, sin tintes de color. Pro y discreto.
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white ring-1 ring-[#dddddd] px-3.5 h-10 text-[13px] font-semibold text-[#3a3a3a] transition-colors hover:ring-[#b0b0b0] active:bg-[#f5f5f5] font-display';
 export const MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS =
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand/10 ring-1 ring-brand/40 px-3.5 h-10 text-[13px] font-semibold text-brand shadow-[0_1px_2px_hsl(var(--brand)/0.15)] transition-colors font-display';
+  // Activo = relleno tinta (casi negro), estilo Airbnb. El azul se reserva para
+  // selección en mapa y favorito; el filtro activo usa tinta neutra, sin glow.
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#1c1c1c] px-3.5 h-10 text-[13px] font-semibold text-white transition-colors hover:bg-black font-display';
 
-export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-1.5`;
+export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-4`;
 
 export const MAP_CARD_BODY_CLASS = 'px-3.5 py-2.5 font-display';
 
@@ -571,15 +576,19 @@ export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/
 export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
 export const MAP_CARD_EYEBROW_CLASS =
-  'text-[10px] font-semibold uppercase tracking-[0.085em] text-brand';
+  'text-[10px] font-semibold uppercase tracking-[0.085em] text-[#717171]';
 
 export const MAP_CARD_NAME_CLASS =
   'truncate text-[15px] font-semibold leading-5 tracking-[-0.015em] text-[#1c1c1c]';
 
 export const MAP_CARD_HOOK_CLASS = 'line-clamp-1 text-[13px] font-normal leading-snug text-[#6a6a6a]';
 
+/** Meta de una sola línea: "Ciudad · Disponibilidad" — gris legible (≥4.5:1), sin chips. */
+export const MAP_CARD_META_LINE_CLASS =
+  'mt-1 truncate text-[13px] font-normal leading-[18px] text-[#525252]';
+
 export const MAP_CARD_CHIP_CLASS =
-  'inline-flex items-center gap-1 rounded-full bg-[#f6f6f6] ring-1 ring-[#ececec] px-2 py-0.5 text-[11px] font-medium text-[#5a5a5a]';
+  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] ring-1 ring-[#e8e8e8] px-2 py-0.5 text-[11px] font-medium text-[#5a5a5a]';
 
 export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 tabular-nums tracking-tight text-[#1c1c1c]';
 
@@ -617,7 +626,7 @@ export const MAP_CARD_MOBILE_COMPACT_INFO_CLASS =
 export const MAP_CARD_MOBILE_NAME_CLASS =
   'truncate text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
 export const MAP_CARD_MOBILE_META_CLASS =
-  'mt-0.5 truncate text-[12.5px] font-medium leading-[1.35] text-[#6a6a6a]';
+  'mt-0.5 truncate text-[12.5px] font-normal leading-[1.35] text-[#525252]';
 export const MAP_CARD_MOBILE_PRICE_CLASS =
   'text-[16px] font-semibold leading-[1.15] tabular-nums tracking-tight text-[#1c1c1c]';
 export const MAP_CARD_MOBILE_FAV_BTN_CLASS =

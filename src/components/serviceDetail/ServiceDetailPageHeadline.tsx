@@ -40,7 +40,7 @@ export const ServiceDetailPageHeadline: React.FC<ServiceDetailPageHeadlineProps>
           ) : null}
           {ratingLabel ? (
             <span className="inline-flex items-center gap-1 font-medium text-[#222222]">
-              <Star className="h-3.5 w-3.5 fill-[#222222] text-[#222222]" aria-hidden />
+              <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" aria-hidden />
               {ratingLabel}
             </span>
           ) : null}

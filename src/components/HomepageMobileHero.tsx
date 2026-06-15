@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { MOBILE_HERO_PHOTO_SCRIM } from '../constants/homepageHeroMap';
 
 /** Altura del hero expandido — texto centrado en banda superior, flecha abajo */
-const MOBILE_HERO_EXPANDED_H_CLASS = 'min-h-[200px]';
+const MOBILE_HERO_EXPANDED_H_CLASS = 'min-h-[168px] min-[390px]:min-h-[178px]';
 
 /**
  * Hero móvil — la imagen ya trae zona clara a la izquierda (IA).
@@ -21,13 +21,27 @@ export const HomepageMobileHero: React.FC = () => {
       }`}
     >
       <div className="absolute inset-0 z-0">
-        <HeroBannerPhoto imgClassName="object-cover object-left" />
+        <HeroBannerPhoto imgClassName="object-cover object-[62%_42%]" />
       </div>
 
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[1]"
         style={{ background: MOBILE_HERO_PHOTO_SCRIM }}
+      />
+
+      {/* Refuerzo de blanco a la izquierda: blanco sólido hasta ~54% y luego se
+          funde, para que el titular a 2 líneas sea legible sin tapar el coche
+          (que queda a la derecha). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(to_right,#ffffff_0%,#ffffff_54%,rgba(255,255,255,0.55)_66%,rgba(255,255,255,0.12)_76%,transparent_86%)]"
+      />
+
+      {/* Fundido inferior hacia el panel blanco de servicios (cose la costura) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-7 bg-gradient-to-t from-white via-white/70 to-transparent"
       />
 
       <div className="relative z-10">
@@ -56,16 +70,14 @@ export const HomepageMobileHero: React.FC = () => {
             <div className={`relative ${MOBILE_HERO_EXPANDED_H_CLASS}`}>
               <div className="absolute inset-x-0 bottom-7 top-0 flex items-center px-4">
                 <div className="relative max-w-[14.25rem] min-[390px]:max-w-[15rem]">
-                  <h1 className="hp-hero-title text-[1.55rem] min-[390px]:text-[1.75rem] font-extrabold leading-[1.08] text-balance">
-                    Antes de comprar,{' '}
-                    <span className="text-brand">
+                  <h1 className="hp-hero-title leading-[1.0]">
+                    <span className="block whitespace-nowrap text-[0.95rem] min-[390px]:text-[1.05rem] font-semibold tracking-[-0.02em] text-[#1c1c1c]/70">
+                      Antes de comprar,
+                    </span>
+                    <span className="block whitespace-nowrap text-[1.15rem] min-[390px]:text-[1.25rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#111827]">
                       que lo revise{' '}
-                      <span className="relative inline-block whitespace-nowrap">
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-x-[-2px] bottom-[2px] h-[7px] rounded-[3px] bg-[#F59E0B]"
-                        ></span>
-                        <span className="relative">un experto</span>
+                      <span className="text-brand underline decoration-[#F59E0B] decoration-[3px] underline-offset-[2px] [text-decoration-skip-ink:none]">
+                        un experto
                       </span>
                     </span>
                   </h1>

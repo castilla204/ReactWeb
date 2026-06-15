@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc -b",
-    "build": "vite build",
+    "i18n:check": "node scripts/check-i18n-keys.mjs",
+    "build": "node scripts/check-i18n-keys.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync",

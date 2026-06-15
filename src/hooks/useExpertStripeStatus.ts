@@ -51,31 +51,31 @@ const getStatusInfo = (
         allStatuses: Object.values(STRIPE_STATUS)
     });
     const getRejectionMessage = (reason: string) => {
+        // 🛡️ MUD-CT: distinguir rechazos por STRIPE vs rechazos POR LA PLATAFORMA.
+        // Los `rejected.platform_*` significan que NOSOTROS rechazamos al experto
+        // (vía POST /accounts/{id}/reject o equivalente). El CTA debe apuntar a
+        // nuestro soporte, no al de Stripe.
         switch (reason) {
-            // 🛡️ MUD-CT: distinguir rechazos por STRIPE vs rechazos POR LA PLATAFORMA.
-            // Los `rejected.platform_*` significan que NOSOTROS rechazamos al experto
-            // (vía POST /accounts/{id}/reject o equivalente). El CTA debe apuntar a
-            // nuestro soporte, no al de Stripe.
             case "rejected.fraud":
-                return "Stripe rechazó tu cuenta por motivos de seguridad. Contacta con soporte de Stripe para más información.";
+                return i18n.t('stripe.rejectionMessages.fraud');
             case "rejected.terms_of_service":
-                return "Stripe rechazó tu cuenta por incumplimiento de los términos de servicio de Stripe.";
+                return i18n.t('stripe.rejectionMessages.termsOfService');
             case "rejected.listed":
-                return "Stripe rechazó tu cuenta por aparecer en una lista de cumplimiento normativo.";
+                return i18n.t('stripe.rejectionMessages.listed');
             case "rejected.incomplete_verification":
-                return "Stripe rechazó tu cuenta tras varios intentos fallidos de verificación de identidad. Contacta con soporte de Stripe.";
+                return i18n.t('stripe.rejectionMessages.incompleteVerification');
             case "rejected.other":
-                return "Stripe rechazó tu cuenta. Contacta con soporte de Stripe para conocer el motivo.";
+                return i18n.t('stripe.rejectionMessages.other');
             case "rejected.platform_fraud":
-                return "Hemos rechazado tu cuenta desde nuestra plataforma por sospecha de fraude. Contacta con nuestro soporte si crees que es un error.";
+                return i18n.t('stripe.rejectionMessages.platformFraud');
             case "rejected.platform_terms_of_service":
-                return "Hemos rechazado tu cuenta desde nuestra plataforma por incumplimiento de nuestros términos. Contacta con nuestro soporte para apelar.";
+                return i18n.t('stripe.rejectionMessages.platformTermsOfService');
             case "rejected.platform_other":
-                return "Hemos rechazado tu cuenta desde nuestra plataforma. Contacta con nuestro soporte para más información.";
+                return i18n.t('stripe.rejectionMessages.platformOther');
             case "platform_paused":
-                return "La verificación de pagos está pausada. Contacta con soporte para conocer cuándo podrás continuar.";
+                return i18n.t('stripe.rejectionMessages.platformPaused');
             default:
-                return "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente.";
+                return i18n.t('stripe.rejectionMessages.default');
         }
     };
 
@@ -121,11 +121,12 @@ const getStatusInfo = (
         if (!stripeFutureDueAt) return null;
         const date = new Date(stripeFutureDueAt);
         if (Number.isNaN(date.getTime())) return null;
-        return `Fecha límite estimada: ${date.toLocaleDateString('es-ES', {
+        const formatted = date.toLocaleDateString(i18n.language || 'es-ES', {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
-        })}`;
+        });
+        return i18n.t('stripe.messages.deadline', { date: formatted });
     };
 
     // 🛡️ MUD-CT: lista completa de rejection reasons PERMANENTES.
@@ -160,9 +161,8 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos."),
+                message: getMessage(i18n.t('stripe.status.notRequested.message')),
                 action: "setup",
-                // 🛡️ LOTE D · D-18 FASE 1 — i18n del buttonText. FASE 2 (mensajes largos) pendiente.
                 buttonText: i18n.t('stripe.status.notRequested.button'),
                 color: "#3b82f6",
                 bgColor: "#eff6ff",
@@ -175,7 +175,7 @@ const getStatusInfo = (
                 return {
                     canCreateServices: false,
                     canRetry: true,
-                    message: getMessage("Tu proceso de verificación está en curso. Completa la configuración de tu cuenta de pagos para continuar."),
+                    message: getMessage(i18n.t('stripe.status.pending.messageContinue')),
                     action: "setup",
                     buttonText: i18n.t('stripe.status.pending.buttonContinue'),
                     color: "#f59e0b",
@@ -188,7 +188,7 @@ const getStatusInfo = (
                 return {
                     canCreateServices: false,
                     canRetry: true,
-                    message: getMessage("Stripe requiere información adicional para activar tu cuenta. Completa los requisitos pendientes."),
+                    message: getMessage(i18n.t('stripe.status.pending.messageRequirements')),
                     action: "complete_requirements",
                     buttonText: i18n.t('stripe.status.pending.buttonRequirements'),
                     color: "#f59e0b",
@@ -200,7 +200,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: false,
-                message: getMessage("Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista."),
+                message: getMessage(i18n.t('stripe.status.pending.message')),
                 action: "wait",
                 buttonText: i18n.t('stripe.status.pending.buttonWait'),
                 color: "#f59e0b",
@@ -212,7 +212,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Stripe necesita documentación o datos adicionales de inmediato. Abre tu panel de Stripe y completa los campos marcados como \"currently_due\"."),
+                message: getMessage(i18n.t('stripe.status.actionRequired.message')),
                 action: "complete_requirements",
                 buttonText: i18n.t('stripe.status.actionRequired.button'),
                 color: "#f97316",
@@ -225,7 +225,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: false,
-                message: getMessage("Stripe está verificando la documentación enviada. Mientras tanto, los pagos seguirán bloqueados."),
+                message: getMessage(i18n.t('stripe.status.pendingVerification.message')),
                 action: "wait",
                 buttonText: i18n.t('stripe.status.pendingVerification.button'),
                 color: "#3b82f6",
@@ -238,7 +238,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Stripe programó requisitos futuros. Actualiza tus datos antes de que la cuenta pase a un estado restrictivo."),
+                message: getMessage(i18n.t('stripe.status.requirementsDue.message')),
                 action: "complete_requirements",
                 buttonText: i18n.t('stripe.status.requirementsDue.button'),
                 color: "#fbbf24",
@@ -251,7 +251,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Algunos requisitos vencieron y Stripe bloqueó tus cobros. Completa la información para reactivar los pagos."),
+                message: getMessage(i18n.t('stripe.status.requirementsPastDue.message')),
                 action: "complete_requirements",
                 buttonText: i18n.t('stripe.status.requirementsPastDue.button'),
                 color: "#dc2626",
@@ -264,7 +264,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Stripe emitió una alerta: si no actualizas tus datos, restringirá tu cuenta en breve."),
+                message: getMessage(i18n.t('stripe.status.restrictedSoon.message')),
                 action: "complete_requirements",
                 buttonText: i18n.t('stripe.status.restrictedSoon.button'),
                 color: "#f97316",
@@ -277,7 +277,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Stripe limitó temporalmente tus cobros/payouts. Revisa el panel para completar los pasos pendientes."),
+                message: getMessage(i18n.t('stripe.status.restricted.message')),
                 action: "complete_requirements",
                 buttonText: i18n.t('stripe.status.restricted.button'),
                 color: "#f97316",
@@ -290,7 +290,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: false,
-                message: getMessage("Stripe deshabilitó los pagos por un incidente o incumplimiento. Debes coordinar con Stripe para recuperar la cuenta."),
+                message: getMessage(i18n.t('stripe.status.disabled.message')),
                 action: "contact",
                 buttonText: i18n.t('stripe.status.disabled.button'),
                 color: "#7f1d1d",
@@ -308,7 +308,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: false,
-                message: getMessage("Stripe está revisando manualmente tu cuenta. Puede tardar varios días. No es necesaria ninguna acción por tu parte; te avisamos cuando termine."),
+                message: getMessage(i18n.t('stripe.status.underReview.message')),
                 action: "wait",
                 buttonText: i18n.t('stripe.status.pendingVerification.button'),
                 color: "#3b82f6",
@@ -320,7 +320,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: true,
                 canRetry: true,
-                message: getMessage("¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos."),
+                message: getMessage(i18n.t('stripe.status.approved.message')),
                 action: "edit_account",
                 buttonText: i18n.t('stripe.status.approved.button'),
                 color: "#10b981",
@@ -331,16 +331,16 @@ const getStatusInfo = (
         case STRIPE_STATUS.REJECTED:
             // Verificar si es rechazo permanente
             const isPermanent = isPermanentRejection(stripeStatusDetails) || canRetryOnboarding === false;
-            let rejectedMessage = "Tu cuenta de pagos fue rechazada por Stripe.";
-            
+            let rejectedMessage = i18n.t('stripe.status.rejected.message');
+
             // Agregar motivo del rechazo si está disponible
             if (rejectionReason) {
                 rejectedMessage += `\n${getRejectionMessage(rejectionReason)}`;
             }
-            
+
             // Si es permanente, agregar mensaje de contacto con soporte
             if (isPermanent) {
-                rejectedMessage += "\nPor favor, contacta al soporte técnico para revisar tu situación.";
+                rejectedMessage += `\n${i18n.t('stripe.status.rejected.permanentSuffix')}`;
             }
             
             return {
@@ -360,7 +360,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Tu cuenta de pagos ha sido desactivada. Por favor, reconecta tu cuenta para continuar recibiendo pagos."),
+                message: getMessage(i18n.t('stripe.status.deauthorized.message')),
                 action: "setup",
                 buttonText: i18n.t('stripe.status.deauthorized.button'),
                 color: "#8b5cf6",
@@ -372,7 +372,7 @@ const getStatusInfo = (
             return {
                 canCreateServices: false,
                 canRetry: true,
-                message: getMessage("Estado de cuenta no reconocido. Por favor, contacta soporte para verificar tu estado."),
+                message: getMessage(i18n.t('stripe.status.unknown.message')),
                 action: "setup",
                 buttonText: i18n.t('stripe.status.unknown.button'),
                 color: "#6b7280",
@@ -672,7 +672,10 @@ export const useExpertStripeStatus = () => {
             setIsPolling(true);
             pollingIntervalRef.current = setInterval(() => {
                 console.log('⏰ useExpertStripeStatus: Polling check');
-                fetchStatus(false); // Usar cache si está disponible
+                // 🛡️ RT-STRIPE: bypass de caché en el tick deliberado (no es una storm de focus) para
+                // que el intervalo real sea 120s y no 120s+60s de caché. El realtime es el camino
+                // primario; este poll es el respaldo si el push de Supabase cae.
+                fetchStatus(true);
             }, 120000); // ✅ Aumentado a 2 minutos para reducir llamadas
         } else if (!needsPolling && pollingIntervalRef.current) {
             console.log('⏹️ useExpertStripeStatus: Stopping polling');
@@ -720,6 +723,17 @@ export const useExpertStripeStatus = () => {
             window.removeEventListener('focus', revalidate);
             document.removeEventListener('visibilitychange', revalidate);
         };
+    }, [fetchStatus]);
+
+    // 🛡️ RT-STRIPE: refresco en TIEMPO REAL. El webhook de Stripe → backend → push por el canal
+    // Supabase `notifications:user:{id}` ya llega al cliente (useNotifications emite 'stripeRealtimePing').
+    // Aquí cableamos el último salto que faltaba: ante el ping, forzamos refetch (bypass caché) para
+    // que los requisitos y el estado se actualicen al instante, sin esperar al poll de 120s — y
+    // cubriendo los estados estables (Approved→Restricted) que NO hacen polling.
+    useEffect(() => {
+        const onRealtimePing = () => { void fetchStatus(true); };
+        window.addEventListener('stripeRealtimePing', onRealtimePing);
+        return () => window.removeEventListener('stripeRealtimePing', onRealtimePing);
     }, [fetchStatus]);
 
     // Detener polling y limpiar cache cuando el estado es estable

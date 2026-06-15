@@ -31,7 +31,7 @@ export const ServiceDetailReviewStars: React.FC<ServiceDetailReviewStarsProps> =
         <Star
           key={i}
           className={`${starClass} ${
-            i < rounded ? 'fill-[#1c1c1c] text-[#1c1c1c]' : 'text-[#e8e8e8]'
+            i < rounded ? 'fill-[#F59E0B] text-[#F59E0B]' : 'text-[#e8e8e8]'
           }`}
           aria-hidden
         />

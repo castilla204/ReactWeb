@@ -98,7 +98,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
                 ·
               </span>
               <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-[#1c1c1c]">
-                <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
+                <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" aria-hidden />
                 {ratingLabel}
                 <span className="font-normal text-[#6a6a6a]">({reviewCount})</span>
               </span>
@@ -115,7 +115,14 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       onClick={onChatClick}
       variant="outline"
       size="sm"
-      className={`rounded-full border-[#dddddd] font-medium text-[#222222] hover:border-[#222222] hover:bg-white ${
+      // Contorno con degradado azul→ámbar de marca. Técnica de doble fondo
+      // (padding-box blanco + border-box degradado) para que respete el rounded-full.
+      style={{
+        border: '2px solid transparent',
+        background:
+          'linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box',
+      }}
+      className={`rounded-full font-semibold text-[#222222] hover:bg-transparent hover:shadow-sm ${
         isMobile
           ? 'h-9 shrink-0 px-3.5 text-sm'
           : `${SD_DESKTOP_HOST_CHAT_CLASS} h-9 px-4 text-sm`

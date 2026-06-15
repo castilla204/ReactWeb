@@ -37,9 +37,10 @@ import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServi
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { StripeStatusCard } from '../components/StripeStatusCard';
-// 🛡️ Round 28 MUD-BP: banner persistente cuando hay warnings Stripe pero el panel
-// sigue accesible. Antes era código muerto; ahora se monta arriba del main content.
-import { StripeStatusBanner } from '../components/StripeStatusBanner';
+// 🛡️ C1 + unificación: banner ÚNICO de visibilidad (consecuencia comercial + acción + plazo
+// Stripe). Sustituye al antiguo StripeStatusBanner, que mostraba info Stripe redundante. Antes
+// era código muerto (nunca importado) → el experto no sabía que estaba oculto en búsquedas.
+import { ExpertVisibilityBanner } from '../components/ExpertVisibilityBanner';
 import { StripeLoadingOverlay } from '../components/StripeLoadingOverlay';
 import { StripeStatusModal, useStripeStatusModal } from '../components/StripeStatusModal';
 // 🛡️ Round 28 MUD-O: wizard de mudanza self-service (cierra Stripe Connect + re-onboarding).
@@ -1195,75 +1196,9 @@ export function ExpertPanelPage() {
                         <StripeStatusCard
                             stripe={stripeHook}
                             isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
-                            onSetupStripe={async () => {
-                                console.log('ExpertPanelPage: onSetupStripe called');
-                                if (isStartingOnboarding || isRestartingOnboarding) return;
-                                setIsStripeLoading(true);
-                                try {
-                                    // Si es Rejected y puede reintentar, usar restart-onboarding
-                                    if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
-                                        await restartAndStartOnboarding();
-                                    } else {
-                                        await startOnboarding();
-                                    }
-                                    setIsStripeLoading(false);
-                                } catch (error: any) {
-                                    setIsStripeLoading(false);
-                                    console.error('Error starting Stripe onboarding:', error);
-                                    window.dispatchEvent(new CustomEvent('showNotification', {
-                                        detail: {
-                                            type: 'error',
-                                            message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.',
-                                        },
-                                    }));
-                                }
-                            }}
-                            onAccessDashboard={async () => {
-                                // 🛡️ Round 12 — D1: si la cuenta está APPROVED, abrir el Express
-                                // Dashboard REAL (LoginLink) en lugar del onboarding (AccountLink).
-                                // El Dashboard es donde el experto ve payouts, balance, transactions
-                                // y puede ajustar cuenta bancaria / payout schedule.
-                                const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
-                                                   && stripeStatus?.onboardingCompleted === true;
-                                setIsStripeLoading(true);
-                                try {
-                                    if (isApprovedNow) {
-                                        await openLoginLink();
-                                    } else {
-                                        await openAccountLink();
-                                    }
-                                    setIsStripeLoading(false);
-                                } catch (error) {
-                                    setIsStripeLoading(false);
-                                    console.error('Error opening dashboard/account link:', error);
-                                    window.dispatchEvent(new CustomEvent('showNotification', {
-                                        detail: {
-                                            type: 'error',
-                                            message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.',
-                                        },
-                                    }));
-                                }
-                            }}
-                            onContactSupport={() => {
-                                // 🛡️ Round 12 — D8 FIX: abrir cliente de email con contexto pre-llenado
-                                // para que el experto no tenga que copiar el email manualmente.
-                                // El subject/body ayuda al admin a identificar al usuario sin pedir info.
-                                const expertId = user?.id ?? (user as any)?.Id ?? 'N/A';
-                                const accountId = stripeStatus?.stripeAccountId || 'N/A';
-                                const subject = encodeURIComponent('Cuenta Stripe — necesito ayuda');
-                                const body = encodeURIComponent(
-                                    `Hola equipo de Inspecciono,\n\n` +
-                                    `Necesito ayuda con mi cuenta de pagos.\n\n` +
-                                    `Mi identificador: ${expertId}\n` +
-                                    `Mi cuenta Stripe: ${accountId}\n\n` +
-                                    `Describe tu problema aquí:\n\n`
-                                );
-                                window.open(
-                                    `mailto:info@inspecciono.io?subject=${subject}&body=${body}`,
-                                    '_blank',
-                                    'noopener,noreferrer'
-                                );
-                            }}
+                            onSetupStripe={handleStripeSetup}
+                            onAccessDashboard={handleStripeAccessDashboard}
+                            onContactSupport={handleStripeContactSupport}
                         />
                     </div>
                 </div>
@@ -1303,6 +1238,62 @@ export function ExpertPanelPage() {
                 },
             }));
         }
+    };
+
+    // 🛡️ M2: handlers del StripeStatusCard extraídos a scope de componente para reutilizarlos
+    // tanto en la pantalla bloqueada (!canAccessPanel) como en el desglose de requisitos que ahora
+    // se muestra en la pestaña Perfil cuando el experto SÍ tiene acceso al panel.
+    const handleStripeSetup = async () => {
+        if (isStartingOnboarding || isRestartingOnboarding) return;
+        setIsStripeLoading(true);
+        try {
+            if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
+                await restartAndStartOnboarding();
+            } else {
+                await startOnboarding();
+            }
+            setIsStripeLoading(false);
+        } catch (error: any) {
+            setIsStripeLoading(false);
+            console.error('Error starting Stripe onboarding:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: { type: 'error', message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.' },
+            }));
+        }
+    };
+
+    const handleStripeAccessDashboard = async () => {
+        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+                           && stripeStatus?.onboardingCompleted === true;
+        setIsStripeLoading(true);
+        try {
+            if (isApprovedNow) {
+                await openLoginLink();
+            } else {
+                await openAccountLink();
+            }
+            setIsStripeLoading(false);
+        } catch (error) {
+            setIsStripeLoading(false);
+            console.error('Error opening dashboard/account link:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: { type: 'error', message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.' },
+            }));
+        }
+    };
+
+    const handleStripeContactSupport = () => {
+        const expertId = user?.id ?? (user as any)?.Id ?? 'N/A';
+        const accountId = stripeStatus?.stripeAccountId || 'N/A';
+        const subject = encodeURIComponent('Cuenta Stripe — necesito ayuda');
+        const body = encodeURIComponent(
+            `Hola equipo de Inspecciono,\n\n` +
+            `Necesito ayuda con mi cuenta de pagos.\n\n` +
+            `Mi identificador: ${expertId}\n` +
+            `Mi cuenta Stripe: ${accountId}\n\n` +
+            `Describe tu problema aquí:\n\n`
+        );
+        window.open(`mailto:info@inspecciono.io?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
     };
 
     const visibilityNote = !profileSetupComplete
@@ -1483,29 +1474,59 @@ export function ExpertPanelPage() {
                             stripeContext={stripeContext}
                         />
                     ) : activeTab === 'profile' && profile ? (
-                        <ProfileEditForm
-                            embedded
-                            profile={profile as any}
-                            onProfileUpdated={() => fetchProfile(true, { silent: true })}
-                            profileSetup={{
-                                steps: profileSetupSteps,
-                                complete: profileSetupComplete,
-                                pendingRequired,
-                                onOpenSetup: !profileSetupComplete ? () => handleTabChange('setup') : undefined,
-                            }}
-                        />
+                        <>
+                            {/* 🛡️ M2: desglose de requisitos Stripe (vencidos / pendientes / errores) para
+                                expertos CON acceso al panel. Antes solo aparecía en la pantalla bloqueada
+                                (!canAccessPanel); estados como RequirementsDue/RestrictedSoon nunca mostraban
+                                qué faltaba. Se omite para Approved (nada que resolver) y NotRequested (aún sin alta). */}
+                            {stripeStatus?.stripeStatus
+                                && stripeStatus.stripeStatus !== STRIPE_STATUS.APPROVED
+                                && stripeStatus.stripeStatus !== STRIPE_STATUS.NOT_REQUESTED && (
+                                <div className="mb-5">
+                                    <StripeStatusCard
+                                        stripe={stripeHook}
+                                        isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
+                                        onSetupStripe={handleStripeSetup}
+                                        onAccessDashboard={handleStripeAccessDashboard}
+                                        onContactSupport={handleStripeContactSupport}
+                                    />
+                                </div>
+                            )}
+                            <ProfileEditForm
+                                embedded
+                                profile={profile as any}
+                                onProfileUpdated={() => fetchProfile(true, { silent: true })}
+                                profileSetup={{
+                                    steps: profileSetupSteps,
+                                    complete: profileSetupComplete,
+                                    pendingRequired,
+                                    onOpenSetup: !profileSetupComplete ? () => handleTabChange('setup') : undefined,
+                                }}
+                            />
+                        </>
                     ) : (
                     <div className="expert-workspace-inner">
                             <div className={`expert-panel-surface expert-tab-content${showServiceForm && activeTab === 'services' ? ' expert-panel-surface--service-editor' : ''}`}>
-                                {activeTab !== 'setup' && activeTab !== 'services' && stripeStatus?.stripeStatus && !(showServiceForm && activeTab === 'services') && (
+                                {/* 🛡️ C1 + unificación: banner ÚNICO de visibilidad (consecuencia comercial +
+                                    acción + plazo Stripe). Sustituye al StripeStatusBanner, que era redundante
+                                    (mostrar ambos confundía). El desglose de requisitos vive en la pestaña Perfil
+                                    (StripeStatusCard, M2). Visible en todas las pestañas del panel, incl. services. */}
+                                {profile && stripeStatus?.stripeStatus && !(showServiceForm && activeTab === 'services') && (
                                     <div className="px-5 pt-4">
-                                        <StripeStatusBanner
+                                        <ExpertVisibilityBanner
                                             stripeStatus={stripeStatus.stripeStatus}
-                                            statusMessage={(stripeStatus as { statusMessage?: string; stripeStatusDetails?: string }).statusMessage || (stripeStatus as { stripeStatusDetails?: string }).stripeStatusDetails || ''}
-                                            canCreateServices={(stripeStatus as { canCreateServices?: boolean }).canCreateServices !== false}
-                                            canReceivePayments={(stripeStatus as { canReceivePayments?: boolean }).canReceivePayments !== false}
+                                            onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean }).onboardingCompleted ?? profile?.onboardingCompleted}
+                                            isOnVacation={profile?.isOnVacation}
+                                            country={(profile as { country?: string })?.country}
+                                            latitude={(profile as { latitude?: string | number })?.latitude}
+                                            longitude={(profile as { longitude?: string | number })?.longitude}
+                                            servicesCount={services.length}
+                                            hasPhoto={Boolean((profile as { profilePictureUrl?: string })?.profilePictureUrl?.trim())}
+                                            hasDescription={Boolean((profile as { description?: string })?.description?.trim())}
+                                            phoneSmsCapable={smsCapable}
                                             futureDueAtIso={(stripeStatus as { stripeFutureDueAt?: string | null }).stripeFutureDueAt ?? null}
                                             onOpenStripe={openStripeDashboard}
+                                            onEditProfile={() => handleTabChange('profile')}
                                         />
                                     </div>
                                 )}
