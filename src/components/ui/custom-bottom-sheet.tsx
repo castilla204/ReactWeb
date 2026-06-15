@@ -1,5 +1,5 @@
 import * as React from "react";
-import { AnimatePresence, motion, useMotionValue, animate } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -90,6 +90,11 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   const closedY = vhRef.current;
 
   const y = useMotionValue(closedY);
+  // Nudge puramente visual: hace que TODO el drawer "asome" arriba y vuelva en
+  // reposo, como pista de que se puede subir. NO toca `y` (toda la lógica de
+  // drag/snap sigue usando `y`); solo se suma en el transform mostrado.
+  const nudge = useMotionValue(0);
+  const displayY = useTransform(() => y.get() + nudge.get());
   const sheetRef = React.useRef<HTMLDivElement>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -239,6 +244,34 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
     };
   }, [open, y, g, fullY, peekY, closedY, dismissible, snapToNearest]);
 
+  // Pista de afordancia: en reposo (peek) y sin arrastrar, TODO el drawer hace un
+  // pequeño "bote" hacia arriba y vuelve, periódicamente, para indicar que sube.
+  React.useEffect(() => {
+    if (!open) { nudge.set(0); return; }
+    const atPeek =
+      activeSnap != null &&
+      toFraction(activeSnap as number | string) <= peekFrac + 0.001;
+    if (!atPeek) { nudge.set(0); return; }
+    let cancelled = false;
+    let controls: { stop: () => void } | null = null;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const run = async () => {
+      await wait(1100);
+      while (!cancelled) {
+        if (g.active) { await wait(700); continue; }
+        controls = animate(nudge, -16, { duration: 0.34, ease: [0.34, 1.56, 0.64, 1] });
+        await controls;
+        if (cancelled) break;
+        controls = animate(nudge, 0, { duration: 0.5, ease: [0.22, 1, 0.36, 1] });
+        await controls;
+        if (cancelled) break;
+        await wait(2200);
+      }
+    };
+    run();
+    return () => { cancelled = true; controls?.stop(); nudge.set(0); };
+  }, [open, activeSnap, peekFrac, nudge, g]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -253,7 +286,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           )}
           style={{
             height: "100dvh",
-            y,
+            y: displayY,
             // pan-y → el navegador permite scroll vertical del hijo; nosotros hacemos
             // preventDefault() en touchmove cuando queremos secuestrar para drag.
             touchAction: "pan-y",

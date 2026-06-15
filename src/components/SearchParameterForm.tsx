@@ -283,12 +283,26 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 <div
                     className={`relative w-full overflow-hidden rounded-2xl bg-white transition-all duration-200 ${
                         isSelected
-                            ? 'ring-2 ring-brand shadow-[0_8px_24px_rgba(16,24,40,0.10)]'
+                            ? 'shadow-[0_10px_30px_rgba(0,102,204,0.20)]'
                             : isHovered
                               ? '-translate-y-0.5 shadow-[0_2px_4px_rgba(16,24,40,0.06),0_14px_32px_rgba(16,24,40,0.13)]'
                               : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
                     }`}
                 >
+                    {/* Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */}
+                    {isSelected && (
+                        <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
+                            style={{
+                                padding: '2px',
+                                background: 'linear-gradient(to right, #0066CC, #F59E0B)',
+                                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                WebkitMaskComposite: 'xor',
+                                maskComposite: 'exclude',
+                            }}
+                        />
+                    )}
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
                     <div className={MAP_CARD_IMAGE_CLASS} style={{ borderRadius: '16px 16px 0 0' }}>
                         {imageUrls.length > 0 ? (
@@ -306,9 +320,9 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
 
                                 {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
                                 {isSelected ? (
-                                    <div className="absolute left-3 top-3 z-10">
-                                        <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
-                                            <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
+                                    <div className="absolute left-3 top-3 z-30">
+                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-2.5 py-1 font-display text-[10px] font-semibold leading-3 text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)]">
+                                            <CheckCircle className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2.5} />
                                             Seleccionado
                                         </span>
                                     </div>
@@ -479,10 +493,24 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
             <div
                 className={`relative w-full overflow-hidden rounded-2xl bg-white transition-shadow duration-200 ${
                     isSelected
-                        ? 'ring-2 ring-brand shadow-[0_8px_24px_rgba(16,24,40,0.10)]'
+                        ? 'shadow-[0_10px_30px_rgba(0,102,204,0.20)]'
                         : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
                 }`}
             >
+                {/* Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */}
+                {isSelected && (
+                    <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
+                        style={{
+                            padding: '2px',
+                            background: 'linear-gradient(to right, #0066CC, #F59E0B)',
+                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                            WebkitMaskComposite: 'xor',
+                            maskComposite: 'exclude',
+                        }}
+                    />
+                )}
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#eceff3]">
                     {imageUrls.length > 0 ? (
                         <>
@@ -499,9 +527,9 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
 
                             {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
                             {isSelected ? (
-                                <div className="absolute left-3 top-3 z-10">
-                                    <span className={`${MAP_CARD_BADGE_CLASS} gap-1.5`}>
-                                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" strokeWidth={2.5} />
+                                <div className="absolute left-3 top-3 z-30">
+                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-2.5 py-1 font-display text-[10px] font-semibold leading-3 text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)]">
+                                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2.5} />
                                         Seleccionado
                                     </span>
                                 </div>
@@ -670,8 +698,8 @@ const getMapOverviewZoom = (countryCode: string): number =>
 //    Con la implementación custom (motion value + spring), el drag es 1:1 con el
 //    dedo; los snaps SOLO se aplican al soltar, así que el snap intermedio no
 //    se siente como "tramo" durante el gesto.
-const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.14, 0.55, 0.92];
-const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 14% – solo tirador + "N expertos" (reposo)
+const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.20, 0.55, 0.92];
+const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 20% – tirador + "N expertos" + asomo de la 1ª card (reposo)
 const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 55% – al pulsar "Ver opciones" o un pin
 const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[2];     // 92% – pantalla casi completa
 
@@ -757,9 +785,9 @@ function MapMobileDrawerHeader({
             /* Tinte degradado azul→ámbar muy sutil de marca en el header del drawer. */
             style={{ background: 'linear-gradient(to right, rgba(0,102,204,0.11) 0%, rgba(245,158,11,0.11) 100%)' }}
         >
-            {/* Handle — afordancia de arrastre con rebote sutil (indica que se puede subir) */}
+            {/* Handle — afordancia de arrastre */}
             <div className="mb-2.5 flex justify-center" aria-hidden>
-                <span className="drawer-handle-hint h-1.5 w-11 rounded-full bg-[#cfcfcf]" />
+                <span className="h-1.5 w-11 rounded-full bg-[#dcdcdc]" />
             </div>
 
             {/* Titular de resultados — mismo tono que desktop */}
