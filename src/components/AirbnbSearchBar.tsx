@@ -6,7 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   FolderTree,
-  Filter,
+  Map,
   ChevronUp,
   Heart,
   User,
@@ -981,16 +981,16 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </div>
             </div>
             
-            {/* Botón circular con ícono de filtro - Posicionado absoluto a la derecha */}
+            {/* Botón circular con ícono de mapa - Posicionado absoluto a la derecha */}
             <div
               onClick={(e) => {
                 e.stopPropagation();
                 openMobileSearch();
               }}
               className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-brand hover:bg-brand-hover transition-colors flex items-center justify-center cursor-pointer"
-              aria-label="Filtros"
+              aria-label="Mapa"
             >
-              <Filter className="w-5 h-5 text-white" />
+              <Map className="w-5 h-5 text-white" strokeWidth={2.1} />
             </div>
           </div>
           </div>
