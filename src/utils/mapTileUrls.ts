@@ -31,3 +31,19 @@ export function getCartoVoyagerNoLabelsTiles(): string[] {
     'https://a.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png',
   ];
 }
+
+/** Carto Voyager con etiquetas (ciudades, carreteras) — paso de búsqueda de expertos. */
+export function getCartoVoyagerTiles(): string[] {
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    return [`${window.location.origin}/carto/rastertiles/voyager/{z}/{x}/{y}.png`];
+  }
+  return ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'];
+}
+
+/** Solo etiquetas (ciudades) — se superpone sobre voyager_nolabels. */
+export function getCartoVoyagerOnlyLabelsTiles(): string[] {
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    return [`${window.location.origin}/carto/rastertiles/voyager_only_labels/{z}/{x}/{y}.png`];
+  }
+  return ['https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png'];
+}

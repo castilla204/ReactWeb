@@ -80,8 +80,8 @@ const SearchCreationPage: React.FC = () => {
     const [isMapLoaded, setIsMapLoaded] = useState<boolean>(false);
     const [areServicesReady, setAreServicesReady] = useState<boolean>(false);
     // ✅ Bloquear la página hasta que mapa + servicios estén listos. Sin esto, el
-    //    usuario veía primero "Sin opciones aquí" y al rato aparecían las cards →
-    //    feo. Fallback: a los 5s mostramos sí o sí (por si el backend nunca responde).
+    //    drawer mostraba estados vacíos antes de que llegaran los expertos del mapa.
+    //    Fallback: a los 5s mostramos sí o sí (por si el backend nunca responde).
     const isPageReady = isMapLoaded && areServicesReady;
     
     // Inicializar ubicación con coordenadas de searchParameters o país por defecto
