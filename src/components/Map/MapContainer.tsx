@@ -1,8 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback, startTransition } from 'react';
 import maplibregl from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { capMapWorkers } from '../../lib/mapWorkers';
+import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
+import {
+  buildInspeccionoMapStyle,
+  ensureInspeccionoLandFill,
+  INSPECCIONO_MAP_THEME,
+} from '../../utils/inspeccionoMapStyle';
 capMapWorkers(maplibregl);
+
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 // ✅ Default import → activa React.memo del ClusteredMarkers. Antes (named import)
 //    cada hover/select sobre la lista forzaba el bucle remove+create de TODOS los markers.
@@ -272,32 +281,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     //    mostrando más Europa arriba (Francia, Pirineos) y menos África abajo.
     const initialPadding =
       isMobile && typeof window !== 'undefined'
-        ? { top: 0, bottom: Math.round(window.innerHeight * 0.60), left: 0, right: 0 }
+        ? {
+            top: 56,
+            bottom: Math.round(window.innerHeight * 0.60),
+            left: 20,
+            right: 20,
+          }
         : typeof window !== 'undefined'
-          ? { top: 0, bottom: Math.round(window.innerHeight * 0.30), left: 0, right: 0 }
+          ? { top: 24, bottom: Math.round(window.innerHeight * 0.30), left: 16, right: 16 }
           : { top: 0, bottom: 0, left: 0, right: 0 };
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          carto: {
-            type: 'raster',
-            // ✅ Un solo subdominio: CartoCDN sirve HTTP/2 multiplexado — con sharding
-            //    a/b/c/d se abrían 4 conexiones TLS y se perdía el reuse. Con 1 host
-            //    el navegador reusa la misma conexión H/2 para todos los tiles.
-            tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}.png'],
-            tileSize: 256,
-          },
-        },
-        layers: [
-          // Mismo tema que el mapa de la ficha (ServiceDetailCoverageMap): capa de
-          // "cielo/agua" #dce9f2 bajo los tiles → color de fondo coherente en toda la app.
-          { id: 'sky-bg', type: 'background', paint: { 'background-color': '#dce9f2' } },
-          { id: 'carto-layer', type: 'raster', source: 'carto', paint: { 'raster-opacity': 1 } },
-        ],
-      },
+      style: buildInspeccionoMapStyle({ withLabels: true }),
       center: [initialCenter.lng, initialCenter.lat],
       zoom: initialZoom,
       minZoom: mapOptions.minZoom,
@@ -305,6 +301,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       dragRotate: false,
       touchPitch: false,
       attributionControl: false,
+      fadeDuration: 0,
+      transformRequest: (url, resourceType) => {
+        if (resourceType === 'Tile' && isExternalMapTileUrl(url)) {
+          return { url, credentials: 'omit' };
+        }
+        return { url };
+      },
       // padding se pasa via fitBounds/easeTo; lo aplicamos aquí porque el constructor
       // no acepta padding inicial — MapLibre v3 sí lo acepta, pero por compat dejamos
       // setPadding inmediato tras el new() abajo (antes del primer render del DOM).
@@ -328,6 +331,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('load', () => {
+      try {
+        ensureInspeccionoLandFill(map);
+        map.triggerRepaint();
+      } catch {
+        // La capa de tierra es cosmética; el mapa sigue usable sin ella.
+      }
       // ✅ El padding ya se aplicó en el constructor (initialPadding) → no hay
       //    re-encaje aquí y los marcadores no brincan al primer fetch.
       mapInstanceRef.current = map;
@@ -375,6 +384,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         width: '100%',
         height: '100%',
         position: 'relative',
+        backgroundColor: INSPECCIONO_MAP_THEME.sky,
         ...style,
       }}
     >
