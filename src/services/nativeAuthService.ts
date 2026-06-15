@@ -15,10 +15,33 @@ const initConfig = {
     },
 };
 
+// Resultado de un inicio de sesión nativo. `cancelled` distingue una cancelación
+// deliberada del usuario (cerró la hoja nativa) de un fallo real, para que los
+// componentes no muestren un toast de error cuando el usuario simplemente salió.
+interface NativeAuthResult {
+    success: boolean;
+    user: any;
+    requiresMFA: boolean;
+    cancelled?: boolean;
+}
+
+// Detecta si un error del plugin corresponde a una cancelación del usuario.
+// Defensivo con el casing ('cancelled'/'canceled') y revisa message, toString y code.
+function isUserCancellation(error: any): boolean {
+    const raw = `${error?.message || ''} ${error?.toString ? error.toString() : ''} ${error?.code || ''}`.toLowerCase();
+    if (raw.includes('cancelled') || raw.includes('canceled')) {
+        return true;
+    }
+    // Apple (ASAuthorizationError.canceled) y el plugin nativo suelen reportar el
+    // código 1001 cuando el usuario cierra la hoja sin completar el login.
+    const code = error?.code;
+    return code === 1001 || code === '1001';
+}
+
 class NativeAuthService {
     private isNative = Capacitor.isNativePlatform();
-    
-    async signInWithGoogle(): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
+
+    async signInWithGoogle(): Promise<NativeAuthResult> {
         const startTime = Date.now();
         try {
             console.log('🚀 [NativeAuth] ========== INICIO GOOGLE SIGN-IN ==========');
@@ -89,10 +112,9 @@ class NativeAuthService {
                 }
                 
                 // ✅ Verificaciones específicas para errores de cancelación
-                const errorMessage = loginError?.message || loginError?.toString() || '';
-                if (errorMessage.includes('cancelled') || errorMessage.includes('canceled')) {
+                if (isUserCancellation(loginError)) {
                     console.error('🔐 [NativeAuth] ========== DIAGNÓSTICO ERROR DE CANCELACIÓN ==========');
-                    console.error('🔐 [NativeAuth] Este error generalmente indica:');
+                    console.error('🔐 [NativeAuth] El usuario pudo haber cerrado la hoja de Google, o bien:');
                     console.error('🔐 [NativeAuth] 1. SHA-1 no coincide con el configurado en Google Cloud Console');
                     console.error('🔐 [NativeAuth] 2. Web Client ID incorrecto o no vinculado al Android Client ID');
                     console.error('🔐 [NativeAuth] 3. Package name incorrecto en Google Cloud Console');
@@ -103,8 +125,12 @@ class NativeAuthService {
                     console.error('🔐 [NativeAuth] - Deben ser EXACTAMENTE iguales (mayúsculas/minúsculas no importan)');
                     console.error('🔐 [NativeAuth] SHA-1 esperado: A7:77:CA:D5:A4:43:D5:EA:C5:A2:66:C5:40:CA:94:4D:94:42:65:10');
                     console.error('🔐 [NativeAuth] ========================================================');
+
+                    // ✅ Cancelación del usuario: resultado benigno, NO un error duro.
+                    // El componente lo trata como no-op silencioso (sin toast de error).
+                    return { success: false, user: null, requiresMFA: false, cancelled: true };
                 }
-                
+
                 throw loginError;
             }
 
@@ -295,7 +321,7 @@ class NativeAuthService {
      * Autenticación con Apple Sign In
      * Solo disponible en iOS y macOS
      */
-    async signInWithApple(): Promise<{ success: boolean; user: any; requiresMFA: boolean }> {
+    async signInWithApple(): Promise<NativeAuthResult> {
         if (!this.isNative) {
             throw new Error('Apple Sign In is only available on native platforms');
         }
@@ -382,6 +408,14 @@ class NativeAuthService {
             };
         } catch (error: any) {
             console.error('Apple Sign In error:', error);
+
+            // ✅ Cancelación del usuario (cerró la hoja de Apple): resultado benigno,
+            // NO un error duro. El componente lo trata como no-op silencioso.
+            if (isUserCancellation(error)) {
+                console.log('🔐 [NativeAuth] Apple Sign In cancelado por el usuario');
+                return { success: false, user: null, requiresMFA: false, cancelled: true };
+            }
+
             throw error;
         }
     }

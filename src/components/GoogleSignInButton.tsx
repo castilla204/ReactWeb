@@ -118,6 +118,13 @@ export const GoogleSignInButton = ({
 
             const result = await nativeAuthService.signInWithGoogle();
 
+            // El usuario cerró la hoja de Google: no es un error, salimos sin toast.
+            if (result.cancelled) {
+                console.log('🔐 [GoogleSignIn Native] Inicio de sesión cancelado por el usuario');
+                setAuthStep('');
+                return;
+            }
+
             if (!result.success) {
                 throw new Error('Authentication failed');
             }
