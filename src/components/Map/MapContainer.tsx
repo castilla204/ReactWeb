@@ -444,10 +444,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         />
       )}
 
-      {isInitialLoading && (
-        <MapLoadingIndicator variant="initial" className={isMobile ? '!top-16' : undefined} />
+      {isInitialLoading && !isMobile && (
+        <MapLoadingIndicator variant="initial" />
       )}
-      {isRefreshing && <MapLoadingIndicator variant="refresh" />}
+      {isRefreshing && !isMobile && <MapLoadingIndicator variant="refresh" />}
 
       {error && (
         <div className="absolute left-1/2 top-3 z-[901] max-w-[90vw] -translate-x-1/2 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white shadow-md">
