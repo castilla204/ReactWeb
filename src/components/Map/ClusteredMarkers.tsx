@@ -327,8 +327,8 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
           const marker = new maplibregl.Marker({
             element: el,
             anchor: 'center',
-            pitchAlignment: 'map',
-            rotationAlignment: 'map',
+            pitchAlignment: 'viewport',
+            rotationAlignment: 'viewport',
           }).setLngLat([lng, lat]).addTo(map);
           entry = { kind: 'cluster', marker, element: el };
           entriesRef.current.set(key, entry);
@@ -357,8 +357,8 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         const marker = new maplibregl.Marker({
           element: el,
           anchor: 'center',
-          pitchAlignment: 'map',
-          rotationAlignment: 'map',
+          pitchAlignment: 'viewport',
+          rotationAlignment: 'viewport',
         }).setLngLat([service.lng, service.lat]).addTo(map);
         entry = { kind: 'service', marker, element: el, serviceId: service.id };
         entriesRef.current.set(key, entry);

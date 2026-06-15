@@ -5,8 +5,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { capMapWorkers } from '../../lib/mapWorkers';
 import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
 import {
+  applyInspeccionoGlobeProjection,
   buildInspeccionoMapStyle,
   ensureInspeccionoLandFill,
+  getSearchMapGlobePitch,
   INSPECCIONO_MAP_THEME,
 } from '../../utils/inspeccionoMapStyle';
 capMapWorkers(maplibregl);
@@ -267,6 +269,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     onMapLoadRef.current = onMapLoad;
   }, [onMapLoad]);
 
+  const syncGlobePitch = useCallback(
+    (map: maplibregl.Map, animate = false) => {
+      const targetPitch = getSearchMapGlobePitch(map.getZoom(), isMobile);
+      if (Math.abs(map.getPitch() - targetPitch) < 0.2) return;
+      if (animate) {
+        map.easeTo({ pitch: targetPitch, bearing: 0, duration: 320 });
+      } else {
+        map.setPitch(targetPitch);
+      }
+    },
+    [isMobile],
+  );
+
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -291,14 +306,21 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           ? { top: 24, bottom: Math.round(window.innerHeight * 0.30), left: 16, right: 16 }
           : { top: 0, bottom: 0, left: 0, right: 0 };
 
+    const openingPitch = getSearchMapGlobePitch(initialZoom, isMobile);
+
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: buildInspeccionoMapStyle({ withLabels: true }),
       center: [initialCenter.lng, initialCenter.lat],
       zoom: initialZoom,
+      bearing: 0,
+      pitch: openingPitch,
       minZoom: mapOptions.minZoom,
       maxZoom: mapOptions.maxZoom,
+      minPitch: 0,
+      maxPitch: 48,
       dragRotate: false,
+      pitchWithRotate: false,
       touchPitch: false,
       attributionControl: false,
       fadeDuration: 0,
@@ -313,6 +335,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       // setPadding inmediato tras el new() abajo (antes del primer render del DOM).
     });
     map.setPadding(initialPadding);
+    // Pinch = solo zoom; el giro con dos dedos queda desactivado.
+    map.touchZoomRotate.disableRotation();
+    map.dragRotate.disable();
+
+    const applyGlobe = () => {
+      applyInspeccionoGlobeProjection(map);
+      syncGlobePitch(map, false);
+    };
 
     if (!isMobile) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -325,12 +355,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         debounceTimerRef.current = null;
       }
     };
-    const onIdle = () => handleMapIdle(map);
+    const onIdle = () => {
+      syncGlobePitch(map, true);
+      handleMapIdle(map);
+    };
 
+    map.once('style.load', applyGlobe);
     map.on('movestart', onMoveStart);
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('load', () => {
+      applyGlobe();
       try {
         ensureInspeccionoLandFill(map);
         map.triggerRepaint();
@@ -343,10 +378,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       setIsMapLoaded(true);
       setMapInstance(map);
       onMapLoadRef.current?.();
-      onIdle();
+      handleMapIdle(map);
     });
 
+    if (map.isStyleLoaded()) applyGlobe();
+
     return () => {
+      map.off('style.load', applyGlobe);
       map.off('movestart', onMoveStart);
       map.off('moveend', onIdle);
       map.off('zoomend', onIdle);
@@ -355,7 +393,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       setMapInstance(null);
       setIsMapLoaded(false);
     };
-  }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle]);
+  }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle, initialZoom, syncGlobePitch]);
 
   // Actualizar centro/zoom solo cuando cambie de verdad (geocoding / país)
   useEffect(() => {
@@ -373,9 +411,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     mapInstance.easeTo({
       center: [initialCenter.lng, initialCenter.lat],
       zoom,
+      pitch: getSearchMapGlobePitch(zoom, isMobile),
+      bearing: 0,
       duration: 400,
     });
-  }, [mapInstance, initialCenter, initialZoom, recenterMode]);
+  }, [mapInstance, initialCenter, initialZoom, recenterMode, isMobile]);
 
   return (
     <div

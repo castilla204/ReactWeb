@@ -82,6 +82,40 @@ export function buildInspeccionoMapStyle(
   return { version: 8, sources, layers };
 }
 
+/** Pitch moderado según zoom: curvatura de globo lejos, plano al acercar para leer precios. */
+export function getSearchMapGlobePitch(zoom: number, isMobile = false): number {
+  const mobileTrim = isMobile ? 2 : 0;
+  if (zoom <= 4.5) return 30 - mobileTrim;
+  if (zoom <= 6.5) return 24 - mobileTrim;
+  if (zoom <= 8.5) return 16 - mobileTrim;
+  if (zoom <= 10.5) return 8;
+  if (zoom <= 12.5) return 3;
+  return 0;
+}
+
+/** Proyección globe + atmósfera suave acorde a la paleta Inspecciono. */
+export function applyInspeccionoGlobeProjection(map: maplibregl.Map): void {
+  try {
+    map.setProjection({ type: 'globe' });
+  } catch {
+    // Fallback silencioso a mercator si el runtime no soporta globe.
+  }
+
+  try {
+    map.setFog({
+      color: INSPECCIONO_MAP_THEME.sky,
+      'high-color': INSPECCIONO_MAP_THEME.sky,
+      'horizon-blend': 0.1,
+      'space-color': INSPECCIONO_MAP_THEME.sky,
+      'star-intensity': 0,
+    });
+  } catch {
+    // Fog cosmético — opcional.
+  }
+
+  map.triggerRepaint();
+}
+
 /** Relleno de tierra bajo los tiles — evita huecos planos mientras cargan. */
 export function ensureInspeccionoLandFill(map: maplibregl.Map): void {
   if (map.getSource('ne-land')) return;

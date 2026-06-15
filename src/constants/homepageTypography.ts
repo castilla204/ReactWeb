@@ -568,8 +568,8 @@ export const MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS =
 
 export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-4`;
 
-/** Lista del drawer en modo tutorial — márgenes simétricos al header + colchón inferior. */
-export const MAP_MOBILE_LIST_TUTORIAL_CLASS = `${SD_MOBILE_GUTTER_CLASS} pt-3 pb-4`;
+/** Lista del drawer en modo tutorial — compacta para dejar más mapa visible. */
+export const MAP_MOBILE_LIST_TUTORIAL_CLASS = `${SD_MOBILE_GUTTER_CLASS} pt-2 pb-2`;
 
 export const MAP_CARD_BODY_CLASS = 'px-3.5 py-2.5 font-display';
 
