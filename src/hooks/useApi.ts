@@ -3,6 +3,7 @@ import { getAuthToken } from '../lib/auth';
 import { showToast } from '../lib/toast';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorHttp } from '@capacitor/core';
+import { authService } from '../services/authService';
 
 interface RequestConfig extends RequestInit {
     requiresAuth?: boolean;
@@ -63,23 +64,52 @@ export const useApi = () => {
                     }
                 }
                 
-                const capacitorResponse = await CapacitorHttp.request({
+                let capacitorResponse = await CapacitorHttp.request({
                     url,
                     method: method as any,
                     headers,
                     data: body,
                 });
-                
+
+                // ✅ FIX fiabilidad: CapacitorHttp NO pasa por el interceptor de window.fetch
+                // de authService, así que un 401 en nativo (Android/iOS) no disparaba el
+                // refresh+retry → el usuario quedaba atascado en 401 si el refresh proactivo
+                // se perdió (sleep del dispositivo / ventana de backoff). Replicamos aquí la
+                // misma lógica single-flight del interceptor web (_retry para evitar bucles).
+                const isMfaVerifyEndpoint = url.includes('/api/auth/mfa/verify');
+                if (
+                    capacitorResponse.status === 401 &&
+                    requiresAuth &&
+                    !isMfaVerifyEndpoint &&
+                    authService.getRefreshToken()
+                ) {
+                    const refreshed = await authService.refreshAccessToken();
+                    if (refreshed) {
+                        const newToken = authService.getAccessToken();
+                        if (newToken) {
+                            headers['Authorization'] = `Bearer ${newToken}`;
+                        }
+                        // Reintentar UNA sola vez con el nuevo token
+                        capacitorResponse = await CapacitorHttp.request({
+                            url,
+                            method: method as any,
+                            headers,
+                            data: body,
+                        });
+                    }
+                }
+
                 // Convertir respuesta de CapacitorHttp a formato Response-like
-                responseText = typeof capacitorResponse.data === 'string' 
-                    ? capacitorResponse.data 
+                responseText = typeof capacitorResponse.data === 'string'
+                    ? capacitorResponse.data
                     : JSON.stringify(capacitorResponse.data);
-                
+
                 // Crear un objeto Response-like para mantener compatibilidad
                 response = {
                     ok: capacitorResponse.status >= 200 && capacitorResponse.status < 300,
                     status: capacitorResponse.status,
                     statusText: capacitorResponse.status >= 200 && capacitorResponse.status < 300 ? 'OK' : 'Error',
+                    headers: new Headers(capacitorResponse.headers || {}),
                     text: async () => responseText,
                     json: async () => JSON.parse(responseText),
                 } as Response;
