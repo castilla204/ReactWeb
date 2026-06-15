@@ -67,10 +67,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, initialIsFavorite = 
       const result = await toggleFavoriteAsync(service.id);
       setIsFavorite(result.isFavorite);
       if (!result.isFavorite) {
+        // La mutación ya invalida ['favorites'] (invalidación por prefijo), así que la
+        // lista se repinta sola. NO recargar toda la SPA con window.location.reload().
         showToast('success', 'Favorito eliminado', 2000);
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
       } else {
         showToast('success', result.message, 2000);
       }

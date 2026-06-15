@@ -156,10 +156,29 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     return geoJsonPoints;
   }, [services]);
 
+  // 🛡️ Persistencia-fix: use-supercluster recorta los clusters a los bounds EXACTOS de
+  //    cámara (getClusters(bbox) sólo devuelve features dentro del bbox) y los IDs de
+  //    cluster cambian al recomputar. Resultado: al desplazar, los clusters del borde
+  //    desaparecían y reaparecían (parpadeo) en cada moveend. Ampliamos los bounds un 25%
+  //    para mantener un anillo de markers/clusters ya montados fuera de la vista → persisten
+  //    cuando paneas hacia ellos y se reduce el churn de IDs en el borde. Acotado al mundo.
+  const paddedBounds = useMemo<[number, number, number, number] | undefined>(() => {
+    if (!bounds) return bounds;
+    const [w, s, e, n] = bounds;
+    const padX = (e - w) * 0.25;
+    const padY = (n - s) * 0.25;
+    return [
+      Math.max(-180, w - padX),
+      Math.max(-85, s - padY),
+      Math.min(180, e + padX),
+      Math.min(85, n + padY),
+    ];
+  }, [bounds]);
+
   // 2️⃣ Supercluster
   const { clusters, supercluster } = useSupercluster({
     points,
-    bounds,
+    bounds: paddedBounds,
     zoom: zoom ?? 12,
     options: {
       radius: clusterRadius,
@@ -282,12 +301,34 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     applyPillVisual(inner, isSelected, isHovered);
   };
 
-  const syncAllMarkerOffsets = useCallback(() => {
+  // 🛡️ Marker-still-fix: el edge-clamp (setOffset recalculado por-frame en cada 'move')
+  //    empujaba a TODOS los markers cercanos al borde de vuelta al interior → en vez de
+  //    quedarse fijos a su lng/lat y salir de pantalla con normalidad, "resbalaban"
+  //    pegados al borde durante el pan, aparentando moverse solos (justo la queja del
+  //    usuario: "que se vean sin moverse aunque desplaces").
+  //    Ahora SOLO se clampa el marker SELECCIONADO — su pill debe permanecer visible por
+  //    encima del drawer móvil (60% de padding inferior). El resto se quedan pinneados a su
+  //    coordenada (offset 0) y se desplazan de forma natural con el mapa.
+  const selectedRef = useRef<number | null | undefined>(selectedServiceId);
+  useEffect(() => { selectedRef.current = selectedServiceId; }, [selectedServiceId]);
+  const clampedKeyRef = useRef<string | null>(null);
+
+  const syncSelectedMarkerOffset = useCallback(() => {
     if (!map) return;
-    entriesRef.current.forEach((entry) => {
-      const { lng, lat } = entry.marker.getLngLat();
-      syncMarkerEdgeOffset(map, entry.marker, lng, lat, entry.element);
-    });
+    const sel = selectedRef.current;
+    const wantKey = sel != null ? `s:${sel}` : null;
+    // Resetear a offset 0 el marker que estaba clampado si la selección cambió o se limpió.
+    if (clampedKeyRef.current && clampedKeyRef.current !== wantKey) {
+      const prev = entriesRef.current.get(clampedKeyRef.current);
+      if (prev) prev.marker.setOffset([0, 0]);
+      clampedKeyRef.current = null;
+    }
+    if (!wantKey) return;
+    const entry = entriesRef.current.get(wantKey);
+    if (!entry) return;
+    const { lng, lat } = entry.marker.getLngLat();
+    syncMarkerEdgeOffset(map, entry.marker, lng, lat, entry.element);
+    clampedKeyRef.current = wantKey;
   }, [map]);
 
   /**
@@ -376,22 +417,23 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       }
     }
 
-    requestAnimationFrame(() => syncAllMarkerOffsets());
+    requestAnimationFrame(() => syncSelectedMarkerOffset());
 
     // Cleanup total al desmontar
     return () => {
       // No limpiar aquí — sólo al unmount real (gestionado por el cleanup del unmount effect abajo).
     };
     // ✅ Importante: no incluir hovered/selected aquí.
-  }, [map, clusters, supercluster, syncAllMarkerOffsets]);
+  }, [map, clusters, supercluster, syncSelectedMarkerOffset]);
 
-  /** Recalcula offset en bordes al mover/zoom el mapa. */
+  /** Recalcula el offset del marker SELECCIONADO al mover/zoom el mapa (los demás
+   *  quedan pinneados a su coordenada y no se tocan → no resbalan). */
   useEffect(() => {
     if (!map) return;
     let raf = 0;
     const schedule = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => syncAllMarkerOffsets());
+      raf = requestAnimationFrame(() => syncSelectedMarkerOffset());
     };
     map.on('move', schedule);
     map.on('zoom', schedule);
@@ -403,7 +445,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       map.off('zoom', schedule);
       map.off('resize', schedule);
     };
-  }, [map, syncAllMarkerOffsets]);
+  }, [map, syncSelectedMarkerOffset]);
 
   /**
    * 4️⃣ Effect B: aplica hover/selected SOLO a los nodos afectados.
@@ -417,8 +459,8 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       const isHovered = !isSelected && hoveredServiceId === entry.serviceId;
       updateServiceVisualState(entry.element, isSelected, isHovered);
     });
-    requestAnimationFrame(() => syncAllMarkerOffsets());
-  }, [map, selectedServiceId, hoveredServiceId, syncAllMarkerOffsets]);
+    requestAnimationFrame(() => syncSelectedMarkerOffset());
+  }, [map, selectedServiceId, hoveredServiceId, syncSelectedMarkerOffset]);
 
   /**
    * 5️⃣ Unmount cleanup

@@ -131,13 +131,13 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
     const showAsDisabled = isWebOrUnavailable;
 
     const compactEnabledClasses =
-        'h-10 w-full text-sm font-medium text-white bg-[#222222] border border-[#222222] rounded-lg hover:bg-black active:bg-[#111111] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+        'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#1c1c1c] bg-[#1c1c1c] font-display text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const compactDisabledClasses =
-        'h-10 w-full text-sm font-medium text-[#717171] bg-[#f7f7f7] border border-[#ebebeb] rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed';
+        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#9ca3af]';
     const defaultEnabledClasses =
-        'w-full h-11 text-sm font-medium text-white bg-[#222222] border border-[#222222] rounded-lg hover:bg-black active:bg-[#111111] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+        'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#1c1c1c] bg-[#1c1c1c] font-display text-sm font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const defaultDisabledClasses =
-        'w-full h-11 text-sm font-medium text-[#717171] bg-[#f7f7f7] border border-[#ebebeb] rounded-lg flex items-center justify-center gap-1.5 cursor-not-allowed';
+        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border border-[#dadce0] bg-white font-display text-sm font-medium text-[#9ca3af]';
 
     return (
         <button
@@ -167,10 +167,7 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
             ) : (
                 <>
                     <AppleIcon compact={variant === 'compact'} />
-                    <span>Apple</span>
-                    {showAsDisabled && (
-                        <span className="text-[10px] font-normal uppercase tracking-wide text-[#b0b0b0]">Próx.</span>
-                    )}
+                    <span className="truncate">Continuar con Apple</span>
                 </>
             )}
             <style>{`
