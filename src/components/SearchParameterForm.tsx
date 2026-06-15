@@ -683,10 +683,10 @@ const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 20% – reposo co
 const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 55% – tutorial al cargar / tras elegir pin
 const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[2];     // 92% – pantalla casi completa
 /** Drawer en reposo sin selección — se calcula al vuelo según altura del tutorial. */
-const MOBILE_MAP_SNAP_TUTORIAL_FALLBACK = 0.48;
+const MOBILE_MAP_SNAP_TUTORIAL_FALLBACK = 0.36;
 
 /** Colchón extra por subpíxeles / borde del header del sheet. */
-const MOBILE_DRAWER_TUTORIAL_MEASURE_FUDGE_PX = 6;
+const MOBILE_DRAWER_TUTORIAL_MEASURE_FUDGE_PX = 4;
 
 function MapPanelHeader({
     count,
@@ -771,24 +771,31 @@ function MapMobileDrawerHeader({
     return (
         <div
             ref={headerRef}
-            className="relative px-5 pt-2.5 pb-3"
-            style={{ background: 'linear-gradient(to right, rgba(0,102,204,0.15) 0%, rgba(245,158,11,0.15) 100%)' }}
+            className={`relative px-5 ${awaitingSelection ? 'pt-2 pb-2' : 'pt-2.5 pb-3'}`}
+            style={{
+                background:
+                    'linear-gradient(to right, rgba(0,102,204,0.08) 0%, rgba(245,158,11,0.08) 100%), #ffffff',
+            }}
         >
             {/* Handle — afordancia de arrastre */}
-            <div className="mb-2.5 flex justify-center" aria-hidden>
-                <span className="h-1.5 w-11 rounded-full bg-[#dcdcdc]" />
+            <div className={`flex justify-center ${awaitingSelection ? 'mb-1.5' : 'mb-2.5'}`} aria-hidden>
+                <span className="h-1.5 w-11 rounded-full bg-[#b8b8b8]" />
             </div>
 
             {/* Titular de resultados — mismo tono que desktop */}
-            <h2 className="font-display text-[16px] font-semibold leading-tight tracking-[-0.01em] text-[#222222]">
+            <h2
+                className={`font-display font-semibold leading-tight tracking-[-0.01em] text-[#222222] ${
+                    awaitingSelection ? 'text-[15px]' : 'text-[16px]'
+                }`}
+            >
                 {count} {count === 1 ? 'experto disponible' : 'expertos disponibles'}
                 {locationLabel ? (
                     <span className="font-normal text-[#717171]"> en {locationLabel}</span>
                 ) : null}
             </h2>
-            <p className="mt-0.5 font-display text-[12.5px] font-normal leading-snug text-[#8a8a8a]">
+            <p className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
                 {awaitingSelection
-                    ? 'Toca una etiqueta de precio en el mapa para empezar'
+                    ? 'Toca una etiqueta de precio en el mapa'
                     : `En un radio de ~${rangeKm} km · desliza para ver la lista`}
             </p>
         </div>
@@ -798,16 +805,16 @@ function MapMobileDrawerHeader({
 /** Tutorial en el drawer antes de elegir un experto en el mapa. */
 function MapMobileSelectTutorial() {
     return (
-        <div className="flex flex-col items-center px-1 pb-2 pt-1 text-center">
+        <div className="flex flex-col items-center px-1 pb-0.5 pt-0 text-center">
             <div
-                className="relative mx-auto mb-4 h-[132px] w-full max-w-[280px] overflow-hidden rounded-2xl bg-[#dce9f2] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]"
+                className="relative mx-auto mb-2 h-[96px] w-full max-w-[240px] overflow-hidden rounded-xl bg-white ring-1 ring-[#d4d4d4] shadow-[0_2px_10px_rgba(15,23,42,0.10)]"
                 aria-hidden
             >
                 <div
-                    className="absolute inset-0 opacity-90"
+                    className="absolute inset-0 opacity-95"
                     style={{
                         background:
-                            'radial-gradient(ellipse 85% 70% at 58% 42%, #ebe8e3 0%, #e8e4dc 38%, transparent 72%), radial-gradient(ellipse 55% 45% at 22% 68%, #d4e8c8 0%, transparent 62%), linear-gradient(180deg, #dce9f2 0%, #d4e3ef 100%)',
+                            'radial-gradient(ellipse 85% 70% at 58% 42%, #ebe8e3 0%, #e8e4dc 38%, transparent 72%), radial-gradient(ellipse 55% 45% at 22% 68%, #d4e8c8 0%, transparent 62%), linear-gradient(180deg, #e8f0f6 0%, #dde8f0 100%)',
                     }}
                 />
                 <div className="absolute left-[18%] top-[22%] h-2 w-2 rounded-full bg-brand/25" />
@@ -816,17 +823,17 @@ function MapMobileSelectTutorial() {
 
                 <div className="absolute left-1/2 top-[36%] -translate-x-1/2">
                     <div className="relative inline-flex">
-                        <span className="map-tutorial-price-label inline-flex items-center justify-center rounded-full border border-[#d9d9d9] bg-white px-3.5 py-1.5 font-display text-[13px] font-bold tabular-nums text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.12),0_2px_5px_rgba(0,0,0,0.08)]">
+                        <span className="map-tutorial-price-label inline-flex items-center justify-center rounded-full border border-[#d9d9d9] bg-white px-3 py-1 font-display text-[12px] font-bold tabular-nums text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.12),0_2px_5px_rgba(0,0,0,0.08)]">
                             €69
                         </span>
 
-                        <span className="map-tutorial-click-ring pointer-events-none absolute left-1/2 top-1/2 h-10 w-[4.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-brand/25" />
+                        <span className="map-tutorial-click-ring pointer-events-none absolute left-1/2 top-1/2 h-8 w-[3.75rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-brand/25" />
 
                         <div
                             className="map-tutorial-cursor pointer-events-none absolute left-1/2 top-1/2 z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
-                            style={{ marginLeft: -6.5, marginTop: -3.5 }}
+                            style={{ marginLeft: -5.5, marginTop: -3 }}
                         >
-                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden className="block">
+                            <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden className="block h-6 w-6">
                                 <path
                                     d="M6.5 3.5L6.5 22.5L11.2 17.8L15.2 24.5L18.5 22.8L14.5 16.1L21.5 15.5L6.5 3.5Z"
                                     fill="#ffffff"
@@ -840,17 +847,17 @@ function MapMobileSelectTutorial() {
                 </div>
             </div>
 
-            <p className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <p className="font-display text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                 Elige un experto en el mapa
             </p>
-            <p className="mt-1.5 max-w-[17rem] pb-0.5 text-sm leading-relaxed text-[#6a6a6a]">
-                Pulsa sobre una etiqueta de precio. Aquí aparecerá su ficha para comparar y reservar.
+            <p className="mt-1 max-w-[15rem] text-xs leading-snug text-[#6a6a6a]">
+                Pulsa una etiqueta de precio para ver su ficha.
             </p>
 
             <style>{`
                 /* Punta del cursor anclada al centro del label vía margin negativo en el nodo. */
                 @keyframes map-tutorial-cursor-tap {
-                    0%, 18%, 100% { transform: translate(16px, 12px) scale(1); }
+                    0%, 18%, 100% { transform: translate(12px, 10px) scale(1); }
                     28% { transform: translate(0, 0) scale(0.92); }
                     36% { transform: translate(0, 0) scale(1); }
                 }
@@ -2231,6 +2238,15 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     />
                                 </div>
                                 )}
+
+                            {/* Velo suave sobre el mapa bajo el drawer — separa panel claro del cielo del mapa */}
+                            {isDrawerOpen && isDrawerVisible && (
+                                <div
+                                    className="pointer-events-none absolute inset-x-0 bottom-0 z-[9990] bg-gradient-to-t from-[#0f172a]/18 via-[#0f172a]/6 to-transparent"
+                                    style={{ height: 'min(48vh, 420px)' }}
+                                    aria-hidden
+                                />
+                            )}
                                 
                             {/* CTA lista — visible si el drawer no está expandido del todo */}
                                 {formData.latitude && formData.longitude && (

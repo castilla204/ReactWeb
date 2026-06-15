@@ -11,19 +11,18 @@ export function getSafeAreaInsetBottom(): number {
     return value;
 }
 
-/** Margen inferior del tutorial — simétrico al header y con extra en pantallas bajas. */
+/** Margen inferior del tutorial — compacto pero con safe area en iOS. */
 export function getTutorialDrawerBottomBuffer(viewportH: number): number {
     const safe = getSafeAreaInsetBottom();
-    const base = viewportH <= 667 ? 18 : viewportH <= 812 ? 16 : viewportH <= 896 ? 14 : 12;
+    const base = viewportH <= 667 ? 10 : viewportH <= 812 ? 8 : 6;
     return base + safe;
 }
 
-/** Fracción del viewport para el drawer tutorial según altura real del contenido. */
+/** Fracción del viewport para el drawer tutorial — despliegue moderado. */
 export function clampTutorialDrawerSnap(totalPx: number, viewportH: number): number {
-    if (viewportH <= 0) return 0.48;
+    if (viewportH <= 0) return 0.36;
     const frac = totalPx / viewportH;
-    // iPhone SE y similares necesitan más %; antes el techo 50 % recortaba el texto.
     const maxFrac =
-        viewportH <= 667 ? 0.64 : viewportH <= 812 ? 0.58 : viewportH <= 896 ? 0.55 : 0.52;
-    return Math.min(maxFrac, Math.max(0.36, Math.round(frac * 1000) / 1000));
+        viewportH <= 667 ? 0.44 : viewportH <= 812 ? 0.40 : viewportH <= 896 ? 0.38 : 0.36;
+    return Math.min(maxFrac, Math.max(0.30, Math.round(frac * 1000) / 1000));
 }
