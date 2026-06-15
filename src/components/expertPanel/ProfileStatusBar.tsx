@@ -130,7 +130,7 @@ export function ProfileStatusBar({
                     <span className="profile-status-bar-ok-label">Perfil activo</span>
                     <span className="profile-status-bar-ok-meta" aria-hidden>·</span>
                     <span className="profile-status-bar-ok-meta">
-                        {doneCount}/{total} requisitos cumplidos
+                        {inline ? 'Todo correcto' : `${doneCount}/${total} requisitos cumplidos`}
                     </span>
                 </span>
                 <ChevronDown className="profile-status-bar-chevron" aria-hidden />

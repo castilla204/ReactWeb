@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Loader2, Pencil, Trash2, Plus, Search } from 'lucide-react';
 import { formatCurrency } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
@@ -51,8 +51,6 @@ interface ServicesTabProps {
     serviceEditor?: React.ReactNode;
 }
 
-type SortField = 'price' | 'category' | 'duration';
-type SortDir = 'asc' | 'desc';
 type VisibilityTone = 'visible' | 'paused' | 'hidden' | 'location';
 
 interface VisibilityMeta {
@@ -133,8 +131,6 @@ export function ServicesTab({
     const [deletingServiceId, setDeletingServiceId] = useState<number | null>(null);
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortField, setSortField] = useState<SortField>('category');
-    const [sortDir, setSortDir] = useState<SortDir>('asc');
 
     const visCtx = useMemo(
         () => ({ stripeStatus, onboardingCompleted, isOnVacation, hasLocation }),
@@ -154,18 +150,25 @@ export function ServicesTab({
             });
         }
         return [...filtered].sort((a, b) => {
-            let cmp = 0;
-            if (sortField === 'price') cmp = a.price - b.price;
-            else if (sortField === 'category') {
-                const catA = categories?.find((c) => c.id === a.categoryId)?.name || a.categoryName || '';
-                const catB = categories?.find((c) => c.id === b.categoryId)?.name || b.categoryName || '';
-                cmp = catA.localeCompare(catB, 'es');
-            } else if (sortField === 'duration') {
-                cmp = (a.durationInHours || 0) - (b.durationInHours || 0);
-            }
-            return sortDir === 'asc' ? cmp : -cmp;
+            const catA = categories?.find((c) => c.id === a.categoryId)?.name || a.categoryName || '';
+            const catB = categories?.find((c) => c.id === b.categoryId)?.name || b.categoryName || '';
+            return catA.localeCompare(catB, 'es');
         });
-    }, [services, searchQuery, sortField, sortDir, categories]);
+    }, [services, searchQuery, categories]);
+
+    const showMobileActionBar =
+        activeTab === 'services' && !serviceEditor && !isLoadingServices && !servicesError;
+
+    useEffect(() => {
+        window.dispatchEvent(
+            new CustomEvent('expert-services-mobile-bar', { detail: { active: showMobileActionBar } }),
+        );
+        return () => {
+            window.dispatchEvent(
+                new CustomEvent('expert-services-mobile-bar', { detail: { active: false } }),
+            );
+        };
+    }, [showMobileActionBar]);
 
     if (!activeTab || activeTab !== 'services') return null;
 
@@ -197,7 +200,7 @@ export function ServicesTab({
         : null;
 
     return (
-        <div className="expert-services">
+        <div className={`expert-services${showMobileActionBar ? ' expert-services--mobile-action' : ''}`}>
             {profileIncomplete && onGoToSetup && (
                 <p className="expert-services-hint" role="status">
                     Completa tu perfil para que tus servicios sean visibles.{' '}
@@ -213,38 +216,22 @@ export function ServicesTab({
                         <Search aria-hidden className="expert-services-search-icon" />
                         <Input
                             type="search"
-                            placeholder="Buscar servicios…"
+                            placeholder="Buscar…"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="expert-services-search"
                         />
                     </label>
-                    <select
-                        id="services-sort"
-                        className="expert-services-sort"
-                        value={`${sortField}-${sortDir}`}
-                        onChange={(e) => {
-                            const [field, dir] = e.target.value.split('-') as [SortField, SortDir];
-                            setSortField(field);
-                            setSortDir(dir);
-                        }}
-                        aria-label="Ordenar servicios"
-                    >
-                        <option value="category-asc">Categoría A–Z</option>
-                        <option value="category-desc">Categoría Z–A</option>
-                        <option value="price-asc">Precio menor</option>
-                        <option value="price-desc">Precio mayor</option>
-                        <option value="duration-asc">Duración menor</option>
-                        <option value="duration-desc">Duración mayor</option>
-                    </select>
+                    <span className="expert-services-bar-spacer" aria-hidden="true" />
                     <Button
                         onClick={() => setShowServiceForm(true)}
                         size="sm"
-                        className="expert-btn-brand expert-services-add"
+                        variant="outline"
+                        className="expert-services-add"
                         disabled={profileIncomplete}
                     >
                         <Plus aria-hidden className="expert-services-add-icon" />
-                        Nuevo
+                        Nuevo servicio
                     </Button>
                 </header>
             )}
@@ -267,7 +254,7 @@ export function ServicesTab({
                         Publica tu primer servicio con categoría, precio y condiciones para aparecer en búsquedas.
                     </p>
                     <Button
-                        className="expert-btn-brand mt-5"
+                        className="expert-btn-brand mt-5 expert-services-state-cta"
                         onClick={() => setShowServiceForm(true)}
                         disabled={profileIncomplete}
                     >
@@ -275,7 +262,13 @@ export function ServicesTab({
                     </Button>
                 </div>
             ) : (
-                <ul className="expert-services-list" aria-label="Lista de servicios">
+                <>
+                    <div className="expert-services-list-head" aria-hidden="true">
+                        <span className="expert-services-list-head-media" />
+                        <span className="expert-services-list-head-label">Servicio</span>
+                        <span className="expert-services-list-head-label expert-services-list-head-label--end">Precio</span>
+                    </div>
+                    <ul className="expert-services-list" aria-label="Lista de servicios">
                     {filteredAndSortedServices.length === 0 ? (
                         <li className="expert-services-empty-filter">
                             <p>No hay resultados para &ldquo;{searchQuery}&rdquo;</p>
@@ -323,13 +316,11 @@ export function ServicesTab({
                                     </div>
 
                                     <div className="expert-service-body">
-                                        <div className="expert-service-head">
-                                            <h3 className="expert-service-title">
-                                                {categoryName}
-                                                {serviceTypeName && (
-                                                    <span className="expert-service-type">{serviceTypeName}</span>
-                                                )}
-                                            </h3>
+                                        <h3 className="expert-service-title">{categoryName}</h3>
+                                        <div className="expert-service-meta">
+                                            {serviceTypeName ? (
+                                                <span className="expert-service-type">{serviceTypeName}</span>
+                                            ) : null}
                                             <span className={`expert-service-status expert-service-status--${vis.tone}`}>
                                                 <span className="expert-service-status-dot" aria-hidden />
                                                 {vis.label}
@@ -379,6 +370,7 @@ export function ServicesTab({
                         })
                     )}
                 </ul>
+                </>
             )}
 
             <Dialog open={deleteTargetId != null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
@@ -412,6 +404,19 @@ export function ServicesTab({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {showMobileActionBar && (
+                <div className="expert-services-mobile-bar">
+                    <Button
+                        onClick={() => setShowServiceForm(true)}
+                        className="expert-btn-brand expert-services-mobile-add"
+                        disabled={profileIncomplete}
+                    >
+                        <Plus aria-hidden className="expert-services-add-icon" />
+                        Nuevo servicio
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

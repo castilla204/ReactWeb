@@ -10,6 +10,7 @@ import { useWindowSize } from '../hooks/useWindowSize';
 import {
   CHATBOT_FAB_BOTTOM_STANDALONE_CLASS,
   CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS,
+  CHATBOT_FAB_BOTTOM_WITH_EXPERT_SERVICES_CLASS,
   CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS,
   CHATBOT_FAB_RIGHT_MOBILE_CLASS,
 } from '../constants/homepageTypography';
@@ -34,9 +35,10 @@ function hasMobileReserveFooter(pathname: string): boolean {
   return RESERVE_FOOTER_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-function getMobileBottomClass(pathname: string): string {
+function getMobileBottomClass(pathname: string, expertServicesFooter: boolean): string {
   if (hasMobileTabBar(pathname)) return CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS;
   if (hasMobileReserveFooter(pathname)) return CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS;
+  if (expertServicesFooter) return CHATBOT_FAB_BOTTOM_WITH_EXPERT_SERVICES_CLASS;
   return CHATBOT_FAB_BOTTOM_STANDALONE_CLASS;
 }
 
@@ -48,6 +50,7 @@ function hasCookieConsent(): boolean {
 export const ChatbotFab: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
+  const [expertServicesFooter, setExpertServicesFooter] = useState(false);
   const [panelKey, setPanelKey] = useState(0);
   const fabRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -56,10 +59,20 @@ export const ChatbotFab: React.FC = () => {
   const keyboardLayout = useMobileDrawerKeyboard(isMobile && isOpen);
 
   const isHidden = HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path));
-  const mobileBottomClass = getMobileBottomClass(location.pathname);
+  const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
+
+  useEffect(() => {
+    const onExpertServicesBar = (event: Event) => {
+      const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
+      setExpertServicesFooter(active);
+    };
+    window.addEventListener('expert-services-mobile-bar', onExpertServicesBar);
+    return () => window.removeEventListener('expert-services-mobile-bar', onExpertServicesBar);
+  }, []);
 
   useEffect(() => {
     setIsOpen(false);
+    setExpertServicesFooter(false);
   }, [location.pathname]);
 
   useEffect(() => {
