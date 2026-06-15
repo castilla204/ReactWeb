@@ -392,6 +392,10 @@ export const MOBILE_TAB_BAR_HEIGHT_PX = 65;
 /** Offset inferior del FAB con tab bar (20px de aire sobre los 65px de la barra) */
 export const CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS = 'bottom-[calc(65px+1.25rem)]';
 
+/** Barra fija «Nuevo servicio» en panel experto (móvil) */
+export const CHATBOT_FAB_BOTTOM_WITH_EXPERT_SERVICES_CLASS =
+  'bottom-[calc(4.25rem+1rem+env(safe-area-inset-bottom,0px))]';
+
 /** Offset inferior del FAB sin tab bar (respeta safe-area del dispositivo) */
 export const CHATBOT_FAB_BOTTOM_STANDALONE_CLASS =
   'bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]';

@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { MOBILE_HERO_PHOTO_SCRIM } from '../constants/homepageHeroMap';
 
 /** Altura del hero expandido — texto centrado en banda superior, flecha abajo */
-const MOBILE_HERO_EXPANDED_H_CLASS = 'min-h-[172px]';
+const MOBILE_HERO_EXPANDED_H_CLASS = 'min-h-[200px]';
 
 /**
  * Hero móvil — la imagen ya trae zona clara a la izquierda (IA).
@@ -39,7 +39,10 @@ export const HomepageMobileHero: React.FC = () => {
             aria-expanded={false}
             aria-label="Desplegar presentación"
           >
-            <p className="hp-eyebrow max-w-[72%]">Inspección antes de comprar</p>
+            <p className="hp-eyebrow max-w-[72%] inline-flex items-center">
+              <span className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#F59E0B]" aria-hidden="true"></span>
+              Inspección antes de comprar
+            </p>
             <ChevronDown className="h-4 w-4 shrink-0 text-brand" strokeWidth={2.5} />
           </button>
         )}
@@ -53,9 +56,18 @@ export const HomepageMobileHero: React.FC = () => {
             <div className={`relative ${MOBILE_HERO_EXPANDED_H_CLASS}`}>
               <div className="absolute inset-x-0 bottom-7 top-0 flex items-center px-4">
                 <div className="relative max-w-[14.25rem] min-[390px]:max-w-[15rem]">
-                  <h1 className="hp-hero-title text-[1.3rem] min-[390px]:text-[1.45rem] leading-[1.12] text-balance">
+                  <h1 className="hp-hero-title text-[1.55rem] min-[390px]:text-[1.75rem] font-extrabold leading-[1.08] text-balance">
                     Antes de comprar,{' '}
-                    <span className="text-brand">que lo revise un experto</span>
+                    <span className="text-brand">
+                      que lo revise{' '}
+                      <span className="relative inline-block whitespace-nowrap">
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-x-[-2px] bottom-[2px] h-[7px] rounded-[3px] bg-[#F59E0B]"
+                        ></span>
+                        <span className="relative">un experto</span>
+                      </span>
+                    </span>
                   </h1>
                   <p className="mt-1.5 text-[13px] leading-snug text-[#3a3a3a] min-[390px]:text-sm">
                     Informe con fotos y vídeo.

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
-import { formatCurrency, getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
+import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import type { ServiceEditorExpertPreview } from './ServiceEditorDesktopPreview';
@@ -407,24 +407,6 @@ export function ServiceForm({
         );
     };
 
-    const previewCategoryName = useMemo(() => {
-        if (!formData.categoryId) return null;
-        const cat = normalizedCategories.find((c) => String(c.id) === formData.categoryId);
-        return cat?.name ?? null;
-    }, [formData.categoryId, normalizedCategories]);
-
-    const previewServiceTypeName = useMemo(() => {
-        if (!formData.serviceTypeId) return null;
-        const st = normalizedServiceTypes.find((s) => String(s.id) === formData.serviceTypeId);
-        return st?.name ?? null;
-    }, [formData.serviceTypeId, normalizedServiceTypes]);
-
-    const previewPriceLabel = useMemo(() => {
-        const price = parseFloat(formData.price);
-        if (!formData.price || Number.isNaN(price) || price <= 0) return '—';
-        return formatCurrency(price, priceCurrencyCode);
-    }, [formData.price, priceCurrencyCode]);
-
     const heroImages = useMemo(() => {
         const existing = imagesToShow.map((img) => img.url);
         return [...existing, ...newImagePreviews];
@@ -459,94 +441,6 @@ export function ServiceForm({
 
     const isSaving = editingService ? isUpdatingService : isCreatingService;
     const showDuration = parseInt(formData.serviceTypeId, 10) === 1;
-
-    const fieldCompletion = useMemo(() => {
-        const price = parseFloat(formData.price);
-        const durationOk = !showDuration || (parseInt(formData.durationInHours, 10) >= 1);
-        return {
-            category: Boolean(formData.categoryId),
-            type: Boolean(formData.serviceTypeId),
-            price: Boolean(formData.price) && !Number.isNaN(price) && price > 0,
-            conditions: formData.conditions.trim().length >= 400 && formData.conditions.trim().length <= 1000,
-            duration: durationOk,
-            images: heroImages.length > 0,
-        };
-    }, [formData, showDuration, heroImages.length]);
-
-    const checklistItems = useMemo(() => {
-        const items = [
-            {
-                id: 'category',
-                label: 'Categoría',
-                done: fieldCompletion.category,
-                required: true,
-                value: previewCategoryName,
-            },
-            {
-                id: 'type',
-                label: 'Tipo de servicio',
-                done: fieldCompletion.type,
-                required: true,
-                value: previewServiceTypeName,
-            },
-            {
-                id: 'price',
-                label: 'Precio',
-                done: fieldCompletion.price,
-                required: true,
-                value: fieldCompletion.price ? previewPriceLabel : null,
-            },
-            ...(showDuration
-                ? [{
-                    id: 'duration',
-                    label: 'Duración',
-                    done: fieldCompletion.duration,
-                    required: true,
-                    value: fieldCompletion.duration ? `${formData.durationInHours} h` : null,
-                }]
-                : []),
-            {
-                id: 'conditions',
-                label: 'Condiciones',
-                done: fieldCompletion.conditions,
-                required: true,
-                value: fieldCompletion.conditions ? 'Completado' : null,
-            },
-            {
-                id: 'images',
-                label: 'Imágenes',
-                done: fieldCompletion.images,
-                required: false,
-                value: fieldCompletion.images ? `${heroImages.length} foto${heroImages.length === 1 ? '' : 's'}` : 'Opcional',
-            },
-        ];
-        return items;
-    }, [fieldCompletion, showDuration, previewCategoryName, previewServiceTypeName, previewPriceLabel, formData.durationInHours, heroImages.length]);
-
-    const requiredItems = checklistItems.filter((item) => item.required);
-    const requiredDone = requiredItems.filter((item) => item.done).length;
-    const requiredTotal = requiredItems.length;
-    const allRequiredDone = requiredDone === requiredTotal;
-
-    const progressPercent = requiredTotal > 0 ? (requiredDone / requiredTotal) * 100 : 0;
-
-    const scrollToSection = (sectionId: string) => {
-        requestAnimationFrame(() => {
-            document.getElementById(`sf-section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    };
-
-    const scrollToField = (fieldId: string) => {
-        const sectionMap: Record<string, string> = {
-            category: 'offer',
-            type: 'offer',
-            price: 'price',
-            duration: 'price',
-            conditions: 'details',
-            images: 'photos',
-        };
-        scrollToSection(sectionMap[fieldId] ?? fieldId);
-    };
 
     const handlePublish = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -606,31 +500,6 @@ export function ServiceForm({
                                 {saveButton}
                             </div>
                         </header>
-
-                        <div className="sf-card-progress">
-                            <div className="sf-progress-track" aria-hidden>
-                                <div className="sf-progress-fill" style={{ width: `${progressPercent}%` }} />
-                            </div>
-                            {allRequiredDone ? (
-                                <p className="sf-progress-status sf-progress-status--ok">Listo para publicar</p>
-                            ) : (
-                                <div className="sf-steps" role="list" aria-label="Campos obligatorios">
-                                    <span className="sf-steps-count">{requiredDone}/{requiredTotal}</span>
-                                    {requiredItems.map((item) => (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            role="listitem"
-                                            className={`sf-step${item.done ? ' sf-step--done' : ''}`}
-                                            onClick={() => !item.done && scrollToField(item.id)}
-                                            disabled={item.done}
-                                        >
-                                            {item.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
 
                         <form className="sf-form" onSubmit={(e) => e.preventDefault()}>
                             <section id="sf-section-photos" className="sf-section sf-section--photos">

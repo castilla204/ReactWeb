@@ -220,7 +220,9 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         className="h-9 w-9 -scale-x-100 object-contain"
         style={{ imageRendering: '-webkit-optimize-contrast' }}
       />
-      <span className="text-[12px] font-semibold tracking-[0.1em] text-[#222]">INSPECCIONO</span>
+      <span className="text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]">
+        Inspecciono<span className="text-[#F59E0B]">.</span>
+      </span>
     </a>
   );
 
@@ -250,8 +252,8 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
             className="h-8 w-8 -scale-x-100 shrink-0 object-contain sm:h-9 sm:w-9"
             style={{ imageRendering: '-webkit-optimize-contrast' }}
           />
-          <span className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[#222]">
-            Inspecciono
+          <span className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[#2563EB]">
+            Inspecciono<span className="text-[#F59E0B]">.</span>
           </span>
         </a>
         {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
