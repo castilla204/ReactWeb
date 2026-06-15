@@ -23,11 +23,12 @@ interface CustomBottomSheetProps {
   snapToSequentialPoint?: boolean;
   scrollLockTimeout?: number;
   onCloseRequest?: () => void;
-  /** Si true y headerContent está presente, NO renderiza el X automático.
-   *  Útil cuando el headerContent ya incluye su propio botón de minimizar
-   *  (evita el solape entre el X absolute y el contenido del header). */
+  /** Si true y headerContent está presente, NO renderiza el X automático. */
+  hideCloseButton?: boolean;
   /** Si true, no permite arrastrar por encima del snap más alto. */
   lockTopSnap?: boolean;
+  /** Sustituye el borde inferior del header por una barra de carga animada. */
+  headerLoading?: boolean;
 }
 
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.9 };
@@ -56,6 +57,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   onCloseRequest,
   hideCloseButton = false,
   lockTopSnap = false,
+  headerLoading = false,
   // snapToSequentialPoint y scrollLockTimeout aceptados por compat — el handoff
   // físico ya emula "un snap por gesto" y la ventana de bloqueo es implícita.
 }) => {
@@ -305,8 +307,27 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           exit={{ y: closedY, transition: { duration: 0.22, ease: [0.32, 0.72, 0, 1] } }}
         >
           {headerContent ? (
-            <div className="relative shrink-0 border-b border-[#cfcfcf] bg-white shadow-[0_4px_14px_rgba(15,23,42,0.07)]">
+            <div
+              className={cn(
+                "relative shrink-0 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.07)]",
+                !headerLoading && "border-b border-[#cfcfcf]",
+              )}
+            >
               {headerContent}
+              {headerLoading ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Buscando expertos"
+                >
+                  <div className="absolute inset-0 bg-[#d4d4d4]" aria-hidden />
+                  <div
+                    className="map-sheet-header-load-bar absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-brand via-[#3d9ae8] to-[#F59E0B]"
+                    aria-hidden
+                  />
+                </div>
+              ) : null}
               {/* X minimizar — solo si hideCloseButton=false. Cuando el headerContent
                   ya integra su propio botón de minimizar (caso MapMobileDrawerHeader),
                   pasar hideCloseButton=true para evitar el solape con los chips. */}
@@ -350,6 +371,22 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           </div>
         </motion.div>
       )}
+      <style>{`
+        @keyframes map-sheet-header-load {
+          0% { transform: translateX(-110%); }
+          100% { transform: translateX(280%); }
+        }
+        .map-sheet-header-load-bar {
+          animation: map-sheet-header-load 1.25s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .map-sheet-header-load-bar {
+            animation: none;
+            left: 29%;
+            width: 42%;
+          }
+        }
+      `}</style>
     </AnimatePresence>
   );
 };
