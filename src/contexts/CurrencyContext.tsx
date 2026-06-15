@@ -140,6 +140,91 @@ function readStoredCurrency(): string {
     return detectFromIP() || BASE_CURRENCY;
 }
 
+/**
+ * Carga de /api/currencies con dedup a nivel de módulo + reintento exponencial.
+ *
+ * Antes el fetch vivía dentro del useEffect del provider con un flag `cancelled`
+ * que solo evitaba el setState, NO la petición de red: el doble montaje de
+ * StrictMode (o dos providers) disparaba 2 GET /api/currencies. Centralizando aquí
+ * con `currenciesInFlight` (promise en vuelo) + caché de 60s, la 2ª llamada reutiliza
+ * la petición en curso → una sola petición.
+ */
+type CurrenciesPayload = { currencies: Currency[] | null; rates: Record<string, number> | null };
+
+let currenciesCache: { data: CurrenciesPayload; timestamp: number } | null = null;
+let currenciesInFlight: Promise<CurrenciesPayload> | null = null;
+const CURRENCIES_CACHE_MS = 60000;
+
+function sanitizeRates(raw: Record<string, unknown>): Record<string, number> {
+    const clean: Record<string, number> = { EUR: 1 };
+    for (const [code, val] of Object.entries(raw)) {
+        const n = typeof val === 'number' ? val : Number(val);
+        if (Number.isFinite(n) && n > 0) {
+            clean[code] = n;
+        } else {
+            console.warn(`[CurrencyContext] Skipping invalid rate for ${code}:`, val);
+        }
+    }
+    return clean;
+}
+
+function normalizeCurrencies(data: any): Currency[] | null {
+    if (!Array.isArray(data?.currencies) || data.currencies.length === 0) return null;
+    // 🛡️ Round 28 CUR-SEL-1: normalizar a UPPERCASE y soportar lowercase + PascalCase.
+    const normalized: Currency[] = (data.currencies as any[])
+        .map((c) => ({
+            code: String(c?.code ?? c?.Code ?? '').trim().toUpperCase(),
+            name: String(c?.name ?? c?.Name ?? ''),
+            symbol: String(c?.symbol ?? c?.Symbol ?? ''),
+            locale: String(c?.locale ?? c?.Locale ?? 'en-US'),
+        }))
+        .filter((c) => c.code.length > 0);
+    return normalized.length > 0 ? normalized : null;
+}
+
+function loadCurrenciesOnce(): Promise<CurrenciesPayload> {
+    const now = Date.now();
+    if (currenciesCache && now - currenciesCache.timestamp < CURRENCIES_CACHE_MS) {
+        return Promise.resolve(currenciesCache.data);
+    }
+    if (currenciesInFlight) return currenciesInFlight;
+
+    const run = (async (): Promise<CurrenciesPayload> => {
+        let lastErr: unknown;
+        // Reintento exponencial: 3 intentos (2s→4s→8s).
+        for (let i = 0; i < 3; i++) {
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}/api/currencies`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const payload: CurrenciesPayload = {
+                    currencies: normalizeCurrencies(data),
+                    rates: data?.rates && typeof data.rates === 'object'
+                        ? sanitizeRates(data.rates as Record<string, unknown>)
+                        : null,
+                };
+                currenciesCache = { data: payload, timestamp: Date.now() };
+                return payload;
+            } catch (err) {
+                lastErr = err;
+                if (i < 2) {
+                    const delay = 2000 * Math.pow(2, i);
+                    const message = err instanceof Error ? err.message : 'Unknown error';
+                    console.warn(`[CurrencyContext] /api/currencies attempt ${i + 1} failed (${message}), retrying in ${delay}ms`);
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                }
+            }
+        }
+        throw lastErr instanceof Error ? lastErr : new Error('Unknown error');
+    })();
+
+    currenciesInFlight = run;
+    run.finally(() => {
+        currenciesInFlight = null;
+    });
+    return run;
+}
+
 export function CurrencyProvider({ children }: { children: ReactNode }) {
     const [currencies, setCurrencies] = useState<Currency[]>(SUPPORTED_CURRENCIES);
     const [rates, setRates] = useState<Record<string, number>>(DEFAULT_RATES);
@@ -149,72 +234,31 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const [ratesFetchedAt, setRatesFetchedAt] = useState<number | null>(null);
 
     // Fetch /api/currencies en el mount para obtener la lista oficial y las tasas en vivo.
-    // Round 24: retry exponencial (3 intentos, 2s→4s→8s) + sanitización de rates 0/null.
+    // La carga real (con retry exponencial + dedup en vuelo) vive en loadCurrenciesOnce
+    // a nivel de módulo, así que StrictMode / múltiples providers comparten una sola
+    // petición. El flag `cancelled` aquí solo evita setState tras desmontar.
     useEffect(() => {
         let cancelled = false;
 
-        const sanitizeRates = (raw: Record<string, unknown>): Record<string, number> => {
-            const clean: Record<string, number> = { EUR: 1 };
-            for (const [code, val] of Object.entries(raw)) {
-                const n = typeof val === 'number' ? val : Number(val);
-                if (Number.isFinite(n) && n > 0) {
-                    clean[code] = n;
-                } else {
-                    console.warn(`[CurrencyContext] Skipping invalid rate for ${code}:`, val);
-                }
-            }
-            return clean;
-        };
-
-        const attempt = async (i: number): Promise<void> => {
-            try {
-                setError(null);
-                const response = await fetch(`${API_CONFIG.baseUrl}/api/currencies`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
+        setLoading(true);
+        loadCurrenciesOnce()
+            .then((payload) => {
                 if (cancelled) return;
-                if (Array.isArray(data?.currencies) && data.currencies.length > 0) {
-                    // 🛡️ Round 28 CUR-SEL-1: normalizar a lowercase para que sobreviva
-                    // independientemente del PropertyNamingPolicy del backend. Soporta tanto
-                    // `code/name/symbol/locale` (lowercase, contrato correcto) como
-                    // `Code/Name/Symbol/Locale` (PascalCase, regresión anterior). Sin esto,
-                    // el filtro de CurrencySelector descartaba todos los items y el dropdown
-                    // se quedaba vacío.
-                    const normalized: Currency[] = (data.currencies as any[])
-                        .map((c) => ({
-                            code: String(c?.code ?? c?.Code ?? '').trim().toUpperCase(),
-                            name: String(c?.name ?? c?.Name ?? ''),
-                            symbol: String(c?.symbol ?? c?.Symbol ?? ''),
-                            locale: String(c?.locale ?? c?.Locale ?? 'en-US'),
-                        }))
-                        .filter((c) => c.code.length > 0);
-                    if (normalized.length > 0) {
-                        setCurrencies(normalized);
-                    }
-                }
-                if (data?.rates && typeof data.rates === 'object') {
-                    setRates(sanitizeRates(data.rates as Record<string, unknown>));
-                }
+                if (payload.currencies) setCurrencies(payload.currencies);
+                if (payload.rates) setRates(payload.rates);
                 setRatesFetchedAt(Date.now());
-            } catch (err) {
+                setError(null);
+            })
+            .catch((err) => {
                 if (cancelled) return;
                 const message = err instanceof Error ? err.message : 'Unknown error';
-                if (i < 2) {
-                    const delay = 2000 * Math.pow(2, i); // 2s, 4s, 8s
-                    console.warn(`[CurrencyContext] /api/currencies attempt ${i + 1} failed (${message}), retrying in ${delay}ms`);
-                    await new Promise((resolve) => setTimeout(resolve, delay));
-                    if (!cancelled) await attempt(i + 1);
-                } else {
-                    console.warn('[CurrencyContext] Failed to load /api/currencies after retries, using defaults:', message);
-                    setError(message);
-                }
-            }
-        };
+                console.warn('[CurrencyContext] Failed to load /api/currencies after retries, using defaults:', message);
+                setError(message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
 
-        setLoading(true);
-        attempt(0).finally(() => {
-            if (!cancelled) setLoading(false);
-        });
         return () => {
             cancelled = true;
         };

@@ -55,58 +55,63 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.categories.list}`;
-            
-            // ✅ CRÍTICO: Endpoint público - NO enviar token de autenticación
-            // ✅ CRÍTICO: Agregar timeout de 15 segundos para evitar que se quede colgado
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos
-            
-            // ✅ Usar capacitorFetch que automáticamente usa CapacitorHttp en Capacitor (bypass CORS)
-            const { capacitorFetch } = await import('../utils/capacitorFetch');
-            
-            // ✅ Crear promise y guardarlo en cache para evitar llamadas duplicadas
-            const fetchPromise = capacitorFetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    // ✅ NO incluir Authorization header para endpoints públicos
-                },
-                signal: controller.signal,
-            }).then(async res => {
-                clearTimeout(timeoutId);
-                if (!res.ok) {
-                    // Verificar si la respuesta es HTML en lugar de JSON
-                    const contentType = res.headers.get('content-type');
-                    if (contentType && !contentType.includes('application/json')) {
-                        throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+
+            // ✅ CRÍTICO: registrar el promise en vuelo de forma SÍNCRONA, antes de
+            // cualquier `await`. Antes el `await import(capacitorFetch)` ocurría ANTES
+            // de asignar globalCategoriesCache.promise, dejando una ventana donde el doble
+            // montaje de StrictMode (o dos consumidores concurrentes) colaba un 2º fetch a
+            // /categories. Envolviendo todo en un IIFE y asignando el promise de inmediato,
+            // la 2ª llamada reutiliza la petición en vuelo.
+            const fetchPromise: Promise<CategoryWithDetailsDto[]> = (async () => {
+                // Endpoint público: NO enviar token. Timeout de 15s para no colgar.
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                try {
+                    // capacitorFetch usa CapacitorHttp en nativo (bypass CORS).
+                    const { capacitorFetch } = await import('../utils/capacitorFetch');
+                    const res = await capacitorFetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+                    if (!res.ok) {
+                        const contentType = res.headers.get('content-type');
+                        if (contentType && !contentType.includes('application/json')) {
+                            throw new Error('Server returned HTML instead of JSON. Check backend configuration.');
+                        }
+                        throw new Error(`Failed to fetch categories: ${res.status} ${res.statusText}`);
                     }
-                    throw new Error(`Failed to fetch categories: ${res.status} ${res.statusText}`);
+                    return res.json();
+                } catch (e: any) {
+                    clearTimeout(timeoutId);
+                    if (e?.name === 'AbortError') {
+                        throw new Error('Request timeout: The server took too long to respond. Please try again.');
+                    }
+                    throw e;
                 }
-                return res.json();
-            });
-            
+            })();
+
             globalCategoriesCache.promise = fetchPromise;
-            
+
             try {
                 const data: CategoryWithDetailsDto[] = await fetchPromise;
-                
+
                 // ✅ Limpiar promise después de completar
                 globalCategoriesCache.promise = null;
-                
+
                 // ✅ Guardar en cache global
                 globalCategoriesCache.data = data;
                 globalCategoriesCache.timestamp = Date.now();
-                
+
                 setCategories(data);
                 setError(null);
             } catch (fetchError: any) {
-                // ✅ Limpiar promise en caso de error
+                // ✅ Limpiar promise en caso de error (timeout/abort ya manejado dentro del IIFE).
                 globalCategoriesCache.promise = null;
-                clearTimeout(timeoutId);
-                if (fetchError.name === 'AbortError') {
-                    throw new Error('Request timeout: The server took too long to respond. Please try again.');
-                }
                 throw fetchError;
             }
         } catch (err) {

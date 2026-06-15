@@ -150,6 +150,10 @@ export const API_CONFIG = {
             block: (userId: number) => `${API_PATH}/User/${userId}/block`,
             delete: (userId: number) => `${API_PATH}/User/${userId}`,
         },
+        // 🖼️ Avatar de cuenta (foto de perfil unificada con la foto pública del experto).
+        account: {
+            avatar: `${API_PATH}/User/avatar`, // POST (multipart) sube/cambia · DELETE quita
+        },
         support: {
             message: `${API_PATH}/SupportChat/message`,
         },

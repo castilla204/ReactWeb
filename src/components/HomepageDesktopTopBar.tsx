@@ -1,9 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Heart, HelpCircle, MapPin, User } from 'lucide-react';
+import { ArrowLeft, Bell, HelpCircle, MapPin, Settings, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { LoginModal } from './LoginModal';
+// ⚡ Lazy: LoginModal arrastra framer-motion (~16 kB gzip). Importado estático aquí cargaba
+//    framer en el bundle inicial de TODAS las páginas (App.tsx importa este top-bar eager),
+//    aunque el login casi nunca se abre. Ahora el chunk solo baja al abrir el modal.
+const LoginModal = lazy(() => import('./LoginModal').then((m) => ({ default: m.LoginModal })));
+import { AccountMenu } from './AccountMenu';
 import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import erizoImg from '../media/erizo.png';
@@ -121,55 +125,43 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     return byEmail || byRole;
   }, [isAuthenticated, userEmail, userRole]);
 
-  const handleAccount = () => {
-    if (isAuthenticated) {
-      navigate('/busquedas');
-    } else {
-      setIsLoginModalOpen(true);
-    }
-  };
-
-  // Botón de cuenta/login extraído: se renderiza a la izquierda en el modo legado
-  // (sin logo) o a la derecha cuando showLogo está activo (patrón header marketplace).
-  const accountBtn = (
+  // Con sesión: dropdown de cuenta (búsquedas, mensajes, transacciones, panel de
+  // experto, ajustes, logout). Sin sesión: botón que abre el login. Se renderiza a la
+  // izquierda en el modo legado (sin logo) o a la derecha cuando showLogo está activo
+  // (patrón header marketplace).
+  const accountBtn = isAuthenticated ? (
+    <AccountMenu isMap={isMap} />
+  ) : (
     <button
       type="button"
-      onClick={handleAccount}
+      onClick={() => setIsLoginModalOpen(true)}
       className={
         isMap
           ? 'sd-icon-btn shrink-0'
           : 'inline-flex items-center gap-2 rounded-full border border-[#9ca3af] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]'
       }
-      aria-label={isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión'}
+      aria-label="Iniciar sesión"
     >
       <User className={isMap ? 'h-4 w-4' : 'h-4 w-4 shrink-0'} strokeWidth={2.1} />
-      {!isMap && (isAuthenticated ? 'Mi cuenta' : 'Iniciar sesión')}
+      {!isMap && 'Iniciar sesión'}
     </button>
   );
 
   const rightActions = (
     <div className="flex shrink-0 items-center gap-2">
       {!isCheckout ? (
-        isMap ? (
-          <button
-            type="button"
-            onClick={() => navigate('/como-funciona')}
-            className="sd-icon-btn"
-            aria-label="Cómo funciona Inspecciono"
-          >
-            <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => navigate('/como-funciona')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#9ca3af] bg-white px-3 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
-            aria-label="Cómo funciona Inspecciono"
-          >
-            <HelpCircle className="h-4 w-4 shrink-0" strokeWidth={2.1} />
-            <span className="hidden lg:inline">Cómo funciona</span>
-          </button>
-        )
+        <button
+          type="button"
+          onClick={() => navigate('/como-funciona')}
+          className={
+            isMap
+              ? 'sd-icon-btn'
+              : 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
+          }
+          aria-label="Cómo funciona Inspecciono"
+        >
+          <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
+        </button>
       ) : null}
       {userIsAdmin && (
         <button
@@ -180,7 +172,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
           Admin
         </button>
       )}
-      {!isCheckout ? <CurrencySelector variant="compact" /> : null}
+      {!isCheckout ? <CurrencySelector variant="icon" isMap={isMap} /> : null}
       {/* 🛡️ MUD-DG — Bell global. Antes solo existía dentro del expert-panel
           → cliente normal NO podía ver su inbox de notificaciones. Auditoría
           de 5 agentes lo marcó como gap CRÍTICO P0. */}
@@ -188,15 +180,22 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
       {!isCheckout && isAuthenticated ? (
         <button
           type="button"
-          aria-label="Favoritos"
-          onClick={() => navigate('/favoritos')}
+          aria-label="Configuración"
+          onClick={() => {
+            if (
+              typeof window !== 'undefined' &&
+              typeof (window as { openAccountSettings?: () => void }).openAccountSettings === 'function'
+            ) {
+              (window as { openAccountSettings?: () => void }).openAccountSettings!();
+            }
+          }}
           className={
             isMap
               ? 'sd-icon-btn'
               : 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
           }
         >
-          <Heart className="h-4 w-4" />
+          <Settings className="h-4 w-4" />
         </button>
       ) : null}
       {/* Cuando hay logo a la izquierda, el botón de cuenta se mueve aquí. */}
@@ -388,11 +387,15 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         </div>
       </header>
 
-      <LoginModal
-        open={isLoginModalOpen}
-        onOpenChange={setIsLoginModalOpen}
-        onSuccess={() => setIsLoginModalOpen(false)}
-      />
+      {isLoginModalOpen && (
+        <Suspense fallback={null}>
+          <LoginModal
+            open={isLoginModalOpen}
+            onOpenChange={setIsLoginModalOpen}
+            onSuccess={() => setIsLoginModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

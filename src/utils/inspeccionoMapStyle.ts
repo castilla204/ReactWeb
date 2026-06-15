@@ -1,7 +1,7 @@
 import type maplibregl from 'maplibre-gl';
 import {
   getCartoVoyagerNoLabelsTiles,
-  getCartoVoyagerOnlyLabelsTiles,
+  getCartoVoyagerTiles,
 } from './mapTileUrls';
 
 /** Paleta compartida — tierra cálida, agua suave, costas en azul marca (ExpertsAreaMap). */
@@ -34,10 +34,15 @@ export function buildInspeccionoMapStyle(
 ): maplibregl.StyleSpecification {
   const withLabels = options.withLabels !== false;
 
+  // ⚡ Carga: UN ÚNICO tileset. Antes la búsqueda bajaba voyager_nolabels + voyager_only_labels
+  //    (2 tilesets = el DOBLE de peticiones de tiles, ~2× bytes y una segunda cola de fetch que
+  //    compite por el ancho de banda en redes lentas). `voyager` ya trae las etiquetas
+  //    integradas → mitad de peticiones y mismo aspecto. Los mapas sin etiquetas (cobertura)
+  //    siguen usando voyager_nolabels vía withLabels:false.
   const sources: maplibregl.StyleSpecification['sources'] = {
     carto: {
       type: 'raster',
-      tiles: getCartoVoyagerNoLabelsTiles(),
+      tiles: withLabels ? getCartoVoyagerTiles() : getCartoVoyagerNoLabelsTiles(),
       tileSize: 256,
       attribution: '© OpenStreetMap · CARTO',
     },
@@ -62,22 +67,6 @@ export function buildInspeccionoMapStyle(
       },
     },
   ];
-
-  if (withLabels) {
-    sources['carto-labels'] = {
-      type: 'raster',
-      tiles: getCartoVoyagerOnlyLabelsTiles(),
-      tileSize: 256,
-    };
-    layers.push({
-      id: INSPECCIONO_MAP_LAYER_IDS.cartoLabels,
-      type: 'raster',
-      source: 'carto-labels',
-      paint: {
-        'raster-opacity': 0.9,
-      },
-    });
-  }
 
   return { version: 8, sources, layers };
 }

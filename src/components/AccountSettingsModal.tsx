@@ -10,6 +10,9 @@ import { MFASetup } from './MFASetup';
 // 🛡️ Round 28 MUD-U: import retirado — el wizard ya no se monta aquí. Lo monta
 // ExpertPanelPage tras recibir el evento global dispatchado al cerrar este modal.
 import { showToast } from '../lib/toast';
+import { ProfilePhotoCropModal } from './becomeExpert/ProfilePhotoCropModal';
+import { API_CONFIG } from '../config/api';
+import { getAuthToken } from '../lib/auth';
 import {
     Dialog,
     DialogContent,
@@ -53,8 +56,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, setUser, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  // 🖼️ Avatar de cuenta: selección de fichero → recorte → subida.
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   // 🛡️ Round 28 MUD-F: detección rol experto + estado del wizard de mudanza.
   const userRole = (user as any)?.Role || (user as any)?.role;
   const isExpert = userRole === 'Expert';
@@ -213,6 +221,102 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     clearError();
   };
 
+  // 🖼️ ───────────────────────── Avatar de cuenta ─────────────────────────
+  const avatarUrl =
+    (user as { ProfilePictureUrl?: string } | null)?.ProfilePictureUrl ??
+    user?.profilePictureUrl ??
+    '';
+
+  const avatarInitials = (() => {
+    const src = user?.name || user?.email || '';
+    const parts = src.split(/\s+/).filter(Boolean);
+    const first = parts[0]?.[0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
+  })();
+
+  // Refleja el avatar nuevo en el contexto y en localStorage (sobrevive a recargas).
+  const persistAvatar = (url: string | null) => {
+    setUser(prev => (prev ? { ...prev, profilePictureUrl: url ?? undefined } : prev));
+    try {
+      for (const key of ['user', 'userData']) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const obj = JSON.parse(raw);
+        obj.profilePictureUrl = url ?? undefined;
+        obj.ProfilePictureUrl = url ?? undefined;
+        localStorage.setItem(key, JSON.stringify(obj));
+      }
+    } catch { /* localStorage no disponible: el estado en memoria ya está actualizado */ }
+  };
+
+  const handleAvatarFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Permitir volver a elegir el mismo fichero más tarde.
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'La imagen no puede superar los 5MB');
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      showToast('error', 'Solo se permiten imágenes JPG o PNG');
+      return;
+    }
+    setCropFile(file);
+    setCropOpen(true);
+  };
+
+  const handleAvatarCropped = async (croppedFile: File) => {
+    setCropOpen(false);
+    setIsUploadingAvatar(true);
+    try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('profilePicture', croppedFile);
+      const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.account.avatar}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        let msg = 'No se pudo actualizar la foto de perfil';
+        try { msg = (await res.json()).message || msg; } catch { /* sin cuerpo JSON */ }
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      persistAvatar(data.profilePictureUrl ?? null);
+      showToast('success', 'Foto de perfil actualizada');
+    } catch (err: any) {
+      showToast('error', err?.message || 'No se pudo actualizar la foto de perfil');
+    } finally {
+      if (isMountedRef.current) setIsUploadingAvatar(false);
+      setCropFile(null);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setIsUploadingAvatar(true);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.account.avatar}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        let msg = 'No se pudo quitar la foto de perfil';
+        try { msg = (await res.json()).message || msg; } catch { /* sin cuerpo JSON */ }
+        throw new Error(msg);
+      }
+      persistAvatar(null);
+      showToast('success', 'Foto de perfil eliminada');
+    } catch (err: any) {
+      showToast('error', err?.message || 'No se pudo quitar la foto de perfil');
+    } finally {
+      if (isMountedRef.current) setIsUploadingAvatar(false);
+    }
+  };
+
   const renderContent = () => (
     <>
       {/* Profile Tab */}
@@ -220,14 +324,69 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         <div className="space-y-4">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h4 className="text-base font-medium">{user?.name || 'Usuario'}</h4>
-                <p className="text-sm text-muted-foreground">{user?.email || 'usuario@email.com'}</p>
+              {/* 🖼️ Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Foto de perfil"
+                  className="w-16 h-16 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className="inline-flex w-16 h-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-lg font-semibold"
+                >
+                  {avatarInitials || <User className="w-6 h-6" />}
+                </span>
+              )}
+              <div className="min-w-0">
+                <h4 className="text-base font-medium truncate">{user?.name || 'Usuario'}</h4>
+                <p className="text-sm text-muted-foreground truncate">{user?.email || 'usuario@email.com'}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={handleAvatarFileSelected}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    {isUploadingAvatar ? 'Guardando…' : (avatarUrl ? 'Cambiar foto' : 'Añadir foto')}
+                  </Button>
+                  {/* El experto no puede quitar su foto (es pública y obligatoria) */}
+                  {avatarUrl && !isExpert && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isUploadingAvatar}
+                      onClick={handleRemoveAvatar}
+                    >
+                      Quitar
+                    </Button>
+                  )}
+                </div>
+                {isExpert && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Esta foto es también tu foto pública como experto.
+                  </p>
+                )}
               </div>
             </div>
+
+            {/* 🖼️ Recorte de la foto antes de subir (reutiliza el flujo del experto) */}
+            <ProfilePhotoCropModal
+              open={cropOpen}
+              onOpenChange={setCropOpen}
+              file={cropFile}
+              onConfirm={handleAvatarCropped}
+            />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

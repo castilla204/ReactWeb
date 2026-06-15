@@ -223,7 +223,10 @@ export function ExpertPanelPage() {
 
     useEffect(() => {
         if (activeTab === 'profile') {
-            fetchProfile(true, { silent: true });
+            // Respeta la caché de 60s: NO forzar (antes force=true disparaba un GET en
+            // CADA visita al tab). Al editar y guardar, onProfileUpdated ya fuerza el
+            // refetch (force=true), así que aquí no hace falta ignorar la caché.
+            fetchProfile(false, { silent: true });
         }
     }, [activeTab]);
 
@@ -361,27 +364,10 @@ export function ExpertPanelPage() {
         }
     }, [user, isExpert, navigate]);
 
-    // ✅ Optimización: Solo fetch si realmente no hay profile y no está cargando
-    // NO incluir fetchProfile en dependencias para evitar ejecuciones múltiples
-    useEffect(() => {
-        if (isExpert && !profile && !isLoadingProfile && !profileError) {
-            // ✅ CRÍTICO: Verificar que el token esté disponible antes de hacer requests
-            const token = getAuthToken();
-            if (!token) {
-                console.warn('⚠️ ExpertPanelPage: No token available, waiting...');
-                return;
-            }
-            
-            // ✅ Pequeño delay para asegurar que el token esté completamente disponible
-            const timeoutId = setTimeout(() => {
-                console.log('Fetching expert profile (initial load)');
-                fetchProfile(false); // Usar cache si está disponible
-            }, 150);
-            
-            return () => clearTimeout(timeoutId);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isExpert, profile, isLoadingProfile, profileError]);
+    // La carga inicial del perfil la gestiona EXCLUSIVAMENTE el hook useExpert
+    // (hasInitializedRef + check de token + reintento en cambio de `user`). Este
+    // useEffect duplicaba esa carga (segundo setTimeout) y provocaba 1-2 GET
+    // /expert-profile en paralelo al montar el panel. Eliminado para deduplicar.
 
     useEffect(() => {
         selectedImagesRef.current = selectedImages;

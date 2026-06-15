@@ -340,17 +340,11 @@ export const useStatusMappings = (page: number = 1, pageSize: number = 20) => {
     await loadAllData();
   };
 
-  // Auto-refresh (pausado si la pestaña no está visible)
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (document.hidden) return;
-      await loadAllData();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [page, pageSize]);
-
-  // Cargar datos al montar el componente o cuando cambian los parámetros de paginación
+  // Cargar datos al montar el componente o cuando cambian los parámetros de paginación.
+  // Sin auto-refresh por polling: estos catálogos (mapeos/estados del sistema) son casi
+  // estáticos y ya se recargan tras cada mutación (create/update/delete -> loadAllData)
+  // y mediante el botón "Refrescar" (refreshAllData). El setInterval de 60s disparaba
+  // 3 GET/min indefinidos sin aportar frescura.
   useEffect(() => {
     loadAllData();
   }, [page, pageSize]);

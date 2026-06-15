@@ -36,7 +36,12 @@ interface ResponsiveModalProps {
   drawerScrollClassName?: string
   /** Oculta la cabecera blanca del diálogo en desktop (el contenido lleva su propia cabecera). */
   hideDialogHeader?: boolean
+  /** Clases extra para la cabecera del drawer en móvil. */
+  drawerHeaderClassName?: string
 }
+
+const AUTH_SURFACE_GRADIENT =
+  'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), #ffffff'
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   open,
@@ -66,6 +71,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   drawerMaxHeight,
   drawerScrollClassName,
   hideDialogHeader = false,
+  drawerHeaderClassName,
 }) => {
   const { width } = useWindowSize()
   
@@ -108,10 +114,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
       >
         <DrawerContent
             className={cn(
-              "flex min-h-0 flex-col rounded-t-[20px] w-full !max-w-full shadow-[0_-8px_32px_rgba(0,0,0,0.15)] border-0 bg-white",
+              "flex min-h-0 flex-col overflow-hidden rounded-t-[24px] w-full !max-w-full border-0 bg-white",
+              "shadow-[0_-12px_40px_rgba(15,23,42,0.12)]",
               "focus:outline-none focus-visible:outline-none",
-              "[&_[data-vaul-drawer-handle]]:bg-white/35",
-              className, 
+              className,
               drawerClassName
             )}
           style={{ 
@@ -129,13 +135,13 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
           }}
           noOverlay={noOverlay}
-          noHandle={noHandle}
+          noHandle
           title={title}
           description={description}
         >
           <div
             className={cn(
-              "h-auto min-h-0 overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]",
+              "flex h-auto min-h-0 flex-col overflow-y-auto overscroll-y-contain bg-white [-webkit-overflow-scrolling:touch]",
               drawerScrollClassName,
             )}
             style={{
@@ -143,18 +149,42 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
             }}
           >
-            {title && (
-              <div className="flex shrink-0 items-center justify-between border-b border-[#ebebeb] px-4 pb-2.5 pt-3">
-                <h2 className="text-base font-semibold leading-snug text-[#1c1c1c]">{title}</h2>
-                <DrawerClose asChild>
-                  <button
-                    type="button"
-                    className="rounded-md p-1.5 text-[#717171] opacity-80 transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label="Cerrar"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </DrawerClose>
+            {(!noHandle || title) && (
+              <div
+                className={cn(
+                  "sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#ebebeb]",
+                  drawerHeaderClassName,
+                )}
+                style={{ background: AUTH_SURFACE_GRADIENT }}
+              >
+                {!noHandle && (
+                  <div className="flex justify-center pb-0 pt-2">
+                    <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-[#c4c4c4]" />
+                  </div>
+                )}
+                {title && (
+                  <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-0.5 md:px-6">
+                    <div className="min-w-0 pr-1">
+                      <h2 className="font-display text-[16px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+                        {title}
+                      </h2>
+                      {description && (
+                        <p className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+                          {description}
+                        </p>
+                      )}
+                    </div>
+                    <DrawerClose asChild>
+                      <button
+                        type="button"
+                        className="-mr-1 shrink-0 rounded-full p-1.5 text-[#717171] transition-colors hover:bg-black/[0.04] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        aria-label="Cerrar"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </DrawerClose>
+                  </div>
+                )}
               </div>
             )}
             {children}
@@ -186,15 +216,18 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         {title && !hideDialogHeader && (
           <DialogHeader
             className={cn(
-              'flex-shrink-0 border-b border-[#ebebeb] bg-white px-4 pb-3.5 pt-4 text-left',
+              'flex-shrink-0 border-b border-[#ebebeb] px-6 pb-3 pt-4 text-left md:px-7',
               dialogHeaderClassName
             )}
+            style={{ background: AUTH_SURFACE_GRADIENT }}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 pr-2">
-                <DialogTitle className="text-base font-semibold leading-snug text-[#1c1c1c]">{title}</DialogTitle>
+                <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+                  {title}
+                </DialogTitle>
                 {description && (
-                  <DialogDescription className="mt-0.5 text-sm text-[#717171]">
+                  <DialogDescription className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
                     {description}
                   </DialogDescription>
                 )}
@@ -202,7 +235,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="shrink-0 rounded-md p-1.5 text-[#717171] opacity-80 ring-offset-background transition-opacity hover:bg-[#f5f5f5] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="shrink-0 rounded-full p-2 text-[#717171] ring-offset-background transition-colors hover:bg-[#f0f0f0] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   aria-label="Cerrar"
                 >
                   <X className="h-5 w-5" />

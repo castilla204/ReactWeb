@@ -42,11 +42,15 @@
   "auth": {
     "login": {
       "title": "Log in",
+      "headline": "Log in",
+      "subtitle": "Bookings, messages, and favorites",
       "submit": "Sign in",
       "forgotPassword": "Forgot your password?"
     },
     "register": {
       "title": "Sign up",
+      "headline": "Create your account",
+      "subtitle": "Free in a minute",
       "submit": "Create account",
       "namePlaceholder": "Full name",
       "emailPlaceholder": "Email address",

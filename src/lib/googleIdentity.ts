@@ -14,6 +14,7 @@ export interface GoogleButtonConfig {
   theme?: 'outline' | 'filled_blue' | 'filled_black';
   size?: 'large' | 'medium' | 'small';
   text?: 'signin_with' | 'continue_with' | 'signup_with';
+  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
   width?: number;
 }
 
