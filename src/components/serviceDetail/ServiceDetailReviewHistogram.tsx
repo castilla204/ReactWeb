@@ -86,7 +86,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             >
               <div
                 className={`h-full rounded-full transition-[width] duration-300 ${
-                  count > 0 ? 'bg-[#222222]' : 'bg-transparent'
+                  count > 0 ? 'bg-brand' : 'bg-transparent'
                 }`}
                 style={{ width: `${barWidth}%` }}
               />

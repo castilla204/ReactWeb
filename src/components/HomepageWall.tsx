@@ -255,8 +255,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       >
                         <path
                           d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.2l-4.78 2.51.91-5.32-3.86-3.77 5.34-.78L12 2z"
-                          fill="#E8B931"
-                          stroke="#C9971E"
+                          fill="#F59E0B"
+                          stroke="#D97706"
                           strokeWidth="0.75"
                           strokeLinejoin="round"
                         />
@@ -489,14 +489,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
           >
             <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Star 
-                  className="flex-shrink-0" 
-                  style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    fill: '#222222', 
-                    color: '#222222',
-                  }} 
+                <Star
+                  className="flex-shrink-0"
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    fill: '#F59E0B',
+                    color: '#F59E0B',
+                  }}
                 />
                 <span>
                   {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
@@ -656,20 +656,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
     >
       {/* Header sección */}
       <div className="mb-2 md:mb-3 md:px-0">
-        <div className="flex items-start gap-3">
-          <span
-            className="hidden md:block mt-1.5 h-7 w-[3px] shrink-0 rounded-full bg-gradient-to-b from-brand to-brand/25"
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <h2 className="hp-section-title">
-              {title.replace(' >', '')}
-            </h2>
-            {subtitle && (
-              <p className="hp-section-subtitle">{subtitle}</p>
-            )}
-          </div>
-        </div>
+        <h2 className="hp-section-title">
+          {title.replace(' >', '')}
+        </h2>
+        {subtitle && (
+          <p className="hp-section-subtitle">{subtitle}</p>
+        )}
       </div>
 
       {/* Tablón horizontal — ancho completo; sin degradé lateral */}

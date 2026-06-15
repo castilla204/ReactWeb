@@ -248,7 +248,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
           role="dialog"
           aria-modal="false"
           className={cn(
-            "fixed inset-x-0 top-0 z-[9998] flex flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
+            "fixed inset-x-0 top-0 z-[9998] flex flex-col overflow-hidden rounded-t-[28px] bg-white shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
             className,
           )}
           style={{

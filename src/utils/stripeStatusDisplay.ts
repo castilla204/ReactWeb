@@ -1,4 +1,5 @@
 import { STRIPE_STATUS } from '../constants/stripeStatus';
+import i18n from '../i18n';
 
 export type StripeStatusDisplay = {
     title: string;
@@ -8,54 +9,42 @@ export type StripeStatusDisplay = {
     nextSteps?: string;
 };
 
-const STATUS_KICKER: Record<string, string> = {
-    [STRIPE_STATUS.APPROVED]: 'Activa',
-    [STRIPE_STATUS.PENDING]: 'Pendiente',
-    [STRIPE_STATUS.PENDING_VERIFICATION]: 'En revisión',
-    [STRIPE_STATUS.UNDER_REVIEW]: 'En revisión',
-    [STRIPE_STATUS.ACTION_REQUIRED]: 'Acción requerida',
-    [STRIPE_STATUS.REQUIREMENTS_DUE]: 'Datos pendientes',
-    [STRIPE_STATUS.REQUIREMENTS_PAST_DUE]: 'Datos vencidos',
-    [STRIPE_STATUS.RESTRICTED_SOON]: 'Plazo próximo',
-    [STRIPE_STATUS.RESTRICTED]: 'Restringida',
-    [STRIPE_STATUS.DISABLED]: 'Deshabilitada',
-    [STRIPE_STATUS.REJECTED]: 'Rechazada',
-    [STRIPE_STATUS.DEAUTHORIZED]: 'Desconectada',
-    [STRIPE_STATUS.NOT_REQUESTED]: 'Sin configurar',
+// 🌐 i18n: mapeamos status → SEGMENTO de clave (no al texto), y resolvemos con i18n.t() DENTRO de
+// buildStripeStatusDisplay (que se llama en render) para no congelar el idioma al evaluar el módulo.
+const STATUS_KEY: Record<string, string> = {
+    [STRIPE_STATUS.APPROVED]: 'approved',
+    [STRIPE_STATUS.PENDING]: 'pending',
+    [STRIPE_STATUS.PENDING_VERIFICATION]: 'pendingVerification',
+    [STRIPE_STATUS.UNDER_REVIEW]: 'underReview',
+    [STRIPE_STATUS.ACTION_REQUIRED]: 'actionRequired',
+    [STRIPE_STATUS.REQUIREMENTS_DUE]: 'requirementsDue',
+    [STRIPE_STATUS.REQUIREMENTS_PAST_DUE]: 'requirementsPastDue',
+    [STRIPE_STATUS.RESTRICTED_SOON]: 'restrictedSoon',
+    [STRIPE_STATUS.RESTRICTED]: 'restricted',
+    [STRIPE_STATUS.DISABLED]: 'disabled',
+    [STRIPE_STATUS.REJECTED]: 'rejected',
+    [STRIPE_STATUS.DEAUTHORIZED]: 'deauthorized',
+    [STRIPE_STATUS.NOT_REQUESTED]: 'notRequested',
 };
 
-const STATUS_TITLE: Record<string, string> = {
-    [STRIPE_STATUS.APPROVED]: 'Cuenta de pagos activa',
-    [STRIPE_STATUS.PENDING]: 'Completa la verificación',
-    [STRIPE_STATUS.PENDING_VERIFICATION]: 'Stripe está revisando tu cuenta',
-    [STRIPE_STATUS.UNDER_REVIEW]: 'Revisión manual en curso',
-    [STRIPE_STATUS.ACTION_REQUIRED]: 'Faltan datos en Stripe',
-    [STRIPE_STATUS.REQUIREMENTS_DUE]: 'Completa los requisitos de Stripe',
-    [STRIPE_STATUS.REQUIREMENTS_PAST_DUE]: 'Requisitos vencidos',
-    [STRIPE_STATUS.RESTRICTED_SOON]: 'Actualiza tu cuenta pronto',
-    [STRIPE_STATUS.RESTRICTED]: 'Cobros restringidos',
-    [STRIPE_STATUS.DISABLED]: 'Pagos deshabilitados',
-    [STRIPE_STATUS.REJECTED]: 'Cuenta de pagos rechazada',
-    [STRIPE_STATUS.DEAUTHORIZED]: 'Cuenta desconectada',
-    [STRIPE_STATUS.NOT_REQUESTED]: 'Configura tu cuenta de pagos',
-};
-
-const REJECTION_REASON_LABELS: Record<string, string> = {
-    'rejected.fraud': 'Stripe detectó un riesgo de seguridad en la solicitud.',
-    'rejected.terms_of_service': 'Incumplimiento de los términos de servicio de Stripe.',
-    'rejected.listed': 'Apareces en una lista de cumplimiento normativo.',
-    'rejected.incomplete_verification': 'No se pudo verificar la identidad tras varios intentos.',
-    'rejected.other': 'Stripe rechazó la solicitud sin más detalle.',
-    'rejected.platform_fraud': 'Rechazo por sospecha de fraude desde Inspecciono.',
-    'rejected.platform_terms_of_service': 'Rechazo por incumplimiento de nuestros términos.',
-    'rejected.platform_other': 'Rechazo desde Inspecciono.',
-    platform_paused: 'La verificación de pagos está pausada en la plataforma.',
-    listed: 'Cuenta incluida en una lista restrictiva.',
+// Código crudo de disabled_reason → segmento bajo stripe.rejectionReasons.
+const REJECTION_REASON_KEY: Record<string, string> = {
+    'rejected.fraud': 'fraud',
+    'rejected.terms_of_service': 'termsOfService',
+    'rejected.listed': 'listed',
+    'rejected.incomplete_verification': 'incompleteVerification',
+    'rejected.other': 'other',
+    'rejected.platform_fraud': 'platformFraud',
+    'rejected.platform_terms_of_service': 'platformTermsOfService',
+    'rejected.platform_other': 'platformOther',
+    platform_paused: 'platformPaused',
+    listed: 'listedShort',
 };
 
 export function humanizeRejectionReason(code: string): string {
     const trimmed = code.trim();
-    if (REJECTION_REASON_LABELS[trimmed]) return REJECTION_REASON_LABELS[trimmed];
+    const key = REJECTION_REASON_KEY[trimmed];
+    if (key) return i18n.t(`stripe.rejectionReasons.${key}`);
     const readable = trimmed
         .replace(/^rejected\.(platform_)?/i, '')
         .replace(/_/g, ' ')
@@ -117,8 +106,9 @@ export function buildStripeStatusDisplay({
     rejectionReason?: string | null;
     canRetryOnboarding?: boolean;
 }): StripeStatusDisplay {
-    const kicker = STATUS_KICKER[stripeStatus] ?? 'Estado';
-    const title = STATUS_TITLE[stripeStatus] ?? 'Estado de cuenta de pagos';
+    const statusKey = STATUS_KEY[stripeStatus] ?? 'unknown';
+    const kicker = i18n.t(`stripe.status.${statusKey}.kicker`);
+    const title = i18n.t(`stripe.status.${statusKey}.title`);
 
     const details = (stripeStatusDetails || '').trim();
     const parsed = details ? parseStructuredDetails(details) : {};
@@ -131,7 +121,7 @@ export function buildStripeStatusDisplay({
         summary =
             parsed.lead && !isStructuredBackendBlob(parsed.lead)
                 ? cleanSummary(parsed.lead)
-                : 'Stripe no ha aprobado tu cuenta de pagos. No podrás cobrar encargos hasta resolverlo.';
+                : i18n.t('stripe.status.rejected.summary');
 
         if (!reason && rejectionReason) {
             reason = humanizeRejectionReason(rejectionReason);
@@ -140,8 +130,8 @@ export function buildStripeStatusDisplay({
         if (!nextSteps) {
             nextSteps =
                 canRetryOnboarding === false
-                    ? 'Escríbenos a info@inspecciono.io con tu ID de cuenta. Te indicamos los pasos para apelar o reactivar la verificación.'
-                    : 'Puedes volver a iniciar la verificación desde el botón de abajo. Si el problema persiste, contacta con soporte de Stripe.';
+                    ? i18n.t('stripe.status.rejected.nextStepsContact')
+                    : i18n.t('stripe.status.rejected.nextStepsRetry');
         }
     } else if (isStructuredBackendBlob(details)) {
         summary = parsed.lead ? cleanSummary(parsed.lead) : cleanSummary(fallbackMessage);

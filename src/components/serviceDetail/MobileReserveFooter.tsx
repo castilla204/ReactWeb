@@ -25,7 +25,10 @@ export const MobileReserveFooter: React.FC<MobileReserveFooterProps> = ({
   trustNote,
   children,
 }) => (
-  <div className={SD_MOBILE_FOOTER_SHELL_CLASS}>
+  <div
+    className={SD_MOBILE_FOOTER_SHELL_CLASS}
+    style={{ borderTopWidth: '2px', borderImage: 'linear-gradient(to right, #0066CC, #F59E0B) 1' }}
+  >
     <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
       {trustNote ? <p className="sd-mobile-footer-trust">{trustNote}</p> : null}
       <div className="sd-mobile-footer-row">

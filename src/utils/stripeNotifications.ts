@@ -1,4 +1,5 @@
 import { STRIPE_STATUS } from '../constants/stripeStatus';
+import i18n from '../i18n';
 
 export interface StripeNotificationData {
     stripeStatus: string;
@@ -21,23 +22,23 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.APPROVED:
                 return {
                     type: 'success' as const,
-                    title: '¡Cuenta Aprobada!',
+                    title: i18n.t('stripe.status.approved.notificationTitle'),
                     message: baseMessage,
                     duration: 8000 // Longer duration for success
                 };
-                
+
             case STRIPE_STATUS.REJECTED:
                 return {
                     type: 'error' as const,
-                    title: 'Cuenta Rechazada',
+                    title: i18n.t('stripe.status.rejected.notificationTitle'),
                     message: baseMessage,
                     duration: 10000 // Longer duration for errors
                 };
-                
+
             case STRIPE_STATUS.PENDING:
                 return {
                     type: 'info' as const,
-                    title: 'Verificación en Proceso',
+                    title: i18n.t('stripe.status.pending.notificationTitle'),
                     message: baseMessage,
                     duration: 6000
                 };
@@ -45,7 +46,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.ACTION_REQUIRED:
                 return {
                     type: 'warning' as const,
-                    title: 'Acción requerida en Stripe',
+                    title: i18n.t('stripe.status.actionRequired.notificationTitle'),
                     message: baseMessage,
                     duration: 8000
                 };
@@ -53,7 +54,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.PENDING_VERIFICATION:
                 return {
                     type: 'info' as const,
-                    title: 'Stripe está verificando tu cuenta',
+                    title: i18n.t('stripe.status.pendingVerification.notificationTitle'),
                     message: baseMessage,
                     duration: 6000
                 };
@@ -63,7 +64,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.UNDER_REVIEW:
                 return {
                     type: 'info' as const,
-                    title: 'Stripe revisa manualmente tu cuenta',
+                    title: i18n.t('stripe.status.underReview.notificationTitle'),
                     message: baseMessage,
                     duration: 6000
                 };
@@ -72,7 +73,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.RESTRICTED_SOON:
                 return {
                     type: 'warning' as const,
-                    title: 'Actualiza tus datos en Stripe',
+                    title: i18n.t('stripe.status.requirementsDue.notificationTitle'),
                     message: baseMessage,
                     duration: 7000
                 };
@@ -80,7 +81,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
                 return {
                     type: 'error' as const,
-                    title: 'Pagos bloqueados en Stripe',
+                    title: i18n.t('stripe.status.requirementsPastDue.notificationTitle'),
                     message: baseMessage,
                     duration: 9000
                 };
@@ -88,7 +89,7 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.RESTRICTED:
                 return {
                     type: 'warning' as const,
-                    title: 'Stripe restringió tu cuenta',
+                    title: i18n.t('stripe.status.restricted.notificationTitle'),
                     message: baseMessage,
                     duration: 9000
                 };
@@ -96,31 +97,31 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
             case STRIPE_STATUS.DISABLED:
                 return {
                     type: 'error' as const,
-                    title: 'Stripe deshabilitó pagos/payouts',
+                    title: i18n.t('stripe.status.disabled.notificationTitle'),
                     message: baseMessage,
                     duration: 10000
                 };
-                
+
             case STRIPE_STATUS.DEAUTHORIZED:
                 return {
                     type: 'warning' as const,
-                    title: 'Cuenta Desautorizada',
+                    title: i18n.t('stripe.status.deauthorized.notificationTitle'),
                     message: baseMessage,
                     duration: 8000
                 };
-                
+
             case STRIPE_STATUS.NOT_REQUESTED:
                 return {
                     type: 'info' as const,
-                    title: 'Configuración Requerida',
+                    title: i18n.t('stripe.status.notRequested.notificationTitle'),
                     message: baseMessage,
                     duration: 5000
                 };
-                
+
             default:
                 return {
                     type: 'info' as const,
-                    title: 'Estado Actualizado',
+                    title: i18n.t('stripe.status.unknown.notificationTitle'),
                     message: baseMessage,
                     duration: 5000
                 };
@@ -151,31 +152,31 @@ export const handleStripeStatusChange = (data: StripeNotificationData) => {
 const getDefaultMessage = (status: string): string => {
     switch (status) {
         case STRIPE_STATUS.APPROVED:
-            return 'Tu cuenta de Stripe ha sido aprobada exitosamente. Ya puedes recibir pagos.';
+            return i18n.t('stripe.status.approved.notificationMessage');
         case STRIPE_STATUS.REJECTED:
-            return 'Tu cuenta de Stripe ha sido rechazada. Por favor, revisa los requisitos e intenta nuevamente.';
+            return i18n.t('stripe.status.rejected.notificationMessage');
         case STRIPE_STATUS.PENDING:
-            return 'Tu cuenta está siendo verificada. Te notificaremos cuando esté lista.';
+            return i18n.t('stripe.status.pending.notificationMessage');
         case STRIPE_STATUS.ACTION_REQUIRED:
-            return 'Stripe necesita información adicional para continuar. Completa los requisitos marcados.';
+            return i18n.t('stripe.status.actionRequired.notificationMessage');
         case STRIPE_STATUS.PENDING_VERIFICATION:
-            return 'Stripe está verificando tus documentos. Te avisaremos en cuanto finalice.';
+            return i18n.t('stripe.status.pendingVerification.notificationMessage');
         case STRIPE_STATUS.REQUIREMENTS_DUE:
-            return 'Stripe detectó requisitos futuros. Actualiza tus datos para evitar bloqueos.';
+            return i18n.t('stripe.status.requirementsDue.notificationMessage');
         case STRIPE_STATUS.RESTRICTED_SOON:
-            return 'Stripe restringirá tu cuenta pronto si no completas los requisitos.';
+            return i18n.t('stripe.status.restrictedSoon.notificationMessage');
         case STRIPE_STATUS.REQUIREMENTS_PAST_DUE:
-            return 'Algunos requisitos vencieron y tus cobros están bloqueados.';
+            return i18n.t('stripe.status.requirementsPastDue.notificationMessage');
         case STRIPE_STATUS.RESTRICTED:
-            return 'Stripe limitó temporalmente tu cuenta; revisa tu panel para resolverlo.';
+            return i18n.t('stripe.status.restricted.notificationMessage');
         case STRIPE_STATUS.DISABLED:
-            return 'Stripe deshabilitó tu cuenta por un incidente grave. Contacta a soporte.';
+            return i18n.t('stripe.status.disabled.notificationMessage');
         case STRIPE_STATUS.DEAUTHORIZED:
-            return 'Tu cuenta de Stripe ha sido desactivada. Contacta soporte para más información.';
+            return i18n.t('stripe.status.deauthorized.notificationMessage');
         case STRIPE_STATUS.NOT_REQUESTED:
-            return 'Necesitas configurar tu cuenta de Stripe para recibir pagos.';
+            return i18n.t('stripe.status.notRequested.notificationMessage');
         default:
-            return 'El estado de tu cuenta de Stripe ha sido actualizado.';
+            return i18n.t('stripe.status.unknown.notificationMessage');
     }
 };
 

@@ -291,7 +291,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             tileSize: 256,
           },
         },
-        layers: [{ id: 'carto-layer', type: 'raster', source: 'carto' }],
+        layers: [
+          // Mismo tema que el mapa de la ficha (ServiceDetailCoverageMap): capa de
+          // "cielo/agua" #dce9f2 bajo los tiles → color de fondo coherente en toda la app.
+          { id: 'sky-bg', type: 'background', paint: { 'background-color': '#dce9f2' } },
+          { id: 'carto-layer', type: 'raster', source: 'carto', paint: { 'raster-opacity': 1 } },
+        ],
       },
       center: [initialCenter.lng, initialCenter.lat],
       zoom: initialZoom,

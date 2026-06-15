@@ -1,4 +1,6 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { Eye, EyeOff, AlertTriangle, MapPin, Plane, FileText, Zap } from 'lucide-react';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { STRIPE_ERROR_STATES, STRIPE_WARNING_STATES } from '../utils/stripeStatusStyles';
@@ -16,6 +18,8 @@ interface ExpertVisibilityBannerProps {
     hasDescription?: boolean;
     /** 📱 Móvil verificado (no fijo). undefined = aún cargando (no se evalúa). */
     phoneSmsCapable?: boolean;
+    /** ⏰ Deadline real de Stripe (current_deadline) para mostrar urgencia en estados error/warning. */
+    futureDueAtIso?: string | null;
     onOpenStripe?: () => void;
     onDisableVacation?: () => void;
     onEditProfile?: () => void;
@@ -66,10 +70,12 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
     hasPhoto,
     hasDescription,
     phoneSmsCapable,
+    futureDueAtIso,
     onOpenStripe,
     onDisableVacation,
     onEditProfile
 }) => {
+    const { t } = useTranslation();
     // Detectar la razón blocking dominante (orden importa).
     const status = (stripeStatus || '').toString();
     const isStripeError = STRIPE_ERROR_STATES.includes(status);
@@ -78,6 +84,16 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
         latitude !== null && latitude !== undefined && latitude !== '' &&
         longitude !== null && longitude !== undefined && longitude !== ''
     );
+
+    // ⏰ Urgencia del plazo de Stripe (antes solo la mostraba el StripeStatusBanner, ya retirado).
+    let stripeDeadlineSuffix = '';
+    if ((isStripeError || isStripeWarning) && futureDueAtIso) {
+        const d = new Date(futureDueAtIso);
+        if (!isNaN(d.getTime())) {
+            const date = d.toLocaleDateString(i18n.language || 'es-ES', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+            stripeDeadlineSuffix = t('stripe.visibility.deadlineSuffix', { date });
+        }
+    }
 
     type Reason = {
         severity: 'error' | 'warning' | 'info' | 'ok';
@@ -93,84 +109,95 @@ export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
         reason = {
             severity: 'warning',
             icon: FileText,
-            title: 'Termina tu onboarding para aparecer en búsquedas',
-            body: 'Tus servicios NO están visibles a clientes hasta que completes el registro de tu cuenta de pagos. Tampoco recibirás nuevas contrataciones mientras tanto.',
-            cta: onOpenStripe ? { label: 'Continuar onboarding', onClick: onOpenStripe } : undefined,
+            title: t('stripe.visibility.onboardingTitle'),
+            body: t('stripe.visibility.onboardingBody'),
+            cta: onOpenStripe ? { label: t('stripe.visibility.ctaContinueOnboarding'), onClick: onOpenStripe } : undefined,
         };
     } else if (isStripeError) {
         reason = {
             severity: 'error',
             icon: AlertTriangle,
-            title: 'Tus servicios están OCULTOS por tu cuenta de Stripe',
-            body: 'NO apareces en búsquedas y NO recibes nuevas contrataciones. Resuelve los requisitos de Stripe para que tus servicios vuelvan a ser visibles automáticamente.',
-            cta: onOpenStripe ? { label: 'Resolver en Stripe', onClick: onOpenStripe } : undefined,
+            title: t('stripe.visibility.stripeErrorTitle'),
+            body: t('stripe.visibility.stripeErrorBody') + stripeDeadlineSuffix,
+            cta: onOpenStripe ? { label: t('stripe.visibility.ctaResolveStripe'), onClick: onOpenStripe } : undefined,
         };
     } else if (isStripeWarning) {
         reason = {
             severity: 'warning',
             icon: AlertTriangle,
-            title: 'Tus servicios están OCULTOS — Stripe te pide acciones',
-            body: 'Mientras tu cuenta de Stripe tenga datos pendientes, NO apareces en búsquedas a clientes. Cuando completes los requisitos, volverás a ser visible automáticamente (sin pasos extra).',
-            cta: onOpenStripe ? { label: 'Resolver en Stripe', onClick: onOpenStripe } : undefined,
+            title: t('stripe.visibility.stripeWarningTitle'),
+            body: t('stripe.visibility.stripeWarningBody') + stripeDeadlineSuffix,
+            cta: onOpenStripe ? { label: t('stripe.visibility.ctaResolveStripe'), onClick: onOpenStripe } : undefined,
+        };
+    } else if (status === STRIPE_STATUS.UNDER_REVIEW) {
+        // Stripe revisa la cuenta manualmente → el gate de visibilidad NO la incluye (a diferencia
+        // de PendingVerification, que sí aparece y por eso cae al check OK). No requiere acción.
+        reason = {
+            severity: 'info',
+            icon: AlertTriangle,
+            title: t('stripe.visibility.underReviewTitle'),
+            body: t('stripe.visibility.underReviewBody'),
         };
     } else if (isOnVacation === true) {
         reason = {
             severity: 'info',
             icon: Plane,
-            title: 'Modo vacaciones activo — tus servicios están ocultos voluntariamente',
-            body: 'Tus servicios NO aparecen en búsquedas mientras estés en vacaciones. Cuando vuelvas, desactívalo y tus servicios reaparecerán automáticamente.',
-            cta: onDisableVacation ? { label: 'Volver de vacaciones', onClick: onDisableVacation } : undefined,
+            title: t('stripe.visibility.vacationTitle'),
+            body: t('stripe.visibility.vacationBody'),
+            cta: onDisableVacation ? { label: t('stripe.visibility.ctaBackFromVacation'), onClick: onDisableVacation } : undefined,
         };
     } else if (!country || country.trim().length === 0) {
         reason = {
             severity: 'warning',
             icon: MapPin,
-            title: 'Configura tu país para empezar a aparecer',
-            body: 'Sin país asignado a tu perfil, tus servicios NO pueden mostrarse a clientes locales. Edita tu perfil para indicar tu país.',
-            cta: onEditProfile ? { label: 'Editar perfil', onClick: onEditProfile } : undefined,
+            title: t('stripe.visibility.countryTitle'),
+            body: t('stripe.visibility.countryBody'),
+            cta: onEditProfile ? { label: t('stripe.visibility.ctaEditProfile'), onClick: onEditProfile } : undefined,
         };
     } else if (!hasLatLng) {
         reason = {
             severity: 'warning',
             icon: MapPin,
-            title: 'Sin ubicación en mapa — tus servicios están ocultos',
-            body: 'Tu perfil no tiene coordenadas válidas. El mapa de búsqueda no puede mostrarte a clientes sin una ubicación. Edita tu perfil y selecciona tu zona en el mapa.',
-            cta: onEditProfile ? { label: 'Añadir ubicación', onClick: onEditProfile } : undefined,
+            title: t('stripe.visibility.locationTitle'),
+            body: t('stripe.visibility.locationBody'),
+            cta: onEditProfile ? { label: t('stripe.visibility.ctaAddLocation'), onClick: onEditProfile } : undefined,
         };
     } else if (hasPhoto === false || hasDescription === false) {
         // 🧩 Coordinado con el gate del backend: sin foto o descripción NO se aparece.
-        const faltan = [
-            hasPhoto === false ? 'tu foto de perfil' : null,
-            hasDescription === false ? 'tu descripción' : null,
-        ].filter(Boolean).join(' y ');
+        const missing = [
+            hasPhoto === false ? t('stripe.visibility.missingPhoto') : null,
+            hasDescription === false ? t('stripe.visibility.missingDescription') : null,
+        ].filter(Boolean).join(t('stripe.visibility.and'));
         reason = {
             severity: 'warning',
             icon: FileText,
-            title: 'Aún no eres visible — completa tu perfil',
-            body: `Tus servicios NO aparecen en búsquedas porque falta ${faltan}. Complétalo en la configuración del perfil y serás visible automáticamente.`,
-            cta: onEditProfile ? { label: 'Completar perfil', onClick: onEditProfile } : undefined,
+            title: t('stripe.visibility.profileTitle'),
+            body: t('stripe.visibility.profileBody', { missing }),
+            cta: onEditProfile ? { label: t('stripe.visibility.ctaCompleteProfile'), onClick: onEditProfile } : undefined,
         };
     } else if (phoneSmsCapable === false) {
         // 📱 Coordinado con el gate del backend: sin móvil verificado NO se aparece.
         reason = {
             severity: 'warning',
             icon: AlertTriangle,
-            title: 'Aún no eres visible — verifica tu móvil',
-            body: 'Tus servicios NO aparecen en búsquedas hasta que verifiques un móvil. Los avisos de citas e informes van por SMS. Complétalo en el paso "Móvil" de la configuración del perfil.',
+            title: t('stripe.visibility.phoneTitle'),
+            body: t('stripe.visibility.phoneBody'),
         };
     } else if (servicesCount === 0) {
         reason = {
             severity: 'info',
             icon: Zap,
-            title: 'Crea tu primer servicio para empezar a recibir clientes',
-            body: 'Tu cuenta está lista pero aún no has creado ningún servicio. Cuando crees uno, aparecerá en el mapa para los clientes de tu zona.',
+            title: t('stripe.visibility.noServicesTitle'),
+            body: t('stripe.visibility.noServicesBody'),
         };
     } else {
         reason = {
             severity: 'ok',
             icon: Eye,
-            title: `Tus ${servicesCount === 1 ? 'servicio aparece' : `${servicesCount} servicios aparecen`} en búsquedas`,
-            body: 'Tus servicios son visibles a clientes en tu zona y puedes recibir nuevas contrataciones. Mantén tu cuenta y datos actualizados para seguir apareciendo.',
+            title: servicesCount === 1
+                ? t('stripe.visibility.visibleTitleOne')
+                : t('stripe.visibility.visibleTitleOther', { count: servicesCount }),
+            body: t('stripe.visibility.visibleBody'),
         };
     }
 

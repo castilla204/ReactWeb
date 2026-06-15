@@ -195,6 +195,14 @@ export function useNotificationsRealtime(enabled: boolean) {
             if (isAdmin) {
                 void queryClient.invalidateQueries({ queryKey: [ADMIN_NOTIFICATIONS_QUERY_KEY] });
             }
+            // 🛡️ RT-STRIPE: el push de Stripe (account.updated/capability.updated → transición de
+            // estado) ya viaja por este mismo canal `notifications:user:{id}`. Antes solo refrescaba
+            // la campana; el banner/tarjeta de requisitos del panel (useExpertStripeStatus, estado
+            // aislado) seguía mostrando datos obsoletos hasta el próximo poll (hasta ~3 min, o NUNCA
+            // en estados estables como Approved). Emitimos un ping para que el panel, si está montado,
+            // refresque su estado al instante (bypass de caché). Coste: un refetch por notificación;
+            // las notificaciones son infrecuentes y el panel solo monta el listener siendo experto.
+            window.dispatchEvent(new CustomEvent('stripeRealtimePing'));
         };
 
         const subscribedNames: string[] = [];

@@ -143,26 +143,210 @@
       "tax_reporting_us_1099_k": "Tax reporting 1099-K (US)"
     },
     "status": {
-      "notRequested":        { "button": "🔧 Set up payments" },
+      "notRequested": {
+        "button": "🔧 Set up payments",
+        "kicker": "Not set up",
+        "title": "Set up your payments account",
+        "message": "To finish registering as an expert, you need to set up your payments account. This step is required and lets you get paid for the services you offer. The process is secure and takes just a few minutes.",
+        "notificationTitle": "Setup required",
+        "notificationMessage": "You need to set up your Stripe account to receive payments."
+      },
       "pending": {
-        "buttonContinue":    "⏳ Continue verification",
+        "buttonContinue": "⏳ Continue verification",
         "buttonRequirements": "⚠️ Complete requirements",
-        "buttonWait":         "Check status"
+        "buttonWait": "Check status",
+        "kicker": "Pending",
+        "title": "Finish verification",
+        "message": "Your request is being reviewed by our team. This usually takes 1-3 business days. We'll let you know when it's ready.",
+        "messageContinue": "Your verification is in progress. Finish setting up your payments account to continue.",
+        "messageRequirements": "Stripe needs more information to activate your account. Complete the pending requirements.",
+        "notificationTitle": "Verification in progress",
+        "notificationMessage": "Your account is being verified. We'll notify you when it's ready."
       },
-      "actionRequired":      { "button": "⚠️ Resolve in Stripe" },
-      "pendingVerification": { "button": "Open Stripe dashboard" },
-      "requirementsDue":     { "button": "Update info" },
-      "requirementsPastDue": { "button": "Reactivate in Stripe" },
-      "restrictedSoon":      { "button": "Resolve now" },
-      "restricted":          { "button": "Resolve in Stripe" },
-      "disabled":            { "button": "Contact Stripe" },
-      "approved":            { "button": "✅ Open Stripe dashboard" },
+      "actionRequired": {
+        "button": "⚠️ Resolve in Stripe",
+        "kicker": "Action required",
+        "title": "Missing details in Stripe",
+        "message": "Stripe needs additional documentation or data right away. Open your Stripe dashboard and complete the fields marked as \"currently_due\".",
+        "notificationTitle": "Action required in Stripe",
+        "notificationMessage": "Stripe needs more information to continue. Complete the requirements flagged."
+      },
+      "pendingVerification": {
+        "button": "Open Stripe dashboard",
+        "kicker": "Under review",
+        "title": "Stripe is reviewing your account",
+        "message": "Stripe is verifying the documents you submitted. In the meantime, payments stay blocked.",
+        "notificationTitle": "Stripe is verifying your account",
+        "notificationMessage": "Stripe is verifying your documents. We'll let you know as soon as it finishes."
+      },
+      "requirementsDue": {
+        "button": "Update info",
+        "kicker": "Details pending",
+        "title": "Complete Stripe's requirements",
+        "message": "Stripe scheduled upcoming requirements. Update your details before your account moves to a restricted state.",
+        "notificationTitle": "Update your details in Stripe",
+        "notificationMessage": "Stripe detected upcoming requirements. Update your details to avoid blocks."
+      },
+      "requirementsPastDue": {
+        "button": "Reactivate in Stripe",
+        "kicker": "Details overdue",
+        "title": "Overdue requirements",
+        "message": "Some requirements expired and Stripe blocked your payouts. Complete the information to reactivate payments.",
+        "notificationTitle": "Payments blocked in Stripe",
+        "notificationMessage": "Some requirements expired and your payments are blocked."
+      },
+      "restrictedSoon": {
+        "button": "Resolve now",
+        "kicker": "Deadline approaching",
+        "title": "Update your account soon",
+        "message": "Stripe issued an alert: if you don't update your details, it will restrict your account shortly.",
+        "notificationTitle": "Update your details in Stripe",
+        "notificationMessage": "Stripe will restrict your account soon if you don't complete the requirements."
+      },
+      "restricted": {
+        "button": "Resolve in Stripe",
+        "kicker": "Restricted",
+        "title": "Payouts restricted",
+        "message": "Stripe temporarily limited your payments/payouts. Check the dashboard to complete the pending steps.",
+        "notificationTitle": "Stripe restricted your account",
+        "notificationMessage": "Stripe temporarily limited your account; check your dashboard to resolve it."
+      },
+      "disabled": {
+        "button": "Contact Stripe",
+        "kicker": "Disabled",
+        "title": "Payments disabled",
+        "message": "Stripe disabled payments due to an incident or breach. You'll need to work with Stripe to recover the account.",
+        "notificationTitle": "Stripe disabled payments/payouts",
+        "notificationMessage": "Stripe disabled your account due to a serious incident. Contact support."
+      },
+      "approved": {
+        "button": "✅ Open Stripe dashboard",
+        "kicker": "Active",
+        "title": "Payments account active",
+        "message": "Great! Your payments account is active and ready to receive payments. You can start offering services and earning.",
+        "notificationTitle": "Account approved!",
+        "notificationMessage": "Your Stripe account has been approved successfully. You can now receive payments."
+      },
       "rejected": {
-        "buttonContact":     "🚫 Contact support",
-        "buttonRetry":       "🔄 Retry setup"
+        "buttonContact": "🚫 Contact support",
+        "buttonRetry": "🔄 Retry setup",
+        "kicker": "Rejected",
+        "title": "Payments account rejected",
+        "summary": "Stripe hasn't approved your payments account. You won't be able to get paid for jobs until it's resolved.",
+        "message": "Your payments account was rejected by Stripe.",
+        "permanentSuffix": "Please contact technical support to review your situation.",
+        "nextStepsContact": "Email us at info@inspecciono.io with your account ID. We'll guide you through how to appeal or reactivate verification.",
+        "nextStepsRetry": "You can restart verification from the button below. If the problem persists, contact Stripe support.",
+        "notificationTitle": "Account rejected",
+        "notificationMessage": "Your Stripe account has been rejected. Please review the requirements and try again."
       },
-      "deauthorized":        { "button": "🔗 Reconnect" },
-      "unknown":             { "button": "Check status" }
+      "deauthorized": {
+        "button": "🔗 Reconnect",
+        "kicker": "Disconnected",
+        "title": "Account disconnected",
+        "message": "Your payments account has been disabled. Please reconnect your account to keep receiving payments.",
+        "notificationTitle": "Account deauthorized",
+        "notificationMessage": "Your Stripe account has been disabled. Contact support for more information."
+      },
+      "underReview": {
+        "kicker": "Under review",
+        "title": "Manual review in progress",
+        "message": "Stripe is manually reviewing your account. It may take several days. No action is needed on your part; we'll let you know when it's done.",
+        "notificationTitle": "Stripe is manually reviewing your account",
+        "notificationMessage": "Your Stripe account status has been updated."
+      },
+      "unknown": {
+        "button": "Check status",
+        "kicker": "Status",
+        "title": "Payments account status",
+        "message": "Account status not recognized. Please contact support to verify your status.",
+        "notificationTitle": "Status updated",
+        "notificationMessage": "Your Stripe account status has been updated."
+      }
+    },
+    "rejectionMessages": {
+      "fraud": "Stripe rejected your account for security reasons. Contact Stripe support for more information.",
+      "termsOfService": "Stripe rejected your account for breaching Stripe's terms of service.",
+      "listed": "Stripe rejected your account because it appears on a regulatory compliance list.",
+      "incompleteVerification": "Stripe rejected your account after several failed identity verification attempts. Contact Stripe support.",
+      "other": "Stripe rejected your account. Contact Stripe support to find out why.",
+      "platformFraud": "We rejected your account from our platform due to suspected fraud. Contact our support if you believe this is a mistake.",
+      "platformTermsOfService": "We rejected your account from our platform for breaching our terms. Contact our support to appeal.",
+      "platformOther": "We rejected your account from our platform. Contact our support for more information.",
+      "platformPaused": "Payment verification is paused. Contact support to find out when you can continue.",
+      "default": "Your payments account request was rejected. Please review the information provided and try again."
+    },
+    "rejectionReasons": {
+      "fraud": "Stripe detected a security risk in the application.",
+      "termsOfService": "Breach of Stripe's terms of service.",
+      "listed": "You appear on a regulatory compliance list.",
+      "incompleteVerification": "Identity could not be verified after several attempts.",
+      "other": "Stripe rejected the application without further detail.",
+      "platformFraud": "Rejected for suspected fraud by Inspecciono.",
+      "platformTermsOfService": "Rejected for breaching our terms.",
+      "platformOther": "Rejected by Inspecciono.",
+      "platformPaused": "Payment verification is paused on the platform.",
+      "listedShort": "Account included on a restrictive list."
+    },
+    "common": {
+      "reason": "Reason",
+      "whatToDo": "What to do",
+      "errorsToFix": "Errors to fix",
+      "pastDueTitle": "Overdue requirements",
+      "pendingNow": "Complete now",
+      "upcoming": "Upcoming requirements",
+      "noData": "No status data available.",
+      "checking": "Checking payments status…",
+      "autoUpdate": "This updates automatically when Stripe verifies your details.",
+      "paymentsBlocked": "Payouts are blocked until this is resolved.",
+      "support": "Support:",
+      "stripeId": "Stripe ID:",
+      "loading": "Loading…"
+    },
+    "banner": {
+      "titleError": "Your payments account needs urgent attention",
+      "titleInfo": "Stripe is reviewing your account",
+      "titleWarning": "There are pending details on your payments account",
+      "cta": "Resolve in Stripe",
+      "deadlineLessThanHour": "less than 1 hour left",
+      "deadlineHours": "{{hours}}h left",
+      "deadlineDays_one": "{{count}} day left",
+      "deadlineDays_other": "{{count}} days left"
+    },
+    "visibility": {
+      "onboardingTitle": "Finish your onboarding to appear in search",
+      "onboardingBody": "Your services are NOT visible to clients until you finish setting up your payments account. You also won't receive new bookings in the meantime.",
+      "stripeErrorTitle": "Your services are HIDDEN because of your Stripe account",
+      "stripeErrorBody": "You don't appear in search and you don't receive new bookings. Resolve Stripe's requirements so your services become visible again automatically.",
+      "stripeWarningTitle": "Your services are HIDDEN — Stripe needs action",
+      "stripeWarningBody": "While your Stripe account has pending details, you don't appear in client searches. Once you complete the requirements, you'll become visible again automatically (no extra steps).",
+      "underReviewTitle": "Your services are HIDDEN — Stripe is reviewing your account",
+      "underReviewBody": "Stripe is manually reviewing your account. While the review lasts you don't appear in search. You don't need to do anything: you'll become visible again automatically when it's done.",
+      "vacationTitle": "Vacation mode on — your services are hidden on purpose",
+      "vacationBody": "Your services do NOT appear in search while you're on vacation. When you return, turn it off and your services will reappear automatically.",
+      "countryTitle": "Set your country to start appearing",
+      "countryBody": "Without a country on your profile, your services can't be shown to local clients. Edit your profile to set your country.",
+      "locationTitle": "No map location — your services are hidden",
+      "locationBody": "Your profile has no valid coordinates. The search map can't show you to clients without a location. Edit your profile and pick your area on the map.",
+      "profileTitle": "Not visible yet — complete your profile",
+      "profileBody": "Your services do NOT appear in search because {{missing}} is missing. Complete it in your profile settings and you'll be visible automatically.",
+      "phoneTitle": "Not visible yet — verify your phone",
+      "phoneBody": "Your services do NOT appear in search until you verify a phone number. Appointment and report alerts go by SMS. Complete it in the \"Phone\" step of your profile settings.",
+      "noServicesTitle": "Create your first service to start getting clients",
+      "noServicesBody": "Your account is ready but you haven't created any services yet. Once you create one, it will appear on the map for clients in your area.",
+      "visibleTitleOne": "Your service appears in search",
+      "visibleTitleOther": "Your {{count}} services appear in search",
+      "visibleBody": "Your services are visible to clients in your area and you can receive new bookings. Keep your account and details up to date to stay listed.",
+      "deadlineSuffix": " Stripe deadline: {{date}}.",
+      "missingPhoto": "your profile photo",
+      "missingDescription": "your description",
+      "and": " and ",
+      "ctaContinueOnboarding": "Continue onboarding",
+      "ctaResolveStripe": "Resolve in Stripe",
+      "ctaBackFromVacation": "Return from vacation",
+      "ctaEditProfile": "Edit profile",
+      "ctaAddLocation": "Add location",
+      "ctaCompleteProfile": "Complete profile"
     }
   }
 }

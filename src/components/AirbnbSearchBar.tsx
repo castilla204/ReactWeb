@@ -928,19 +928,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       {/* Mobile */}
       <header className="sticky top-0 z-50 md:hidden bg-white border-b border-[#ebebeb] relative">
         <div className="px-4 pt-3.5 pb-1">
+          <div className="relative">
+            {/* Halo/sombra con degradado azul→ámbar de marca, rodeando todo el botón */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(to_right,#0066CC,#F59E0B)] opacity-50 blur-[12px]"
+              style={{ transform: 'translateY(2px)' }}
+            />
           <div
             onClick={openMobileSearch}
-            className="w-full bg-white border border-[#e8e8e8] rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer relative"
-            
+            className="relative w-full bg-white border border-[#e8e8e8] rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer"
             style={{
               height: '56px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 16px 0 rgba(0, 0, 0, 0.08)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 12px 24px 0 rgba(0, 0, 0, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 16px 0 rgba(0, 0, 0, 0.08)';
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
             }}
           >
             {/* Contenido centrado: Texto */}
@@ -992,6 +992,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             >
               <Filter className="w-5 h-5 text-white" />
             </div>
+          </div>
           </div>
         </div>
 

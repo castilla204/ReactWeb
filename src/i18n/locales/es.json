@@ -143,26 +143,210 @@
       "tax_reporting_us_1099_k": "Reporte fiscal 1099-K (EE.UU.)"
     },
     "status": {
-      "notRequested":        { "button": "🔧 Configurar Pagos" },
+      "notRequested": {
+        "button": "🔧 Configurar Pagos",
+        "kicker": "Sin configurar",
+        "title": "Configura tu cuenta de pagos",
+        "message": "Para completar tu registro como experto, necesitas configurar tu cuenta de pagos. Este proceso es obligatorio y te permitirá recibir pagos por los servicios que ofrezcas. El proceso es seguro y se completa en pocos minutos.",
+        "notificationTitle": "Configuración Requerida",
+        "notificationMessage": "Necesitas configurar tu cuenta de Stripe para recibir pagos."
+      },
       "pending": {
-        "buttonContinue":    "⏳ Continuar Verificación",
+        "buttonContinue": "⏳ Continuar Verificación",
         "buttonRequirements": "⚠️ Completar Requisitos",
-        "buttonWait":         "Verificar Estado"
+        "buttonWait": "Verificar Estado",
+        "kicker": "Pendiente",
+        "title": "Completa la verificación",
+        "message": "Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista.",
+        "messageContinue": "Tu proceso de verificación está en curso. Completa la configuración de tu cuenta de pagos para continuar.",
+        "messageRequirements": "Stripe requiere información adicional para activar tu cuenta. Completa los requisitos pendientes.",
+        "notificationTitle": "Verificación en Proceso",
+        "notificationMessage": "Tu cuenta está siendo verificada. Te notificaremos cuando esté lista."
       },
-      "actionRequired":      { "button": "⚠️ Resolver en Stripe" },
-      "pendingVerification": { "button": "Ver panel Stripe" },
-      "requirementsDue":     { "button": "Actualizar datos" },
-      "requirementsPastDue": { "button": "Reactivar en Stripe" },
-      "restrictedSoon":      { "button": "Resolver ahora" },
-      "restricted":          { "button": "Resolver en Stripe" },
-      "disabled":            { "button": "Contactar Stripe" },
-      "approved":            { "button": "✅ Abrir panel de Stripe" },
+      "actionRequired": {
+        "button": "⚠️ Resolver en Stripe",
+        "kicker": "Acción requerida",
+        "title": "Faltan datos en Stripe",
+        "message": "Stripe necesita documentación o datos adicionales de inmediato. Abre tu panel de Stripe y completa los campos marcados como \"currently_due\".",
+        "notificationTitle": "Acción requerida en Stripe",
+        "notificationMessage": "Stripe necesita información adicional para continuar. Completa los requisitos marcados."
+      },
+      "pendingVerification": {
+        "button": "Ver panel Stripe",
+        "kicker": "En revisión",
+        "title": "Stripe está revisando tu cuenta",
+        "message": "Stripe está verificando la documentación enviada. Mientras tanto, los pagos seguirán bloqueados.",
+        "notificationTitle": "Stripe está verificando tu cuenta",
+        "notificationMessage": "Stripe está verificando tus documentos. Te avisaremos en cuanto finalice."
+      },
+      "requirementsDue": {
+        "button": "Actualizar datos",
+        "kicker": "Datos pendientes",
+        "title": "Completa los requisitos de Stripe",
+        "message": "Stripe programó requisitos futuros. Actualiza tus datos antes de que la cuenta pase a un estado restrictivo.",
+        "notificationTitle": "Actualiza tus datos en Stripe",
+        "notificationMessage": "Stripe detectó requisitos futuros. Actualiza tus datos para evitar bloqueos."
+      },
+      "requirementsPastDue": {
+        "button": "Reactivar en Stripe",
+        "kicker": "Datos vencidos",
+        "title": "Requisitos vencidos",
+        "message": "Algunos requisitos vencieron y Stripe bloqueó tus cobros. Completa la información para reactivar los pagos.",
+        "notificationTitle": "Pagos bloqueados en Stripe",
+        "notificationMessage": "Algunos requisitos vencieron y tus cobros están bloqueados."
+      },
+      "restrictedSoon": {
+        "button": "Resolver ahora",
+        "kicker": "Plazo próximo",
+        "title": "Actualiza tu cuenta pronto",
+        "message": "Stripe emitió una alerta: si no actualizas tus datos, restringirá tu cuenta en breve.",
+        "notificationTitle": "Actualiza tus datos en Stripe",
+        "notificationMessage": "Stripe restringirá tu cuenta pronto si no completas los requisitos."
+      },
+      "restricted": {
+        "button": "Resolver en Stripe",
+        "kicker": "Restringida",
+        "title": "Cobros restringidos",
+        "message": "Stripe limitó temporalmente tus cobros/payouts. Revisa el panel para completar los pasos pendientes.",
+        "notificationTitle": "Stripe restringió tu cuenta",
+        "notificationMessage": "Stripe limitó temporalmente tu cuenta; revisa tu panel para resolverlo."
+      },
+      "disabled": {
+        "button": "Contactar Stripe",
+        "kicker": "Deshabilitada",
+        "title": "Pagos deshabilitados",
+        "message": "Stripe deshabilitó los pagos por un incidente o incumplimiento. Debes coordinar con Stripe para recuperar la cuenta.",
+        "notificationTitle": "Stripe deshabilitó pagos/payouts",
+        "notificationMessage": "Stripe deshabilitó tu cuenta por un incidente grave. Contacta a soporte."
+      },
+      "approved": {
+        "button": "✅ Abrir panel de Stripe",
+        "kicker": "Activa",
+        "title": "Cuenta de pagos activa",
+        "message": "¡Excelente! Tu cuenta de pagos está activa y lista para recibir pagos. Ya puedes empezar a ofrecer servicios y generar ingresos.",
+        "notificationTitle": "¡Cuenta Aprobada!",
+        "notificationMessage": "Tu cuenta de Stripe ha sido aprobada exitosamente. Ya puedes recibir pagos."
+      },
       "rejected": {
-        "buttonContact":     "🚫 Contactar Soporte",
-        "buttonRetry":       "🔄 Reintentar Configuración"
+        "buttonContact": "🚫 Contactar Soporte",
+        "buttonRetry": "🔄 Reintentar Configuración",
+        "kicker": "Rechazada",
+        "title": "Cuenta de pagos rechazada",
+        "summary": "Stripe no ha aprobado tu cuenta de pagos. No podrás cobrar encargos hasta resolverlo.",
+        "message": "Tu cuenta de pagos fue rechazada por Stripe.",
+        "permanentSuffix": "Por favor, contacta al soporte técnico para revisar tu situación.",
+        "nextStepsContact": "Escríbenos a info@inspecciono.io con tu ID de cuenta. Te indicamos los pasos para apelar o reactivar la verificación.",
+        "nextStepsRetry": "Puedes volver a iniciar la verificación desde el botón de abajo. Si el problema persiste, contacta con soporte de Stripe.",
+        "notificationTitle": "Cuenta Rechazada",
+        "notificationMessage": "Tu cuenta de Stripe ha sido rechazada. Por favor, revisa los requisitos e intenta nuevamente."
       },
-      "deauthorized":        { "button": "🔗 Volver a Conectar" },
-      "unknown":             { "button": "Verificar Estado" }
+      "deauthorized": {
+        "button": "🔗 Volver a Conectar",
+        "kicker": "Desconectada",
+        "title": "Cuenta desconectada",
+        "message": "Tu cuenta de pagos ha sido desactivada. Por favor, reconecta tu cuenta para continuar recibiendo pagos.",
+        "notificationTitle": "Cuenta Desautorizada",
+        "notificationMessage": "Tu cuenta de Stripe ha sido desactivada. Contacta soporte para más información."
+      },
+      "underReview": {
+        "kicker": "En revisión",
+        "title": "Revisión manual en curso",
+        "message": "Stripe está revisando manualmente tu cuenta. Puede tardar varios días. No es necesaria ninguna acción por tu parte; te avisamos cuando termine.",
+        "notificationTitle": "Stripe revisa manualmente tu cuenta",
+        "notificationMessage": "El estado de tu cuenta de Stripe ha sido actualizado."
+      },
+      "unknown": {
+        "button": "Verificar Estado",
+        "kicker": "Estado",
+        "title": "Estado de cuenta de pagos",
+        "message": "Estado de cuenta no reconocido. Por favor, contacta soporte para verificar tu estado.",
+        "notificationTitle": "Estado Actualizado",
+        "notificationMessage": "El estado de tu cuenta de Stripe ha sido actualizado."
+      }
+    },
+    "rejectionMessages": {
+      "fraud": "Stripe rechazó tu cuenta por motivos de seguridad. Contacta con soporte de Stripe para más información.",
+      "termsOfService": "Stripe rechazó tu cuenta por incumplimiento de los términos de servicio de Stripe.",
+      "listed": "Stripe rechazó tu cuenta por aparecer en una lista de cumplimiento normativo.",
+      "incompleteVerification": "Stripe rechazó tu cuenta tras varios intentos fallidos de verificación de identidad. Contacta con soporte de Stripe.",
+      "other": "Stripe rechazó tu cuenta. Contacta con soporte de Stripe para conocer el motivo.",
+      "platformFraud": "Hemos rechazado tu cuenta desde nuestra plataforma por sospecha de fraude. Contacta con nuestro soporte si crees que es un error.",
+      "platformTermsOfService": "Hemos rechazado tu cuenta desde nuestra plataforma por incumplimiento de nuestros términos. Contacta con nuestro soporte para apelar.",
+      "platformOther": "Hemos rechazado tu cuenta desde nuestra plataforma. Contacta con nuestro soporte para más información.",
+      "platformPaused": "La verificación de pagos está pausada. Contacta con soporte para conocer cuándo podrás continuar.",
+      "default": "Tu solicitud de cuenta de pagos fue rechazada. Por favor, revisa la información proporcionada e intenta nuevamente."
+    },
+    "rejectionReasons": {
+      "fraud": "Stripe detectó un riesgo de seguridad en la solicitud.",
+      "termsOfService": "Incumplimiento de los términos de servicio de Stripe.",
+      "listed": "Apareces en una lista de cumplimiento normativo.",
+      "incompleteVerification": "No se pudo verificar la identidad tras varios intentos.",
+      "other": "Stripe rechazó la solicitud sin más detalle.",
+      "platformFraud": "Rechazo por sospecha de fraude desde Inspecciono.",
+      "platformTermsOfService": "Rechazo por incumplimiento de nuestros términos.",
+      "platformOther": "Rechazo desde Inspecciono.",
+      "platformPaused": "La verificación de pagos está pausada en la plataforma.",
+      "listedShort": "Cuenta incluida en una lista restrictiva."
+    },
+    "common": {
+      "reason": "Motivo",
+      "whatToDo": "Qué hacer",
+      "errorsToFix": "Errores a corregir",
+      "pastDueTitle": "Requisitos vencidos",
+      "pendingNow": "Por completar ahora",
+      "upcoming": "Próximos requisitos",
+      "noData": "No hay datos de estado disponibles.",
+      "checking": "Comprobando estado de pagos…",
+      "autoUpdate": "Se actualiza automáticamente cuando Stripe verifica tus datos.",
+      "paymentsBlocked": "Los cobros están bloqueados hasta resolver esto.",
+      "support": "Soporte:",
+      "stripeId": "ID Stripe:",
+      "loading": "Cargando…"
+    },
+    "banner": {
+      "titleError": "Tu cuenta de pagos necesita atención urgente",
+      "titleInfo": "Stripe está revisando tu cuenta",
+      "titleWarning": "Hay datos pendientes en tu cuenta de pagos",
+      "cta": "Resolver en Stripe",
+      "deadlineLessThanHour": "plazo menos de 1 hora",
+      "deadlineHours": "plazo {{hours}}h",
+      "deadlineDays_one": "plazo {{count}} día",
+      "deadlineDays_other": "plazo {{count}} días"
+    },
+    "visibility": {
+      "onboardingTitle": "Termina tu onboarding para aparecer en búsquedas",
+      "onboardingBody": "Tus servicios NO están visibles a clientes hasta que completes el registro de tu cuenta de pagos. Tampoco recibirás nuevas contrataciones mientras tanto.",
+      "stripeErrorTitle": "Tus servicios están OCULTOS por tu cuenta de Stripe",
+      "stripeErrorBody": "NO apareces en búsquedas y NO recibes nuevas contrataciones. Resuelve los requisitos de Stripe para que tus servicios vuelvan a ser visibles automáticamente.",
+      "stripeWarningTitle": "Tus servicios están OCULTOS — Stripe te pide acciones",
+      "stripeWarningBody": "Mientras tu cuenta de Stripe tenga datos pendientes, NO apareces en búsquedas a clientes. Cuando completes los requisitos, volverás a ser visible automáticamente (sin pasos extra).",
+      "underReviewTitle": "Tus servicios están OCULTOS — Stripe está revisando tu cuenta",
+      "underReviewBody": "Stripe está revisando tu cuenta manualmente. Mientras dure la revisión NO apareces en búsquedas. No necesitas hacer nada: volverás a ser visible automáticamente cuando termine.",
+      "vacationTitle": "Modo vacaciones activo — tus servicios están ocultos voluntariamente",
+      "vacationBody": "Tus servicios NO aparecen en búsquedas mientras estés en vacaciones. Cuando vuelvas, desactívalo y tus servicios reaparecerán automáticamente.",
+      "countryTitle": "Configura tu país para empezar a aparecer",
+      "countryBody": "Sin país asignado a tu perfil, tus servicios NO pueden mostrarse a clientes locales. Edita tu perfil para indicar tu país.",
+      "locationTitle": "Sin ubicación en mapa — tus servicios están ocultos",
+      "locationBody": "Tu perfil no tiene coordenadas válidas. El mapa de búsqueda no puede mostrarte a clientes sin una ubicación. Edita tu perfil y selecciona tu zona en el mapa.",
+      "profileTitle": "Aún no eres visible — completa tu perfil",
+      "profileBody": "Tus servicios NO aparecen en búsquedas porque falta {{missing}}. Complétalo en la configuración del perfil y serás visible automáticamente.",
+      "phoneTitle": "Aún no eres visible — verifica tu móvil",
+      "phoneBody": "Tus servicios NO aparecen en búsquedas hasta que verifiques un móvil. Los avisos de citas e informes van por SMS. Complétalo en el paso \"Móvil\" de la configuración del perfil.",
+      "noServicesTitle": "Crea tu primer servicio para empezar a recibir clientes",
+      "noServicesBody": "Tu cuenta está lista pero aún no has creado ningún servicio. Cuando crees uno, aparecerá en el mapa para los clientes de tu zona.",
+      "visibleTitleOne": "Tu servicio aparece en búsquedas",
+      "visibleTitleOther": "Tus {{count}} servicios aparecen en búsquedas",
+      "visibleBody": "Tus servicios son visibles a clientes en tu zona y puedes recibir nuevas contrataciones. Mantén tu cuenta y datos actualizados para seguir apareciendo.",
+      "deadlineSuffix": " Plazo de Stripe: {{date}}.",
+      "missingPhoto": "tu foto de perfil",
+      "missingDescription": "tu descripción",
+      "and": " y ",
+      "ctaContinueOnboarding": "Continuar onboarding",
+      "ctaResolveStripe": "Resolver en Stripe",
+      "ctaBackFromVacation": "Volver de vacaciones",
+      "ctaEditProfile": "Editar perfil",
+      "ctaAddLocation": "Añadir ubicación",
+      "ctaCompleteProfile": "Completar perfil"
     }
   }
 }
