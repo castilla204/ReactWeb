@@ -26,7 +26,8 @@ interface CustomBottomSheetProps {
   /** Si true y headerContent está presente, NO renderiza el X automático.
    *  Útil cuando el headerContent ya incluye su propio botón de minimizar
    *  (evita el solape entre el X absolute y el contenido del header). */
-  hideCloseButton?: boolean;
+  /** Si true, no permite arrastrar por encima del snap más alto. */
+  lockTopSnap?: boolean;
 }
 
 const SPRING = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.9 };
@@ -54,6 +55,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
   dismissible = false,
   onCloseRequest,
   hideCloseButton = false,
+  lockTopSnap = false,
   // snapToSequentialPoint y scrollLockTimeout aceptados por compat — el handoff
   // físico ya emula "un snap por gesto" y la ventana de bloqueo es implícita.
 }) => {
@@ -218,8 +220,12 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       if (e.cancelable) e.preventDefault();
       const delta = ny - g.startY;
       let next = g.startSheetY + delta;
-      // Resistencia suave en bordes
-      if (next < fullY) next = fullY - (fullY - next) * 0.35;
+      // Resistencia suave en bordes (arriba: bloqueo duro si lockTopSnap)
+      if (lockTopSnap && next < fullY) {
+        next = fullY;
+      } else if (next < fullY) {
+        next = fullY - (fullY - next) * 0.35;
+      }
       const lower = dismissible ? closedY : peekY;
       if (next > lower) next = lower + (next - lower) * 0.35;
       y.set(next);
@@ -242,7 +248,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
       el.removeEventListener("touchend", onUp);
       el.removeEventListener("touchcancel", onUp);
     };
-  }, [open, y, g, fullY, peekY, closedY, dismissible, snapToNearest]);
+  }, [open, y, g, fullY, peekY, closedY, dismissible, snapToNearest, lockTopSnap]);
 
   // Pista de afordancia: en reposo (peek) y sin arrastrar, TODO el drawer hace un
   // pequeño "bote" hacia arriba y vuelve, periódicamente, para indicar que sube.

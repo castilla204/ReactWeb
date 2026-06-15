@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
 // 🛡️ Round 28: helper unificado de símbolos de divisa (cubre EUR/USD/GBP/CHF/CAD/SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
 import { getCurrencySymbol } from '../utils/priceUtils';
-import { ArrowRight, ArrowLeft, Search, X, Star, CheckCircle, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronRight, ChevronUp, HelpCircle, SlidersHorizontal } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
@@ -37,6 +37,10 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
 import { persistHireSearchLocation, readHireSearchLocation, snapshotHireSearchLocation } from '../utils/hireSearchContext';
 import {
+    clampTutorialDrawerSnap,
+    getTutorialDrawerBottomBuffer,
+} from '../utils/safeAreaInsets';
+import {
     hpTitleUnderlineBarStyle,
     MAP_CARD_BODY_CLASS,
     MAP_CARD_META_LINE_CLASS,
@@ -54,6 +58,7 @@ import {
     MAP_DESKTOP_SCROLL_CLASS,
     MAP_DESKTOP_SPLIT_CLASS,
     MAP_MOBILE_LIST_CLASS,
+    MAP_MOBILE_LIST_TUTORIAL_CLASS,
     SD_MOBILE_GUTTER_CLASS,
 } from '../constants/homepageTypography';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
@@ -72,6 +77,21 @@ interface MapServiceCardProps {
     /** Persiste la ubicación de búsqueda antes de ir a la ficha. */
     onNavigateToService?: () => void;
 }
+
+/** Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */
+const MapCardGradientOutline: React.FC = () => (
+    <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
+        style={{
+            padding: '2px',
+            background: 'linear-gradient(to right, #0066CC, #F59E0B)',
+            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
+        }}
+    />
+);
 
 const getExpertDisplayName = (service: any): string =>
     service.expert?.user?.name || service.expert?.User?.Name || 'Experto verificado';
@@ -289,20 +309,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                               : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
                     }`}
                 >
-                    {/* Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */}
-                    {isSelected && (
-                        <span
-                            aria-hidden
-                            className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
-                            style={{
-                                padding: '2px',
-                                background: 'linear-gradient(to right, #0066CC, #F59E0B)',
-                                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                WebkitMaskComposite: 'xor',
-                                maskComposite: 'exclude',
-                            }}
-                        />
-                    )}
+                    {isSelected && <MapCardGradientOutline />}
                     {/* Contenedor de imagen - Estilo exacto de HomepageWall */}
                     <div className={MAP_CARD_IMAGE_CLASS} style={{ borderRadius: '16px 16px 0 0' }}>
                         {imageUrls.length > 0 ? (
@@ -318,15 +325,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 via-black/10 to-transparent" aria-hidden />
                                 </div>
 
-                                {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
-                                {isSelected ? (
-                                    <div className="absolute left-3 top-3 z-30">
-                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-2.5 py-1 font-display text-[10px] font-semibold leading-3 text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)]">
-                                            <CheckCircle className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2.5} />
-                                            Seleccionado
-                                        </span>
-                                    </div>
-                                ) : isGuestFavorite && (
+                                {/* Badge recomendado (sin badge de selección — el contorno basta). */}
+                                {isGuestFavorite && (
                                     <div className="absolute left-3 top-3 z-10">
                                         <span className={`${MAP_CARD_BADGE_CLASS} gap-1`} aria-label="Mejor valorado">
                                             <Star className="h-3 w-3 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
@@ -427,10 +427,10 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 {service.expert && (
                                     <div
                                         className="absolute left-3 z-10"
-                                    style={{
-                                        width: '44px',
-                                        height: '44px',
-                                        bottom: '10px',
+                                        style={{
+                                            width: '44px',
+                                            height: '44px',
+                                            bottom: '10px',
                                             borderRadius: '50%',
                                             border: '2px solid white',
                                             overflow: 'hidden',
@@ -445,8 +445,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <div 
-                                                className="w-full h-full flex items-center justify-center"
+                                            <div
+                                                className="flex h-full w-full items-center justify-center"
                                                 style={{
                                                     backgroundColor: '#5b6b7e',
                                                     color: 'white',
@@ -497,20 +497,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                         : 'shadow-[0_1px_2px_rgba(16,24,40,0.06),0_8px_24px_rgba(16,24,40,0.08)]'
                 }`}
             >
-                {/* Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */}
-                {isSelected && (
-                    <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
-                        style={{
-                            padding: '2px',
-                            background: 'linear-gradient(to right, #0066CC, #F59E0B)',
-                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                            WebkitMaskComposite: 'xor',
-                            maskComposite: 'exclude',
-                        }}
-                    />
-                )}
+                {isSelected && <MapCardGradientOutline />}
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#eceff3]">
                     {imageUrls.length > 0 ? (
                         <>
@@ -525,15 +512,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 via-black/10 to-transparent" aria-hidden />
                             </div>
 
-                            {/* Un solo badge: seleccionado tiene prioridad sobre recomendado. */}
-                            {isSelected ? (
-                                <div className="absolute left-3 top-3 z-30">
-                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-2.5 py-1 font-display text-[10px] font-semibold leading-3 text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)]">
-                                        <CheckCircle className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2.5} />
-                                        Seleccionado
-                                    </span>
-                                </div>
-                            ) : isGuestFavorite && (
+                            {/* Badge recomendado (sin badge de selección — el contorno basta). */}
+                            {isGuestFavorite && (
                                 <div className="absolute left-3 top-3 z-10">
                                     <span className={`${MAP_CARD_BADGE_CLASS} gap-1`} aria-label="Mejor valorado">
                                         <Star className="h-3 w-3 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
@@ -622,11 +602,11 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         <img
                                             src={service.expert.profilePictureUrl}
                                             alt={service.expert.user?.name || 'Experto'}
-                                            className="w-full h-full object-cover"
+                                            className="h-full w-full object-cover"
                                         />
                                     ) : (
-                                        <div 
-                                            className="w-full h-full flex items-center justify-center"
+                                        <div
+                                            className="flex h-full w-full items-center justify-center"
                                             style={{
                                                 backgroundColor: '#5b6b7e',
                                                 color: 'white',
@@ -699,9 +679,14 @@ const getMapOverviewZoom = (countryCode: string): number =>
 //    dedo; los snaps SOLO se aplican al soltar, así que el snap intermedio no
 //    se siente como "tramo" durante el gesto.
 const MOBILE_MAP_SNAP_POINTS: (number | string)[] = [0.20, 0.55, 0.92];
-const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 20% – tirador + "N expertos" + asomo de la 1ª card (reposo)
-const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 55% – al pulsar "Ver opciones" o un pin
+const MOBILE_MAP_SNAP_PEEK = MOBILE_MAP_SNAP_POINTS[0];     // 20% – reposo con card ya elegida
+const MOBILE_MAP_SNAP_DEPLOYED = MOBILE_MAP_SNAP_POINTS[1]; // 55% – tutorial al cargar / tras elegir pin
 const MOBILE_MAP_SNAP_FULL = MOBILE_MAP_SNAP_POINTS[2];     // 92% – pantalla casi completa
+/** Drawer en reposo sin selección — se calcula al vuelo según altura del tutorial. */
+const MOBILE_MAP_SNAP_TUTORIAL_FALLBACK = 0.48;
+
+/** Colchón extra por subpíxeles / borde del header del sheet. */
+const MOBILE_DRAWER_TUTORIAL_MEASURE_FUDGE_PX = 6;
 
 function MapPanelHeader({
     count,
@@ -749,6 +734,8 @@ interface MapMobileDrawerHeaderProps {
     count: number;
     locationLabel?: string | null;
     rangeKm?: number;
+    awaitingSelection?: boolean;
+    headerRef?: React.Ref<HTMLDivElement>;
 }
 
 /**
@@ -765,6 +752,8 @@ function MapMobileDrawerHeader({
     count,
     locationLabel,
     rangeKm = 25,
+    awaitingSelection = false,
+    headerRef,
 }: MapMobileDrawerHeaderProps) {
     /*
      * Layout REDISEÑADO (método radicalmente distinto):
@@ -781,9 +770,9 @@ function MapMobileDrawerHeader({
      */
     return (
         <div
+            ref={headerRef}
             className="relative px-5 pt-2.5 pb-3"
-            /* Tinte degradado azul→ámbar muy sutil de marca en el header del drawer. */
-            style={{ background: 'linear-gradient(to right, rgba(0,102,204,0.11) 0%, rgba(245,158,11,0.11) 100%)' }}
+            style={{ background: 'linear-gradient(to right, rgba(0,102,204,0.15) 0%, rgba(245,158,11,0.15) 100%)' }}
         >
             {/* Handle — afordancia de arrastre */}
             <div className="mb-2.5 flex justify-center" aria-hidden>
@@ -798,8 +787,104 @@ function MapMobileDrawerHeader({
                 ) : null}
             </h2>
             <p className="mt-0.5 font-display text-[12.5px] font-normal leading-snug text-[#8a8a8a]">
-                En un radio de ~{rangeKm} km · desliza para ver la lista
+                {awaitingSelection
+                    ? 'Toca una etiqueta de precio en el mapa para empezar'
+                    : `En un radio de ~${rangeKm} km · desliza para ver la lista`}
             </p>
+        </div>
+    );
+}
+
+/** Tutorial en el drawer antes de elegir un experto en el mapa. */
+function MapMobileSelectTutorial() {
+    return (
+        <div className="flex flex-col items-center px-1 pb-2 pt-1 text-center">
+            <div
+                className="relative mx-auto mb-4 h-[132px] w-full max-w-[280px] overflow-hidden rounded-2xl bg-[#dce9f2] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]"
+                aria-hidden
+            >
+                <div
+                    className="absolute inset-0 opacity-90"
+                    style={{
+                        background:
+                            'radial-gradient(ellipse 85% 70% at 58% 42%, #ebe8e3 0%, #e8e4dc 38%, transparent 72%), radial-gradient(ellipse 55% 45% at 22% 68%, #d4e8c8 0%, transparent 62%), linear-gradient(180deg, #dce9f2 0%, #d4e3ef 100%)',
+                    }}
+                />
+                <div className="absolute left-[18%] top-[22%] h-2 w-2 rounded-full bg-brand/25" />
+                <div className="absolute right-[24%] top-[34%] h-1.5 w-1.5 rounded-full bg-[#F59E0B]/35" />
+                <div className="absolute bottom-[28%] left-[32%] h-1.5 w-1.5 rounded-full bg-brand/20" />
+
+                <div className="absolute left-1/2 top-[36%] -translate-x-1/2">
+                    <div className="relative inline-flex">
+                        <span className="map-tutorial-price-label inline-flex items-center justify-center rounded-full border border-[#d9d9d9] bg-white px-3.5 py-1.5 font-display text-[13px] font-bold tabular-nums text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.12),0_2px_5px_rgba(0,0,0,0.08)]">
+                            €69
+                        </span>
+
+                        <span className="map-tutorial-click-ring pointer-events-none absolute left-1/2 top-1/2 h-10 w-[4.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-brand/25" />
+
+                        <div
+                            className="map-tutorial-cursor pointer-events-none absolute left-1/2 top-1/2 z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+                            style={{ marginLeft: -6.5, marginTop: -3.5 }}
+                        >
+                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden className="block">
+                                <path
+                                    d="M6.5 3.5L6.5 22.5L11.2 17.8L15.2 24.5L18.5 22.8L14.5 16.1L21.5 15.5L6.5 3.5Z"
+                                    fill="#ffffff"
+                                    stroke="#1c1c1c"
+                                    strokeWidth="1.25"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                Elige un experto en el mapa
+            </p>
+            <p className="mt-1.5 max-w-[17rem] pb-0.5 text-sm leading-relaxed text-[#6a6a6a]">
+                Pulsa sobre una etiqueta de precio. Aquí aparecerá su ficha para comparar y reservar.
+            </p>
+
+            <style>{`
+                /* Punta del cursor anclada al centro del label vía margin negativo en el nodo. */
+                @keyframes map-tutorial-cursor-tap {
+                    0%, 18%, 100% { transform: translate(16px, 12px) scale(1); }
+                    28% { transform: translate(0, 0) scale(0.92); }
+                    36% { transform: translate(0, 0) scale(1); }
+                }
+                @keyframes map-tutorial-label-select {
+                    0%, 24%, 100% {
+                        background: #ffffff;
+                        color: #1c1c1c;
+                        border-color: #d9d9d9;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.08);
+                        transform: scale(1);
+                    }
+                    32%, 44% {
+                        background: hsl(var(--brand));
+                        color: #ffffff;
+                        border-color: transparent;
+                        box-shadow: 0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14);
+                        transform: scale(1.04);
+                    }
+                }
+                @keyframes map-tutorial-click-ring {
+                    0%, 26%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+                    32% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    44% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+                }
+                .map-tutorial-cursor {
+                    animation: map-tutorial-cursor-tap 2.4s ease-in-out infinite;
+                }
+                .map-tutorial-price-label {
+                    animation: map-tutorial-label-select 2.4s ease-in-out infinite;
+                }
+                .map-tutorial-click-ring {
+                    animation: map-tutorial-click-ring 2.4s ease-in-out infinite;
+                }
+            `}</style>
         </div>
     );
 }
@@ -1129,8 +1214,68 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // ✅ Posición inicial: 0 (cerrado) - El drawer no se abre automáticamente
     const [activeSnapPoint, setActiveSnapPoint] = useState<string | number | null>(0);
     const [mobileDrawerSnap, setMobileDrawerSnap] = useState<number | string | null>(
-        MOBILE_MAP_SNAP_PEEK,
+        MOBILE_MAP_SNAP_TUTORIAL_FALLBACK,
     );
+    const [tutorialSnapFraction, setTutorialSnapFraction] = useState(MOBILE_MAP_SNAP_TUTORIAL_FALLBACK);
+    const mobileDrawerHeaderRef = useRef<HTMLDivElement>(null);
+    const tutorialContentRef = useRef<HTMLDivElement>(null);
+
+    const recomputeTutorialDrawerSnap = useCallback(() => {
+        const header = mobileDrawerHeaderRef.current;
+        const content = tutorialContentRef.current;
+        const viewportH = window.innerHeight;
+        if (!header || !content || viewportH <= 0) return;
+        const totalPx =
+            header.offsetHeight +
+            content.offsetHeight +
+            getTutorialDrawerBottomBuffer(viewportH) +
+            MOBILE_DRAWER_TUTORIAL_MEASURE_FUDGE_PX;
+        setTutorialSnapFraction(clampTutorialDrawerSnap(totalPx, viewportH));
+    }, []);
+
+    const mobileDrawerSnapPoints = useMemo(() => {
+        if (selectedService) return MOBILE_MAP_SNAP_POINTS;
+        // Tutorial: solo peek (bajar) y altura calculada del contenido (tope máximo).
+        return [MOBILE_MAP_SNAP_PEEK, tutorialSnapFraction];
+    }, [selectedService, tutorialSnapFraction]);
+
+    useLayoutEffect(() => {
+        if (!isMobileDevice || selectedService) return;
+
+        const measure = () => recomputeTutorialDrawerSnap();
+        measure();
+        const raf = requestAnimationFrame(() => requestAnimationFrame(measure));
+
+        const targets = [mobileDrawerHeaderRef.current, tutorialContentRef.current].filter(
+            Boolean,
+        ) as HTMLElement[];
+        const observer = new ResizeObserver(measure);
+        targets.forEach((el) => observer.observe(el));
+        window.addEventListener('resize', measure);
+        window.visualViewport?.addEventListener('resize', measure);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            observer.disconnect();
+            window.removeEventListener('resize', measure);
+            window.visualViewport?.removeEventListener('resize', measure);
+        };
+    }, [isMobileDevice, selectedService, recomputeTutorialDrawerSnap, mapLoading, mapServicesCount]);
+
+    useEffect(() => {
+        if (!isMobileDevice || selectedService) return;
+        setMobileDrawerSnap((prev) => {
+            if (prev == null) return tutorialSnapFraction;
+            const prevFrac = Number(prev);
+            if (prevFrac > tutorialSnapFraction + 0.001) return tutorialSnapFraction;
+            return prev;
+        });
+    }, [isMobileDevice, selectedService, tutorialSnapFraction]);
+
+    useEffect(() => {
+        if (!isMobileDevice || selectedService || wasManuallyClosed) return;
+        setMobileDrawerSnap(tutorialSnapFraction);
+    }, [isMobileDevice, selectedService, wasManuallyClosed, tutorialSnapFraction]);
 
     const isMobileDrawerDeployed =
         mobileDrawerSnap === MOBILE_MAP_SNAP_DEPLOYED || mobileDrawerSnap === MOBILE_MAP_SNAP_FULL;
@@ -1201,20 +1346,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             mapServices.length === 0,
     });
    
-    // ✅ Dispara `onServicesReady` una sola vez cuando la primera carga finalice.
-    //    El padre (SearchCreationPage) lo usa junto con `onMapReady` para evitar
-    //    mostrar la página vacía mientras llegan los datos. Sin esto, el usuario veía
-    //    primero la lista vacía y al rato aparecían los servicios → mal UX.
+    // ✅ Dispara `onServicesReady` cuando termina la carga del listado Y del mapa.
+    //    Evita mostrar el drawer con "Sin opciones aquí" antes de que lleguen los pins.
     const servicesReadyFiredRef = useRef(false);
     useEffect(() => {
         if (servicesReadyFiredRef.current) return;
         const hasParams = !!(debouncedParams.categoryId && debouncedParams.serviceTypeId && debouncedParams.latitude && debouncedParams.longitude);
         if (!hasParams) return;
-        if (!isLoadingServices) {
+        if (!isLoadingServices && !mapLoading) {
             servicesReadyFiredRef.current = true;
             onServicesReady?.();
         }
-    }, [isLoadingServices, debouncedParams.categoryId, debouncedParams.serviceTypeId, debouncedParams.latitude, debouncedParams.longitude, onServicesReady]);
+    }, [isLoadingServices, mapLoading, debouncedParams.categoryId, debouncedParams.serviceTypeId, debouncedParams.latitude, debouncedParams.longitude, onServicesReady]);
 
     // MapContainer maneja la carga de servicios internamente - ya no necesitamos useMapExperts ni handleBoundsChange
    
@@ -1386,10 +1529,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const collapseMobileDrawer = useCallback(() => {
         setWasManuallyClosed(true);
         setSelectedService(null);
-        setMobileDrawerSnap(MOBILE_MAP_SNAP_PEEK);
+        setMobileDrawerSnap(tutorialSnapFraction);
         setIsDrawerOpen(true);
         setIsDrawerVisible(true);
-    }, []);
+    }, [tutorialSnapFraction]);
 
     // Móvil: montar el drawer la primera vez en posición de reposo.
     // ❌ NO depender de formData.latitude/longitude: re-disparaba el setSnap
@@ -1400,12 +1543,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         setIsDrawerOpen(true);
         setIsDrawerVisible(true);
         if (!drawerMountedRef.current && !wasManuallyClosed) {
-            // Reposo = peek (solo tirador + meta). El usuario sube el drawer con el
-            // tirador o el botón flotante "Ver N opciones".
-            setMobileDrawerSnap(MOBILE_MAP_SNAP_PEEK);
+            setMobileDrawerSnap(tutorialSnapFraction);
             drawerMountedRef.current = true;
         }
-    }, [isMobileDevice, wasManuallyClosed]);
+    }, [isMobileDevice, wasManuallyClosed, tutorialSnapFraction]);
 
     // Detectar cuando el usuario interactúa con el drawer (arrastra o abre manualmente)
     const handleDrawerOpenChange = (open: boolean) => {
@@ -2057,7 +2198,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         
                         {/* Map - ocupa todo el espacio restante */}
                                 {isMobileDevice && (
-                                <div className="flex-1 relative w-full overflow-visible">
+                                <div className="relative flex-1 w-full overflow-visible bg-[#dce9f2]">
                                     <MapContainer
                                         categoryId={selectedCategory}
                                         serviceTypeId={serviceTypeId}
@@ -2069,10 +2210,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             const baseZoom = selectedLocation
                                                 ? getZoomLevel(parseInt(formData.locationRange || '25', 10))
                                                 : getMapOverviewZoom(selectedCountry);
-                                            // ✅ Este MapContainer SOLO se monta en móvil ({isMobileDevice && ...})
-                                            //    Cargamos "mucho más atrás" (2 niveles de zoom menos) para dar
-                                            //    contexto regional; el usuario amplía con gesto si quiere acercar.
-                                            return Math.max(3, baseZoom - 2);
+                                            // Un nivel menos de alejamiento que antes: mantiene contexto regional
+                                            // pero deja legibles las etiquetas de ciudades (Carto Voyager).
+                                            return Math.max(4, baseZoom - 1);
                                         })()}
                                         recenterMode="pan-only"
                                         onServiceSelect={(service: Service) => {
@@ -2102,7 +2242,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             : 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)',
                                     }}
                                 >
-                                    {!isMobileDrawerDeployed && (
+                                    {!isMobileDrawerDeployed && selectedService && (
                                         <Button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -2135,6 +2275,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                     <CustomBottomSheet
                         open={isDrawerOpen && isDrawerVisible}
                         dismissible={false}
+                        lockTopSnap={!selectedService}
                         // ✅ El X de minimizar lo dibuja MapMobileDrawerHeader inline
                         //    en la fila meta (justify-between), no como absolute. Sin esto,
                         //    el X automático se solapaba visualmente con el chip "Valoración".
@@ -2157,21 +2298,27 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         }}
                         onCloseRequest={collapseMobileDrawer}
                         onActiveSnapPointChange={(snap) => {
-                            // ✅ Solo actualiza si realmente cambió (evita renders
-                            //    concurrentes durante la animación de release de Vaul).
-                            setMobileDrawerSnap((prev) => (prev === snap ? prev : snap));
+                            let nextSnap = snap;
+                            if (!selectedService && snap != null) {
+                                const frac = Number(snap);
+                                if (Number.isFinite(frac) && frac > tutorialSnapFraction + 0.001) {
+                                    nextSnap = tutorialSnapFraction;
+                                }
+                            }
+                            setMobileDrawerSnap((prev) => (prev === nextSnap ? prev : nextSnap));
                             if (
-                                snap === MOBILE_MAP_SNAP_DEPLOYED ||
-                                snap === MOBILE_MAP_SNAP_FULL
+                                selectedService &&
+                                (snap === MOBILE_MAP_SNAP_DEPLOYED || snap === MOBILE_MAP_SNAP_FULL)
                             ) {
                                 setWasManuallyClosed(false);
                             }
                         }}
-                        snapPoints={MOBILE_MAP_SNAP_POINTS}
+                        snapPoints={mobileDrawerSnapPoints}
                         activeSnapPoint={mobileDrawerSnap}
                         headerContent={
                             <MapMobileDrawerHeader
-                                count={services.length}
+                                headerRef={mobileDrawerHeaderRef}
+                                count={Math.max(services.length, mapServicesCount)}
                                 locationLabel={
                                     formData.locationName ||
                                     searchAddress ||
@@ -2179,13 +2326,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     null
                                 }
                                 rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
+                                awaitingSelection={!selectedService}
                             />
                         }
                         className="lg:hidden"
                     >
                         {/* Contenido con scroll */}
                         <div ref={drawerContentRef} className={MAP_MOBILE_LIST_CLASS}>
-                            {services.length > 0 ? (
+                            {!selectedService ? (
+                                <div ref={tutorialContentRef} className={MAP_MOBILE_LIST_TUTORIAL_CLASS}>
+                                    <MapMobileSelectTutorial />
+                                </div>
+                            ) : services.length > 0 ? (
                                 <div className="space-y-4">
                                     {services.map((service) => {
                                         const serviceId = service.id || (service as any).Id;

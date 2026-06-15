@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import { capMapWorkers } from '../../lib/mapWorkers';
 capMapWorkers(maplibregl);
@@ -6,6 +6,50 @@ import useSupercluster from 'use-supercluster';
 import { Service } from '../../hooks/useServiceLoader';
 // 🛡️ Round 28: símbolo correcto del servicio (£/CHF/kr) en lugar de € hardcoded en markers.
 import { getCurrencySymbol } from '../../utils/priceUtils';
+
+/** Margen mínimo entre el pill y el borde visible del mapa (px). */
+const MARKER_EDGE_MARGIN = 12;
+
+function computeMarkerScreenOffset(
+  map: maplibregl.Map,
+  lng: number,
+  lat: number,
+  el: HTMLElement,
+): [number, number] {
+  const point = map.project([lng, lat]);
+  const w = el.offsetWidth || 52;
+  const h = el.offsetHeight || 28;
+  const pad = map.getPadding();
+  const cw = map.getContainer().clientWidth;
+  const ch = map.getContainer().clientHeight;
+  const minX = pad.left + MARKER_EDGE_MARGIN;
+  const maxX = cw - pad.right - MARKER_EDGE_MARGIN;
+  const minY = pad.top + MARKER_EDGE_MARGIN;
+  const maxY = ch - pad.bottom - MARKER_EDGE_MARGIN;
+  const halfW = w / 2;
+  const halfH = h / 2;
+  let ox = 0;
+  let oy = 0;
+  const left = point.x - halfW;
+  const right = point.x + halfW;
+  const top = point.y - halfH;
+  const bottom = point.y + halfH;
+  if (left < minX) ox += minX - left;
+  if (right > maxX) ox += maxX - right;
+  if (top < minY) oy += minY - top;
+  if (bottom > maxY) oy += maxY - bottom;
+  return [ox, oy];
+}
+
+function syncMarkerEdgeOffset(
+  map: maplibregl.Map,
+  marker: maplibregl.Marker,
+  lng: number,
+  lat: number,
+  el: HTMLElement,
+) {
+  marker.setOffset(computeMarkerScreenOffset(map, lng, lat, el));
+}
 
 interface ClusteredMarkersProps {
   map: maplibregl.Map | null;
@@ -162,20 +206,26 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     isSelected: boolean,
     isHovered: boolean
   ) => {
+    inner.style.padding = '6px 14px';
+    inner.style.fontSize = '14px';
+    inner.style.fontWeight = '700';
+    inner.style.letterSpacing = '-0.01em';
+    inner.style.lineHeight = '1.1';
+    inner.style.fontVariantNumeric = 'tabular-nums';
     inner.style.borderStyle = 'solid';
-    inner.style.borderWidth = isSelected ? '0' : '1px';
+    inner.style.borderWidth = isSelected ? '0' : '1.25px';
     inner.style.borderColor = isSelected
       ? 'transparent'
       : isHovered
-        ? '#9aa0a6'
-        : '#d9d9d9';
+        ? '#8a8a8a'
+        : '#c8c8c8';
     inner.style.background = isSelected ? 'hsl(var(--brand))' : '#fff';
-    inner.style.color = isSelected ? '#fff' : '#1c1c1c';
+    inner.style.color = isSelected ? '#fff' : '#111111';
     inner.style.boxShadow = isSelected
       ? '0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14)'
       : isHovered
-        ? '0 3px 10px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.10)'
-        : '0 1px 2px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.08)';
+        ? '0 3px 10px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.10)'
+        : '0 2px 6px rgba(0,0,0,0.16), 0 1px 2px rgba(0,0,0,0.10)';
     inner.style.transform = isSelected ? 'scale(1.04)' : isHovered ? 'scale(1.06)' : 'scale(1)';
   };
 
@@ -207,10 +257,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       inner.style.display = 'inline-flex';
       inner.style.alignItems = 'center';
       inner.style.justifyContent = 'center';
-      inner.style.padding = '6px 14px';
       inner.style.borderRadius = '9999px';
-      inner.style.fontWeight = '700';
-      inner.style.fontSize = '14px';
       inner.style.whiteSpace = 'nowrap';
       inner.style.willChange = 'transform';
       inner.style.transition = 'transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease';
@@ -234,6 +281,14 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     if (!inner || inner.dataset.role !== 'pill') return;
     applyPillVisual(inner, isSelected, isHovered);
   };
+
+  const syncAllMarkerOffsets = useCallback(() => {
+    if (!map) return;
+    entriesRef.current.forEach((entry) => {
+      const { lng, lat } = entry.marker.getLngLat();
+      syncMarkerEdgeOffset(map, entry.marker, lng, lat, entry.element);
+    });
+  }, [map]);
 
   /**
    * 3️⃣ Effect A: sincroniza el SET de marcadores con `clusters`.
@@ -309,18 +364,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         entriesRef.current.set(key, entry);
       } else {
         entry.marker.setLngLat([service.lng, service.lat]);
-        // 🛡️ Round 28 CUR-5: usar símbolo derivado del currency del servicio, no € hardcoded.
-        // Antes esta rama (cuando el clustering reciclaba un marker DOM existente al mover el viewport)
-        // sobrescribía cualquier símbolo correcto que applyServiceStyle hubiera puesto inicialmente.
-        // Resultado: experto US con servicio USD se veía $25 al primer render y luego €25 al mover el mapa.
-        // ⚠️ Wobble-fix: el texto vive en el hijo `pill` (no en `entry.element`), porque
-        //    el botón externo debe permanecer libre de mutaciones que rompan el fix.
-        const inner = entry.element.firstElementChild as HTMLSpanElement | null;
-        if (inner && inner.dataset.role === 'pill') {
-          inner.textContent = service.price > 0
-            ? `${getCurrencySymbol(((service as any).priceCurrency || (service as any).currency || 'EUR'))}${Math.round(service.price)}`
-            : 'Consultar';
-        }
+        applyServiceStyle(entry.element, service, isSelected, isHovered);
       }
     });
 
@@ -332,12 +376,34 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       }
     }
 
+    requestAnimationFrame(() => syncAllMarkerOffsets());
+
     // Cleanup total al desmontar
     return () => {
       // No limpiar aquí — sólo al unmount real (gestionado por el cleanup del unmount effect abajo).
     };
     // ✅ Importante: no incluir hovered/selected aquí.
-  }, [map, clusters, supercluster]);
+  }, [map, clusters, supercluster, syncAllMarkerOffsets]);
+
+  /** Recalcula offset en bordes al mover/zoom el mapa. */
+  useEffect(() => {
+    if (!map) return;
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => syncAllMarkerOffsets());
+    };
+    map.on('move', schedule);
+    map.on('zoom', schedule);
+    map.on('resize', schedule);
+    schedule();
+    return () => {
+      cancelAnimationFrame(raf);
+      map.off('move', schedule);
+      map.off('zoom', schedule);
+      map.off('resize', schedule);
+    };
+  }, [map, syncAllMarkerOffsets]);
 
   /**
    * 4️⃣ Effect B: aplica hover/selected SOLO a los nodos afectados.
@@ -351,7 +417,8 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       const isHovered = !isSelected && hoveredServiceId === entry.serviceId;
       updateServiceVisualState(entry.element, isSelected, isHovered);
     });
-  }, [map, selectedServiceId, hoveredServiceId]);
+    requestAnimationFrame(() => syncAllMarkerOffsets());
+  }, [map, selectedServiceId, hoveredServiceId, syncAllMarkerOffsets]);
 
   /**
    * 5️⃣ Unmount cleanup

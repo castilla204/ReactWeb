@@ -568,6 +568,9 @@ export const MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS =
 
 export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-4`;
 
+/** Lista del drawer en modo tutorial — márgenes simétricos al header + colchón inferior. */
+export const MAP_MOBILE_LIST_TUTORIAL_CLASS = `${SD_MOBILE_GUTTER_CLASS} pt-3 pb-4`;
+
 export const MAP_CARD_BODY_CLASS = 'px-3.5 py-2.5 font-display';
 
 /** Imagen un poco más baja que 4/3 (desktop y móvil) */
