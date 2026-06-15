@@ -1146,10 +1146,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     // Estado para servicios del mapa (para verificar favoritos)
     const [mapServices, setMapServices] = useState<Service[]>([]);
     const [mapLoading, setMapLoading] = useState(true);
+    const [mapRefreshing, setMapRefreshing] = useState(false);
 
     const handleMapLoadingChange = useCallback(
         (state: { loading: boolean; isInitialLoading: boolean; isRefreshing: boolean }) => {
             setMapLoading(state.isInitialLoading);
+            setMapRefreshing(state.isRefreshing);
         },
         []
     );
@@ -2292,6 +2294,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         open={isDrawerOpen && isDrawerVisible}
                         dismissible={false}
                         lockTopSnap={!selectedService}
+                        headerLoading={mapLoading || mapRefreshing}
                         // ✅ El X de minimizar lo dibuja MapMobileDrawerHeader inline
                         //    en la fila meta (justify-between), no como absolute. Sin esto,
                         //    el X automático se solapaba visualmente con el chip "Valoración".
