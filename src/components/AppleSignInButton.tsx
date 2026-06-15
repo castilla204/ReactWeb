@@ -65,7 +65,14 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
             setAuthStep('Iniciando sesión con Apple...');
             
             const result = await nativeAuthService.signInWithApple();
-            
+
+            // El usuario cerró la hoja de Apple: no es un error, salimos sin toast.
+            if (result.cancelled) {
+                console.log('🔐 [AppleSignIn] Inicio de sesión cancelado por el usuario');
+                setAuthStep('');
+                return;
+            }
+
             if (!result.success) {
                 throw new Error('Authentication failed');
             }
