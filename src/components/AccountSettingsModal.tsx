@@ -63,6 +63,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  // ✏️ Edición del nombre de la cuenta (el email no es editable).
+  const [nameInput, setNameInput] = useState(user?.name || '');
+  const [isSavingName, setIsSavingName] = useState(false);
   // 🛡️ Round 28 MUD-F: detección rol experto + estado del wizard de mudanza.
   const userRole = (user as any)?.Role || (user as any)?.role;
   const isExpert = userRole === 'Expert';
@@ -94,6 +97,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     deleteAccount, 
     clearError 
   } = useAccountDeletion();
+
+  // ✏️ Mantener el input de nombre en sync con el usuario (al abrir el modal o tras refresh).
+  useEffect(() => {
+    setNameInput(user?.name || '');
+  }, [user?.name]);
 
   useEffect(() => {
     if (activeTab === 'delete' && deletionStep === 'initial') {
@@ -250,6 +258,57 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     } catch { /* localStorage no disponible: el estado en memoria ya está actualizado */ }
   };
 
+  // ✏️ Refleja el nombre nuevo en el contexto y en localStorage (sobrevive a recargas).
+  const persistName = (newName: string) => {
+    setUser(prev => (prev ? { ...prev, name: newName } : prev));
+    try {
+      for (const key of ['user', 'userData']) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const obj = JSON.parse(raw);
+        obj.name = newName;
+        obj.Name = newName;
+        localStorage.setItem(key, JSON.stringify(obj));
+      }
+    } catch { /* localStorage no disponible: el estado en memoria ya está actualizado */ }
+  };
+
+  const trimmedName = nameInput.trim();
+  const nameChanged = trimmedName !== (user?.name || '').trim();
+
+  const handleSaveName = async () => {
+    if (!trimmedName) {
+      showToast('error', 'El nombre no puede estar vacío');
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.account.profile}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: trimmedName }),
+      });
+      if (!res.ok) {
+        let msg = 'No se pudo actualizar el nombre';
+        try { msg = (await res.json()).message || msg; } catch { /* sin cuerpo JSON */ }
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      const saved = data.name ?? trimmedName;
+      persistName(saved);
+      setNameInput(saved);
+      showToast('success', 'Nombre actualizado');
+    } catch (err: any) {
+      showToast('error', err?.message || 'No se pudo actualizar el nombre');
+    } finally {
+      if (isMountedRef.current) setIsSavingName(false);
+    }
+  };
+
   const handleAvatarFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     // Permitir volver a elegir el mismo fichero más tarde.
@@ -393,10 +452,23 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <Label>Nombre</Label>
                 <input
                   type="text"
-                  value={user?.name || ''}
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  maxLength={100}
+                  disabled={isSavingName}
+                  placeholder="Tu nombre"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  readOnly
                 />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isSavingName || !nameChanged || !trimmedName}
+                    onClick={handleSaveName}
+                  >
+                    {isSavingName ? 'Guardando…' : 'Guardar nombre'}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>

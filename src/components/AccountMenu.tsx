@@ -10,7 +10,9 @@ import {
   Shield,
   LogOut,
   ChevronDown,
+  ChevronRight,
   User,
+  Settings,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,24 +25,39 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { getAuthToken } from '../lib/auth';
 import { RoleChecker } from '../utils/roleChecker';
+import { cn } from '../lib/utils';
+
+type MenuItem = {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  onClick: () => void;
+  destructive?: boolean;
+  highlight?: boolean;
+};
+
+function openAccountSettings() {
+  if (typeof (window as { openAccountSettings?: () => void }).openAccountSettings === 'function') {
+    (window as { openAccountSettings?: () => void }).openAccountSettings!();
+    return;
+  }
+  window.dispatchEvent(
+    new CustomEvent('openAccountSettings', {
+      bubbles: true,
+      cancelable: true,
+      detail: { source: 'AccountMenu' },
+    }),
+  );
+}
 
 /**
  * Menú de cuenta del topbar global (desktop).
- *
- * Antes el botón "Mi cuenta" era un enlace muerto a `/busquedas` y no había forma
- * de llegar a panel de experto, transacciones, ajustes ni cerrar sesión desde el
- * header. Este dropdown porta la misma fuente de verdad de roles que el menú móvil
- * ([MobileProfileMenu]) — rol Expert vía token (`RoleChecker`), admin por email/rol,
- * y el evento global `openAccountSettings` — para que ambos no diverjan.
- *
- * `isMap`: en las variantes de mapa el trigger es un icono compacto (`sd-icon-btn`)
- * en lugar del pill con etiqueta.
+ * Misma fuente de verdad de roles y rutas que [MobileProfileMenu].
  */
 export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  // El backend serializa PascalCase; el front puede tener ambos casings.
   const userName = ((user as { Name?: string } | null)?.Name ?? user?.name ?? '').trim();
   const userEmail = (user as { Email?: string } | null)?.Email ?? user?.email ?? '';
   const userAvatar =
@@ -52,14 +69,13 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
     user?.role ??
     (user as { userRole?: string | number } | null)?.userRole;
 
-  // Detección robusta de experto: rol del objeto user o, si falla, el token JWT.
   const isExpert = useMemo(() => {
     const roleFromUser =
       userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1;
     if (roleFromUser) return true;
     try {
       const token = getAuthToken();
-      if (token) return RoleChecker.getUserRole(token) === 1; // UserRole.Expert = 1
+      if (token) return RoleChecker.getUserRole(token) === 1;
     } catch (error) {
       console.warn('[AccountMenu] Error checking role from token:', error);
     }
@@ -77,10 +93,39 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
     return (first + last).toUpperCase();
   }, [userName, userEmail]);
 
+  const roleHint = useMemo(() => {
+    const parts: string[] = [];
+    if (isExpert) parts.push('Revisor');
+    if (userIsAdmin) parts.push('Admin');
+    return parts.length ? ` · ${parts.join(' · ')}` : '';
+  }, [isExpert, userIsAdmin]);
+
   const handleLogout = () => {
     signOut();
     navigate('/');
   };
+
+  const menuGroups: MenuItem[][] = [
+    [
+      { id: 'searches', label: 'Mis búsquedas', icon: Search, onClick: () => navigate('/busquedas') },
+      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => navigate('/mis-mensajes') },
+      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => navigate('/favoritos') },
+      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => navigate('/transacciones') },
+    ],
+    [
+      {
+        id: 'become-expert',
+        label: isExpert ? 'Panel de experto' : 'Hazte revisor',
+        icon: isExpert ? Briefcase : UserPlus,
+        onClick: () => navigate(isExpert ? '/expert-panel' : '/become-expert'),
+        highlight: !isExpert,
+      },
+      ...(userIsAdmin
+        ? [{ id: 'admin', label: 'Administración', icon: Shield, onClick: () => navigate('/admin') }]
+        : []),
+      { id: 'settings', label: 'Configuración', icon: Settings, onClick: openAccountSettings },
+    ],
+  ];
 
   const renderAvatar = (size: number) =>
     userAvatar ? (
@@ -93,15 +138,48 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
     ) : (
       <span
         aria-hidden
-        className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#2563EB] font-semibold text-white"
-        style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
+        className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand font-semibold text-white"
+        style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
       >
         {initials || <User className="h-4 w-4" strokeWidth={2.1} />}
       </span>
     );
 
-  const itemClass = 'gap-3 cursor-pointer px-2.5 py-2 text-[13.5px] text-[#222]';
-  const iconClass = 'h-[18px] w-[18px] shrink-0 text-[#717171]';
+  const itemClass = cn(
+    'group mx-1 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5',
+    'text-[13.5px] font-medium text-[#222222]',
+    'focus:bg-[#f5f5f5] data-[highlighted]:bg-[#f5f5f5]',
+  );
+
+  const renderMenuItem = (item: MenuItem) => {
+    const Icon = item.icon;
+    return (
+      <DropdownMenuItem
+        key={item.id}
+        className={cn(
+          itemClass,
+          item.destructive && 'text-red-600 focus:text-red-600 data-[highlighted]:bg-red-50',
+        )}
+        onClick={item.onClick}
+      >
+        <Icon
+          className={cn(
+            'h-[17px] w-[17px] shrink-0',
+            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-[#717171]',
+          )}
+          strokeWidth={2.1}
+        />
+        <span className="min-w-0 flex-1 leading-none">{item.label}</span>
+        {!item.destructive ? (
+          <ChevronRight
+            className="h-3.5 w-3.5 shrink-0 text-[#d1d5db] opacity-0 transition-opacity group-focus:opacity-100 group-data-[highlighted]:opacity-100"
+            strokeWidth={2.2}
+            aria-hidden
+          />
+        ) : null}
+      </DropdownMenuItem>
+    );
+  };
 
   return (
     <DropdownMenu>
@@ -112,7 +190,7 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
           className={
             isMap
               ? 'sd-icon-btn shrink-0'
-              : 'inline-flex shrink-0 items-center gap-2 rounded-full border border-[#9ca3af] bg-white py-1 pl-1 pr-2.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]'
+              : 'inline-flex shrink-0 items-center gap-2 rounded-full border border-[#dddddd] bg-white py-1 pl-1 pr-2.5 text-[13px] font-semibold text-[#222222] shadow-sm transition-colors hover:border-[#b0b0b0] hover:bg-[#fafafa]'
           }
         >
           {isMap ? (
@@ -121,74 +199,52 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
             <>
               {renderAvatar(26)}
               <span className="hidden lg:inline">Mi cuenta</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" strokeWidth={2.4} aria-hidden />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#717171]" strokeWidth={2.4} aria-hidden />
             </>
           )}
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={8} className="w-64">
-        {/* Cabecera con identidad */}
-        <div className="flex items-center gap-3 px-2.5 py-2.5">
-          {renderAvatar(40)}
-          <div className="min-w-0">
-            <p className="truncate text-[14px] font-semibold leading-tight text-[#222]">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="w-[248px] overflow-hidden rounded-xl border border-[#ebebeb] bg-white p-0 shadow-[0_8px_28px_rgba(0,0,0,0.12)]"
+      >
+        <div className="flex items-center gap-2.5 border-b border-[#ebebeb] px-3 py-2.5">
+          {renderAvatar(36)}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14px] font-semibold leading-tight text-[#222222]">
               {userName || 'Mi cuenta'}
             </p>
             {userEmail ? (
-              <p className="truncate text-[12px] leading-tight text-[#717171]">{userEmail}</p>
+              <p className="truncate text-[11.5px] leading-tight text-[#717171]">
+                {userEmail}
+                {roleHint ? <span className="text-brand">{roleHint}</span> : null}
+              </p>
+            ) : roleHint ? (
+              <p className="text-[11.5px] leading-tight text-brand">{roleHint.replace(/^ · /, '')}</p>
             ) : null}
           </div>
         </div>
 
-        <DropdownMenuSeparator />
+        <div className="py-1">
+          {menuGroups.map((group, index) => (
+            <React.Fragment key={index}>
+              {index > 0 ? <DropdownMenuSeparator className="my-1 bg-[#ebebeb]" /> : null}
+              {group.map(renderMenuItem)}
+            </React.Fragment>
+          ))}
 
-        <DropdownMenuItem className={itemClass} onClick={() => navigate('/busquedas')}>
-          <Search className={iconClass} strokeWidth={2.1} />
-          Mis búsquedas
-        </DropdownMenuItem>
-        <DropdownMenuItem className={itemClass} onClick={() => navigate('/mis-mensajes')}>
-          <MessageSquare className={iconClass} strokeWidth={2.1} />
-          Mis mensajes
-        </DropdownMenuItem>
-        <DropdownMenuItem className={itemClass} onClick={() => navigate('/favoritos')}>
-          <Heart className={iconClass} strokeWidth={2.1} />
-          Favoritos
-        </DropdownMenuItem>
-        <DropdownMenuItem className={itemClass} onClick={() => navigate('/transacciones')}>
-          <CreditCard className={iconClass} strokeWidth={2.1} />
-          Transacciones
-        </DropdownMenuItem>
+          <DropdownMenuSeparator className="my-1 bg-[#ebebeb]" />
 
-        <DropdownMenuSeparator />
-
-        {isExpert ? (
-          <DropdownMenuItem className={itemClass} onClick={() => navigate('/expert-panel')}>
-            <Briefcase className={iconClass} strokeWidth={2.1} />
-            Panel de experto
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem className={itemClass} onClick={() => navigate('/become-expert')}>
-            <UserPlus className={iconClass} strokeWidth={2.1} />
-            Hazte revisor
-          </DropdownMenuItem>
-        )}
-        {userIsAdmin ? (
-          <DropdownMenuItem className={itemClass} onClick={() => navigate('/admin')}>
-            <Shield className={iconClass} strokeWidth={2.1} />
-            Panel de administración
-          </DropdownMenuItem>
-        ) : null}
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          className="gap-3 cursor-pointer px-2.5 py-2 text-[13.5px] text-red-600 focus:text-red-600"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-[18px] w-[18px] shrink-0 text-red-600" strokeWidth={2.1} />
-          Cerrar sesión
-        </DropdownMenuItem>
+          {renderMenuItem({
+            id: 'logout',
+            label: 'Cerrar sesión',
+            icon: LogOut,
+            onClick: handleLogout,
+            destructive: true,
+          })}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
