@@ -153,6 +153,7 @@ export const API_CONFIG = {
         // 🖼️ Avatar de cuenta (foto de perfil unificada con la foto pública del experto).
         account: {
             avatar: `${API_PATH}/User/avatar`, // POST (multipart) sube/cambia · DELETE quita
+            profile: `${API_PATH}/User/profile`, // PUT actualiza el nombre (el email no es editable)
         },
         support: {
             message: `${API_PATH}/SupportChat/message`,

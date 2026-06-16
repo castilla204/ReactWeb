@@ -1,7 +1,17 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
+import {
+    ArrowLeft,
+    ChevronRight,
+    Check,
+    Loader2,
+    Wallet,
+    ShieldCheck,
+    CalendarClock,
+    BadgeCheck,
+    Star,
+    Clock,
+} from 'lucide-react';
 import { HeroBannerPhoto } from '../HeroBannerPhoto';
-import { MOBILE_HERO_PHOTO_SCRIM } from '../../constants/homepageHeroMap';
 import {
     HP_PANEL_GRADIENT,
     SD_MOBILE_FOOTER_SHELL_CLASS,
@@ -298,42 +308,125 @@ export const BE_INPUT_CLASS =
 export const BE_DAY_ACTIVE = 'bg-brand/[0.1] text-brand font-semibold';
 export const BE_DAY_IDLE = 'bg-[#f5f5f5] text-[#444] hover:bg-[#ebebeb]';
 
-const FAST_PATH_STEPS = [
-    'Elige tu país y conecta Stripe',
-    'Completa tu perfil y zona en el panel',
-    'Publica servicios y recibe encargos',
+const FAST_PATH_INTRO =
+    'Mecánico, perito, agente o técnico: en Inspecciono haces revisiones presenciales y online antes de comprar (coches, viviendas, motos y más). Defines tu zona, publicas tus servicios y cobras cada encargo con Stripe.';
+
+/** Razones para registrarse — el «por qué». */
+const FAST_PATH_VALUE_PROPS = [
+    {
+        icon: Wallet,
+        title: 'Tú fijas el precio',
+        body: 'Cobras por encargo. Sin coste de alta ni cuota mensual.',
+    },
+    {
+        icon: ShieldCheck,
+        title: 'Cobro protegido',
+        body: 'El cliente paga por adelantado; tú cobras al entregar el informe.',
+    },
+    {
+        icon: CalendarClock,
+        title: 'Tu zona, tus horarios',
+        body: 'Decides dónde trabajas y cuándo estás disponible.',
+    },
+    {
+        icon: BadgeCheck,
+        title: 'Perfil verificado',
+        body: 'Apareces en las búsquedas de clientes de tu área.',
+    },
 ] as const;
 
-const FAST_PATH_INTRO =
-    'Mecánico, perito, agente o técnico: en Inspecciono haces revisiones presenciales y online antes de comprar — coches, viviendas, motos y más. Defines tu zona, publicas servicios y cobras cada encargo con Stripe.';
+/** Pasos del alta — el «cómo». Es una secuencia real, los números informan. */
+const FAST_PATH_STEPS = [
+    { title: 'Elige tu país y conecta Stripe', body: 'Verificación segura, solo una vez.' },
+    { title: 'Completa tu perfil y tu zona', body: 'Foto, experiencia y radio de cobertura.' },
+    { title: 'Recibe encargos y cobra', body: 'Los clientes te contratan; el dinero llega a tu cuenta.' },
+] as const;
 
-/** Intro móvil con foto hero de la homepage. */
-export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
+/** Avatares de prueba social — mismo origen que la homepage. */
+const FAST_PATH_AVATARS = [13, 14, 15, 33] as const;
+
+/**
+ * Scrim de marca sobre la foto del oficio: tiñe la imagen de azul Inspecciono
+ * y oscurece la zona del texto para garantizar contraste AA del copy blanco.
+ * Es un velo de imagen (no un gradiente decorativo preset).
+ */
+export const BE_FAST_HERO_SCRIM =
+    'linear-gradient(180deg, hsl(212 100% 16% / 0.28) 0%, hsl(212 100% 13% / 0.55) 58%, hsl(212 100% 11% / 0.86) 100%), ' +
+    'linear-gradient(96deg, hsl(212 100% 17% / 0.90) 0%, hsl(212 100% 20% / 0.62) 46%, hsl(212 100% 26% / 0.30) 100%)';
+
+/** Prueba social cualitativa: avatares + estrellas, sin cifras. */
+function FastPathSocialProof({ tone = 'light' }: { tone?: 'onBrand' | 'light' }) {
+    const onBrand = tone === 'onBrand';
     return (
-        <div className="space-y-4 lg:hidden">
-            <button
-                type="button"
-                onClick={onBack}
-                className="text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
-            >
-                Volver
-            </button>
-
-            <div className="relative -mx-5 aspect-square overflow-hidden border-y border-[#e8e8e8]">
-                <HeroBannerPhoto imgClassName="object-cover object-[68%_38%]" />
+        <div className="flex items-center gap-3">
+            <div className="flex -space-x-2.5">
+                {FAST_PATH_AVATARS.map((id) => (
+                    <img
+                        key={id}
+                        src={`https://i.pravatar.cc/80?img=${id}`}
+                        alt=""
+                        aria-hidden
+                        loading="lazy"
+                        className={`h-8 w-8 rounded-full border-2 object-cover ${
+                            onBrand ? 'border-white/75' : 'border-white shadow-sm'
+                        }`}
+                    />
+                ))}
             </div>
-
-            <div className="space-y-2">
-                <h1 className="font-display text-[1.35rem] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c]">
-                    Hazte experto
-                </h1>
-                <p className="text-[14px] leading-relaxed text-[#6a6a6a]">{FAST_PATH_INTRO}</p>
+            <div className="min-w-0">
+                <div
+                    className={`flex items-center gap-0.5 ${onBrand ? 'text-amber-300' : 'text-amber-400'}`}
+                    aria-hidden
+                >
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <Star key={i} className="h-3.5 w-3.5 fill-current" strokeWidth={0} />
+                    ))}
+                </div>
+                <p className={`mt-0.5 text-xs leading-snug ${onBrand ? 'text-white/85' : 'text-[#6a6a6a]'}`}>
+                    Profesionales verificados por toda España
+                </p>
             </div>
+        </div>
+    );
+}
 
-            <ol className="space-y-1.5 text-[13px] leading-relaxed text-[#6a6a6a]" aria-label="Pasos del alta">
+/**
+ * Gancho «listo en 15 min» con acento ámbar (color secundario de la marca,
+ * presente en mapas y estrellas). Dos tonos: sobre el héroe azul y sobre blanco.
+ */
+function FastPathReadyBadge({ tone = 'light' }: { tone?: 'onBrand' | 'light' }) {
+    const onBrand = tone === 'onBrand';
+    return (
+        <span
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12.5px] font-semibold ${
+                onBrand
+                    ? 'bg-amber-400/15 text-amber-100 ring-1 ring-amber-300/35'
+                    : 'bg-amber-50 text-amber-900 ring-1 ring-amber-200'
+            }`}
+        >
+            <Clock className={`h-3.5 w-3.5 ${onBrand ? 'text-amber-300' : 'text-amber-500'}`} strokeWidth={2.5} />
+            Listo para recibir pagos en ~15 min
+        </span>
+    );
+}
+
+/** Lista de pasos del alta — reutilizada en intro móvil y columna de formulario. */
+export function BecomeExpertFastPathSteps({ className = '' }: { className?: string }) {
+    return (
+        <div className={className}>
+            <h2 className="font-display text-[1.05rem] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                Cómo empiezas
+            </h2>
+            <ol className="mt-3.5 space-y-3.5" aria-label="Pasos del alta">
                 {FAST_PATH_STEPS.map((step, index) => (
-                    <li key={step}>
-                        {index + 1}. {step}
+                    <li key={step.title} className="flex gap-3">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[13px] font-bold tabular-nums text-brand">
+                            {index + 1}
+                        </span>
+                        <div className="pt-0.5">
+                            <p className="text-[14px] font-semibold leading-snug text-[#1c1c1c]">{step.title}</p>
+                            <p className="mt-0.5 text-[13px] leading-snug text-[#6a6a6a]">{step.body}</p>
+                        </div>
                     </li>
                 ))}
             </ol>
@@ -341,7 +434,74 @@ export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
     );
 }
 
-/** Shell Stripe-first — sin banner móvil; contexto en el scroll. */
+/** Intro móvil — hero de marca con foto + scrim, prueba social y razones. */
+export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
+    return (
+        <div className="lg:hidden">
+            {/* Hero a sangre con foto del oficio velada en azul de marca */}
+            <div className="relative -mx-5 overflow-hidden">
+                <div className="absolute inset-0">
+                    <HeroBannerPhoto imgClassName="object-cover object-[62%_30%]" />
+                </div>
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: BE_FAST_HERO_SCRIM }}
+                />
+                <div className="relative z-10 flex min-h-[25rem] flex-col px-5 pb-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className={`${hpIconButtonClass} self-start border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 active:bg-white/25 ${FOCUS_RING}`}
+                        aria-label="Volver"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+
+                    <div className="be-fast-reveal mt-auto" style={{ animationDelay: '40ms' }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/85">
+                            Programa de expertos
+                        </p>
+                        <h1 className="mt-2 font-display text-[1.95rem] font-bold leading-[1.08] tracking-[-0.025em] text-white [text-wrap:balance]">
+                            Tu experiencia, en ingresos
+                        </h1>
+                        <span aria-hidden className="mt-3 block h-1 w-12 rounded-full bg-amber-400" />
+                        <p className="mt-3 text-[14px] leading-relaxed text-white/85 [text-wrap:pretty]">
+                            {FAST_PATH_INTRO}
+                        </p>
+                        <div className="mt-4 flex flex-col items-start gap-3.5">
+                            <FastPathReadyBadge tone="onBrand" />
+                            <FastPathSocialProof tone="onBrand" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Razones — lista sobria con filete, no tarjetas de colores */}
+            <ul className="mt-6 overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white">
+                {FAST_PATH_VALUE_PROPS.map(({ icon: Icon, title, body }, i) => (
+                    <li
+                        key={title}
+                        className={`flex gap-3.5 px-4 py-3.5 ${i > 0 ? 'border-t border-[#f0f0f0]' : ''}`}
+                    >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/[0.08] text-brand">
+                            <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                        </span>
+                        <div className="min-w-0">
+                            <p className="text-[14px] font-semibold leading-snug text-[#1c1c1c]">{title}</p>
+                            <p className="mt-0.5 text-[13px] leading-snug text-[#5a5a5a]">{body}</p>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+
+            {/* Pasos */}
+            <BecomeExpertFastPathSteps className="mt-7" />
+        </div>
+    );
+}
+
+/** Shell Stripe-first — aside de marca en escritorio; scroll narrativo en móvil. */
 export function BecomeExpertFastPathShell({
     onBack,
     children,
@@ -357,46 +517,68 @@ export function BecomeExpertFastPathShell({
 
     return (
         <div className="become-expert-wizard be-fast-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#fafafa] font-display text-[#1c1c1c] lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(420px,640px)] xl:grid-cols-[minmax(320px,1fr)_680px]">
-            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] lg:flex lg:flex-col lg:justify-between">
+            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] lg:flex lg:flex-col">
                 <div className="absolute inset-0">
-                    <HeroBannerPhoto imgClassName="object-cover object-right" />
+                    <HeroBannerPhoto imgClassName="object-cover object-[58%_30%]" />
                 </div>
                 <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0"
-                    style={{ background: MOBILE_HERO_PHOTO_SCRIM }}
+                    style={{ background: BE_FAST_HERO_SCRIM }}
                 />
 
-                <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-10 xl:p-12">
-                    <div>
-                        <button
-                            type="button"
-                            onClick={onBack}
-                            className={`${hpIconButtonClass} bg-white/90 backdrop-blur-sm ${FOCUS_RING}`}
-                            aria-label="Volver al inicio"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                        </button>
-                        <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+                <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto p-10 xl:p-12">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className={`${hpIconButtonClass} self-start border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 active:bg-white/25 ${FOCUS_RING}`}
+                        aria-label="Volver al inicio"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+
+                    <div className="be-fast-reveal mt-9 max-w-md" style={{ animationDelay: '40ms' }}>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/85">
                             Programa de expertos
                         </p>
-                        <h1 className="mt-3 max-w-md font-display text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#1c1c1c] xl:text-[2rem]">
-                            Tu experiencia, en ingresos
+                        <h1 className="mt-3 font-display text-[2.1rem] font-bold leading-[1.06] tracking-[-0.03em] text-white xl:text-[2.55rem] [text-wrap:balance]">
+                            Tu experiencia,
+                            <br />
+                            en ingresos
                         </h1>
-                        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#444]">
+                        <span aria-hidden className="mt-4 block h-1 w-14 rounded-full bg-amber-400" />
+                        <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/85 [text-wrap:pretty]">
                             {FAST_PATH_INTRO}
                         </p>
-                        <ol className="mt-8 max-w-md space-y-2.5" aria-label="Pasos del alta">
-                            {FAST_PATH_STEPS.map((step, index) => (
-                                <li key={step} className="text-sm leading-relaxed text-[#444]">
-                                    {index + 1}. {step}
-                                </li>
-                            ))}
-                        </ol>
+                        <div className="mt-5">
+                            <FastPathReadyBadge tone="onBrand" />
+                        </div>
                     </div>
-                    <p className="mt-8 max-w-md shrink-0 text-xs leading-relaxed text-[#6a6a6a]">
-                        Pagos con Stripe. Tus datos solo se usan para verificar tu perfil.
-                    </p>
+
+                    <ul className="be-fast-reveal mt-8 max-w-md space-y-3.5" style={{ animationDelay: '150ms' }}>
+                        {FAST_PATH_VALUE_PROPS.map(({ icon: Icon, title, body }) => (
+                            <li key={title} className="flex gap-3">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white ring-1 ring-white/20">
+                                    <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                                </span>
+                                <div>
+                                    <p className="text-[15px] font-semibold leading-snug text-white">{title}</p>
+                                    <p className="mt-0.5 text-[13px] leading-relaxed text-white/80">{body}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+
+                    <div
+                        className="be-fast-reveal mt-auto max-w-md pt-8"
+                        style={{ animationDelay: '260ms' }}
+                    >
+                        <FastPathSocialProof tone="onBrand" />
+                        <p className="mt-6 flex items-center gap-2 text-xs leading-relaxed text-white/70">
+                            <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
+                            Pagos con Stripe. Tus datos solo se usan para verificar tu perfil.
+                        </p>
+                    </div>
                 </div>
             </aside>
 
@@ -409,7 +591,7 @@ export function BecomeExpertFastPathShell({
                         className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-4 lg:max-w-none lg:px-10 lg:py-8 xl:px-12`}
                     >
                         <BecomeExpertFastPathIntro onBack={onBack} />
-                        <div className="mt-5 border-t border-[#ececec] pt-5 lg:mt-0 lg:border-t-0 lg:pt-10">{children}</div>
+                        <div className="mt-7 border-t border-[#ececec] pt-6 lg:mt-0 lg:border-t-0 lg:pt-10">{children}</div>
                     </div>
                 </main>
 

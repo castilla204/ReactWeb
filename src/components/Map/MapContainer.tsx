@@ -5,10 +5,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { capMapWorkers } from '../../lib/mapWorkers';
 import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
 import {
-  applyInspeccionoGlobeProjection,
   buildInspeccionoMapStyle,
   ensureInspeccionoLandFill,
-  getSearchMapGlobePitch,
   INSPECCIONO_MAP_THEME,
 } from '../../utils/inspeccionoMapStyle';
 capMapWorkers(maplibregl);
@@ -87,7 +85,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   // Referencias para debounce y control
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isDraggingRef = useRef(false);
-  const lastBoundsKeyRef = useRef<string>('');
   const lastServicesKeyRef = useRef<string>('');
   const lastInitialCenterRef = useRef(initialCenter);
   // ⚡ Carga: el debounce de viewport agrupa paneos/zooms rápidos del usuario. Pero en la
@@ -95,8 +92,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   //    500 ms son tiempo muerto antes de ver los primeros markers. Disparamos el primer fetch
   //    de inmediato y dejamos el debounce sólo para los movimientos posteriores.
   const isInitialFetchRef = useRef(true);
-  // Coalesce: evita encolar múltiples easeTo de pitch durante zoom/pan continuo.
-  const pitchEaseScheduledRef = useRef(false);
+  // Área (ampliada) ya pedida al backend. Mientras el viewport visible siga DENTRO de ella y
+  // no cambie el zoom, NO se vuelve a pedir → los markers no aparecen/desaparecen al panear.
+  const fetchedAreaRef = useRef<{ w: number; s: number; e: number; n: number; zoom: number } | null>(null);
   const loaderEnabled = isMapLoaded && currentViewport !== null;
   const loaderOptions = useMemo(
     () => ({
@@ -114,9 +112,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     loaderOptions
   );
 
-  // Al cambiar categoría/tipo, el siguiente fetch vuelve a ser "inicial" (sin debounce).
+  // Al cambiar categoría/tipo, el siguiente fetch vuelve a ser "inicial" (sin debounce) y se
+  // descarta el área ya cargada → se vuelve a pedir la nueva categoría aunque el mapa no se mueva.
   useEffect(() => {
     isInitialFetchRef.current = true;
+    fetchedAreaRef.current = null;
   }, [categoryId, serviceTypeId]);
 
   // Notificar cambios en el número de servicios
@@ -163,18 +163,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     }),
     [isMobile]
   );
-
-  /**
-   * Genera una clave única para los bounds (evita updates innecesarios)
-   */
-  const getBoundsKey = useCallback((bounds: maplibregl.LngLatBounds, zoom: number): string => {
-    const ne = bounds.getNorthEast();
-    const sw = bounds.getSouthWest();
-    // Reducimos sensibilidad para evitar refetch por variaciones minimas de camara.
-    // toFixed(3) (~110 m) en vez de (4) (~11 m): el settle de la cámara de apertura (proyección
-    // globe + easeTo de pitch) movía el 4º decimal y disparaba 2-3 map-experts redundantes.
-    return `${sw.lat.toFixed(3)},${sw.lng.toFixed(3)},${ne.lat.toFixed(3)},${ne.lng.toFixed(3)},${zoom.toFixed(2)}`;
-  }, []);
 
   /**
    * Valida que los bounds sean correctos
@@ -241,12 +229,37 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const zoom = map.getZoom();
       if (!bounds || !Number.isFinite(zoom) || !validateBounds(bounds, zoom)) return;
 
-      const boundsKey = getBoundsKey(bounds, zoom);
-      if (lastBoundsKeyRef.current === boundsKey) return;
-
-      lastBoundsKeyRef.current = boundsKey;
       const ne = bounds.getNorthEast();
       const sw = bounds.getSouthWest();
+
+      // ⚡ Carga única (modelo Airbnb): los markers NO se recargan al hacer zoom (in/out) ni al
+      //    panear dentro del área ya cargada. Supercluster agrupa/desagrupa en CLIENTE sin pedir
+      //    nada al backend → los pills se quedan fijos en su sitio y no parpadean. Solo se vuelve
+      //    a pedir cuando el CENTRO del mapa sale del área cargada (te desplazas a otra región).
+      //    Esto elimina la queja: "se recargan en cada desplazamiento / desaparecen al alejar".
+      const centerLat = (ne.lat + sw.lat) / 2;
+      const centerLng = (ne.lng + sw.lng) / 2;
+      const fetched = fetchedAreaRef.current;
+      const centerInside =
+        !!fetched &&
+        centerLat >= fetched.s && centerLat <= fetched.n &&
+        centerLng >= fetched.w && centerLng <= fetched.e;
+      if (centerInside) return;
+
+      // Cargar un área GENEROSA alrededor del viewport (margen ~1× por lado, total acotado a
+      // ~60° para no superar el límite de bounds del backend) → margen amplio para moverse.
+      const latSpan = ne.lat - sw.lat;
+      const lngSpan = ne.lng - sw.lng;
+      const padLat = Math.min(latSpan * 1.0, Math.max(0, (60 - latSpan) / 2));
+      const padLng = Math.min(lngSpan * 1.0, Math.max(0, (60 - lngSpan) / 2));
+      const exp = {
+        n: Math.min(85, ne.lat + padLat),
+        s: Math.max(-85, sw.lat - padLat),
+        e: Math.min(180, ne.lng + padLng),
+        w: Math.max(-180, sw.lng - padLng),
+        zoom,
+      };
+      fetchedAreaRef.current = exp;
 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -258,20 +271,18 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       debounceTimerRef.current = setTimeout(() => {
         if (isDraggingRef.current) return;
-        // ⚡ Transición: el fetch + render de la nueva lista de servicios es
-        // pesado. Sin transition, bloquea el primer paint tras el `moveend`
-        // y el INP sube. Con transition, React deja respirar al input antes
-        // de pintar la nueva tanda.
+        // ⚡ Transición: el fetch + render de la nueva lista de servicios es pesado. Con
+        // transition, React deja respirar al input antes de pintar la nueva tanda.
         startTransition(() => {
           setCurrentViewport({
-            northeast: { lat: ne.lat, lng: ne.lng },
-            southwest: { lat: sw.lat, lng: sw.lng },
+            northeast: { lat: exp.n, lng: exp.e },
+            southwest: { lat: exp.s, lng: exp.w },
             zoom,
           });
         });
       }, delay);
     },
-    [validateBounds, getBoundsKey, debounceMs]
+    [validateBounds, debounceMs]
   );
 
   const handleMapIdle = useCallback(
@@ -286,42 +297,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   useEffect(() => {
     onMapLoadRef.current = onMapLoad;
   }, [onMapLoad]);
-
-  const syncGlobePitch = useCallback(
-    (map: maplibregl.Map, animate = false) => {
-      const targetPitch = getSearchMapGlobePitch(map.getZoom(), isMobile);
-      if (Math.abs(map.getPitch() - targetPitch) < 0.2) return;
-      if (animate) {
-        // ⚠️ Re-entrancy-fix: NUNCA llamar easeTo() síncronamente aquí. Esta función se
-        //    invoca desde onIdle (handlers de 'moveend'/'zoomend'), y maplibre dispara esos
-        //    eventos DENTRO de su propio _render(). Arrancar otra animación de cámara en ese
-        //    punto re-entra en el render loop → "Attempting to run(), but is already running"
-        //    y "this._onEaseFrame is not a function", que se repiten cada frame y CONGELAN el
-        //    mapa (no deja mover). Diferimos el easeTo a un macrotask fuera del despacho del
-        //    evento; la animación de pitch resultante es idéntica.
-        if (pitchEaseScheduledRef.current) return; // ya hay uno encolado → no duplicar
-        pitchEaseScheduledRef.current = true;
-        setTimeout(() => {
-          pitchEaseScheduledRef.current = false;
-          try {
-            // No arrancar el pitch mientras el usuario interactúa o hay otra animación en
-            // curso: evita easeTo que compiten y la re-entrancia. Cuando el mapa quede quieto,
-            // el siguiente 'moveend' (ya sin movimiento) ajustará el pitch.
-            if (map.isMoving() || map.isZooming() || map.isEasing()) return;
-            const t = getSearchMapGlobePitch(map.getZoom(), isMobile);
-            if (Math.abs(map.getPitch() - t) >= 0.2) {
-              map.easeTo({ pitch: t, bearing: 0, duration: 320 });
-            }
-          } catch {
-            // El mapa pudo desmontarse entre el evento y este tick; ignorar.
-          }
-        }, 0);
-      } else {
-        map.setPitch(targetPitch);
-      }
-    },
-    [isMobile],
-  );
 
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -351,7 +326,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           ? { top: 24, bottom: Math.round(window.innerHeight * 0.30), left: 16, right: 16 }
           : { top: 0, bottom: 0, left: 0, right: 0 };
 
-    const openingPitch = getSearchMapGlobePitch(initialZoom, isMobile);
+    // 🗺️ Mapa de búsqueda PLANO (mercator, pitch 0). Antes usaba proyección globe + tilt,
+    //    pero bajo globe maplibre CLAMPA/OCULTA los markers HTML al acercarse al horizonte
+    //    (bug conocido: "globe unproject clamps points to horizon"): al alejar o en móvil,
+    //    los markers de los bordes (Londres, Roma, Casablanca…) DESAPARECÍAN. Plano = los
+    //    markers se quedan exactamente en su lng/lat y nunca desaparecen (estándar Airbnb).
+    const openingPitch = 0;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
@@ -384,9 +364,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.touchZoomRotate.disableRotation();
     map.dragRotate.disable();
 
-    const applyGlobe = () => {
-      applyInspeccionoGlobeProjection(map);
-      syncGlobePitch(map, false);
+    const applyFlat = () => {
+      // Mercator plano explícito (el estilo ya es mercator por defecto) + pitch 0.
+      try { map.setProjection({ type: 'mercator' }); } catch { /* runtime sin setProjection */ }
+      if (map.getPitch() !== 0) map.setPitch(0);
     };
 
     if (!isMobile) {
@@ -401,16 +382,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       }
     };
     const onIdle = () => {
-      syncGlobePitch(map, true);
       handleMapIdle(map);
     };
 
-    map.once('style.load', applyGlobe);
+    map.once('style.load', applyFlat);
     map.on('movestart', onMoveStart);
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('load', () => {
-      applyGlobe();
+      applyFlat();
       try {
         ensureInspeccionoLandFill(map);
         map.triggerRepaint();
@@ -426,10 +406,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       handleMapIdle(map);
     });
 
-    if (map.isStyleLoaded()) applyGlobe();
+    if (map.isStyleLoaded()) applyFlat();
 
     return () => {
-      map.off('style.load', applyGlobe);
+      map.off('style.load', applyFlat);
       map.off('movestart', onMoveStart);
       map.off('moveend', onIdle);
       map.off('zoomend', onIdle);
@@ -438,7 +418,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       setMapInstance(null);
       setIsMapLoaded(false);
     };
-  }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle, initialZoom, syncGlobePitch]);
+  }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle, initialZoom]);
 
   // Actualizar centro/zoom solo cuando cambie de verdad (geocoding / país)
   useEffect(() => {
@@ -456,7 +436,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     mapInstance.easeTo({
       center: [initialCenter.lng, initialCenter.lat],
       zoom,
-      pitch: getSearchMapGlobePitch(zoom, isMobile),
+      pitch: 0,
       bearing: 0,
       duration: 400,
     });

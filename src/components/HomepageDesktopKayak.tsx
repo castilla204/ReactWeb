@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
 import { HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
 import {
@@ -98,7 +98,6 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
         >
           <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
             <p className="hp-eyebrow mb-2 inline-flex items-center">
-              <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#F59E0B]" aria-hidden="true"></span>
               Inspección antes de comprar
             </p>
 
@@ -113,7 +112,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             </h1>
 
             <p className="hp-hero-body mt-3 max-w-[26rem] lg:text-base">
-              Informe con fotos y vídeo. Precio cerrado y pago retenido hasta recibirlo.
+              <strong className="font-semibold">Informe con fotos y vídeo.</strong> Precio cerrado y pago retenido hasta recibirlo.
             </p>
 
             <div
@@ -151,7 +150,6 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
               onClick={goToMap}
               className={`group mt-5 gap-2 ${HP_SERVICE_CTA_CLASS}`}
             >
-              <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
               Buscar en el mapa
               <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
             </button>

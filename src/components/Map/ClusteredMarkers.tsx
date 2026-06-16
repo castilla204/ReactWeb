@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import { capMapWorkers } from '../../lib/mapWorkers';
 capMapWorkers(maplibregl);
@@ -7,49 +7,9 @@ import { Service } from '../../hooks/useServiceLoader';
 // 🛡️ Round 28: símbolo correcto del servicio (£/CHF/kr) en lugar de € hardcoded en markers.
 import { getCurrencySymbol } from '../../utils/priceUtils';
 
-/** Margen mínimo entre el pill y el borde visible del mapa (px). */
-const MARKER_EDGE_MARGIN = 12;
-
-function computeMarkerScreenOffset(
-  map: maplibregl.Map,
-  lng: number,
-  lat: number,
-  el: HTMLElement,
-): [number, number] {
-  const point = map.project([lng, lat]);
-  const w = el.offsetWidth || 52;
-  const h = el.offsetHeight || 28;
-  const pad = map.getPadding();
-  const cw = map.getContainer().clientWidth;
-  const ch = map.getContainer().clientHeight;
-  const minX = pad.left + MARKER_EDGE_MARGIN;
-  const maxX = cw - pad.right - MARKER_EDGE_MARGIN;
-  const minY = pad.top + MARKER_EDGE_MARGIN;
-  const maxY = ch - pad.bottom - MARKER_EDGE_MARGIN;
-  const halfW = w / 2;
-  const halfH = h / 2;
-  let ox = 0;
-  let oy = 0;
-  const left = point.x - halfW;
-  const right = point.x + halfW;
-  const top = point.y - halfH;
-  const bottom = point.y + halfH;
-  if (left < minX) ox += minX - left;
-  if (right > maxX) ox += maxX - right;
-  if (top < minY) oy += minY - top;
-  if (bottom > maxY) oy += maxY - bottom;
-  return [ox, oy];
-}
-
-function syncMarkerEdgeOffset(
-  map: maplibregl.Map,
-  marker: maplibregl.Marker,
-  lng: number,
-  lat: number,
-  el: HTMLElement,
-) {
-  marker.setOffset(computeMarkerScreenOffset(map, lng, lat, el));
-}
+// Mundo entero — referencia ESTABLE (fuera del componente) para que use-supercluster no
+// recompute en cada render. Clusterizamos todos los puntos cargados sin recortar al viewport.
+const WORLD_BOUNDS: [number, number, number, number] = [-180, -85, 180, 85];
 
 interface ClusteredMarkersProps {
   map: maplibregl.Map | null;
@@ -156,29 +116,20 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     return geoJsonPoints;
   }, [services]);
 
-  // 🛡️ Persistencia-fix: use-supercluster recorta los clusters a los bounds EXACTOS de
-  //    cámara (getClusters(bbox) sólo devuelve features dentro del bbox) y los IDs de
-  //    cluster cambian al recomputar. Resultado: al desplazar, los clusters del borde
-  //    desaparecían y reaparecían (parpadeo) en cada moveend. Ampliamos los bounds un 25%
-  //    para mantener un anillo de markers/clusters ya montados fuera de la vista → persisten
-  //    cuando paneas hacia ellos y se reduce el churn de IDs en el borde. Acotado al mundo.
-  const paddedBounds = useMemo<[number, number, number, number] | undefined>(() => {
-    if (!bounds) return bounds;
-    const [w, s, e, n] = bounds;
-    const padX = (e - w) * 0.25;
-    const padY = (n - s) * 0.25;
-    return [
-      Math.max(-180, w - padX),
-      Math.max(-85, s - padY),
-      Math.min(180, e + padX),
-      Math.min(85, n + padY),
-    ];
-  }, [bounds]);
+  // 🛡️ Persistencia-fix DEFINITIVO: NO recortar el clustering al viewport. Antes se pasaba el
+  //    bbox de cámara a getClusters() y supercluster SOLO devolvía features dentro de él →
+  //    al panear, los markers/clusters del borde salían del bbox y se ELIMINABAN (Effect A),
+  //    reapareciendo al volver (la queja "en unas posiciones se ven y en otras desaparecen").
+  //    Clusterizamos TODOS los puntos cargados con bounds = MUNDO entero: cada marker se crea
+  //    una vez y se queda fijo en su lng/lat; los de fuera de pantalla simplemente no se ven,
+  //    pero NO se destruyen → al panear aparecen sin parpadeo. (El refetch por área ampliada de
+  //    MapContainer ya limita cuántos puntos hay cargados.) Como los `points` y el `zoom` no
+  //    cambian al panear, los IDs de cluster tampoco → sin churn.
 
   // 2️⃣ Supercluster
   const { clusters, supercluster } = useSupercluster({
     points,
-    bounds: paddedBounds,
+    bounds: WORLD_BOUNDS,
     zoom: zoom ?? 12,
     options: {
       radius: clusterRadius,
@@ -301,35 +252,11 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     applyPillVisual(inner, isSelected, isHovered);
   };
 
-  // 🛡️ Marker-still-fix: el edge-clamp (setOffset recalculado por-frame en cada 'move')
-  //    empujaba a TODOS los markers cercanos al borde de vuelta al interior → en vez de
-  //    quedarse fijos a su lng/lat y salir de pantalla con normalidad, "resbalaban"
-  //    pegados al borde durante el pan, aparentando moverse solos (justo la queja del
-  //    usuario: "que se vean sin moverse aunque desplaces").
-  //    Ahora SOLO se clampa el marker SELECCIONADO — su pill debe permanecer visible por
-  //    encima del drawer móvil (60% de padding inferior). El resto se quedan pinneados a su
-  //    coordenada (offset 0) y se desplazan de forma natural con el mapa.
-  const selectedRef = useRef<number | null | undefined>(selectedServiceId);
-  useEffect(() => { selectedRef.current = selectedServiceId; }, [selectedServiceId]);
-  const clampedKeyRef = useRef<string | null>(null);
-
-  const syncSelectedMarkerOffset = useCallback(() => {
-    if (!map) return;
-    const sel = selectedRef.current;
-    const wantKey = sel != null ? `s:${sel}` : null;
-    // Resetear a offset 0 el marker que estaba clampado si la selección cambió o se limpió.
-    if (clampedKeyRef.current && clampedKeyRef.current !== wantKey) {
-      const prev = entriesRef.current.get(clampedKeyRef.current);
-      if (prev) prev.marker.setOffset([0, 0]);
-      clampedKeyRef.current = null;
-    }
-    if (!wantKey) return;
-    const entry = entriesRef.current.get(wantKey);
-    if (!entry) return;
-    const { lng, lat } = entry.marker.getLngLat();
-    syncMarkerEdgeOffset(map, entry.marker, lng, lat, entry.element);
-    clampedKeyRef.current = wantKey;
-  }, [map]);
+  // 🛡️ Markers SIN clamp: cada marker se queda fijo en su lng/lat real. Antes se "clampaba"
+  //    el marker seleccionado dentro del área visible (setOffset), pero al quedar el mapa
+  //    quieto ese offset clavaba el pill en una esquina (la queja "salta a la esquina"). El
+  //    comportamiento correcto/estándar es: el marker vive en su coordenada y si queda bajo
+  //    el drawer, el drawer simplemente lo tapa (la ficha ya se ve en el propio drawer).
 
   /**
    * 3️⃣ Effect A: sincroniza el SET de marcadores con `clusters`.
@@ -417,35 +344,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       }
     }
 
-    requestAnimationFrame(() => syncSelectedMarkerOffset());
-
     // Cleanup total al desmontar
     return () => {
       // No limpiar aquí — sólo al unmount real (gestionado por el cleanup del unmount effect abajo).
     };
     // ✅ Importante: no incluir hovered/selected aquí.
-  }, [map, clusters, supercluster, syncSelectedMarkerOffset]);
-
-  /** Recalcula el offset del marker SELECCIONADO al mover/zoom el mapa (los demás
-   *  quedan pinneados a su coordenada y no se tocan → no resbalan). */
-  useEffect(() => {
-    if (!map) return;
-    let raf = 0;
-    const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => syncSelectedMarkerOffset());
-    };
-    map.on('move', schedule);
-    map.on('zoom', schedule);
-    map.on('resize', schedule);
-    schedule();
-    return () => {
-      cancelAnimationFrame(raf);
-      map.off('move', schedule);
-      map.off('zoom', schedule);
-      map.off('resize', schedule);
-    };
-  }, [map, syncSelectedMarkerOffset]);
+  }, [map, clusters, supercluster]);
 
   /**
    * 4️⃣ Effect B: aplica hover/selected SOLO a los nodos afectados.
@@ -459,8 +363,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       const isHovered = !isSelected && hoveredServiceId === entry.serviceId;
       updateServiceVisualState(entry.element, isSelected, isHovered);
     });
-    requestAnimationFrame(() => syncSelectedMarkerOffset());
-  }, [map, selectedServiceId, hoveredServiceId, syncSelectedMarkerOffset]);
+  }, [map, selectedServiceId, hoveredServiceId]);
 
   /**
    * 5️⃣ Unmount cleanup
