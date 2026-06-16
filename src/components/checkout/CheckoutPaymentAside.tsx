@@ -90,9 +90,9 @@ export function CheckoutPaymentAside({
             disabled={!canPay || isProcessing}
             type="button"
             aria-busy={isProcessing}
-            className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#222222] text-base font-semibold text-white transition-colors hover:bg-black active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-base font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-wait disabled:opacity-75"
           >
-            {isProcessing ? 'Procesando...' : 'Reservar'}
+            {isProcessing ? 'Procesando…' : 'Reservar'}
           </button>
 
           {legalNotices}

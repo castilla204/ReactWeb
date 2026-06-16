@@ -353,7 +353,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
             <div className="flex min-h-screen items-center justify-center bg-[#fafafa]">
                 <div className="text-center">
                     <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-                    <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>Cargando...</p>
+                    <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>Cargando…</p>
                 </div>
             </div>
         );
@@ -545,7 +545,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         aria-busy={isProcessing}
                         className={SD_CHECKOUT_MOBILE_CTA_CLASS}
                     >
-                        {isProcessing ? 'Procesando...' : 'Reservar'}
+                        {isProcessing ? 'Procesando…' : 'Reservar'}
                     </button>
                 </CheckoutMobileStickyFooter>
             </div>

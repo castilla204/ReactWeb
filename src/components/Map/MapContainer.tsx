@@ -65,17 +65,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onServicesChange,
   onLoadingChange,
   recenterMode = 'pan-only',
-  // ✅ 500 ms (no 280): da margen al gesto del drawer móvil sin disparar refetch
-  //    a mitad del arrastre cuando el mapa "se mueve" bajo el dedo. El default del
-  //    comentario superior ya decía 500; el valor real era 280.
-  debounceMs = 500,
+  // ✅ 250 ms: tras soltar el mapa, pide los markers de la zona nueva enseguida (antes 500 ms
+  //    se sentía lento). Sigue agrupando paneos/zooms rápidos. El fetch real solo arranca en el
+  //    'moveend' (isDraggingRef), así que no dispara a mitad del arrastre del drawer.
+  debounceMs = 250,
   clusterRadius = 56,
   maxClusterZoom = 17,
 }) => {
   // Estado del mapa
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [currentViewport, setCurrentViewport] = useState<ViewportRequest | null>(null);
-  const [cameraBounds, setCameraBounds] = useState<[number, number, number, number] | undefined>(undefined);
   const [cameraZoom, setCameraZoom] = useState<number | undefined>(undefined);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -210,11 +209,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const zoom = map.getZoom();
       if (!bounds || !Number.isFinite(zoom) || !validateBounds(bounds, zoom)) return;
 
-      const ne = bounds.getNorthEast();
-      const sw = bounds.getSouthWest();
       startTransition(() => {
-        setCameraBounds([sw.lng, sw.lat, ne.lng, ne.lat]);
-        setCameraZoom(zoom);
+        // ⚡ Anti-flicker: zoom ENTERO. supercluster reclusteriza por nivel ENTERO, pero
+        //    use-supercluster compara la dependencia con el zoom crudo (fraccional). Pasarle
+        //    5.234 → 5.237 → 5.241 en cada frame de pan/zoom le hacía RECOMPUTAR clusters y
+        //    churnar los markers (parpadeo). Con Math.round, el prop solo cambia al cruzar un
+        //    nivel entero → supercluster solo recomputa entonces. setState con el mismo valor
+        //    no re-renderiza (React lo descarta). (cameraBounds ya no se usa → eliminado.)
+        setCameraZoom(Math.round(zoom));
       });
     },
     [validateBounds]
@@ -232,26 +234,27 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const ne = bounds.getNorthEast();
       const sw = bounds.getSouthWest();
 
-      // ⚡ Carga única (modelo Airbnb): los markers NO se recargan al hacer zoom (in/out) ni al
-      //    panear dentro del área ya cargada. Supercluster agrupa/desagrupa en CLIENTE sin pedir
-      //    nada al backend → los pills se quedan fijos en su sitio y no parpadean. Solo se vuelve
-      //    a pedir cuando el CENTRO del mapa sale del área cargada (te desplazas a otra región).
-      //    Esto elimina la queja: "se recargan en cada desplazamiento / desaparecen al alejar".
-      const centerLat = (ne.lat + sw.lat) / 2;
-      const centerLng = (ne.lng + sw.lng) / 2;
+      // 🔄 Refetch al MOVERSE: cuando el viewport visible SALE del área ya cargada (anillo del
+      //    35% alrededor) o cambia el zoom, se piden los expertos de la zona nueva. Así, al
+      //    panear/zoomear, aparecen los markers del sitio al que vas (la queja: "no busca nuevos
+      //    al moverme"). Un pan pequeño dentro del anillo NO dispara llamada → ni spam ni
+      //    parpadeo. Los markers NO desaparecen durante la llamada: se mantienen los previos
+      //    hasta que llega la nueva tanda (stale-while-revalidate) y el clustering es estable
+      //    (zoom entero + supercluster con bounds=mundo).
       const fetched = fetchedAreaRef.current;
-      const centerInside =
+      const stillInside =
         !!fetched &&
-        centerLat >= fetched.s && centerLat <= fetched.n &&
-        centerLng >= fetched.w && centerLng <= fetched.e;
-      if (centerInside) return;
+        sw.lat >= fetched.s && ne.lat <= fetched.n &&
+        sw.lng >= fetched.w && ne.lng <= fetched.e &&
+        Math.abs(zoom - fetched.zoom) < 0.6;
+      if (stillInside) return;
 
-      // Cargar un área GENEROSA alrededor del viewport (margen ~1× por lado, total acotado a
-      // ~60° para no superar el límite de bounds del backend) → margen amplio para moverse.
+      // Anillo del 35% alrededor del viewport (área pequeña = consulta MÁS RÁPIDA que antes,
+      // que pedía ~60° y tardaba). Acotado para no superar el límite de bounds del backend.
       const latSpan = ne.lat - sw.lat;
       const lngSpan = ne.lng - sw.lng;
-      const padLat = Math.min(latSpan * 1.0, Math.max(0, (60 - latSpan) / 2));
-      const padLng = Math.min(lngSpan * 1.0, Math.max(0, (60 - lngSpan) / 2));
+      const padLat = Math.min(latSpan * 0.35, Math.max(0, (75 - latSpan) / 2));
+      const padLng = Math.min(lngSpan * 0.35, Math.max(0, (75 - lngSpan) / 2));
       const exp = {
         n: Math.min(85, ne.lat + padLat),
         s: Math.max(-85, sw.lat - padLat),
@@ -462,7 +465,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         <ClusteredMarkers
           map={mapInstance}
           services={services}
-          bounds={cameraBounds}
           zoom={cameraZoom}
           selectedServiceId={selectedServiceId}
           hoveredServiceId={hoveredServiceId}

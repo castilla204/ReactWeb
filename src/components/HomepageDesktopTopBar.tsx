@@ -210,16 +210,28 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         e.preventDefault();
         navigate('/');
       }}
-      className="inline-flex h-9 shrink-0 items-center gap-2.5 rounded-md px-1"
+      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-1"
       aria-label="Inspecciono — inicio"
     >
+      {/* Icono de marca (erizo) — el mismo que la ficha de servicio / wall.
+          Antes el logo del topbar era solo wordmark; ahora marca + wordmark. */}
       <img
         src={erizoImg}
         alt=""
-        className="h-9 w-9 -scale-x-100 object-contain"
+        className="h-9 w-9 -scale-x-100 shrink-0 object-contain"
         style={{ imageRendering: '-webkit-optimize-contrast' }}
       />
-      <span className="text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]">
+      {/* Fuente fijada al stack de sistema (el que ya usa la home): en páginas como
+          la ficha de servicio el contenedor fuerza Manrope a sus hijos, que en 800
+          se ve más fino. Pinnamos aquí para que el wordmark se vea igual de grueso
+          en TODAS las páginas. Decisión usuario 2026-06-16. */}
+      <span
+        className="text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
+        style={{
+          fontFamily:
+            '"SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
         Inspecciono<span className="text-[#F59E0B]">.</span>
       </span>
     </a>

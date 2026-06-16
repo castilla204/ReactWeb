@@ -3850,6 +3850,52 @@
   }
 }
 
+/* Cuerpo del panel: contenedor de la narrativa (izq.) + checklist (der.).
+   En móvil es un bloque normal → todo apilado en orden de lectura. */
+.stripe-status-body {
+  margin-top: 14px;
+}
+
+.stripe-status-main > :first-child {
+  margin-top: 0;
+}
+
+/* Sin requisitos → una sola columna; limitamos la medida para que las líneas
+   no se estiren incómodas en pantallas anchas. */
+@media (min-width: 768px) {
+  .stripe-status-panel:not(.stripe-status-panel--split) {
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  /* Con requisitos → 2 columnas: la tira deja de verse estrecha y vertical. */
+  .stripe-status-panel--split {
+    padding: 26px 30px;
+  }
+
+  .stripe-status-panel--split .stripe-status-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: start;
+  }
+
+  .stripe-status-panel--split .stripe-status-main {
+    padding-right: 30px;
+  }
+
+  .stripe-status-panel--split .stripe-status-side {
+    border-left: 1px solid hsl(var(--ep-border, 220 13% 90%));
+    padding-left: 30px;
+  }
+
+  /* El primer grupo encabeza su columna: no necesita el divisor superior. */
+  .stripe-status-panel--split .stripe-status-side > .stripe-req-group:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
 .stripe-status-panel--loading {
   display: flex;
   align-items: center;

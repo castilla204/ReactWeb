@@ -13,100 +13,92 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({
     cookiePolicyUrl = '/terms/cookie_policy'
 }) => {
     const [isVisible, setIsVisible] = useState(false);
+    // `entered` controla la animación de entrada/salida (slide + fade) sin depender de plugins.
+    const [entered, setEntered] = useState(false);
 
     useEffect(() => {
         // Verificar si el usuario ya ha aceptado/rechazado cookies
         const cookieConsent = localStorage.getItem('cookie-consent');
         if (!cookieConsent) {
-            // Mostrar el banner después de un pequeño delay para mejor UX
-            const timer = setTimeout(() => {
-                setIsVisible(true);
-            }, 500);
-            return () => clearTimeout(timer);
+            // Mostrar el aviso tras un pequeño delay para no competir con la carga inicial
+            const showTimer = setTimeout(() => setIsVisible(true), 600);
+            return () => clearTimeout(showTimer);
         }
     }, []);
 
-    const handleAcceptAll = () => {
-        localStorage.setItem('cookie-consent', 'all');
+    // Activamos la transición de entrada en cuanto el aviso se monta (un tick después
+    // de pintar el estado inicial, para que el slide-up se aprecie).
+    useEffect(() => {
+        if (!isVisible) return;
+        const enterTimer = setTimeout(() => setEntered(true), 20);
+        return () => clearTimeout(enterTimer);
+    }, [isVisible]);
+
+    const persistAndClose = (preference: Exclude<CookiePreference, null>) => {
+        localStorage.setItem('cookie-consent', preference);
         localStorage.setItem('cookie-consent-date', new Date().toISOString());
-        setIsVisible(false);
-        onAccept?.('all');
+        // Animamos la salida antes de desmontar (debe coincidir con la duración de la transición)
+        setEntered(false);
+        setTimeout(() => setIsVisible(false), 300);
+        onAccept?.(preference);
     };
 
-    const handleAcceptNecessary = () => {
-        localStorage.setItem('cookie-consent', 'necessary');
-        localStorage.setItem('cookie-consent-date', new Date().toISOString());
-        setIsVisible(false);
-        onAccept?.('necessary');
-    };
-
-    const handleManagePreferences = () => {
-        // Aquí podrías abrir un modal o navegar a una página de preferencias
-        // Por ahora, simplemente mostramos un mensaje
-        console.log('Abrir gestión de preferencias de cookies');
-        // Opcional: puedes abrir un modal o navegar a una página de preferencias
-    };
+    const handleAcceptAll = () => persistAndClose('all');
+    const handleAcceptNecessary = () => persistAndClose('necessary');
 
     if (!isVisible) return null;
 
     return (
         <div
-            className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 md:px-6 md:pb-6"
-            style={{ bottom: '80px' }}
+            className="fixed z-[60] inset-x-0 bottom-0 sm:inset-x-auto sm:left-6 sm:right-auto sm:bottom-6 sm:max-w-md"
             data-testid="main-cookies-banner-container"
         >
-            <section className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 md:p-8">
-                <div className="flex flex-col gap-6">
-                    {/* Contenido principal */}
-                    <div className="flex flex-col gap-4">
-                        <section>
-                            <h1 
-                                tabIndex={-1}
-                                className="text-xl md:text-2xl font-semibold text-gray-900"
-                            >
-                                <div className="text-lg md:text-xl font-medium">
-                                    Ayúdanos a mejorar tu experiencia
-                                </div>
-                            </h1>
-                        </section>
-                        <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                            Utilizamos cookies y otras tecnologías para personalizar el contenido, medir la eficacia de los anuncios y ofrecer una experiencia optimizada. Algunas cookies son necesarias para que el sitio web funcione y no se pueden desactivar. Al aceptar, confirmas que estás de acuerdo con la{' '}
-                            <a
-                                href={cookiePolicyUrl}
-                                className="text-gray-900 underline hover:text-gray-700 font-medium transition-colors"
-                            >
-                                Política de Cookies
-                            </a>
-                            . Puedes modificar tus preferencias cuando quieras.
-                        </p>
-                    </div>
+            <section
+                role="dialog"
+                aria-label="Aviso de cookies"
+                className={[
+                    'bg-white/95 backdrop-blur shadow-2xl ring-1 ring-gray-200',
+                    // En móvil es un drawer pegado al borde (esquinas superiores redondeadas);
+                    // en desktop es una tarjeta flotante completa.
+                    'rounded-t-2xl sm:rounded-2xl',
+                    'px-5 pt-3 pb-6 sm:p-6',
+                    'transition-all duration-300 ease-out',
+                    entered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full sm:translate-y-3'
+                ].join(' ')}
+            >
+                {/* Asa del drawer (solo móvil) */}
+                <div aria-hidden="true" className="sm:hidden mx-auto mb-3 h-1.5 w-10 rounded-full bg-gray-300" />
 
-                    {/* Botones de acción */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-                        <Button
-                            type="button"
-                            onClick={handleAcceptAll}
-                            className="w-full sm:w-auto bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"
+                <div className="flex items-start gap-3">
+                    <span aria-hidden="true" className="text-xl leading-none mt-0.5 select-none">🍪</span>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                        Usamos cookies para que el sitio funcione y mejorar tu experiencia.{' '}
+                        <a
+                            href={cookiePolicyUrl}
+                            className="text-gray-900 underline underline-offset-2 hover:text-gray-700 font-medium transition-colors"
                         >
-                            Aceptar todas
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={handleAcceptNecessary}
-                            variant="outline"
-                            className="w-full sm:w-auto border-gray-300 text-gray-900 hover:bg-gray-50 text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"
-                        >
-                            Solo las necesarias
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={handleManagePreferences}
-                            variant="ghost"
-                            className="w-full sm:w-auto text-gray-900 hover:bg-gray-100 text-sm font-medium px-6 py-2.5 rounded-lg transition-colors underline"
-                        >
-                            Gestiona tus preferencias
-                        </Button>
-                    </div>
+                            Más información
+                        </a>
+                        .
+                    </p>
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                    <Button
+                        type="button"
+                        onClick={handleAcceptNecessary}
+                        variant="outline"
+                        className="flex-1 h-10 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-lg transition-colors"
+                    >
+                        Solo necesarias
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleAcceptAll}
+                        className="flex-1 h-10 bg-gray-900 text-white hover:bg-gray-800 text-sm font-medium rounded-lg transition-colors"
+                    >
+                        Aceptar todas
+                    </Button>
                 </div>
             </section>
         </div>
@@ -114,4 +106,3 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({
 };
 
 export default CookieBanner;
-

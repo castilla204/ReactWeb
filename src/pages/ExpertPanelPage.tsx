@@ -1165,12 +1165,71 @@ export function ExpertPanelPage() {
         );
     }
 
+    // 🛡️ M2: handlers del StripeStatusCard extraídos a scope de componente para reutilizarlos
+    // tanto en la pantalla bloqueada (!canAccessPanel) como en el desglose de requisitos que ahora
+    // se muestra en la pestaña Perfil cuando el experto SÍ tiene acceso al panel.
+    // ⚠️ Deben declararse ANTES del early return de !canAccessPanel: ese return referencia estos
+    // handlers en su JSX, y como son `const` (sin hoisting) colocarlos debajo provocaba
+    // "Cannot access 'handleStripeSetup' before initialization" (TDZ) al renderizar esa rama.
+    const handleStripeSetup = async () => {
+        if (isStartingOnboarding || isRestartingOnboarding) return;
+        setIsStripeLoading(true);
+        try {
+            if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
+                await restartAndStartOnboarding();
+            } else {
+                await startOnboarding();
+            }
+            setIsStripeLoading(false);
+        } catch (error: any) {
+            setIsStripeLoading(false);
+            console.error('Error starting Stripe onboarding:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: { type: 'error', message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.' },
+            }));
+        }
+    };
+
+    const handleStripeAccessDashboard = async () => {
+        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
+                           && stripeStatus?.onboardingCompleted === true;
+        setIsStripeLoading(true);
+        try {
+            if (isApprovedNow) {
+                await openLoginLink();
+            } else {
+                await openAccountLink();
+            }
+            setIsStripeLoading(false);
+        } catch (error) {
+            setIsStripeLoading(false);
+            console.error('Error opening dashboard/account link:', error);
+            window.dispatchEvent(new CustomEvent('showNotification', {
+                detail: { type: 'error', message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.' },
+            }));
+        }
+    };
+
+    const handleStripeContactSupport = () => {
+        const expertId = user?.id ?? (user as any)?.Id ?? 'N/A';
+        const accountId = stripeStatus?.stripeAccountId || 'N/A';
+        const subject = encodeURIComponent('Cuenta Stripe — necesito ayuda');
+        const body = encodeURIComponent(
+            `Hola equipo de Inspecciono,\n\n` +
+            `Necesito ayuda con mi cuenta de pagos.\n\n` +
+            `Mi identificador: ${expertId}\n` +
+            `Mi cuenta Stripe: ${accountId}\n\n` +
+            `Describe tu problema aquí:\n\n`
+        );
+        window.open(`mailto:info@inspecciono.io?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
+    };
+
     // ✅ Solo bloquear acceso si el estado está cargado Y canAccessStripe es false
     if (!canAccessPanel && stripeStatus !== null) {
         return (
             <>
                 <div className="min-h-screen bg-[#fafafa]">
-                    <div className="mx-auto max-w-lg px-4 py-5 sm:px-5 sm:py-6">
+                    <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8 lg:py-12">
                         <button
                             type="button"
                             onClick={() => navigate('/')}
@@ -1224,62 +1283,6 @@ export function ExpertPanelPage() {
                 },
             }));
         }
-    };
-
-    // 🛡️ M2: handlers del StripeStatusCard extraídos a scope de componente para reutilizarlos
-    // tanto en la pantalla bloqueada (!canAccessPanel) como en el desglose de requisitos que ahora
-    // se muestra en la pestaña Perfil cuando el experto SÍ tiene acceso al panel.
-    const handleStripeSetup = async () => {
-        if (isStartingOnboarding || isRestartingOnboarding) return;
-        setIsStripeLoading(true);
-        try {
-            if (stripeStatus?.stripeStatus === STRIPE_STATUS.REJECTED && stripeStatus?.canRetryOnboarding !== false) {
-                await restartAndStartOnboarding();
-            } else {
-                await startOnboarding();
-            }
-            setIsStripeLoading(false);
-        } catch (error: any) {
-            setIsStripeLoading(false);
-            console.error('Error starting Stripe onboarding:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: { type: 'error', message: error?.message || 'No se pudo iniciar el proceso en Stripe. Inténtalo de nuevo.' },
-            }));
-        }
-    };
-
-    const handleStripeAccessDashboard = async () => {
-        const isApprovedNow = stripeStatus?.stripeStatus === STRIPE_STATUS.APPROVED
-                           && stripeStatus?.onboardingCompleted === true;
-        setIsStripeLoading(true);
-        try {
-            if (isApprovedNow) {
-                await openLoginLink();
-            } else {
-                await openAccountLink();
-            }
-            setIsStripeLoading(false);
-        } catch (error) {
-            setIsStripeLoading(false);
-            console.error('Error opening dashboard/account link:', error);
-            window.dispatchEvent(new CustomEvent('showNotification', {
-                detail: { type: 'error', message: 'Error al abrir el enlace de Stripe. Inténtalo de nuevo.' },
-            }));
-        }
-    };
-
-    const handleStripeContactSupport = () => {
-        const expertId = user?.id ?? (user as any)?.Id ?? 'N/A';
-        const accountId = stripeStatus?.stripeAccountId || 'N/A';
-        const subject = encodeURIComponent('Cuenta Stripe — necesito ayuda');
-        const body = encodeURIComponent(
-            `Hola equipo de Inspecciono,\n\n` +
-            `Necesito ayuda con mi cuenta de pagos.\n\n` +
-            `Mi identificador: ${expertId}\n` +
-            `Mi cuenta Stripe: ${accountId}\n\n` +
-            `Describe tu problema aquí:\n\n`
-        );
-        window.open(`mailto:info@inspecciono.io?subject=${subject}&body=${body}`, '_blank', 'noopener,noreferrer');
     };
 
     const visibilityNote = !profileSetupComplete

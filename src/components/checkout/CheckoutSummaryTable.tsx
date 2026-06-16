@@ -142,7 +142,7 @@ export function CheckoutSummaryTable({
                 role="region"
                 aria-label="Detalles del precio"
               >
-                <p>Impuestos incluidos. El IVA se calcula en Stripe según tu país.</p>
+                <p>Impuestos incluidos. El IVA se calcula en Stripe según tu país de facturación.</p>
                 {priceSubline ? <p className="mt-1">{priceSubline}</p> : null}
               </div>
             ) : null}
