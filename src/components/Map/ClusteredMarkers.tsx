@@ -14,7 +14,6 @@ const WORLD_BOUNDS: [number, number, number, number] = [-180, -85, 180, 85];
 interface ClusteredMarkersProps {
   map: maplibregl.Map | null;
   services: Service[];
-  bounds?: [number, number, number, number];
   zoom?: number;
   selectedServiceId?: number | null;
   hoveredServiceId?: number | null;
@@ -46,7 +45,6 @@ interface ClusteredMarkersProps {
 export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
   map,
   services,
-  bounds,
   zoom,
   selectedServiceId,
   hoveredServiceId,
@@ -130,7 +128,10 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
   const { clusters, supercluster } = useSupercluster({
     points,
     bounds: WORLD_BOUNDS,
-    zoom: zoom ?? 12,
+    // Zoom ENTERO: evita que use-supercluster recompute por micro-cambios fraccionales del
+    // zoom en cada frame de pan (la causa del parpadeo de markers). cameraZoom ya viene
+    // redondeado de MapContainer; Math.floor es defensa extra por si llega fraccional.
+    zoom: Math.floor(zoom ?? 12),
     options: {
       radius: clusterRadius,
       maxZoom: maxZoom,
@@ -216,7 +217,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     el.style.cursor = 'pointer';
     el.style.whiteSpace = 'nowrap';
     el.style.boxShadow = 'none';
-    el.style.transform = ''; // ⛔ NUNCA escribir transform aquí (MapLibre es dueño)
+    // ⛔ BUG-esquina (FIX): NO escribir `el.style.transform` aquí. MapLibre posiciona el marker
+    //    con `transform: translate(Xpx,Ypx)` en ESTE nodo. En el UPDATE de un marker existente
+    //    el orden es setLngLat() (MapLibre escribe el translate) → applyServiceStyle(); si aquí
+    //    poníamos transform='' BORRÁBAMOS la posición → el marker saltaba a translate(0,0) =
+    //    esquina superior-izquierda hasta el siguiente render (visible sobre todo al alejar el
+    //    zoom, que es cuando Effect A actualiza los markers). El scale del hover va en el <span>.
 
     // Crear (o reutilizar) el hijo interno que sí anima libremente
     let inner = el.firstElementChild as HTMLSpanElement | null;

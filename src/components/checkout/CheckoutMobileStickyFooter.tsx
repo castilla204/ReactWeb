@@ -12,7 +12,10 @@ interface CheckoutMobileStickyFooterProps {
 /** Footer checkout móvil — una línea + CTA fijo. */
 export function CheckoutMobileStickyFooter({ children }: CheckoutMobileStickyFooterProps) {
   return (
-    <div className={SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS}>
+    <div
+      className={SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS}
+      style={{ borderTopWidth: '2px', borderImage: 'linear-gradient(to right, #0066CC, #F59E0B) 1' }}
+    >
       <div
         className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-2.5`}
       >

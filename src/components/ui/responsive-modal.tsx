@@ -38,10 +38,17 @@ interface ResponsiveModalProps {
   hideDialogHeader?: boolean
   /** Clases extra para la cabecera del drawer en móvil. */
   drawerHeaderClassName?: string
+  /** En desktop, renderiza un panel lateral derecho (drawer) en vez del popup centrado. */
+  desktopSidePanel?: boolean
 }
 
 const AUTH_SURFACE_GRADIENT =
   'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), #ffffff'
+
+// Panel lateral derecho a pantalla completa (desktop). Doble override con `!`
+// para anular el centrado por defecto de DialogContent y respetar el deslizado.
+const DESKTOP_SIDE_PANEL_CLASS =
+  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(440px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-[#ebebeb] bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[440px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none'
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   open,
@@ -72,6 +79,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   drawerScrollClassName,
   hideDialogHeader = false,
   drawerHeaderClassName,
+  desktopSidePanel = false,
 }) => {
   const { width } = useWindowSize()
   
@@ -191,6 +199,59 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           </div>
         </DrawerContent>
       </Drawer>
+    )
+  }
+
+  const desktopHeader =
+    title && !hideDialogHeader ? (
+      <DialogHeader
+        className={cn(
+          'flex-shrink-0 border-b border-[#ebebeb] px-6 pb-3 pt-4 text-left md:px-7',
+          dialogHeaderClassName
+        )}
+        style={{ background: AUTH_SURFACE_GRADIENT }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 pr-2">
+            <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+              {title}
+            </DialogTitle>
+            {description && (
+              <DialogDescription className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+                {description}
+              </DialogDescription>
+            )}
+          </div>
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="shrink-0 rounded-full p-2 text-[#717171] ring-offset-background transition-colors hover:bg-[#f0f0f0] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </DialogClose>
+        </div>
+      </DialogHeader>
+    ) : null
+
+  // Panel lateral derecho (drawer) en PC
+  if (desktopSidePanel) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          className={cn(DESKTOP_SIDE_PANEL_CLASS, className, dialogClassName)}
+          style={{ ...style, ...dialogStyle }}
+          hideCloseButton={true}
+          overlayClassName="bg-black/40"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          {desktopHeader}
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            {children}
+          </div>
+        </DialogContent>
+      </Dialog>
     )
   }
 

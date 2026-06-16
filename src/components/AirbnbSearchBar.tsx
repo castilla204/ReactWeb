@@ -890,6 +890,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           onClick: () => handleTabClick('inmobiliaria', CATEGORIES.INMOBILIARIA),
           isActive: activeTab === 'inmobiliaria',
         },
+        {
+          key: 'mas' as const,
+          label: 'Más',
+          icon: null,
+          onClick: () => setIsDrawerOpen(true),
+          isActive: false,
+          highlight: true,
+        },
       ] as const,
     [
       activeTab,
@@ -1708,19 +1716,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         }}
         title="Más Categorías"
         drawerClassName="w-full"
-        dialogClassName="max-w-lg"
+        desktopSidePanel
         snapPoints={[0.82]}
       >
-        <div className="flex flex-col h-full pt-2" style={{ height: '100%', overflow: 'hidden' }}>
-          {/* Header mejorado con tipografía Airbnb - Estilo más sutil y moderno */}
-          <div className="px-4 pt-2 pb-3 border-b border-[#e8e8e8]/90 flex-shrink-0">
-            <h2 className="mb-0 hp-section-title">
-              Más Categorías
-            </h2>
-          </div>
-
-          {/* Barra de búsqueda mejorada */}
-          <div className="px-4 pt-3 pb-3 flex-shrink-0">
+        <div className="flex flex-col h-full" style={{ height: '100%', overflow: 'hidden' }}>
+          {/* Barra de búsqueda — el título lo aporta la cabecera de ResponsiveModal */}
+          <div className="px-4 pt-4 pb-3 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a0a0a0] pointer-events-none" />
               <input

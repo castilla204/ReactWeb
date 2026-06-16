@@ -21,6 +21,8 @@ export interface KayakCategoryTab {
   icon: string | null;
   onClick: () => void;
   isActive: boolean;
+  /** Contorno con degradado azul→ámbar de marca (igual que el botón "Chat"). */
+  highlight?: boolean;
 }
 
 interface HomepageDesktopKayakProps {
@@ -127,17 +129,34 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                   role="tab"
                   aria-selected={cat.isActive}
                   onClick={cat.onClick}
+                  // Contorno con degradado azul→ámbar (doble fondo padding-box/border-box)
+                  // para que respete el rounded-full — mismo recurso que el botón "Chat".
+                  // Si la pestaña está activa, el relleno interior pasa a oscuro.
+                  style={
+                    cat.highlight
+                      ? {
+                          border: '2px solid transparent',
+                          background: cat.isActive
+                            ? 'linear-gradient(#1c1c1c, #1c1c1c) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box'
+                            : 'linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box',
+                        }
+                      : undefined
+                  }
                   className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors ${
-                    cat.isActive
-                      ? 'bg-[#1c1c1c] font-medium text-white shadow-sm'
-                      : 'border border-[#e8e8e8] bg-white font-normal text-[#6a6a6a] hover:border-[#d4d4d4] hover:text-[#222222]'
+                    cat.highlight
+                      ? cat.isActive
+                        ? 'font-medium text-white shadow-sm'
+                        : 'font-medium text-[#222222] hover:shadow-sm'
+                      : cat.isActive
+                        ? 'bg-[#1c1c1c] font-medium text-white shadow-sm'
+                        : 'border border-[#e8e8e8] bg-white font-medium text-[#3a3a3a] shadow-sm hover:border-[#d4d4d4] hover:text-[#111] hover:shadow-md'
                   }`}
                 >
                   {cat.icon && (
                     <img
                       src={cat.icon}
                       alt=""
-                      className={`h-4 w-4 object-contain ${cat.isActive ? 'brightness-0 invert' : 'opacity-80'}`}
+                      className={`h-4 w-4 object-contain ${cat.isActive ? 'brightness-0 invert' : 'opacity-100'}`}
                     />
                   )}
                   {cat.label}
@@ -151,7 +170,10 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
               className={`group mt-5 gap-2 ${HP_SERVICE_CTA_CLASS}`}
             >
               Buscar en el mapa
-              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight
+                className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
+                strokeWidth={2.5}
+              />
             </button>
 
             <HomepageHeroTrustLines />

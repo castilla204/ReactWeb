@@ -21,6 +21,7 @@ const HIDDEN_PATH_PREFIXES = [
   '/mis-mensajes',
   '/service/',
   '/checkout/',
+  '/crear-busqueda',
 ];
 
 const TAB_BAR_PATHS = new Set(['/', '/explorar', '/busquedas', '/como-funciona']);
@@ -123,12 +124,16 @@ export const ChatbotFab: React.FC = () => {
         >
           <DrawerContent
             className={cn(
-              'flex min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 bg-white p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]',
+              'flex min-h-0 flex-col overflow-hidden rounded-t-[1.25rem] border-0 p-0 shadow-[0_-8px_40px_rgba(15,23,42,0.12)]',
               !keyboardLayout && 'h-[92dvh] max-h-[92dvh]',
             )}
             noOverlay
-            style={
-              keyboardLayout
+            style={{
+              backgroundColor: '#ffffff',
+              backgroundImage:
+                'linear-gradient(90deg, rgba(247,193,75,0.45) 0%, rgba(253,237,205,0.42) 36%, rgba(221,233,250,0.48) 62%, rgba(63,127,224,0.45) 100%)',
+              backgroundRepeat: 'no-repeat',
+              ...(keyboardLayout
                 ? {
                     height: keyboardLayout.height,
                     maxHeight: keyboardLayout.height,
@@ -136,8 +141,8 @@ export const ChatbotFab: React.FC = () => {
                     bottom: 'auto',
                     transform: 'none',
                   }
-                : undefined
-            }
+                : {}),
+            }}
             title="Asistente de Inspecciono"
             description="Respuestas sobre la plataforma"
           >
@@ -183,14 +188,13 @@ export const ChatbotFab: React.FC = () => {
           onClick={toggleOpen}
           tabIndex={isOpen ? -1 : 0}
           className={cn(
-            'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-white',
-            'shadow-[0_4px_16px_hsl(var(--brand)/0.22)] ring-2 ring-white',
+            'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#161616] text-white',
+            'shadow-[0_6px_20px_rgba(0,0,0,0.18)] ring-1 ring-black/5',
             'transition-[background-color,box-shadow,transform] duration-200 ease-out',
-            'hover:bg-brand-hover hover:shadow-[0_6px_22px_hsl(var(--brand)/0.3)]',
-            'active:scale-[0.96]',
+            'hover:bg-black hover:shadow-[0_8px_26px_rgba(0,0,0,0.24)] hover:-translate-y-0.5',
+            'active:translate-y-0 active:scale-[0.96]',
             'touch-manipulation [-webkit-tap-highlight-color:transparent]',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
-            !isOpen && 'support-chat-fab-pulse',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#161616] focus-visible:ring-offset-2',
           )}
           aria-label={isOpen ? 'Cerrar asistente' : 'Abrir asistente de Inspecciono'}
           aria-expanded={isOpen}

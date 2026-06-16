@@ -81,14 +81,17 @@
 
 
 @media (prefers-reduced-motion: reduce) {
-  .chat-message-enter {
+  .chat-message-enter,
+  .chat-stagger {
     animation: none;
   }
 
   .support-chat-panel,
   .support-chat-fab-pulse,
+  .chat-typing-dot,
   .expert-sparkle-marker,
-  .expert-sparkle-marker * {
+  .expert-sparkle-marker *,
+  .checkout-mobile-title-underline {
     animation: none !important;
   }
 }
@@ -108,6 +111,48 @@
 
 .support-chat-fab-pulse {
   animation: support-chat-fab-pulse 2.8s ease-out infinite;
+}
+
+/* Asistente — typing dots con onda suave (sustituye animate-bounce) */
+@keyframes chat-typing-wave {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.chat-typing-dot {
+  animation: chat-typing-wave 1.25s ease-in-out infinite;
+}
+
+/* Asistente — entrada escalonada de sugerencias/burbujas */
+.chat-stagger {
+  animation: chat-message-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Asistente — scrollbar fina en el área de mensajes */
+.chat-messages-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+}
+.chat-messages-area::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-messages-area::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.14);
+  border-radius: 9999px;
+}
+.chat-messages-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.26);
 }
 
 /* Destellos de expertos — anclados a coordenadas del mapa (MapLibre markers) */
@@ -1629,6 +1674,35 @@ img[alt*="country"],
     [data-sonner-toaster].hp-toaster {
         --offset-top: 24px;
         --offset-right: 24px;
+    }
+}
+
+/* Móvil: el toast ocupa el 100% del ancho, con 16px de margen a cada lado. */
+@media (max-width: 600px) {
+    [data-sonner-toaster].hp-toaster {
+        --width: calc(100vw - 32px);
+        left: 16px !important;
+        right: 16px !important;
+        width: auto !important;
+    }
+
+    [data-sonner-toast].hp-toast {
+        width: 100% !important;
+        max-width: none !important;
+        transform-origin: top center;
+        animation: hp-toast-in-top 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* A todo ancho, entrar deslizando desde arriba es más natural que desde la derecha. */
+    @keyframes hp-toast-in-top {
+        from {
+            transform: translateY(-12px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 }
 

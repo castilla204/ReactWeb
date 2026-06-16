@@ -286,9 +286,9 @@ export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
   'fixed bottom-0 left-0 right-0 z-50 border-t border-[#dddddd] bg-white';
 
-/** CTA checkout móvil a ancho completo — negro tipo Airbnb */
+/** CTA checkout móvil a ancho completo — azul de marca (paridad con la ficha y el hero) */
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#222222] text-base font-semibold text-white transition-colors hover:bg-black active:scale-[0.99] disabled:cursor-wait disabled:opacity-60';
+  'inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-base font-semibold text-white shadow-[0_4px_18px_hsl(var(--brand)/0.24)] transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75';
 
 /** Gutter horizontal móvil — 20px */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';

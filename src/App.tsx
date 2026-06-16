@@ -213,11 +213,10 @@ const AppContent: React.FC = () => {
         || location.pathname === '/expert-panel'
         || location.pathname === '/become-expert'
         || location.pathname.startsWith('/complete-onboarding')
-        || location.pathname.startsWith('/refresh-onboarding')
-        // /busquedas tiene su propio toolbar sticky (back + título + search + filtros + nueva).
-        // Mostrar también el header global resulta en dos chromes apilados; ocultamos el global.
-        || location.pathname === '/busquedas'
-        || location.pathname.startsWith('/busquedas/');
+        || location.pathname.startsWith('/refresh-onboarding');
+    // /busquedas YA NO se oculta: en desktop muestra el topbar global de la homepage
+    // (decisión usuario 2026-06-16) y su toolbar de buscar/filtros queda como fila
+    // secundaria justo debajo (sticky con offset md:top-12 en SearchDashboardToolbar).
     const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
     const [isInFormStep, setIsInFormStep] = useState(false);
     

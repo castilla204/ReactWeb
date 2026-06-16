@@ -18,6 +18,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       duration={4000}
       gap={10}
       offset={{ top: 16, right: 16 }}
+      mobileOffset={{ top: 12, left: 16, right: 16 }}
       visibleToasts={3}
       style={{ zIndex: 9999, fontFamily: TOAST_THEME.font }}
       icons={{
@@ -49,7 +50,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
         style: {
           background: 'transparent',
           color: 'inherit',
-          maxWidth: `${TOAST_THEME.width}px`,
           width: '100%',
           fontFamily: TOAST_THEME.font,
         },
