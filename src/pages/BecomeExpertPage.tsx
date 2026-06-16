@@ -3,11 +3,12 @@
 // (renderizado) con tiles Carto + la API REST de Mapbox para geocoding (igual que el
 // resto de pantallas migradas — ver `ServiceDetailCoverageMap.tsx`).
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard } from 'lucide-react';
+import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, ShieldCheck, Globe, ChevronDown } from 'lucide-react';
 import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
     BecomeExpertFastPathShell,
+    BecomeExpertFastPathSteps,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
     BE_DAY_ACTIVE,
@@ -1054,37 +1055,50 @@ function BecomeExpertPage() {
                 }
             >
                 <div className="be-fast-form">
-                    <header className="hidden max-w-md space-y-2 lg:block">
-                        <p className="be-fast-form-kicker">Pagos</p>
-                        <h2 className="be-fast-form-title">Cuenta Stripe</h2>
+                    <header className="max-w-md space-y-2">
+                        <p className="be-fast-form-kicker">Empieza ahora</p>
+                        <h2 className="be-fast-form-title">Crea tu cuenta de cobros</h2>
                         <p className="be-fast-form-lead">
-                            Elige el país donde cobrarás. Después completarás perfil, zona y servicios en el panel;
-                            no serás visible para clientes hasta entonces.
+                            Conecta Stripe y empieza a recibir pagos. Completas tu perfil y tu zona en el panel;
+                            no eres visible para clientes hasta entonces.
                         </p>
                     </header>
 
                     <div className="be-fast-form-field">
                         <label htmlFor="fast-country" className="be-fast-form-label">
-                            País de la cuenta
+                            ¿Dónde cobrarás?
                         </label>
-                        <select
-                            id="fast-country"
-                            value={fastPathCountry}
-                            onChange={(e) => setFastPathCountry(e.target.value)}
-                            className={`${BE_INPUT_CLASS} be-fast-select`}
-                        >
-                            {sortedCountries.map((code) => (
-                                <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
-                            ))}
-                        </select>
-                        <p className="be-fast-form-hint">
-                            No se puede cambiar después. Elige donde resides y cobras habitualmente.
-                        </p>
+                        <div className="relative">
+                            <Globe
+                                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]"
+                                aria-hidden
+                            />
+                            <select
+                                id="fast-country"
+                                value={fastPathCountry}
+                                onChange={(e) => setFastPathCountry(e.target.value)}
+                                className={`${BE_INPUT_CLASS} be-fast-select appearance-none pl-10 pr-9`}
+                            >
+                                {sortedCountries.map((code) => (
+                                    <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
+                                ))}
+                            </select>
+                            <ChevronDown
+                                className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
+                                aria-hidden
+                            />
+                        </div>
+                        <p className="be-fast-form-hint">No se puede cambiar después.</p>
                     </div>
 
                     {fastPathError && (
                         <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
                     )}
+
+                    <p className="flex max-w-md items-start gap-2 text-xs leading-relaxed text-[#6a6a6a]">
+                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
+                        Sin coste de alta. La verificación de identidad la realiza Stripe de forma segura.
+                    </p>
 
                     <div className="hidden max-w-md flex-col gap-3 pt-1 lg:flex">
                         <button
@@ -1104,6 +1118,9 @@ function BecomeExpertPage() {
                             Volver
                         </button>
                     </div>
+
+                    {/* En móvil los pasos van en la intro; aquí solo en escritorio. */}
+                    <BecomeExpertFastPathSteps className="hidden max-w-md border-t border-[#ececec] pt-6 lg:block" />
                 </div>
             </BecomeExpertFastPathShell>
             </>

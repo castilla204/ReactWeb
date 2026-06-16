@@ -1,17 +1,39 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, DollarSign, UserPlus, Briefcase, Shield, X, Search } from 'lucide-react';
+import {
+  Settings,
+  LogOut,
+  CreditCard,
+  UserPlus,
+  Briefcase,
+  Shield,
+  Search,
+  MessageSquare,
+  Heart,
+  User,
+  ChevronRight,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
-import { toast } from 'sonner';
 import { getAuthToken } from '../lib/auth';
 import { RoleChecker } from '../utils/roleChecker';
+import { Sheet, SheetContent, SheetTitle } from './ui/sheet';
+import { cn } from '../lib/utils';
 
 interface MobileProfileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSettings: () => void;
 }
+
+type MenuItem = {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  onClick: () => void;
+  destructive?: boolean;
+  highlight?: boolean;
+};
 
 export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   isOpen,
@@ -21,42 +43,52 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
-  // Obtener información del usuario - verificar múltiples formatos posibles
-  const userEmail = user?.Email || user?.email;
-  const userRole = user?.Role || user?.role || user?.userRole;
-  
-  // ✅ Detección más robusta de experto - verificar tanto el objeto user como el token
+  const userName = ((user as { Name?: string } | null)?.Name ?? user?.name ?? '').trim();
+  const userEmail = (user as { Email?: string } | null)?.Email ?? user?.email ?? '';
+  const userAvatar =
+    (user as { ProfilePictureUrl?: string } | null)?.ProfilePictureUrl ??
+    user?.profilePictureUrl ??
+    '';
+  const userRole: string | number | undefined =
+    (user as { Role?: string | number } | null)?.Role ??
+    user?.role ??
+    (user as { userRole?: string | number } | null)?.userRole;
+
   const isExpert = useMemo(() => {
-    // Primero verificar el rol del objeto user
-    const roleFromUser = userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1;
+    const roleFromUser =
+      userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === 1;
     if (roleFromUser) return true;
-    
-    // Si no se detecta por el rol del objeto user, verificar el token
+
     try {
       const token = getAuthToken();
-      if (token) {
-        const roleFromToken = RoleChecker.getUserRole(token);
-        return roleFromToken === 1; // UserRole.Expert = 1
-      }
+      if (token) return RoleChecker.getUserRole(token) === 1;
     } catch (error) {
       console.warn('[MobileProfileMenu] Error checking role from token:', error);
     }
-    
+
     return false;
   }, [userRole, user]);
-  
-  const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
-  
-  // Debug log (solo si se activa explícitamente)
-  if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_PROFILE === 'true') {
-    console.debug('[MobileProfileMenu] User role check:', { userRole, isExpert, user });
-  }
 
-  if (!isOpen) return null;
+  const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
+
+  const initials = useMemo(() => {
+    const src = userName || userEmail;
+    if (!src) return '';
+    const parts = src.split(/\s+/).filter(Boolean);
+    const first = parts[0]?.[0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    return (first + last).toUpperCase();
+  }, [userName, userEmail]);
+
+  const roleHint = useMemo(() => {
+    const parts: string[] = [];
+    if (isExpert) parts.push('Revisor');
+    if (userIsAdmin) parts.push('Admin');
+    return parts.length ? ` · ${parts.join(' · ')}` : '';
+  }, [isExpert, userIsAdmin]);
 
   const handleLogout = () => {
     signOut();
-    // No mostrar notificación de adiós
     onClose();
     navigate('/');
   };
@@ -66,161 +98,131 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
     onClose();
   };
 
-  const handleBecomeExpert = () => {
-    if (isExpert) {
-      // Si ya es experto, ir al panel de experto
-      handleNavigate('/expert-panel');
-    } else {
-      // Si no es experto, ir a la página de registro
-      handleNavigate('/become-expert');
-    }
+  const menuGroups: MenuItem[][] = [
+    [
+      { id: 'searches', label: 'Mis búsquedas', icon: Search, onClick: () => handleNavigate('/busquedas') },
+      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => handleNavigate('/mis-mensajes') },
+      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => handleNavigate('/favoritos') },
+      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => handleNavigate('/transacciones') },
+    ],
+    [
+      {
+        id: 'become-expert',
+        label: isExpert ? 'Panel de experto' : 'Hazte revisor',
+        icon: isExpert ? Briefcase : UserPlus,
+        onClick: () => handleNavigate(isExpert ? '/expert-panel' : '/become-expert'),
+        highlight: !isExpert,
+      },
+      ...(userIsAdmin
+        ? [{ id: 'admin', label: 'Administración', icon: Shield, onClick: () => handleNavigate('/admin') }]
+        : []),
+      {
+        id: 'settings',
+        label: 'Configuración',
+        icon: Settings,
+        onClick: () => {
+          onOpenSettings();
+          onClose();
+        },
+      },
+    ],
+  ];
+
+  const renderAvatar = () =>
+    userAvatar ? (
+      <img src={userAvatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+    ) : (
+      <span
+        aria-hidden
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-[13px] font-semibold text-white"
+      >
+        {initials || <User className="h-4 w-4" strokeWidth={2.1} />}
+      </span>
+    );
+
+  const renderMenuItem = (item: MenuItem) => {
+    const Icon = item.icon;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={item.onClick}
+        className={cn(
+          'group flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition-colors',
+          item.destructive ? 'hover:bg-red-50 active:bg-red-100' : 'hover:bg-[#f7f7f7] active:bg-[#efefef]',
+        )}
+      >
+        <Icon
+          className={cn(
+            'h-[18px] w-[18px] shrink-0',
+            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-[#717171]',
+          )}
+          strokeWidth={2.1}
+        />
+        <span
+          className={cn(
+            'min-w-0 flex-1 text-[14px] font-medium leading-none',
+            item.destructive ? 'text-red-600' : 'text-[#222222]',
+          )}
+        >
+          {item.label}
+        </span>
+        {!item.destructive ? (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" strokeWidth={2.2} aria-hidden />
+        ) : null}
+      </button>
+    );
   };
 
-  const menuItems = [
-    {
-      id: 'searches',
-      label: 'Mis búsquedas',
-      icon: Search,
-      onClick: () => handleNavigate('/busquedas'),
-      show: true,
-    },
-    {
-      id: 'transactions',
-      label: 'Transacciones',
-      icon: DollarSign,
-      onClick: () => handleNavigate('/transacciones'),
-      show: true,
-    },
-    {
-      id: 'settings',
-      label: 'Configuración',
-      icon: Settings,
-      onClick: () => {
-        onOpenSettings();
-        onClose();
-      },
-      show: true,
-    },
-    {
-      id: 'become-expert',
-      label: isExpert ? 'Acceder como Revisor' : 'Hazte Revisor',
-      icon: isExpert ? Briefcase : UserPlus,
-      onClick: handleBecomeExpert,
-      show: true,
-    },
-    {
-      id: 'admin',
-      label: 'Panel de Administración',
-      icon: Shield,
-      onClick: () => handleNavigate('/admin'),
-      show: userIsAdmin,
-    },
-    {
-      id: 'logout',
-      label: 'Cerrar sesión',
-      icon: LogOut,
-      onClick: handleLogout,
-      show: true,
-      destructive: true,
-    },
-  ].filter(item => item.show);
-
   return (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 md:hidden"
-        onClick={onClose}
-        style={{ animation: 'fadeIn 0.2s ease-out' }}
-      />
-
-      {/* Drawer */}
-      <div
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 md:hidden shadow-2xl"
-        style={{
-          maxHeight: '80vh',
-          animation: 'slideUp 0.3s ease-out',
-          paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
-        }}
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent
+        side="bottom"
+        className="md:hidden max-h-[75vh] gap-0 rounded-t-2xl border-0 p-0 pb-[max(12px,env(safe-area-inset-bottom))] [&>button]:hidden"
+        aria-describedby={undefined}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <h2
-            style={{
-              fontSize: '18px',
-              lineHeight: '24px',
-              fontWeight: 600,
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-              color: 'rgb(34, 34, 34)',
-              margin: 0,
-              padding: 0,
-            }}
-          >
-            Menú
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Cerrar"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
+        <SheetTitle className="sr-only">Menú de cuenta</SheetTitle>
+
+        <div className="flex justify-center pt-2 pb-0.5" aria-hidden>
+          <div className="h-1 w-9 rounded-full bg-[#dddddd]" />
         </div>
 
-        {/* Menu Items */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 80px)' }}>
-          <div className="py-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={item.onClick}
-                  className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  style={{
-                    color: item.destructive ? 'rgb(220, 38, 38)' : 'rgb(34, 34, 34)',
-                  }}
-                >
-                  <Icon
-                    className="w-5 h-5 flex-shrink-0"
-                    style={{
-                      color: item.destructive ? 'rgb(220, 38, 38)' : 'rgb(113, 113, 113)',
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      fontWeight: 400,
-                      fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                      color: item.destructive ? 'rgb(220, 38, 38)' : 'rgb(34, 34, 34)',
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
+        <div className="flex items-center gap-2.5 border-b border-[#ebebeb] px-4 py-2.5">
+          {renderAvatar()}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold leading-tight text-[#222222]">
+              {userName || 'Mi cuenta'}
+            </p>
+            {userEmail ? (
+              <p className="truncate text-[12px] leading-tight text-[#717171]">
+                {userEmail}
+                {roleHint ? <span className="text-brand">{roleHint}</span> : null}
+              </p>
+            ) : roleHint ? (
+              <p className="text-[12px] leading-tight text-brand">{roleHint.replace(/^ · /, '')}</p>
+            ) : null}
           </div>
         </div>
-      </div>
 
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </>
+        <div className="overflow-y-auto overscroll-contain py-1">
+          {menuGroups.map((group, index) => (
+            <React.Fragment key={index}>
+              {index > 0 ? <div className="mx-4 my-0.5 h-px bg-[#ebebeb]" /> : null}
+              <div>{group.map(renderMenuItem)}</div>
+            </React.Fragment>
+          ))}
+
+          <div className="mx-4 my-0.5 h-px bg-[#ebebeb]" />
+
+          {renderMenuItem({
+            id: 'logout',
+            label: 'Cerrar sesión',
+            icon: LogOut,
+            onClick: handleLogout,
+            destructive: true,
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
