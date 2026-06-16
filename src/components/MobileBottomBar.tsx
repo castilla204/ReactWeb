@@ -3,10 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
 import { LoginModal } from './LoginModal';
-import { authService } from '../services/authService';
-import { Bell, HelpCircle, MessageSquare } from 'lucide-react';
+import { Search, HelpCircle, Bell, MessageSquare, CircleUserRound } from 'lucide-react';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
-import { UserRole, RoleChecker } from '../utils/roleChecker';
 import {
   ensureGoogleIdentityReady,
   logGoogleOriginHintOnce,
@@ -14,13 +12,108 @@ import {
 } from '../lib/googleIdentity';
 import { HP_COLOR, hpType } from '../constants/homepageTypography';
 
-const tabLabelStyle = (active: boolean): React.CSSProperties => ({
-  ...hpType.tabBarLabel,
-  color: active ? HP_COLOR.brand : HP_COLOR.muted,
-});
-
 // ID único para este componente para evitar conflictos
 const MOBILE_GOOGLE_BUTTON_ID = 'mobile-bottom-bar-google-btn';
+
+const ICON_SIZE = 22;
+const ICON_STROKE = 2;
+
+/**
+ * Tab individual de la barra inferior. Cada tab reparte el ancho por igual
+ * (`flex: 1`) — sin anchos fijos ni márgenes negativos — así la barra nunca
+ * desborda con 3 tabs (invitado) ni con 6 (experto autenticado) en pantallas
+ * de 360 px. El estado activo se comunica con un "pill" teñido de marca detrás
+ * del icono (patrón Material-3), color de marca y etiqueta semibold.
+ */
+type TabButtonProps = {
+  label: string;
+  icon: React.ReactNode;
+  active?: boolean;
+  onClick: (e: React.MouseEvent | React.TouchEvent) => void;
+  onTouchEnd?: (e: React.TouchEvent) => void;
+  badgeCount?: number;
+  ariaLabel?: string;
+  dataVeloute?: string;
+};
+
+const TabButton: React.FC<TabButtonProps> = ({
+  label,
+  icon,
+  active = false,
+  onClick,
+  onTouchEnd,
+  badgeCount = 0,
+  ariaLabel,
+  dataVeloute,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    onTouchEnd={onTouchEnd ?? onClick}
+    aria-current={active ? 'page' : undefined}
+    aria-label={ariaLabel}
+    data-veloute={dataVeloute}
+    className={[
+      'group relative flex shrink-0 flex-col items-center justify-center',
+      'rounded-xl border-0 bg-transparent p-0 outline-none',
+      'focus-visible:ring-2 focus-visible:ring-brand/45',
+      active ? 'cursor-default' : 'cursor-pointer',
+    ].join(' ')}
+    style={{ width: '56px', height: '44px', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+  >
+    <span
+      className={[
+        'relative flex h-7 items-center justify-center rounded-full px-3 transform-gpu',
+        'transition-[background-color,transform] duration-200 ease-out',
+        'group-active:scale-90 motion-reduce:transition-none motion-reduce:group-active:scale-100',
+        active ? 'bg-brand/10' : 'bg-transparent',
+      ].join(' ')}
+      style={{ color: active ? 'hsl(var(--brand))' : HP_COLOR.muted }}
+    >
+      <span className="relative inline-flex items-center justify-center">
+        {icon}
+        {badgeCount > 0 && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '-6px',
+              right: '-8px',
+              minWidth: '16px',
+              height: '16px',
+              padding: '0 4px',
+              borderRadius: '999px',
+              background: '#dc2626',
+              color: '#ffffff',
+              fontSize: '10px',
+              fontWeight: 700,
+              lineHeight: '16px',
+              textAlign: 'center',
+              boxShadow: '0 0 0 2px #ffffff',
+            }}
+          >
+            {badgeCount > 99 ? '99+' : badgeCount}
+          </span>
+        )}
+      </span>
+    </span>
+    <span
+      className="mt-0.5 max-w-full overflow-hidden transition-colors duration-200"
+      style={{
+        ...hpType.tabBarLabel,
+        fontSize: '11px',
+        lineHeight: '13px',
+        fontWeight: active ? 600 : 500,
+        letterSpacing: '-0.01em',
+        color: active ? 'hsl(var(--brand))' : HP_COLOR.muted,
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+      }}
+    >
+      {label}
+    </span>
+  </button>
+);
 
 export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +130,7 @@ export const MobileBottomBar: React.FC = () => {
     }
   }, [navigate]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [, setIsGoogleReady] = useState(false);
   const googleLoginButtonRef = useRef<HTMLDivElement>(null);
   const isInitializingRef = useRef(false);
 
@@ -89,15 +182,10 @@ export const MobileBottomBar: React.FC = () => {
   };
 
   const exploreActive = isActive('/');
-  const wishlistsActive = isActive('/favoritos');
-  const searchesActive = isActive('/busquedas');
   const messagesActive = isActive('/mis-mensajes');
   const howItWorksActive = isActive('/como-funciona');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
-
-  const tabWidth = isAuthenticated ? '64px' : '72px';
-  const tabMargin = isAuthenticated ? '-4px' : '-6px';
 
   const handleHowItWorksClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -111,59 +199,11 @@ export const MobileBottomBar: React.FC = () => {
     navigate('/');
   };
 
-  const handleFavoritesClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isAuthenticated) {
-      navigate('/favoritos');
-    } else {
-      // Si no está autenticado, redirigir a la página principal donde puede iniciar sesión
-      navigate('/');
-    }
-  };
-
   const handleMessagesClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (isAuthenticated) {
       navigate('/mis-mensajes');
-    }
-  };
-
-  const handleSearchesClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isAuthenticated) {
-      // Verificar si el usuario es experto
-      const userRole = user?.role;
-      let isExpert = false;
-      
-      // Verificar por rol del objeto user
-      if (userRole === 'Expert' || userRole === 'expert' || userRole === 'EXPERT' || userRole === UserRole.Expert) {
-        isExpert = true;
-      }
-      
-      // Si no se detecta por el rol del objeto user, verificar el token
-      if (!isExpert) {
-        try {
-          const token = authService.getAccessToken();
-          if (token) {
-            const roleFromToken = RoleChecker.getUserRole(token);
-            isExpert = roleFromToken === UserRole.Expert;
-          }
-        } catch (error) {
-          console.warn('[MobileBottomBar] Error checking role from token:', error);
-        }
-      }
-      
-      // Si es experto, ir al panel de experto en el tab de contratación
-      if (isExpert) {
-        navigate('/expert-panel?tab=hires');
-      } else {
-        navigate('/busquedas');
-      }
-    } else {
-      handleLoginClick(e);
     }
   };
 
@@ -179,7 +219,7 @@ export const MobileBottomBar: React.FC = () => {
       setIsLoginModalOpen(true);
     }
   };
-  
+
   // Handler separado para touch para evitar conflictos
   const handleLoginTouch = (e: React.TouchEvent) => {
     e.preventDefault();
@@ -187,9 +227,41 @@ export const MobileBottomBar: React.FC = () => {
     handleLoginClick(e);
   };
 
+  // Avatar del usuario autenticado (o icono de invitado) para el tab de Perfil.
+  const profileIcon =
+    isAuthenticated && user ? (
+      <span
+        style={{
+          width: '26px',
+          height: '26px',
+          borderRadius: '50%',
+          backgroundColor: HP_COLOR.muted,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          boxShadow: profileActive ? '0 0 0 2px hsl(var(--brand))' : 'none',
+        }}
+      >
+        {user.profilePictureUrl ? (
+          <img
+            src={user.profilePictureUrl}
+            alt={user.name || 'User'}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 600 }}>
+            {(user.name || user.email || 'U').charAt(0).toUpperCase()}
+          </span>
+        )}
+      </span>
+    ) : (
+      <CircleUserRound size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />
+    );
+
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       aria-hidden="false"
       data-shared-element-id="tab-bar"
       data-xray-jira-component="Guest: Navigation: Header"
@@ -197,414 +269,84 @@ export const MobileBottomBar: React.FC = () => {
         height: '65px',
         paddingTop: '11px',
         paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
+        background: '#ffffff',
+        borderTop: `1px solid ${HP_COLOR.border}`,
+        boxShadow: '0 -1px 2px rgba(15,23,42,0.04), 0 -10px 28px -16px rgba(15,23,42,0.18)',
       }}
     >
-      {/* div._18ybk0k - Contenedor de los enlaces */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '44px',
-        paddingLeft: '4px',
-        paddingRight: '4px',
-        maxWidth: '100%',
-        width: '100%',
-        gap: '0px',
-      }}>
-        {/* Explore - button */}
-        <button
-          type="button"
+      {/* Contenedor de los tabs — reparto equitativo del ancho, sin overflow */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '44px',
+          width: '100%',
+          paddingLeft: '8px',
+          paddingRight: '8px',
+          gap: '4px',
+        }}
+      >
+        {/* Explorar — siempre visible */}
+        <TabButton
+          label="Explorar"
+          icon={<Search size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
+          active={exploreActive}
           onClick={handleExploreClick}
-          onTouchEnd={handleExploreClick}
-          aria-current={exploreActive ? 'page' : undefined}
-          disabled={exploreActive}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: tabWidth,
-            height: '44px',
-            flexShrink: 0,
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            margin: 0,
-            color: exploreActive ? 'hsl(var(--brand))' : '#717171',
-            cursor: exploreActive ? 'default' : 'pointer',
-            touchAction: 'manipulation',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {/* div._rz58lf5 - Contenedor del icono */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '4px',
-          }}>
-            {/* div._1kbkc83g - Contenedor del SVG */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <svg
-                viewBox="0 0 32 32"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                role="presentation"
-                focusable="false"
-              style={{
-                display: 'block',
-                fill: 'none',
-                height: '24px',
-                width: '24px',
-                stroke: exploreActive ? 'hsl(var(--brand))' : '#717171',
-                strokeWidth: '2.66667',
-                overflow: 'visible',
-              }}
-              >
-                <path d="m20.666 20.666 10 10"></path>
-                <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-              </svg>
-            </div>
-          </div>
-          {/* div._1sg9eagp - Texto */}
-          <div style={tabLabelStyle(exploreActive)}>
-            Explorar
-          </div>
-        </button>
-
-        {/* Favoritos — solo usuarios registrados (requiere sesión para guardar) */}
-        {isAuthenticated && (
-          <button
-            type="button"
-            onClick={handleFavoritesClick}
-            onTouchEnd={handleFavoritesClick}
-            aria-current={wishlistsActive ? 'page' : undefined}
-            disabled={wishlistsActive}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: tabWidth,
-              height: '44px',
-              flexShrink: 0,
-              marginLeft: tabMargin,
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              color: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
-              cursor: wishlistsActive ? 'default' : 'pointer',
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '4px',
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <svg
-                  viewBox="0 0 32 32"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  role="presentation"
-                  focusable="false"
-                  style={{
-                    display: 'block',
-                    fill: 'none',
-                    height: '24px',
-                    width: '24px',
-                    stroke: wishlistsActive ? 'hsl(var(--brand))' : '#717171',
-                    strokeWidth: '2',
-                    overflow: 'visible',
-                  }}
-                >
-                  <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0988-2.11677c-1.3995-1.4098-3.2332-2.11573-5.06783-2.11573-1.83364 0-3.66831.70593-5.06683 2.11573-1.39955 1.41083-2.09984 3.25926-2.09984 5.10877 0 7.2244 7.16667 13.2241 14.3333 18.1088z"></path>
-                </svg>
-              </div>
-            </div>
-            <div style={tabLabelStyle(wishlistsActive)}>
-              Favoritos
-            </div>
-          </button>
-        )}
+        />
 
         {/* Ayuda — invitados y registrados */}
-        <button
-          type="button"
+        <TabButton
+          label="Ayuda"
+          icon={<HelpCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
+          active={howItWorksActive}
           onClick={handleHowItWorksClick}
-          onTouchEnd={handleHowItWorksClick}
-          aria-current={howItWorksActive ? 'page' : undefined}
-          aria-label="Cómo funciona"
-          disabled={howItWorksActive}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: tabWidth,
-            height: '44px',
-            flexShrink: 0,
-            marginLeft: tabMargin,
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            color: howItWorksActive ? 'hsl(var(--brand))' : '#717171',
-            cursor: howItWorksActive ? 'default' : 'pointer',
-            touchAction: 'manipulation',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '4px',
-            }}
-          >
-            <HelpCircle
-              size={24}
-              strokeWidth={2}
-              style={{ color: howItWorksActive ? 'hsl(var(--brand))' : '#717171' }}
-              aria-hidden
-            />
-          </div>
-          <div style={tabLabelStyle(howItWorksActive)}>Ayuda</div>
-        </button>
+          ariaLabel="Cómo funciona"
+        />
 
         {/* 🛡️ MUD-DH — Bell de notificaciones mobile.
             Antes el cliente NO tenía forma de abrir el inbox en mobile (sólo el
             experto, dentro de /expert-panel). Auditoría de 5 agentes lo marcó
             como gap P0. Click → abre el drawer global compartido. */}
         {isAuthenticated && (
-          <button
-            type="button"
+          <TabButton
+            label="Alertas"
+            icon={<Bell size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
             onClick={handleNotificationsClick}
-            onTouchEnd={(e) => { e.preventDefault(); handleNotificationsClick(); }}
-            aria-label={unreadNotifsCount > 0 ? `Notificaciones (${unreadNotifsCount} nuevas)` : 'Notificaciones'}
-            data-veloute="pwa-tab-bar-item-notifications"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: tabWidth,
-              height: '44px',
-              flexShrink: 0,
-              marginLeft: tabMargin,
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              color: '#717171',
-              cursor: 'pointer',
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-              position: 'relative',
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleNotificationsClick();
             }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '4px',
-              position: 'relative',
-            }}>
-              <Bell size={24} strokeWidth={2} style={{ color: '#717171' }} aria-hidden />
-              {unreadNotifsCount > 0 && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    top: '-4px',
-                    right: '-6px',
-                    minWidth: '16px',
-                    height: '16px',
-                    padding: '0 4px',
-                    borderRadius: '999px',
-                    background: '#dc2626',
-                    color: '#ffffff',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    lineHeight: '16px',
-                    textAlign: 'center',
-                  }}
-                >
-                  {unreadNotifsCount > 99 ? '99+' : unreadNotifsCount}
-                </span>
-              )}
-            </div>
-            <div style={tabLabelStyle(false)}>Alertas</div>
-          </button>
+            badgeCount={unreadNotifsCount}
+            ariaLabel={
+              unreadNotifsCount > 0
+                ? `Notificaciones (${unreadNotifsCount} nuevas)`
+                : 'Notificaciones'
+            }
+            dataVeloute="pwa-tab-bar-item-notifications"
+          />
         )}
 
-        {/* Mis mensajes - button (solo cuando está autenticado) */}
+        {/* Mensajes — solo cuando está autenticado */}
         {isAuthenticated && (
-          <button
-            type="button"
+          <TabButton
+            label="Mensajes"
+            icon={<MessageSquare size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
+            active={messagesActive}
             onClick={handleMessagesClick}
-            onTouchEnd={handleMessagesClick}
-            aria-current={messagesActive ? 'page' : undefined}
-            disabled={messagesActive}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: tabWidth,
-              height: '44px',
-              flexShrink: 0,
-              marginLeft: tabMargin,
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              color: messagesActive ? 'hsl(var(--brand))' : '#717171',
-              cursor: messagesActive ? 'default' : 'pointer',
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '4px',
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <MessageSquare
-                  size={24}
-                  strokeWidth={2}
-                  style={{
-                    color: messagesActive ? 'hsl(var(--brand))' : '#717171',
-                  }}
-                />
-              </div>
-            </div>
-            <div style={tabLabelStyle(messagesActive)}>
-              Mis mensajes
-            </div>
-          </button>
+          />
         )}
 
-        {/* Log in / Perfil - button */}
-        <button
-          type="button"
+        {/* Iniciar sesión / Perfil — siempre visible */}
+        <TabButton
+          label={isAuthenticated ? 'Perfil' : 'Entrar'}
+          icon={profileIcon}
+          active={profileActive}
           onClick={handleLoginClick}
           onTouchEnd={handleLoginTouch}
-          aria-current={profileActive ? 'page' : undefined}
-          disabled={false}
-          data-veloute="pwa-tab-bar-item-login"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: tabWidth,
-            height: '44px',
-            flexShrink: 0,
-            marginLeft: tabMargin,
-            border: 'none',
-            background: 'transparent',
-            padding: 0,
-            color: profileActive ? 'hsl(var(--brand))' : '#717171',
-            cursor: profileActive ? 'default' : 'pointer',
-            touchAction: 'manipulation',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {/* div._jro6t0 - Contenedor del icono */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '4px',
-          }}>
-            {/* div._39ksk0 - Contenedor del SVG/Avatar */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-            }}>
-              {isAuthenticated && user ? (
-                <div style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  backgroundColor: '#717171',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                }}>
-                  {user.profilePictureUrl ? (
-                    <img
-                      src={user.profilePictureUrl}
-                      alt={user.name || 'User'}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                  ) : (
-                    <span style={{
-                      color: 'white',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                    }}>
-                      {(user.name || user.email || 'U').charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <svg
-                  viewBox="0 0 32 32"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  role="presentation"
-                  focusable="false"
-                  style={{
-                    display: 'block',
-                    fill: 'none',
-                    height: '24px',
-                    width: '24px',
-                    stroke: profileActive ? 'hsl(var(--brand))' : '#717171',
-                    strokeWidth: '2',
-                    overflow: 'visible',
-                  }}
-                >
-                  <g fill="none">
-                    <circle cx="16" cy="16" r="14"></circle>
-                    <path d="m26.46 25.62c-1.58-2.81-4.26-4.9-7.46-5.73v-.72c1.79-1.04 3-2.96 3-5.17 0-3.31-2.69-6-6-6s-6 2.69-6 6c0 2.22 1.21 4.14 3 5.17v.72c-3.16.82-5.83 2.87-7.42 5.64"></path>
-                  </g>
-                </svg>
-              )}
-            </div>
-          </div>
-          {/* div._1xhupxb - Texto */}
-          <div style={tabLabelStyle(profileActive)}>
-            {isAuthenticated ? 'Perfil' : 'Iniciar sesión'}
-          </div>
-        </button>
+          dataVeloute="pwa-tab-bar-item-login"
+        />
       </div>
-      
-      {/* Modal de Favoritos */}
 
       {/* ✅ Menú de Perfil Móvil */}
       <MobileProfileMenu
@@ -615,10 +357,10 @@ export const MobileBottomBar: React.FC = () => {
             (window as any).openAccountSettings();
           } else {
             try {
-              const event = new CustomEvent('openAccountSettings', { 
-                bubbles: true, 
+              const event = new CustomEvent('openAccountSettings', {
+                bubbles: true,
                 cancelable: true,
-                detail: { source: 'MobileBottomBar' }
+                detail: { source: 'MobileBottomBar' },
               });
               window.dispatchEvent(event);
             } catch (error) {
@@ -627,7 +369,7 @@ export const MobileBottomBar: React.FC = () => {
           }
         }}
       />
-      
+
       {/* ✅ Contenedor para el botón de Google - Renderizado por window.google.accounts.id */}
       {!isAuthenticated && (
         <div
@@ -640,7 +382,7 @@ export const MobileBottomBar: React.FC = () => {
             zIndex: -1,
             width: '1px',
             height: '1px',
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
         />
       )}
@@ -655,4 +397,3 @@ export const MobileBottomBar: React.FC = () => {
     </nav>
   );
 };
-

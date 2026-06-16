@@ -27,8 +27,9 @@ const QuienesSomosPage: React.FC = () => {
         jsonLd={jsonLd}
       />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      {/* Header propio SOLO en móvil: en desktop el topbar global de la homepage
+          (App.tsx) ya es la cabecera unificada, así que evitamos el doble header. */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 md:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <Button

@@ -8,11 +8,13 @@ import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import {
   AlertCircle,
+  ArrowUpRight,
   CheckCheck,
   Loader2,
   MessageCircle,
   RefreshCw,
   Send,
+  ShieldCheck,
   Wifi,
   WifiOff,
   X,
@@ -70,7 +72,6 @@ interface Conversation {
 }
 
 const CHAT_FETCH_TIMEOUT_MS = 30000;
-const TRUST_BANNER_STORAGE_KEY = 'prehire-trust-banner-dismissed';
 
 function sortMessagesByDate(messages: Message[]) {
   return [...messages].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
@@ -164,11 +165,6 @@ export const PreHireChat = ({
   const [typingUserIds, setTypingUserIds] = useState<number[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [trustBannerDismissed, setTrustBannerDismissed] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      localStorage.getItem(TRUST_BANNER_STORAGE_KEY) === 'true',
-  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastScrolledMessageIdRef = useRef<number | string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -734,24 +730,6 @@ export const PreHireChat = ({
           >
             {PRE_HIRE_CHAT_COPY.reconnecting}
           </p>
-        ) : !trustBannerDismissed ? (
-          <p
-            role="status"
-            aria-live="polite"
-            className="shrink-0 border-b border-[#ebebeb] bg-white px-4 py-2 text-center text-[11px] leading-snug text-[#717171]"
-          >
-            {PRE_HIRE_CHAT_COPY.trustBannerInline}{' '}
-            <button
-              type="button"
-              onClick={() => {
-                setTrustBannerDismissed(true);
-                localStorage.setItem(TRUST_BANNER_STORAGE_KEY, 'true');
-              }}
-              className="font-medium text-brand underline-offset-2 hover:underline"
-            >
-              {PRE_HIRE_CHAT_COPY.trustBannerAck}
-            </button>
-          </p>
         ) : null
       ) : (
         (!isConnected || isReconnecting) && (
@@ -794,20 +772,28 @@ export const PreHireChat = ({
         aria-label="Mensajes del chat antes de contratar"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full min-h-[12rem] items-center justify-center px-2">
-            <div className="max-w-sm text-center">
-              <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm">
-                <MessageCircle className="h-5 w-5 text-[#1c1c1c]" aria-hidden />
+          <div className="flex h-full min-h-[12rem] items-center justify-center px-4 py-8">
+            <div className="w-full max-w-sm">
+              <div className="flex flex-col items-center text-center">
+                <Avatar className="h-16 w-16 shadow-sm ring-4 ring-white">
+                  <AvatarImage
+                    src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
+                    alt={peerName}
+                  />
+                  <AvatarFallback className="bg-[#1c1c1c] text-lg font-medium text-white">
+                    {peerName.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="mt-3 text-[17px] font-semibold text-[#1c1c1c]">
+                  {PRE_HIRE_CHAT_COPY.emptyTitle}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#717171]">
+                  {PRE_HIRE_CHAT_COPY.emptyBody}
+                </p>
               </div>
-              <h3 className="text-base font-semibold text-[#1c1c1c]">
-                {PRE_HIRE_CHAT_COPY.emptyTitle}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-[#6a6a6a]">
-                {PRE_HIRE_CHAT_COPY.emptyBody}
-              </p>
-              <p className="mt-2 text-xs text-[#6a6a6a]">{PRE_HIRE_CHAT_COPY.emptyTrust}</p>
+
               <div
-                className="mt-4 flex flex-wrap justify-center gap-2"
+                className="mt-6 flex flex-col gap-2"
                 role="group"
                 aria-label="Preguntas sugeridas"
               >
@@ -815,12 +801,21 @@ export const PreHireChat = ({
                   <button
                     key={question}
                     type="button"
-                    className="rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-left text-xs text-[#1c1c1c] shadow-sm transition-colors active:bg-[#f5f5f5]"
                     onClick={() => setInputValue(question)}
+                    className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e6e6e6] bg-white px-4 py-3 text-left text-sm text-[#1c1c1c] shadow-sm transition-all hover:border-amber-300 hover:bg-amber-50/60 active:scale-[0.99]"
                   >
-                    {question}
+                    <span>{question}</span>
+                    <ArrowUpRight
+                      className="h-4 w-4 shrink-0 text-amber-400 transition-colors group-hover:text-amber-500"
+                      aria-hidden
+                    />
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px] leading-snug text-[#9a9a9a]">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>{PRE_HIRE_CHAT_COPY.emptyTrust}</span>
               </div>
             </div>
           </div>
@@ -829,7 +824,7 @@ export const PreHireChat = ({
             const isOwnMessage = isMessageFromUser(message.senderId, userId);
             const previousMessage = messages[index - 1];
             const showDaySeparator =
-              !previousMessage ||
+              !!previousMessage &&
               new Date(previousMessage.sentAt).toDateString() !==
                 new Date(message.sentAt).toDateString();
             const isFirstInGroup = !isSameChatMessageGroup(previousMessage, message);
@@ -852,21 +847,23 @@ export const PreHireChat = ({
                   className={`mb-0.5 flex gap-2 sm:gap-2.5 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} max-w-[88%] sm:max-w-[80%] ${isOwnMessage ? 'ml-auto' : 'mr-auto'} ${isFirstInGroup ? 'mt-2.5' : ''}`}
                   aria-label={`${isOwnMessage ? 'Tú' : message.senderName} a las ${formatMessageTime(message.sentAt)}`}
                 >
-                  <div className="w-8 shrink-0">
-                    {!isOwnMessage && isFirstInGroup ? (
-                      <Avatar className="h-8 w-8 shadow-sm">
-                        <AvatarImage
-                          src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
-                          alt=""
-                        />
-                        <AvatarFallback className="bg-[#1c1c1c] text-xs text-white">
-                          {message.senderName?.charAt(0) || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <span className="block h-8 w-8" aria-hidden />
-                    )}
-                  </div>
+                  {!isOwnMessage && (
+                    <div className="w-8 shrink-0">
+                      {isFirstInGroup ? (
+                        <Avatar className="h-8 w-8 shadow-sm">
+                          <AvatarImage
+                            src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
+                            alt=""
+                          />
+                          <AvatarFallback className="bg-[#1c1c1c] text-xs text-white">
+                            {message.senderName?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <span className="block h-8 w-8" aria-hidden />
+                      )}
+                    </div>
+                  )}
 
                   <div className={`flex min-w-0 flex-col gap-0.5 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     {!isOwnMessage && isFirstInGroup && (
@@ -881,7 +878,7 @@ export const PreHireChat = ({
                           : 'rounded-bl-sm border border-[#e8e8e8] bg-white text-[#1c1c1c]'
                       } ${message.isOptimistic ? 'opacity-80' : ''}`}
                     >
-                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      <p className="whitespace-pre-wrap break-words text-sm leading-snug">
                         {message.content}
                       </p>
                     </div>
@@ -892,9 +889,11 @@ export const PreHireChat = ({
                           <>
                             <span aria-hidden>·</span>
                             <span>{message.isOptimistic ? 'Enviando…' : message.isRead ? 'Leído' : 'Enviado'}</span>
-                            {!message.isOptimistic && (
+                            {message.isOptimistic ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-[#9a9a9a]" aria-hidden />
+                            ) : (
                               <CheckCheck
-                                className={`h-3 w-3 ${message.isRead ? 'text-primary' : ''}`}
+                                className={`h-3 w-3 ${message.isRead ? 'text-brand' : 'text-[#9a9a9a]'}`}
                                 aria-hidden
                               />
                             )}
@@ -939,46 +938,46 @@ export const PreHireChat = ({
       )}
 
       {/* Input */}
-      <div className="relative z-10 shrink-0 border-t border-[#e8e8e8] bg-white p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+      <div className="relative z-10 shrink-0 border-t border-[#ececec] bg-white px-3 py-2.5 sm:px-4 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
         {sendError && (
-          <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          <div className="mb-2.5 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
             {sendError}
           </div>
         )}
-        <div className="flex items-end gap-2">
-        <Textarea
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            notifyTypingState(e.target.value.trim().length > 0);
-          }}
-          onBlur={() => notifyTypingState(false)}
-          onKeyDown={handleKeyDown}
-          placeholder={PRE_HIRE_CHAT_COPY.inputPlaceholder}
-          disabled={sendMessageMutation.isPending}
-          aria-label="Escribe tu mensaje"
-          aria-describedby="chat-input-help"
-          aria-invalid={!!sendError}
-          rows={1}
-          maxLength={1200}
-          className="min-h-[44px] max-h-32 flex-1 resize-none rounded-3xl border-[#e8e8e8] bg-[#fafafa] px-4 py-3 text-sm leading-5 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-          style={{ pointerEvents: 'auto' }}
-        />
-        <Button
-          type="button"
-          onClick={handleSend}
-          disabled={!inputValue.trim() || sendMessageMutation.isPending}
-          className="h-11 w-11 rounded-full p-0 shadow-sm"
-          aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
-        >
-          {sendMessageMutation.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Send className="w-4 h-4" aria-hidden="true" />
-          )}
-        </Button>
+        <div className="flex items-end gap-1.5 rounded-[1.5rem] border border-[#e4e4e4] bg-[#f6f7f9] py-1 pl-3.5 pr-1 transition-colors focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
+          <Textarea
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              notifyTypingState(e.target.value.trim().length > 0);
+            }}
+            onBlur={() => notifyTypingState(false)}
+            onKeyDown={handleKeyDown}
+            placeholder={PRE_HIRE_CHAT_COPY.inputPlaceholder}
+            disabled={sendMessageMutation.isPending}
+            aria-label="Escribe tu mensaje"
+            aria-describedby="chat-input-help"
+            aria-invalid={!!sendError}
+            rows={1}
+            maxLength={1200}
+            className="min-h-[36px] max-h-32 flex-1 resize-none border-0 bg-transparent px-1 py-[0.4rem] text-sm leading-5 shadow-none ring-offset-0 placeholder:text-[#9a9a9a] focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ pointerEvents: 'auto' }}
+          />
+          <Button
+            type="button"
+            onClick={handleSend}
+            disabled={!inputValue.trim() || sendMessageMutation.isPending}
+            className="h-9 w-9 shrink-0 rounded-full bg-brand p-0 text-white shadow-sm transition-all hover:bg-brand-hover active:scale-90 disabled:bg-transparent disabled:text-[#bcbcbc] disabled:shadow-none"
+            aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
+          >
+            {sendMessageMutation.isPending ? (
+              <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden="true" />
+            ) : (
+              <Send className="h-[18px] w-[18px]" aria-hidden="true" />
+            )}
+          </Button>
         </div>
-        <p id="chat-input-help" className="mt-2 px-2 text-[11px] text-[#6a6a6a]">
+        <p id="chat-input-help" className="mt-1.5 hidden px-2 text-[11px] text-[#9a9a9a] sm:block">
           {PRE_HIRE_CHAT_COPY.inputHelp}
         </p>
       </div>

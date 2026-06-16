@@ -1,20 +1,23 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import {
-    ArrowLeft,
-    MessageCircle,
-    Search as SearchIcon,
-    ShieldCheck,
-    X,
-} from 'lucide-react';
+import { ArrowLeft, MessageCircle, Search as SearchIcon, X } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { API_CONFIG } from '../config/api';
 import { authService } from '../services/authService';
 import { ClientConversationSummaryDto, MessageSummaryDto } from '../types/chat.types';
 import { useApi } from '../hooks/useApi';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { HP_FONT } from '../constants/homepageTypography';
+
+const MobileBottomBar = lazy(() =>
+    import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+);
+
+const PreHireChat = lazy(() =>
+    import('../components/PreHireChat').then((m) => ({ default: m.PreHireChat })),
+);
 
 /**
  * MessagesPage — Rediseño 2026-06 "El gabinete del perito" (iter. 2).
@@ -86,7 +89,7 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, tone }) => {
     })();
     return (
         <span
-            className={`inline-flex h-[22px] shrink-0 items-center rounded-full px-2.5 text-[11px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
+            className={`inline-flex h-[18px] shrink-0 items-center rounded-full px-2 text-[10.5px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
         >
             {label}
         </span>
@@ -111,10 +114,13 @@ export function MessagesPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { fetchApi } = useApi();
+    const isMobile = useIsMobile();
     const token = authService.getAccessToken() || '';
 
     const [searchInput, setSearchInput] = useState('');
     const [filter, setFilter] = useState<FilterTab>('all');
+    // Conversación abierta en el panel derecho (solo desktop). En móvil se navega.
+    const [selectedId, setSelectedId] = useState<number | null>(null);
 
     const { data: conversations, isLoading, error, refetch } = useQuery<
         ClientConversationSummaryDto[]
@@ -243,13 +249,26 @@ export function MessagesPage() {
 
     const handleOpenChat = (conversation: ClientConversationSummaryDto) => {
         if (conversation.conversationType === 'pre-hire' && conversation.searchServiceId) {
-            navigate(
-                `/chat-pre-contratacion/${conversation.searchServiceId}?conversationId=${conversation.conversationId}`,
-            );
+            // Desktop: abrir el chat en el panel derecho. Móvil: navegar a la página completa.
+            if (isMobile) {
+                navigate(
+                    `/chat-pre-contratacion/${conversation.searchServiceId}?conversationId=${conversation.conversationId}`,
+                );
+            } else {
+                setSelectedId(conversation.conversationId);
+            }
         } else if (conversation.conversationType === 'post-hire' && conversation.searchHireId) {
             navigate(`/searchhire/${conversation.searchHireId}`);
         }
     };
+
+    const selectedConversation = useMemo(
+        () =>
+            selectedId == null
+                ? null
+                : sortedConversations.find((c) => c.conversationId === selectedId) ?? null,
+        [selectedId, sortedConversations],
+    );
 
     const formatAmount = (value: number | null | undefined, currency: string | null | undefined) => {
         if (value == null) return '';
@@ -274,14 +293,12 @@ export function MessagesPage() {
                     onBack={() => navigate(-1)}
                     title="Mis mensajes"
                     counter="Cargando conversaciones…"
-                    searchSlot={null}
-                    filterSlot={null}
                 />
-                <main className="mx-auto w-full max-w-3xl flex-1 px-3 pb-6 pt-1 md:max-w-4xl md:px-5">
-                    <ul className="flex flex-col gap-1.5" aria-hidden>
-                        {Array.from({ length: 6 }).map((_, i) => (
+                <main className="w-full flex-1 px-0 pb-6 pt-1 sm:px-4 md:max-w-[380px] md:border-r md:border-[#ededed]">
+                    <ul className="flex flex-col" aria-hidden>
+                        {Array.from({ length: 7 }).map((_, i) => (
                             <li key={i}>
-                                <SkeletonCard index={i} />
+                                <SkeletonRow index={i} isLast={i === 6} />
                             </li>
                         ))}
                     </ul>
@@ -293,13 +310,7 @@ export function MessagesPage() {
     if (error) {
         return (
             <div className="flex h-screen flex-col bg-white" style={{ fontFamily: HP_FONT }}>
-                <Header
-                    onBack={() => navigate(-1)}
-                    title="Mis mensajes"
-                    counter={null}
-                    searchSlot={null}
-                    filterSlot={null}
-                />
+                <Header onBack={() => navigate(-1)} title="Mis mensajes" counter={null} />
                 <div className="flex flex-1 items-center justify-center p-4">
                     <div className="text-center">
                         <p className="mb-4 text-[14px] text-[#DC2626]">
@@ -320,98 +331,272 @@ export function MessagesPage() {
 
     // -------------- Render principal --------------
 
-    return (
-        <div className="flex min-h-screen flex-col bg-white" style={{ fontFamily: HP_FONT }}>
-            <Header
-                onBack={() => navigate(-1)}
-                title="Mis mensajes"
-                counter={
-                    totalCount > 0
-                        ? `${totalCount} ${totalCount === 1 ? 'conversación' : 'conversaciones'}${
-                              totalUnread > 0 ? ` · ${totalUnread} sin leer` : ''
-                          }`
-                        : null
-                }
-                searchSlot={
-                    totalCount > 3 ? (
-                        <SearchInput
-                            value={searchInput}
-                            onChange={setSearchInput}
-                            onClear={() => setSearchInput('')}
-                        />
-                    ) : null
-                }
-                filterSlot={
-                    totalCount > 0 ? (
-                        <FilterPills value={filter} onChange={setFilter} counts={filterCounts} />
-                    ) : null
-                }
-            />
+    const counterText =
+        totalCount > 0
+            ? `${totalCount} ${totalCount === 1 ? 'conversación' : 'conversaciones'}${
+                  totalUnread > 0 ? ` · ${totalUnread} sin leer` : ''
+              }`
+            : null;
 
-            {/* Lista */}
-            {sortedConversations.length === 0 ? (
+    // Buscador siempre visible cuando hay conversaciones (estilo WhatsApp/Telegram):
+    // ancla la parte superior en móvil ahora que no hay header de página.
+    const showSearch = totalCount > 0;
+    const showFilters = totalCount > 0;
+
+    // Sin ninguna conversación → estado vacío a pantalla completa (sin two-pane).
+    if (sortedConversations.length === 0) {
+        return (
+            <div className="flex min-h-screen flex-col bg-white" style={{ fontFamily: HP_FONT }}>
+                <Header onBack={() => navigate(-1)} title="Mis mensajes" counter={null} />
                 <EmptyState onCreate={() => navigate('/crear-busqueda')} />
-            ) : visibleConversations.length === 0 ? (
-                <NoResultsState
-                    query={searchInput}
-                    onClearFilters={() => {
-                        setSearchInput('');
-                        setFilter('all');
-                    }}
-                />
-            ) : (
-                <main className="mx-auto w-full max-w-3xl flex-1 px-3 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-1 md:max-w-4xl md:px-5">
-                    <ul className="flex flex-col gap-1.5">
-                        {visibleConversations.map((conversation, index) => (
-                            <li
-                                key={conversation.conversationId}
-                                className="animate-fade-in motion-reduce:animate-none"
-                                style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-                            >
-                                <ConversationCard
-                                    conversation={conversation}
-                                    isOwnLastMessage={
-                                        conversation.lastMessage?.senderId === user?.id
-                                    }
-                                    formatAmount={formatAmount}
-                                    onOpen={() => handleOpenChat(conversation)}
-                                />
-                            </li>
-                        ))}
-                    </ul>
+                {isMobile && (
+                    <Suspense fallback={null}>
+                        <MobileBottomBar />
+                    </Suspense>
+                )}
+            </div>
+        );
+    }
 
-                    {/* Hint al pie si pocas conversaciones */}
-                    {visibleConversations.length > 0 && visibleConversations.length < 3 && (
-                        <div className="mt-6 rounded-2xl border border-dashed border-[#e8e8e8] bg-white px-5 py-5 text-center">
-                            <p className="text-[13px] text-[#6a6a6a]">
-                                ¿Necesitas otra inspección?
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => navigate('/crear-busqueda')}
-                                className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand transition-colors hover:text-brand-hover"
-                            >
-                                Pedir una revisión nueva
-                                <svg
-                                    aria-hidden
-                                    className="h-3.5 w-3.5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M5 12h14M13 5l7 7-7 7" />
-                                </svg>
-                            </button>
+    return (
+        <div
+            className="flex min-h-screen flex-col bg-white md:h-[calc(100dvh-3rem)] md:min-h-0 md:overflow-hidden"
+            style={{ fontFamily: HP_FONT }}
+        >
+            <Header onBack={() => navigate(-1)} title="Mis mensajes" counter={counterText} />
+
+            {/* Cuerpo: una columna en móvil · dos paneles (lista + conversación) en desktop */}
+            <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(330px,380px)_minmax(0,1fr)]">
+                {/* ----- Panel lista ----- */}
+                <section className="flex min-h-0 min-w-0 flex-col md:border-r md:border-[#ededed]">
+                    {(showSearch || showFilters) && (
+                        <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:pt-3.5">
+                            {showSearch && (
+                                <div className="flex items-center gap-2">
+                                    {/* Volver — solo móvil (en desktop el botón vive en la cabecera del panel) */}
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(-1)}
+                                        aria-label="Volver"
+                                        className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors hover:bg-[#f2f2f2] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden"
+                                    >
+                                        <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                                    </button>
+                                    <div className="min-w-0 flex-1">
+                                        <SearchInput
+                                            value={searchInput}
+                                            onChange={setSearchInput}
+                                            onClear={() => setSearchInput('')}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {showFilters && (
+                                <FilterPills
+                                    value={filter}
+                                    onChange={setFilter}
+                                    counts={filterCounts}
+                                />
+                            )}
                         </div>
                     )}
-                </main>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(65px+1rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+                        {visibleConversations.length === 0 ? (
+                            <NoResultsState
+                                query={searchInput}
+                                onClearFilters={() => {
+                                    setSearchInput('');
+                                    setFilter('all');
+                                }}
+                            />
+                        ) : (
+                            <>
+                                <ul className="flex flex-col">
+                                    {visibleConversations.map((conversation, index) => (
+                                        <li
+                                            key={conversation.conversationId}
+                                            className="animate-fade-in motion-reduce:animate-none"
+                                            style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
+                                        >
+                                            <ConversationRow
+                                                conversation={conversation}
+                                                isOwnLastMessage={
+                                                    conversation.lastMessage?.senderId === user?.id
+                                                }
+                                                isActive={
+                                                    selectedId === conversation.conversationId
+                                                }
+                                                formatAmount={formatAmount}
+                                                onOpen={() => handleOpenChat(conversation)}
+                                                isLast={index === visibleConversations.length - 1}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {visibleConversations.length < 3 && (
+                                    <div className="px-4 pt-5 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/crear-busqueda')}
+                                            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand transition-colors hover:text-brand-hover"
+                                        >
+                                            Pedir una revisión nueva
+                                            <svg
+                                                aria-hidden
+                                                className="h-3.5 w-3.5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <path d="M5 12h14M13 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </section>
+
+                {/* ----- Panel conversación — solo desktop ----- */}
+                {selectedConversation && selectedConversation.searchServiceId ? (
+                    <ConversationPanel
+                        key={selectedConversation.conversationId}
+                        conversation={selectedConversation}
+                        token={token}
+                        userId={user?.id ?? 0}
+                        amountLabel={formatAmount(
+                            selectedConversation.servicePrice,
+                            selectedConversation.serviceCurrency,
+                        )}
+                        onHire={() =>
+                            navigate(`/checkout/${selectedConversation.searchServiceId}`)
+                        }
+                        onClose={() => setSelectedId(null)}
+                    />
+                ) : (
+                    <ConversationPlaceholder />
+                )}
+            </div>
+
+            {isMobile && (
+                <Suspense fallback={null}>
+                    <MobileBottomBar />
+                </Suspense>
             )}
         </div>
     );
 }
+
+/**
+ * Panel derecho en desktop (estilo WhatsApp Web / Telegram): mientras no hay una
+ * conversación abierta dentro de la página, ocupa el espacio con un placeholder
+ * de marca en lugar de dejar un vacío blanco. Al pulsar una fila se navega a la
+ * vista de chat completa.
+ */
+const ConversationPlaceholder: React.FC = () => (
+    <section className="hidden items-center justify-center bg-[#fbfbfb] px-8 md:flex">
+        <div className="max-w-xs text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand/[0.08]">
+                <MessageCircle className="h-7 w-7 text-brand" strokeWidth={1.5} aria-hidden />
+            </div>
+            <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                Selecciona una conversación
+            </h2>
+            <p className="mx-auto mt-1.5 text-[13px] leading-relaxed text-[#737373]">
+                Elige una conversación de la lista para ver los mensajes y seguir con tu inspección.
+            </p>
+        </div>
+    </section>
+);
+
+interface ConversationPanelProps {
+    conversation: ClientConversationSummaryDto;
+    token: string;
+    userId: number;
+    amountLabel: string;
+    onHire: () => void;
+    onClose: () => void;
+}
+
+/**
+ * Panel derecho en desktop con el chat de pre-contratación incrustado (estilo
+ * WhatsApp Web): cabecera con experto + acción de contratar, y la conversación
+ * dentro. Antes esto navegaba a /chat-pre-contratacion (página suelta); ahora se
+ * abre aquí mismo sin salir de la bandeja. En móvil se sigue navegando.
+ */
+const ConversationPanel: React.FC<ConversationPanelProps> = ({
+    conversation,
+    token,
+    userId,
+    amountLabel,
+    onHire,
+    onClose,
+}) => (
+    <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
+            <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+                <AvatarImage
+                    src={conversation.expertProfilePictureUrl || undefined}
+                    alt=""
+                    className="h-full w-full object-cover"
+                />
+                <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[15px] font-semibold text-white">
+                    {(conversation.expertName || '?').charAt(0).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1 leading-tight">
+                <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                    {conversation.expertName}
+                </p>
+                <p className="truncate text-[12px] text-[#737373]">
+                    {conversation.serviceName || 'Pregunta antes de contratar'}
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={onHire}
+                className="hidden shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover lg:inline-flex"
+            >
+                Contratar{amountLabel ? ` · ${amountLabel}` : ''}
+            </button>
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar conversación"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+                <X className="h-[18px] w-[18px]" strokeWidth={2} />
+            </button>
+        </div>
+        <div className="min-h-0 flex-1">
+            <Suspense
+                fallback={
+                    <div className="flex h-full items-center justify-center bg-white">
+                        <MessageCircle
+                            className="h-6 w-6 animate-pulse text-[#d4d4d4]"
+                            aria-hidden
+                        />
+                    </div>
+                }
+            >
+                <PreHireChat
+                    serviceId={conversation.searchServiceId ?? 0}
+                    token={token}
+                    userId={userId}
+                    conversationId={conversation.conversationId}
+                    peerName={conversation.expertName}
+                    embedded
+                />
+            </Suspense>
+        </div>
+    </section>
+);
 
 // -------------- Subcomponentes --------------
 
@@ -419,38 +604,27 @@ interface HeaderProps {
     onBack: () => void;
     title: string;
     counter: string | null;
-    searchSlot: React.ReactNode;
-    filterSlot: React.ReactNode;
 }
 
-const Header: React.FC<HeaderProps> = ({ onBack, title, counter, searchSlot, filterSlot }) => (
-    <header className="sticky top-0 z-30 border-b border-[#e8e8e8] bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
-        <div className="mx-auto w-full max-w-3xl px-3 md:max-w-4xl md:px-5">
-            <div className="flex items-center gap-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 sm:gap-3">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    aria-label="Volver"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors hover:bg-[#f2f2f2] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-                >
-                    <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                </button>
-                <div className="min-w-0 flex-1">
-                    <h1 className="truncate text-[17px] font-semibold tracking-[-0.015em] text-[#1c1c1c] md:text-[18px]">
-                        {title}
-                    </h1>
-                    {counter && (
-                        <p className="truncate text-[12px] leading-snug text-[#737373]">
-                            {counter}
-                        </p>
-                    )}
-                </div>
-                <div className="hidden min-w-[180px] max-w-[260px] flex-1 md:block">{searchSlot}</div>
+const Header: React.FC<HeaderProps> = ({ onBack, title, counter }) => (
+    <header className="hidden shrink-0 border-b border-[#ededed] bg-white md:block">
+        <div className="flex items-center gap-3 px-5 py-3.5">
+            <button
+                type="button"
+                onClick={onBack}
+                aria-label="Volver"
+                className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors hover:bg-[#f2f2f2] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            >
+                <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
+            <div className="min-w-0 flex-1">
+                <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[#1c1c1c]">
+                    {title}
+                </h1>
+                {counter && (
+                    <p className="truncate text-[12.5px] leading-snug text-[#8a8a8a]">{counter}</p>
+                )}
             </div>
-            {/* Mobile search bajo el título */}
-            <div className="md:hidden">{searchSlot && <div className="pb-3">{searchSlot}</div>}</div>
-            {/* Filter pills */}
-            {filterSlot && <div className="pb-3">{filterSlot}</div>}
         </div>
     </header>
 );
@@ -498,7 +672,7 @@ const FilterPills: React.FC<FilterPillsProps> = ({ value, onChange, counts }) =>
     <div
         role="radiogroup"
         aria-label="Filtrar conversaciones"
-        className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-0.5 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex flex-wrap items-center gap-1.5"
     >
         {(Object.keys(FILTER_LABELS) as FilterTab[]).map((tab) => {
             const active = value === tab;
@@ -522,8 +696,8 @@ const FilterPills: React.FC<FilterPillsProps> = ({ value, onChange, counts }) =>
                     {count > 0 && (
                         <span
                             className={[
-                                'inline-flex min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none tabular-nums',
-                                active ? 'bg-white/25 text-white' : 'bg-[#f0f0f0] text-[#6a6a6a]',
+                                'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold leading-none tabular-nums',
+                                active ? 'bg-white/25 text-white' : 'bg-[#e9e9e9] text-[#5a5a5a]',
                             ].join(' ')}
                             aria-hidden
                         >
@@ -538,28 +712,32 @@ const FilterPills: React.FC<FilterPillsProps> = ({ value, onChange, counts }) =>
 
 // -------------- Skeleton --------------
 
-const SkeletonCard: React.FC<{ index: number }> = ({ index }) => (
+const SkeletonRow: React.FC<{ index: number; isLast: boolean }> = ({ index, isLast }) => (
     <div
-        className="flex w-full items-start gap-3 rounded-2xl border border-[#f0f0f0] bg-white p-4 animate-fade-in motion-reduce:animate-none"
-        style={{ animationDelay: `${index * 60}ms` }}
+        className="relative flex w-full items-center gap-3 px-4 py-3 animate-fade-in motion-reduce:animate-none"
+        style={{ animationDelay: `${index * 55}ms` }}
     >
-        <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-[#f0f0f0]" />
-        <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5">
+        <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-[#f0f0f0]" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
                 <div className="h-3.5 w-40 animate-pulse rounded-full bg-[#f0f0f0]" />
-                <div className="h-3 w-10 animate-pulse rounded-full bg-[#f3f3f3]" />
+                <div className="h-3 w-10 animate-pulse rounded-full bg-[#f4f4f4]" />
             </div>
-            <div className="h-2.5 w-28 animate-pulse rounded-full bg-[#f3f3f3]" />
-            <div className="h-3 w-3/4 animate-pulse rounded-full bg-[#f3f3f3]" />
+            <div className="h-3 w-3/4 animate-pulse rounded-full bg-[#f4f4f4]" />
         </div>
+        {!isLast && (
+            <span className="pointer-events-none absolute bottom-0 left-[80px] right-0 h-px bg-[#f1f1f1]" />
+        )}
     </div>
 );
 
-interface ConversationCardProps {
+interface ConversationRowProps {
     conversation: ClientConversationSummaryDto;
     isOwnLastMessage: boolean;
+    isActive?: boolean;
     formatAmount: (v: number | null | undefined, c: string | null | undefined) => string;
     onOpen: () => void;
+    isLast: boolean;
 }
 
 /**
@@ -578,20 +756,36 @@ const NEUTRAL_HIRE_STATUSES = new Set([
     'precontratación',
 ]);
 
-const ConversationCard: React.FC<ConversationCardProps> = ({
+/**
+ * ConversationRow — fila tipo WhatsApp / Telegram / iMessage.
+ *
+ * Lista continua (sin tarjetas, sin huecos): avatar 52px · nombre + último
+ * mensaje apilados · hora arriba a la derecha · badge de no leídos abajo a la
+ * derecha · separador fino metido tras el avatar (estilo iMessage). El estado
+ * de contratación (Disputa/Completada…) aparece como chip pequeño inline al
+ * inicio del snippet, no como bloque a la derecha.
+ */
+const ConversationRow: React.FC<ConversationRowProps> = ({
     conversation,
     isOwnLastMessage,
+    isActive = false,
     formatAmount,
     onOpen,
+    isLast,
 }) => {
     const isPreHire = conversation.conversationType === 'pre-hire';
-    const isUnread = (conversation.unreadCount || 0) > 0;
+    const unread = conversation.unreadCount || 0;
+    const isUnread = unread > 0;
     const title =
         (isPreHire
             ? conversation.serviceName || conversation.expertName
             : conversation.searchTitle || conversation.serviceName || conversation.expertName) ||
         'Conversación';
-    const image = conversation.serviceImageUrl || conversation.expertProfilePictureUrl || undefined;
+    // Avatar = la PERSONA con quien hablas (foto del experto), no la foto del
+    // servicio. La imagen del servicio es de stock y se repite entre servicios
+    // del mismo tipo → "siempre la misma foto". La del experto distingue cada chat.
+    const image =
+        conversation.expertProfilePictureUrl || conversation.serviceImageUrl || undefined;
     const expert = conversation.expertName;
     const stamp = conversation.lastMessage?.sentAt
         ? formatRelative(conversation.lastMessage.sentAt)
@@ -603,12 +797,6 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
         ? formatAmount(conversation.servicePrice, conversation.serviceCurrency)
         : formatAmount(conversation.hireAmount, conversation.hireCurrency);
 
-    /**
-     * Chip de estado: SOLO aparece si hay un estado relevante (Disputa,
-     * Cancelada, Completada, Esperando…). En pre-contratación normal no
-     * aparece porque duplica la info del filter pill activo. El timestamp
-     * pasa a ocupar su sitio arriba a la derecha (estilo iMessage).
-     */
     const statusLabel = conversation.hireStatusTranslated?.trim() || null;
     const chip =
         !isPreHire && statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
@@ -621,96 +809,90 @@ const ConversationCard: React.FC<ConversationCardProps> = ({
         <button
             type="button"
             onClick={onOpen}
+            aria-current={isActive ? 'true' : undefined}
             aria-label={`Abrir conversación con ${expert} sobre ${title}.${ariaStamp}${
-                isUnread ? ` ${conversation.unreadCount} sin leer.` : ''
+                isUnread ? ` ${unread} sin leer.` : ''
             }${chip ? ` Estado: ${chip.label}.` : ''}`}
             className={[
-                'group relative flex w-full items-start gap-3 rounded-2xl border border-[#e8e8e8] bg-white p-4 text-left',
-                'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                'hover:-translate-y-0.5 hover:border-[#d4d4d4] hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.16)]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
-                'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
+                'group relative flex w-full items-center gap-3 px-4 py-3 text-left',
+                'transition-colors duration-150',
+                isActive
+                    ? 'md:bg-brand/[0.06] md:hover:bg-brand/[0.06]'
+                    : 'hover:bg-[#f6f6f6] active:bg-[#efefef]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand',
             ].join(' ')}
         >
-            {/* Punto de no leído (estilo Mail) — reserva espacio para alinear avatares */}
-            <span className="mt-4 flex h-2 w-2 shrink-0 items-center justify-center" aria-hidden>
-                {isUnread && (
-                    <span className="h-2 w-2 rounded-full bg-brand shadow-[0_0_0_3px_hsl(var(--brand)/0.14)]" />
-                )}
-            </span>
+            {/* Avatar 52px */}
+            <Avatar className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+                <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
+                <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[18px] font-semibold text-white">
+                    {(expert || title || '?').charAt(0).toUpperCase()}
+                </AvatarFallback>
+            </Avatar>
 
-            {/* Avatar 44px sin ring, con badge de tipo de conversación */}
-            <div className="relative shrink-0">
-                <Avatar className="h-11 w-11 overflow-hidden rounded-full">
-                    <AvatarImage src={image} alt="" />
-                    <AvatarFallback className="bg-brand text-[15px] font-bold text-white">
-                        {(expert || title || '?').charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
-                <span
-                    className="absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white text-brand ring-1 ring-[#e8e8e8]"
-                    aria-hidden
-                >
-                    {isPreHire ? (
-                        <MessageCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
-                    ) : (
-                        <ShieldCheck className="h-2.5 w-2.5" strokeWidth={2.5} />
-                    )}
-                </span>
-            </div>
-
-            {/* Cuerpo */}
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                {/* Header: título + chip de estado (si lo hay) + timestamp arriba derecha */}
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-1 min-w-0 text-[14px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+            {/* Cuerpo: nombre + snippet, dos líneas */}
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+                {/* Línea 1: nombre · hora */}
+                <div className="flex items-baseline justify-between gap-2">
+                    <h3
+                        className={[
+                            'line-clamp-1 min-w-0 text-[15px] leading-tight tracking-[-0.01em] text-[#1c1c1c]',
+                            isUnread ? 'font-bold' : 'font-semibold',
+                        ].join(' ')}
+                    >
                         {title}
                     </h3>
-                    <div className="flex shrink-0 items-center gap-2">
-                        {chip && <StatusChip label={chip.label} tone={chip.tone} />}
-                        {stamp && (
-                            <time
-                                className={[
-                                    'text-[11px] font-medium leading-none',
-                                    isUnread ? 'text-brand' : 'text-[#a0a0a0]',
-                                ].join(' ')}
-                                aria-hidden
-                            >
-                                {stamp}
-                            </time>
-                        )}
-                    </div>
+                    {stamp && (
+                        <time
+                            className={[
+                                'shrink-0 text-[12px] leading-none tabular-nums',
+                                isUnread ? 'font-semibold text-brand' : 'font-medium text-[#8a8a8a]',
+                            ].join(' ')}
+                            aria-hidden
+                        >
+                            {stamp}
+                        </time>
+                    )}
                 </div>
 
-                {/* Meta: experto · precio (sin fecha, ya está arriba) */}
-                <p className="truncate text-[12px] leading-tight text-[#737373]">
-                    {expert}
-                    {amount ? ` · ${amount}` : ''}
-                </p>
-
-                {/* Snippet del último mensaje */}
+                {/* Línea 2: [chip estado] snippet · badge no leídos */}
                 <div className="flex items-center gap-2">
                     <p
                         className={[
-                            'line-clamp-1 flex-1 text-[13px] leading-snug',
-                            isUnread ? 'font-semibold text-[#1c1c1c]' : 'text-[#6a6a6a]',
+                            'flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px] leading-snug',
+                            isUnread ? 'font-medium text-[#3a3a3a]' : 'text-[#737373]',
                         ].join(' ')}
                     >
-                        {isOwnLastMessage && (
-                            <span className="text-[#a0a0a0]">Tú: </span>
-                        )}
-                        {snippet}
-                    </p>
-                    {isUnread && (
-                        <span
-                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold leading-none text-white"
-                            aria-label={`${conversation.unreadCount} mensajes sin leer`}
-                        >
-                            {(conversation.unreadCount || 0) > 99 ? '99+' : conversation.unreadCount}
+                        {chip && <StatusChip label={chip.label} tone={chip.tone} />}
+                        <span className="truncate">
+                            {isOwnLastMessage && <span className="text-[#a0a0a0]">Tú: </span>}
+                            {snippet}
                         </span>
+                    </p>
+                    {isUnread ? (
+                        <span
+                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold leading-none text-white"
+                            aria-label={`${unread} mensajes sin leer`}
+                        >
+                            {unread > 99 ? '99+' : unread}
+                        </span>
+                    ) : (
+                        amount && (
+                            <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#9a9a9a]">
+                                {amount}
+                            </span>
+                        )
                     )}
                 </div>
             </div>
+
+            {/* Separador inset (alineado con el texto), estilo iMessage */}
+            {!isLast && (
+                <span
+                    className="pointer-events-none absolute bottom-0 left-[80px] right-0 h-px bg-[#f0f0f0]"
+                    aria-hidden
+                />
+            )}
         </button>
     );
 };

@@ -135,53 +135,67 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
         status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false;
     const isBusy = loading || isLoadingOnboarding;
 
+    // 🖥️ Desktop: el panel pasa a 2 columnas cuando hay requisitos que listar —
+    // narrativa (resumen/plazo/motivo/qué hacer) a la izquierda y checklist a la
+    // derecha— para que no se vea como una tira estrecha y muy vertical. En móvil
+    // colapsa a una sola columna en el mismo orden de lectura.
+    const isSplit = groups.length > 0;
+
     return (
-        <div className={`stripe-status-panel ${className}`}>
+        <div className={`stripe-status-panel ${isSplit ? 'stripe-status-panel--split' : ''} ${className}`}>
             <header className="stripe-status-header">
                 <p className="stripe-status-kicker">{display.kicker}</p>
                 <h2 className="stripe-status-title">{display.title}</h2>
             </header>
 
-            <p className="stripe-status-summary">{display.summary}</p>
+            <div className="stripe-status-body">
+                <div className="stripe-status-main">
+                    <p className="stripe-status-summary">{display.summary}</p>
 
-            {statusInfo.deadlineText && (
-                <div className={`stripe-deadline-pill ${deadlineUrgent ? 'stripe-deadline-pill--danger' : 'stripe-deadline-pill--warning'}`}>
-                    <Clock className="h-3.5 w-3.5" aria-hidden />
-                    <span>{statusInfo.deadlineText}</span>
+                    {statusInfo.deadlineText && (
+                        <div className={`stripe-deadline-pill ${deadlineUrgent ? 'stripe-deadline-pill--danger' : 'stripe-deadline-pill--warning'}`}>
+                            <Clock className="h-3.5 w-3.5" aria-hidden />
+                            <span>{statusInfo.deadlineText}</span>
+                        </div>
+                    )}
+
+                    {display.reason && (
+                        <section className="stripe-status-block">
+                            <h3 className="stripe-status-label">{t('stripe.common.reason')}</h3>
+                            <p className="stripe-status-text">{display.reason}</p>
+                        </section>
+                    )}
+
+                    {display.nextSteps && (
+                        <section className="stripe-status-block">
+                            <h3 className="stripe-status-label">{t('stripe.common.whatToDo')}</h3>
+                            <p className="stripe-status-text">{display.nextSteps}</p>
+                        </section>
+                    )}
                 </div>
-            )}
 
-            {display.reason && (
-                <section className="stripe-status-block">
-                    <h3 className="stripe-status-label">{t('stripe.common.reason')}</h3>
-                    <p className="stripe-status-text">{display.reason}</p>
-                </section>
-            )}
-
-            {display.nextSteps && (
-                <section className="stripe-status-block">
-                    <h3 className="stripe-status-label">{t('stripe.common.whatToDo')}</h3>
-                    <p className="stripe-status-text">{display.nextSteps}</p>
-                </section>
-            )}
-
-            {groups.map((group) => (
-                <section key={group.key} className="stripe-req-group">
-                    <div className="stripe-req-group-head">
-                        <group.Icon className={`h-4 w-4 sev-${group.severity}`} aria-hidden />
-                        <h3 className="stripe-req-title">{group.title}</h3>
-                        <span className="stripe-req-count">{group.items.length}</span>
-                    </div>
-                    <ul className="stripe-req-rows">
-                        {group.items.map((item) => (
-                            <li key={item} className="stripe-req-row">
-                                <span className={`stripe-req-dot stripe-req-dot--${group.severity}`} aria-hidden />
-                                <span>{item}</span>
-                            </li>
+                {isSplit && (
+                    <div className="stripe-status-side">
+                        {groups.map((group) => (
+                            <section key={group.key} className="stripe-req-group">
+                                <div className="stripe-req-group-head">
+                                    <group.Icon className={`h-4 w-4 sev-${group.severity}`} aria-hidden />
+                                    <h3 className="stripe-req-title">{group.title}</h3>
+                                    <span className="stripe-req-count">{group.items.length}</span>
+                                </div>
+                                <ul className="stripe-req-rows">
+                                    {group.items.map((item) => (
+                                        <li key={item} className="stripe-req-row">
+                                            <span className={`stripe-req-dot stripe-req-dot--${group.severity}`} aria-hidden />
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
                         ))}
-                    </ul>
-                </section>
-            ))}
+                    </div>
+                )}
+            </div>
 
             {showActionButton && (
                 <div className="stripe-status-actions">

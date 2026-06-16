@@ -3,12 +3,11 @@
 // (renderizado) con tiles Carto + la API REST de Mapbox para geocoding (igual que el
 // resto de pantallas migradas — ver `ServiceDetailCoverageMap.tsx`).
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, ShieldCheck, Globe, ChevronDown } from 'lucide-react';
+import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, ChevronDown, ArrowRight } from 'lucide-react';
 import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
     BecomeExpertFastPathShell,
-    BecomeExpertFastPathSteps,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
     BE_DAY_ACTIVE,
@@ -34,7 +33,7 @@ import {
 } from '../constants/stripeConnectCountries';
 import { API_CONFIG } from '../config/api';
 import { authService } from '../services/authService';
-import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
+import { HP_LINK_UNDERLINE_CLASS, HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { SEO } from '../components/SEO';
@@ -1043,48 +1042,97 @@ function BecomeExpertPage() {
             <BecomeExpertFastPathShell
                 onBack={() => navigate(-1)}
                 footer={
-                    <button
-                        type="button"
-                        onClick={submitMinimal}
-                        disabled={fastPathSubmitting}
-                        aria-busy={fastPathSubmitting}
-                        className="sd-btn-primary inline-flex h-11 w-full items-center justify-center px-5 disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                    >
-                        {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
-                    </button>
+                    <div className="space-y-2.5">
+                        <div className="be-fast-form-field">
+                            <label htmlFor="fast-country-m" className="be-fast-form-label">
+                                ¿Dónde trabajarás?
+                            </label>
+                            <div className="relative">
+                                <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden ring-1 ring-black/[0.08]">
+                                    <span
+                                        className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
+                                        aria-hidden
+                                    />
+                                </span>
+                                <select
+                                    id="fast-country-m"
+                                    value={fastPathCountry}
+                                    onChange={(e) => setFastPathCountry(e.target.value)}
+                                    className={`${BE_INPUT_CLASS} be-fast-select h-12 appearance-none pl-12 pr-10 text-[15px]`}
+                                >
+                                    {sortedCountries.map((code) => (
+                                        <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown
+                                    className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
+                                    aria-hidden
+                                />
+                            </div>
+                            <p className="be-fast-form-hint">
+                                Operamos en todo el mundo. Tu país de cobro debe coincidir con el de trabajo y no se puede cambiar.
+                            </p>
+                        </div>
+                        {fastPathError && (
+                            <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
+                        )}
+                        <button
+                            type="button"
+                            onClick={submitMinimal}
+                            disabled={fastPathSubmitting}
+                            aria-busy={fastPathSubmitting}
+                            className={`${HP_SERVICE_CTA_CLASS} group w-full gap-2`}
+                        >
+                            {fastPathSubmitting ? (
+                                'Creando tu alta…'
+                            ) : (
+                                <>
+                                    Continuar con Stripe
+                                    <ArrowRight
+                                        className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
+                                        strokeWidth={2.5}
+                                    />
+                                </>
+                            )}
+                        </button>
+                    </div>
                 }
             >
                 <div className="be-fast-form">
-                    <header className="max-w-md space-y-2">
-                        <p className="be-fast-form-kicker">Empieza ahora</p>
+                    <header className="hidden space-y-2 lg:block">
                         <h2 className="be-fast-form-title">Crea tu cuenta de cobros</h2>
                         <p className="be-fast-form-lead">
-                            Conecta Stripe y empieza a recibir pagos. Completas tu perfil y tu zona en el panel;
-                            no eres visible para clientes hasta entonces.
+                            Solo necesitas tu país para empezar. El perfil, tu zona y tus servicios los completas
+                            después en el panel.
                         </p>
                     </header>
 
                     <div className="be-fast-form-field">
                         <label htmlFor="fast-country" className="be-fast-form-label">
-                            ¿Dónde cobrarás?
+                            ¿Dónde trabajarás?
                         </label>
+                        <p className="be-fast-form-hint">
+                            Inspecciono opera en todo el mundo. Tu país de cobro debe ser el mismo en el que trabajas.
+                        </p>
                         <div className="relative">
-                            <Globe
-                                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]"
-                                aria-hidden
-                            />
+                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden ring-1 ring-black/[0.08]">
+                                <span
+                                    className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
+                                    aria-hidden
+                                />
+                            </span>
                             <select
                                 id="fast-country"
                                 value={fastPathCountry}
                                 onChange={(e) => setFastPathCountry(e.target.value)}
-                                className={`${BE_INPUT_CLASS} be-fast-select appearance-none pl-10 pr-9`}
+                                className={`${BE_INPUT_CLASS} be-fast-select h-12 appearance-none pl-12 pr-10 text-[15px]`}
                             >
                                 {sortedCountries.map((code) => (
                                     <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
                                 ))}
                             </select>
                             <ChevronDown
-                                className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
+                                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
                                 aria-hidden
                             />
                         </div>
@@ -1095,32 +1143,27 @@ function BecomeExpertPage() {
                         <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
                     )}
 
-                    <p className="flex max-w-md items-start gap-2 text-xs leading-relaxed text-[#6a6a6a]">
-                        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
-                        Sin coste de alta. La verificación de identidad la realiza Stripe de forma segura.
-                    </p>
-
-                    <div className="hidden max-w-md flex-col gap-3 pt-1 lg:flex">
+                    <div className="flex flex-col gap-3 pt-1">
                         <button
                             type="button"
                             onClick={submitMinimal}
                             disabled={fastPathSubmitting}
                             aria-busy={fastPathSubmitting}
-                            className="sd-btn-primary inline-flex h-11 w-full items-center justify-center px-5 disabled:cursor-wait focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                            className={`${HP_SERVICE_CTA_CLASS} group w-full gap-2`}
                         >
-                            {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate(-1)}
-                            className="h-10 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
-                        >
-                            Volver
+                            {fastPathSubmitting ? (
+                                'Creando tu alta…'
+                            ) : (
+                                <>
+                                    Continuar con Stripe
+                                    <ArrowRight
+                                        className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
+                                        strokeWidth={2.5}
+                                    />
+                                </>
+                            )}
                         </button>
                     </div>
-
-                    {/* En móvil los pasos van en la intro; aquí solo en escritorio. */}
-                    <BecomeExpertFastPathSteps className="hidden max-w-md border-t border-[#ececec] pt-6 lg:block" />
                 </div>
             </BecomeExpertFastPathShell>
             </>

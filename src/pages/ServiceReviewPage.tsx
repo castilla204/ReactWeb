@@ -55,7 +55,7 @@ import { ServiceDetailReviewsPreview } from '../components/serviceDetail/Service
 import { getCountryName } from '../utils/countries';
 import { readWorkRadiusKm } from '../utils/workRadius';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
-import { ServiceDetailDesktopHeader } from '../components/serviceDetail/ServiceDetailDesktopHeader';
+import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
@@ -699,11 +699,10 @@ export function ServiceReviewPage({
 
             {/* ========== DESKTOP — galería full-width + grid contenido / aside ========== */}
             <div className="service-detail-desktop hidden lg:block min-h-screen bg-white">
-                <ServiceDetailDesktopHeader
-                    onBack={onBack}
-                    isFavorite={isFavorite}
-                    onToggleFavorite={() => setIsFavorite(!isFavorite)}
-                />
+                {/* Header unificado: el mismo topbar de la homepage en desktop
+                    (logo→inicio, ayuda, moneda, notificaciones, cuenta) en lugar del
+                    header propio de la ficha. Decisión del usuario 2026-06-16. */}
+                <HomepageDesktopTopBar variant="plain" showLogo />
 
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-4 lg:pt-5`}>
                     <ServiceDetailDesktopPhotoMapHero

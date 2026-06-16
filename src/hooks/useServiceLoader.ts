@@ -87,15 +87,11 @@ export function useServiceLoader(
   }, [viewport]);
 
   /**
-   * Determina el límite máximo de resultados según el nivel de zoom
-   * Similar a Airbnb: menos marcadores en zoom bajo, más en zoom alto
+   * Límite de resultados del mapa: SIEMPRE el máximo. Antes se reducía al alejar (zoom<8 → 30)
+   * y los expertos del área "desaparecían" al hacer zoom out. Como clusterizamos en cliente,
+   * pedimos TODO el área de una vez (tope 500) y supercluster agrupa/desagrupa sin recargar.
    */
-  const getMaxResults = useCallback((zoom: number): number => {
-    if (zoom < 8) return 30;
-    if (zoom < 10) return 50;
-    if (zoom < 12) return 100;
-    if (zoom < 14) return 200;
-    if (zoom < 16) return 300;
+  const getMaxResults = useCallback((_zoom: number): number => {
     return 500;
   }, []);
 

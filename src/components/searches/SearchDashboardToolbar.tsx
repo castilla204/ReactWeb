@@ -44,7 +44,10 @@ export const SearchDashboardToolbar: React.FC<SearchDashboardToolbarProps> = ({
     onClearSearch,
 }) => (
     <header
-        className="sticky top-0 z-30 border-b border-[#e8e8e8] bg-white"
+        // En desktop el topbar global de la homepage (sticky top-0, h-12) va encima:
+        // este toolbar se pega debajo con md:top-12. En móvil ese topbar está oculto,
+        // así que aquí seguimos pegados arriba (top-0).
+        className="sticky top-0 z-30 border-b border-[#e8e8e8] bg-white md:top-12"
         style={{ fontFamily: HP_FONT }}
     >
         <div className={`${SD_PAGE_INNER_MAX_CLASS} max-w-5xl lg:max-w-6xl`}>

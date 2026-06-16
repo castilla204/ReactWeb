@@ -355,7 +355,7 @@ export function PreHireChatPage() {
             <div className="bg-gray-50 flex-shrink-0 shadow-sm border-b border-gray-200">
                 <div className="max-w-4xl mx-auto">
                     {/* Header superior con botón atrás y menú */}
-                    <div className="flex items-center justify-between px-4 py-1.5">
+                    <div className="flex items-center gap-1 px-2 py-2 md:px-4 md:py-1.5">
                         <Button
                             variant="ghost"
                             size="icon"
@@ -365,7 +365,38 @@ export function PreHireChatPage() {
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        
+
+                        {/* Identidad del experto — Móvil (estilo app de mensajería) */}
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5 md:hidden">
+                            <button
+                                type="button"
+                                onClick={() => setShowAvatarModal(true)}
+                                className="relative shrink-0 rounded-full transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                                aria-label={`Ampliar foto de ${expertName}`}
+                            >
+                                <Avatar className="h-9 w-9">
+                                    <AvatarImage src={expertAvatar} alt={expertName} />
+                                    <AvatarFallback className="bg-gray-900 text-xs text-white">
+                                        {expertName.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                {isChatConnected && (
+                                    <span
+                                        className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-gray-50 bg-green-500"
+                                        aria-label="Chat en directo activo"
+                                    />
+                                )}
+                            </button>
+                            <Link to={`/service/${serviceIdNumber}`} className="min-w-0 flex-1 leading-tight">
+                                <span className="block truncate text-[15px] font-semibold text-[#1c1c1c]">
+                                    {expertName}
+                                </span>
+                                <span className={`block truncate text-[12px] ${isChatConnected ? 'text-green-600' : 'text-[#717171]'}`}>
+                                    {isChatConnected ? 'En directo' : locationLabel}
+                                </span>
+                            </Link>
+                        </div>
+
                         {/* Información del experto en desktop */}
                         <div className="hidden md:flex items-center gap-3 flex-1 ml-4">
                             <button
@@ -596,14 +627,14 @@ export function PreHireChatPage() {
             )}
 
             {service && !loading && (
-                <div className="shrink-0 border-t border-gray-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] md:hidden">
+                <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:hidden">
                     <Button
                         type="button"
                         onClick={handleHireClick}
-                        className="h-12 w-full rounded-full bg-brand text-base font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] hover:bg-brand-hover"
+                        className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-brand text-sm font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)] transition-colors hover:bg-brand-hover active:scale-[0.99]"
                     >
-                        {PRE_HIRE_CHAT_COPY.hireCta}
-                        {priceLabel ? ` · ${priceLabel}` : ''}
+                        <span>{PRE_HIRE_CHAT_COPY.hireCta}</span>
+                        {priceLabel && <span className="font-normal opacity-90">· {priceLabel}</span>}
                     </Button>
                 </div>
             )}
