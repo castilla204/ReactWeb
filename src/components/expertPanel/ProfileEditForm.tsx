@@ -652,9 +652,9 @@ export function ProfileEditForm({
             <form className="pf-form pf-form--stacked" onSubmit={handleSubmit}>
                 <div className="pf-settings-card pf-settings-card--content">
                     <div className="pf-form-body">
-                        <div className="pf-form-grid">
+                        <div className={`pf-form-grid${embedded ? ' pf-form-grid--embedded' : ''}`}>
                     <section id="pf-section-about" className="pf-section pf-section--about">
-                        <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
+                        <div className={`pf-about-composer${embedded ? ' pf-about-composer--embedded' : ''}${formErrors.description ? ' pf-about-composer--error' : ''}`}>
                             <div className="pf-about-composer__head">
                                 {embedded && profileSetup && !profileSetup.complete && (
                                     <div className="pf-editor-status-mobile">
@@ -665,13 +665,15 @@ export function ProfileEditForm({
                                     </div>
                                 )}
                                 <div className="pf-about-composer__photo">
-                                    <div className="pf-about-composer__label pf-photo-composer__label">
-                                        Foto de perfil
-                                        <span id="photo-hint" className="pf-about-composer__label-hint">
-                                            Tu foto actual.
-                                        </span>
-                                    </div>
-                                    <div className="pf-photo-composer__body" aria-describedby="photo-hint">
+                                    {!embedded && (
+                                        <div className="pf-about-composer__label pf-photo-composer__label">
+                                            Foto de perfil
+                                            <span id="photo-hint" className="pf-about-composer__label-hint">
+                                                Tu foto actual.
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="pf-photo-composer__body" aria-describedby={embedded ? 'photo-hint-embedded' : 'photo-hint'}>
                                         <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
                                             {profileImageUrl ? (
                                                 <img src={profileImageUrl} alt="" />
@@ -682,15 +684,40 @@ export function ProfileEditForm({
                                                 <Upload className="h-4 w-4" />
                                             </span>
                                         </button>
-                                        <div className="pf-about-composer__actions">
-                                            <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
-                                                {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
-                                            </button>
-                                            {(previewUrl || profilePicture) && (
-                                                <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
-                                                    Quitar
-                                                </button>
+                                        <div className="pf-photo-composer__side">
+                                            {embedded && (
+                                                <div className="pf-profile-field-head">
+                                                    <p className="pf-profile-field-title">Foto de perfil</p>
+                                                    <p id="photo-hint-embedded" className="pf-profile-field-hint">
+                                                        La imagen que ven los clientes al buscarte.
+                                                    </p>
+                                                </div>
                                             )}
+                                            <div className="pf-about-composer__actions">
+                                                {embedded ? (
+                                                    <>
+                                                        <Button type="button" variant="outline" size="sm" onClick={openFilePicker}>
+                                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                                        </Button>
+                                                        {(previewUrl || profilePicture) && (
+                                                            <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={removeImage}>
+                                                                Quitar
+                                                            </Button>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
+                                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                                        </button>
+                                                        {(previewUrl || profilePicture) && (
+                                                            <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
+                                                                Quitar
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                         <input
                                             ref={fileInputRef}
@@ -705,74 +732,142 @@ export function ProfileEditForm({
                                 </div>
                             </div>
                             <div className="pf-about-composer__copy">
-                                <label htmlFor="description" className="pf-about-composer__label">
-                                    Descripción profesional
-                                    <span id="description-hint" className="pf-about-composer__label-hint">
-                                        Quién eres y en qué te especializas (30–60 car.)
-                                    </span>
-                                </label>
+                                {embedded ? (
+                                    <div className="pf-profile-field-head">
+                                        <label htmlFor="description" className="pf-profile-field-title">
+                                            Descripción profesional
+                                        </label>
+                                        <p id="description-hint" className="pf-profile-field-hint">
+                                            Quién eres y en qué te especializas (30–60 caracteres).
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <label htmlFor="description" className="pf-about-composer__label">
+                                        Descripción profesional
+                                        <span id="description-hint" className="pf-about-composer__label-hint">
+                                            Quién eres y en qué te especializas (30–60 car.)
+                                        </span>
+                                    </label>
+                                )}
                                 <textarea
                                     id="description"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={2}
+                                    rows={embedded ? 3 : 2}
                                     minLength={30}
                                     maxLength={60}
                                     placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
-                                    className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
+                                    className={`pf-textarea pf-textarea--composer${embedded ? ' pf-textarea--field' : ''}${formErrors.description ? ' pf-textarea--error' : ''}`}
                                     required
                                     aria-describedby="description-hint"
                                 />
-                                <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
-                                <div className="pf-ai-rewrite">
-                                    <button
-                                        type="button"
-                                        className="pf-ai-rewrite__btn ai-magic-btn"
-                                        onClick={handleRewriteDescription}
-                                        disabled={aiLoading}
-                                    >
-                                        {aiLoading ? (
-                                            <>
-                                                <Loader2 className="ai-magic-btn__spinner" size={15} />
-                                                Generando…
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
-                                                Reescribir con IA
-                                            </>
-                                        )}
-                                    </button>
-                                    {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
-                                    {aiSuggestion && (
-                                        <div className="pf-ai-rewrite__preview ai-magic-preview">
-                                            <p className="ai-magic-preview__label">
-                                                <Sparkles size={12} aria-hidden />
-                                                Sugerencia de IA
-                                            </p>
-                                            <p className="ai-magic-preview__text">{aiSuggestion}</p>
-                                            <div className="ai-magic-preview__actions">
-                                                <button
-                                                    type="button"
-                                                    className="ai-magic-preview__use"
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, description: aiSuggestion });
-                                                        setAiSuggestion(null);
-                                                    }}
-                                                >
-                                                    Usar este texto
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="ai-magic-preview__discard"
-                                                    onClick={() => setAiSuggestion(null)}
-                                                >
-                                                    Descartar
-                                                </button>
-                                            </div>
+                                {embedded ? (
+                                    <div className="pf-profile-field-footer">
+                                        <div className="pf-ai-rewrite">
+                                            <button
+                                                type="button"
+                                                className="pf-ai-rewrite__btn ai-magic-btn"
+                                                onClick={handleRewriteDescription}
+                                                disabled={aiLoading}
+                                            >
+                                                {aiLoading ? (
+                                                    <>
+                                                        <Loader2 className="ai-magic-btn__spinner" size={15} />
+                                                        Generando…
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
+                                                        Reescribir con IA
+                                                    </>
+                                                )}
+                                            </button>
+                                            {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
+                                            {aiSuggestion && (
+                                                <div className="pf-ai-rewrite__preview ai-magic-preview">
+                                                    <p className="ai-magic-preview__label">
+                                                        <Sparkles size={12} aria-hidden />
+                                                        Sugerencia de IA
+                                                    </p>
+                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
+                                                    <div className="ai-magic-preview__actions">
+                                                        <button
+                                                            type="button"
+                                                            className="ai-magic-preview__use"
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, description: aiSuggestion });
+                                                                setAiSuggestion(null);
+                                                            }}
+                                                        >
+                                                            Usar este texto
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="ai-magic-preview__discard"
+                                                            onClick={() => setAiSuggestion(null)}
+                                                        >
+                                                            Descartar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
+                                        <span className={`pf-profile-counter pf-profile-counter--${descMetaTone}`}>{descLength}/60</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
+                                        <div className="pf-ai-rewrite">
+                                            <button
+                                                type="button"
+                                                className="pf-ai-rewrite__btn ai-magic-btn"
+                                                onClick={handleRewriteDescription}
+                                                disabled={aiLoading}
+                                            >
+                                                {aiLoading ? (
+                                                    <>
+                                                        <Loader2 className="ai-magic-btn__spinner" size={15} />
+                                                        Generando…
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
+                                                        Reescribir con IA
+                                                    </>
+                                                )}
+                                            </button>
+                                            {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
+                                            {aiSuggestion && (
+                                                <div className="pf-ai-rewrite__preview ai-magic-preview">
+                                                    <p className="ai-magic-preview__label">
+                                                        <Sparkles size={12} aria-hidden />
+                                                        Sugerencia de IA
+                                                    </p>
+                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
+                                                    <div className="ai-magic-preview__actions">
+                                                        <button
+                                                            type="button"
+                                                            className="ai-magic-preview__use"
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, description: aiSuggestion });
+                                                                setAiSuggestion(null);
+                                                            }}
+                                                        >
+                                                            Usar este texto
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="ai-magic-preview__discard"
+                                                            onClick={() => setAiSuggestion(null)}
+                                                        >
+                                                            Descartar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                         {formErrors.description && (
@@ -782,19 +877,28 @@ export function ProfileEditForm({
                         )}
                     </section>
 
-                    <section id="pf-section-zone" className="pf-section pf-section--zone">
+                    <section id="pf-section-zone" className={`pf-section pf-section--zone${embedded ? ' pf-section--zone-embedded' : ''}`}>
                         <div className="pf-section-fields">
                             {!MAPBOX_TOKEN ? (
                                 <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
                             ) : (
                                 <div className="pf-map-panel">
                                     <div className="pf-zone-composer">
-                                        <div className="pf-about-composer__label pf-zone-composer__label">
-                                            Zona de trabajo
-                                            <span id="zone-hint" className="pf-about-composer__label-hint">
-                                                Busca tu dirección y ajusta el radio en el mapa.
-                                            </span>
-                                        </div>
+                                        {embedded ? (
+                                            <div className="pf-profile-field-head pf-profile-field-head--zone">
+                                                <p className="pf-profile-field-title">Zona de trabajo</p>
+                                                <p id="zone-hint" className="pf-profile-field-hint">
+                                                    Busca tu dirección y ajusta el radio en el mapa.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="pf-about-composer__label pf-zone-composer__label">
+                                                Zona de trabajo
+                                                <span id="zone-hint" className="pf-about-composer__label-hint">
+                                                    Busca tu dirección y ajusta el radio en el mapa.
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className="pf-map-stage" aria-describedby="zone-hint">
                                         <div className="pf-map-search">
                                             <div className="pf-map-search-bar">
