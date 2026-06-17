@@ -895,7 +895,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             });
             
             return {
-                showPropose: isClient && canPropose && !!search?.searchHire, // ✅ Asegurar que existe searchHire
+                showPropose: false && isClient && canPropose && !!search?.searchHire, // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: false,
                 showAccept: false,
                 showReject: false
@@ -943,7 +943,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             });
             
             return {
-                showPropose: canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled,
+                showPropose: false && (canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled), // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: status === 'appointment_confirmed',
                 showAccept: false,
                 showReject: false
