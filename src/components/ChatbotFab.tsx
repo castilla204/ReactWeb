@@ -52,6 +52,7 @@ export const ChatbotFab: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
   const [expertServicesFooter, setExpertServicesFooter] = useState(false);
+  const [mobileSearchOverlay, setMobileSearchOverlay] = useState(false);
   const [panelKey, setPanelKey] = useState(0);
   const fabRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
@@ -59,7 +60,8 @@ export const ChatbotFab: React.FC = () => {
   const isMobile = width === 0 || width < 768;
   const keyboardLayout = useMobileDrawerKeyboard(isMobile && isOpen);
 
-  const isHidden = HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path));
+  const isHidden =
+    HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path)) || mobileSearchOverlay;
   const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
 
   useEffect(() => {
@@ -67,13 +69,22 @@ export const ChatbotFab: React.FC = () => {
       const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
       setExpertServicesFooter(active);
     };
+    const onMobileSearchOverlay = (event: Event) => {
+      const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
+      setMobileSearchOverlay(active);
+    };
     window.addEventListener('expert-services-mobile-bar', onExpertServicesBar);
-    return () => window.removeEventListener('expert-services-mobile-bar', onExpertServicesBar);
+    window.addEventListener('mobile-search-overlay', onMobileSearchOverlay);
+    return () => {
+      window.removeEventListener('expert-services-mobile-bar', onExpertServicesBar);
+      window.removeEventListener('mobile-search-overlay', onMobileSearchOverlay);
+    };
   }, []);
 
   useEffect(() => {
     setIsOpen(false);
     setExpertServicesFooter(false);
+    setMobileSearchOverlay(false);
   }, [location.pathname]);
 
   useEffect(() => {

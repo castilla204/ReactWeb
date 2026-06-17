@@ -34,7 +34,7 @@ export function buildInspeccionoMapStyle(
 ): maplibregl.StyleSpecification {
   const withLabels = options.withLabels !== false;
 
-  // ⚡ Carga: UN ÚNICO tileset. Antes la búsqueda bajaba voyager_nolabels + voyager_only_labels
+  // ⚡ Carga: UN ÚNICO tileset.
   //    (2 tilesets = el DOBLE de peticiones de tiles, ~2× bytes y una segunda cola de fetch que
   //    compite por el ancho de banda en redes lentas). `voyager` ya trae las etiquetas
   //    integradas → mitad de peticiones y mismo aspecto. Los mapas sin etiquetas (cobertura)
@@ -69,6 +69,34 @@ export function buildInspeccionoMapStyle(
   ];
 
   return { version: 8, sources, layers };
+}
+
+/** Mapa neutro para checkout: sin saturación cálida ni capas de color fuertes. */
+export function buildNeutralCheckoutMapStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      carto: {
+        type: 'raster',
+        tiles: getCartoVoyagerNoLabelsTiles(),
+        tileSize: 256,
+        attribution: '© OpenStreetMap · CARTO',
+      },
+    },
+    layers: [
+      {
+        id: 'sky-bg',
+        type: 'background',
+        paint: { 'background-color': '#f4f4f5' },
+      },
+      {
+        id: 'carto-neutral',
+        type: 'raster',
+        source: 'carto',
+        paint: { 'raster-opacity': 1 },
+      },
+    ],
+  };
 }
 
 /** Pitch moderado según zoom: curvatura de globo lejos, plano al acercar para leer precios. */

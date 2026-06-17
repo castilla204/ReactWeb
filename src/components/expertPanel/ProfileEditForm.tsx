@@ -20,6 +20,7 @@ import {
 } from '../../utils/mapboxGeocoding';
 import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
 import { VALID_DAYS_OF_WEEK, CurrentExpertAvailabilityDto } from '../../types/stripe';
+import AvailabilityRulesEditor from './AvailabilityRulesEditor';
 import {
     Drawer,
     DrawerContent,
@@ -734,6 +735,11 @@ export function ProfileEditForm({
                 )}
             </div>
             {formErrors.availability && <p className="pf-error">{formErrors.availability}</p>}
+            {variant === 'card' && (
+                <div className="pf-rules-editor" style={{ marginTop: 16 }}>
+                    <AvailabilityRulesEditor />
+                </div>
+            )}
         </section>
     );
 

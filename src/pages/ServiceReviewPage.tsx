@@ -698,11 +698,11 @@ export function ServiceReviewPage({
             </div>
 
             {/* ========== DESKTOP — galería full-width + grid contenido / aside ========== */}
-            <div className="service-detail-desktop hidden lg:block min-h-screen bg-white">
+            <div className="service-detail-desktop hidden min-h-screen overflow-x-hidden bg-white lg:block">
                 {/* Header unificado: el mismo topbar de la homepage en desktop
                     (logo→inicio, ayuda, moneda, notificaciones, cuenta) en lugar del
                     header propio de la ficha. Decisión del usuario 2026-06-16. */}
-                <HomepageDesktopTopBar variant="plain" showLogo />
+                <HomepageDesktopTopBar variant="plain" showLogo onBack={onBack} />
 
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-4 lg:pt-5`}>
                     <ServiceDetailDesktopPhotoMapHero
@@ -719,8 +719,8 @@ export function ServiceReviewPage({
                         rangeKm={expertRange ?? 25}
                     />
 
-                    <div className={SD_PAGE_GRID_CLASS}>
-                        <div className={`min-w-0 lg:col-start-1 ${SD_DESKTOP_CONTENT_STACK_CLASS}`}>
+                    <div className={`${SD_PAGE_GRID_CLASS} min-w-0`}>
+                        <div className={`min-w-0 overflow-hidden lg:col-start-1 ${SD_DESKTOP_CONTENT_STACK_CLASS}`}>
                             <header className={SD_DESKTOP_HEADER_STACK_CLASS}>
                                 <ServiceDetailPageHeadline
                                     title={finalServiceTitle}
@@ -744,11 +744,11 @@ export function ServiceReviewPage({
                             </header>
 
                             {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
-                                <section>
+                                <section className="min-w-0 overflow-hidden">
                                     {displayMainDescription ? (
                                         <>
                                             <h2 className="hp-section-title mb-2.5">Acerca del servicio</h2>
-                                            <p className="sd-body whitespace-pre-line">
+                                            <p className="sd-body sd-user-text whitespace-pre-line">
                                                 {displayMainDescription}
                                             </p>
                                         </>

@@ -29,6 +29,7 @@ export interface Service {
     categoryName?: string;
     completedSearches?: number;
     totalReviews?: number; // ✅ NUEVO: Total de reseñas del experto
+    reviewsCount?: number; // Alias poblado por el transform de CheckoutPage/ServiceDetailPage
     averageRating?: number;
     isActive?: boolean;
     selectedDeliverableTypes?: {

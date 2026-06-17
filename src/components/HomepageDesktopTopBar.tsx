@@ -12,6 +12,7 @@ import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import erizoImg from '../media/erizo.png';
 import {
+  HP_FONT,
   SD_PAGE_INNER_MAX_CLASS,
   SD_CHECKOUT_INNER_MAX_CLASS,
   MAP_STEP_TOPBAR_SHELL_CLASS,
@@ -163,7 +164,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
           <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
         </button>
       ) : null}
-      {userIsAdmin && (
+      {userIsAdmin && !isCheckout ? (
         <button
           type="button"
           onClick={() => navigate('/admin')}
@@ -171,7 +172,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         >
           Admin
         </button>
-      )}
+      ) : null}
       {!isCheckout ? <CurrencySelector variant="icon" isMap={isMap} /> : null}
       {/* 🛡️ MUD-DG — Bell global. Antes solo existía dentro del expert-panel
           → cliente normal NO podía ver su inbox de notificaciones. Auditoría
@@ -199,7 +200,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         </button>
       ) : null}
       {/* Cuando hay logo a la izquierda, el botón de cuenta se mueve aquí. */}
-      {showLogo && !onBack ? accountBtn : null}
+      {showLogo ? accountBtn : null}
     </div>
   );
 
@@ -221,16 +222,13 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         className="h-9 w-9 -scale-x-100 shrink-0 object-contain"
         style={{ imageRendering: '-webkit-optimize-contrast' }}
       />
-      {/* Fuente fijada al stack de sistema (el que ya usa la home): en páginas como
-          la ficha de servicio el contenedor fuerza Manrope a sus hijos, que en 800
-          se ve más fino. Pinnamos aquí para que el wordmark se vea igual de grueso
-          en TODAS las páginas. Decisión usuario 2026-06-16. */}
+      {/* Fuente fijada a Manrope (HP_FONT, la fuente de marca): la home heredaba el
+          stack de sistema (SF Pro/Segoe) y se veía MÁS gruesa que la ficha de servicio,
+          que sí usa Manrope. Pinnamos Manrope aquí para que el wordmark se vea igual de
+          fino en TODAS las páginas. Decisión usuario 2026-06-16. */}
       <span
         className="text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
-        style={{
-          fontFamily:
-            '"SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
-        }}
+        style={{ fontFamily: HP_FONT }}
       >
         Inspecciono<span className="text-[#F59E0B]">.</span>
       </span>
@@ -278,6 +276,18 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
       >
         <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
       </button>
+    ) : showLogo ? (
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="sd-icon-btn shrink-0"
+          aria-label="Volver"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={2.1} aria-hidden />
+        </button>
+        {logoLink}
+      </div>
     ) : (
       <button
         type="button"

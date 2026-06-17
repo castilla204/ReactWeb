@@ -9,7 +9,6 @@ import {
   DESKTOP_HERO_SOFT_OVAL,
 } from '../constants/homepageHeroMap';
 import { HeroBannerPhoto } from './HeroBannerPhoto';
-import { HomepageHeroTrustLines } from './HomepageHeroTrustLines';
 
 const ExpertsAreaMap = lazy(() =>
   import('./ExpertsAreaMap').then((m) => ({ default: m.default ?? m.ExpertsAreaMap })),
@@ -171,12 +170,10 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
             >
               Buscar en el mapa
               <ArrowRight
-                className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
+                className="h-4 w-4 shrink-0 text-white transition-transform group-hover:translate-x-0.5"
                 strokeWidth={2.5}
               />
             </button>
-
-            <HomepageHeroTrustLines />
           </div>
         </div>
       </div>

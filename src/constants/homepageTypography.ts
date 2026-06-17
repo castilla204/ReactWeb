@@ -55,16 +55,19 @@ export const hpTitleUnderlineBarStyle = {
   opacity: 0.85,
 };
 
-/** Subrayado checkout móvil — pegado al texto, barra fina */
+/** Subrayado checkout — azul → ámbar de marca (estilos en index.css `.checkout-page-title-underline`) */
+export const HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT =
+  'linear-gradient(to right, #0066CC 0%, #2563EB 38%, #F59E0B 100%)';
+
+/** @deprecated Usar clase CSS `.checkout-page-title-underline` */
 export const hpCheckoutTitleUnderlineStyle = {
   position: 'absolute' as const,
-  bottom: '-3px',
+  bottom: 0,
   left: 0,
-  right: 0,
-  height: '3px',
-  background: HP_TITLE_UNDERLINE_GRADIENT,
+  width: '100%',
+  height: '4px',
+  background: HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT,
   borderRadius: '9999px',
-  boxShadow: '0 2px 8px hsl(var(--brand) / 0.28)',
 };
 
 /** Clase Tailwind para enlaces subrayados de marca */
@@ -155,23 +158,23 @@ export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-5';
 /** Cabecera ficha desktop: título + host */
 export const SD_DESKTOP_HEADER_STACK_CLASS = 'flex flex-col';
 
-/** Fila experto desktop — separador inferior, ritmo compacto */
+/** Fila experto desktop — separadores superior e inferior, ritmo compacto */
 export const SD_DESKTOP_HOST_ROW_CLASS =
-  'mt-4 border-b border-[#ebebeb] pb-5';
+  'mt-4 border-t border-b border-[#dddddd] py-5';
 
 /** Nombre del experto en desktop — 14px / 600, alineado con escala móvil */
 export const SD_DESKTOP_HOST_NAME_CLASS =
   'truncate text-sm font-semibold leading-5 tracking-[-0.01em] text-[#222222]';
 
-/** Bio del experto en desktop — 14px meta, una línea a ancho completo */
+/** Bio del experto en desktop — envuelve texto largo sin desbordar la columna */
 export const SD_DESKTOP_HOST_BIO_CLASS =
-  'mt-0.5 min-w-0 w-full truncate text-sm font-normal leading-5 text-[#6a6a6a]';
+  'sd-user-text mt-0.5 min-w-0 w-full text-sm font-normal leading-5 text-[#6a6a6a]';
 
 /** Columna nombre + bio — reserva aire antes del botón Chat */
-export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 pr-6';
+export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 overflow-hidden pr-6';
 
 /** Layout interno fila host desktop */
-export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-center gap-3';
+export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-start gap-3';
 
 /** Separación extra del botón Chat en desktop */
 export const SD_DESKTOP_HOST_CHAT_CLASS = 'ml-2 shrink-0';
@@ -206,29 +209,48 @@ export const SD_CHECKOUT_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[72rem] px-5 lg:px-8';
 
 export const SD_CHECKOUT_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-12 lg:gap-y-0';
+  'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
 
-/** Título visible checkout desktop */
-export const SD_CHECKOUT_PAGE_TITLE_CLASS =
-  'text-lg font-semibold leading-tight tracking-[-0.02em] text-[#222222]';
+/** Fondo checkout desktop — gris neutro muy suave (Airbnb/Stripe: tarjetas blancas flotan sin tinte azul) */
+export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-[#f7f7f7]';
 
-/** Título checkout móvil — compacto, alineado con topbar de ficha */
-export const SD_CHECKOUT_MOBILE_TITLE_CLASS =
-  'relative inline-block font-display text-xl font-semibold leading-tight tracking-[-0.02em] text-[#222222]';
+/** Tarjeta checkout desktop — elevación neutra sobre fondo gris claro */
+export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
+  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)]';
 
-/** Gutter checkout móvil — 24px (más aire que ficha genérica) */
-export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-6';
+/** Cabecera de sección dentro de tarjeta checkout desktop */
+export const SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS =
+  'border-b border-[#f0f0f0] bg-white px-4 py-2.5';
 
-/** Cabecera checkout móvil — fila back + título con gutter y safe-area */
+/** SearchDetails desktop — layout marketplace (misma paleta que checkout) */
+export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-[#f7f7f7]';
+
+export const SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS = SD_CHECKOUT_DESKTOP_CARD_CLASS;
+
+export const SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS =
+  'mx-auto flex h-full w-full max-w-[90rem] flex-1 flex-col min-h-0';
+
+export const SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS =
+  'flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:items-stretch lg:px-6 lg:pb-5';
+
+export const SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS =
+  'hidden lg:flex lg:w-[320px] lg:shrink-0 xl:w-[360px] lg:flex-col lg:min-h-0';
+
+export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS =
+  'flex min-h-0 min-w-0 flex-1 flex-col';
+
+/** Gutter checkout móvil */
+export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
+
+/** Cabecera checkout móvil — sin barra divisoria */
 export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
-  'border-b border-[#ebebeb] pb-5 pt-[max(1rem,env(safe-area-inset-top,0px))] ' +
-  SD_CHECKOUT_MOBILE_GUTTER_CLASS;
+  'pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))] ' + SD_CHECKOUT_MOBILE_GUTTER_CLASS;
 
 export const SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS =
-  'flex min-h-12 items-center gap-3';
+  'flex min-h-10 items-center gap-2.5 overflow-visible';
 
 export const SD_CHECKOUT_MOBILE_BACK_BTN_CLASS =
-  'sd-icon-btn h-10 w-10 shrink-0';
+  'sd-icon-btn h-9 w-9 shrink-0';
 
 /** Etiqueta de fila checkout móvil */
 export const SD_CHECKOUT_MOBILE_LABEL_CLASS =
@@ -248,19 +270,28 @@ export const SD_CHECKOUT_MOBILE_ROW_CLASS =
 
 /** Contenedor tabla resumen — estilo Airbnb */
 export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} py-4`;
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-3 pt-1`;
 
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
-  'overflow-hidden rounded-xl border border-[#dddddd] bg-white';
+  'overflow-hidden rounded-xl border border-[#ebebeb] bg-white';
+
+export const SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS =
+  'px-4 py-3.5';
+
+export const SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS =
+  'text-base font-semibold leading-snug tracking-[-0.01em] text-[#1c1c1c]';
+
+export const SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS =
+  'mt-0.5 text-xs text-[#6a6a6a]';
 
 export const SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS =
-  'flex items-start justify-between gap-4 border-b border-[#ebebeb] px-4 py-3.5 last:border-b-0';
+  'flex items-start justify-between gap-4 border-t border-[#f5f5f5] px-4 py-3';
 
 export const SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS =
-  'shrink-0 text-sm font-normal text-[#222222]';
+  'w-[30%] shrink-0 text-xs text-[#6a6a6a]';
 
 export const SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS =
-  'min-w-0 max-w-[62%] text-end text-sm font-normal leading-snug text-[#222222]';
+  'min-w-0 flex-1 text-end text-[13px] leading-snug text-[#1c1c1c]';
 
 export const SD_CHECKOUT_MOBILE_TABLE_VALUE_META_CLASS =
   'mt-0.5 block text-xs leading-snug text-[#6a6a6a]';
@@ -280,15 +311,33 @@ export const SD_CHECKOUT_MOBILE_LEGAL_CLASS =
 
 /** Scroll checkout móvil — footer con nota + CTA */
 export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
-  'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]';
+  'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]';
 
-/** Footer checkout móvil — borde fino, sin sombra (patrón Airbnb) */
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#dddddd] bg-white';
+  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#ebebeb] bg-white/95 backdrop-blur-sm';
 
-/** CTA checkout móvil a ancho completo — azul de marca (paridad con la ficha y el hero) */
+export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
+
+export const SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS =
+  'inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#d1d5db] bg-white px-4 text-[13px] font-semibold text-[#4b5563] transition-colors hover:border-[#9ca3af] hover:bg-[#f9fafb] hover:text-[#1c1c1c] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+
+/** Contenedor calendario checkout — contorno neutro */
+export const SD_CHECKOUT_CALENDAR_FRAME_CLASS =
+  'rounded-2xl border border-[#d8dce3] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+
+/** Contenedor mapa checkout — contorno neutro */
+export const SD_CHECKOUT_PICKER_FRAME_CLASS =
+  'overflow-hidden rounded-2xl border border-[#d8dce3] bg-white p-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+
+/** @deprecated Usar SD_CHECKOUT_PICKER_FRAME_CLASS */
+export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
+
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-12 w-full items-center justify-center rounded-full bg-brand text-base font-semibold text-white shadow-[0_4px_18px_hsl(var(--brand)/0.24)] transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75';
+
+/** Separador entre mapa y resumen en checkout móvil paso 2 */
+export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =
+  'mt-6 border-t border-[#ebebeb] bg-[#fafafa] pb-4 pt-5';
 
 /** Gutter horizontal móvil — 20px */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
