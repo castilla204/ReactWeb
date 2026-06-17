@@ -2839,14 +2839,11 @@
   .pf-page .pf-profile-editor__aside {
     border-left: none;
     border-top: 1px solid hsl(var(--ep-border));
+    min-height: 300px;
   }
 
-  .pf-page .pf-profile-editor__map-head {
-    padding: 14px 16px 10px;
-  }
-
-  .pf-page .pf-profile-editor__map-wrap {
-    min-height: 280px;
+  .pf-page .pf-profile-editor__aside > .pf-map-stage--split {
+    min-height: 300px;
   }
 
   .pf-page .pf-profile-editor__photo-block .pf-avatar.pf-avatar--composer {
