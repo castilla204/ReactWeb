@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search, Check } from 'lucide-react';
+import { Loader2, Upload, X, Plane, Search, Check, Sparkles } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -30,29 +30,12 @@ import { Button } from '../ui/button';
 import type { ProfileStep } from './profileSteps';
 
 function ProfileEditorStatusBadge({
-    complete,
     pendingRequired,
     onOpenSetup,
 }: {
-    complete: boolean;
     pendingRequired: number;
     onOpenSetup?: () => void;
 }) {
-    if (complete) {
-        return (
-            <div className="pf-profile-badge pf-profile-badge--ok" role="status">
-                <span className="pf-profile-badge__dot" aria-hidden />
-                <span className="pf-profile-badge__icon" aria-hidden>
-                    <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
-                </span>
-                <span className="pf-profile-badge__text">
-                    <span className="pf-profile-badge__eyebrow">Estado</span>
-                    Verificado y activo
-                </span>
-            </div>
-        );
-    }
-
     return (
         <div className="pf-profile-badge pf-profile-badge--pending" role="status">
             <span className="pf-profile-badge__text">
@@ -67,6 +50,7 @@ function ProfileEditorStatusBadge({
     );
 }
 import '../../styles/expert-profile-form.css';
+import '../../styles/ai-rewrite-magic.css';
 
 const MAPBOX_TOKEN =
     import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN ||
@@ -588,6 +572,7 @@ export function ProfileEditForm({
         || null;
 
     const descLength = formData.description.length;
+    const descMetaTone = descLength < 30 ? 'low' : descLength >= 55 ? 'high' : 'ok';
 
     if (!profile) return null;
 
@@ -595,7 +580,7 @@ export function ProfileEditForm({
         <Button type="button" className="pf-btn-save" onClick={handleSubmit} disabled={isUpdating}>
             {isUpdating ? (
                 <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Guardando…</>
-            ) : 'Guardar'}
+            ) : 'Guardar cambios'}
         </Button>
     );
 
@@ -603,7 +588,7 @@ export function ProfileEditForm({
         <Button type="button" className="pf-btn-save pf-btn-save--bar" onClick={handleSubmit} disabled={isUpdating}>
             {isUpdating ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Guardando…</>
-            ) : 'Guardar'}
+            ) : 'Guardar cambios'}
         </Button>
     );
 
@@ -626,18 +611,41 @@ export function ProfileEditForm({
         <div className="pf-editor-stack">
             {embedded && (
                 <div className="pf-settings-card pf-settings-card--meta">
-                    <header className="pf-card-header pf-card-header--actions pf-card-header--toolbar pf-editor-save-desktop">
-                        {profileSetup ? (
-                            <div className="pf-editor-bar-start">
-                                <ProfileEditorStatusBadge
-                                    complete={profileSetup.complete}
-                                    pendingRequired={profileSetup.pendingRequired}
-                                    onOpenSetup={profileSetup.onOpenSetup}
-                                />
-                            </div>
-                        ) : null}
+                    <header className="pf-card-header pf-card-header--toolbar pf-editor-save-desktop">
+                        <div className="pf-editor-bar-start">
+                            {profileSetup ? (
+                                profileSetup.complete ? (
+                                    <span className="expert-status-pill expert-status-pill--visible" role="status">
+                                        <Check className="h-3.5 w-3.5" aria-hidden />
+                                        Perfil activo
+                                    </span>
+                                ) : (
+                                    <span className="expert-status-pill expert-status-pill--hidden" role="status">
+                                        Faltan {profileSetup.pendingRequired} requisito{profileSetup.pendingRequired === 1 ? '' : 's'}
+                                    </span>
+                                )
+                            ) : null}
+                        </div>
                         <div className="pf-editor-bar-end">{saveButton}</div>
                     </header>
+                    {profileSetup && !profileSetup.complete ? (
+                        <div className="pf-profile-pending-banner">
+                            <p className="pf-profile-pending-banner__text">
+                                Tus servicios no aparecen en búsquedas hasta completar los requisitos obligatorios.
+                            </p>
+                            {profileSetup.onOpenSetup ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="pf-profile-pending-banner__cta"
+                                    onClick={profileSetup.onOpenSetup}
+                                >
+                                    Ir a configuración
+                                </Button>
+                            ) : null}
+                        </div>
+                    ) : null}
                 </div>
             )}
 
@@ -648,10 +656,9 @@ export function ProfileEditForm({
                     <section id="pf-section-about" className="pf-section pf-section--about">
                         <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
                             <div className="pf-about-composer__head">
-                                {embedded && profileSetup && (
+                                {embedded && profileSetup && !profileSetup.complete && (
                                     <div className="pf-editor-status-mobile">
                                         <ProfileEditorStatusBadge
-                                            complete={profileSetup.complete}
                                             pendingRequired={profileSetup.pendingRequired}
                                             onOpenSetup={profileSetup.onOpenSetup}
                                         />
@@ -708,7 +715,7 @@ export function ProfileEditForm({
                                     id="description"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={5}
+                                    rows={2}
                                     minLength={30}
                                     maxLength={60}
                                     placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
@@ -716,31 +723,38 @@ export function ProfileEditForm({
                                     required
                                     aria-describedby="description-hint"
                                 />
-                                <span className="pf-about-composer__meta">{descLength}/60</span>
+                                <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
                                 <div className="pf-ai-rewrite">
                                     <button
                                         type="button"
-                                        className="pf-ai-rewrite__btn"
+                                        className="pf-ai-rewrite__btn ai-magic-btn"
                                         onClick={handleRewriteDescription}
                                         disabled={aiLoading}
                                     >
                                         {aiLoading ? (
                                             <>
-                                                <Loader2 className="pf-ai-rewrite__spinner" size={14} />
+                                                <Loader2 className="ai-magic-btn__spinner" size={15} />
                                                 Generando…
                                             </>
                                         ) : (
-                                            'Reescribir con IA'
+                                            <>
+                                                <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
+                                                Reescribir con IA
+                                            </>
                                         )}
                                     </button>
                                     {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
                                     {aiSuggestion && (
-                                        <div className="pf-ai-rewrite__preview">
-                                            <p className="pf-ai-rewrite__text">{aiSuggestion}</p>
-                                            <div className="pf-ai-rewrite__actions">
+                                        <div className="pf-ai-rewrite__preview ai-magic-preview">
+                                            <p className="ai-magic-preview__label">
+                                                <Sparkles size={12} aria-hidden />
+                                                Sugerencia de IA
+                                            </p>
+                                            <p className="ai-magic-preview__text">{aiSuggestion}</p>
+                                            <div className="ai-magic-preview__actions">
                                                 <button
                                                     type="button"
-                                                    className="pf-ai-rewrite__use"
+                                                    className="ai-magic-preview__use"
                                                     onClick={() => {
                                                         setFormData({ ...formData, description: aiSuggestion });
                                                         setAiSuggestion(null);
@@ -750,7 +764,7 @@ export function ProfileEditForm({
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    className="pf-ai-rewrite__discard"
+                                                    className="ai-magic-preview__discard"
                                                     onClick={() => setAiSuggestion(null)}
                                                 >
                                                     Descartar

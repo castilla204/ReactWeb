@@ -135,7 +135,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
               </h1>
             </div>
             <p
-              className="mt-2 text-[14px] md:text-[15px]"
+              className="mt-3.5 text-[14px] md:text-[15px]"
               style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}
             >
               {subtitle}
