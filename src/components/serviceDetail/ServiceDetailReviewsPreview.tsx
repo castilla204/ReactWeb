@@ -27,7 +27,7 @@ interface ServiceDetailReviewsPreviewProps {
 const MIN_REVIEWS_FOR_HISTOGRAM = 3;
 const MOBILE_PREVIEW_COUNT = 2;
 const DESKTOP_PREVIEW_COUNT = 4;
-const DESKTOP_FULL_PREVIEW_COUNT = 2;
+const DESKTOP_FULL_PREVIEW_COUNT = 3;
 
 function MobileReviewsPreview({
   reviews,
@@ -177,12 +177,12 @@ function DesktopReviewsPreview({
     >
       {isFullWidth ? (
         <>
-          <div className="mb-6 flex items-start justify-between gap-3 lg:mb-8">
+          <div className="mb-5 flex items-start justify-between gap-3 lg:mb-6">
             <div>
               <h2 id={headingId} className="hp-section-title">
                 Reseñas
               </h2>
-              <p className="mt-1 text-[13px] text-[#6a6a6a]">{opinionsLabel}</p>
+              <p className="mt-1.5 text-sm text-[#6a6a6a]">{opinionsLabel}</p>
             </div>
             {showFeaturedBadge ? (
               <span className="inline-flex shrink-0 rounded-full border border-[#e8e8e8] bg-[#fafafa] px-2.5 py-1 text-[11px] font-medium text-[#1c1c1c]">
@@ -191,7 +191,7 @@ function DesktopReviewsPreview({
             ) : null}
           </div>
 
-          <div className="sd-reviews-preview-full-row grid grid-cols-1 items-start gap-6 border-b border-[#ebebeb] pb-8 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-x-12 xl:gap-x-14">
+          <div className="sd-reviews-preview-full-row grid grid-cols-1 items-start gap-5 border-b border-[#ebebeb] pb-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-x-10 xl:gap-x-12">
             <div className="min-w-0">
               <div className="flex items-center gap-4 lg:gap-5">
                 <div className="shrink-0">
@@ -214,9 +214,9 @@ function DesktopReviewsPreview({
               </div>
             </div>
 
-            <div className="min-w-0 lg:border-l lg:border-[#ebebeb] lg:pl-10 xl:pl-12">
+            <div className="min-w-0 lg:border-l lg:border-[#ebebeb] lg:pl-8 xl:pl-10">
               {previewReviews.length > 0 ? (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:gap-8">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                   {previewReviews.map((review, idx) => {
                     const key = review.id ?? `${review.createdAt}-${idx}`;
                     return (
@@ -235,7 +235,7 @@ function DesktopReviewsPreview({
               <button
                 type="button"
                 onClick={onShowAll}
-                className="sd-btn-secondary mt-6 min-w-[12rem] justify-center px-5"
+                className="sd-btn-secondary mt-5 min-w-[12rem] justify-center px-5"
               >
                 {ctaLabel}
               </button>

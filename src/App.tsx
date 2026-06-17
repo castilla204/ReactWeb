@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe, Heart, User } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import DevAvailabilityTabPreview from './pages/DevAvailabilityTabPreview'; // TEMP DEV-ONLY: borrar tras verificar
 import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
 // import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
@@ -514,6 +515,7 @@ const AppContent: React.FC = () => {
                     <Background />
                     <section className="w-full flex flex-col relative z-10" style={{ minHeight: 0, height: 'auto' }}>
                         <Routes>
+                            <Route path="/dev/availability-tab" element={<RouteSuspense><DevAvailabilityTabPreview /></RouteSuspense>} />
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
                             <Route path="/privacy-policy.html" element={<RouteSuspense><PrivacyPolicy /></RouteSuspense>} />

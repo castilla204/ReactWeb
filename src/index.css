@@ -1,4 +1,6 @@
-@import "react-day-picker/dist/style.css";
+/* react-day-picker se estiliza por completo vía classNames en ui/calendar.tsx (setup shadcn).
+   Importar su hoja por defecto fijaba el ancho de mes/día con variables --rdp-* y rompía el
+   layout fluido del calendario (quedaba estrecho/centrado). Ver SlotPicker / ui/calendar.tsx. */
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
@@ -485,7 +487,7 @@
     }
 
     .service-detail-desktop {
-        @apply text-[#1c1c1c] bg-white;
+        @apply text-[#1c1c1c] bg-[#f7f7f7];
     }
 
     .sd-page-title {
@@ -512,17 +514,17 @@
     }
 
     .service-detail-desktop .sd-page-title {
-        @apply lg:text-[1.5rem] lg:leading-[1.28] text-[#222222];
+        @apply lg:text-[1.625rem] lg:leading-[1.25] text-[#222222];
     }
 
     .service-detail-desktop .sd-body {
-        @apply w-full max-w-none text-[0.9375rem] leading-[1.65] text-[#484848];
+        @apply w-full max-w-none text-[0.9375rem] leading-[1.6] text-[#484848];
         overflow-wrap: anywhere;
         word-break: break-word;
     }
 
     .service-detail-desktop .hp-section-title {
-        @apply text-[1.125rem] leading-[1.35] font-semibold text-[#222222];
+        @apply text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#222222];
     }
 
     .service-detail-desktop .sd-rating-numeral {
@@ -530,7 +532,7 @@
     }
 
     .service-detail-desktop .sd-deliverable-list {
-        @apply max-w-lg rounded-xl border border-[#ebebeb] bg-[#fafafa];
+        @apply max-w-none rounded-none border-0 border-y border-[#ebebeb] bg-transparent;
     }
 
     /* Precio del aside / numeral de rating — único paso grande fuera de headline */
@@ -779,7 +781,28 @@
     }
 
     .sd-deliverable-chip-icon {
-        @apply h-2.5 w-2.5 shrink-0 opacity-80;
+        @apply h-2.5 w-2.5 shrink-0 opacity-85;
+    }
+
+    .sd-deliverable-type-badge {
+        @apply inline-flex shrink-0 items-center justify-center font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.08em] text-[#525252];
+    }
+
+    .sd-deliverable-type-badge--overlay {
+        @apply rounded px-1 py-0.5 text-[8px] tracking-[0.1em] text-white/95;
+        background: rgb(255 255 255 / 0.14);
+    }
+
+    .sd-deliverable-type-badge--chip {
+        @apply h-5 min-w-[1.625rem] rounded border border-[#e3e3e3] bg-[#f7f7f7] px-1 text-[9px];
+    }
+
+    .sd-deliverable-type-badge--list {
+        @apply h-8 min-w-[2.375rem] rounded-md border border-[#e8e8e8] bg-[#fafafa] px-1.5 text-[10px] tracking-[0.06em];
+    }
+
+    .sd-deliverable-include-marker {
+        @apply mt-[0.55rem] h-px w-3 shrink-0 bg-[#c4c4c4];
     }
 
     @keyframes sd-deliverable-rise-from-sheet {
@@ -798,11 +821,11 @@
     }
 
     .sd-deliverable-chip-surface {
-        @apply inline-flex items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-[#fafafa] px-2.5 py-1.5 text-xs font-medium leading-4 text-[#1c1c1c] transition-colors hover:border-brand/25 hover:bg-brand/[0.03] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+        @apply inline-flex items-center gap-1.5 rounded-md border border-[#e8e8e8] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#1c1c1c] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c];
     }
 
     .sd-deliverable-chip-surface-icon {
-        @apply h-3.5 w-3.5 shrink-0 text-brand;
+        @apply hidden;
     }
 
     @media (min-width: 1024px) {
@@ -956,27 +979,43 @@
 
     .checkout-page .sd-aside-card,
     .service-detail-desktop .sd-aside-card {
-        @apply gap-0 p-5;
+        @apply gap-0 overflow-hidden rounded-2xl border-[#ebebeb] shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)];
+    }
+
+    .checkout-page .sd-aside-card {
+        @apply p-6;
+    }
+
+    .service-detail-desktop .sd-service-booking-aside {
+        @apply gap-0 p-0;
+    }
+
+    .service-detail-desktop .sd-service-booking-aside__cta {
+        @apply mt-1;
+    }
+
+    .service-detail-desktop .sd-service-booking-aside .sd-aside-price {
+        @apply text-[1.75rem] leading-none;
     }
 
     .checkout-page .sd-aside-price,
     .service-detail-desktop .sd-aside-price {
-        @apply text-[1.5rem];
+        @apply text-[1.75rem];
     }
 
     .checkout-page .sd-aside-summary-title,
     .service-detail-desktop .sd-aside-summary-title {
-        @apply text-sm font-semibold leading-snug text-[#222222];
+        @apply text-base font-semibold leading-snug text-[#222222];
     }
 
     .checkout-page .sd-aside-summary-meta,
     .service-detail-desktop .sd-aside-summary-meta {
-        @apply text-xs text-[#6a6a6a];
+        @apply text-sm text-[#6a6a6a];
     }
 
     .checkout-page .sd-aside-cta,
     .service-detail-desktop .sd-aside-cta {
-        @apply h-10 text-sm;
+        @apply h-11 rounded-full text-[15px] shadow-none hover:shadow-none;
     }
 
     .sd-aside-price {
@@ -987,8 +1026,16 @@
         @apply inline-flex h-10 w-full items-center justify-center rounded-full bg-brand text-sm font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.99] disabled:cursor-wait disabled:opacity-60;
     }
 
+    .service-detail-desktop .sd-deliverable-list-item-btn {
+        @apply py-3;
+    }
+
+    .service-detail-desktop .sd-deliverable-list-icon {
+        @apply hidden;
+    }
+
     .service-detail-desktop .sd-deliverable-chip-surface {
-        @apply px-2.5 py-1.5 text-xs leading-snug;
+        @apply px-2.5 py-1.5 text-[13px] leading-snug;
     }
 
     .service-detail-desktop .sd-btn-secondary {
@@ -1020,7 +1067,7 @@
     }
 
     .sd-deliverable-list-icon {
-        @apply h-4 w-4 shrink-0 text-[#6a6a6a];
+        @apply hidden;
     }
 
     .sd-deliverable-list-label {

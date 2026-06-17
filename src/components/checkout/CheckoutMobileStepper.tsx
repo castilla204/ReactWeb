@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const STEPS = [
@@ -11,13 +12,19 @@ export type CheckoutMobileWizardStep = (typeof STEPS)[number]['id'];
 
 interface CheckoutMobileStepperProps {
   currentStep: CheckoutMobileWizardStep;
+  className?: string;
 }
 
 /** Indicador de paso — tres pasos: fecha, ubicación, pago. */
-export function CheckoutMobileStepper({ currentStep }: CheckoutMobileStepperProps) {
+export function CheckoutMobileStepper({ currentStep, className }: CheckoutMobileStepperProps) {
   return (
-    <nav className="mb-1" aria-label="Pasos de la reserva">
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#f4f4f5] p-1">
+    <nav className={cn('mb-1.5', className)} aria-label="Pasos de la reserva">
+      <div
+        className={cn(
+          'grid grid-cols-3 gap-1 rounded-full border border-[#e5e7eb]/80 bg-[#f0f1f3] p-1.5',
+          'shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]',
+        )}
+      >
         {STEPS.map((step) => {
           const active = currentStep === step.id;
           const done = currentStep > step.id;
@@ -25,14 +32,19 @@ export function CheckoutMobileStepper({ currentStep }: CheckoutMobileStepperProp
             <div
               key={step.id}
               className={cn(
-                'rounded-lg py-2 text-center text-[11px] font-medium transition-all duration-200 sm:text-[12px]',
-                active && 'bg-white text-[#1c1c1c] shadow-sm',
-                done && !active && 'text-[#6b7280]',
+                'flex min-h-[2.375rem] items-center justify-center gap-1 rounded-full px-1.5',
+                'text-center text-[11px] font-semibold tracking-[-0.01em] transition-all duration-300 ease-out sm:text-[12px]',
+                active &&
+                  'bg-white text-[#1c1c1c] shadow-[0_1px_4px_rgba(15,23,42,0.08),0_0_0_1px_rgba(15,23,42,0.04)]',
+                done && !active && 'text-brand',
                 !active && !done && 'text-[#9ca3af]',
               )}
               aria-current={active ? 'step' : undefined}
             >
-              {step.label}
+              {done && !active ? (
+                <Check className="h-3 w-3 shrink-0 stroke-[2.5]" aria-hidden />
+              ) : null}
+              <span className="leading-tight">{step.label}</span>
             </div>
           );
         })}

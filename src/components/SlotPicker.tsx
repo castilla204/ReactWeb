@@ -174,7 +174,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                     type="button"
                     {...props}
                     className={cn(
-                        'flex aspect-square w-full items-center justify-center rounded-lg text-sm font-semibold transition-all',
+                        'flex h-full w-full items-center justify-center rounded-lg text-sm font-semibold transition-all',
                         selected && 'bg-brand text-white shadow-sm ring-2 ring-brand/30',
                         !selected && tint,
                         !selected && tint && 'hover:brightness-[0.96] active:scale-[0.97]',
@@ -209,7 +209,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
 
             <div className="grid max-md:overflow-hidden md:grid-cols-2 md:items-stretch lg:min-h-0">
             {/* Calendario */}
-            <div className="flex flex-col max-md:border-b max-md:border-[#f0f0f0] max-md:p-4 md:border-r md:border-[#f0f0f0] md:p-3 md:py-3">
+            <div className="flex flex-col max-md:border-b max-md:border-[#f0f0f0] max-md:px-4 max-md:py-3.5 md:border-r md:border-[#f0f0f0] md:p-3 md:py-3">
                 <Calendar
                     mode="single"
                     locale={es}
@@ -221,11 +221,11 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                     components={{ DayButton: AvailabilityDayButton }}
                     classNames={{
                         button_previous:
-                            'rounded-lg text-[#6a6a6a] hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
+                            'inline-flex size-9 items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
                         button_next:
-                            'rounded-lg text-[#6a6a6a] hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
+                            'inline-flex size-9 items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
                     }}
-                    className="mx-auto w-full max-w-[300px] p-0 lg:max-w-[280px]"
+                    className="w-full p-0"
                 />
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-2.5 text-[10px] text-[#6a6a6a]">
                     <span className="inline-flex items-center gap-1.5">
@@ -276,7 +276,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                                         aria-selected={active}
                                         onClick={() => onSelect(active ? null : s)}
                                         className={cn(
-                                            'inline-flex h-9 min-w-[4.5rem] items-center justify-center rounded-lg border px-3 text-[13px] font-medium tabular-nums transition-colors',
+                                            'inline-flex h-9 min-w-[3.75rem] items-center justify-center rounded-lg border px-2.5 text-[13px] font-medium tabular-nums transition-colors sm:min-w-[4.25rem] sm:px-3',
                                             active
                                                 ? 'border-brand bg-brand text-white shadow-sm'
                                                 : 'border-[#e5e7eb] bg-white text-[#1c1c1c] hover:border-brand/45 hover:bg-brand/[0.04] active:scale-[0.98]',

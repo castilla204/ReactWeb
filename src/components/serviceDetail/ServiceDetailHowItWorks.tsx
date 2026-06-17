@@ -25,10 +25,10 @@ interface ServiceDetailHowItWorksProps {
 
 export const ServiceDetailHowItWorks: React.FC<ServiceDetailHowItWorksProps> = ({ className = '' }) => (
   <section
-    className={`mt-6 pt-6 lg:mt-8 lg:pt-8 ${className}`}
+    className={`${className}`.trim()}
     aria-labelledby="sd-how-heading"
   >
-    <h2 id="sd-how-heading" className="hp-section-title mb-4">
+    <h2 id="sd-how-heading" className="hp-section-title mb-5">
       ¿Cómo funciona?
     </h2>
 
@@ -36,29 +36,29 @@ export const ServiceDetailHowItWorks: React.FC<ServiceDetailHowItWorksProps> = (
       {FLOW_STEPS.map((step, i) => {
         const isLast = i === FLOW_STEPS.length - 1;
         return (
-          <li key={step.title} className="relative flex gap-3 pb-5 last:pb-0">
+          <li key={step.title} className="relative flex gap-4 pb-6 last:pb-0">
             {!isLast && (
               <span
-                className="absolute left-[15px] top-9 bottom-0 w-px bg-[#e8e8e8]"
+                className="absolute left-[17px] top-10 bottom-0 w-px bg-[#e8e8e8]"
                 aria-hidden
               />
             )}
             <div
-              className="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-[#6a6a6a]"
+              className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-[#6a6a6a]"
               aria-hidden
             >
-              <step.Icon className="h-3.5 w-3.5" strokeWidth={2} />
+              <step.Icon className="h-4 w-4" strokeWidth={2} />
             </div>
             <div className="min-w-0 pt-0.5">
-              <h3 className="text-[15px] font-semibold leading-tight text-[#1c1c1c]">{step.title}</h3>
-              <p className="mt-1 text-sm leading-snug text-[#6a6a6a]">{step.body}</p>
+              <h3 className="text-base font-semibold leading-tight text-[#1c1c1c]">{step.title}</h3>
+              <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-[#6a6a6a]">{step.body}</p>
             </div>
           </li>
         );
       })}
     </ol>
 
-    <p className="mt-4 text-xs leading-relaxed text-[#9ca3af]">
+    <p className="mt-5 text-sm leading-relaxed text-[#9ca3af]">
       Si cancelas antes de que empiece la revisión, reembolso completo.
     </p>
   </section>

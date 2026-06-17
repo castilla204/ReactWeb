@@ -354,6 +354,16 @@ export function HiresTab({
                                     >
                                         {unread > 0 ? 'Ver mensajes' : 'Ver detalle'}
                                     </button>
+                                    {isActiveHire(hire) && (
+                                        <button
+                                            type="button"
+                                            className="expert-hire-action"
+                                            style={{ background: 'hsl(var(--brand))', color: '#fff', borderColor: 'transparent', marginTop: 6 }}
+                                            onClick={() => window.open('/plantillas/inspeccion-coche.pdf', '_blank', 'noopener')}
+                                        >
+                                            Abrir PDF de inspección
+                                        </button>
+                                    )}
                                 </div>
                             </li>
                         );
@@ -361,7 +371,6 @@ export function HiresTab({
                 </ul>
                 </>
             )}
-
             {pagination && onPageChange && onPageSizeChange && filteredHires.length > 0 && (
                 <div className="expert-hires-pagination">
                     <Pagination

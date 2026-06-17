@@ -135,9 +135,9 @@ export const hpType = {
   },
 } as const;
 
-/** Mismos márgenes que HomepageWall — desktop contenido más ancho, gutters ajustados */
+/** Mismos márgenes que HomepageWall — desktop contenido más ancho en XL */
 export const SD_PAGE_INNER_MAX_CLASS =
-  'mx-auto w-full max-w-[1280px] px-4 md:px-5 lg:px-6';
+  'mx-auto w-full max-w-[1280px] px-4 md:px-5 lg:px-6 xl:max-w-[1360px]';
 
 /** Cifras de cobertura en hero (alineado con FAQ / HomePresentation) */
 export const HP_HERO_COVERAGE = {
@@ -147,31 +147,46 @@ export const HP_HERO_COVERAGE = {
 
 /** Contenido + aside (título dentro de la columna izquierda, alineado con aside) */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-10 lg:gap-y-0';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-5 lg:gap-y-0';
 
 /** Ritmo vertical secciones desktop */
 export const SD_DESKTOP_SECTION_PY_CLASS = 'py-0';
 
-/** Bloque principal bajo el hero */
-export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-5';
+/** Bloque principal bajo el hero — ritmo entre tarjetas de la columna izquierda */
+export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-4';
+
+/** Tarjeta blanca columna izquierda — paridad visual con aside */
+export const SD_DESKTOP_MAIN_CARD_CLASS =
+  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white p-6 shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] lg:p-7';
+
+/** Panel desktop ficha servicio — más sobrio que la tarjeta genérica */
+export const SD_DESKTOP_PANEL_CLASS =
+  'overflow-hidden rounded-xl border border-[#e8e8e8] bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_16px_rgba(15,23,42,0.04)] lg:p-7';
+
+/** Título de página bajo el hero */
+export const SD_DESKTOP_PAGE_TITLE_BLOCK_CLASS = 'mb-0';
 
 /** Cabecera ficha desktop: título + host */
 export const SD_DESKTOP_HEADER_STACK_CLASS = 'flex flex-col';
 
-/** Fila experto desktop — separadores superior e inferior, ritmo compacto */
+/** Fila experto dentro de tarjeta — solo separador inferior */
 export const SD_DESKTOP_HOST_ROW_CLASS =
-  'mt-4 border-t border-b border-[#dddddd] py-5';
+  'border-b border-[#ebebeb] pb-5';
 
-/** Nombre del experto en desktop — 14px / 600, alineado con escala móvil */
+/** Nombre del experto en desktop — 15px */
 export const SD_DESKTOP_HOST_NAME_CLASS =
-  'truncate text-sm font-semibold leading-5 tracking-[-0.01em] text-[#222222]';
+  'truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-[#222222]';
 
-/** Bio del experto en desktop — envuelve texto largo sin desbordar la columna */
+/** Bio del experto en desktop — 14px */
 export const SD_DESKTOP_HOST_BIO_CLASS =
-  'sd-user-text mt-0.5 min-w-0 w-full text-sm font-normal leading-5 text-[#6a6a6a]';
+  'sd-user-text mt-0.5 min-w-0 w-full text-sm font-normal leading-[1.5] text-[#6a6a6a]';
 
-/** Columna nombre + bio — reserva aire antes del botón Chat */
-export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 overflow-hidden pr-6';
+/** Meta del experto en desktop — 13px */
+export const SD_DESKTOP_HOST_META_CLASS =
+  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-normal leading-5 text-[#6a6a6a]';
+
+/** Columna nombre + bio */
+export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 overflow-hidden pr-5';
 
 /** Layout interno fila host desktop */
 export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-start gap-3';
@@ -179,12 +194,13 @@ export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-start gap-3';
 /** Separación extra del botón Chat en desktop */
 export const SD_DESKTOP_HOST_CHAT_CLASS = 'ml-2 shrink-0';
 
-/** Reseñas desktop — aire respecto al bloque superior; el separador lo pone el componente */
-export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS = 'mt-10 w-full lg:mt-12';
+/** Reseñas desktop — pegadas al grid principal */
+export const SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS =
+  'mt-6 w-full lg:mt-7';
 
-/** Hero desktop 50/50 fotos + mapa — compacto, no dominar el viewport */
-export const SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS = 'h-[min(340px,32vh)]';
-export const SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX = 280;
+/** Hero desktop 50/50 fotos + mapa */
+export const SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS = 'h-[min(300px,28vh)]';
+export const SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX = 260;
 
 /** Aside reserva desktop */
 export const SD_ASIDE_KICKER_CLASS =

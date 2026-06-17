@@ -24,6 +24,8 @@ import { parsePositiveIntegerParam } from '../utils/routeParams';
 import AppointmentMap from '../components/AppointmentMap';
 import { LoginModal } from '../components/LoginModal';
 import { PRE_HIRE_CHAT_COPY } from '../constants/chatCopy.es';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
@@ -33,6 +35,9 @@ export function PreHireChatPage() {
     const navigate = useNavigate();
     const { isAuthenticated, user } = useAuth();
     const { fetchApi } = useApi();
+    const isMobile = useIsMobile();
+    const userRole = (user?.Role || user?.role) as string | undefined;
+    const isExpert = userRole === 'Expert';
     
     const serviceIdNumber = parsePositiveIntegerParam(serviceId) ?? 0;
     const token = authService.getAccessToken() || '';
@@ -45,8 +50,22 @@ export function PreHireChatPage() {
     const [showAvatarModal, setShowAvatarModal] = useState(false);
     const [showMapPreview, setShowMapPreview] = useState(false);
     
-    // ✅ Bloquear scroll del body y usar altura dinámica del viewport en móviles
+    // Desktop (clientes): abrir en la bandeja de mensajes, no en página suelta.
     useEffect(() => {
+        if (isMobile || isExpert || serviceIdNumber <= 0) return;
+        navigate(
+            buildClientPreHireChatPath(serviceIdNumber, {
+                conversationId: conversationId && conversationId > 0 ? conversationId : undefined,
+                mobile: false,
+            }),
+            { replace: true },
+        );
+    }, [isMobile, isExpert, serviceIdNumber, conversationId, navigate]);
+
+    // Bloquear scroll del body solo en móvil (pantalla completa tipo app).
+    useEffect(() => {
+        if (!isMobile) return;
+
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
         const originalWidth = document.body.style.width;
@@ -108,7 +127,7 @@ export function PreHireChatPage() {
             html.style.overflow = originalHtmlOverflow || '';
             document.documentElement.style.removeProperty('--vh');
         };
-    }, []);
+    }, [isMobile]);
     
     // Hook para favoritos - DEBE estar antes de cualquier return
     const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
@@ -251,6 +270,10 @@ export function PreHireChatPage() {
     }, [favoriteData?.isFavorite]);
     
     // ✅ El ProtectedRoute ya maneja la autenticación, solo verificamos serviceId
+    if (!isMobile && !isExpert && serviceIdNumber > 0) {
+        return null;
+    }
+
     if (serviceIdNumber === 0) {
         return (
             <div className="min-h-screen flex items-center justify-center">

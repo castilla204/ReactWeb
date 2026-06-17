@@ -1049,6 +1049,71 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     };
 
     // Funciones para manejar acciones de citas
+    // 🧪 PRUEBAS (Admin): salto de la espera de 3h post-cita. Llama al endpoint admin que reusa
+    // el mismo handler idempotente del watchdog (ProcessAppointmentToAwaitingReportAsync) para
+    // pasar la cita confirmada directamente a 'awaiting_report'. Solo visible para admin.
+    const [isSkippingReport, setIsSkippingReport] = useState(false);
+
+    const handleAdminSkipReport = async () => {
+        if (!appointment?.id) return;
+        setIsSkippingReport(true);
+        try {
+            const response = await fetch(
+                `${API_CONFIG.baseUrl}/api/appointment/admin/${appointment.id}/skip-to-awaiting-report`,
+                {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                }
+            );
+            const data: any = await response.json().catch(() => ({}));
+            if (response.ok) {
+                showToast('success', data?.message || data?.Message || 'Cita saltada a "esperando reporte"');
+                invalidateAll();
+            } else {
+                showToast('error', data?.message || data?.Message || 'No se pudo saltar el paso de la cita');
+            }
+        } catch (error) {
+            console.error('[SearchDetails] Error en salto admin de cita:', error);
+            showToast('error', 'Error al saltar el paso de la cita');
+        } finally {
+            setIsSkippingReport(false);
+        }
+    };
+
+    // Botón de pruebas (solo admin) que aparece en la contratación cuando la cita está confirmada.
+    const renderAdminSkipReportButton = () => {
+        if (!isAdmin || appointment?.status !== 'appointment_confirmed') return null;
+        return (
+            <Button
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAdminSkipReport();
+                }}
+                variant="outline"
+                className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+                size="sm"
+                disabled={isSkippingReport}
+                title="Solo admin · pruebas: salta la espera de 3h y pasa la cita a 'esperando reporte'"
+            >
+                {isSkippingReport ? (
+                    <>
+                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Saltando...
+                    </>
+                ) : (
+                    <>
+                        <Clock className="w-4 h-4 mr-2" />
+                        🧪 Admin: saltar a "esperando reporte"
+                    </>
+                )}
+            </Button>
+        );
+    };
+
     const handleAppointmentAction = async (action: string, appointment: Appointment) => {
         console.log('[SearchDetails] handleAppointmentAction called:', { action, appointmentId: appointment.id, appointment });
         try {
@@ -2093,6 +2158,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         )}
                                                     </Button>
                                                 )}
+
+                                                {/* 🧪 BOTÓN DE PRUEBAS (Solo Admin): saltar la espera de 3h → awaiting_report */}
+                                                {renderAdminSkipReportButton()}
                                             </div>
                                             
                                             {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
@@ -2654,7 +2722,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         )}
                                                     </Button>
                                                 )}
-                                                
+
+                                                {/* 🧪 BOTÓN DE PRUEBAS (Solo Admin): saltar la espera de 3h → awaiting_report */}
+                                                {renderAdminSkipReportButton()}
+
                                                 {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
                                                 {appointmentButtons.showPropose && (
                                                     <Button

@@ -87,6 +87,7 @@ function ReviewsDrawerSummary({
         reviewCount={reviewCount}
         distribution={distribution}
         showHistogram={showBars}
+        neutral
       />
     </div>
   );
