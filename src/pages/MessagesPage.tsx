@@ -794,17 +794,16 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                     </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1 leading-tight">
-                    <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                        {conversation.expertName}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                        <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            {conversation.expertName}
+                        </p>
                         <StatusChip label={chip.label} tone={chip.tone} icon="shield" />
-                        {amountLabel && (
-                            <span className="truncate text-[12px] font-medium tabular-nums text-[#9a9a9a]">
-                                {amountLabel}
-                            </span>
-                        )}
                     </div>
+                    <p className="mt-0.5 truncate text-[12px] text-[#737373]">
+                        {conversation.searchTitle || conversation.serviceName || 'Contratación'}
+                        {amountLabel ? ` · ${amountLabel}` : ''}
+                    </p>
                 </div>
                 <button
                     type="button"
@@ -837,6 +836,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                         searchId={null}
                         searchHireId={conversation.searchHireId ?? undefined}
                         isExpert={false}
+                        embedded
                         expertData={{
                             name: conversation.expertName,
                             profilePictureUrl: conversation.expertProfilePictureUrl || undefined,

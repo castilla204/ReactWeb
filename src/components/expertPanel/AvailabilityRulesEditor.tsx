@@ -251,41 +251,39 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
     const anyEnabled = Object.values(week).some((d) => d.enabled);
 
     return (
-        <section className="overflow-hidden rounded-2xl border border-[#e7e9ee] bg-white shadow-[0_1px_2px_hsl(220_22%_14%/0.04)]">
+        <section className="av-schedule">
             {collapsible ? (
                 <button
                     type="button"
                     onClick={() => setOpen((o) => !o)}
                     aria-expanded={open}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#fafbfd]"
+                    className="av-schedule__toggle"
                 >
-                    <span className="min-w-0 flex-1">
-                        <span className="block text-[15px] font-bold leading-tight tracking-[-0.01em] text-[#171a1f]">
-                            Tu horario semanal
-                        </span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-[#5a606b]">
+                    <span className="av-schedule__toggle-text">
+                        <span className="av-schedule__toggle-title">Tu horario semanal</span>
+                        <span className="av-schedule__toggle-desc">
                             Se repite cada semana. Define cuándo tus clientes pueden reservar.
                         </span>
                     </span>
-                    <span className="hidden shrink-0 rounded-full bg-[#f1f3f7] px-2.5 py-1 text-[12px] font-semibold tabular-nums text-[#5a606b] sm:inline">{summary}</span>
-                    <ChevronDown className={cn('h-[18px] w-[18px] shrink-0 text-[#8a8f98] transition-transform', open && 'rotate-180')} />
+                    <span className="av-schedule__toggle-summary">{summary}</span>
+                    <ChevronDown className={cn('av-schedule__toggle-chevron', open && 'av-schedule__toggle-chevron--open')} />
                 </button>
             ) : (
-                <header className="flex items-start gap-3 border-b border-[#eef0f4] bg-[#f7f9fc] px-4 py-3.5">
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/[0.12] text-brand">
+                <header className="av-schedule__header">
+                    <span className="av-schedule__header-icon" aria-hidden>
                         <CalendarClock className="h-[18px] w-[18px]" />
                     </span>
                     <div className="min-w-0">
-                        <h3 className="text-[15px] font-bold leading-tight tracking-[-0.01em] text-[#171a1f]">Tu horario semanal</h3>
-                        <p className="mt-0.5 text-[13px] leading-snug text-[#5a606b]">
-                            Se repite cada semana y define cuándo tus clientes pueden reservar. Configúralo una vez.
+                        <h3 className="av-schedule__header-title">Tu horario semanal</h3>
+                        <p className="av-schedule__header-desc">
+                            Se repite cada semana y define cuándo tus clientes pueden reservar.
                         </p>
                     </div>
                 </header>
             )}
 
             {open && (
-            <div className={collapsible ? 'border-t border-[#eef0f4] p-4' : 'p-4'}>
+            <div className={collapsible ? 'av-schedule__body av-schedule__body--collapsible' : 'av-schedule__body'}>
             {prefilledFromLegacy && (
                 <p className="mb-3 flex items-start gap-2 rounded-lg border border-[hsl(var(--ep-info-border))] bg-[hsl(var(--ep-info-bg))] px-3 py-2 text-[13px] text-[hsl(var(--ep-info))]">
                     <Info className="mt-0.5 h-4 w-4 shrink-0" />
@@ -303,31 +301,27 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                 <>
                     {/* Presets rápidos */}
                     <div className="mb-4 flex flex-wrap items-center gap-2">
-                        <span className="mr-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8a8f98]">Plantilla</span>
-                        <button type="button" onClick={presetEveryDay}
-                            className="rounded-full border border-[#e3e6ec] px-3 py-1 text-[12px] font-medium text-[#44484f] transition-colors hover:border-brand/50 hover:bg-brand/[0.04] hover:text-brand">
+                        <span className="av-schedule__presets-label">Plantilla</span>
+                        <button type="button" onClick={presetEveryDay} className="av-schedule__preset">
                             Todos los días
                         </button>
-                        <button type="button" onClick={presetWeekdays}
-                            className="rounded-full border border-[#e3e6ec] px-3 py-1 text-[12px] font-medium text-[#44484f] transition-colors hover:border-brand/50 hover:bg-brand/[0.04] hover:text-brand">
+                        <button type="button" onClick={presetWeekdays} className="av-schedule__preset">
                             Lunes a viernes
                         </button>
-                        <button type="button" onClick={presetWeekend}
-                            className="rounded-full border border-[#e3e6ec] px-3 py-1 text-[12px] font-medium text-[#44484f] transition-colors hover:border-brand/50 hover:bg-brand/[0.04] hover:text-brand">
+                        <button type="button" onClick={presetWeekend} className="av-schedule__preset">
                             Fines de semana
                         </button>
-                        <button type="button" onClick={presetClear}
-                            className="rounded-full border border-[#e3e6ec] px-3 py-1 text-[12px] font-medium text-[#8a8f98] transition-colors hover:border-[hsl(var(--ep-error-border))] hover:text-[hsl(var(--ep-error))]">
+                        <button type="button" onClick={presetClear} className="av-schedule__preset av-schedule__preset--muted">
                             Limpiar
                         </button>
                     </div>
 
                     {/* Lista limpia: una fila por día separada por hairlines (sin caja por día). */}
-                    <div className="divide-y divide-[#f0f2f6]">
+                    <div className="av-schedule__days">
                         {DAYS.map((d) => {
                             const day = week[d.id];
                             return (
-                                <div key={d.id} className="py-3 first:pt-0 last:pb-0">
+                                <div key={d.id} className={cn('av-schedule__day', day.enabled && 'av-schedule__day--on')}>
                                     <div className="flex items-center justify-between gap-2">
                                         <button
                                             type="button"

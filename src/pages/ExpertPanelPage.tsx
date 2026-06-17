@@ -1462,7 +1462,7 @@ export function ExpertPanelPage() {
                     </div>
                 </header>
 
-                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'hires' ? ' expert-workspace--hires' : ''}`}>
+                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'hires' ? ' expert-workspace--hires' : ''}${activeTab === 'disponibilidad' ? ' expert-workspace--availability' : ''}`}>
                     {activeTab === 'setup' && profile ? (
                         <ProfileSetupWizard
                             profile={profile}
@@ -1481,7 +1481,7 @@ export function ExpertPanelPage() {
                             {stripeStatus?.stripeStatus
                                 && stripeStatus.stripeStatus !== STRIPE_STATUS.APPROVED
                                 && stripeStatus.stripeStatus !== STRIPE_STATUS.NOT_REQUESTED && (
-                                <div className="mb-5">
+                                <div className="expert-profile-stripe-notice">
                                     <StripeStatusCard
                                         stripe={stripeHook}
                                         isLoadingOnboarding={isStartingOnboarding || isRestartingOnboarding}
