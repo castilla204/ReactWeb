@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search, Sparkles } from 'lucide-react';
+import { Loader2, Upload, X, Plane, Search, Sparkles, MapPin, Car } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -19,6 +19,7 @@ import {
     type MapboxFeature,
 } from '../../utils/mapboxGeocoding';
 import { useExpertProfile } from '../../hooks/useExpertProfile';
+import FormacionEditor from './FormacionEditor';
 import { rewriteDescription } from '../../services/aiService';
 import { CurrentExpertAvailabilityDto } from '../../types/stripe';
 import {
@@ -60,6 +61,7 @@ function buildCartoMapStyle() {
 const defaultCenter = { lat: 40.4168, lng: -3.7038 };
 const DEFAULT_WORK_RADIUS_KM = 100;
 const MAX_WORK_RADIUS_KM = 200;
+const MIN_MOBILE_RADIUS_KM = 5;
 
 const CIRCLE_FILL_COLOR = '#0066CC';
 const CIRCLE_FILL_OPACITY = 0.12;
@@ -87,6 +89,10 @@ interface ProfileEditFormProps {
         latitude?: number | string;
         longitude?: number | string;
         workRadiusKm?: number;
+        workLocationDoor?: string | null;
+        workLocationFloor?: string | null;
+        workLocationDetails?: string | null;
+        formacion?: string | null;
         currentAvailability?: CurrentExpertAvailabilityDto | null;
     };
     onProfileUpdated: () => void;
@@ -132,6 +138,11 @@ export function ProfileEditForm({
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+    // Formación (opcional). JSON de items; se muestra al cliente.
+    const [formacion, setFormacion] = useState<string>(profile?.formacion ?? '');
+    const [workLocationDoor, setWorkLocationDoor] = useState<string>(profile?.workLocationDoor ?? '');
+    const [workLocationFloor, setWorkLocationFloor] = useState<string>(profile?.workLocationFloor ?? '');
+    const [workLocationDetails, setWorkLocationDetails] = useState<string>(profile?.workLocationDetails ?? '');
 
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
@@ -168,10 +179,14 @@ export function ProfileEditForm({
     const [selectedLocation, setSelectedLocation] = useState(initialLocation);
     const selectedLocationRef = useRef(selectedLocation);
     const [workRadiusKm, setWorkRadiusKm] = useState<number>(() => readWorkRadiusKm(profile));
+    const lastMobileRadiusRef = useRef(
+        readWorkRadiusKm(profile) > 0 ? readWorkRadiusKm(profile) : DEFAULT_WORK_RADIUS_KM,
+    );
     const [addressQuery, setAddressQuery] = useState('');
     const [addressResults, setAddressResults] = useState<MapboxFeature[]>([]);
     const [showAddressResults, setShowAddressResults] = useState(false);
     const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
+    const [mobileEditorTab, setMobileEditorTab] = useState<'profile' | 'map'>('profile');
 
     const cartoMapStyle = useMemo(() => buildCartoMapStyle(), []);
     const [mapCanRender, setMapCanRender] = useState(false);
@@ -286,6 +301,16 @@ export function ProfileEditForm({
     }, [resizeMap]);
 
     useEffect(() => {
+        if (mobileEditorTab !== 'map') return undefined;
+        const t1 = window.setTimeout(() => resizeMap(), 60);
+        const t2 = window.setTimeout(() => resizeMap(), 320);
+        return () => {
+            window.clearTimeout(t1);
+            window.clearTimeout(t2);
+        };
+    }, [mobileEditorTab, resizeMap]);
+
+    useEffect(() => {
         if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
 
         if (!addressSearchFromUserRef.current) {
@@ -393,6 +418,8 @@ export function ProfileEditForm({
             : defaultCenter;
         setSelectedLocation(newLocation);
         setWorkRadiusKm(readWorkRadiusKm(profile));
+        const restoredRadius = readWorkRadiusKm(profile);
+        if (restoredRadius > 0) lastMobileRadiusRef.current = restoredRadius;
         void syncAddressFromCoords(newLocation.lat, newLocation.lng);
         mapRef.current?.flyTo({ center: [newLocation.lng, newLocation.lat], duration: 0 });
     }, [embedded, showEditForm, profile?.id, syncAddressFromCoords]);
@@ -500,6 +527,10 @@ export function ProfileEditForm({
                 longitude: formData.longitude,
                 profilePicture: profilePicture || undefined,
                 workRadiusKm,
+                formacion,
+                workLocationDoor: isFixedWorkLocation ? workLocationDoor.trim() : '',
+                workLocationFloor: isFixedWorkLocation ? workLocationFloor.trim() : '',
+                workLocationDetails: isFixedWorkLocation ? workLocationDetails.trim() : '',
             });
             if (!embedded) setShowEditForm?.(false);
             onProfileUpdated();
@@ -535,6 +566,9 @@ export function ProfileEditForm({
         setProfilePicture(null);
         setPreviewUrl(null);
         setFormErrors({});
+        setWorkLocationDoor(profile.workLocationDoor ?? '');
+        setWorkLocationFloor(profile.workLocationFloor ?? '');
+        setWorkLocationDetails(profile.workLocationDetails ?? '');
         const lat = Number(profile.latitude);
         const lng = Number(profile.longitude);
         const resetLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
@@ -542,6 +576,8 @@ export function ProfileEditForm({
             : defaultCenter;
         setSelectedLocation(resetLocation);
         setWorkRadiusKm(readWorkRadiusKm(profile));
+        const restoredRadius = readWorkRadiusKm(profile);
+        if (restoredRadius > 0) lastMobileRadiusRef.current = restoredRadius;
         mapRef.current?.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -553,6 +589,29 @@ export function ProfileEditForm({
 
     const descLength = formData.description.length;
     const descMetaTone = descLength < 30 ? 'low' : descLength >= 55 ? 'high' : 'ok';
+    const isFixedWorkLocation = workRadiusKm === 0;
+
+    const selectFixedWorkMode = useCallback(() => {
+        if (workRadiusKm > 0) lastMobileRadiusRef.current = workRadiusKm;
+        setWorkRadiusKm(0);
+        mapRef.current?.flyTo({
+            center: [selectedLocationRef.current.lng, selectedLocationRef.current.lat],
+            zoom: 14,
+            duration: 650,
+        });
+    }, [workRadiusKm]);
+
+    const selectMobileWorkMode = useCallback(() => {
+        const nextRadius = workRadiusKm > 0
+            ? workRadiusKm
+            : Math.max(MIN_MOBILE_RADIUS_KM, lastMobileRadiusRef.current || DEFAULT_WORK_RADIUS_KM);
+        setWorkRadiusKm(nextRadius);
+        mapRef.current?.flyTo({
+            center: [selectedLocationRef.current.lng, selectedLocationRef.current.lat],
+            zoom: 10,
+            duration: 650,
+        });
+    }, [workRadiusKm]);
 
     if (!profile) return null;
 
@@ -640,7 +699,10 @@ export function ProfileEditForm({
     );
 
     const mapStageUi = (stageClassName = '', fullHeight = false) => (
-        <div className={`pf-map-stage${stageClassName ? ` ${stageClassName}` : ''}`} aria-describedby="zone-hint">
+        <div
+            className={`pf-map-stage${stageClassName ? ` ${stageClassName}` : ''}${isFixedWorkLocation ? ' pf-map-stage--fixed' : ' pf-map-stage--mobile'}`}
+            aria-describedby="zone-hint"
+        >
             <div className="pf-map-search">
                 <div className="pf-map-search-bar">
                     <Search className="pf-map-search-icon" aria-hidden />
@@ -689,6 +751,38 @@ export function ProfileEditForm({
                     </ul>
                 )}
             </div>
+            <div className="pf-map-work-mode" role="group" aria-label="Modo de cobertura">
+                <button
+                    type="button"
+                    className={`pf-map-work-mode__btn${isFixedWorkLocation ? ' pf-map-work-mode__btn--active' : ''}`}
+                    onClick={selectFixedWorkMode}
+                    aria-pressed={isFixedWorkLocation}
+                >
+                    <MapPin className="pf-map-work-mode__icon" size={14} aria-hidden />
+                    <span className="pf-map-work-mode__text">
+                        <span className="pf-map-work-mode__label">
+                            <span className="pf-map-work-mode__label-full">Ubicación fija</span>
+                            <span className="pf-map-work-mode__label-short">Punto fijo</span>
+                        </span>
+                        <span className="pf-map-work-mode__hint">El cliente viene a ti</span>
+                    </span>
+                </button>
+                <button
+                    type="button"
+                    className={`pf-map-work-mode__btn${!isFixedWorkLocation ? ' pf-map-work-mode__btn--active' : ''}`}
+                    onClick={selectMobileWorkMode}
+                    aria-pressed={!isFixedWorkLocation}
+                >
+                    <Car className="pf-map-work-mode__icon" size={14} aria-hidden />
+                    <span className="pf-map-work-mode__text">
+                        <span className="pf-map-work-mode__label">
+                            <span className="pf-map-work-mode__label-full">Rango de trabajo</span>
+                            <span className="pf-map-work-mode__label-short">Con radio</span>
+                        </span>
+                        <span className="pf-map-work-mode__hint">Tú te desplazas</span>
+                    </span>
+                </button>
+            </div>
             <div className="pf-map-canvas" ref={mapCanvasRef}>
                 <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
                     {mapCanRender && (
@@ -714,30 +808,90 @@ export function ProfileEditForm({
                                 </Source>
                             )}
                             <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
-                                <div className="pf-map-pin" />
+                                <div
+                                    className={`pf-map-marker${isFixedWorkLocation ? ' pf-map-marker--fixed' : ' pf-map-marker--mobile'}`}
+                                    title={isFixedWorkLocation ? 'Trabajas en un punto fijo' : 'Te desplazas en un radio'}
+                                >
+                                    {isFixedWorkLocation ? (
+                                        <MapPin size={15} strokeWidth={2.25} aria-hidden />
+                                    ) : (
+                                        <Car size={14} strokeWidth={2.25} aria-hidden />
+                                    )}
+                                </div>
                             </Marker>
                         </MapGL>
                     )}
                 </div>
             </div>
-            <div className="pf-map-radius">
-                <div className="pf-map-radius__head">
-                    <span className="pf-map-radius-label">Radio de cobertura</span>
-                    <span className="pf-map-radius-val">{workRadiusKm === 0 ? 'Solo taller' : `${workRadiusKm} km`}</span>
+            {!isFixedWorkLocation && (
+                <div className="pf-map-radius">
+                    <div className="pf-map-radius__head">
+                        <span className="pf-map-radius-label">Radio de desplazamiento</span>
+                        <span className="pf-map-radius-val">{workRadiusKm} km</span>
+                    </div>
+                    <input
+                        id="workRadius"
+                        type="range"
+                        min={MIN_MOBILE_RADIUS_KM}
+                        max={MAX_WORK_RADIUS_KM}
+                        step={5}
+                        value={workRadiusKm}
+                        onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                        className="pf-range"
+                        aria-label="Radio de desplazamiento en kilómetros"
+                        aria-valuetext={`${workRadiusKm} kilómetros`}
+                        style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
+                    />
                 </div>
-                <input
-                    id="workRadius"
-                    type="range"
-                    min={0}
-                    max={MAX_WORK_RADIUS_KM}
-                    step={5}
-                    value={workRadiusKm}
-                    onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
-                    className="pf-range"
-                    aria-label="Radio de cobertura"
-                    style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
-                />
-            </div>
+            )}
+            {isFixedWorkLocation && (
+                <div className="pf-map-fixed-details">
+                    <p className="pf-map-fixed-details__hint">
+                        Detalles para que el cliente llegue a tu taller (opcional).
+                    </p>
+                    <div className="pf-map-fixed-details__row">
+                        <label className="pf-field">
+                            <span className="pf-field__label">
+                                Puerta / garaje <span className="pf-field__optional">(opcional)</span>
+                            </span>
+                            <input
+                                type="text"
+                                className="pf-input"
+                                value={workLocationDoor}
+                                maxLength={60}
+                                onChange={(e) => setWorkLocationDoor(e.target.value)}
+                                placeholder="3B, garaje 12…"
+                            />
+                        </label>
+                        <label className="pf-field">
+                            <span className="pf-field__label">
+                                Piso / planta <span className="pf-field__optional">(opcional)</span>
+                            </span>
+                            <input
+                                type="text"
+                                className="pf-input"
+                                value={workLocationFloor}
+                                maxLength={40}
+                                onChange={(e) => setWorkLocationFloor(e.target.value)}
+                                placeholder="2ª planta, bajo…"
+                            />
+                        </label>
+                    </div>
+                    <label className="pf-field">
+                        <span className="pf-field__label">
+                            Observaciones de acceso <span className="pf-field__optional">(opcional)</span>
+                        </span>
+                        <textarea
+                            className="pf-input pf-textarea"
+                            value={workLocationDetails}
+                            maxLength={300}
+                            rows={2}
+                            onChange={(e) => setWorkLocationDetails(e.target.value)}
+                            placeholder="Portal, referencias para llegar, parking…"
+                        />
+                    </label>
+                </div>
+            )}
         </div>
     );
 
@@ -898,34 +1052,66 @@ export function ProfileEditForm({
 
                 <form onSubmit={handleSubmit}>
                     <section className="av-calendar pf-profile-editor">
-                        <div className="av-calendar__layout pf-profile-editor__layout">
-                            <div className="av-calendar__main pf-profile-editor__main">
-                                <div className="av-calendar__toolbar">
-                                    <div className="av-calendar__toolbar-start pf-profile-editor__status">
-                                        {profileSetup ? (
-                                            profileSetup.complete ? (
-                                                <span className="pf-status-led pf-status-led--on" role="status">
-                                                    <span className="pf-status-led__dot" aria-hidden />
-                                                    <span className="pf-status-led__label">Perfil activo</span>
-                                                </span>
-                                            ) : (
-                                                <span className="pf-status-led pf-status-led--off" role="status">
-                                                    <span className="pf-status-led__dot" aria-hidden />
-                                                    <span className="pf-status-led__label">Incompleto</span>
-                                                </span>
-                                            )
-                                        ) : null}
-                                        <span className="pf-status-led__hint">
-                                            {profileSetup?.complete
-                                                ? 'Visible en búsquedas'
-                                                : `Faltan ${profileSetup?.pendingRequired ?? 0} requisito${profileSetup?.pendingRequired === 1 ? '' : 's'}`}
+                        <div className="pf-profile-editor__action-bar">
+                            <div className="pf-profile-editor__status">
+                                {profileSetup ? (
+                                    profileSetup.complete ? (
+                                        <span className="pf-status-led pf-status-led--on" role="status">
+                                            <span className="pf-status-led__dot" aria-hidden />
+                                            <span className="pf-status-led__label">Perfil activo</span>
                                         </span>
-                                    </div>
-                                    <div className="av-calendar__toolbar-actions pf-editor-save-desktop">
-                                        {saveButton}
-                                    </div>
-                                </div>
+                                    ) : (
+                                        <span className="pf-status-led pf-status-led--off" role="status">
+                                            <span className="pf-status-led__dot" aria-hidden />
+                                            <span className="pf-status-led__label">Incompleto</span>
+                                        </span>
+                                    )
+                                ) : null}
+                                <span className="pf-status-led__hint">
+                                    {profileSetup?.complete
+                                        ? 'Visible en búsquedas'
+                                        : `Faltan ${profileSetup?.pendingRequired ?? 0} requisito${profileSetup?.pendingRequired === 1 ? '' : 's'}`}
+                                </span>
+                            </div>
+                            <div className="pf-profile-editor__action-bar-end">
+                                {saveButton}
+                            </div>
+                        </div>
 
+                        <div className="pf-profile-editor__mobile-tabs" role="tablist" aria-label="Secciones del perfil">
+                            <button
+                                type="button"
+                                role="tab"
+                                id="pf-tab-profile"
+                                aria-selected={mobileEditorTab === 'profile'}
+                                aria-controls="pf-panel-profile"
+                                className={`pf-profile-editor__mobile-tab${mobileEditorTab === 'profile' ? ' pf-profile-editor__mobile-tab--active' : ''}`}
+                                onClick={() => setMobileEditorTab('profile')}
+                            >
+                                Perfil
+                            </button>
+                            <button
+                                type="button"
+                                role="tab"
+                                id="pf-tab-map"
+                                aria-selected={mobileEditorTab === 'map'}
+                                aria-controls="pf-panel-map"
+                                className={`pf-profile-editor__mobile-tab${mobileEditorTab === 'map' ? ' pf-profile-editor__mobile-tab--active' : ''}`}
+                                onClick={() => setMobileEditorTab('map')}
+                            >
+                                Mapa
+                            </button>
+                        </div>
+
+                        <div
+                            className={`av-calendar__layout pf-profile-editor__layout pf-profile-editor__layout--${mobileEditorTab}-tab`}
+                        >
+                            <div
+                                id="pf-panel-profile"
+                                role="tabpanel"
+                                aria-labelledby="pf-tab-profile"
+                                className="av-calendar__main pf-profile-editor__main"
+                            >
                                 <div className="pf-profile-editor__body">
                                     <div className="pf-profile-editor__section pf-profile-editor__section--photo">
                                         <div className="pf-profile-editor__photo-block">
@@ -943,11 +1129,11 @@ export function ProfileEditForm({
                                                 <p className="pf-profile-editor__label">Foto de perfil</p>
                                                 <p className="pf-profile-editor__hint">La imagen que ven los clientes al buscarte.</p>
                                                 <div className="pf-profile-editor__photo-actions">
-                                                    <Button type="button" variant="outline" size="sm" onClick={openFilePicker}>
+                                                    <Button type="button" variant="outline" size="sm" className="pf-profile-editor__photo-btn" onClick={openFilePicker}>
                                                         {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
                                                     </Button>
                                                     {(previewUrl || profilePicture) && (
-                                                        <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={removeImage}>
+                                                        <Button type="button" variant="ghost" size="sm" className="pf-profile-editor__photo-btn pf-profile-editor__photo-btn--ghost" onClick={removeImage}>
                                                             Quitar
                                                         </Button>
                                                     )}
@@ -998,12 +1184,21 @@ export function ProfileEditForm({
                                         </div>
                                         {formErrors.description && <p className="pf-error">{formErrors.description}</p>}
                                     </div>
+                                    <div className="pf-profile-editor__section" style={{ marginTop: 16 }}>
+                                        <FormacionEditor value={formacion} onChange={setFormacion} />
+                                    </div>
                                 </div>
                             </div>
 
-                            <aside className="av-calendar__aside pf-profile-editor__aside" aria-label="Zona de trabajo">
+                            <aside
+                                id="pf-panel-map"
+                                role="tabpanel"
+                                aria-labelledby="pf-tab-map"
+                                className="av-calendar__aside pf-profile-editor__aside"
+                                aria-label="Zona de trabajo"
+                            >
                                 <p id="zone-hint" className="sr-only">
-                                    Busca tu dirección y ajusta el radio en el mapa.
+                                    Elige ubicación fija o rango de trabajo. Busca tu dirección y ajusta el punto en el mapa.
                                 </p>
                                 {!MAPBOX_TOKEN ? (
                                     <div className="pf-alert pf-profile-editor__map-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
@@ -1023,8 +1218,6 @@ export function ProfileEditForm({
                         {formErrorAlert}
                     </section>
                 </form>
-
-                <footer className="pf-page-footer pf-editor-save-mobile">{mobileFooterActions}</footer>
             </div>
         );
     }

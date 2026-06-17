@@ -17,6 +17,10 @@ interface UpdateExpertProfileData {
     profilePicture?: File;
     availability?: AvailabilityFormData;  // Opcional: solo se actualiza si se incluye
     workRadiusKm?: number;                // 0 = solo en su taller, máx 200; si no se envía se conserva
+    formacion?: string;                   // JSON con la formación (opcional); se muestra al cliente
+    workLocationDoor?: string;            // Puerta/garaje del taller (solo modo fijo)
+    workLocationFloor?: string;           // Piso/planta del taller (solo modo fijo)
+    workLocationDetails?: string;         // Observaciones de acceso (solo modo fijo)
 }
 
 export function useExpertProfile() {
@@ -44,6 +48,23 @@ export function useExpertProfile() {
 
             if (typeof data.workRadiusKm === 'number') {
                 formData.append('WorkRadiusKm', String(data.workRadiusKm));
+            }
+
+            // Formación (opcional): se envía como JSON en el campo 'formacion'.
+            if (typeof data.formacion === 'string') {
+                formData.append('formacion', data.formacion);
+            }
+
+            // 🏠 Detalle del punto fijo (solo modo fijo). Se envían siempre que el caller los pase;
+            // el backend los limpia si el experto está en modo rango.
+            if (typeof data.workLocationDoor === 'string') {
+                formData.append('WorkLocationDoor', data.workLocationDoor);
+            }
+            if (typeof data.workLocationFloor === 'string') {
+                formData.append('WorkLocationFloor', data.workLocationFloor);
+            }
+            if (typeof data.workLocationDetails === 'string') {
+                formData.append('WorkLocationDetails', data.workLocationDetails);
             }
 
             // ✅ CRÍTICO: Si se incluye disponibilidad, agregar todos los campos
