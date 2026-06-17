@@ -14,6 +14,8 @@ interface ServiceDetailReviewHistogramProps {
   showPercent?: boolean;
   /** Más alto en pestaña móvil de la ficha */
   emphasis?: 'default' | 'prominent';
+  /** Barras en carbón en lugar de color de marca (drawer sobrio). */
+  neutral?: boolean;
 }
 
 export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogramProps> = ({
@@ -23,6 +25,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
   variant,
   showPercent = true,
   emphasis = 'default',
+  neutral = false,
 }) => {
   const resolvedVariant: ReviewHistogramVariant =
     variant ?? (compact ? 'compact' : 'default');
@@ -86,7 +89,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             >
               <div
                 className={`h-full rounded-full transition-[width] duration-300 ${
-                  count > 0 ? 'bg-brand' : 'bg-transparent'
+                  count > 0 ? (neutral ? 'bg-[#222222]' : 'bg-brand') : 'bg-transparent'
                 }`}
                 style={{ width: `${barWidth}%` }}
               />

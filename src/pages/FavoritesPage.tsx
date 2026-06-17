@@ -1,603 +1,294 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Heart } from 'lucide-react';
 import { persistServiceReturnPath } from '../utils/servicePageNavigation';
-import { ArrowLeft, Heart, Star, ChevronRight } from 'lucide-react';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { useAuth } from '../contexts/AuthContext';
-import { showToast } from '../lib/toast';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { homepageToast } from '../lib/toast';
 import { Footer } from '../components/Footer';
+// Reutilizamos la MISMA tarjeta de la homepage → favoritos y home se ven idénticos
+// y cualquier mejora futura de la card se hereda sin duplicar estilos.
+import { ServiceCard } from '../components/HomepageWall';
 import { SearchServiceDetailDto } from '../types/homepageWall';
-import { useCurrency } from '../contexts/CurrencyContext';
-// 🛡️ Round 28: símbolos unificados.
-import { getCurrencySymbol } from '../utils/priceUtils';
+import {
+  HP_FONT,
+  HP_COLOR,
+  SD_PAGE_INNER_MAX_CLASS,
+  HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT,
+  hpIconButtonClass,
+} from '../constants/homepageTypography';
 
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+const FAVORITES_PATH = '/favoritos';
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+/**
+ * Grid responsive de favoritos. Las cards de la homepage tienen ancho FIJO
+ * (pensadas para el carrusel), así que el wrapper fuerza el `<a>` interno a
+ * `w-full` → la misma card crece y llena cada columna, sin huecos raros.
+ */
+const FAVORITES_GRID_CLASS =
+  'grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:gap-x-5 md:gap-y-9 lg:grid-cols-4 xl:grid-cols-5';
 
-  return isMobile;
-};
+const FAVORITES_GRID_CARDS_CLASS = `${FAVORITES_GRID_CLASS} [&>a]:!w-full [&>a]:!max-w-none`;
 
-interface ServiceCardProps {
-  service: SearchServiceDetailDto;
-  initialIsFavorite?: boolean;
+/** Botón pill de marca — mismas reglas de color/animación que los CTA del sitio. */
+const BRAND_CTA_CLASS =
+  'inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+
+/** Convierte la fila de favorito al DTO que consume la tarjeta de la homepage. */
+const toServiceDetail = (service: any): SearchServiceDetailDto => ({
+  id: service.id,
+  categoryId: service.categoryId,
+  serviceTypeId: service.serviceTypeId,
+  serviceTypeName: service.serviceTypeName,
+  price: service.price,
+  imageUrls: service.imageUrls || [],
+  categoryName: service.categoryName,
+  completedSearches: service.completedSearches || 0,
+  averageRating: service.averageRating || 0,
+  isFavorite: true, // En esta página todo está marcado como favorito.
+  expert: service.expert
+    ? {
+        id: service.expert.id,
+        profilePictureUrl: service.expert.profilePictureUrl,
+        description: '',
+        latitude: '',
+        longitude: '',
+        user: {
+          id: service.expert.id,
+          name: service.expert.name,
+          email: '',
+        },
+        reviews: [],
+        country: service.expert.country,
+        city: service.expert.city || null,
+        currentAvailability: undefined,
+      }
+    : undefined,
+  requiresAppointment: false,
+  conditions: '',
+  durationInHours: 0,
+  createdAt: '',
+  isActive: true,
+  selectedDeliverableTypes: [],
+});
+
+/** Placeholder con el footprint exacto de una tarjeta mientras carga. */
+const FavoriteCardSkeleton: React.FC<{ isMobile: boolean }> = ({ isMobile }) => (
+  <div className="w-full" aria-hidden="true">
+    <div
+      className="w-full animate-pulse rounded-[20px] bg-[#eeeeee] md:rounded-xl"
+      style={{ aspectRatio: isMobile ? '1' : '4 / 3' }}
+    />
+    <div className="mt-2 h-[14px] w-3/4 animate-pulse rounded bg-[#eeeeee]" />
+    <div className="mt-1.5 h-3 w-1/2 animate-pulse rounded bg-[#f1f1f1]" />
+    <div className="mt-1.5 h-3 w-2/3 animate-pulse rounded bg-[#f1f1f1]" />
+  </div>
+);
+
+interface FavoritesShellProps {
+  count?: number;
+  showBack?: boolean;
+  children: React.ReactNode;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, initialIsFavorite = true }) => {
+/** Marco común: cabecera editorial + contenido + footer pegado abajo. */
+const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true, children }) => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const { toggleFavoriteAsync } = useServiceFavorites();
-  const [isFavorite, setIsFavorite] = useState(service.isFavorite ?? initialIsFavorite);
-  const [imageIndex, setImageIndex] = useState(0);
-  const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (service.isFavorite !== undefined) {
-      setIsFavorite(service.isFavorite);
-    } else if (initialIsFavorite !== undefined) {
-      setIsFavorite(initialIsFavorite);
-    }
-  }, [service.isFavorite, initialIsFavorite]);
-
-  const handleCardClick = () => {
-    const returnTo = '/favoritos';
-    persistServiceReturnPath(returnTo);
-    navigate(`/service/${service.id}`, { state: { returnTo } });
-  };
-
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    if (!isAuthenticated) {
-      showToast('info', 'Inicia sesión para guardar favoritos', 3000);
-      return;
-    }
-
-    try {
-      const result = await toggleFavoriteAsync(service.id);
-      setIsFavorite(result.isFavorite);
-      if (!result.isFavorite) {
-        // La mutación ya invalida ['favorites'] (invalidación por prefijo), así que la
-        // lista se repinta sola. NO recargar toda la SPA con window.location.reload().
-        showToast('success', 'Favorito eliminado', 2000);
-      } else {
-        showToast('success', result.message, 2000);
-      }
-    } catch (error: any) {
-      console.error('Error al actualizar favorito:', error);
-      showToast('error', error.message || 'Error al actualizar favorito', 3000);
-    }
-  };
-
-  const handleImageNavigation = (e: React.MouseEvent, direction: 'prev' | 'next') => {
-    e.stopPropagation();
-    const imageUrls = service.imageUrls || [];
-    if (imageUrls.length <= 1) return;
-    
-    if (direction === 'next') {
-      setImageIndex((prev) => (prev + 1) % imageUrls.length);
-    } else {
-      setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
-    }
-  };
-
-  const imageUrls = service.imageUrls || [];
-  const hasMultipleImages = imageUrls.length > 1;
-  const isGuestFavorite = service.completedSearches > 10 && service.averageRating >= 4.5;
-  // Round 24: conversión multi-moneda.
-  const { formatPriceWithSource, preferredCurrency } = useCurrency();
-  // 🛡️ Round 28: símbolos del helper unificado (cubre 13 divisas, evita el switch duplicado).
-  const priceData = (() => {
-    if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
-    const src = (service as any).priceCurrency || (service as any).currency || 'EUR';
-    const info = formatPriceWithSource(service.price, src, preferredCurrency);
-    if (!info.wasConverted) {
-      const symbol = getCurrencySymbol(src);
-      return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
-    }
-    const tSym = getCurrencySymbol(preferredCurrency);
-    const sSym = getCurrencySymbol(src);
-    return {
-      display: `≈ ${tSym}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
-      wasConverted: true,
-      sourceFormatted: `(${sSym}${Math.round(service.price)} ${src})`,
-    };
-  })();
-  const price = priceData.display;
-  
-  const formatAvailability = () => {
-    const availability = service.expert?.currentAvailability;
-    if (!availability) return 'Flexible';
-    
-    const days = availability.daysOfWeek || [];
-    if (days.length === 0) return 'Flexible';
-    
-    const dayMap: Record<string, string> = {
-      'Monday': 'L',
-      'Tuesday': 'M',
-      'Wednesday': 'X',
-      'Thursday': 'J',
-      'Friday': 'V',
-      'Saturday': 'S',
-      'Sunday': 'D'
-    };
-    
-    const dayAbbr = days
-      .slice(0, 5)
-      .map((day: string) => dayMap[day] || day.charAt(0))
-      .join('');
-    
-    const startTime = availability.startTime ? availability.startTime.substring(0, 5) : '';
-    const endTime = availability.endTime ? availability.endTime.substring(0, 5) : '';
-    
-    if (startTime && endTime) {
-      const startHour = parseInt(startTime.split(':')[0], 10).toString();
-      const endHour = parseInt(endTime.split(':')[0], 10).toString();
-      return `${dayAbbr} ${startHour}-${endHour}h`;
-    }
-    return dayAbbr || 'Flexible';
-  };
-  
-  const availabilityInfo = formatAvailability();
+  const subtitle =
+    count === undefined
+      ? 'Tu colección de servicios guardados'
+      : count === 0
+      ? 'Aún no has guardado ningún servicio'
+      : `${count} ${count === 1 ? 'servicio guardado' : 'servicios guardados'}`;
 
   return (
-    <a
-      href={`/service/${service.id}`}
-      onClick={(e) => {
-        e.preventDefault();
-        handleCardClick();
-      }}
-      className="block flex-shrink-0"
-      style={{ width: isMobile ? '160px' : '169px' }}
-    >
-      <div className="relative cursor-pointer group w-full">
-        <div className="relative w-full overflow-hidden mb-2" style={{ aspectRatio: '1', borderRadius: '20px', width: '100%' }}>
-          {imageUrls.length > 0 ? (
-            <>
-              <div className="relative w-full h-full">
-                <img
-                  src={imageUrls[imageIndex]}
-                  alt={service.serviceTypeName}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  style={{ display: 'block' }}
-                />
-              </div>
-              
-              {isGuestFavorite && (
-                <div
-                  className="absolute top-3 left-3 z-10"
-                  style={{ padding: '0' }}
-                >
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      paddingTop: '4px',
-                      paddingBottom: '4px',
-                      paddingLeft: '8px',
-                      paddingRight: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(4px)',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        lineHeight: '12px',
-                        fontWeight: 400,
-                        color: '#222222',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                        letterSpacing: '0',
-                      }}
-                      aria-label="Recomendamos"
-                    >
-                      Recomendamos
-                    </span>
-                  </div>
-                </div>
-              )}
-
+    <div className="flex min-h-screen flex-col bg-white">
+      {/* Cabecera editorial — sin barra sticky; respira y deja la marca clara. */}
+      <header className="border-b border-[#ececec]">
+        <div className={SD_PAGE_INNER_MAX_CLASS}>
+          <div className="py-6 md:py-9">
+            {showBack && (
               <button
-                onClick={handleFavoriteClick}
-                className="absolute top-3 right-3 z-10"
-                style={{
-                  padding: '0',
-                  margin: '0',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                }}
+                type="button"
+                onClick={() => navigate(-1)}
+                className={`${hpIconButtonClass} mb-4`}
+                aria-label="Volver"
               >
-                <svg
-                  viewBox="0 0 32 32"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  role="presentation"
-                  focusable="false"
-                  style={{
-                    display: 'block',
-                    fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
-                    height: '24px',
-                    width: '24px',
-                    stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
-                    strokeWidth: '2',
-                    overflow: 'visible',
-                    margin: '0',
-                    padding: '0',
-                  }}
-                >
-                  <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                </svg>
+                <ArrowLeft className="h-4 w-4" />
               </button>
-
-              {hasMultipleImages && (
-                <>
-                  <button
-                    onClick={(e) => handleImageNavigation(e, 'prev')}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block"
-                    style={{ padding: '6px', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" />
-                  </button>
-                  <button
-                    onClick={(e) => handleImageNavigation(e, 'next')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block"
-                    style={{ padding: '6px', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-700" />
-                  </button>
-                  
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 flex"
-                    style={{ 
-                      gap: '6px',
-                      bottom: isMobile ? '8px' : '12px',
-                    }}
-                  >
-                    {imageUrls.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className="rounded-full transition-all bg-white"
-                        style={{
-                          height: isMobile ? '3px' : '4px',
-                          width: idx === imageIndex ? (isMobile ? '20px' : '24px') : (isMobile ? '3px' : '4px'),
-                          opacity: idx === imageIndex ? 1 : 0.6,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {service.expert && (
-                <div
-                  className="absolute left-3 z-10"
-                  style={{
-                    width: isMobile ? '28px' : '32px',
-                    height: isMobile ? '28px' : '32px',
-                    bottom: isMobile ? '8px' : '12px',
-                    borderRadius: '50%',
-                    border: '2px solid white',
-                    overflow: 'hidden',
-                    backgroundColor: '#f0f0f0',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  {service.expert.profilePictureUrl ? (
-                    <img
-                      src={service.expert.profilePictureUrl}
-                      alt={service.expert.user?.name || 'Experto'}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div 
-                      className="w-full h-full flex items-center justify-center"
-                      style={{
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400 text-sm">Sin imagen</span>
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: '6px' }}>
-          <div
-            className="overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              fontSize: '14px',
-              lineHeight: '20.02px',
-              fontWeight: 500,
-              color: 'rgb(34, 34, 34)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-              textAlign: 'left',
-            }}
-          >
-            <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
-          </div>
-
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              fontSize: '12px',
-              lineHeight: '16px',
-              fontWeight: 400,
-              color: 'rgb(106, 106, 106)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-              textAlign: 'left',
-            }}
-          >
-            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-              {service.expert?.city && (
-                <>
-                  <span className="truncate">{service.expert.city}</span>
-                  <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                </>
-              )}
-              <span className="truncate">{availabilityInfo}</span>
-            </div>
-          </div>
-
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              fontSize: '12px',
-              lineHeight: '16px',
-              fontWeight: 400,
-              color: 'rgb(106, 106, 106)',
-              fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-              textAlign: 'left',
-            }}
-          >
-            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Star 
-                  className="flex-shrink-0" 
-                  style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    fill: '#222222', 
-                    color: '#222222',
-                  }} 
+            )}
+            <div className="flex items-center gap-2.5">
+              <Heart className="h-6 w-6 flex-shrink-0" style={{ fill: '#FF385C', color: '#FF385C' }} />
+              <h1
+                className="relative inline-block font-display text-[26px] font-bold leading-tight tracking-[-0.02em] md:text-[32px]"
+                style={{ fontFamily: HP_FONT, color: HP_COLOR.primary }}
+              >
+                Favoritos
+                {/* Acento de marca azul → ámbar (mismo flow que títulos de checkout/mapa) */}
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-2 left-0 h-[3px] w-full rounded-full"
+                  style={{ background: HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT }}
                 />
-                <span>
-                  {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
-                </span>
-              </span>
-              <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-              <span>
-                {price}
-                {priceData.wasConverted && (
-                  <span style={{ marginLeft: 4, fontSize: '0.85em', color: '#6B7280' }}>
-                    {priceData.sourceFormatted}
-                  </span>
-                )}
-              </span>
+              </h1>
             </div>
+            <p
+              className="mt-2 text-[14px] md:text-[15px]"
+              style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}
+            >
+              {subtitle}
+            </p>
           </div>
         </div>
-      </div>
-    </a>
+      </header>
+
+      <main className="flex-1">
+        <div className={`${SD_PAGE_INNER_MAX_CLASS} py-7 md:py-9`}>{children}</div>
+      </main>
+
+      <Footer />
+    </div>
   );
 };
 
+/** Estado centrado reutilizable (sin sesión / vacío / error). */
+const CenteredState: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  onCta: () => void;
+}> = ({ icon, title, description, ctaLabel, onCta }) => (
+  <div className="mx-auto flex max-w-md flex-col items-center px-2 py-12 text-center md:py-20">
+    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f6f6f6]">
+      {icon}
+    </div>
+    <h2
+      className="text-[19px] font-semibold tracking-[-0.01em] md:text-[21px]"
+      style={{ fontFamily: HP_FONT, color: HP_COLOR.primary }}
+    >
+      {title}
+    </h2>
+    <p className="mt-2 text-[14px] leading-relaxed" style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}>
+      {description}
+    </p>
+    <button type="button" onClick={onCta} className={`${BRAND_CTA_CLASS} mt-6`}>
+      {ctaLabel}
+    </button>
+  </div>
+);
+
 export const FavoritesPage: React.FC = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { isAuthenticated } = useAuth();
-  const { getUserFavorites } = useServiceFavorites();
+  const { getUserFavorites, toggleFavoriteAsync } = useServiceFavorites();
   const { data: favoritesResponse, isLoading, error } = getUserFavorites(1, 50);
   const favorites = favoritesResponse?.data || [];
 
+  // Mismas handlers que la homepage para que la card se comporte igual.
+  const handleOpenService = useCallback(
+    (serviceId: number) => {
+      persistServiceReturnPath(FAVORITES_PATH);
+      navigate(`/service/${serviceId}`, { state: { returnTo: FAVORITES_PATH } });
+    },
+    [navigate],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (serviceId: number) => {
+      if (!isAuthenticated) {
+        homepageToast.loginRequired();
+        return null;
+      }
+      try {
+        const result = await toggleFavoriteAsync(serviceId);
+        return { isFavorite: result.isFavorite, message: result.message };
+      } catch (err: any) {
+        homepageToast.error(err?.message || 'Error al actualizar favorito', 3000);
+        return null;
+      }
+    },
+    [isAuthenticated, toggleFavoriteAsync],
+  );
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
-          <div className="text-center py-12">
-            <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Inicia sesión para ver tus favoritos</h2>
-            <p className="text-gray-600 mb-6">Guarda tus servicios favoritos y accede a ellos fácilmente</p>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-[#ff385c] text-white rounded-lg hover:bg-[#e31c5f] transition-colors"
-            >
-              Ir al inicio
-            </button>
-          </div>
-        </div>
-      </div>
+      <FavoritesShell showBack={false}>
+        <CenteredState
+          icon={<Heart className="h-7 w-7" style={{ color: HP_COLOR.muted }} />}
+          title="Inicia sesión para ver tus favoritos"
+          description="Guarda los servicios que te interesan y vuelve a ellos cuando quieras, desde cualquier dispositivo."
+          ctaLabel="Ir al inicio"
+          onCta={() => navigate('/')}
+        />
+      </FavoritesShell>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff385c] mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando favoritos...</p>
-            </div>
-          </div>
+      <FavoritesShell>
+        <div className={FAVORITES_GRID_CLASS}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <FavoriteCardSkeleton key={i} isMobile={isMobile} />
+          ))}
         </div>
-      </div>
+      </FavoritesShell>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-8">
-          <div className="text-center py-12">
-            <p className="text-red-600 mb-4">Error al cargar los favoritos</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-[#ff385c] text-white rounded-lg hover:bg-[#e31c5f] transition-colors"
-            >
-              Reintentar
-            </button>
-          </div>
-        </div>
-      </div>
+      <FavoritesShell>
+        <CenteredState
+          icon={<Heart className="h-7 w-7" style={{ color: HP_COLOR.muted }} />}
+          title="No pudimos cargar tus favoritos"
+          description="Ha ocurrido un problema al recuperar tu lista. Inténtalo de nuevo en unos segundos."
+          ctaLabel="Reintentar"
+          onCta={() => window.location.reload()}
+        />
+      </FavoritesShell>
+    );
+  }
+
+  if (favorites.length === 0) {
+    return (
+      <FavoritesShell count={0}>
+        <CenteredState
+          icon={<Heart className="h-7 w-7" style={{ color: HP_COLOR.muted }} />}
+          title="Todavía no tienes favoritos"
+          description="Explora los servicios disponibles y pulsa el corazón para guardarlos aquí."
+          ctaLabel="Explorar servicios"
+          onCta={() => navigate('/')}
+        />
+      </FavoritesShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
-              </button>
-              <h1 
-                className="text-xl font-semibold flex items-center gap-2"
-                style={{
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(34, 34, 34)',
-                }}
-              >
-                <Heart className="w-5 h-5 text-[#ff385c] fill-[#ff385c]" />
-                Mis Favoritos
-              </h1>
-            </div>
-            {favorites.length > 0 && (
-              <div 
-                className="text-sm"
-                style={{
-                  fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                  color: 'rgb(106, 106, 106)',
-                }}
-              >
-                {favorites.length} {favorites.length === 1 ? 'favorito' : 'favoritos'}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <FavoritesShell count={favorites.length}>
+      <div className={FAVORITES_GRID_CARDS_CLASS}>
+        {favorites.map((favorite: any, index: number) => {
+          const service = favorite.service;
+          if (!service) return null;
 
-      {/* Contenido - Flex grow para ocupar el espacio disponible */}
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {favorites.length === 0 ? (
-          <div className="text-center py-16">
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 
-              className="text-xl font-semibold mb-2"
-              style={{
-                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                color: 'rgb(34, 34, 34)',
-              }}
-            >
-              No tienes favoritos guardados
-            </h2>
-            <p 
-              className="text-gray-600 mb-6"
-              style={{
-                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-              }}
-            >
-              Explora servicios y guarda tus favoritos para acceder a ellos fácilmente
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-[#ff385c] text-white rounded-lg hover:bg-[#e31c5f] transition-colors"
-            >
-              Explorar servicios
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-6" style={{ gap: '12px' }}>
-            {favorites.map((favorite) => {
-              const service = favorite.service;
-              if (!service) {
-                console.warn('Favorito sin servicio:', favorite);
-                return null;
-              }
-              
-              // ✅ Convertir el servicio a SearchServiceDetailDto (formato de HomepageWall)
-              const serviceDetail: SearchServiceDetailDto = {
-                id: service.id,
-                categoryId: service.categoryId,
-                serviceTypeId: service.serviceTypeId,
-                serviceTypeName: service.serviceTypeName,
-                price: service.price,
-                imageUrls: service.imageUrls || [],
-                categoryName: service.categoryName,
-                completedSearches: service.completedSearches || 0,
-                averageRating: service.averageRating || 0,
-                isFavorite: true, // Siempre es favorito en esta página
-                expert: service.expert ? {
-                  id: service.expert.id,
-                  profilePictureUrl: service.expert.profilePictureUrl,
-                  description: '',
-                  latitude: '',
-                  longitude: '',
-                  user: {
-                    id: service.expert.id,
-                    name: service.expert.name,
-                    email: '',
-                  },
-                  reviews: [],
-                  country: service.expert.country,
-                  city: service.expert.city || null,
-                  currentAvailability: undefined, // No disponible en favoritos según la guía
-                } : undefined,
-                requiresAppointment: false,
-                conditions: '',
-                durationInHours: 0,
-                createdAt: '',
-                isActive: true,
-                selectedDeliverableTypes: [],
-              };
-              
-              return (
-                <ServiceCard key={favorite.id} service={serviceDetail} initialIsFavorite={true} />
-              );
-            })}
-          </div>
-        )}
+          return (
+            <ServiceCard
+              key={favorite.id}
+              service={toServiceDetail(service)}
+              initialIsFavorite
+              isMobile={isMobile}
+              isAuthenticated={isAuthenticated}
+              priority={index < 4}
+              onOpenService={handleOpenService}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          );
+        })}
       </div>
-
-      {/* Footer - Siempre al final, independiente de las cards */}
-      <div className="mt-auto w-full">
-        <Footer />
-      </div>
-    </div>
+    </FavoritesShell>
   );
 };

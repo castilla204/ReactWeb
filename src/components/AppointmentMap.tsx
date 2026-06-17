@@ -45,7 +45,9 @@ interface AppointmentMapProps {
   frameless?: boolean;
   /** Buscador flotante minimalista sobre el mapa. */
   searchMinimal?: boolean;
-  /** Checkout: mapa neutro, solo borde gris discontinuo — sin rojo/verde/azul. */
+  /** Posición del buscador flotante (p. ej. bajo stepper superpuesto). */
+  searchOverlayClassName?: string;
+  /** Checkout: mapa neutro, solo contorno discontinuo del radio — sin relleno ni máscara roja/verde. */
   coverageStyle?: 'default' | 'minimal';
   /** Dirección fuera del radio de cobertura (p. ej. búsqueda). */
   onLocationRejected?: (info: { reason: 'out_of_range'; address: string }) => void;
@@ -136,12 +138,36 @@ const buildMarkerElement = (svg: string, size: number): HTMLDivElement => {
   return el;
 };
 
-const buildNeutralPinElement = (size: number, emphasis = false): HTMLDivElement => {
+/**
+ * Punto base del experto (centro del área de cobertura): dot de marca con halo
+ * translúcido. Discreto, sirve de referencia sin competir con el pin elegido.
+ */
+const buildExpertDotElement = (size: number): HTMLDivElement => {
   const el = document.createElement('div');
   el.style.cursor = 'pointer';
-  const border = emphasis ? '2.5px' : '2px';
-  const shadow = emphasis ? '0 2px 10px rgba(0,0,0,0.22)' : '0 1px 6px rgba(0,0,0,0.16)';
-  el.innerHTML = `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#1c1c1c;border:${border} solid #fff;box-shadow:${shadow}"></div>`;
+  const halo = size + 12;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;width:${halo}px;height:${halo}px;border-radius:50%;background:rgba(0,102,204,0.16)">
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#0066CC;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.28)"></div>
+    </div>`;
+  return el;
+};
+
+/**
+ * Pin de la ubicación elegida: lágrima estilo Google/Apple en azul de marca, con
+ * punto blanco central y sombra. Se ancla por la PUNTA (anchor 'bottom') para que
+ * señale el punto exacto.
+ */
+const buildSelectedPinElement = (): HTMLDivElement => {
+  const el = document.createElement('div');
+  el.style.cursor = 'pointer';
+  el.style.filter = 'drop-shadow(0 4px 5px rgba(0,0,0,0.3))';
+  el.innerHTML = `
+    <svg width="30" height="40" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 20 12 20s12-11.6 12-20C24 5.4 18.6 0 12 0z" fill="#0066CC" stroke="#004C99" stroke-width="1"/>
+      <circle cx="12" cy="12" r="5" fill="#FFFFFF"/>
+      <circle cx="12" cy="12" r="2.5" fill="#0066CC"/>
+    </svg>`;
   return el;
 };
 
@@ -168,6 +194,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   defaultZoom = 10,
   frameless = false,
   searchMinimal = false,
+  searchOverlayClassName,
   coverageStyle = 'default',
   onLocationRejected,
 }) => {
@@ -353,15 +380,16 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       });
 
       if (isMinimalCoverage) {
+        // Zona elegible: solo contorno discontinuo, sin relleno interior.
         map.addLayer({
           id: LAYER_CIRCLE_LINE,
           type: 'line',
           source: SRC_CIRCLE,
           paint: {
-            'line-color': '#9ca3af',
-            'line-opacity': 0.9,
+            'line-color': '#0066CC',
+            'line-opacity': 0.55,
             'line-width': 2,
-            'line-dasharray': [4, 3],
+            'line-dasharray': [5, 3],
           },
         });
       } else {
@@ -443,7 +471,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         isFinite(memoizedCoordinates.lng)
       ) {
         const expertEl = isMinimalCoverage
-          ? buildNeutralPinElement(12)
+          ? buildExpertDotElement(12)
           : buildMarkerElement(EXPERT_MARKER_SVG, 28);
         expertMarkerRef.current = new mapboxgl.Marker({
           element: expertEl,
@@ -459,11 +487,11 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         const initLng = Number(initialLocation.longitude);
         if (isFinite(initLat) && isFinite(initLng)) {
           const el = isMinimalCoverage
-            ? buildNeutralPinElement(16, true)
+            ? buildSelectedPinElement()
             : buildMarkerElement(SELECTED_MARKER_SVG, 32);
           selectedMarkerRef.current = new mapboxgl.Marker({
             element: el,
-            anchor: 'center',
+            anchor: isMinimalCoverage ? 'bottom' : 'center',
           })
             .setLngLat([initLng, initLat])
             .addTo(map);
@@ -498,11 +526,11 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         selectedMarkerRef.current.setLngLat([clickedLng, clickedLat]);
       } else {
         const el = isMinimalCoverage
-          ? buildNeutralPinElement(16, true)
+          ? buildSelectedPinElement()
           : buildMarkerElement(SELECTED_MARKER_SVG, 32);
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
-          anchor: 'center',
+          anchor: isMinimalCoverage ? 'bottom' : 'center',
         })
           .setLngLat([clickedLng, clickedLat])
           .addTo(map);
@@ -619,11 +647,11 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         selectedMarkerRef.current.setLngLat([item.lng, item.lat]);
       } else {
         const el = isMinimalCoverage
-          ? buildNeutralPinElement(16, true)
+          ? buildSelectedPinElement()
           : buildMarkerElement(SELECTED_MARKER_SVG, 32);
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
-          anchor: 'center',
+          anchor: isMinimalCoverage ? 'bottom' : 'center',
         })
           .setLngLat([item.lng, item.lat])
           .addTo(map);
@@ -664,6 +692,10 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     ? 'w-full rounded-full border-0 bg-white/92 px-4 py-2.5 pr-10 text-sm text-[#333] shadow-[0_2px_14px_rgba(0,0,0,0.14)] backdrop-blur-md placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-brand/25'
     : 'w-full rounded-lg border-2 border-gray-300 bg-white/98 px-4 py-2.5 pr-10 text-sm shadow-lg backdrop-blur-md placeholder:text-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
 
+  const searchOverlayCls =
+    searchOverlayClassName ??
+    (searchMinimal ? 'left-3 right-3 top-3' : 'left-4 right-4 top-4');
+
   return (
     <div className={`${className} ${shellCls}`}>
       <div ref={mapContainerRef} className={mapSurfaceCls} />
@@ -675,11 +707,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       )}
 
       {(showCountrySelector || showSearch) && !mapError && (
-        <div
-          className={`absolute z-[9999] flex gap-2 pointer-events-none ${
-            searchMinimal ? 'left-3 right-3 top-3' : 'left-4 right-4 top-4'
-          }`}
-        >
+        <div className={`absolute z-[9999] flex gap-2 pointer-events-none ${searchOverlayCls}`}>
           {showCountrySelector && (
             <div className="pointer-events-auto">
               <CountrySelector

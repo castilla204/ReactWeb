@@ -155,15 +155,25 @@ export function useSearchDashboard() {
     );
 
     const handleSearchClick = useCallback(
-        async (searchId: number) => {
+        async (search: SearchItem) => {
             if (isAdmin) {
                 try {
-                    await reviseSearchMutation.mutateAsync(searchId);
+                    await reviseSearchMutation.mutateAsync(search.id);
                 } catch (err) {
                     console.error('Failed to mark search as revised:', err);
                 }
+                navigate(`/detalles/${search.id}`);
+                return;
             }
-            navigate(`/detalles/${searchId}`);
+            // Si la búsqueda ya está contratada, abrir el chat de la contratación
+            // incrustado en Mensajes (una conversación más de la bandeja) en vez de
+            // la página de resultados. El detalle completo (cita/estado/pagos) sigue
+            // accesible desde el botón "Ver detalle" del panel de Mensajes.
+            if (search.searchHire?.id) {
+                navigate(`/mis-mensajes?searchHireId=${search.searchHire.id}`);
+                return;
+            }
+            navigate(`/detalles/${search.id}`);
         },
         [isAdmin, navigate, reviseSearchMutation],
     );

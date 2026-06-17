@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell, Settings2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
 import '../styles/expert-panel.css';
 /* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
 import '../styles/expert-profile-form.css';
@@ -57,6 +57,7 @@ import { isFiscalStepComplete } from '../components/expertPanel/profileSteps';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
 import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
+import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
 
@@ -116,8 +117,8 @@ export function ExpertPanelPage() {
 
     // Leer el tab desde los query params, por defecto 'services'
     const tabFromUrl = searchParams.get('tab');
-    type ExpertTab = 'setup' | 'profile' | 'services' | 'hires' | 'messages';
-    const validTabs: ExpertTab[] = ['setup', 'profile', 'services', 'hires', 'messages'];
+    type ExpertTab = 'setup' | 'profile' | 'disponibilidad' | 'services' | 'hires' | 'messages';
+    const validTabs: ExpertTab[] = ['setup', 'profile', 'disponibilidad', 'services', 'hires', 'messages'];
     const initialTab: ExpertTab = validTabs.includes(tabFromUrl as ExpertTab) ? tabFromUrl as ExpertTab : 'services';
     const [activeTab, setActiveTab] = useState<ExpertTab>(initialTab);
     
@@ -1264,6 +1265,7 @@ export function ExpertPanelPage() {
     const tabTitles: Record<ExpertTab, string> = {
         setup: 'Configuración',
         profile: 'Mi perfil',
+        disponibilidad: 'Disponibilidad',
         services: 'Servicios',
         hires: 'Contrataciones',
         messages: 'Mensajes',
@@ -1367,6 +1369,14 @@ export function ExpertPanelPage() {
                     >
                         <User />
                         Mi perfil
+                    </button>
+                    <button
+                        type="button"
+                        className={`expert-nav-item ${activeTab === 'disponibilidad' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('disponibilidad')}
+                    >
+                        <CalendarClock />
+                        Disponibilidad
                     </button>
                     <button
                         type="button"
@@ -1605,6 +1615,8 @@ export function ExpertPanelPage() {
                                         onPageChange={setHiresPage}
                                         onPageSizeChange={setHiresPageSize}
                                     />
+                                ) : activeTab === 'disponibilidad' ? (
+                                    <AvailabilityTab />
                                 ) : (
                                     <PreHireConversationsTab
                                         token={getAuthToken() || ''}

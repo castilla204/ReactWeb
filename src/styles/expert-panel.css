@@ -4167,3 +4167,26 @@
 @media (prefers-reduced-motion: reduce) {
   .stripe-status-skeleton .sk { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Disponibilidad — calendario de días
+   "Cerrado" se distingue por TEXTURA (trama diagonal), no solo por color: una
+   pista no cromática que sobrevive a daltonismo y a fondos tenues. El relleno
+   de "trabajas" usa el azul de marca (su propio tono), no el verde por defecto.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.av-closed-cell,
+.av-closed-swatch {
+  background-color: hsl(220 16% 95%);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    hsl(220 12% 84%) 0,
+    hsl(220 12% 84%) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.av-closed-cell:hover {
+  background-color: hsl(220 16% 92%);
+}

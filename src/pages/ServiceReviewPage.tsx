@@ -19,6 +19,8 @@ import { authService } from '../services/authService';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
+import { ServiceDetailDesktopBookingAside } from '../components/serviceDetail/ServiceDetailDesktopBookingAside';
+import { pickPreviewReviews } from '../utils/reviewRatingDistribution';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import { EscrowTrustLine } from '../components/EscrowTrustLine';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -38,10 +40,7 @@ import {
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_PAGE_GRID_CLASS,
-  SD_DESKTOP_CONTENT_STACK_CLASS,
-  SD_DESKTOP_HEADER_STACK_CLASS,
-  SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS,
-  SD_DESKTOP_ASIDE_MAX_H_CLASS,
+  SD_DESKTOP_PANEL_CLASS,
   SD_DESKTOP_STICKY_TOP_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
 } from '../constants/homepageTypography';
@@ -62,6 +61,8 @@ import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/Ser
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
 import { LoginModal } from '../components/LoginModal';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -104,6 +105,7 @@ export function ServiceReviewPage({
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useIsMobile();
     
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -124,7 +126,7 @@ export function ServiceReviewPage({
     // Handler para abrir chat o login
     const handleChatClick = () => {
         if (isAuthenticated && token && userId > 0) {
-            navigate(`/chat-pre-contratacion/${serviceId}`);
+            navigate(buildClientPreHireChatPath(serviceId, { mobile: isMobile }));
             return;
         }
         sessionStorage.removeItem('redirectAfterLogin');
@@ -158,7 +160,7 @@ export function ServiceReviewPage({
             sessionStorage.removeItem('loginFromChat');
             if (serviceId) {
                 const t = window.setTimeout(() => {
-                    navigate(`/chat-pre-contratacion/${serviceId}`, { replace: true });
+                    navigate(buildClientPreHireChatPath(serviceId, { mobile: isMobile }), { replace: true });
                 }, 100);
                 return () => clearTimeout(t);
             }
@@ -176,7 +178,7 @@ export function ServiceReviewPage({
             }, 100);
             return () => clearTimeout(t);
         }
-    }, [isAuthenticated, navigate, serviceId]);
+    }, [isAuthenticated, navigate, serviceId, isMobile]);
 
     // ✅ Si el servicio viene como prop, usarlo directamente; si no, buscarlo con useServices
     const { services, isLoading } = useServices({
@@ -698,42 +700,55 @@ export function ServiceReviewPage({
             </div>
 
             {/* ========== DESKTOP — galería full-width + grid contenido / aside ========== */}
-            <div className="service-detail-desktop hidden min-h-screen overflow-x-hidden bg-white lg:block">
+            <div className="service-detail-desktop hidden min-h-screen overflow-x-hidden lg:block">
                 {/* Header unificado: el mismo topbar de la homepage en desktop
                     (logo→inicio, ayuda, moneda, notificaciones, cuenta) en lugar del
                     header propio de la ficha. Decisión del usuario 2026-06-16. */}
                 <HomepageDesktopTopBar variant="plain" showLogo onBack={onBack} />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-4 lg:pt-5`}>
-                    <ServiceDetailDesktopPhotoMapHero
-                        className="mb-4 lg:mb-5"
-                        images={validImages}
-                        onOpen={handleImageClick}
-                        loadingImages={loadingImages}
-                        failedImages={failedImages}
-                        onImageError={handleImageError}
-                        onImageLoad={handleImageLoad}
-                        onImageLoadStart={handleImageLoadStart}
-                        location={expertLocation}
-                        locationLabel={expertLocationLabel || undefined}
-                        rangeKm={expertRange ?? 25}
-                    />
-
-                    <div className={`${SD_PAGE_GRID_CLASS} min-w-0`}>
-                        <div className={`min-w-0 overflow-hidden lg:col-start-1 ${SD_DESKTOP_CONTENT_STACK_CLASS}`}>
-                            <header className={SD_DESKTOP_HEADER_STACK_CLASS}>
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-5 lg:pt-6`}>
+                    <div className="mb-5 overflow-hidden lg:mb-6">
+                        <ServiceDetailDesktopPhotoMapHero
+                            images={validImages}
+                            onOpen={handleImageClick}
+                            loadingImages={loadingImages}
+                            failedImages={failedImages}
+                            onImageError={handleImageError}
+                            onImageLoad={handleImageLoad}
+                            onImageLoadStart={handleImageLoadStart}
+                            location={expertLocation}
+                            locationLabel={expertLocationLabel || undefined}
+                            rangeKm={expertRange ?? 25}
+                            titleOverlay={
                                 <ServiceDetailPageHeadline
+                                    variant="on-image"
                                     title={finalServiceTitle}
                                     locationLabel={expertLocationLabel || undefined}
                                     rating={finalRating > 0 ? finalRating : undefined}
-                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
+                                    reviewCount={
+                                        finalReviews.length > 0 ? finalReviews.length : undefined
+                                    }
+                                    onReviewsClick={
+                                        finalReviews.length > 0
+                                            ? () => setReviewsModalOpen(true)
+                                            : undefined
+                                    }
                                 />
+                            }
+                        />
+                    </div>
+
+                    <div className={`${SD_PAGE_GRID_CLASS} min-w-0`}>
+                        <div className="min-w-0 lg:col-start-1 flex flex-col gap-5">
+                            <article className={SD_DESKTOP_PANEL_CLASS}>
                                 <ServiceDetailExpertHostRow
                                     variant="desktop"
                                     expertName={finalExpertName}
                                     expertPicture={finalExpertPicture}
                                     expertDescription={finalExpertDescription}
                                     completedSearches={finalCompletedSearches}
+                                    rating={finalRating > 0 ? finalRating : undefined}
+                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
                                     onAvatarClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
@@ -741,29 +756,46 @@ export function ServiceReviewPage({
                                     }}
                                     onChatClick={handleChatClick}
                                 />
-                            </header>
 
-                            {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
-                                <section className="min-w-0 overflow-hidden">
-                                    {displayMainDescription ? (
-                                        <>
-                                            <h2 className="hp-section-title mb-2.5">Acerca del servicio</h2>
-                                            <p className="sd-body sd-user-text whitespace-pre-line">
-                                                {displayMainDescription}
-                                            </p>
-                                        </>
-                                    ) : null}
-                                    {visibleDeliverableTypes.length > 0 ? (
-                                        <ServiceDetailDeliverablesGuide
-                                            items={finalDeliverableTypes}
-                                            variant="inline"
-                                            presentation="chips"
-                                            showHeading={!displayMainDescription}
-                                            className={displayMainDescription ? 'mt-4' : ''}
-                                        />
-                                    ) : null}
-                                </section>
-                            )}
+                                {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
+                                    <div className="mt-5 flex flex-col gap-5">
+                                        {displayMainDescription ? (
+                                            <section className="min-w-0 overflow-hidden">
+                                                <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
+                                                <div className="sd-body sd-user-text space-y-3">
+                                                    {displayMainDescription
+                                                        .split(/\n\s*\n/)
+                                                        .map((paragraph) => paragraph.trim())
+                                                        .filter(Boolean)
+                                                        .map((paragraph, index) => (
+                                                            <p key={index} className="m-0 whitespace-pre-line">
+                                                                {paragraph}
+                                                            </p>
+                                                        ))}
+                                                </div>
+                                            </section>
+                                        ) : null}
+                                        {visibleDeliverableTypes.length > 0 ? (
+                                            <section
+                                                className={
+                                                    displayMainDescription
+                                                        ? 'border-t border-[#ebebeb] pt-5'
+                                                        : undefined
+                                                }
+                                            >
+                                                <ServiceDetailDeliverablesGuide
+                                                    items={finalDeliverableTypes}
+                                                    variant="inline"
+                                                    presentation="list"
+                                                    showHeading
+                                                />
+                                            </section>
+                                        ) : null}
+                                    </div>
+                                )}
+
+                                <EscrowTrustLine className="mt-5 border-t border-[#ebebeb] pt-4" />
+                            </article>
                         </div>
 
                         <aside
@@ -772,89 +804,43 @@ export function ServiceReviewPage({
                             {(() => {
                                 const desktopPriceInfo = getServicePriceInfo(finalPrice);
                                 return (
-                                    <article
-                                        className={`sd-aside-card flex flex-col ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
-                                    >
-                                        <div className="pb-1">
-                                            <p className="sd-aside-summary-title line-clamp-2">
-                                                {finalServiceTitle}
-                                            </p>
-                                            <p className="sd-aside-summary-meta mt-0.5 truncate">
-                                                con {finalExpertName}
-                                            </p>
-                                        </div>
-
-                                        <section className="shrink-0 border-t border-[#ebebeb] py-4">
-                                            <p className="text-xs leading-snug text-[#6a6a6a]">
-                                                Precio · impuestos incluidos
-                                            </p>
-                                            <p className="sd-aside-price mt-0.5">
-                                                {desktopPriceInfo.wasConverted ? (
-                                                    <>
-                                                        <span className="mr-0.5 text-base font-medium text-brand">
-                                                            ≈
-                                                        </span>
-                                                        {desktopPriceInfo.converted}
-                                                    </>
-                                                ) : (
-                                                    desktopPriceInfo.display
-                                                )}
-                                            </p>
-                                            {desktopPriceInfo.wasConverted ? (
-                                                <p className="mt-1 text-[11px] text-[#6a6a6a]">
-                                                    {desktopPriceInfo.sourceFormatted}
-                                                </p>
-                                            ) : null}
-                                        </section>
-
-                                        {finalAvailability && (
-                                            <section className="border-t border-[#ebebeb] py-4">
-                                                <ServiceDetailBookingMeta
-                                                    layout="card"
-                                                    showCoverage={false}
-                                                    showAvailabilityHint={false}
-                                                    availability={finalAvailability}
-                                                    timezone={finalService?.expert?.timezone}
-                                                    isOnVacation={finalService?.expert?.isOnVacation}
-                                                />
-                                            </section>
-                                        )}
-
-                                        <footer className="mt-auto space-y-2.5 border-t border-[#ebebeb] pt-4">
-                                            {isAuthenticated ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleReserveClick}
-                                                    className="sd-aside-cta"
-                                                >
-                                                    Reservar
-                                                </button>
+                                    <ServiceDetailDesktopBookingAside
+                                        expertName={finalExpertName}
+                                        priceDisplay={
+                                            desktopPriceInfo.wasConverted ? (
+                                                <>
+                                                    <span className="mr-0.5 text-base font-medium text-brand">
+                                                        ≈
+                                                    </span>
+                                                    {desktopPriceInfo.converted}
+                                                </>
                                             ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={openLoginForCheckout}
-                                                    className="sd-aside-cta"
-                                                >
-                                                    Inicia sesión para continuar
-                                                </button>
-                                            )}
-                                            <EscrowTrustLine align="center" />
-                                        </footer>
-                                    </article>
+                                                desktopPriceInfo.display
+                                            )
+                                        }
+                                        priceWasConverted={desktopPriceInfo.wasConverted}
+                                        priceSourceFormatted={desktopPriceInfo.sourceFormatted}
+                                        isOnVacation={finalService?.expert?.isOnVacation}
+                                        isAuthenticated={isAuthenticated}
+                                        averageRating={finalRating > 0 ? finalRating : undefined}
+                                        reviewCount={finalReviews.length}
+                                        highlightReview={
+                                            finalReviews.length > 0
+                                                ? pickPreviewReviews(finalReviews, 1)[0] ?? null
+                                                : null
+                                        }
+                                        onReviewsClick={
+                                            finalReviews.length > 0
+                                                ? () => setReviewsModalOpen(true)
+                                                : undefined
+                                        }
+                                        onReserve={handleReserveClick}
+                                        onLogin={openLoginForCheckout}
+                                    />
                                 );
                             })()}
                         </aside>
                     </div>
-
-                    <section className={SD_DESKTOP_REVIEWS_FULL_SECTION_CLASS}>
-                        <ServiceDetailReviewsPreview
-                            variant="desktop"
-                            layout="full"
-                            reviews={finalReviews}
-                            averageRating={finalRating}
-                            onShowAll={() => setReviewsModalOpen(true)}
-                        />
-                    </section>
                 </div>
             </div>
 

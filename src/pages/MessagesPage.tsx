@@ -1,8 +1,8 @@
-import { Suspense, lazy, useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, MessageCircle, Search as SearchIcon, X } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Search as SearchIcon, ShieldCheck, X } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { API_CONFIG } from '../config/api';
 import { authService } from '../services/authService';
@@ -10,6 +10,29 @@ import { ClientConversationSummaryDto, MessageSummaryDto } from '../types/chat.t
 import { useApi } from '../hooks/useApi';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HP_FONT } from '../constants/homepageTypography';
+import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
+
+type PendingPreHireOpen = { serviceId: number; conversationId?: number };
+
+function buildPendingPreHireConversation(
+    pending: PendingPreHireOpen,
+): ClientConversationSummaryDto {
+    return {
+        conversationId: pending.conversationId ?? 0,
+        conversationType: 'pre-hire',
+        createdAt: '',
+        updatedAt: '',
+        unreadCount: 0,
+        lastMessage: null,
+        expertId: null,
+        expertName: 'Experto',
+        expertProfilePictureUrl: null,
+        searchServiceId: pending.serviceId,
+        serviceName: 'Pregunta antes de contratar',
+        servicePrice: null,
+        serviceImageUrl: null,
+    };
+}
 
 const MobileBottomBar = lazy(() =>
     import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
@@ -18,6 +41,8 @@ const MobileBottomBar = lazy(() =>
 const PreHireChat = lazy(() =>
     import('../components/PreHireChat').then((m) => ({ default: m.PreHireChat })),
 );
+
+const Chat = lazy(() => import('../components/Chat'));
 
 /**
  * MessagesPage — Rediseño 2026-06 "El gabinete del perito" (iter. 2).
@@ -70,9 +95,11 @@ function formatRelative(iso: string): string {
 interface StatusChipProps {
     label: string;
     tone: 'brand' | 'green' | 'amber' | 'red' | 'neutral';
+    /** Icono opcional al inicio del chip (p. ej. escudo para contratación). */
+    icon?: 'shield';
 }
 
-const StatusChip: React.FC<StatusChipProps> = ({ label, tone }) => {
+const StatusChip: React.FC<StatusChipProps> = ({ label, tone, icon }) => {
     const palette = (() => {
         switch (tone) {
             case 'brand':
@@ -89,8 +116,11 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, tone }) => {
     })();
     return (
         <span
-            className={`inline-flex h-[18px] shrink-0 items-center rounded-full px-2 text-[10.5px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
+            className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[10.5px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
         >
+            {icon === 'shield' && (
+                <ShieldCheck className="h-[11px] w-[11px]" strokeWidth={2.25} aria-hidden />
+            )}
             {label}
         </span>
     );
@@ -112,6 +142,7 @@ function tonFromHireStatus(status: string | null | undefined): StatusChipProps['
 
 export function MessagesPage() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const { fetchApi } = useApi();
     const isMobile = useIsMobile();
@@ -121,6 +152,8 @@ export function MessagesPage() {
     const [filter, setFilter] = useState<FilterTab>('all');
     // Conversación abierta en el panel derecho (solo desktop). En móvil se navega.
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [pendingPreHire, setPendingPreHire] = useState<PendingPreHireOpen | null>(null);
+    const deepLinkHandledRef = useRef(false);
 
     const { data: conversations, isLoading, error, refetch } = useQuery<
         ClientConversationSummaryDto[]
@@ -249,16 +282,27 @@ export function MessagesPage() {
 
     const handleOpenChat = (conversation: ClientConversationSummaryDto) => {
         if (conversation.conversationType === 'pre-hire' && conversation.searchServiceId) {
-            // Desktop: abrir el chat en el panel derecho. Móvil: navegar a la página completa.
+            setPendingPreHire(null);
             if (isMobile) {
                 navigate(
-                    `/chat-pre-contratacion/${conversation.searchServiceId}?conversationId=${conversation.conversationId}`,
+                    buildClientPreHireChatPath(conversation.searchServiceId, {
+                        conversationId: conversation.conversationId,
+                        mobile: true,
+                    }),
                 );
             } else {
                 setSelectedId(conversation.conversationId);
             }
         } else if (conversation.conversationType === 'post-hire' && conversation.searchHireId) {
-            navigate(`/searchhire/${conversation.searchHireId}`);
+            // Desktop: abrir el chat de la contratación incrustado en el panel derecho,
+            // como una conversación más de la bandeja. Móvil: navegar a la página completa
+            // del hire (ya optimizada para móvil con su propia cabecera y detalles).
+            if (isMobile) {
+                navigate(`/searchhire/${conversation.searchHireId}`);
+            } else {
+                setPendingPreHire(null);
+                setSelectedId(conversation.conversationId);
+            }
         }
     };
 
@@ -269,6 +313,90 @@ export function MessagesPage() {
                 : sortedConversations.find((c) => c.conversationId === selectedId) ?? null,
         [selectedId, sortedConversations],
     );
+
+    const activePreHireConversation = useMemo(() => {
+        if (
+            selectedConversation?.conversationType === 'pre-hire' &&
+            selectedConversation.searchServiceId
+        ) {
+            return selectedConversation;
+        }
+        if (pendingPreHire) {
+            return buildPendingPreHireConversation(pendingPreHire);
+        }
+        return null;
+    }, [selectedConversation, pendingPreHire]);
+
+    useEffect(() => {
+        if (isLoading || deepLinkHandledRef.current) return;
+
+        const serviceIdParam = searchParams.get('serviceId');
+        const conversationIdParam = searchParams.get('conversationId');
+        const hireIdParam = searchParams.get('searchHireId');
+        if (!serviceIdParam && !conversationIdParam && !hireIdParam) return;
+
+        deepLinkHandledRef.current = true;
+        setSearchParams({}, { replace: true });
+
+        // --- Contratación (post-hire): abrir el chat del hire incrustado, como
+        // una conversación más. En móvil se navega a la página completa del hire. ---
+        const hireId = hireIdParam ? Number.parseInt(hireIdParam, 10) : null;
+        if (hireId && hireId > 0) {
+            if (isMobile) {
+                navigate(`/searchhire/${hireId}`, { replace: true });
+                return;
+            }
+            const byHire = sortedConversations.find(
+                (c) => c.conversationType === 'post-hire' && c.searchHireId === hireId,
+            );
+            if (byHire) {
+                setSelectedId(byHire.conversationId);
+                setPendingPreHire(null);
+            } else {
+                // Sin fila de conversación para este hire → página completa del hire.
+                navigate(`/searchhire/${hireId}`, { replace: true });
+            }
+            return;
+        }
+
+        // --- Pre-contratación: solo desktop (en móvil se navega a su página). ---
+        if (isMobile) return;
+
+        const conversationId = conversationIdParam ? Number.parseInt(conversationIdParam, 10) : null;
+        const serviceId = serviceIdParam ? Number.parseInt(serviceIdParam, 10) : null;
+
+        if (conversationId && conversationId > 0) {
+            const byId = sortedConversations.find((c) => c.conversationId === conversationId);
+            if (byId) {
+                setSelectedId(conversationId);
+                setPendingPreHire(null);
+                return;
+            }
+            if (serviceId && serviceId > 0) {
+                setPendingPreHire({ serviceId, conversationId });
+                return;
+            }
+        }
+
+        if (serviceId && serviceId > 0) {
+            const byService = sortedConversations.find(
+                (c) => c.conversationType === 'pre-hire' && c.searchServiceId === serviceId,
+            );
+            if (byService) {
+                setSelectedId(byService.conversationId);
+                setPendingPreHire(null);
+            } else {
+                setPendingPreHire({ serviceId });
+            }
+        }
+    }, [isMobile, isLoading, searchParams, setSearchParams, sortedConversations, navigate]);
+
+    const handlePreHireConversationLoaded = (conversationId: number) => {
+        if (!pendingPreHire) return;
+        setPendingPreHire(null);
+        setSelectedId(conversationId);
+        void refetch();
+    };
 
     const formatAmount = (value: number | null | undefined, currency: string | null | undefined) => {
         if (value == null) return '';
@@ -464,20 +592,42 @@ export function MessagesPage() {
                 </section>
 
                 {/* ----- Panel conversación — solo desktop ----- */}
-                {selectedConversation && selectedConversation.searchServiceId ? (
-                    <ConversationPanel
-                        key={selectedConversation.conversationId}
+                {selectedConversation?.conversationType === 'post-hire' &&
+                selectedConversation.searchHireId ? (
+                    <HireConversationPanel
+                        key={`hire-${selectedConversation.searchHireId}`}
                         conversation={selectedConversation}
+                        amountLabel={formatAmount(
+                            selectedConversation.hireAmount,
+                            selectedConversation.hireCurrency,
+                        )}
+                        onViewDetail={() =>
+                            navigate(`/searchhire/${selectedConversation.searchHireId}`)
+                        }
+                        onClose={() => setSelectedId(null)}
+                    />
+                ) : activePreHireConversation?.searchServiceId ? (
+                    <ConversationPanel
+                        key={
+                            activePreHireConversation.conversationId > 0
+                                ? activePreHireConversation.conversationId
+                                : `pending-${activePreHireConversation.searchServiceId}`
+                        }
+                        conversation={activePreHireConversation}
                         token={token}
                         userId={user?.id ?? 0}
                         amountLabel={formatAmount(
-                            selectedConversation.servicePrice,
-                            selectedConversation.serviceCurrency,
+                            activePreHireConversation.servicePrice,
+                            activePreHireConversation.serviceCurrency,
                         )}
                         onHire={() =>
-                            navigate(`/checkout/${selectedConversation.searchServiceId}`)
+                            navigate(`/checkout/${activePreHireConversation.searchServiceId}`)
                         }
-                        onClose={() => setSelectedId(null)}
+                        onClose={() => {
+                            setSelectedId(null);
+                            setPendingPreHire(null);
+                        }}
+                        onConversationLoaded={handlePreHireConversationLoaded}
                     />
                 ) : (
                     <ConversationPlaceholder />
@@ -522,6 +672,7 @@ interface ConversationPanelProps {
     amountLabel: string;
     onHire: () => void;
     onClose: () => void;
+    onConversationLoaded?: (conversationId: number) => void;
 }
 
 /**
@@ -537,6 +688,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
     amountLabel,
     onHire,
     onClose,
+    onConversationLoaded,
 }) => (
     <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
         <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
@@ -589,14 +741,114 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
                     serviceId={conversation.searchServiceId ?? 0}
                     token={token}
                     userId={userId}
-                    conversationId={conversation.conversationId}
+                    conversationId={
+                        conversation.conversationId > 0 ? conversation.conversationId : undefined
+                    }
                     peerName={conversation.expertName}
                     embedded
+                    onConversationLoaded={({ id }) => onConversationLoaded?.(id)}
                 />
             </Suspense>
         </div>
     </section>
 );
+
+interface HireConversationPanelProps {
+    conversation: ClientConversationSummaryDto;
+    amountLabel: string;
+    onViewDetail: () => void;
+    onClose: () => void;
+}
+
+/**
+ * Panel derecho en desktop para una CONTRATACIÓN activa: misma cabecera que el
+ * panel de pre-contratación (avatar + experto + acción + cerrar), pero el cuerpo
+ * incrusta el chat completo del hire (Chat.tsx) — con toda su funcionalidad:
+ * mensajes, archivos, ubicación/mapa y mensajes de cita/estado. La acción de la
+ * cabecera ya no es "Contratar" sino "Ver detalle", que lleva a /searchhire/:id
+ * para gestionar cita, estado y pagos completos. En móvil se navega a esa página.
+ */
+const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
+    conversation,
+    amountLabel,
+    onViewDetail,
+    onClose,
+}) => {
+    const statusLabel = conversation.hireStatusTranslated?.trim() || null;
+    const chip =
+        statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
+            ? { label: statusLabel, tone: tonFromHireStatus(statusLabel) }
+            : { label: 'Contratación activa', tone: 'green' as StatusChipProps['tone'] };
+
+    return (
+        <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
+                <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+                    <AvatarImage
+                        src={conversation.expertProfilePictureUrl || undefined}
+                        alt=""
+                        className="h-full w-full object-cover"
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[15px] font-semibold text-white">
+                        {(conversation.expertName || '?').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1 leading-tight">
+                    <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                        {conversation.expertName}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5">
+                        <StatusChip label={chip.label} tone={chip.tone} icon="shield" />
+                        {amountLabel && (
+                            <span className="truncate text-[12px] font-medium tabular-nums text-[#9a9a9a]">
+                                {amountLabel}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={onViewDetail}
+                    className="hidden shrink-0 items-center gap-1.5 rounded-full border border-[#e1e1e1] bg-white px-4 py-2 text-[13px] font-semibold text-[#1c1c1c] transition-colors hover:bg-[#fafafa] lg:inline-flex"
+                >
+                    Ver detalle
+                </button>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Cerrar conversación"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                >
+                    <X className="h-[18px] w-[18px]" strokeWidth={2} />
+                </button>
+            </div>
+            <div className="min-h-0 flex-1">
+                <Suspense
+                    fallback={
+                        <div className="flex h-full items-center justify-center bg-white">
+                            <MessageCircle
+                                className="h-6 w-6 animate-pulse text-[#d4d4d4]"
+                                aria-hidden
+                            />
+                        </div>
+                    }
+                >
+                    <Chat
+                        searchId={null}
+                        searchHireId={conversation.searchHireId ?? undefined}
+                        isExpert={false}
+                        expertData={{
+                            name: conversation.expertName,
+                            profilePictureUrl: conversation.expertProfilePictureUrl || undefined,
+                        }}
+                        onOpenDetails={onViewDetail}
+                        onBack={onClose}
+                    />
+                </Suspense>
+            </div>
+        </section>
+    );
+};
 
 // -------------- Subcomponentes --------------
 
@@ -797,11 +1049,17 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
         ? formatAmount(conversation.servicePrice, conversation.serviceCurrency)
         : formatAmount(conversation.hireAmount, conversation.hireCurrency);
 
+    // Chip de estado en la fila:
+    //  · Pre-contratación → sin chip (ya lo dice el filtro/insignia del avatar).
+    //  · Contratación con estado especial (disputa, completada, cancelada…) → ese estado.
+    //  · Contratación activa "normal" → chip permanente "Contratación activa" con escudo,
+    //    para distinguirla de un vistazo de las consultas pre-contratación.
     const statusLabel = conversation.hireStatusTranslated?.trim() || null;
-    const chip =
-        !isPreHire && statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
-            ? { label: statusLabel, tone: tonFromHireStatus(statusLabel) }
-            : null;
+    const chip: { label: string; tone: StatusChipProps['tone']; icon?: 'shield' } | null = isPreHire
+        ? null
+        : statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
+          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel), icon: 'shield' }
+          : { label: 'Contratación activa', tone: 'green', icon: 'shield' };
 
     const ariaStamp = stamp ? ` Última actividad hace ${stamp}.` : '';
 
@@ -822,13 +1080,28 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand',
             ].join(' ')}
         >
-            {/* Avatar 52px */}
-            <Avatar className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
-                <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
-                <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[18px] font-semibold text-white">
-                    {(expert || title || '?').charAt(0).toUpperCase()}
-                </AvatarFallback>
-            </Avatar>
+            {/* Avatar 52px con insignia de tipo (escudo = contratada · burbuja = pregunta) */}
+            <div className="relative shrink-0">
+                <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-[#f0f0f0]">
+                    <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[18px] font-semibold text-white">
+                        {(expert || title || '?').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                </Avatar>
+                <span
+                    className={[
+                        'absolute -bottom-0.5 -right-0.5 flex h-[19px] w-[19px] items-center justify-center rounded-full ring-2 ring-white',
+                        isPreHire ? 'bg-[#eef4fb] text-brand' : 'bg-[#0F6A3E] text-white',
+                    ].join(' ')}
+                    aria-hidden
+                >
+                    {isPreHire ? (
+                        <MessageCircle className="h-[11px] w-[11px]" strokeWidth={2.25} />
+                    ) : (
+                        <ShieldCheck className="h-[11px] w-[11px]" strokeWidth={2.25} />
+                    )}
+                </span>
+            </div>
 
             {/* Cuerpo: nombre + snippet, dos líneas */}
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
@@ -863,7 +1136,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                             isUnread ? 'font-medium text-[#3a3a3a]' : 'text-[#737373]',
                         ].join(' ')}
                     >
-                        {chip && <StatusChip label={chip.label} tone={chip.tone} />}
+                        {chip && <StatusChip label={chip.label} tone={chip.tone} icon={chip.icon} />}
                         <span className="truncate">
                             {isOwnLastMessage && <span className="text-[#a0a0a0]">Tú: </span>}
                             {snippet}

@@ -24,6 +24,7 @@ import { normalizeDeliverableTypes } from '../components/serviceDetail/ServiceDe
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
 import { resolveCheckoutLocation, persistHireSearchLocation } from '../utils/hireSearchContext';
 import { resolveExpertWorkRadiusKm } from '../utils/workRadius';
+import { cn } from '../lib/utils';
 // Verificación de móvil/SMS: NO se exige al cliente para contratar (solo a expertos).
 import { getCountryName } from '../utils/countries';
 import {
@@ -586,7 +587,31 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
             {/* Versión Móvil — wizard de 3 pasos cuando hay ubicación que elegir */}
             {!isDesktop && (
-            <div className="checkout-page min-h-screen bg-white lg:hidden">
+            <div
+                className={cn(
+                    'checkout-page lg:hidden',
+                    mobileThreeStep && mobileStep === 2
+                        ? 'relative h-[100dvh] max-h-[100dvh] overflow-hidden'
+                        : 'min-h-screen bg-white',
+                )}
+            >
+                {mobileThreeStep && mobileStep === 2 ? (
+                    <>
+                        <div className="absolute inset-x-0 top-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-0">
+                            {locationPickerWizardNode}
+                        </div>
+                        <header className="pointer-events-none absolute inset-x-0 top-0 z-20">
+                            <div
+                                className={cn(
+                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+                                    'bg-gradient-to-b from-white/96 via-white/80 to-transparent pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                )}
+                            >
+                                <CheckoutMobileStepper currentStep={mobileStep} className="mb-0" />
+                            </div>
+                        </header>
+                    </>
+                ) : (
                 <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
                     <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
                         {!mobileThreeStep ? (
@@ -600,8 +625,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     {mobileThreeStep ? (
                         mobileStep === 1 ? (
                             <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{slotPickerMobileNode}</div>
-                        ) : mobileStep === 2 ? (
-                            <div className="mb-0">{locationPickerWizardNode}</div>
                         ) : (
                             <>
                                 <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3`}>
@@ -637,6 +660,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         </>
                     )}
                 </div>
+                )}
 
                 <CheckoutMobileStickyFooter>
                     <div className={SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS}>

@@ -45,9 +45,9 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
     'bg-white font-semibold text-[#1c1c1c] ring-1 ring-inset ring-brand';
   const inactiveDayClass = 'bg-[#fafafa] font-medium text-[#6a6a6a]';
   const sidebarActiveDayClass =
-    'bg-white font-semibold text-[#1c1c1c] ring-1 ring-inset ring-brand';
+    'bg-brand/[0.09] font-semibold text-brand';
   const sidebarInactiveDayClass =
-    'bg-[#fafafa] font-medium text-[#9ca3af]';
+    'bg-transparent font-medium text-[#9ca3af]';
   const mobileActiveDayClass = 'bg-brand font-semibold text-white';
   const mobileInactiveDayClass = 'bg-[#f0f0f0] font-medium text-[#b0b0b0]';
 
@@ -146,33 +146,13 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
     );
   }
 
-  const circleDaysRow = (
-    <div className="flex w-full items-center justify-between gap-0.5">
-      {EXPERT_WEEK_DAYS.map((day) => {
-        const on = activeDays.has(day.key);
-        return (
-          <span
-            key={day.key}
-            title={`${day.label}${on ? '' : ' — no disponible'}`}
-            aria-pressed={on}
-            className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none ${
-              on ? mobileActiveDayClass : mobileInactiveDayClass
-            }`}
-          >
-            {day.short}
-          </span>
-        );
-      })}
-    </div>
-  );
-
   if (variant === 'sidebar') {
     return (
       <div className={`w-full ${hideScheduleRow ? '' : 'space-y-2'} ${className}`} role="group" aria-label={ariaLabel}>
         {showHeading && (
           <p className="mb-2 text-xs font-medium text-[#6a6a6a]">Disponibilidad</p>
         )}
-        {circleDaysRow}
+        {daysRow}
         {!hideScheduleRow && scheduleRow}
       </div>
     );

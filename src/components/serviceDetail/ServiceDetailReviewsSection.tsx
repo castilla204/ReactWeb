@@ -100,7 +100,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
             isCompact
               ? 'border-l-2 border-brand py-0 pl-2.5 text-xs text-[#6a6a6a]'
               : isDrawer
-                ? 'border-l-2 border-brand py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
+                ? 'border-l-2 border-[#222222] py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
                 : 'border-l-2 border-brand py-0 pl-3 text-sm text-[#6a6a6a]'
           }
         >
@@ -182,6 +182,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                     <ServiceDetailReviewStars
                       rating={rating}
                       size={isCompact ? 'sm' : isDrawer ? 'sm' : 'md'}
+                      neutral={isDrawer}
                       className={isDrawer ? 'mt-1' : 'mt-1'}
                     />
                     {isDrawer && review.client?.location ? (

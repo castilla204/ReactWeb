@@ -262,6 +262,8 @@ export interface ClientConversationSummaryDto {
   hireAmount?: number | null
   hireBaseAmount?: number | null
   hireTaxAmount?: number | null
+  serviceCurrency?: string | null
+  hireCurrency?: string | null
   searchTitle?: string | null
   searchDescription?: string | null
   // También incluye searchServiceId, serviceName, servicePrice, serviceImageUrl para post-hire

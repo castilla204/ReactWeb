@@ -224,19 +224,19 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
       </div>
     ) : (
       <section className="w-full">
-        <div className="mb-2 flex items-baseline justify-between gap-2">
-          <p className="text-[11px] font-medium text-[#6a6a6a]">Disponibilidad</p>
+        <p className="mb-2.5 text-xs font-medium text-[#6a6a6a]">
+          Disponibilidad
           {isOnVacation ? (
             <span
-              className="text-[10px] font-medium text-[#b45309]"
+              className="ml-2 font-normal text-[#b45309]"
               title="El experto está de vacaciones"
             >
-              No disponible
+              · No disponible
             </span>
           ) : null}
-        </div>
+        </p>
         {availabilityTimeRange ? (
-          <p className="mb-2 text-xs font-medium tabular-nums text-[#222222]">
+          <p className="mb-2.5 text-sm font-medium tabular-nums text-[#222222]">
             {availabilityTimeRange}
             {tzShort ? (
               <span className="ml-1 font-normal text-[#9ca3af]">· {tzShort}</span>

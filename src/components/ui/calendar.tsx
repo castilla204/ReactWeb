@@ -67,7 +67,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "group/calendar bg-background p-3 [--cell-size:2.25rem] sm:[--cell-size:2.5rem]",
+        "group/calendar bg-background p-3 [--cell-size:2.75rem] sm:[--cell-size:2.5rem]",
         className
       )}
       captionLayout={captionLayout}
@@ -77,12 +77,12 @@ function Calendar({
         ...formatters,
       }}
       classNames={{
-        root: cn("w-fit", defaultClassNames.root),
+        root: cn("w-full", defaultClassNames.root),
         months: cn(
-          "relative flex flex-col gap-4 md:flex-row",
+          "relative flex w-full flex-col gap-4 md:flex-row",
           defaultClassNames.months
         ),
-        month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
+        month: cn("flex w-full flex-col gap-2.5 sm:gap-4", defaultClassNames.month),
         nav: cn(
           "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
           defaultClassNames.nav
@@ -117,13 +117,14 @@ function Calendar({
             : "flex h-8 items-center gap-1 rounded-md pl-2 pr-1 text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
           defaultClassNames.caption_label
         ),
-        table: "w-full border-collapse",
-        weekdays: cn("flex", defaultClassNames.weekdays),
+        table: "flex w-full flex-col",
+        month_grid: "flex w-full flex-col",
+        weekdays: cn("flex gap-1", defaultClassNames.weekdays),
         weekday: cn(
-          "flex-1 select-none rounded-md text-[0.75rem] font-medium uppercase tracking-wide text-[#888]",
+          "min-w-0 flex-1 basis-0 select-none rounded-md text-center text-[0.75rem] font-medium uppercase tracking-wide text-[#888]",
           defaultClassNames.weekday
         ),
-        week: cn("mt-2 flex w-full", defaultClassNames.week),
+        week: cn("mt-1 flex w-full gap-1 sm:mt-2", defaultClassNames.week),
         week_number_header: cn(
           "w-(--cell-size) select-none",
           defaultClassNames.week_number_header
@@ -133,7 +134,7 @@ function Calendar({
           defaultClassNames.week_number
         ),
         day: cn(
-          "group/day relative aspect-square h-full w-full p-0 text-center select-none [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md",
+          "group/day relative h-[var(--cell-size)]! min-w-0 flex-1 basis-0 p-0 text-center select-none [&:first-child[data-selected=true]_button]:rounded-l-md [&:last-child[data-selected=true]_button]:rounded-r-md",
           defaultClassNames.day
         ),
         range_start: cn("rounded-l-md bg-brand/10", defaultClassNames.range_start),
