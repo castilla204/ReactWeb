@@ -56,7 +56,7 @@ import { ProfileSetupWizard, useProfileSetupState } from '../components/expertPa
 import { isFiscalStepComplete } from '../components/expertPanel/profileSteps';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
 import { HiresTab } from '../components/expertPanel/HiresTab';
-import { PreHireConversationsTab } from '../components/expertPanel/PreHireConversationsTab';
+import { ExpertMessagesInbox } from '../components/expertPanel/ExpertMessagesInbox';
 import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
@@ -1510,7 +1510,7 @@ export function ExpertPanelPage() {
                                     acción + plazo Stripe). Sustituye al StripeStatusBanner, que era redundante
                                     (mostrar ambos confundía). El desglose de requisitos vive en la pestaña Perfil
                                     (StripeStatusCard, M2). Visible en todas las pestañas del panel, incl. services. */}
-                                {profile && stripeStatus?.stripeStatus && !(showServiceForm && activeTab === 'services') && (
+                                {profile && stripeStatus?.stripeStatus && activeTab !== 'disponibilidad' && !(showServiceForm && activeTab === 'services') && (
                                     <div className="px-5 pt-4">
                                         <ExpertVisibilityBanner
                                             stripeStatus={stripeStatus.stripeStatus}
@@ -1618,7 +1618,7 @@ export function ExpertPanelPage() {
                                 ) : activeTab === 'disponibilidad' ? (
                                     <AvailabilityTab />
                                 ) : (
-                                    <PreHireConversationsTab
+                                    <ExpertMessagesInbox
                                         token={getAuthToken() || ''}
                                         userId={user?.id || user?.Id || 0}
                                     />

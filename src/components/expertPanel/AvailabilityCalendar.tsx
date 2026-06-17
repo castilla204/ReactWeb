@@ -69,11 +69,29 @@ const AvailabilityCalendar: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    // Alcance de los atajos por día de la semana: solo el mes visible o hasta el horizonte.
+    const [scope, setScope] = useState<'month' | 'all'>('month');
+    // Confirmación inline al aplicar a muchos días (evita cierres masivos accidentales).
+    const [confirmBulk, setConfirmBulk] = useState(false);
     const prevSelSize = useRef(0);
 
     const enabledWeekdays = useMemo(() => new Set(rules.map((r) => r.dayOfWeek)), [rules]);
     const pendingCount = Object.keys(pending).length;
     const selCount = selectedDays.size;
+    const BULK_THRESHOLD = 31; // a partir de aquí, pedir confirmación al aplicar
+
+    // Horizonte para "Todo el calendario": 18 meses desde hoy (acota el batch y es comunicable).
+    const horizonEnd = useMemo(() => new Date(today.getFullYear(), today.getMonth() + 18 + 1, 0), [today]);
+    const horizonLabel = useMemo(
+        () => horizonEnd.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
+        [horizonEnd],
+    );
+    // Cuántos días seleccionados caen fuera del mes que se está viendo (para avisar de que no se ven).
+    const selOutsideMonth = useMemo(() => {
+        let n = 0;
+        selectedDays.forEach((ymd) => { const d = fromYmd(ymd); if (d.getFullYear() !== month.getFullYear() || d.getMonth() !== month.getMonth()) n += 1; });
+        return n;
+    }, [selectedDays, month]);
 
     const rangeFromTo = useCallback((m: Date) => {
         const from = new Date(m.getFullYear(), m.getMonth(), 1);
@@ -178,15 +196,22 @@ const AvailabilityCalendar: React.FC = () => {
         });
     };
 
-    // Atajo: añadir a la selección todos los días de un día-de-la-semana en el mes visible (futuros).
+    // Atajo: añadir todos los días de un día-de-la-semana. Según `scope`: solo el mes visible,
+    // o desde hoy hasta el horizonte (varios meses/años). Itera por fecha-calendario (estable en
+    // cualquier zona horaria; getDay() de un Y-M-D a medianoche local es el día correcto).
     const selectWeekdayColumn = (dow: number) => {
-        const year = month.getFullYear(); const mi = month.getMonth();
-        const days = new Date(year, mi + 1, 0).getDate();
+        const start = scope === 'all'
+            ? new Date(today.getFullYear(), today.getMonth(), 1)
+            : new Date(month.getFullYear(), month.getMonth(), 1);
+        const end = scope === 'all'
+            ? horizonEnd
+            : new Date(month.getFullYear(), month.getMonth() + 1, 0);
         setSelectedDays((prev) => {
             const next = new Set(prev);
-            for (let day = 1; day <= days; day += 1) {
-                const d = new Date(year, mi, day);
-                if (startOfDay(d) >= today && d.getDay() === dow) next.add(toYmd(d));
+            const cur = new Date(start);
+            while (cur <= end) {
+                if (startOfDay(cur) >= today && cur.getDay() === dow) next.add(toYmd(cur));
+                cur.setDate(cur.getDate() + 1); // setDate normaliza rollover de mes/año y bisiestos
             }
             return next;
         });
@@ -205,7 +230,7 @@ const AvailabilityCalendar: React.FC = () => {
         });
     };
 
-    const clearSelection = () => setSelectedDays(new Set());
+    const clearSelection = () => { setSelectedDays(new Set()); setConfirmBulk(false); setScope('month'); };
 
     // Aplicar el draft a TODOS los días seleccionados (los acumula en pending). No llama al API.
     const applyToSelection = () => {
@@ -217,6 +242,8 @@ const AvailabilityCalendar: React.FC = () => {
                 setError('Revisa las horas: la hora de fin debe ser posterior a la de inicio.'); return;
             }
         }
+        // Confirmación ante cambios masivos (p. ej. cerrar todos los martes de 18 meses sin querer).
+        if (selCount > BULK_THRESHOLD && !confirmBulk) { setConfirmBulk(true); return; }
         const change: PendingChange = draft.isWorking
             ? { isWorking: true, ranges: draft.ranges.map((r) => ({ ...r })) }
             : { isWorking: false, ranges: [] };
@@ -392,11 +419,25 @@ const AvailabilityCalendar: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Atajos de selección múltiple: por columna de día de la semana, todo el mes, limpiar. */}
-                        <div className="av-calendar__quickselect" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 10px' }}>
+                        {/* Atajos de selección múltiple: alcance + columna de día de la semana, todo el mes, limpiar. */}
+                        <div className="av-calendar__quickselect" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 6px' }}>
                             <span style={{ fontSize: 12, fontWeight: 600, color: '#999' }}>Seleccionar:</span>
+                            {/* Alcance: ¿el botón de día abarca solo el mes o todo el calendario hasta el horizonte? */}
+                            <div role="group" aria-label="Alcance de la selección por día de la semana"
+                                style={{ display: 'inline-flex', border: '1px solid #e3e3e3', borderRadius: 999, overflow: 'hidden' }}>
+                                <button type="button" aria-pressed={scope === 'month'} onClick={() => setScope('month')}
+                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'month' ? 'bg-brand text-white' : 'bg-white text-[#666] hover:text-brand')}>
+                                    Este mes
+                                </button>
+                                <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')}
+                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'all' ? 'bg-brand text-white' : 'bg-white text-[#666] hover:text-brand')}>
+                                    Todo el calendario
+                                </button>
+                            </div>
                             {WEEKDAYS.map((w) => (
-                                <button key={w.dow} type="button" onClick={() => selectWeekdayColumn(w.dow)} aria-label={`Todos los ${w.short}`}
+                                <button key={w.dow} type="button" onClick={() => selectWeekdayColumn(w.dow)}
+                                    aria-label={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
+                                    title={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
                                     className="h-7 w-7 rounded-full border border-[#e3e3e3] text-xs font-semibold text-[#555] hover:border-brand/50 hover:text-brand">
                                     {w.short}
                                 </button>
@@ -406,12 +447,18 @@ const AvailabilityCalendar: React.FC = () => {
                                 Todo el mes
                             </button>
                             {selCount > 0 && (
-                                <button type="button" onClick={clearSelection}
+                                <button type="button" onClick={clearSelection} aria-label={`Limpiar selección de ${selCount} días`}
                                     className="rounded-full border border-[#e3e3e3] px-3 py-1 text-xs font-medium text-[#999] hover:border-red-300 hover:text-red-500">
                                     Limpiar selección ({selCount})
                                 </button>
                             )}
                         </div>
+                        {(scope === 'all' || selOutsideMonth > 0) && (
+                            <p className={cn('mb-2 text-xs', selCount > BULK_THRESHOLD ? 'font-medium text-amber-700' : 'text-[#888]')}>
+                                {scope === 'all' && <>Alcance ampliado: los botones de día seleccionan hasta <strong>{horizonLabel}</strong>. </>}
+                                {selCount > 0 && <>{selCount} día{selCount !== 1 ? 's' : ''} seleccionado{selCount !== 1 ? 's' : ''}{selOutsideMonth > 0 ? ` (${selOutsideMonth} en otros meses — navega para verlos)` : ''}.</>}
+                            </p>
+                        )}
 
                         <Calendar
                             mode="single"
@@ -462,7 +509,9 @@ const AvailabilityCalendar: React.FC = () => {
                                         ) : (
                                             <>
                                                 <p className="av-day-editor__weekday">{selCount} días seleccionados</p>
-                                                <p className="av-day-editor__date">Se aplicará el mismo horario a todos</p>
+                                                <p className="av-day-editor__date">
+                                                    Se aplicará el mismo horario a todos{selOutsideMonth > 0 ? ` · ${selOutsideMonth} en otros meses` : ''}
+                                                </p>
                                             </>
                                         )}
                                     </div>
@@ -506,15 +555,38 @@ const AvailabilityCalendar: React.FC = () => {
                                     </div>
                                 ) : null}
 
-                                <div className="av-day-editor__footer">
-                                    <button type="button" onClick={resetSelection} className="av-day-editor__reset">Restablecer</button>
-                                    <button type="button" onClick={applyToSelection} className="av-day-editor__save">
-                                        Aplicar{selCount > 1 ? ` a ${selCount} días` : ''}
-                                    </button>
-                                </div>
-                                <p className="av-day-editor__hint" style={{ marginTop: 8 }}>
-                                    Los cambios no se guardan hasta que pulses <strong>Guardar cambios</strong>.
-                                </p>
+                                {confirmBulk ? (
+                                    <div className="av-day-editor__section" style={{ background: 'hsl(38 92% 96%)', border: '1px solid hsl(38 80% 80%)', borderRadius: 12, padding: 12 }}>
+                                        <p className="text-sm font-semibold" style={{ color: 'hsl(32 60% 28%)' }}>
+                                            {draft.isWorking
+                                                ? `Vas a aplicar este horario a ${selCount} días.`
+                                                : `Vas a marcar como CERRADOS ${selCount} días.`}
+                                        </p>
+                                        <p className="text-xs" style={{ color: 'hsl(32 40% 38%)', marginTop: 4 }}>Son muchos días — revisa antes de continuar.</p>
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                                            <button type="button" onClick={() => setConfirmBulk(false)}
+                                                className="rounded-xl border border-[#e3e3e3] bg-white px-3 py-2 text-sm font-medium text-[#666] hover:bg-[#f5f5f5]">
+                                                Cancelar
+                                            </button>
+                                            <button type="button" onClick={applyToSelection}
+                                                className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+                                                Sí, aplicar a {selCount} días
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="av-day-editor__footer">
+                                            <button type="button" onClick={resetSelection} className="av-day-editor__reset">Restablecer</button>
+                                            <button type="button" onClick={applyToSelection} className="av-day-editor__save">
+                                                Aplicar{selCount > 1 ? ` a ${selCount} días` : ''}
+                                            </button>
+                                        </div>
+                                        <p className="av-day-editor__hint" style={{ marginTop: 8 }}>
+                                            Los cambios no se guardan hasta que pulses <strong>Guardar cambios</strong>.
+                                        </p>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <div className="av-calendar__empty">
