@@ -41,10 +41,18 @@ const kindOf = (works: boolean, ranges: Range[]): DayKind => {
     const dur = minutesOf(ranges[0].end) - minutesOf(ranges[0].start);
     return dur >= 420 ? 'full' : 'reduced';
 };
+// Cada categoría con su PROPIO hue (sobrio, pastel) para que se distingan de un vistazo:
+//   completa = verde · reducido = azul · turnos partidos = violeta · cerrado = gris tramado.
 const KIND_CLASS: Record<Exclude<DayKind, 'closed'>, string> = {
-    full: 'bg-brand/[0.12] text-[#0b3f73] hover:bg-brand/[0.18]',
-    reduced: 'bg-brand/[0.24] text-[#0a2d52] hover:bg-brand/[0.30]',
-    split: 'bg-brand/[0.40] text-[#06203f] hover:bg-brand/[0.46]',
+    full: 'bg-[hsl(150_46%_88%)] text-[hsl(154_55%_24%)] hover:bg-[hsl(150_46%_82%)]',
+    reduced: 'bg-[hsl(206_72%_88%)] text-[hsl(211_60%_30%)] hover:bg-[hsl(206_72%_82%)]',
+    split: 'bg-[hsl(258_50%_90%)] text-[hsl(260_46%_36%)] hover:bg-[hsl(258_50%_84%)]',
+};
+// Tonos para la leyenda (swatches), espejo de los fondos de arriba.
+const KIND_SWATCH: Record<Exclude<DayKind, 'closed'>, string> = {
+    full: 'hsl(150 46% 80%)',
+    reduced: 'hsl(206 72% 80%)',
+    split: 'hsl(258 50% 82%)',
 };
 
 const sameState = (a: DayState, b: DayState) =>
@@ -344,10 +352,10 @@ const AvailabilityCalendar: React.FC = () => {
                     )}
                 >
                     <span className="relative z-10">{d.getDate()}</span>
-                    {works && kind === 'split' && (
+                    {works && kind === 'split' && !isSelected && (
                         <span className="absolute bottom-1 left-1/2 z-10 flex -translate-x-1/2 gap-0.5" aria-hidden>
-                            <span className="h-0.5 w-1.5 rounded-full bg-[#0b3f73]/70" />
-                            <span className="h-0.5 w-1.5 rounded-full bg-[#0b3f73]/70" />
+                            <span className="h-0.5 w-1.5 rounded-full bg-[hsl(260_46%_45%)]" />
+                            <span className="h-0.5 w-1.5 rounded-full bg-[hsl(260_46%_45%)]" />
                         </span>
                     )}
                     {(isPending || hasPersisted) && (
@@ -473,15 +481,15 @@ const AvailabilityCalendar: React.FC = () => {
 
                         <div className="av-calendar__legend">
                             <span className="av-calendar__legend-item">
-                                <span className="av-calendar__legend-swatch" style={{ background: 'hsl(var(--brand) / 0.12)' }} aria-hidden />
+                                <span className="av-calendar__legend-swatch" style={{ background: KIND_SWATCH.full }} aria-hidden />
                                 Jornada completa
                             </span>
                             <span className="av-calendar__legend-item">
-                                <span className="av-calendar__legend-swatch" style={{ background: 'hsl(var(--brand) / 0.24)' }} aria-hidden />
+                                <span className="av-calendar__legend-swatch" style={{ background: KIND_SWATCH.reduced }} aria-hidden />
                                 Horario reducido
                             </span>
                             <span className="av-calendar__legend-item">
-                                <span className="av-calendar__legend-swatch" style={{ background: 'hsl(var(--brand) / 0.40)' }} aria-hidden />
+                                <span className="av-calendar__legend-swatch" style={{ background: KIND_SWATCH.split }} aria-hidden />
                                 Turnos partidos
                             </span>
                             <span className="av-calendar__legend-item">

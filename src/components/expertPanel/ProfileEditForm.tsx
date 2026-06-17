@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search, Check, Sparkles } from 'lucide-react';
+import { Loader2, Upload, X, Plane, Search, Sparkles } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -901,24 +901,25 @@ export function ProfileEditForm({
                         <div className="av-calendar__layout pf-profile-editor__layout">
                             <div className="av-calendar__main pf-profile-editor__main">
                                 <div className="av-calendar__toolbar">
-                                    <div className="av-calendar__toolbar-start">
+                                    <div className="av-calendar__toolbar-start pf-profile-editor__status">
                                         {profileSetup ? (
                                             profileSetup.complete ? (
-                                                <span className="expert-status-pill expert-status-pill--visible" role="status">
-                                                    <Check className="h-3.5 w-3.5" aria-hidden />
-                                                    Perfil activo
+                                                <span className="pf-status-led pf-status-led--on" role="status">
+                                                    <span className="pf-status-led__dot" aria-hidden />
+                                                    <span className="pf-status-led__label">Perfil activo</span>
                                                 </span>
                                             ) : (
-                                                <span className="expert-status-pill expert-status-pill--hidden" role="status">
-                                                    Faltan {profileSetup.pendingRequired} requisito{profileSetup.pendingRequired === 1 ? '' : 's'}
+                                                <span className="pf-status-led pf-status-led--off" role="status">
+                                                    <span className="pf-status-led__dot" aria-hidden />
+                                                    <span className="pf-status-led__label">Incompleto</span>
                                                 </span>
                                             )
                                         ) : null}
-                                        <div className="av-calendar__stats">
+                                        <span className="pf-status-led__hint">
                                             {profileSetup?.complete
-                                                ? 'Visible para clientes en búsquedas'
-                                                : 'Completa los campos para activar tu visibilidad'}
-                                        </div>
+                                                ? 'Visible en búsquedas'
+                                                : `Faltan ${profileSetup?.pendingRequired ?? 0} requisito${profileSetup?.pendingRequired === 1 ? '' : 's'}`}
+                                        </span>
                                     </div>
                                     <div className="av-calendar__toolbar-actions pf-editor-save-desktop">
                                         {saveButton}
@@ -1000,26 +1001,23 @@ export function ProfileEditForm({
                                 </div>
                             </div>
 
-                            <aside className="av-calendar__aside pf-profile-editor__aside">
-                                <div className="pf-profile-editor__map-zone">
-                                    <div className="pf-profile-editor__map-head">
-                                        <p className="pf-profile-editor__label">Zona de trabajo</p>
-                                        <p id="zone-hint" className="pf-profile-editor__hint">
-                                            Busca tu dirección y ajusta el radio en el mapa.
-                                        </p>
+                            <aside className="av-calendar__aside pf-profile-editor__aside" aria-label="Zona de trabajo">
+                                <p id="zone-hint" className="sr-only">
+                                    Busca tu dirección y ajusta el radio en el mapa.
+                                </p>
+                                {!MAPBOX_TOKEN ? (
+                                    <div className="pf-alert pf-profile-editor__map-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
+                                ) : (
+                                    mapStageUi('pf-map-stage--split', true)
+                                )}
+                                {(addressSearchError || formErrors.latitude || formErrors.longitude) && (
+                                    <div className="pf-profile-editor__map-errors" role="alert">
+                                        {addressSearchError && <p>{addressSearchError}</p>}
+                                        {(formErrors.latitude || formErrors.longitude) && (
+                                            <p>{formErrors.latitude || formErrors.longitude}</p>
+                                        )}
                                     </div>
-                                    {!MAPBOX_TOKEN ? (
-                                        <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
-                                    ) : (
-                                        <div className="pf-profile-editor__map-wrap">
-                                            {mapStageUi('pf-map-stage--split', true)}
-                                        </div>
-                                    )}
-                                    {addressSearchError && <p className="pf-error pf-profile-card__error">{addressSearchError}</p>}
-                                    {(formErrors.latitude || formErrors.longitude) && (
-                                        <p className="pf-error pf-profile-card__error">{formErrors.latitude || formErrors.longitude}</p>
-                                    )}
-                                </div>
+                                )}
                             </aside>
                         </div>
                         {formErrorAlert}
