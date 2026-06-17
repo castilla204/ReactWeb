@@ -22,6 +22,7 @@ import {
 import { PRE_HIRE_CHAT_COPY } from '../constants/chatCopy.es';
 import { TypingDots } from './chat/TypingDots';
 import { isSameChatMessageGroup } from '../utils/chatMessageGroups';
+import { detectContactInfo } from '../utils/contactFilter';
 import { Button } from './ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,6 +43,8 @@ interface PreHireChatProps {
   peerName?: string;
   /** Página dedicada: banner de confianza y menos ruido de conexión. */
   embedded?: boolean;
+  /** Cuando la conversación se obtiene/crea en el servidor (p. ej. sincronizar bandeja). */
+  onConversationLoaded?: (conversation: { id: number }) => void;
 }
 
 interface Message {
@@ -155,6 +158,7 @@ export const PreHireChat = ({
   onConnectionChange,
   peerName = 'El experto',
   embedded = false,
+  onConversationLoaded,
 }: PreHireChatProps) => {
   const { user } = useAuth();
   const userId = userIdProp > 0 ? userIdProp : getUserId(user as { id?: number; Id?: number });
@@ -237,6 +241,12 @@ export const PreHireChat = ({
     enabled: !!serviceId && !!token,
     retry: 2
   });
+
+  useEffect(() => {
+    if (conversation?.id) {
+      onConversationLoaded?.({ id: conversation.id });
+    }
+  }, [conversation?.id, onConversationLoaded]);
 
   refetchRef.current = refetch;
 
@@ -594,6 +604,11 @@ export const PreHireChat = ({
   const handleSend = () => {
     if (!inputValue.trim() || !conversation) return;
     setSendError(null);
+    const contactCheck = detectContactInfo(inputValue.trim());
+    if (contactCheck.hasViolation) {
+      setSendError(contactCheck.message);
+      return;
+    }
     sendMessageMutation.mutate(inputValue.trim());
   };
 

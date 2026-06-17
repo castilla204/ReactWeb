@@ -158,6 +158,9 @@ export const API_CONFIG = {
         support: {
             message: `${API_PATH}/SupportChat/message`,
         },
+        ai: {
+            rewriteDescription: `${API_PATH}/AISearch/rewrite-description`,
+        },
         chat: {
             conversation: `${API_PATH}/chat/conversation`,
             conversationBySearchHire: (searchHireId: number) => `${API_PATH}/chat/by-searchhire/${searchHireId}`,
