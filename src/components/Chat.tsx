@@ -28,6 +28,12 @@ interface ChatProps {
     isDetailsOpen?: boolean;
     /** Volver / salir del chat */
     onBack?: () => void;
+    /**
+     * Incrustado dentro de otro contenedor que ya aporta su propia cabecera
+     * (p. ej. el panel de la bandeja de Mensajes). Oculta la cabecera interna
+     * del chat para no duplicarla. Por defecto false (vista a pantalla completa).
+     */
+    embedded?: boolean;
 }
 
 function formatLastSeen(iso: string): string {
@@ -207,6 +213,7 @@ const Chat: React.FC<ChatProps> = ({
     onOpenDetails,
     isDetailsOpen,
     onBack,
+    embedded = false,
 }) => {
     const { user } = useAuth();
     const {
@@ -596,7 +603,19 @@ const Chat: React.FC<ChatProps> = ({
 
     return (
         <div className="flex min-h-0 flex-1 flex-col h-full bg-[#e8ecf1]">
-            {/* Cabecera */}
+            {/* Cabecera — oculta cuando el chat va incrustado (el contenedor padre
+                ya aporta la suya); solo se conserva un aviso fino de reconexión. */}
+            {embedded ? (
+                isReconnecting && (
+                    <p
+                        role="status"
+                        aria-live="polite"
+                        className="shrink-0 border-b border-[#ebebeb] bg-white px-4 py-2 text-center text-[11px] leading-snug text-amber-800"
+                    >
+                        Reconectando…
+                    </p>
+                )
+            ) : (
             <div className="shrink-0 border-b border-[#e8e8e8] bg-white px-4 py-3">
                 <div className="flex items-center gap-3">
                     {onBack && (
@@ -657,6 +676,7 @@ const Chat: React.FC<ChatProps> = ({
                     </p>
                 )}
             </div>
+            )}
 
             {/* Mensajes */}
             <div

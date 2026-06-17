@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
 import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import type { ServiceEditorExpertPreview } from './ServiceEditorDesktopPreview';
 import '../../styles/expert-service-form.css';
+import '../../styles/ai-rewrite-magic.css';
 import { rewriteDescription } from '../../services/aiService';
 
 interface ServiceFormProps {
@@ -728,27 +729,34 @@ export function ServiceForm({
                                         <div className="sf-ai-rewrite">
                                             <button
                                                 type="button"
-                                                className="sf-ai-rewrite__btn"
+                                                className="sf-ai-rewrite__btn ai-magic-btn"
                                                 onClick={handleRewriteConditions}
                                                 disabled={aiLoading}
                                             >
                                                 {aiLoading ? (
                                                     <>
-                                                        <Loader2 className="sf-ai-rewrite__spinner" size={14} />
+                                                        <Loader2 className="ai-magic-btn__spinner" size={15} />
                                                         Generando…
                                                     </>
                                                 ) : (
-                                                    'Reescribir con IA'
+                                                    <>
+                                                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
+                                                        Reescribir con IA
+                                                    </>
                                                 )}
                                             </button>
                                             {aiError && <p className="sf-error">{aiError}</p>}
                                             {aiSuggestion && (
-                                                <div className="sf-ai-rewrite__preview">
-                                                    <p className="sf-ai-rewrite__text">{aiSuggestion}</p>
-                                                    <div className="sf-ai-rewrite__actions">
+                                                <div className="sf-ai-rewrite__preview ai-magic-preview">
+                                                    <p className="ai-magic-preview__label">
+                                                        <Sparkles size={12} aria-hidden />
+                                                        Sugerencia de IA
+                                                    </p>
+                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
+                                                    <div className="ai-magic-preview__actions">
                                                         <button
                                                             type="button"
-                                                            className="sf-ai-rewrite__use"
+                                                            className="ai-magic-preview__use"
                                                             onClick={() => {
                                                                 setFormData({ ...formData, conditions: aiSuggestion });
                                                                 setAiSuggestion(null);
@@ -758,7 +766,7 @@ export function ServiceForm({
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            className="sf-ai-rewrite__discard"
+                                                            className="ai-magic-preview__discard"
                                                             onClick={() => setAiSuggestion(null)}
                                                         >
                                                             Descartar
