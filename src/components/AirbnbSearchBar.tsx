@@ -585,6 +585,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'coches' | 'motos' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // 'map' = abierto desde "Buscar en el mapa" (al elegir categoría navega al mapa).
+  // 'filter' = abierto desde la pestaña "Más" (al elegir categoría filtra la homepage).
+  const [drawerIntent, setDrawerIntent] = useState<'filter' | 'map'>('filter');
   const [drawerCategoryReplacement, setDrawerCategoryReplacement] = useState<{ id: number; name: string; image: string } | null>(null);
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [imageCacheKey, setImageCacheKey] = useState(Date.now());
@@ -825,6 +828,22 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     setCategorySearchQuery('');
   };
 
+  // Abre el drawer existente en "modo mapa". Lo invoca el botón "Buscar en el
+  // mapa" de HomepageDesktopKayak.
+  const openMapCategoryDrawer = useCallback(() => {
+    setDrawerIntent('map');
+    setIsDrawerOpen(true);
+  }, []);
+
+  // En modo mapa: al elegir categoría navegamos al mapa de esa categoría.
+  // serviceTypeId || 2 iguala el comportamiento del antiguo goToMap (fijaba 2).
+  const goToCategoryMap = (mapCategoryId: number) => {
+    const stId = serviceTypeId || 2;
+    setIsDrawerOpen(false);
+    setCategorySearchQuery('');
+    navigate(`/crear-busqueda?categoryId=${mapCategoryId}&serviceTypeId=${stId}&step=map`);
+  };
+
   useEffect(() => {
     const onPick = (e: Event) => {
       const { categoryId: id, categoryName } = (e as CustomEvent<HomepagePickCategoryDetail>).detail;
@@ -905,7 +924,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           key: 'mas' as const,
           label: 'Más',
           icon: null,
-          onClick: () => setIsDrawerOpen(true),
+          onClick: () => {
+            setDrawerIntent('filter');
+            setIsDrawerOpen(true);
+          },
           isActive: false,
           highlight: true,
         },
@@ -938,7 +960,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         >
           <HomepageDesktopKayak
             categoryTabs={desktopCategoryTabs}
-            categoryId={categoryId ?? CATEGORIES.INMOBILIARIA}
+            onSearchInMap={openMapCategoryDrawer}
             countryCode={countryCode}
           />
         </Suspense>
@@ -1723,9 +1745,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           setIsDrawerOpen(open);
           if (!open) {
             setCategorySearchQuery('');
+            setDrawerIntent('filter');
           }
         }}
-        title="Más Categorías"
+        title={drawerIntent === 'map' ? '¿Qué quieres buscar en el mapa?' : 'Más Categorías'}
         drawerClassName="w-full"
         desktopSidePanel
         snapPoints={[0.82]}
@@ -1772,7 +1795,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </SkeletonTheme>
             ) : (
               <div className="flex flex-col gap-2 pb-4">
-                {categoriesForDrawerModal
+                {(drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal)
                   .filter(cat => {
                     if (categorySearchQuery.trim()) {
                       return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
@@ -1784,7 +1807,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         key={category.id}
                         name={category.name}
                         isSelected={categoryId === category.id}
-                        onClick={() => handleDrawerCategoryClick(category.id, category.name)}
+                        onClick={() =>
+                          drawerIntent === 'map'
+                            ? goToCategoryMap(category.id)
+                            : handleDrawerCategoryClick(category.id, category.name)
+                        }
                       />
                     ))}
                 

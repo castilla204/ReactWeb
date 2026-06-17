@@ -1,5 +1,4 @@
 import React, { Suspense, lazy } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
 import { HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
@@ -26,7 +25,8 @@ export interface KayakCategoryTab {
 
 interface HomepageDesktopKayakProps {
   categoryTabs: readonly KayakCategoryTab[];
-  categoryId: number;
+  /** Abre el drawer de categorías en "modo mapa" (lo provee AirbnbSearchBar). */
+  onSearchInMap: () => void;
   countryCode?: string;
 }
 
@@ -38,14 +38,9 @@ const HeroMapLoadingPlaceholder: React.FC = () => (
 
 export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
   categoryTabs,
-  categoryId,
+  onSearchInMap,
 }) => {
-  const navigate = useNavigate();
   const { landingTarget: ipLanding, isResolved: ipLandingResolved } = useDetectedCountryFromIp();
-
-  const goToMap = () => {
-    navigate(`/crear-busqueda?categoryId=${categoryId}&serviceTypeId=2&step=map`);
-  };
 
   const expertLeft = 'max(0.25rem, calc((100vw - 1280px) / 2 - 0.25rem))';
   const textBlockLeft = `calc(${expertLeft} + clamp(13.5rem, 21vw, 17rem))`;
@@ -165,7 +160,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
 
             <button
               type="button"
-              onClick={goToMap}
+              onClick={onSearchInMap}
               className={`group mt-5 gap-2 ${HP_SERVICE_CTA_CLASS}`}
             >
               Buscar en el mapa
