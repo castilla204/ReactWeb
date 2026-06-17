@@ -114,6 +114,10 @@ export const useSearchDetailsComplete = (
           locationRange: service.LocationRange ?? service.locationRange ?? null,
           // Radio de trabajo del EXPERTO (0 = solo en su taller; ?? para no perder el 0).
           expertWorkRadiusKm: service.ExpertWorkRadiusKm ?? service.expertWorkRadiusKm ?? null,
+          // 🏠 Detalle del punto fijo del experto (snapshot). Solo relevante con expertWorkRadiusKm === 0.
+          expertWorkLocationDoor: service.ExpertWorkLocationDoor ?? service.expertWorkLocationDoor ?? null,
+          expertWorkLocationFloor: service.ExpertWorkLocationFloor ?? service.expertWorkLocationFloor ?? null,
+          expertWorkLocationDetails: service.ExpertWorkLocationDetails ?? service.expertWorkLocationDetails ?? null,
         };
       };
       

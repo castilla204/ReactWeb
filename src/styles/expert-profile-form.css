@@ -795,6 +795,46 @@
   resize: vertical;
 }
 
+/* 🏠 Detalle del punto fijo (puerta/piso/observaciones), solo en modo "Ubicación fija" */
+.pf-map-fixed-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pf-map-fixed-details__hint {
+  font-size: 0.6875rem;
+  color: hsl(var(--pf-muted));
+}
+
+.pf-map-fixed-details__row {
+  display: flex;
+  gap: 8px;
+}
+
+.pf-map-fixed-details__row .pf-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-field__label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: hsl(var(--pf-muted));
+}
+
+.pf-field__optional {
+  font-weight: 400;
+  color: hsl(var(--pf-muted) / 0.7);
+}
+
+@media (max-width: 520px) {
+  .pf-map-fixed-details__row {
+    flex-direction: column;
+  }
+}
+
 /* Presentación — misma caja que el mapa, fondo blanco continuo */
 .pf-about-composer {
   position: relative;
@@ -1850,6 +1890,114 @@
   pointer-events: auto;
 }
 
+.pf-map-work-mode {
+  position: absolute;
+  top: 56px;
+  left: 12px;
+  right: 12px;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: none;
+  border-radius: 10px;
+  background: hsl(var(--ep-surface) / 0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 14px hsl(220 22% 14% / 0.1);
+  pointer-events: auto;
+}
+
+.pf-map-work-mode__label-short {
+  display: none;
+}
+
+.pf-map-work-mode__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  text-align: center;
+  color: hsl(var(--pf-muted));
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pf-map-work-mode__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  align-items: center;
+}
+
+.pf-map-work-mode__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.pf-map-work-mode__hint {
+  display: none;
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: hsl(220 8% 52%);
+  white-space: nowrap;
+}
+
+.pf-map-work-mode__btn:hover:not(.pf-map-work-mode__btn--active) {
+  color: hsl(var(--pf-ink));
+  background: hsl(var(--pf-fill) / 0.6);
+}
+
+.pf-map-work-mode__btn--active {
+  background: hsl(var(--brand) / 0.1);
+  color: hsl(var(--brand));
+  box-shadow: none;
+}
+
+.pf-map-work-mode__icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  opacity: 0.45;
+}
+
+.pf-map-work-mode__btn--active .pf-map-work-mode__icon {
+  opacity: 1;
+  color: hsl(var(--brand));
+}
+
+.pf-map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px hsl(220 30% 22% / 0.28);
+  cursor: grab;
+}
+
+.pf-map-marker--fixed {
+  background: hsl(var(--brand));
+  color: #fff;
+}
+
+.pf-map-marker--mobile {
+  background: linear-gradient(145deg, hsl(218 92% 48%) 0%, hsl(214 88% 40%) 100%);
+  color: #fff;
+}
+
 .pf-map-canvas {
   position: relative;
   flex: 1;
@@ -1987,35 +2135,44 @@
 }
 
 .pf-map-radius__head {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 @media (min-width: 640px) {
   .pf-map-radius {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
     border-radius: 8px;
   }
 
   .pf-map-radius__head {
-    display: contents;
+    display: flex;
   }
 
   .pf-map-radius-label {
-    display: none;
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: hsl(var(--pf-muted));
   }
 
   .pf-map-radius .pf-range {
-    grid-column: 1;
-    grid-row: 1;
+    width: 100%;
   }
 
   .pf-map-radius-val {
-    grid-column: 2;
-    grid-row: 1;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: hsl(var(--brand));
+    min-width: 3rem;
+    text-align: right;
   }
 }
 
@@ -2813,41 +2970,32 @@
 }
 
 /* Mi perfil embebido — móvil */
-@media (max-width: 639px) {
+@media (max-width: 899px) {
   .pf-page .pf-profile-editor__body {
-    padding: 0 16px 16px;
+    padding: 0 14px 16px;
   }
 
   .pf-page .pf-profile-editor__section--photo {
-    padding: 14px 0 16px;
+    padding: 12px 0 14px;
+    border-bottom: none;
   }
 
   .pf-page .pf-profile-editor__section--desc {
-    padding-top: 16px;
+    padding-top: 14px;
   }
 
-  .pf-page .pf-profile-editor__main .av-calendar__toolbar {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .pf-page .pf-profile-editor__main .av-calendar__toolbar-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .pf-page .pf-profile-editor__aside {
-    border-left: none;
-    border-top: 1px solid hsl(var(--ep-border));
-    min-height: 300px;
-  }
-
-  .pf-page .pf-profile-editor__aside > .pf-map-stage--split {
-    min-height: 300px;
+  .pf-page .pf-profile-editor__photo-block {
+    align-items: center;
+    gap: 14px;
   }
 
   .pf-page .pf-profile-editor__photo-block .pf-avatar.pf-avatar--composer {
-    width: 76px;
-    height: 76px;
+    width: 80px;
+    height: 80px;
+  }
+
+  .pf-page .pf-profile-editor__photo-meta .pf-profile-editor__hint {
+    margin-bottom: 8px;
+    max-width: none;
   }
 }

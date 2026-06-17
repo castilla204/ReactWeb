@@ -41,6 +41,10 @@ interface ExpertProfile {
     longitude?: string;
     /** Radio de trabajo en km: 0 = solo en su taller/punto fijo, máx 200. */
     workRadiusKm?: number;
+    /** Detalle del punto fijo (solo modo fijo): puerta/garaje, piso/planta, observaciones de acceso. */
+    workLocationDoor?: string | null;
+    workLocationFloor?: string | null;
+    workLocationDetails?: string | null;
     // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
     country?: string | null;
     // 🛡️ Round 28 MUD-W: si !null, el experto está en proceso de mudanza
@@ -161,6 +165,10 @@ export function useExpert() {
                 longitude: data.longitude ?? data.Longitude ?? null,
                 // ?? (no ||): 0 = "solo en su taller" es un valor válido.
                 workRadiusKm: data.workRadiusKm ?? data.WorkRadiusKm ?? undefined,
+                // 🏠 Detalle del punto fijo (solo modo fijo). Defensive: ambas casings.
+                workLocationDoor: data.workLocationDoor ?? data.WorkLocationDoor ?? null,
+                workLocationFloor: data.workLocationFloor ?? data.WorkLocationFloor ?? null,
+                workLocationDetails: data.workLocationDetails ?? data.WorkLocationDetails ?? null,
                 // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
                 country: data.country ?? data.Country ?? null,
                 // 🛡️ MUD-W: relocation signal del backend (defensive: ambas casings).
