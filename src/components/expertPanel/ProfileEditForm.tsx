@@ -18,9 +18,9 @@ import {
     reverseGeocodeMapbox,
     type MapboxFeature,
 } from '../../utils/mapboxGeocoding';
-import { useExpertProfile, AvailabilityFormData } from '../../hooks/useExpertProfile';
-import { VALID_DAYS_OF_WEEK, CurrentExpertAvailabilityDto } from '../../types/stripe';
-import AvailabilityRulesEditor from './AvailabilityRulesEditor';
+import { useExpertProfile } from '../../hooks/useExpertProfile';
+import { rewriteDescription } from '../../services/aiService';
+import { CurrentExpertAvailabilityDto } from '../../types/stripe';
 import {
     Drawer,
     DrawerContent,
@@ -102,28 +102,12 @@ const CIRCLE_FILL_OPACITY = 0.12;
 const CIRCLE_LINE_COLOR = 'rgba(0, 102, 204, 0.55)';
 const CIRCLE_LINE_WIDTH = 2;
 
-const DAY_LETTER: Record<string, string> = {
-    Monday: 'L',
-    Tuesday: 'M',
-    Wednesday: 'X',
-    Thursday: 'J',
-    Friday: 'V',
-    Saturday: 'S',
-    Sunday: 'D',
-};
-
 function readWorkRadiusKm(profile: unknown): number {
     const p = profile as { workRadiusKm?: unknown; WorkRadiusKm?: unknown } | null | undefined;
     const raw = p?.workRadiusKm ?? p?.WorkRadiusKm;
     const value = Number(raw);
     if (Number.isFinite(value) && value >= 0 && value <= MAX_WORK_RADIUS_KM) return value;
     return DEFAULT_WORK_RADIUS_KM;
-}
-
-function formatTimeFromTimeSpan(timeSpan: string): string {
-    if (!timeSpan) return '';
-    const parts = timeSpan.split(':');
-    return `${parts[0]}:${parts[1]}`;
 }
 
 interface ProfileEditFormProps {
@@ -181,33 +165,32 @@ export function ProfileEditForm({
         longitude: profile?.longitude?.toString() || '',
     });
 
-    const initialAvailability: AvailabilityFormData = profile?.currentAvailability ? {
-        daysOfWeek: (() => {
-            const days = profile?.currentAvailability?.daysOfWeek ??
-                (profile?.currentAvailability as { DaysOfWeek?: string[] })?.DaysOfWeek ??
-                [];
-            return Array.isArray(days) ? days : [];
-        })(),
-        startTime: formatTimeFromTimeSpan(
-            profile?.currentAvailability?.startTime ??
-            (profile?.currentAvailability as { StartTime?: string })?.StartTime ??
-            '',
-        ),
-        endTime: formatTimeFromTimeSpan(
-            profile?.currentAvailability?.endTime ??
-            (profile?.currentAvailability as { EndTime?: string })?.EndTime ??
-            '',
-        ),
-    } : {
-        daysOfWeek: [],
-        startTime: '09:00',
-        endTime: '18:00',
-    };
-
-    const [availability, setAvailability] = useState<AvailabilityFormData>(initialAvailability);
     const [profilePicture, setProfilePicture] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    const handleRewriteDescription = async () => {
+        const current = formData.description?.trim() ?? '';
+        if (current.length < 10) {
+            setAiError('Escribe primero una descripción (al menos 10 caracteres) para poder mejorarla.');
+            return;
+        }
+        setAiError(null);
+        setAiSuggestion(null);
+        setAiLoading(true);
+        try {
+            const rewritten = await rewriteDescription('expertProfile', current);
+            setAiSuggestion(rewritten);
+        } catch (err) {
+            setAiError(err instanceof Error ? err.message : 'No se pudo generar el texto.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     const initialLocation = useMemo(() => {
         const lat = Number(profile?.latitude);
@@ -439,23 +422,6 @@ export function ProfileEditForm({
         const profileImageUrl = (profile as { ProfilePictureUrl?: string }).ProfilePictureUrl || profile.profilePictureUrl || null;
         setPreviewUrl(profileImageUrl);
 
-        const newAvailability: AvailabilityFormData = profile.currentAvailability ? {
-            daysOfWeek: (() => {
-                const days = profile.currentAvailability?.daysOfWeek ??
-                    (profile.currentAvailability as { DaysOfWeek?: string[] })?.DaysOfWeek ?? [];
-                return Array.isArray(days) ? days : [];
-            })(),
-            startTime: formatTimeFromTimeSpan(
-                profile.currentAvailability.startTime ??
-                (profile.currentAvailability as { StartTime?: string })?.StartTime ?? '',
-            ),
-            endTime: formatTimeFromTimeSpan(
-                profile.currentAvailability.endTime ??
-                (profile.currentAvailability as { EndTime?: string })?.EndTime ?? '',
-            ),
-        } : { daysOfWeek: [], startTime: '09:00', endTime: '18:00' };
-        setAvailability(newAvailability);
-
         const lat = Number(profile.latitude);
         const lng = Number(profile.longitude);
         const newLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
@@ -503,19 +469,6 @@ export function ProfileEditForm({
         } else {
             const lng = parseFloat(formData.longitude);
             if (isNaN(lng) || lng < -180 || lng > 180) errors.longitude = 'La longitud debe estar entre -180 y 180';
-        }
-        if (availability.daysOfWeek.length > 0) {
-            if (!availability.startTime || !availability.endTime) {
-                errors.availability = 'Debes especificar hora de inicio y fin';
-            } else {
-                const [startH, startM] = availability.startTime.split(':').map(Number);
-                const [endH, endM] = availability.endTime.split(':').map(Number);
-                if (Number.isNaN(startH) || Number.isNaN(endH)) {
-                    errors.availability = 'Horario de disponibilidad no válido';
-                } else if (startH * 60 + startM >= endH * 60 + endM) {
-                    errors.availability = 'La hora de inicio debe ser anterior a la hora de fin';
-                }
-            }
         }
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -582,7 +535,6 @@ export function ProfileEditForm({
                 latitude: formData.latitude,
                 longitude: formData.longitude,
                 profilePicture: profilePicture || undefined,
-                availability,
                 workRadiusKm,
             });
             if (!embedded) setShowEditForm?.(false);
@@ -619,12 +571,6 @@ export function ProfileEditForm({
         setProfilePicture(null);
         setPreviewUrl(null);
         setFormErrors({});
-        const resetAvailability: AvailabilityFormData = profile.currentAvailability ? {
-            daysOfWeek: profile.currentAvailability.daysOfWeek || [],
-            startTime: formatTimeFromTimeSpan(profile.currentAvailability.startTime),
-            endTime: formatTimeFromTimeSpan(profile.currentAvailability.endTime),
-        } : { daysOfWeek: [], startTime: '09:00', endTime: '18:00' };
-        setAvailability(resetAvailability);
         const lat = Number(profile.latitude);
         const lng = Number(profile.longitude);
         const resetLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
@@ -634,15 +580,6 @@ export function ProfileEditForm({
         setWorkRadiusKm(readWorkRadiusKm(profile));
         mapRef.current?.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
         if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-
-    const toggleDay = (day: string) => {
-        setAvailability(prev => ({
-            ...prev,
-            daysOfWeek: prev.daysOfWeek.includes(day)
-                ? prev.daysOfWeek.filter(d => d !== day)
-                : [...prev.daysOfWeek, day],
-        }));
     };
 
     const profileImageUrl = previewUrl
@@ -683,64 +620,6 @@ export function ProfileEditForm({
             </Button>
             {saveButtonBar}
         </div>
-    );
-
-    const scheduleBlock = (variant: 'hero' | 'card') => (
-        <section
-            id={variant === 'hero' ? 'pf-section-schedule-hero' : 'pf-section-schedule'}
-            className={`pf-schedule-block pf-schedule-block--${variant}`}
-            aria-label="Disponibilidad horaria"
-        >
-            <div className={`pf-availability-row${variant === 'hero' ? ' pf-availability-row--hero' : ' pf-availability-row--card'}`}>
-                <div className="pf-days" role="group" aria-label="Días de atención">
-                    {VALID_DAYS_OF_WEEK.map(day => {
-                        const isSelected = availability.daysOfWeek.includes(day);
-                        return (
-                            <button
-                                key={day}
-                                type="button"
-                                aria-pressed={isSelected}
-                                className={`pf-day${isSelected ? ' pf-day--on' : ''}${variant === 'hero' ? ' pf-day--hero' : ''}`}
-                                onClick={() => toggleDay(day)}
-                            >
-                                {DAY_LETTER[day] ?? day[0]}
-                            </button>
-                        );
-                    })}
-                </div>
-                {availability.daysOfWeek.length > 0 ? (
-                    <div className={`pf-time-row${variant === 'hero' ? ' pf-time-row--hero' : ''}`}>
-                        <input
-                            id={variant === 'hero' ? 'startTimeHero' : 'startTime'}
-                            type="time"
-                            className={`pf-input pf-input--time${variant === 'hero' ? ' pf-input--time-hero' : ''}`}
-                            value={availability.startTime}
-                            onChange={(e) => setAvailability(prev => ({ ...prev, startTime: e.target.value }))}
-                            aria-label="Hora de inicio"
-                        />
-                        <span className="pf-time-sep">—</span>
-                        <input
-                            id={variant === 'hero' ? 'endTimeHero' : 'endTime'}
-                            type="time"
-                            className={`pf-input pf-input--time${variant === 'hero' ? ' pf-input--time-hero' : ''}`}
-                            value={availability.endTime}
-                            onChange={(e) => setAvailability(prev => ({ ...prev, endTime: e.target.value }))}
-                            aria-label="Hora de fin"
-                        />
-                    </div>
-                ) : (
-                    <p className={`pf-schedule-empty${variant === 'hero' ? ' pf-schedule-empty--hero' : ''}`}>
-                        {variant === 'hero' ? 'Selecciona los días en los que atiendes' : 'Selecciona días para definir horario'}
-                    </p>
-                )}
-            </div>
-            {formErrors.availability && <p className="pf-error">{formErrors.availability}</p>}
-            {variant === 'card' && (
-                <div className="pf-rules-editor" style={{ marginTop: 16 }}>
-                    <AvailabilityRulesEditor />
-                </div>
-            )}
-        </section>
     );
 
     const editorCard = (
@@ -818,17 +697,6 @@ export function ProfileEditForm({
                                     </div>
                                 </div>
                             </div>
-                            <div className="pf-schedule-composer">
-                                <div className="pf-about-composer__label pf-schedule-composer__label">
-                                    Disponibilidad horaria
-                                    <span id="schedule-hint" className="pf-about-composer__label-hint">
-                                        Opcional: indica los días y horas en los que puedes atender
-                                    </span>
-                                </div>
-                                <div className="pf-schedule-panel" aria-describedby="schedule-hint">
-                                    {scheduleBlock('hero')}
-                                </div>
-                            </div>
                             <div className="pf-about-composer__copy">
                                 <label htmlFor="description" className="pf-about-composer__label">
                                     Descripción profesional
@@ -849,6 +717,48 @@ export function ProfileEditForm({
                                     aria-describedby="description-hint"
                                 />
                                 <span className="pf-about-composer__meta">{descLength}/60</span>
+                                <div className="pf-ai-rewrite">
+                                    <button
+                                        type="button"
+                                        className="pf-ai-rewrite__btn"
+                                        onClick={handleRewriteDescription}
+                                        disabled={aiLoading}
+                                    >
+                                        {aiLoading ? (
+                                            <>
+                                                <Loader2 className="pf-ai-rewrite__spinner" size={14} />
+                                                Generando…
+                                            </>
+                                        ) : (
+                                            'Reescribir con IA'
+                                        )}
+                                    </button>
+                                    {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
+                                    {aiSuggestion && (
+                                        <div className="pf-ai-rewrite__preview">
+                                            <p className="pf-ai-rewrite__text">{aiSuggestion}</p>
+                                            <div className="pf-ai-rewrite__actions">
+                                                <button
+                                                    type="button"
+                                                    className="pf-ai-rewrite__use"
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, description: aiSuggestion });
+                                                        setAiSuggestion(null);
+                                                    }}
+                                                >
+                                                    Usar este texto
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="pf-ai-rewrite__discard"
+                                                    onClick={() => setAiSuggestion(null)}
+                                                >
+                                                    Descartar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         {formErrors.description && (
@@ -981,16 +891,6 @@ export function ProfileEditForm({
                     </section>
                     </div>
                     </div>
-                </div>
-
-                <div className="pf-settings-card pf-settings-card--schedule">
-                    <div className="pf-about-composer__label pf-schedule-composer__label pf-schedule-composer__label--card">
-                        Disponibilidad horaria
-                        <span className="pf-about-composer__label-hint">
-                            Opcional: indica los días y horas en los que puedes atender
-                        </span>
-                    </div>
-                    {scheduleBlock('card')}
                 </div>
 
                 {formErrors.general && (
