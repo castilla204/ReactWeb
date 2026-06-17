@@ -307,12 +307,12 @@ const AvailabilityCalendar: React.FC = () => {
                         'group/cell relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg text-sm tabular-nums transition-[transform,box-shadow,background-color] duration-150',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1',
                         past && 'cursor-default font-medium text-[#c2c2c2]',
-                        !past && 'cursor-pointer font-semibold motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
-                        !past && works && KIND_CLASS[kind === 'closed' ? 'full' : kind],
-                        !past && !works && 'av-closed-cell text-[#8b8b8b] hover:text-[#5f5f5f]',
-                        // selección = anillo azul (conserva el color de franja debajo); hoy = anillo interior tenue
+                        !past && !isSelected && 'cursor-pointer font-semibold motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
+                        !past && works && !isSelected && KIND_CLASS[kind === 'closed' ? 'full' : kind],
+                        !past && !works && !isSelected && 'av-closed-cell text-[#8b8b8b] hover:text-[#5f5f5f]',
                         !past && isToday && !isSelected && 'ring-2 ring-inset ring-brand/70',
-                        isSelected && 'ring-2 ring-brand ring-offset-1 shadow-[0_2px_8px_hsl(var(--brand)/0.30)]',
+                        // seleccionado = relleno azul sólido, número blanco, realce (inconfundible)
+                        isSelected && 'cursor-pointer bg-brand text-white font-bold scale-[1.06] z-10 shadow-[0_4px_12px_hsl(var(--brand)/0.5)] ring-2 ring-inset ring-white/70',
                         className,
                     )}
                 >
