@@ -58,12 +58,14 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
           {expertName.charAt(0)}
         </AvatarFallback>
       </Avatar>
-      <span
-        className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
-        aria-hidden
-      >
-        <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
-      </span>
+      {isMobile ? (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
+          aria-hidden
+        >
+          <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
+        </span>
+      ) : null}
     </button>
   );
 
@@ -115,8 +117,6 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       onClick={onChatClick}
       variant="outline"
       size="sm"
-      // Contorno con degradado azul→ámbar de marca. Técnica de doble fondo
-      // (padding-box blanco + border-box degradado) para que respete el rounded-full.
       style={{
         border: '2px solid transparent',
         background:

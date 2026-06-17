@@ -71,14 +71,20 @@ export function buildInspeccionoMapStyle(
   return { version: 8, sources, layers };
 }
 
-/** Mapa neutro para checkout: sin saturación cálida ni capas de color fuertes. */
+/**
+ * Mapa de checkout: base limpia pero LEGIBLE (con etiquetas, para que el cliente
+ * reconozca su calle/barrio al marcar el punto) sobre un cielo azul-gris muy suave
+ * acorde a la marca. Un realce sutil de saturación/contraste evita el aspecto lavado.
+ */
 export function buildNeutralCheckoutMapStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
     sources: {
       carto: {
         type: 'raster',
-        tiles: getCartoVoyagerNoLabelsTiles(),
+        // Voyager CON etiquetas (un único tileset) → el cliente valida la dirección
+        // que está eligiendo. Mismo nº de peticiones que la variante sin etiquetas.
+        tiles: getCartoVoyagerTiles(),
         tileSize: 256,
         attribution: '© OpenStreetMap · CARTO',
       },
@@ -87,13 +93,18 @@ export function buildNeutralCheckoutMapStyle(): maplibregl.StyleSpecification {
       {
         id: 'sky-bg',
         type: 'background',
-        paint: { 'background-color': '#f4f4f5' },
+        paint: { 'background-color': '#eaf0f6' },
       },
       {
         id: 'carto-neutral',
         type: 'raster',
         source: 'carto',
-        paint: { 'raster-opacity': 1 },
+        paint: {
+          'raster-opacity': 1,
+          'raster-saturation': 0.06,
+          'raster-contrast': 0.05,
+          'raster-brightness-min': 0.02,
+        },
       },
     ],
   };

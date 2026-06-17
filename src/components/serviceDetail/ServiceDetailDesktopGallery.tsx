@@ -34,6 +34,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
 }) => {
   const shellHeight = resolveShellHeight(className);
   const isSplit = layout === 'split';
+  const shellClass = `sd-gallery-shell ${isSplit ? '!rounded-none' : ''}`;
 
   const cell = (
     src: string,
@@ -90,7 +91,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   if (images.length === 0) {
     return (
       <div
-        className={`sd-gallery-shell relative flex ${shellHeight} items-center justify-center border border-[#e8e8e8] ${className}`}
+        className={`${shellClass} relative flex ${shellHeight} items-center justify-center border border-[#e8e8e8] ${className}`}
       >
         <div className="text-center">
           <Image className="mx-auto mb-2 h-8 w-8 text-[#a3a3a3]" strokeWidth={1.5} />
@@ -102,7 +103,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
 
   if (images.length === 1) {
     return (
-      <div className={`sd-gallery-shell relative ${shellHeight} ${className}`}>
+      <div className={`${shellClass} relative ${shellHeight} ${className}`}>
         {cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true)}
       </div>
     );
@@ -115,7 +116,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
 
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
-        <div className={`sd-gallery-shell grid ${shellHeight} ${twoColClass} ${GAP}`}>
+        <div className={`${shellClass} grid ${shellHeight} ${twoColClass} ${GAP}`}>
           {cell(images[0], 'Imagen 1', 0, 'h-full min-h-0', true)}
           {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         </div>
@@ -127,7 +128,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   if (images.length === 3) {
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
-        <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+        <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
           {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
           {cell(images[1], 'Imagen 2', 1, 'col-span-2 h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'col-span-2 h-full min-h-0')}
@@ -140,7 +141,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   if (images.length === 4) {
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
-        <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+        <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
           {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
           {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
@@ -155,7 +156,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
 
   return (
     <div className={`relative h-full min-h-0 ${className}`}>
-      <div className={`sd-gallery-shell grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
+      <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
         {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
         {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}

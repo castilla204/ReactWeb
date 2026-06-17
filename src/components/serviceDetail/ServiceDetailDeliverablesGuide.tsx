@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronRight, FileText, Video, X, type LucideIcon } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
+import { DeliverableTypeIcon } from './DeliverableTypeIcon';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import {
   Dialog,
@@ -10,6 +11,7 @@ import {
 import { SD_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
 import { useWindowSize } from '../../hooks/useWindowSize';
 import { getDeliverableDetail, type DeliverableDetail } from '../../utils/deliverableDetailContent';
+import { getDeliverableKind } from '../../utils/deliverableIcons';
 import {
   mapSelectedDeliverableType,
   mapSelectedDeliverableTypes,
@@ -30,12 +32,6 @@ function getDeliverableLabel(dt: ServiceDeliverableType): string {
 
 function getDeliverableKey(dt: ServiceDeliverableType): string {
   return (dt.name || dt.displayName || dt.deliverableType?.name || '').toLowerCase();
-}
-
-function getDeliverableIcon(dt: ServiceDeliverableType): LucideIcon {
-  const key = getDeliverableKey(dt);
-  if (key.includes('video') || key.includes('vídeo')) return Video;
-  return FileText;
 }
 
 function getOverlayDeliverableLabel(dt: ServiceDeliverableType): string {
@@ -67,14 +63,25 @@ const DESKTOP_SIDE_PANEL_CLASS =
 
 function DeliverableDetailContent({
   detail,
+  deliverable,
   onClose,
   layout,
 }: {
   detail: DeliverableDetail;
+  deliverable: ServiceDeliverableType;
   onClose: () => void;
   layout: 'mobile' | 'desktop';
 }) {
   const isDesktop = layout === 'desktop';
+  const kind = getDeliverableKind(deliverable);
+  const includesHeading =
+    kind === 'pdf'
+      ? 'El informe incluye'
+      : kind === 'video'
+        ? 'El vídeo incluye'
+        : kind === 'photo'
+          ? 'Las fotos incluyen'
+          : 'Este entregable incluye';
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white font-display text-[#1c1c1c]">
@@ -108,16 +115,16 @@ function DeliverableDetailContent({
       >
         <p className="text-sm leading-relaxed text-[#1c1c1c]">{detail.description}</p>
         {detail.isRequired ? (
-          <p className="text-xs font-medium text-brand">Incluido en el precio del servicio</p>
+          <p className="text-xs font-medium text-[#6a6a6a]">Incluido en el precio del servicio</p>
         ) : null}
         <section aria-labelledby="deliverable-includes-heading">
           <p id="deliverable-includes-heading" className="sd-section-label mb-3">
-            Este archivo incluye
+            {includesHeading}
           </p>
-          <ul className="m-0 list-none space-y-2.5 p-0">
+          <ul className="m-0 list-none space-y-3 p-0">
             {detail.includes.map((line) => (
-              <li key={line} className="flex gap-2.5 text-sm leading-snug text-[#6a6a6a]">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
+              <li key={line} className="flex gap-3 text-sm leading-relaxed text-[#4a4a4a]">
+                <span className="sd-deliverable-include-marker" aria-hidden />
                 <span>{line}</span>
               </li>
             ))}
@@ -167,7 +174,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
       {visible.map((dt, idx) => {
         const label = getOverlayDeliverableLabel(dt);
         const fullLabel = getDeliverableLabel(dt);
-        const Icon = getDeliverableIcon(dt);
         return (
           <li key={dt.id ?? `${fullLabel}-${idx}`} className="sd-deliverable-guide-item">
             <button
@@ -179,7 +185,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${fullLabel}`}
             >
-              <Icon className="sd-deliverable-chip-icon" aria-hidden />
               <span>{label}</span>
             </button>
           </li>
@@ -192,7 +197,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
       {visible.map((dt, index) => {
         const label = getDeliverableLabel(dt);
-        const Icon = getDeliverableIcon(dt);
         return (
           <li key={dt.id ?? `${label}-${index}`}>
             <button
@@ -203,7 +207,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
-              <Icon className="sd-deliverable-chip-surface-icon" aria-hidden />
+              <DeliverableTypeIcon deliverable={dt} variant="chip" />
               <span>{label}</span>
             </button>
           </li>
@@ -216,7 +220,6 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     <ul className="sd-deliverable-list">
       {visible.map((dt, index) => {
         const label = getDeliverableLabel(dt);
-        const Icon = getDeliverableIcon(dt);
         return (
           <li key={dt.id ?? `${label}-${index}`}>
             <button
@@ -227,7 +230,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
-              <Icon className="sd-deliverable-list-icon" aria-hidden />
+              <DeliverableTypeIcon deliverable={dt} variant="list" />
               <span className="sd-deliverable-list-label">{label}</span>
               <ChevronRight className="sd-deliverable-list-chevron" aria-hidden />
             </button>
@@ -239,7 +242,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
 
   const closeDetail = () => setOpen(false);
 
-  const detailModal = detail ? (
+  const detailModal = detail && active ? (
     isMobile ? (
       <ResponsiveModal
         open={open}
@@ -250,7 +253,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
         drawerMaxHeight="min(85dvh, calc(100dvh - env(safe-area-inset-bottom, 0px)))"
         drawerClassName="rounded-t-[1.25rem] shadow-[0_-12px_40px_rgba(15,23,42,0.12)]"
       >
-        <DeliverableDetailContent detail={detail} onClose={closeDetail} layout="mobile" />
+        <DeliverableDetailContent detail={detail} deliverable={active} onClose={closeDetail} layout="mobile" />
       </ResponsiveModal>
     ) : (
       <Dialog open={open} onOpenChange={setOpen}>
@@ -263,7 +266,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           <DialogDescription className="sr-only">
             Qué recibirás con este servicio
           </DialogDescription>
-          <DeliverableDetailContent detail={detail} onClose={closeDetail} layout="desktop" />
+          <DeliverableDetailContent detail={detail} deliverable={active} onClose={closeDetail} layout="desktop" />
         </DialogContent>
       </Dialog>
     )

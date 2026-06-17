@@ -4,6 +4,8 @@ import { Star } from 'lucide-react';
 interface ServiceDetailReviewStarsProps {
   rating: number;
   size?: 'sm' | 'md' | 'lg';
+  /** Tono monocromo (carbón) para superficies sobrias como el drawer de reseñas. */
+  neutral?: boolean;
   className?: string;
 }
 
@@ -16,10 +18,14 @@ const SIZE_CLASS = {
 export const ServiceDetailReviewStars: React.FC<ServiceDetailReviewStarsProps> = ({
   rating,
   size = 'sm',
+  neutral = false,
   className = '',
 }) => {
   const starClass = SIZE_CLASS[size];
   const rounded = Math.min(5, Math.max(0, Math.round(rating)));
+  const filledClass = neutral
+    ? 'fill-[#222222] text-[#222222]'
+    : 'fill-[#F59E0B] text-[#F59E0B]';
 
   return (
     <div
@@ -31,7 +37,7 @@ export const ServiceDetailReviewStars: React.FC<ServiceDetailReviewStarsProps> =
         <Star
           key={i}
           className={`${starClass} ${
-            i < rounded ? 'fill-[#F59E0B] text-[#F59E0B]' : 'text-[#e8e8e8]'
+            i < rounded ? filledClass : 'text-[#e8e8e8]'
           }`}
           aria-hidden
         />

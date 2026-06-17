@@ -23,6 +23,8 @@ interface ServiceDetailDesktopPhotoMapHeroProps {
   location: { latitude: number; longitude: number } | null;
   locationLabel?: string;
   rangeKm?: number;
+  /** Título/meta superpuesto sobre la imagen principal (columna izquierda) */
+  titleOverlay?: React.ReactNode;
   className?: string;
 }
 
@@ -37,6 +39,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   location,
   locationLabel,
   rangeKm = 25,
+  titleOverlay,
   className = '',
 }) => {
   // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
@@ -46,7 +49,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
 
   return (
     <div
-      className={`grid grid-cols-1 items-stretch gap-2.5 lg:grid-cols-2 lg:gap-3 ${className}`}
+      className={`grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2 lg:gap-4 ${className}`}
       style={{ minHeight: SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX }}
     >
       <div className={`relative min-h-0 min-w-0 ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}>
@@ -61,10 +64,15 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
           onImageLoad={onImageLoad}
           onImageLoadStart={onImageLoadStart}
         />
+        {titleOverlay ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-5 pb-4 pt-20">
+            {titleOverlay}
+          </div>
+        ) : null}
       </div>
 
       <div
-        className={`sd-gallery-shell relative min-h-0 min-w-0 overflow-hidden ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}
+        className={`relative min-h-0 min-w-0 overflow-hidden rounded-none ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}
       >
         {location ? (
           <>

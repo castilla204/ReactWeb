@@ -193,7 +193,7 @@ const SearchDashboard: React.FC = () => {
                                             categoryLabel={
                                                 search.categoryName || getCategoryName(search.category)
                                             }
-                                            onClick={() => handleSearchClick(search.id)}
+                                            onClick={() => handleSearchClick(search)}
                                             highlightUnreviewed={isAdmin && !search.isRevised}
                                         />
                                     </li>
