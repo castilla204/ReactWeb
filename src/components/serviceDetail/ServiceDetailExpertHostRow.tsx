@@ -74,7 +74,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       </p>
 
       {showDesktopExpertBio ? (
-        <p className={SD_DESKTOP_HOST_BIO_CLASS} title={trimmedExpertDescription}>
+        <p className={SD_DESKTOP_HOST_BIO_CLASS}>
           {trimmedExpertDescription}
         </p>
       ) : null}

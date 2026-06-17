@@ -195,6 +195,15 @@ interface SearchData {
 interface CreateSearchWithHireData {
     searchData: SearchData;
     parameters: SearchParameters;
+    // 🗓️ Fase E: hueco de cita elegido (UTC ISO). El backend lo asegura con la exclusion constraint.
+    startsAtUtc?: string | null;
+    endsAtUtc?: string | null;
+    // 🗓️ Fase E: ubicación de la cita (servicios con radio de km; el cliente la elige en el mapa).
+    location?: string | null;
+    latitude?: string | null;
+    longitude?: string | null;
+    doorNumber?: string | null;
+    siteDetails?: string | null;
 }
 
 export const useSearch = (options: { enableQueries?: boolean } = {}) => {
@@ -280,12 +289,23 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
     });
 
     const createSearchWithHireMutation = useMutation({
-        mutationFn: ({ searchData, parameters }: CreateSearchWithHireData) =>
+        mutationFn: ({ searchData, parameters, startsAtUtc, endsAtUtc, location, latitude, longitude, doorNumber, siteDetails }: CreateSearchWithHireData) =>
             fetchApi<{ url?: string; searchId?: number; searchHireId?: number }>(
                 API_CONFIG.endpoints.search.createWithHire,
                 {
                     method: 'POST',
-                    body: JSON.stringify({ searchDto: searchData, parameterDto: parameters }),
+                    body: JSON.stringify({
+                        searchDto: searchData,
+                        parameterDto: parameters,
+                        // 🗓️ Fase E: viajan al checkout y de ahí al webhook (binding case-insensitive de ASP.NET).
+                        startsAtUtc: startsAtUtc ?? null,
+                        endsAtUtc: endsAtUtc ?? null,
+                        location: location ?? null,
+                        latitude: latitude ?? null,
+                        longitude: longitude ?? null,
+                        doorNumber: doorNumber ?? null,
+                        siteDetails: siteDetails ?? null,
+                    }),
                 }
             ),
         onSuccess: () => {

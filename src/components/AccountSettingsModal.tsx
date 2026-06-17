@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, Menu, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin } from 'lucide-react';
+import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, ChevronLeft, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAccountDeletion } from '../hooks/useAccountDeletion';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion';
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
+import { DisableMFAModal } from './DisableMFAModal';
 // 🛡️ Round 28 MUD-F: wizard de mudanza self-service del experto.
 // 🛡️ Round 28 MUD-U: import retirado — el wizard ya no se monta aquí. Lo monta
 // ExpertPanelPage tras recibir el evento global dispatchado al cerrar este modal.
@@ -26,8 +28,6 @@ import {
     DrawerHeader,
     DrawerTitle,
     DrawerDescription,
-    DrawerClose,
-    DrawerTrigger,
 } from './ui/drawer';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -71,8 +71,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const isExpert = userRole === 'Expert';
   const tabs = allTabs.filter(t => !t.expertOnly || isExpert);
   // 🛡️ MUD-U: state retirado — el wizard vive en ExpertPanelPage.
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // 📱 Navegación móvil maestro-detalle (estilo ajustes nativo): 'list' muestra
+  //    el índice de secciones; 'detail' muestra el contenido del tab activo.
+  //    Sustituye al antiguo drawer anidado con hamburguesa (3 toques → 1 toque).
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  // 🔐 Modal para deshabilitar MFA (sustituye a los prompt() nativos).
+  const [showDisableMFA, setShowDisableMFA] = useState(false);
+  // 🔔 Ajustes de notificaciones reales (email / WhatsApp) desde el backend.
+  const { settings, isLoadingSettings, toggleEmail, toggleWhatsApp, isUpdating: isUpdatingSettings } = useUserSettings();
   // ✅ Ref para rastrear si el componente está montado y limpiar timeouts
   const isMountedRef = React.useRef(true);
   const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -160,23 +167,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     showToast('success', 'MFA configurado exitosamente. La próxima vez que inicies sesión, se te pedirá el código MFA.');
   };
 
-  const handleDisableMFA = async () => {
-    const password = prompt('Ingresa tu contraseña:');
-    const totpCode = prompt('Ingresa el código de tu app:');
-
-    if (!password || !totpCode) return;
-
-    try {
-      await mfaService.disableMFA(password, totpCode);
-      // Limpiar caché y forzar refresh
-      mfaService.clearCache();
-      setTimeout(() => {
-        loadMFAStatus();
-      }, 500);
-      showToast('success', 'MFA deshabilitado');
-    } catch (error: any) {
-      showToast('error', error.response?.data?.message || error.message || 'Error al deshabilitar MFA');
-    }
+  // 🔐 Tras deshabilitar MFA desde el modal: limpiar caché y refrescar estado.
+  const handleDisableMFASuccess = () => {
+    mfaService.clearCache();
+    setTimeout(() => {
+      loadMFAStatus();
+    }, 500);
   };
 
   const checkStatus = async () => {
@@ -543,10 +539,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           ⚠️ Quedan pocos códigos de recuperación. Considera regenerarlos.
                         </div>
                       )}
-                      <Button 
-                        onClick={handleDisableMFA} 
-                        variant="destructive" 
+                      <Button
+                        onClick={() => setShowDisableMFA(true)}
+                        variant="destructive"
                         size="sm"
+                        className="h-10"
                       >
                         Deshabilitar MFA
                       </Button>
@@ -579,46 +576,75 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
         <div className="space-y-4">
-          <div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-muted-foreground" />
-                  <div>
+          {isLoadingSettings ? (
+            <div className="flex items-center gap-3 p-4 text-sm text-muted-foreground">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+              Cargando preferencias…
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Email */}
+              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-lg cursor-pointer active:bg-muted/40 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
                     <h4 className="text-sm font-medium">Notificaciones por Email</h4>
-                    <p className="text-sm text-muted-foreground">Recibe notificaciones por correo electrónico</p>
+                    <p className="text-sm text-muted-foreground">Recibe avisos por correo electrónico</p>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
-                  <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring peer-focus:ring-offset-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
+                <span className="relative inline-flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={!!settings?.isEmailEnabled}
+                    disabled={isUpdatingSettings}
+                    onChange={() => toggleEmail()}
+                  />
+                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
+                </span>
+              </label>
+
+              {/* WhatsApp */}
+              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-lg cursor-pointer active:bg-muted/40 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-medium">Notificaciones por WhatsApp</h4>
+                    <p className="text-sm text-muted-foreground">Recibe avisos importantes por WhatsApp</p>
+                  </div>
+                </div>
+                <span className="relative inline-flex items-center shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={!!settings?.isWhatsAppEnabled}
+                    disabled={isUpdatingSettings}
+                    onChange={() => toggleWhatsApp()}
+                  />
+                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
+                </span>
+              </label>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Privacy Tab */}
       {activeTab === 'privacy' && (
         <div className="space-y-4">
-          <div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Globe className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <h4 className="text-sm font-medium">Visibilidad del Perfil</h4>
-                    <p className="text-sm text-muted-foreground">Controla quién puede ver tu perfil</p>
-                  </div>
-                </div>
-                <select className="flex h-10 w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                  <option>Público</option>
-                  <option>Privado</option>
-                  <option>Solo Amigos</option>
-                </select>
+          <div className="flex flex-col gap-3 p-4 border border-border rounded-lg sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Globe className="w-5 h-5 text-muted-foreground shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium">Visibilidad del Perfil</h4>
+                <p className="text-sm text-muted-foreground">Controla quién puede ver tu perfil</p>
               </div>
             </div>
+            <select className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-10 sm:w-[150px]">
+              <option>Público</option>
+              <option>Privado</option>
+              <option>Solo Amigos</option>
+            </select>
           </div>
         </div>
       )}
@@ -626,16 +652,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       {/* 🛡️ Round 28 MUD-F: Tab Mudarme (solo expertos) */}
       {activeTab === 'relocate' && isExpert && (
         <div className="space-y-4">
-          <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Plane className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
+                  <Plane className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
               <div className="flex-1">
-                <h4 className="text-base font-semibold text-blue-900">¿Te has mudado a otro país?</h4>
-                <p className="text-sm text-blue-800 mt-1">
+                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">¿Te has mudado a otro país?</h4>
+                <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
                   Stripe Connect no permite cambiar el país de tu cuenta de cobros. Si te has mudado, este asistente cierra tu cuenta Stripe actual y te prepara para hacer un onboarding nuevo en tu país de residencia.
                 </p>
               </div>
@@ -878,10 +904,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     };
   }, []);
 
-  // ✅ Cerrar drawer anidado cuando el drawer principal se cierra
+  // ✅ Al cerrar el drawer principal, volver al índice de secciones (vista lista)
   React.useEffect(() => {
     if (!isOpen) {
-      setMobileMenuOpen(false);
+      setMobileView('list');
       // Limpiar timeout si existe
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
@@ -899,8 +925,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         closeTimeoutRef.current = null;
       }
 
-      // Cerrar el drawer anidado primero para evitar conflictos de DOM
-      setMobileMenuOpen(false);
+      // Volver a la vista lista para la próxima apertura
+      setMobileView('list');
 
       // 🛡️ Si la cuenta ya se eliminó, cerrar el modal debe redirigir SIEMPRE
       //    al login para evitar dejar al usuario en una vista zombi.
@@ -927,8 +953,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     // Si open es true, no hacemos nada - el drawer se abre automáticamente
   }, [onClose, deletionStep]);
 
-  const handleNestedDrawerOpenChange = React.useCallback((open: boolean) => {
-    setMobileMenuOpen(open);
+  // 📱 Selección de sección en móvil: fija el tab y pasa a la vista detalle.
+  const handleSelectTab = React.useCallback((tab: TabType) => {
+    setActiveTab(tab);
+    setMobileView('detail');
   }, []);
 
   // ✅ Handler para el Dialog de desktop - debe manejar correctamente el estado
@@ -1031,6 +1059,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </DialogContent>
         </Dialog>
 
+        {/* 🔐 Modal para deshabilitar MFA (dialog en desktop). */}
+        <DisableMFAModal
+          isOpen={showDisableMFA}
+          onClose={() => setShowDisableMFA(false)}
+          onSuccess={handleDisableMFASuccess}
+        />
       </>
     );
   }
@@ -1040,89 +1074,126 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     return null;
   }
 
+  const activeTabMeta = tabs.find(t => t.id === activeTab);
+
   return (
     <>
       <Drawer open={isOpen} onOpenChange={handleDrawerOpenChange}>
-        <DrawerContent className="max-h-[96vh]">
+        <DrawerContent className="max-h-[92vh] bg-background">
           <DrawerHeader className="sr-only">
             <DrawerTitle>Configuración de Cuenta</DrawerTitle>
             <DrawerDescription>Gestiona tu perfil, seguridad, notificaciones y privacidad</DrawerDescription>
           </DrawerHeader>
-          <div className="mx-auto w-full max-w-4xl">
-            {/* Mobile Header */}
-            <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-              {/* ✅ Solo renderizar el drawer anidado si el drawer principal está abierto */}
-              {isOpen && (
-                <Drawer open={mobileMenuOpen && isOpen} onOpenChange={handleNestedDrawerOpenChange}>
-                  <DrawerTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9">
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="max-h-[96vh]">
-                  <DrawerHeader className="sr-only">
-                    <DrawerTitle>Menú de Configuración</DrawerTitle>
-                    <DrawerDescription>Navega entre las opciones de configuración</DrawerDescription>
-                  </DrawerHeader>
-                  <div className="p-4">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Configuración</h2>
-                      <DrawerClose asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </DrawerClose>
+          <div className="mx-auto flex w-full max-w-lg flex-col max-h-[92vh]">
+            {mobileView === 'list' ? (
+              /* ── Vista índice: lista de secciones (estilo ajustes nativo) ── */
+              <>
+                <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+                  <h2 className="text-lg font-semibold">Configuración</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    aria-label="Cerrar"
+                    onClick={() => handleDrawerOpenChange(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                <nav className="overflow-y-auto px-4 pb-6">
+                  {/* Usuario → atajo al perfil (fila plana, sin caja) */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTab('profile')}
+                    className="flex w-full items-center gap-3 border-b border-border py-4 text-left transition-colors active:bg-muted/40"
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+                        {avatarInitials || <User className="h-5 w-5" />}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-medium leading-tight">{user?.name || 'Usuario'}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                     </div>
-                    <nav className="space-y-1">
-                      {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        const isActive = activeTab === tab.id;
-                        return (
-                          <React.Fragment key={tab.id}>
-                            {tab.id === 'delete' && <Separator className="my-2" />}
-                            <Button
-                              variant={isActive ? (tab.destructive ? 'destructive' : 'secondary') : 'ghost'}
-                              className="w-full justify-start h-11"
-                              onClick={() => {
-                                setActiveTab(tab.id);
-                                setMobileMenuOpen(false);
-                              }}
-                            >
-                              <Icon className="w-5 h-5 mr-3" />
-                              <span>{tab.label}</span>
-                            </Button>
-                          </React.Fragment>
-                        );
-                      })}
-                    </nav>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                  </button>
+
+                  {/* Lista de secciones: iconos desnudos + separadores hairline */}
+                  <div>
+                    {tabs.map((tab, i) => {
+                      const Icon = tab.icon;
+                      const next = tabs[i + 1];
+                      const showDivider = !!next && next.id !== 'delete';
+                      return (
+                        <React.Fragment key={tab.id}>
+                          {tab.id === 'delete' && <div className="h-3" />}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTab(tab.id)}
+                            className={`flex w-full items-center gap-3.5 py-3.5 text-left transition-colors active:bg-muted/40 ${
+                              tab.destructive ? 'text-destructive' : ''
+                            } ${showDivider ? 'border-b border-border/60' : ''}`}
+                          >
+                            <Icon
+                              className={`h-[18px] w-[18px] shrink-0 ${tab.destructive ? '' : 'text-muted-foreground'}`}
+                              strokeWidth={1.75}
+                            />
+                            <span className="flex-1 text-[15px]">{tab.label}</span>
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
-                </DrawerContent>
-              </Drawer>
-              )}
+                </nav>
+              </>
+            ) : (
+              /* ── Vista detalle: contenido del tab activo con botón atrás ── */
+              <>
+                <div className="flex h-14 shrink-0 items-center gap-1 border-b border-border px-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    aria-label="Volver"
+                    onClick={() => setMobileView('list')}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <span className={`flex-1 truncate text-base font-semibold ${activeTabMeta?.destructive ? 'text-destructive' : ''}`}>
+                    {activeTabMeta?.label}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    aria-label="Cerrar"
+                    onClick={() => handleDrawerOpenChange(false)}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
 
-              <div className="flex-1">
-                <span className="text-sm font-medium">
-                  {tabs.find(t => t.id === activeTab)?.label}
-                </span>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => handleDrawerOpenChange(false)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Mobile Content */}
-            <div className="overflow-y-auto p-4 max-h-[calc(96vh-56px)]">
-              {renderContent()}
-            </div>
+                <div className="overflow-y-auto overscroll-contain p-4">
+                  {renderContent()}
+                </div>
+              </>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* 🔐 Modal para deshabilitar MFA (drawer en móvil, dialog en desktop). Se
+          renderiza fuera del drawer principal pero monta su propio portal. */}
+      <DisableMFAModal
+        isOpen={showDisableMFA}
+        onClose={() => setShowDisableMFA(false)}
+        onSuccess={handleDisableMFASuccess}
+      />
 
       {/* 🛡️ Round 28 MUD-U: wizard NO se monta aquí — ExpertPanelPage lo monta y
           escucha el evento global 'openExpertRelocationWizard' (necesario porque este
