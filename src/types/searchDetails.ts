@@ -44,6 +44,10 @@ export interface ServiceInfo {
   locationRange: number | null;
   /** Radio de trabajo del EXPERTO en km (0 = solo en su taller/punto fijo). */
   expertWorkRadiusKm?: number | null;
+  /** Detalle del punto fijo del experto (snapshot). Solo relevante con expertWorkRadiusKm === 0. */
+  expertWorkLocationDoor?: string | null;
+  expertWorkLocationFloor?: string | null;
+  expertWorkLocationDetails?: string | null;
   // ✅ NUEVOS CAMPOS DE PAÍS Y TIMEZONE
   expertTimezone: string | null; // Timezone del experto al momento de contratar
   expertCountry: string | null; // ✅ NUEVO: País del experto al momento de contratar (ISO 3166-1 alpha-2)

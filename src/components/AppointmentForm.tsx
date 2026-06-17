@@ -46,6 +46,10 @@ interface AppointmentFormProps {
    * cliente no puede elegir otra (el mapa se muestra bloqueado).
    */
   expertWorkRadiusKm?: number | null;
+  /** Detalle del taller del experto (solo modo fijo): se muestra en el aviso "cita en el taller". */
+  expertWorkLocationDoor?: string | null;
+  expertWorkLocationFloor?: string | null;
+  expertWorkLocationDetails?: string | null;
   expertAvailability?: CurrentExpertAvailabilityDto | null;
   /**
    * ✅ INTERNACIONALIZACIÓN: Timezone del lugar donde se presta el servicio
@@ -71,6 +75,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   expertLocation,
   expertRange,
   expertWorkRadiusKm,
+  expertWorkLocationDoor,
+  expertWorkLocationFloor,
+  expertWorkLocationDetails,
   expertAvailability,
   serviceTimezone, // ✅ Timezone del servicio (donde se presta)
   expertCountry // ✅ País del experto
@@ -765,6 +772,19 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       <AlertDescription className="text-blue-800">
                         Este experto trabaja solo en su punto fijo, así que la ubicación ya está
                         fijada en el mapa y no es necesario elegirla. Te desplazarás tú a su taller.
+                        {(expertWorkLocationDoor || expertWorkLocationFloor || expertWorkLocationDetails) && (
+                          <div className="mt-2 space-y-0.5 text-[13px]">
+                            {expertWorkLocationDoor && (
+                              <div><span className="font-medium">Puerta/garaje:</span> {expertWorkLocationDoor}</div>
+                            )}
+                            {expertWorkLocationFloor && (
+                              <div><span className="font-medium">Piso/planta:</span> {expertWorkLocationFloor}</div>
+                            )}
+                            {expertWorkLocationDetails && (
+                              <div><span className="font-medium">Acceso:</span> {expertWorkLocationDetails}</div>
+                            )}
+                          </div>
+                        )}
                       </AlertDescription>
                     </Alert>
                   )}

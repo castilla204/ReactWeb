@@ -1284,6 +1284,22 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         );
     }
 
+    // Clases de layout conscientes del modo. Embebido = diseño PLANO (sin tarjetas
+    // ni bordes/sombra: chat y detalles a ras, separados por una hairline). Móvil
+    // (no embebido) = edge-to-edge, sin el marco de tarjeta ni el padding exterior.
+    const sdInnerClass = embedded
+        ? 'flex h-full w-full min-h-0 flex-1 flex-col'
+        : SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS;
+    const sdLayoutClass = embedded
+        ? 'flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row lg:items-stretch'
+        : `${SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS} max-md:gap-0 max-md:p-0`;
+    const sdChatClass = embedded
+        ? `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} overflow-hidden lg:border-r lg:border-[#ededed]`
+        : `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS} max-md:rounded-none max-md:border-0 max-md:shadow-none`;
+    const sdSidebarClass = embedded
+        ? `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} overflow-hidden bg-white`
+        : `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`;
+
     return (
         <div className={
             embedded
@@ -1379,11 +1395,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
             {/* Main Layout - Sin scroll, solo scroll interno en componentes */}
             {!isNetworkErr && (
-            <div className={SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS}>
-            <div className={`${SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS} bg-gray-50 lg:bg-transparent`} style={{ minHeight: 0, flex: '1 1 0%' }}>
+            <div className={sdInnerClass}>
+            <div className={`${sdLayoutClass} ${embedded ? 'bg-white' : 'bg-gray-50 lg:bg-transparent'}`} style={{ minHeight: 0, flex: '1 1 0%' }}>
                 {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
-                    <div className={`${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`}>
+                    <div className={sdChatClass}>
                         <div className="flex h-full min-h-0 w-full flex-col">
                             <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
                                 <Chat
@@ -2335,7 +2351,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 )}
 
                 {/* Sidebar — detalles + acciones (desktop) */}
-                <aside className={`${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`}>
+                <aside className={sdSidebarClass}>
                     <div className={`${SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS} shrink-0 py-3`}>
                         <h2 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">Detalles del servicio</h2>
                         {searchHireStatusInfo && (
@@ -3099,6 +3115,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         ?? (serviceInfo as any)?.ExpertWorkRadiusKm
                         ?? null
                     }
+                    expertWorkLocationDoor={serviceInfo?.expertWorkLocationDoor ?? (serviceInfo as any)?.ExpertWorkLocationDoor ?? null}
+                    expertWorkLocationFloor={serviceInfo?.expertWorkLocationFloor ?? (serviceInfo as any)?.ExpertWorkLocationFloor ?? null}
+                    expertWorkLocationDetails={serviceInfo?.expertWorkLocationDetails ?? (serviceInfo as any)?.ExpertWorkLocationDetails ?? null}
                     // ✅ NUEVO: País y timezone del experto
                     expertCountry={
                         search?.searchHire?.expertCountry || 
