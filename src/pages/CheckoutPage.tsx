@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { showToast } from '../lib/toast';
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import { Service } from '../hooks/useServices';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { formatPriceNumber } from '../utils/priceUtils';
@@ -14,10 +12,14 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { CheckoutSummaryTable } from '../components/checkout/CheckoutSummaryTable';
+import { CheckoutPageTitle } from '../components/checkout/CheckoutPageTitle';
 import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAside';
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
+import { CheckoutMobileStepper, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepper';
 import { CheckoutLegalNotices } from '../components/checkout/CheckoutLegalNotices';
+import SlotPicker, { ChosenSlot } from '../components/SlotPicker';
+import CheckoutLocationPicker, { CheckoutLocationData } from '../components/CheckoutLocationPicker';
 import { normalizeDeliverableTypes } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
 import { resolveCheckoutLocation, persistHireSearchLocation } from '../utils/hireSearchContext';
@@ -27,15 +29,16 @@ import { getCountryName } from '../utils/countries';
 import {
     HP_FONT,
     SD_CHECKOUT_MOBILE_CTA_CLASS,
+    SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
+    SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
-    SD_CHECKOUT_MOBILE_TITLE_CLASS,
     SD_CHECKOUT_MOBILE_HEADER_CLASS,
-    SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS,
-    SD_CHECKOUT_MOBILE_BACK_BTN_CLASS,
     SD_CHECKOUT_GRID_CLASS,
     SD_CHECKOUT_INNER_MAX_CLASS,
-    HP_LINK_UNDERLINE_CLASS,
-    hpCheckoutTitleUnderlineStyle,
+    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+    SD_DESKTOP_STICKY_TOP_CLASS,
+    SD_CHECKOUT_DESKTOP_PAGE_CLASS,
+    SD_CHECKOUT_DESKTOP_CARD_CLASS,
 } from '../constants/homepageTypography';
 
 interface CheckoutPageProps {}
@@ -58,7 +61,27 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // isSubmittingRef.current=true se aplica INMEDIATAMENTE, bloqueando el segundo handler.
     const isSubmittingRef = useRef(false);
     const [showPriceDetails, setShowPriceDetails] = useState(false);
-    
+    // 🗓️ Fase E: hueco de cita elegido (modelo Calendly), null hasta que el cliente elige.
+    const [chosenSlot, setChosenSlot] = useState<ChosenSlot | null>(null);
+    // 🗓️ Fase E: ubicación de la cita (servicios con radio); estáticos la prefijan al taller.
+    const [chosenLocation, setChosenLocation] = useState<CheckoutLocationData | null>(null);
+    // 📱 Móvil: wizard (1 = fecha/hora, 2 = ubicación, 3 = pago). En desktop no aplica.
+    const [mobileStep, setMobileStep] = useState<CheckoutMobileWizardStep>(1);
+
+    // 🖥️ C1 FIX: montar SOLO un árbol (desktop o móvil), no ambos. Antes `hidden lg:block` /
+    // `lg:hidden` dejaban los dos en el DOM → se montaban DOS SlotPicker + DOS CheckoutLocationPicker
+    // (dos mapas Mapbox, peticiones dobles) y la instancia oculta podía borrar (onChange(null)) el
+    // hueco/ubicación elegido en la visible. Con matchMedia solo existe una instancia de cada picker.
+    const [isDesktop, setIsDesktop] = useState<boolean>(
+        () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+    );
+    useEffect(() => {
+        const mq = window.matchMedia('(min-width: 1024px)');
+        const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+
     // Datos del servicio
     const serviceDuration = service?.durationInHours ? `${service.durationInHours} ${service.durationInHours === 1 ? 'hora' : 'horas'}` : 'No especificada';
 
@@ -236,6 +259,17 @@ export function CheckoutPage({}: CheckoutPageProps) {
             return;
         }
 
+        // 🗓️ Fase E: si el servicio requiere cita, hay que elegir hueco ANTES de pagar.
+        if (service.requiresAppointment && !chosenSlot) {
+            showToast('error', 'Elige un día y una hora para la cita antes de continuar.');
+            return;
+        }
+        // 🗓️ Fase E: y la ubicación (salvo taller estático, que va prefijada).
+        if (service.requiresAppointment && !isWorkshopOnly && !chosenLocation) {
+            showToast('error', 'Indica en el mapa dónde será la cita antes de continuar.');
+            return;
+        }
+
         // 🛡️ T8 FIX: check ATÓMICO con useRef ANTES de cualquier setState. El check
         // anterior `isSubmitting` (state) tenía microventana 100-200ms entre lectura y
         // setIsSubmitting(true) durante la cual un doble click rápido pasaba ambos
@@ -307,6 +341,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
             const response = await createSearchWithHire.mutateAsync({
                 searchData,
                 parameters: parameterData,
+                // 🗓️ Fase E: el hueco viaja al backend → metadata Stripe → webhook crea la cita confirmada.
+                startsAtUtc: chosenSlot?.startUtc ?? null,
+                endsAtUtc: chosenSlot?.endUtc ?? null,
+                location: chosenLocation?.location ?? null,
+                latitude: chosenLocation?.latitude ?? null,
+                longitude: chosenLocation?.longitude ?? null,
+                doorNumber: chosenLocation?.doorNumber ?? null,
+                siteDetails: chosenLocation?.siteDetails ?? null,
             });
 
             if (import.meta.env.DEV) {
@@ -381,11 +423,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const finalDeliverableTypes = normalizeDeliverableTypes(service.selectedDeliverableTypes);
     const finalExpertName = service.expert?.user?.name || 'Experto';
     const finalServiceTypeName = service.serviceTypeName || 'Servicio';
+    const expertPicture = service.expert?.profilePictureUrl || undefined;
+    const expertRating = service.averageRating ?? 0;
+    const expertReviewCount = service.reviewsCount ?? 0;
+    const expertCompletedSearches = service.completedSearches ?? 0;
     const expertStripeStatus = service.expert?.stripeStatus;
     const allowedStripeStatuses = ['Approved', 'PendingVerification'];
     const expertCanReceivePayments =
         !expertStripeStatus || allowedStripeStatuses.includes(expertStripeStatus);
-    const desktopPriceInfo = formatPriceDisplay(finalTotal);
     const hireSearchLocation = resolveCheckoutLocation(routerLocation.state, {
         city: service.expert?.city,
         country: service.expert?.country,
@@ -397,6 +442,75 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const expertWorkRadiusKm = resolveExpertWorkRadiusKm(service);
     const timezoneLabel = formatTimezoneFriendly(service.expert?.timezone) || null;
     const isProcessing = isSubmitting || createSearchWithHire.isPending;
+
+    // 🗓️ Fase E: selector de huecos (solo si el servicio requiere cita). Bloquea el pago hasta elegir.
+    const requiresAppointment = !!service.requiresAppointment;
+    const slotSatisfied = !requiresAppointment || !!chosenSlot;
+    const slotPickerProps = {
+        serviceId: service.id,
+        selected: chosenSlot,
+        onSelect: setChosenSlot,
+    };
+    const slotPickerDesktopNode = requiresAppointment ? (
+        <SlotPicker {...slotPickerProps} sectionTitle="Fecha y hora" />
+    ) : null;
+    const slotPickerMobileNode = requiresAppointment ? (
+        <SlotPicker {...slotPickerProps} />
+    ) : null;
+
+    // 🗓️ Fase E: ubicación. Radio>0 → el cliente la elige en el mapa; estático (radio 0) → taller del experto.
+    const eLat = Number(service.expert?.latitude);
+    const eLng = Number(service.expert?.longitude);
+    const expertHasCoords = Number.isFinite(eLat) && Number.isFinite(eLng) && (eLat !== 0 || eLng !== 0);
+    const isWorkshopOnly = expertWorkRadiusKm === 0 && expertHasCoords;
+    const locationSatisfied = !requiresAppointment || isWorkshopOnly || !!chosenLocation;
+    const locationPickerProps = {
+        expertLatitude: service.expert?.latitude,
+        expertLongitude: service.expert?.longitude,
+        expertCountry: service.expert?.country,
+        expertRange: expertWorkRadiusKm,
+        workRadiusKm: expertWorkRadiusKm,
+        onChange: setChosenLocation,
+    };
+    const locationPickerNode = requiresAppointment ? (
+        <CheckoutLocationPicker {...locationPickerProps} />
+    ) : null;
+    const locationPickerWizardNode = requiresAppointment ? (
+        <CheckoutLocationPicker {...locationPickerProps} variant="wizard" />
+    ) : null;
+
+    const priceInfo = formatPriceDisplay(finalTotal);
+    const priceDisplayNode = priceInfo.wasConverted ? (
+        <>
+            <span className="mr-0.5 text-sm font-medium text-brand lg:text-base">≈</span>
+            {priceInfo.converted}
+        </>
+    ) : (
+        priceInfo.display
+    );
+    const priceSublineNode = priceInfo.wasConverted
+        ? `${priceInfo.sourceFormatted} · cargo en ${sourceCurrency}`
+        : undefined;
+
+    const summaryTableProps = {
+        serviceName: finalServiceTypeName,
+        durationLabel: serviceDuration,
+        categoryName: service?.categoryName,
+        expertName: finalExpertName,
+        expertPicture,
+        expertRating,
+        expertReviewCount,
+        expertCompletedSearches,
+        locationLabel: checkoutLocationLabel,
+        locationRangeKm: expertWorkRadiusKm,
+        timezoneLabel,
+        deliverables: finalDeliverableTypes,
+        priceDisplay: priceDisplayNode,
+        priceSubline: priceSublineNode,
+        showPriceDetails,
+        onTogglePriceDetails: () => setShowPriceDetails(!showPriceDetails),
+        showFooterNotes: false,
+    };
 
     const handleBack = () => {
         if (serviceId) {
@@ -410,158 +524,170 @@ export function CheckoutPage({}: CheckoutPageProps) {
         navigate('/');
     };
 
+    // 📱 Móvil en 3 pasos cuando hay que elegir UBICACIÓN (servicio con radio).
+    // Taller estático o sin cita → flujo de una pantalla.
+    const mobileThreeStep = requiresAppointment && !isWorkshopOnly;
+    const handleMobileBack = () => {
+        if (mobileThreeStep && mobileStep > 1) {
+            setMobileStep((s) => (s - 1) as CheckoutMobileWizardStep);
+            return;
+        }
+        handleBack();
+    };
+
     return (
         <>
-            {/* Versión Desktop */}
-            <div className="checkout-page hidden min-h-screen bg-[#fafafa] lg:block">
+            {/* Versión Desktop (C1: montada solo en ≥lg, nunca a la vez que la móvil) */}
+            {isDesktop && (
+            <div className={`checkout-page hidden min-h-screen lg:block ${SD_CHECKOUT_DESKTOP_PAGE_CLASS}`}>
                 <HomepageDesktopTopBar
                     variant="checkout"
                     onBack={handleBack}
-                    pageTitle="Confirmar y pagar"
                 />
-                <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-12 pt-8`}>
-                    <div className={SD_CHECKOUT_GRID_CLASS}>
-                        <main className="min-w-0 space-y-5">
-                            <CheckoutSummaryTable
-                                serviceName={finalServiceTypeName}
-                                expertName={finalExpertName}
-                                durationLabel={serviceDuration}
-                                categoryName={service?.categoryName}
-                                locationLabel={checkoutLocationLabel}
-                                locationRangeKm={expertWorkRadiusKm}
-                                deliverables={finalDeliverableTypes}
-                                includePrice={false}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className={`text-sm font-medium text-brand ${HP_LINK_UNDERLINE_CLASS}`}
-                            >
-                                Ver ficha del servicio
-                            </button>
-                        </main>
+                <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-6 pt-4`}>
+                    <div className={`${SD_CHECKOUT_GRID_CLASS} gap-y-2.5`}>
+                        <section className="flex min-w-0 flex-col gap-2.5">
+                            {slotPickerDesktopNode}
+                            {locationPickerNode}
+                        </section>
 
-                        <CheckoutPaymentAside
-                            priceDisplay={
-                                desktopPriceInfo.wasConverted ? (
-                                    <>
-                                        <span className="mr-0.5 text-base font-medium text-brand">≈</span>
-                                        {desktopPriceInfo.converted}
-                                    </>
-                                ) : (
-                                    desktopPriceInfo.display
-                                )
-                            }
-                            priceSubline={
-                                desktopPriceInfo.wasConverted ? (
-                                    <>
-                                        {desktopPriceInfo.sourceFormatted} · cargo en {sourceCurrency}
-                                    </>
-                                ) : undefined
-                            }
-                            showPriceDetails={showPriceDetails}
-                            onTogglePriceDetails={() => setShowPriceDetails(!showPriceDetails)}
-                            timezoneLabel={timezoneLabel}
-                            canPay={expertCanReceivePayments}
-                            isProcessing={isProcessing}
-                            onPay={handlePayment}
-                            legalNotices={
-                                <CheckoutLegalNotices
-                                    sourceCurrency={sourceCurrency}
-                                    collapsible
-                                    defaultOpen={false}
-                                    variant="plain"
+                        <aside className={`flex h-full lg:sticky lg:self-stretch ${SD_DESKTOP_STICKY_TOP_CLASS}`}>
+                            <div className={`flex h-full min-h-full w-full flex-col ${SD_CHECKOUT_DESKTOP_CARD_CLASS}`}>
+                                <div className="shrink-0 border-b border-[#f0f0f0] px-4 py-3">
+                                    <CheckoutPageTitle variant="subtle" className="text-[15px]" />
+                                </div>
+                                <CheckoutSummaryTable
+                                    {...summaryTableProps}
+                                    includePrice={false}
+                                    className="flex min-h-0 flex-1 flex-col [&_article]:rounded-none [&_article]:border-0 [&_article]:bg-transparent [&_article]:shadow-none"
                                 />
-                            }
-                        />
+                                <CheckoutPaymentAside
+                                    embedded
+                                    priceDisplay={priceDisplayNode}
+                                    canPay={expertCanReceivePayments && slotSatisfied && locationSatisfied}
+                                    isProcessing={isProcessing}
+                                    onPay={handlePayment}
+                                    legalNotices={
+                                        <CheckoutLegalNotices
+                                            sourceCurrency={sourceCurrency}
+                                            collapsible
+                                            defaultOpen={false}
+                                            variant="plain"
+                                            showCancellation={false}
+                                        />
+                                    }
+                                />
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </div>
+            )}
 
-            {/* Versión Móvil */}
+            {/* Versión Móvil — wizard de 3 pasos cuando hay ubicación que elegir */}
+            {!isDesktop && (
             <div className="checkout-page min-h-screen bg-white lg:hidden">
                 <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
                     <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
-                        <div className={SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS}>
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className={SD_CHECKOUT_MOBILE_BACK_BTN_CLASS}
-                                aria-label="Volver"
-                            >
-                                <ArrowLeft className="h-5 w-5" aria-hidden />
-                            </button>
-                            <h1 className="min-w-0 flex-1">
-                                <span className={SD_CHECKOUT_MOBILE_TITLE_CLASS}>
-                                    Confirmar y pagar
-                                    <span
-                                        aria-hidden
-                                        className="checkout-mobile-title-underline"
-                                        style={hpCheckoutTitleUnderlineStyle}
-                                    />
-                                </span>
-                            </h1>
-                        </div>
+                        {!mobileThreeStep ? (
+                            <CheckoutPageTitle className="text-lg" />
+                        ) : null}
+                        {mobileThreeStep ? (
+                            <CheckoutMobileStepper currentStep={mobileStep} />
+                        ) : null}
                     </header>
 
-                    {(() => {
-                        const priceInfo = formatPriceDisplay(finalTotal);
-                        return (
-                            <CheckoutMobileSheet
-                                serviceName={finalServiceTypeName}
-                                durationLabel={serviceDuration}
-                                categoryName={service?.categoryName}
-                                locationLabel={checkoutLocationLabel}
-                                locationRangeKm={expertWorkRadiusKm}
-                                timezoneLabel={timezoneLabel}
-                                deliverables={finalDeliverableTypes}
-                                priceDisplay={
-                                    priceInfo.wasConverted ? (
-                                        <>
-                                            <span className="mr-0.5 text-sm font-medium text-brand">≈</span>
-                                            {priceInfo.converted}
-                                        </>
-                                    ) : (
-                                        priceInfo.display
-                                    )
-                                }
-                                priceSubline={
-                                    priceInfo.wasConverted
-                                        ? `${priceInfo.sourceFormatted} · cargo en ${sourceCurrency}`
-                                        : undefined
-                                }
-                                showPriceDetails={showPriceDetails}
-                                onTogglePriceDetails={() => setShowPriceDetails(!showPriceDetails)}
-                            />
-                        );
-                    })()}
+                    {mobileThreeStep ? (
+                        mobileStep === 1 ? (
+                            <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{slotPickerMobileNode}</div>
+                        ) : mobileStep === 2 ? (
+                            <div className="mb-0">{locationPickerWizardNode}</div>
+                        ) : (
+                            <>
+                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3`}>
+                                    <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#1c1c1c]">
+                                        Confirmar y pagar
+                                    </h2>
+                                </div>
+                                <CheckoutMobileSheet
+                                    {...summaryTableProps}
+                                    includePrice
+                                    showFooterNotes
+                                />
+                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-2 pt-1`}>
+                                    <CheckoutLegalNotices
+                                        sourceCurrency={sourceCurrency}
+                                        collapsible
+                                        defaultOpen={false}
+                                        variant="plain"
+                                        showCancellation={false}
+                                    />
+                                </div>
+                            </>
+                        )
+                    ) : (
+                        <>
+                            {slotPickerMobileNode && (
+                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{slotPickerMobileNode}</div>
+                            )}
+                            {locationPickerNode && (
+                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{locationPickerNode}</div>
+                            )}
+                            <CheckoutMobileSheet {...summaryTableProps} includePrice showFooterNotes />
+                        </>
+                    )}
                 </div>
 
                 <CheckoutMobileStickyFooter>
-                    <button
-                        onClick={handlePayment}
-                        disabled={!expertCanReceivePayments || isProcessing}
-                        type="button"
-                        aria-busy={isProcessing}
-                        className={SD_CHECKOUT_MOBILE_CTA_CLASS}
-                    >
-                        {isProcessing ? 'Procesando…' : 'Reservar'}
-                    </button>
+                    <div className={SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS}>
+                        <button
+                            type="button"
+                            onClick={handleMobileBack}
+                            className={SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS}
+                        >
+                            Atrás
+                        </button>
+                        {mobileThreeStep && mobileStep < 3 ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (mobileStep === 1 && slotSatisfied) setMobileStep(2);
+                                    else if (mobileStep === 2 && locationSatisfied) setMobileStep(3);
+                                }}
+                                disabled={mobileStep === 1 ? !slotSatisfied : !locationSatisfied}
+                                className={`${SD_CHECKOUT_MOBILE_CTA_CLASS} gap-2`}
+                            >
+                                Continuar
+                                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handlePayment}
+                                disabled={!expertCanReceivePayments || isProcessing || !slotSatisfied || !locationSatisfied}
+                                type="button"
+                                aria-busy={isProcessing}
+                                className={SD_CHECKOUT_MOBILE_CTA_CLASS}
+                            >
+                                {isProcessing ? 'Procesando…' : 'Reservar y pagar'}
+                            </button>
+                        )}
+                    </div>
                 </CheckoutMobileStickyFooter>
             </div>
+            )}
 
             {isSubmitting && (
-                <div className="fixed inset-0 z-[9999] bg-white">
-                    <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                        <div className="min-h-screen p-6">
-                            <div className="max-w-2xl mx-auto space-y-6">
-                                <Skeleton height={40} width="60%" borderRadius={0} />
-                                <Skeleton height={300} width="100%" borderRadius={0} />
-                                <Skeleton height={200} width="100%" borderRadius={0} />
-                                <Skeleton height={150} width="100%" borderRadius={0} />
-                            </div>
-                        </div>
-                    </SkeletonTheme>
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-white/95 backdrop-blur-sm"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="text-center">
+                        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                        <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
+                            Conectando con el pago seguro…
+                        </p>
+                    </div>
                 </div>
             )}
         </>

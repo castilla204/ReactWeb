@@ -501,6 +501,14 @@
     .sd-body {
         @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-[#1c1c1c];
         text-wrap: pretty;
+        /* Rompe cadenas larguísimas sin espacios (texto pegado, URLs, etc.) */
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .sd-user-text {
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .service-detail-desktop .sd-page-title {
@@ -509,6 +517,8 @@
 
     .service-detail-desktop .sd-body {
         @apply w-full max-w-none text-[0.9375rem] leading-[1.65] text-[#484848];
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .service-detail-desktop .hp-section-title {
@@ -541,20 +551,66 @@
         @apply py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
     }
 
-    /* Subrayado título checkout móvil — glow suave */
+    /* Subrayado título checkout — degradado azul→ámbar (móvil / énfasis) */
+    .checkout-page-title-underline,
     .checkout-mobile-title-underline {
-        animation: checkout-title-underline-glow 2.8s ease-in-out infinite;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        border-radius: 9999px;
+        background: linear-gradient(to right, #0066cc 0%, #1d4ed8 32%, #f59e0b 100%);
+        box-shadow:
+            0 2px 10px rgba(0, 102, 204, 0.45),
+            0 1px 8px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Desktop checkout — acento mínimo bajo el título */
+    .checkout-page-title-underline-subtle {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 2.75rem;
+        height: 2px;
+        border-radius: 9999px;
+        background: #0066cc;
+        opacity: 0.55;
+    }
+
+    /* Segunda capa suave para más presencia sin ensuciar */
+    .checkout-page-title-underline::after,
+    .checkout-mobile-title-underline::after {
+        content: '';
+        position: absolute;
+        inset: -1px -2px;
+        border-radius: inherit;
+        background: inherit;
+        filter: blur(3px);
+        opacity: 0.55;
+        z-index: -1;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .checkout-page-title-underline,
+        .checkout-mobile-title-underline {
+            animation: checkout-title-underline-glow 2.8s ease-in-out infinite;
+        }
     }
 
     @keyframes checkout-title-underline-glow {
         0%,
         100% {
-            opacity: 0.88;
-            box-shadow: 0 3px 12px hsl(var(--brand) / 0.28);
+            opacity: 0.92;
+            box-shadow:
+                0 2px 10px rgba(0, 102, 204, 0.38),
+                0 1px 6px rgba(245, 158, 11, 0.3);
         }
         50% {
             opacity: 1;
-            box-shadow: 0 4px 18px hsl(var(--brand) / 0.42);
+            box-shadow:
+                0 3px 14px rgba(0, 102, 204, 0.52),
+                0 2px 10px rgba(245, 158, 11, 0.45);
         }
     }
 
@@ -834,10 +890,7 @@
     }
 
     .sd-reviews-preview--desktop-full {
-        @apply pt-10 lg:pt-12;
-        /* Hairline divisoria con degradado azul→ámbar de marca (un border normal no admite degradado). */
-        border-top: 2px solid transparent;
-        border-image: linear-gradient(to right, #0066CC, #F59E0B) 1;
+        @apply border-t border-[#e8e8e8] pt-10 lg:pt-12;
     }
 
     .sd-reviews-preview--desktop-full .sd-reviews-preview-summary {

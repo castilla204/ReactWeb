@@ -8,14 +8,15 @@ import PriorityBadge from './PriorityBadge';
 import { API_CONFIG } from '../config/api';
 import { ErrorDisplay } from './ErrorDisplay';
 import StripeModePanel from './StripeModePanel';
+import CancellationSettingsPanel from './CancellationSettingsPanel';
 import { Pagination } from './Pagination';
 
 interface AdminPanelProps {
-  initialTab?: 'status' | 'category' | 'granular' | 'query' | 'stripe';
+  initialTab?: 'status' | 'category' | 'granular' | 'query' | 'stripe' | 'cancellation';
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
-  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'stripe'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'status' | 'category' | 'granular' | 'query' | 'stripe' | 'cancellation'>(initialTab);
   const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>(null);
   const [formData, setFormData] = useState<ConfigFormData>({
@@ -767,6 +768,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                 }`}
               >
                 💳 Configuración Stripe
+              </button>
+              <button
+                onClick={() => setActiveTab('cancellation')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'cancellation'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                🗓️ Cancelaciones
               </button>
             </nav>
           </div>
@@ -1774,6 +1785,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         {activeTab === 'stripe' && (
           <div>
             <StripeModePanel />
+          </div>
+        )}
+
+        {activeTab === 'cancellation' && (
+          <div>
+            <CancellationSettingsPanel />
           </div>
         )}
       </div>

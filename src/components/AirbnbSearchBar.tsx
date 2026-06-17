@@ -571,6 +571,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       setExpandedAccordion('where');
     }
   }, [isMobileSearchOpen, isMobile]);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('mobile-search-overlay', { detail: { active: isMobileSearchOpen } }),
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('mobile-search-overlay', { detail: { active: false } }),
+      );
+    };
+  }, [isMobileSearchOpen]);
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'coches' | 'motos' | 'inmobiliaria' | 'drawer' | null>('inmobiliaria');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);

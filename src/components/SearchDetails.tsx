@@ -63,6 +63,16 @@ import { getPriceDisplay } from '../utils/priceUtils';
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
+import {
+    SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS,
+    SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS,
+    HP_FONT,
+} from '../constants/homepageTypography';
 
 interface NewAd {
     title: string;
@@ -1200,34 +1210,29 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     }
 
     return (
-        <div className="fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)]">
-            {/* Header - Minimalista y limpio */}
-            <header className="hidden lg:flex bg-white border-b border-gray-200 flex-shrink-0 z-50" style={{ margin: 0 }}>
-                <div className="px-6 py-4 w-full">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={`fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)] ${SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS}`}>
+            {/* Header — desktop minimalista, alineado al contenido */}
+            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-[#ebebeb] bg-white" style={{ margin: 0 }}>
+                <div className={`${SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS} px-6 py-3.5`}>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={onBack || (() => navigate('/busquedas'))}
-                                className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors"
+                                className="h-9 w-9 shrink-0 rounded-full hover:bg-[#f5f5f5]"
                             >
-                                <ArrowLeft className="w-4 h-4 text-gray-700" />
+                                <ArrowLeft className="h-4 w-4 text-[#444]" />
                             </Button>
-                            <div className="flex flex-col min-w-0 flex-1">
-                                <h1 
-                                    className="text-lg font-semibold text-gray-900 tracking-tight truncate"
-                                    style={{
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        fontSize: '18px',
-                                        lineHeight: '24px',
-                                        fontWeight: 600,
-                                    }}
+                            <div className="min-w-0 flex-1">
+                                <h1
+                                    className="truncate font-display text-[17px] font-semibold tracking-[-0.02em] text-[#1c1c1c]"
+                                    style={{ fontFamily: HP_FONT }}
                                 >
                                     {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
                                 </h1>
                                 {searchHireStatusInfo && (
-                                    <div className="flex items-center gap-2 mt-0.5">
+                                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                         <StatusBadge statusInfo={searchHireStatusInfo} />
                                         {appointment && appointmentStatusInfo && (
                                             <StatusBadge statusInfo={appointmentStatusInfo} />
@@ -1236,14 +1241,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 )}
                             </div>
                         </div>
-                        
-                        <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors" title="Compartir">
-                                <Share2 className="w-4 h-4 text-gray-600" />
+
+                        <div className="flex shrink-0 items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-[#f5f5f5]" title="Compartir">
+                                <Share2 className="h-4 w-4 text-[#666]" />
                             </Button>
                             {canViewChat && (
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 rounded-md transition-colors" title="Mensajes">
-                                    <MessageCircle className="w-4 h-4 text-gray-600" />
+                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-[#f5f5f5]" title="Mensajes">
+                                    <MessageCircle className="h-4 w-4 text-[#666]" />
                                 </Button>
                             )}
                         </div>
@@ -1293,12 +1298,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
             {/* Main Layout - Sin scroll, solo scroll interno en componentes */}
             {!isNetworkErr && (
-            <div className="flex flex-col lg:flex-row flex-1 min-h-0 bg-gray-50 lg:gap-2 overflow-hidden" style={{ minHeight: 0, flex: '1 1 0%', overflow: 'hidden', padding: 0 }}>
-                {/* Chat Section - Izquierda en desktop, tabs en móvil - Más grande */}
+            <div className={SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS}>
+            <div className={`${SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS} bg-gray-50 lg:bg-transparent`} style={{ minHeight: 0, flex: '1 1 0%' }}>
+                {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
-                    <div className="flex-1 lg:w-[70%] xl:w-[75%] bg-white flex flex-col flex-shrink-0 min-h-0 overflow-hidden" style={{ minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', margin: 0, padding: 0 }}>
-                        <div className="w-full flex flex-col flex-1 min-h-0 h-full">
-                            <div className="flex-1 w-full overflow-hidden flex flex-col bg-white min-h-0 h-full">
+                    <div className={`${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`}>
+                        <div className="flex h-full min-h-0 w-full flex-col">
+                            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
                                 <Chat
                                     searchId={searchHireId ? null : searchId}
                                     searchHireId={searchHireId}
@@ -2243,18 +2249,24 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     </div>
                 )}
 
-                {/* Sidebar - Info + Acciones - Derecha en desktop - Con scroll interno */}
-                <aside className="hidden lg:flex lg:flex-col lg:w-[30%] xl:w-[25%] bg-white lg:rounded-lg lg:border lg:border-gray-200/60 lg:overflow-hidden min-h-0" style={{ margin: 0 }}>
-                    <ScrollArea className="flex-1 min-h-0">
-                        <div className="p-4 space-y-4" style={{ padding: '1rem' }}>
-                            
-                            {/* Resumen del Servicio - Minimalista */}
-                                <div className="space-y-3">
-                                {searchHireStatusInfo && (
-                                    <div className="flex">
-                                        <StatusBadge status={searchHireStatusInfo} />
-                                    </div>
+                {/* Sidebar — detalles + acciones (desktop) */}
+                <aside className={`${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`}>
+                    <div className={`${SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS} shrink-0 py-3`}>
+                        <h2 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">Detalles del servicio</h2>
+                        {searchHireStatusInfo && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <StatusBadge status={searchHireStatusInfo} />
+                                {appointment && appointmentStatusInfo && (
+                                    <StatusBadge statusInfo={appointmentStatusInfo} />
                                 )}
+                            </div>
+                        )}
+                    </div>
+                    <ScrollArea className="min-h-0 flex-1">
+                        <div className="space-y-4 p-4">
+                            
+                            {/* Resumen del Servicio */}
+                                <div className="space-y-3">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-sm">
                                         <Tag className="w-3.5 h-3.5 text-gray-500" />
@@ -2267,9 +2279,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </div>
                                     )}
                                     {search?.description && (
-                                        <div className="text-sm">
-                                            <span className="text-gray-500 block mb-1">Descripción:</span>
-                                            <span className="text-gray-700 leading-relaxed">{search.description}</span>
+                                        <div className="sd-user-text text-sm leading-relaxed">
+                                            <span className="text-gray-500">Descripción: </span>
+                                            <span className="text-gray-700">{search.description}</span>
                                         </div>
                                     )}
                                     {search?.createdAt && (
@@ -2294,7 +2306,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         const priceDisplay = getPriceDisplay(priceSource);
                                         
                                         return (
-                                            <div className="bg-gray-50/50 rounded-lg border border-gray-100 p-3 mt-1">
+                                            <div className="mt-1 rounded-xl border border-[#f0f0f0] bg-[#fafafa] p-3">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm font-medium text-gray-600">Precio total</span>
                                                     <div className="text-right">
@@ -2368,7 +2380,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Sección de Cita - Desktop - Siempre visible si necesita cita - Minimalista */}
                                 {needsAppointment && (
-                                    <div className="mt-4 hidden lg:block border-t border-gray-200/60 pt-4">
+                                    <div className="mt-4 hidden border-t border-[#f0f0f0] pt-4 lg:block">
                                         <div className="space-y-2">
                                             <h3 className="text-sm font-semibold text-gray-900">
                                                     {appointment ? (
@@ -2481,8 +2493,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* ✅ Botones de acción para desktop - Según la guía - Fuera de needsAppointment para que siempre se muestren */}
                                 {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
-                                    <div className="mt-4 hidden lg:block">
-                                        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                                    <div className="mt-4 hidden border-t border-[#f0f0f0] pt-4 lg:block">
+                                        <div className="space-y-3">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
                                                 <div className="space-y-2 pb-3 border-b border-gray-200">
@@ -2687,7 +2699,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                             {/* Cliente */}
                             {search?.user && (
-                                <div className="space-y-2 border-t border-gray-200/60 pt-4">
+                                <div className="space-y-2 border-t border-[#f0f0f0] pt-4">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
                                             <AvatarImage 
@@ -2708,7 +2720,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                             {/* Experto */}
                         {expertData && (
-                                <div className="space-y-2 border-t border-gray-200/60 pt-4">
+                                <div className="space-y-2 border-t border-[#f0f0f0] pt-4">
                                     <div className="flex items-center gap-3">
                                             <Avatar className="h-9 w-9">
                                                 <AvatarImage 
@@ -2763,8 +2775,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                             {/* Acciones Principales */}
                             {(canDispute || canApprove || canExpertRespond) && (
-                                <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                                    <h3 className="text-base font-semibold text-gray-900">Acciones</h3>
+                                <div className="space-y-3 border-t border-[#f0f0f0] pt-4">
+                                    <h3 className="text-sm font-semibold text-[#1c1c1c]">Acciones</h3>
                                     <div className="space-y-2">
                                         {canApprove && (
                                             <Button
@@ -2963,6 +2975,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     </div>
                     </ScrollArea>
                 </aside>
+            </div>
             </div>
             )}
 
