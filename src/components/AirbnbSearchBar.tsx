@@ -840,6 +840,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const goToCategoryMap = (mapCategoryId: number) => {
     const stId = serviceTypeId || 2;
     setIsDrawerOpen(false);
+    // Reset explícito por si onOpenChange no se dispara al navegar/desmontar.
+    setDrawerIntent('filter');
     setCategorySearchQuery('');
     navigate(`/crear-busqueda?categoryId=${mapCategoryId}&serviceTypeId=${stId}&step=map`);
   };
