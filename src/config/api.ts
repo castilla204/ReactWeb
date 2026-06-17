@@ -167,6 +167,7 @@ export const API_CONFIG = {
             conversationByService: (searchServiceId: number) => `${API_PATH}/Chat/conversation-by-service?searchServiceId=${searchServiceId}`,
             preHireConversations: `${API_PATH}/Chat/pre-hire-conversations`,  // ✅ NUEVO: Lista de conversaciones pre-contratación del experto
             myConversations: `${API_PATH}/Chat/my-conversations`,  // ✅ NUEVO: Todas las conversaciones del cliente (pre y post contratación)
+            expertConversations: `${API_PATH}/Chat/expert-conversations`,  // ✅ NUEVO: Bandeja del experto (pre y post contratación), contraparte = cliente
             message: `${API_PATH}/chat/message`,
             markAsRead: (messageId: number) => `${API_PATH}/chat/message/${messageId}/read`,
             typing: `${API_PATH}/chat/typing`,

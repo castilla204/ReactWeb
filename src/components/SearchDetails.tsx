@@ -91,6 +91,14 @@ interface SearchDetailsProps {
     isAdmin: boolean;
     onBack?: () => void;
     searchHireId?: number; // ✅ Opcional: si se pasa, se usa directamente (para rutas /searchhire/:id)
+    /**
+     * Incrustado dentro de otro contenedor (p. ej. el panel derecho de la bandeja
+     * de Mensajes): no ocupa el viewport completo (sin `fixed`/bloqueo de scroll),
+     * oculta su cabecera de página y propaga `embedded` al chat. Todos los botones
+     * de acción (cita, aprobar, disputar, informe, reseña…) siguen funcionando
+     * in-place vía modales, sin navegar a otra ruta. Por defecto false.
+     */
+    embedded?: boolean;
 }
 
 const categoryBanners: { [key: number]: string } = {
@@ -105,7 +113,7 @@ const statusRoadmap = [
     { label: 'Completado', status: 'completed', color: 'bg-green-600' },
 ];
 
-export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHireIdProp }: SearchDetailsProps) {
+export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHireIdProp, embedded = false }: SearchDetailsProps) {
     const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const searchIdParam = parseInt(id || '0', 10);
@@ -170,8 +178,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
     const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
-    // Bloquear scroll + altura real del viewport en móvil (evita hueco inferior)
+    // Bloquear scroll + altura real del viewport en móvil (evita hueco inferior).
+    // Incrustado NO debe tocar el <body> (rompería la bandeja de Mensajes).
     useEffect(() => {
+        if (embedded) return;
         const originalOverflow = document.body.style.overflow;
         const originalPosition = document.body.style.position;
         const originalWidth = document.body.style.width;
@@ -223,7 +233,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             document.body.style.left = originalLeft || '';
             html.style.overflow = originalHtmlOverflow || '';
         };
-    }, []);
+    }, [embedded]);
 
     const { user } = useAuth();
 
@@ -1234,7 +1244,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // Only show loading for critical queries
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50">
+            <div className={`flex items-center justify-center bg-gray-50 ${embedded ? 'h-full min-h-[20rem]' : 'h-screen'}`}>
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
                     <p className="text-sm text-gray-600">Cargando...</p>
@@ -1249,7 +1259,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
     if (isError && error && !isNetworkErr) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+            <div className={`flex items-center justify-center bg-gray-50 p-4 ${embedded ? 'h-full min-h-[20rem]' : 'min-h-screen'}`}>
                 <div className="text-center space-y-4 max-w-md">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
                         <AlertCircle className="w-8 h-8 text-gray-400" />
@@ -1275,8 +1285,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     }
 
     return (
-        <div className={`fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)] ${SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS}`}>
-            {/* Header — desktop minimalista, alineado al contenido */}
+        <div className={
+            embedded
+                ? `relative flex h-full min-h-0 flex-col overflow-hidden bg-gray-50`
+                : `fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)] ${SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS}`
+        }>
+            {/* Header de página — oculto cuando va incrustado (la bandeja ya aporta cabecera) */}
+            {!embedded && (
             <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-[#ebebeb] bg-white" style={{ margin: 0 }}>
                 <div className={`${SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS} px-6 py-3.5`}>
                     <div className="flex items-center justify-between gap-4">
@@ -1320,6 +1335,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     </div>
                 </div>
             </header>
+            )}
 
             {searchHireStatus === SEARCH_HIRE_STATUS.TRANSFER_FAILED && (
                 <div className="mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -1383,6 +1399,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     isDetailsOpen={mobileDetailsOpen}
                                     onOpenDetails={() => setMobileDetailsOpen((v) => !v)}
                                     onBack={onBack || (() => navigate('/busquedas'))}
+                                    embedded={embedded}
                                 />
                             </div>
 

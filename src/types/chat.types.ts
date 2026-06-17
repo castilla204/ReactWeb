@@ -248,6 +248,12 @@ export interface ClientConversationSummaryDto {
   expertName: string
   expertProfilePictureUrl: string | null
 
+  // Información del cliente (contraparte cuando QUIEN MIRA es el experto;
+  // poblado por /Chat/expert-conversations). En la vista del cliente va vacío.
+  clientId?: number | null
+  clientName?: string | null
+  clientProfilePictureUrl?: string | null
+
   // Información para PRE-CONTRATACIÓN (solo si conversationType === "pre-hire")
   searchServiceId?: number | null
   serviceName?: string | null
