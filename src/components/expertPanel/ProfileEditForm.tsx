@@ -29,26 +29,6 @@ import {
 import { Button } from '../ui/button';
 import type { ProfileStep } from './profileSteps';
 
-function ProfileEditorStatusBadge({
-    pendingRequired,
-    onOpenSetup,
-}: {
-    pendingRequired: number;
-    onOpenSetup?: () => void;
-}) {
-    return (
-        <div className="pf-profile-badge pf-profile-badge--pending" role="status">
-            <span className="pf-profile-badge__text">
-                Faltan {pendingRequired} requisito{pendingRequired === 1 ? '' : 's'} obligatorio{pendingRequired === 1 ? '' : 's'}
-            </span>
-            {onOpenSetup ? (
-                <button type="button" className="pf-profile-badge__link" onClick={onOpenSetup}>
-                    Completar
-                </button>
-            ) : null}
-        </div>
-    );
-}
 import '../../styles/expert-profile-form.css';
 import '../../styles/ai-rewrite-magic.css';
 
@@ -607,27 +587,295 @@ export function ProfileEditForm({
         </div>
     );
 
-    const editorCard = (
-        <div className="pf-editor-stack">
-            {embedded && (
-                <div className="pf-settings-card pf-settings-card--meta">
-                    <header className="pf-card-header pf-card-header--toolbar pf-editor-save-desktop">
-                        <div className="pf-editor-bar-start">
-                            {profileSetup ? (
-                                profileSetup.complete ? (
-                                    <span className="expert-status-pill expert-status-pill--visible" role="status">
-                                        <Check className="h-3.5 w-3.5" aria-hidden />
-                                        Perfil activo
+    const aiRewriteUi = (
+        <div className="pf-ai-rewrite">
+            <button
+                type="button"
+                className="pf-ai-rewrite__btn ai-magic-btn"
+                onClick={handleRewriteDescription}
+                disabled={aiLoading}
+            >
+                {aiLoading ? (
+                    <>
+                        <Loader2 className="ai-magic-btn__spinner" size={15} />
+                        Generando…
+                    </>
+                ) : (
+                    <>
+                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
+                        Reescribir con IA
+                    </>
+                )}
+            </button>
+            {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
+            {aiSuggestion && (
+                <div className="pf-ai-rewrite__preview ai-magic-preview">
+                    <p className="ai-magic-preview__label">
+                        <Sparkles size={12} aria-hidden />
+                        Sugerencia de IA
+                    </p>
+                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
+                    <div className="ai-magic-preview__actions">
+                        <button
+                            type="button"
+                            className="ai-magic-preview__use"
+                            onClick={() => {
+                                setFormData({ ...formData, description: aiSuggestion });
+                                setAiSuggestion(null);
+                            }}
+                        >
+                            Usar este texto
+                        </button>
+                        <button
+                            type="button"
+                            className="ai-magic-preview__discard"
+                            onClick={() => setAiSuggestion(null)}
+                        >
+                            Descartar
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const mapStageUi = (stageClassName = '', fullHeight = false) => (
+        <div className={`pf-map-stage${stageClassName ? ` ${stageClassName}` : ''}`} aria-describedby="zone-hint">
+            <div className="pf-map-search">
+                <div className="pf-map-search-bar">
+                    <Search className="pf-map-search-icon" aria-hidden />
+                    <input
+                        id="work-address-search"
+                        type="text"
+                        value={addressQuery}
+                        onChange={(e) => {
+                            addressSearchFromUserRef.current = true;
+                            setShowAddressResults(false);
+                            setAddressQuery(e.target.value);
+                        }}
+                        onFocus={() => {
+                            addressInputFocusedRef.current = true;
+                            if (
+                                addressSearchFromUserRef.current
+                                && addressResults.length > 0
+                                && addressQuery.trim() !== appliedAddressRef.current.trim()
+                            ) {
+                                setShowAddressResults(true);
+                            }
+                        }}
+                        onBlur={() => {
+                            addressInputFocusedRef.current = false;
+                            window.setTimeout(() => setShowAddressResults(false), 150);
+                        }}
+                        placeholder="Buscar calle o dirección…"
+                        autoComplete="off"
+                        className="pf-map-search-input"
+                    />
+                </div>
+                {showAddressResults && addressResults.length > 0 && (
+                    <ul className="pf-map-search-results" role="listbox">
+                        {addressResults.map((item) => (
+                            <li key={item.id} role="option">
+                                <button
+                                    type="button"
+                                    className="pf-map-search-result"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleAddressSelect(item)}
+                                >
+                                    {item.address || item.place_name}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+            <div className="pf-map-canvas" ref={mapCanvasRef}>
+                <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
+                    {mapCanRender && (
+                        <MapGL
+                            ref={mapRef}
+                            mapboxAccessToken={MAPBOX_TOKEN}
+                            initialViewState={{ longitude: initialLocation.lng, latitude: initialLocation.lat, zoom: 6 }}
+                            style={{ width: '100%', height: fullHeight ? '100%' : mapHeight }}
+                            mapStyle={cartoMapStyle as never}
+                            onClick={handleMapClick}
+                            onLoad={resizeMap}
+                            onResize={resizeMap}
+                            cursor="pointer"
+                            attributionControl={false}
+                            dragRotate={false}
+                            pitchWithRotate={false}
+                            touchPitch={false}
+                        >
+                            {coverageGeoJSON && (
+                                <Source id="coverage" type="geojson" data={coverageGeoJSON}>
+                                    <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
+                                    <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
+                                </Source>
+                            )}
+                            <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
+                                <div className="pf-map-pin" />
+                            </Marker>
+                        </MapGL>
+                    )}
+                </div>
+            </div>
+            <div className="pf-map-radius">
+                <div className="pf-map-radius__head">
+                    <span className="pf-map-radius-label">Radio de cobertura</span>
+                    <span className="pf-map-radius-val">{workRadiusKm === 0 ? 'Solo taller' : `${workRadiusKm} km`}</span>
+                </div>
+                <input
+                    id="workRadius"
+                    type="range"
+                    min={0}
+                    max={MAX_WORK_RADIUS_KM}
+                    step={5}
+                    value={workRadiusKm}
+                    onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
+                    className="pf-range"
+                    aria-label="Radio de cobertura"
+                    style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
+                />
+            </div>
+        </div>
+    );
+
+    const profileSections = (
+        <>
+                    <section id="pf-section-about" className="pf-section pf-section--about">
+                        <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
+                            <div className="pf-about-composer__head">
+                                <div className="pf-about-composer__photo">
+                                    <div className="pf-about-composer__label pf-photo-composer__label">
+                                        Foto de perfil
+                                        <span id="photo-hint" className="pf-about-composer__label-hint">
+                                            Tu foto actual.
+                                        </span>
+                                    </div>
+                                    <div className="pf-photo-composer__body" aria-describedby="photo-hint">
+                                        <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
+                                            {profileImageUrl ? (
+                                                <img src={profileImageUrl} alt="" />
+                                            ) : (
+                                                <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
+                                            )}
+                                            <span className="pf-avatar-overlay" aria-hidden>
+                                                <Upload className="h-4 w-4" />
+                                            </span>
+                                        </button>
+                                        <div className="pf-photo-composer__side">
+                                            <div className="pf-about-composer__actions">
+                                                <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
+                                                    {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                                </button>
+                                                {(previewUrl || profilePicture) && (
+                                                    <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
+                                                        Quitar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/jpg"
+                                            onChange={handleImageSelect}
+                                            onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
+                                            className="hidden"
+                                        />
+                                        {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pf-about-composer__copy">
+                                <label htmlFor="description" className="pf-about-composer__label">
+                                    Descripción profesional
+                                    <span id="description-hint" className="pf-about-composer__label-hint">
+                                        Quién eres y en qué te especializas (30–60 car.)
                                     </span>
-                                ) : (
-                                    <span className="expert-status-pill expert-status-pill--hidden" role="status">
-                                        Faltan {profileSetup.pendingRequired} requisito{profileSetup.pendingRequired === 1 ? '' : 's'}
-                                    </span>
-                                )
-                            ) : null}
+                                </label>
+                                <textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    rows={2}
+                                    minLength={30}
+                                    maxLength={60}
+                                    placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
+                                    className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
+                                    required
+                                    aria-describedby="description-hint"
+                                />
+                                <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
+                                {aiRewriteUi}
+                            </div>
                         </div>
-                        <div className="pf-editor-bar-end">{saveButton}</div>
-                    </header>
+                        {formErrors.description && (
+                            <div className="pf-about-errors">
+                                <p className="pf-error">{formErrors.description}</p>
+                            </div>
+                        )}
+                    </section>
+
+                    <section id="pf-section-zone" className="pf-section pf-section--zone">
+                        <div className="pf-section-fields">
+                            {!MAPBOX_TOKEN ? (
+                                <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
+                            ) : (
+                                <div className="pf-map-panel">
+                                    <div className="pf-zone-composer">
+                                        <div className="pf-about-composer__label pf-zone-composer__label">
+                                            Zona de trabajo
+                                            <span id="zone-hint" className="pf-about-composer__label-hint">
+                                                Busca tu dirección y ajusta el radio en el mapa.
+                                            </span>
+                                        </div>
+                                        {mapStageUi('')}
+                                    </div>
+                                </div>
+                            )}
+                            {addressSearchError && <p className="pf-error pf-zone-composer__error">{addressSearchError}</p>}
+                            {(formErrors.latitude || formErrors.longitude) && (
+                                <p className="pf-error pf-zone-composer__error">{formErrors.latitude || formErrors.longitude}</p>
+                            )}
+                        </div>
+                    </section>
+        </>
+    );
+
+    const formErrorAlert = formErrors.general ? (
+        <div className="pf-alert">
+            <div>{formErrors.general}</div>
+            {formErrors.relocationRequired === 'true' && (
+                <Button
+                    type="button"
+                    size="sm"
+                    className="pf-btn-save mt-2"
+                    onClick={() => {
+                        closeEditor();
+                        setTimeout(() => window.dispatchEvent(new CustomEvent('openExpertRelocationWizard')), 50);
+                    }}
+                >
+                    <Plane className="w-4 h-4 mr-2" />
+                    Iniciar asistente de mudanza
+                </Button>
+            )}
+        </div>
+    ) : null;
+
+    if (embedded) {
+        return (
+            <div className="av-page pf-page pf-editor--embedded">
+                <header className="av-page-intro">
+                    <p className="av-page-intro__lead">
+                        Tu <strong>foto y descripción</strong> son lo primero que ven los clientes al buscarte.
+                        Marca tu <strong>zona de trabajo</strong> en el mapa para aparecer en búsquedas cercanas.
+                    </p>
+                    <ol className="av-page-intro__steps" aria-label="Cómo funciona">
+                        <li>Sube una foto clara y escribe una descripción breve</li>
+                        <li>Busca tu dirección en el mapa y pulsa <strong>Guardar cambios</strong></li>
+                    </ol>
                     {profileSetup && !profileSetup.complete ? (
                         <div className="pf-profile-pending-banner">
                             <p className="pf-profile-pending-banner__text">
@@ -646,404 +894,157 @@ export function ProfileEditForm({
                             ) : null}
                         </div>
                     ) : null}
-                </div>
-            )}
+                </header>
 
-            <form className="pf-form pf-form--stacked" onSubmit={handleSubmit}>
-                <div className="pf-settings-card pf-settings-card--content">
-                    <div className="pf-form-body">
-                        <div className={`pf-form-grid${embedded ? ' pf-form-grid--embedded' : ''}`}>
-                    <section id="pf-section-about" className="pf-section pf-section--about">
-                        <div className={`pf-about-composer${embedded ? ' pf-about-composer--embedded' : ''}${formErrors.description ? ' pf-about-composer--error' : ''}`}>
-                            <div className="pf-about-composer__head">
-                                {embedded && profileSetup && !profileSetup.complete && (
-                                    <div className="pf-editor-status-mobile">
-                                        <ProfileEditorStatusBadge
-                                            pendingRequired={profileSetup.pendingRequired}
-                                            onOpenSetup={profileSetup.onOpenSetup}
-                                        />
-                                    </div>
-                                )}
-                                <div className="pf-about-composer__photo">
-                                    {!embedded && (
-                                        <div className="pf-about-composer__label pf-photo-composer__label">
-                                            Foto de perfil
-                                            <span id="photo-hint" className="pf-about-composer__label-hint">
-                                                Tu foto actual.
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="pf-photo-composer__body" aria-describedby={embedded ? 'photo-hint-embedded' : 'photo-hint'}>
-                                        <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
-                                            {profileImageUrl ? (
-                                                <img src={profileImageUrl} alt="" />
+                <form onSubmit={handleSubmit}>
+                    <section className="av-calendar pf-profile-editor">
+                        <div className="av-calendar__layout pf-profile-editor__layout">
+                            <div className="av-calendar__main pf-profile-editor__main">
+                                <div className="av-calendar__toolbar">
+                                    <div className="av-calendar__toolbar-start">
+                                        {profileSetup ? (
+                                            profileSetup.complete ? (
+                                                <span className="expert-status-pill expert-status-pill--visible" role="status">
+                                                    <Check className="h-3.5 w-3.5" aria-hidden />
+                                                    Perfil activo
+                                                </span>
                                             ) : (
-                                                <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
-                                            )}
-                                            <span className="pf-avatar-overlay" aria-hidden>
-                                                <Upload className="h-4 w-4" />
-                                            </span>
-                                        </button>
-                                        <div className="pf-photo-composer__side">
-                                            {embedded && (
-                                                <div className="pf-profile-field-head">
-                                                    <p className="pf-profile-field-title">Foto de perfil</p>
-                                                    <p id="photo-hint-embedded" className="pf-profile-field-hint">
-                                                        La imagen que ven los clientes al buscarte.
-                                                    </p>
-                                                </div>
-                                            )}
-                                            <div className="pf-about-composer__actions">
-                                                {embedded ? (
-                                                    <>
-                                                        <Button type="button" variant="outline" size="sm" onClick={openFilePicker}>
-                                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
-                                                        </Button>
-                                                        {(previewUrl || profilePicture) && (
-                                                            <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={removeImage}>
-                                                                Quitar
-                                                            </Button>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
-                                                            {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
-                                                        </button>
-                                                        {(previewUrl || profilePicture) && (
-                                                            <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
-                                                                Quitar
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
+                                                <span className="expert-status-pill expert-status-pill--hidden" role="status">
+                                                    Faltan {profileSetup.pendingRequired} requisito{profileSetup.pendingRequired === 1 ? '' : 's'}
+                                                </span>
+                                            )
+                                        ) : null}
+                                        <div className="av-calendar__stats">
+                                            {profileSetup?.complete
+                                                ? 'Visible para clientes en búsquedas'
+                                                : 'Completa los campos para activar tu visibilidad'}
                                         </div>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/jpeg,image/png,image/jpg"
-                                            onChange={handleImageSelect}
-                                            onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
-                                            className="hidden"
-                                        />
-                                        {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
+                                    </div>
+                                    <div className="av-calendar__toolbar-actions pf-editor-save-desktop">
+                                        {saveButton}
                                     </div>
                                 </div>
-                            </div>
-                            <div className="pf-about-composer__copy">
-                                {embedded ? (
-                                    <div className="pf-profile-field-head">
-                                        <label htmlFor="description" className="pf-profile-field-title">
-                                            Descripción profesional
-                                        </label>
-                                        <p id="description-hint" className="pf-profile-field-hint">
-                                            Quién eres y en qué te especializas (30–60 caracteres).
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <label htmlFor="description" className="pf-about-composer__label">
-                                        Descripción profesional
-                                        <span id="description-hint" className="pf-about-composer__label-hint">
-                                            Quién eres y en qué te especializas (30–60 car.)
-                                        </span>
-                                    </label>
-                                )}
-                                <textarea
-                                    id="description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={embedded ? 3 : 2}
-                                    minLength={30}
-                                    maxLength={60}
-                                    placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
-                                    className={`pf-textarea pf-textarea--composer${embedded ? ' pf-textarea--field' : ''}${formErrors.description ? ' pf-textarea--error' : ''}`}
-                                    required
-                                    aria-describedby="description-hint"
-                                />
-                                {embedded ? (
-                                    <div className="pf-profile-field-footer">
-                                        <div className="pf-ai-rewrite">
-                                            <button
-                                                type="button"
-                                                className="pf-ai-rewrite__btn ai-magic-btn"
-                                                onClick={handleRewriteDescription}
-                                                disabled={aiLoading}
-                                            >
-                                                {aiLoading ? (
-                                                    <>
-                                                        <Loader2 className="ai-magic-btn__spinner" size={15} />
-                                                        Generando…
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
-                                                        Reescribir con IA
-                                                    </>
-                                                )}
-                                            </button>
-                                            {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
-                                            {aiSuggestion && (
-                                                <div className="pf-ai-rewrite__preview ai-magic-preview">
-                                                    <p className="ai-magic-preview__label">
-                                                        <Sparkles size={12} aria-hidden />
-                                                        Sugerencia de IA
-                                                    </p>
-                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
-                                                    <div className="ai-magic-preview__actions">
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__use"
-                                                            onClick={() => {
-                                                                setFormData({ ...formData, description: aiSuggestion });
-                                                                setAiSuggestion(null);
-                                                            }}
-                                                        >
-                                                            Usar este texto
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__discard"
-                                                            onClick={() => setAiSuggestion(null)}
-                                                        >
-                                                            Descartar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className={`pf-profile-counter pf-profile-counter--${descMetaTone}`}>{descLength}/60</span>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
-                                        <div className="pf-ai-rewrite">
-                                            <button
-                                                type="button"
-                                                className="pf-ai-rewrite__btn ai-magic-btn"
-                                                onClick={handleRewriteDescription}
-                                                disabled={aiLoading}
-                                            >
-                                                {aiLoading ? (
-                                                    <>
-                                                        <Loader2 className="ai-magic-btn__spinner" size={15} />
-                                                        Generando…
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Sparkles className="ai-magic-btn__icon" size={15} aria-hidden />
-                                                        Reescribir con IA
-                                                    </>
-                                                )}
-                                            </button>
-                                            {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
-                                            {aiSuggestion && (
-                                                <div className="pf-ai-rewrite__preview ai-magic-preview">
-                                                    <p className="ai-magic-preview__label">
-                                                        <Sparkles size={12} aria-hidden />
-                                                        Sugerencia de IA
-                                                    </p>
-                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
-                                                    <div className="ai-magic-preview__actions">
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__use"
-                                                            onClick={() => {
-                                                                setFormData({ ...formData, description: aiSuggestion });
-                                                                setAiSuggestion(null);
-                                                            }}
-                                                        >
-                                                            Usar este texto
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__discard"
-                                                            onClick={() => setAiSuggestion(null)}
-                                                        >
-                                                            Descartar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                        {formErrors.description && (
-                            <div className="pf-about-errors">
-                                <p className="pf-error">{formErrors.description}</p>
-                            </div>
-                        )}
-                    </section>
 
-                    <section id="pf-section-zone" className={`pf-section pf-section--zone${embedded ? ' pf-section--zone-embedded' : ''}`}>
-                        <div className="pf-section-fields">
-                            {!MAPBOX_TOKEN ? (
-                                <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
-                            ) : (
-                                <div className="pf-map-panel">
-                                    <div className="pf-zone-composer">
-                                        {embedded ? (
-                                            <div className="pf-profile-field-head pf-profile-field-head--zone">
-                                                <p className="pf-profile-field-title">Zona de trabajo</p>
-                                                <p id="zone-hint" className="pf-profile-field-hint">
-                                                    Busca tu dirección y ajusta el radio en el mapa.
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="pf-about-composer__label pf-zone-composer__label">
-                                                Zona de trabajo
-                                                <span id="zone-hint" className="pf-about-composer__label-hint">
-                                                    Busca tu dirección y ajusta el radio en el mapa.
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div className="pf-map-stage" aria-describedby="zone-hint">
-                                        <div className="pf-map-search">
-                                            <div className="pf-map-search-bar">
-                                                <Search className="pf-map-search-icon" aria-hidden />
-                                                <input
-                                                    id="work-address-search"
-                                                    type="text"
-                                                    value={addressQuery}
-                                                    onChange={(e) => {
-                                                        addressSearchFromUserRef.current = true;
-                                                        setShowAddressResults(false);
-                                                        setAddressQuery(e.target.value);
-                                                    }}
-                                                    onFocus={() => {
-                                                        addressInputFocusedRef.current = true;
-                                                        if (
-                                                            addressSearchFromUserRef.current
-                                                            && addressResults.length > 0
-                                                            && addressQuery.trim() !== appliedAddressRef.current.trim()
-                                                        ) {
-                                                            setShowAddressResults(true);
-                                                        }
-                                                    }}
-                                                    onBlur={() => {
-                                                        addressInputFocusedRef.current = false;
-                                                        window.setTimeout(() => setShowAddressResults(false), 150);
-                                                    }}
-                                                    placeholder="Buscar calle o dirección…"
-                                                    autoComplete="off"
-                                                    className="pf-map-search-input"
-                                                />
-                                            </div>
-                                            {showAddressResults && addressResults.length > 0 && (
-                                                <ul className="pf-map-search-results" role="listbox">
-                                                    {addressResults.map((item) => (
-                                                        <li key={item.id} role="option">
-                                                            <button
-                                                                type="button"
-                                                                className="pf-map-search-result"
-                                                                onMouseDown={(e) => e.preventDefault()}
-                                                                onClick={() => handleAddressSelect(item)}
-                                                            >
-                                                                {item.address || item.place_name}
-                                                            </button>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
-                                        <div className="pf-map-canvas" ref={mapCanvasRef}>
-                                            <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
-                                                {mapCanRender && (
-                                                    <MapGL
-                                                        ref={mapRef}
-                                                        mapboxAccessToken={MAPBOX_TOKEN}
-                                                        initialViewState={{ longitude: initialLocation.lng, latitude: initialLocation.lat, zoom: 6 }}
-                                                        style={{ width: '100%', height: mapHeight }}
-                                                        mapStyle={cartoMapStyle as never}
-                                                        onClick={handleMapClick}
-                                                        onLoad={resizeMap}
-                                                        onResize={resizeMap}
-                                                        cursor="pointer"
-                                                        attributionControl={false}
-                                                        dragRotate={false}
-                                                        pitchWithRotate={false}
-                                                        touchPitch={false}
-                                                    >
-                                                        {coverageGeoJSON && (
-                                                            <Source id="coverage" type="geojson" data={coverageGeoJSON}>
-                                                                <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
-                                                                <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
-                                                            </Source>
-                                                        )}
-                                                        <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">
-                                                            <div className="pf-map-pin" />
-                                                        </Marker>
-                                                    </MapGL>
+                                <div className="pf-profile-editor__body">
+                                    <div className="pf-profile-editor__section pf-profile-editor__section--photo">
+                                        <div className="pf-profile-editor__photo-block">
+                                            <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
+                                                {profileImageUrl ? (
+                                                    <img src={profileImageUrl} alt="" />
+                                                ) : (
+                                                    <span className="pf-avatar-empty"><Upload className="h-7 w-7" /></span>
                                                 )}
-                                            </div>
-                                        </div>
-                                        <div className="pf-map-radius">
-                                            <div className="pf-map-radius__head">
-                                                <span className="pf-map-radius-label">Radio de cobertura</span>
-                                                <span className="pf-map-radius-val">{workRadiusKm === 0 ? 'Solo taller' : `${workRadiusKm} km`}</span>
+                                                <span className="pf-avatar-overlay" aria-hidden>
+                                                    <Upload className="h-4 w-4" />
+                                                </span>
+                                            </button>
+                                            <div className="pf-profile-editor__photo-meta">
+                                                <p className="pf-profile-editor__label">Foto de perfil</p>
+                                                <p className="pf-profile-editor__hint">La imagen que ven los clientes al buscarte.</p>
+                                                <div className="pf-profile-editor__photo-actions">
+                                                    <Button type="button" variant="outline" size="sm" onClick={openFilePicker}>
+                                                        {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
+                                                    </Button>
+                                                    {(previewUrl || profilePicture) && (
+                                                        <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={removeImage}>
+                                                            Quitar
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <input
-                                                id="workRadius"
-                                                type="range"
-                                                min={0}
-                                                max={MAX_WORK_RADIUS_KM}
-                                                step={5}
-                                                value={workRadiusKm}
-                                                onChange={(e) => setWorkRadiusKm(Number(e.target.value))}
-                                                className="pf-range"
-                                                aria-label="Radio de cobertura"
-                                                style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/jpg"
+                                                onChange={handleImageSelect}
+                                                onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
+                                                className="hidden"
                                             />
                                         </div>
+                                        {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
+                                    </div>
+
+                                    <div className="pf-profile-editor__section pf-profile-editor__section--desc">
+                                        <div className="pf-profile-editor__field-head">
+                                            <div>
+                                                <label htmlFor="description" className="pf-profile-editor__label">
+                                                    Descripción profesional
+                                                </label>
+                                                <p id="description-hint" className="pf-profile-editor__hint">
+                                                    Quién eres y en qué te especializas (30–60 caracteres).
+                                                </p>
+                                            </div>
+                                            <span className={`pf-profile-editor__count pf-profile-editor__count--${descMetaTone}`}>
+                                                {descLength}/60
+                                            </span>
                                         </div>
+                                        <div className="pf-profile-editor__input">
+                                            <textarea
+                                                id="description"
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                rows={3}
+                                                minLength={30}
+                                                maxLength={60}
+                                                placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
+                                                className={`pf-textarea pf-textarea--field${formErrors.description ? ' pf-textarea--error' : ''}`}
+                                                required
+                                                aria-describedby="description-hint"
+                                            />
+                                        </div>
+                                        <div className="pf-profile-editor__tools">
+                                            {aiRewriteUi}
+                                        </div>
+                                        {formErrors.description && <p className="pf-error">{formErrors.description}</p>}
                                     </div>
                                 </div>
-                            )}
-                            {addressSearchError && <p className="pf-error pf-zone-composer__error">{addressSearchError}</p>}
-                            {(formErrors.latitude || formErrors.longitude) && (
-                                <p className="pf-error pf-zone-composer__error">{formErrors.latitude || formErrors.longitude}</p>
-                            )}
+                            </div>
+
+                            <aside className="av-calendar__aside pf-profile-editor__aside">
+                                <div className="pf-profile-editor__map-zone">
+                                    <div className="pf-profile-editor__map-head">
+                                        <p className="pf-profile-editor__label">Zona de trabajo</p>
+                                        <p id="zone-hint" className="pf-profile-editor__hint">
+                                            Busca tu dirección y ajusta el radio en el mapa.
+                                        </p>
+                                    </div>
+                                    {!MAPBOX_TOKEN ? (
+                                        <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
+                                    ) : (
+                                        <div className="pf-profile-editor__map-wrap">
+                                            {mapStageUi('pf-map-stage--split', true)}
+                                        </div>
+                                    )}
+                                    {addressSearchError && <p className="pf-error pf-profile-card__error">{addressSearchError}</p>}
+                                    {(formErrors.latitude || formErrors.longitude) && (
+                                        <p className="pf-error pf-profile-card__error">{formErrors.latitude || formErrors.longitude}</p>
+                                    )}
+                                </div>
+                            </aside>
                         </div>
+                        {formErrorAlert}
                     </section>
-                    </div>
-                    </div>
-                </div>
+                </form>
 
-                {formErrors.general && (
-                    <div className="pf-alert">
-                        <div>{formErrors.general}</div>
-                        {formErrors.relocationRequired === 'true' && (
-                            <Button
-                                type="button"
-                                size="sm"
-                                className="pf-btn-save mt-2"
-                                onClick={() => {
-                                    closeEditor();
-                                    setTimeout(() => window.dispatchEvent(new CustomEvent('openExpertRelocationWizard')), 50);
-                                }}
-                            >
-                                <Plane className="w-4 h-4 mr-2" />
-                                Iniciar asistente de mudanza
-                            </Button>
-                        )}
-                    </div>
-                )}
-            </form>
-        </div>
-    );
-
-    if (embedded) {
-        return (
-            <div className="pf-editor pf-editor--embedded">
-                <div className="pf-editor-body">
-                    <div className="pf-editor-frame">{editorCard}</div>
-                </div>
-                <footer className="pf-editor-footer pf-editor-save-mobile">{mobileFooterActions}</footer>
+                <footer className="pf-page-footer pf-editor-save-mobile">{mobileFooterActions}</footer>
             </div>
         );
     }
+
+    const editorCard = (
+        <div className="pf-editor-stack">
+            <form className="pf-form pf-form--stacked" onSubmit={handleSubmit}>
+                <div className="pf-settings-card pf-settings-card--content">
+                    <div className="pf-form-body">
+                        <div className="pf-form-grid">
+                            {profileSections}
+                        </div>
+                    </div>
+                </div>
+                {formErrorAlert}
+            </form>
+        </div>
+    );
 
     return (
         <Drawer

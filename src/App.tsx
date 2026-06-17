@@ -554,6 +554,7 @@ const AppContent: React.FC = () => {
                             </Route>
                             <Route path="/become-expert" element={<ProtectedRoute><RouteSuspense><LazyPages.BecomeExpertPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/expert-panel/inspeccion/:hireId" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertInspectionPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/complete-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/refresh-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/transacciones" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />

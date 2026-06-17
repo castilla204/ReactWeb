@@ -42,7 +42,7 @@ const PreHireChat = lazy(() =>
     import('../components/PreHireChat').then((m) => ({ default: m.PreHireChat })),
 );
 
-const Chat = lazy(() => import('../components/Chat'));
+const SearchDetails = lazy(() => import('../components/SearchDetails'));
 
 /**
  * MessagesPage — Rediseño 2026-06 "El gabinete del perito" (iter. 2).
@@ -601,9 +601,6 @@ export function MessagesPage() {
                             selectedConversation.hireAmount,
                             selectedConversation.hireCurrency,
                         )}
-                        onViewDetail={() =>
-                            navigate(`/searchhire/${selectedConversation.searchHireId}`)
-                        }
                         onClose={() => setSelectedId(null)}
                     />
                 ) : activePreHireConversation?.searchServiceId ? (
@@ -756,22 +753,19 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
 interface HireConversationPanelProps {
     conversation: ClientConversationSummaryDto;
     amountLabel: string;
-    onViewDetail: () => void;
     onClose: () => void;
 }
 
 /**
- * Panel derecho en desktop para una CONTRATACIÓN activa: misma cabecera que el
- * panel de pre-contratación (avatar + experto + acción + cerrar), pero el cuerpo
- * incrusta el chat completo del hire (Chat.tsx) — con toda su funcionalidad:
- * mensajes, archivos, ubicación/mapa y mensajes de cita/estado. La acción de la
- * cabecera ya no es "Contratar" sino "Ver detalle", que lleva a /searchhire/:id
- * para gestionar cita, estado y pagos completos. En móvil se navega a esa página.
+ * Panel derecho en desktop para una CONTRATACIÓN activa: cabecera de bandeja
+ * (avatar + experto + estado + cerrar) y, debajo, la EXPERIENCIA COMPLETA del hire
+ * incrustada (SearchDetails con `embedded`): chat + columna de detalles con TODOS
+ * los botones de acción (cita, aprobar, disputar, informe, reseña…) funcionando
+ * in-place, sin salir de Mensajes ni "Ver detalle" a otra página.
  */
 const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
     conversation,
     amountLabel,
-    onViewDetail,
     onClose,
 }) => {
     const statusLabel = conversation.hireStatusTranslated?.trim() || null;
@@ -807,13 +801,6 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                 </div>
                 <button
                     type="button"
-                    onClick={onViewDetail}
-                    className="hidden shrink-0 items-center gap-1.5 rounded-full border border-[#e1e1e1] bg-white px-4 py-2 text-[13px] font-semibold text-[#1c1c1c] transition-colors hover:bg-[#fafafa] lg:inline-flex"
-                >
-                    Ver detalle
-                </button>
-                <button
-                    type="button"
                     onClick={onClose}
                     aria-label="Cerrar conversación"
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
@@ -832,16 +819,10 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                         </div>
                     }
                 >
-                    <Chat
-                        searchId={null}
+                    <SearchDetails
+                        isAdmin={false}
                         searchHireId={conversation.searchHireId ?? undefined}
-                        isExpert={false}
                         embedded
-                        expertData={{
-                            name: conversation.expertName,
-                            profilePictureUrl: conversation.expertProfilePictureUrl || undefined,
-                        }}
-                        onOpenDetails={onViewDetail}
                         onBack={onClose}
                     />
                 </Suspense>

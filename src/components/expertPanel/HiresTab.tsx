@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStatusInfoWithFallback } from '../../utils/statusUtils';
 import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
@@ -121,6 +122,7 @@ export function HiresTab({
     onPageChange,
     onPageSizeChange,
 }: HiresTabProps) {
+    const navigate = useNavigate();
     const [filtersOpen, setFiltersOpen] = useState(hasActiveFilters(filters));
 
     if (!activeTab || activeTab !== 'hires') return null;
@@ -359,9 +361,9 @@ export function HiresTab({
                                             type="button"
                                             className="expert-hire-action"
                                             style={{ background: 'hsl(var(--brand))', color: '#fff', borderColor: 'transparent', marginTop: 6 }}
-                                            onClick={() => window.open('/plantillas/inspeccion-coche.pdf', '_blank', 'noopener')}
+                                            onClick={() => navigate(`/expert-panel/inspeccion/${hire.id}`)}
                                         >
-                                            Abrir PDF de inspección
+                                            Rellenar inspección
                                         </button>
                                     )}
                                 </div>
