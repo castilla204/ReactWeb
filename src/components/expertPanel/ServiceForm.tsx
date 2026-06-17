@@ -7,6 +7,7 @@ import { Button } from '../ui/button';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import type { ServiceEditorExpertPreview } from './ServiceEditorDesktopPreview';
 import '../../styles/expert-service-form.css';
+import { rewriteDescription } from '../../services/aiService';
 
 interface ServiceFormProps {
     onClose: () => void;
@@ -87,6 +88,29 @@ export function ServiceForm({
     const [hasInitializedDeliverableTypes, setHasInitializedDeliverableTypes] = useState(false);
     const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
     const [isPhotoDragOver, setIsPhotoDragOver] = useState(false);
+
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    const handleRewriteConditions = async () => {
+        const current = formData.conditions?.trim() ?? '';
+        if (current.length < 10) {
+            setAiError('Escribe primero las condiciones (al menos 10 caracteres) para poder mejorarlas.');
+            return;
+        }
+        setAiError(null);
+        setAiSuggestion(null);
+        setAiLoading(true);
+        try {
+            const rewritten = await rewriteDescription('serviceConditions', current);
+            setAiSuggestion(rewritten);
+        } catch (err) {
+            setAiError(err instanceof Error ? err.message : 'No se pudo generar el texto.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
     useEffect(() => {
         const catId = formData.categoryId;
@@ -701,6 +725,48 @@ export function ServiceForm({
                                             <span className="sf-counter">{formData.conditions.trim().length}/1000</span>
                                         </div>
                                         {formErrors.conditions && <p className="sf-error">{formErrors.conditions}</p>}
+                                        <div className="sf-ai-rewrite">
+                                            <button
+                                                type="button"
+                                                className="sf-ai-rewrite__btn"
+                                                onClick={handleRewriteConditions}
+                                                disabled={aiLoading}
+                                            >
+                                                {aiLoading ? (
+                                                    <>
+                                                        <Loader2 className="sf-ai-rewrite__spinner" size={14} />
+                                                        Generando…
+                                                    </>
+                                                ) : (
+                                                    'Reescribir con IA'
+                                                )}
+                                            </button>
+                                            {aiError && <p className="sf-error">{aiError}</p>}
+                                            {aiSuggestion && (
+                                                <div className="sf-ai-rewrite__preview">
+                                                    <p className="sf-ai-rewrite__text">{aiSuggestion}</p>
+                                                    <div className="sf-ai-rewrite__actions">
+                                                        <button
+                                                            type="button"
+                                                            className="sf-ai-rewrite__use"
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, conditions: aiSuggestion });
+                                                                setAiSuggestion(null);
+                                                            }}
+                                                        >
+                                                            Usar este texto
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="sf-ai-rewrite__discard"
+                                                            onClick={() => setAiSuggestion(null)}
+                                                        >
+                                                            Descartar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </section>
