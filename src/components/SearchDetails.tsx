@@ -970,8 +970,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             return {
                 showPropose: false,
                 showCancel: status === 'appointment_confirmed',
-                showAccept: canAcceptOrReject,
-                showReject: canAcceptOrReject
+                showAccept: false && canAcceptOrReject, // SISTEMA ANTIGUO: aceptar cita retirado (endpoint /confirm #if false)
+                showReject: false && canAcceptOrReject  // SISTEMA ANTIGUO: rechazar cita retirado (endpoint /reject #if false)
             };
         }
 
