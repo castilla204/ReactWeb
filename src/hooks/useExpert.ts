@@ -45,6 +45,8 @@ interface ExpertProfile {
     workLocationDoor?: string | null;
     workLocationFloor?: string | null;
     workLocationDetails?: string | null;
+    /** Formación del experto (JSON opcional, se muestra al cliente como señal de confianza). */
+    formacion?: string | null;
     // 🛡️ Round 28: exponer country (ISO 3166-1 alpha-2) para derivar moneda del experto.
     country?: string | null;
     // 🛡️ Round 28 MUD-W: si !null, el experto está en proceso de mudanza
@@ -169,6 +171,8 @@ export function useExpert() {
                 workLocationDoor: data.workLocationDoor ?? data.WorkLocationDoor ?? null,
                 workLocationFloor: data.workLocationFloor ?? data.WorkLocationFloor ?? null,
                 workLocationDetails: data.workLocationDetails ?? data.WorkLocationDetails ?? null,
+                // Formación (JSON opcional). Defensive: ambas casings (el backend serializa PascalCase).
+                formacion: data.formacion ?? data.Formacion ?? null,
                 // 🛡️ Round 28: mapear country del backend (ISO 3166-1 alpha-2) para derivar moneda.
                 country: data.country ?? data.Country ?? null,
                 // 🛡️ MUD-W: relocation signal del backend (defensive: ambas casings).

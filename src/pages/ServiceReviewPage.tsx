@@ -8,6 +8,7 @@ import {
     Image,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
+import FormacionDisplay from '../components/FormacionDisplay';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -232,6 +233,7 @@ export function ServiceReviewPage({
     // ✅ CORRECTO: Usar profilePictureUrl del nivel superior del experto, NO de user (que siempre es null)
     const finalExpertPicture = finalService?.expert?.profilePictureUrl || expertProfilePicture;
     const finalExpertDescription = (finalService?.expert?.description || '').trim();
+    const finalExpertFormacion = (finalService?.expert as { formacion?: string } | null | undefined)?.formacion ?? '';
     const finalPrice = finalService?.price || servicePrice || 0;
     
     const expertCity = finalService?.expert?.city || null;
@@ -756,6 +758,8 @@ export function ServiceReviewPage({
                                     }}
                                     onChatClick={handleChatClick}
                                 />
+
+                                <FormacionDisplay value={finalExpertFormacion} className="mt-4" />
 
                                 {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
                                     <div className="mt-5 flex flex-col gap-5">

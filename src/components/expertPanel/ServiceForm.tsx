@@ -1,11 +1,10 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Loader2, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
 import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import type { ServiceEditorExpertPreview } from './ServiceEditorDesktopPreview';
 import '../../styles/expert-service-form.css';
 import '../../styles/ai-rewrite-magic.css';
 import { rewriteDescription } from '../../services/aiService';
@@ -34,11 +33,16 @@ interface ServiceFormProps {
     existingImages?: string[];
     setExistingImages?: (images: string[]) => void;
     existingImagesWithIds?: Array<{ id: number; url: string }>;
+    setExistingImagesWithIds?: (images: Array<{ id: number; url: string }>) => void;
     imagesToDelete?: number[];
     setImagesToDelete?: (ids: number[]) => void;
+    onImagesSequenceChange?: (sequence: string[]) => void;
     expertCountry?: string | null;
-    expertPreview?: ServiceEditorExpertPreview;
 }
+
+type OrderedPhoto =
+    | { key: string; kind: 'existing'; id: number; url: string }
+    | { key: string; kind: 'new'; file: File; url: string };
 
 export function ServiceForm({
     onClose,
@@ -64,8 +68,10 @@ export function ServiceForm({
     existingImages: propExistingImages,
     setExistingImages: propSetExistingImages,
     existingImagesWithIds: propExistingImagesWithIds,
+    setExistingImagesWithIds: propSetExistingImagesWithIds,
     imagesToDelete: propImagesToDelete = [],
     setImagesToDelete: propSetImagesToDelete,
+    onImagesSequenceChange,
     expertCountry,
 }: ServiceFormProps) {
     const editingCurrencyCode = editingService?.currency ?? editingService?.priceCurrency;
@@ -89,6 +95,8 @@ export function ServiceForm({
     const [hasInitializedDeliverableTypes, setHasInitializedDeliverableTypes] = useState(false);
     const [expandedCategoryIds, setExpandedCategoryIds] = useState<number[]>([]);
     const [isPhotoDragOver, setIsPhotoDragOver] = useState(false);
+    const [orderedPhotos, setOrderedPhotos] = useState<OrderedPhoto[]>([]);
+    const [draggedPhotoKey, setDraggedPhotoKey] = useState<string | null>(null);
 
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
@@ -366,6 +374,106 @@ export function ServiceForm({
         return getCurrentExistingImages().map((url, index) => ({ id: -(index + 1), url }));
     }, [propExistingImagesWithIds, propImagesToDelete, propExistingImages, existingImages]);
 
+    const buildSequenceFromOrder = (items: OrderedPhoto[]) => {
+        const newFiles = items.filter((item): item is Extract<OrderedPhoto, { kind: 'new' }> => item.kind === 'new').map((item) => item.file);
+        return items.map((item) => {
+            if (item.kind === 'existing') return `id:${item.id}`;
+            const newIndex = newFiles.indexOf(item.file);
+            return `new:${newIndex}`;
+        });
+    };
+
+    const applyPhotoOrder = (items: OrderedPhoto[]) => {
+        setOrderedPhotos(items);
+        const existing = items
+            .filter((item): item is Extract<OrderedPhoto, { kind: 'existing' }> => item.kind === 'existing')
+            .map((item) => ({ id: item.id, url: item.url }));
+        const files = items
+            .filter((item): item is Extract<OrderedPhoto, { kind: 'new' }> => item.kind === 'new')
+            .map((item) => item.file);
+
+        if (propSetExistingImagesWithIds) {
+            propSetExistingImagesWithIds(existing);
+        } else if (existing.length > 0) {
+            setExistingImages(existing.map((item) => item.url));
+        }
+
+        setSelectedImages(files);
+        onImagesSequenceChange?.(buildSequenceFromOrder(items));
+    };
+
+    useEffect(() => {
+        setOrderedPhotos((prev) => {
+            const existingItems = imagesToShow.map((image) => ({
+                key: `existing-${image.id}`,
+                kind: 'existing' as const,
+                id: image.id,
+                url: image.url,
+            }));
+            const newItems = selectedImages.map((file, index) => ({
+                key: `new-${file.name}-${file.size}-${file.lastModified}`,
+                kind: 'new' as const,
+                file,
+                url: newImagePreviews[index],
+            }));
+            const incoming = [...existingItems, ...newItems];
+            const incomingKeys = new Set(incoming.map((item) => item.key));
+
+            const kept = prev.filter((item) => incomingKeys.has(item.key)).map((item) => {
+                if (item.kind === 'existing') {
+                    const fresh = existingItems.find((entry) => entry.id === item.id);
+                    return fresh ?? item;
+                }
+                const fresh = newItems.find((entry) => entry.file === item.file);
+                return fresh ?? item;
+            });
+
+            incoming.forEach((item) => {
+                if (!kept.some((entry) => entry.key === item.key)) {
+                    kept.push(item);
+                }
+            });
+
+            if (kept.length === incoming.length && kept.every((item, index) => item.key === incoming[index]?.key)) {
+                return incoming;
+            }
+
+            return kept;
+        });
+    }, [imagesToShow, selectedImages, newImagePreviews]);
+
+    useEffect(() => {
+        if (orderedPhotos.length === 0) {
+            onImagesSequenceChange?.([]);
+            return;
+        }
+        onImagesSequenceChange?.(buildSequenceFromOrder(orderedPhotos));
+    }, [orderedPhotos, onImagesSequenceChange]);
+
+    const movePhoto = (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= orderedPhotos.length) return;
+        const next = [...orderedPhotos];
+        [next[index], next[target]] = [next[target], next[index]];
+        applyPhotoOrder(next);
+    };
+
+    const handlePhotoTileDragStart = (key: string) => {
+        setDraggedPhotoKey(key);
+    };
+
+    const handlePhotoTileDrop = (targetKey: string) => {
+        if (!draggedPhotoKey || draggedPhotoKey === targetKey) return;
+        const fromIndex = orderedPhotos.findIndex((item) => item.key === draggedPhotoKey);
+        const toIndex = orderedPhotos.findIndex((item) => item.key === targetKey);
+        if (fromIndex < 0 || toIndex < 0) return;
+        const next = [...orderedPhotos];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        applyPhotoOrder(next);
+        setDraggedPhotoKey(null);
+    };
+
     const renderCategoryButton = (cat: { id: number; name: string }, compact = false) => {
         const catIdStr = String(cat.id);
         const isSelected = selectedCategoryIds.includes(catIdStr);
@@ -432,11 +540,6 @@ export function ServiceForm({
         );
     };
 
-    const heroImages = useMemo(() => {
-        const existing = imagesToShow.map((img) => img.url);
-        return [...existing, ...newImagePreviews];
-    }, [imagesToShow, newImagePreviews]);
-
     const handleClose = () => {
         if (fileInputRef.current) fileInputRef.current.value = '';
         onClose();
@@ -461,7 +564,7 @@ export function ServiceForm({
         if (e.dataTransfer.files?.length) appendPhotoFiles(e.dataTransfer.files);
     };
 
-    const totalPhotoCount = imagesToShow.length + selectedImages.length;
+    const totalPhotoCount = orderedPhotos.length;
     const hasPhotos = totalPhotoCount > 0;
 
     const isSaving = editingService ? isUpdatingService : isCreatingService;
@@ -476,31 +579,13 @@ export function ServiceForm({
     const saveButton = (
         <Button
             type="button"
-            className="sf-btn-save"
+            className="pf-btn-save"
             disabled={isSaving || isLoadingServiceTypes}
             onClick={handlePublish}
         >
             {isSaving ? (
                 <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {editingService ? 'Guardando…' : 'Publicando…'}
-                </>
-            ) : (
-                editingService ? 'Guardar' : 'Publicar'
-            )}
-        </Button>
-    );
-
-    const saveButtonBar = (
-        <Button
-            type="button"
-            className="sf-btn-save sf-btn-save--bar"
-            disabled={isSaving || isLoadingServiceTypes}
-            onClick={handlePublish}
-        >
-            {isSaving ? (
-                <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                     {editingService ? 'Guardando…' : 'Publicando…'}
                 </>
             ) : (
@@ -510,33 +595,47 @@ export function ServiceForm({
     );
 
     return (
-        <div className="sf-editor">
-            <div className="sf-editor-body">
-                <div className="sf-editor-frame">
-                    <div className="sf-settings-card">
-                        <header className="sf-card-header sf-card-header--brand">
-                            <h1 className="sf-editor-bar-title">
-                                {editingService ? 'Editar servicio' : 'Nuevo servicio'}
-                            </h1>
-                            <div className="sf-editor-bar-end sf-editor-save-desktop">
-                                <Button type="button" variant="outline" className="sf-btn-cancel" onClick={handleClose}>
-                                    Cancelar
-                                </Button>
-                                {saveButton}
-                            </div>
-                        </header>
+        <div className="av-page sf-page sf-page--service-editor pf-editor--embedded">
+            <header className="av-page-intro">
+                <p className="av-page-intro__lead">
+                    Elige <strong>categoría y precio</strong>, describe las condiciones y pulsa{' '}
+                    <strong>{editingService ? 'Guardar' : 'Publicar'}</strong> para dejarlo visible en búsquedas.
+                </p>
+                <ol className="av-page-intro__steps" aria-label="Cómo publicar un servicio">
+                    <li>Categoría, tipo y precio</li>
+                    <li>Condiciones claras para el cliente</li>
+                    <li>Pulsa <strong>{editingService ? 'Guardar' : 'Publicar'}</strong></li>
+                </ol>
+            </header>
 
+            <section className="av-calendar sf-service-editor">
+                <div className="sf-service-editor__action-bar pf-profile-editor__action-bar">
+                    <div className="pf-profile-editor__status">
+                        <span className="pf-status-led pf-status-led--on" role="status">
+                            <span className="pf-status-led__dot" aria-hidden />
+                            <span className="pf-status-led__label">
+                                {editingService ? 'Editando servicio' : 'Nuevo servicio'}
+                            </span>
+                        </span>
+                        <span className="pf-status-led__hint">
+                            {editingService ? 'Los cambios se aplican al guardar' : 'Visible en búsquedas al publicar'}
+                        </span>
+                    </div>
+                    <div className="pf-profile-editor__action-bar-end sf-service-editor__actions">
+                        <Button type="button" variant="outline" className="pf-btn-cancel" onClick={handleClose}>
+                            Cancelar
+                        </Button>
+                        {saveButton}
+                    </div>
+                </div>
+
+                <div className="av-calendar__main sf-service-editor__main">
+                    <div className="sf-service-editor__body">
                         <form className="sf-form" onSubmit={(e) => e.preventDefault()}>
                             <section id="sf-section-photos" className="sf-section sf-section--photos">
-                                <h2 className="sf-section-title">
-                                    Fotos del servicio
-                                    <span className="sf-section-tag">Opcional</span>
-                                </h2>
-
-                                <div className={`sf-photo-block${hasPhotos ? ' sf-photo-block--filled' : ''}`}>
+                                {!hasPhotos ? (
                                     <div
-                                        id="sf-field-images"
-                                        className={`sf-photo-area${isPhotoDragOver ? ' sf-photo-area--drag' : ''}${!hasPhotos ? ' sf-photo-area--empty' : ''}`}
+                                        className={`pf-profile-editor__photo-block sf-service-editor__photo-empty${isPhotoDragOver ? ' sf-service-editor__photo-empty--drag' : ''}`}
                                         onDragOver={(e) => {
                                             e.preventDefault();
                                             setIsPhotoDragOver(true);
@@ -544,38 +643,104 @@ export function ServiceForm({
                                         onDragLeave={() => setIsPhotoDragOver(false)}
                                         onDrop={handlePhotoDrop}
                                     >
-                                        {hasPhotos ? (
-                                            <div className="sf-photo-grid">
-                                            {imagesToShow.map((image, index) => (
-                                                <div key={`existing-${image.id}`} className="sf-photo-tile">
+                                        <button
+                                            type="button"
+                                            className="pf-avatar pf-avatar--composer sf-service-editor__photo-placeholder"
+                                            onClick={openFilePicker}
+                                            aria-label="Subir fotos del servicio"
+                                        >
+                                            <span className="pf-avatar-empty">
+                                                <Upload className="h-7 w-7" aria-hidden />
+                                            </span>
+                                            <span className="pf-avatar-overlay" aria-hidden>
+                                                <Upload className="h-4 w-4" />
+                                            </span>
+                                        </button>
+                                        <div className="pf-profile-editor__photo-meta">
+                                            <p className="pf-profile-editor__label">
+                                                Fotos del servicio
+                                                <span className="sf-section-tag">Opcional</span>
+                                            </p>
+                                            <p className="pf-profile-editor__hint">PNG o JPG · La primera será la portada del servicio.</p>
+                                            <div className="pf-profile-editor__photo-actions">
+                                                <Button type="button" variant="outline" size="sm" className="pf-profile-editor__photo-btn" onClick={openFilePicker}>
+                                                    Subir fotos
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className={`sf-service-editor__photos${isPhotoDragOver ? ' sf-service-editor__photos--drag' : ''}`}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            setIsPhotoDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsPhotoDragOver(false)}
+                                        onDrop={handlePhotoDrop}
+                                    >
+                                        <div className="sf-service-editor__photos-head">
+                                            <div>
+                                                <p className="pf-profile-editor__label">Fotos del servicio</p>
+                                                <p className="pf-profile-editor__hint">
+                                                    {totalPhotoCount} {totalPhotoCount === 1 ? 'foto' : 'fotos'} · La primera es la portada · Arrastra o usa las flechas para reordenar
+                                                </p>
+                                            </div>
+                                            <div className="pf-profile-editor__photo-actions">
+                                                <Button type="button" variant="outline" size="sm" className="pf-profile-editor__photo-btn" onClick={openFilePicker}>
+                                                    Añadir fotos
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div id="sf-field-images" className="sf-photo-grid sf-service-editor__photo-grid">
+                                            {orderedPhotos.map((photo, index) => (
+                                                <div
+                                                    key={photo.key}
+                                                    className={`sf-photo-tile sf-service-editor__photo-tile${draggedPhotoKey === photo.key ? ' sf-service-editor__photo-tile--dragging' : ''}`}
+                                                    draggable
+                                                    onDragStart={() => handlePhotoTileDragStart(photo.key)}
+                                                    onDragEnd={() => setDraggedPhotoKey(null)}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    onDrop={() => handlePhotoTileDrop(photo.key)}
+                                                >
                                                     {index === 0 && <span className="sf-photo-cover">Portada</span>}
-                                                    <img src={image.url} alt="" loading="lazy" />
-                                                    <button
-                                                        type="button"
-                                                        className="sf-photo-remove"
-                                                        onClick={() => removeExistingImage(image.id)}
-                                                        aria-label="Quitar imagen"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {selectedImages.map((_image, index) => (
-                                                <div key={`new-${index}`} className="sf-photo-tile">
-                                                    {imagesToShow.length === 0 && index === 0 && (
-                                                        <span className="sf-photo-cover">Portada</span>
-                                                    )}
-                                                    <img src={newImagePreviews[index]} alt="" />
-                                                    {isSaving && (
+                                                    <img src={photo.url} alt="" loading="lazy" draggable={false} />
+                                                    {photo.kind === 'new' && isSaving && (
                                                         <div className="sf-photo-loading">
-                                                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                                            <Loader2 className="w-4 h-4 text-white animate-spin" />
                                                         </div>
                                                     )}
+                                                    <div className="sf-service-editor__photo-tile-actions">
+                                                        <button
+                                                            type="button"
+                                                            className="sf-service-editor__photo-move"
+                                                            onClick={() => movePhoto(index, -1)}
+                                                            disabled={index === 0}
+                                                            aria-label="Mover foto a la izquierda"
+                                                        >
+                                                            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="sf-service-editor__photo-move"
+                                                            onClick={() => movePhoto(index, 1)}
+                                                            disabled={index === orderedPhotos.length - 1}
+                                                            aria-label="Mover foto a la derecha"
+                                                        >
+                                                            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                                                        </button>
+                                                    </div>
                                                     <button
                                                         type="button"
                                                         className="sf-photo-remove"
-                                                        onClick={() => removeImage(index)}
-                                                        aria-label="Quitar imagen nueva"
+                                                        onClick={() => {
+                                                            if (photo.kind === 'existing') removeExistingImage(photo.id);
+                                                            else {
+                                                                const fileIndex = selectedImages.indexOf(photo.file);
+                                                                if (fileIndex >= 0) removeImage(fileIndex);
+                                                            }
+                                                        }}
+                                                        aria-label="Quitar imagen"
                                                     >
                                                         ×
                                                     </button>
@@ -583,31 +748,15 @@ export function ServiceForm({
                                             ))}
                                             <button
                                                 type="button"
-                                                className="sf-photo-add-tile"
+                                                className="sf-photo-add-tile sf-service-editor__photo-add"
                                                 onClick={openFilePicker}
+                                                aria-label="Añadir más fotos"
                                             >
-                                                <span className="sf-photo-add-label">Añadir fotos</span>
+                                                <span className="sf-photo-add-label">+</span>
                                             </button>
                                         </div>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            className="sf-photo-dropzone"
-                                            onClick={openFilePicker}
-                                        >
-                                            <span className="sf-photo-dropzone-title">Subir fotos</span>
-                                            <span className="sf-photo-dropzone-hint">Arrastra o haz clic · PNG o JPG · 10 MB máx.</span>
-                                        </button>
-                                    )}
                                     </div>
-                                    {hasPhotos ? (
-                                        <p className="sf-photo-caption">
-                                            {totalPhotoCount} foto{totalPhotoCount === 1 ? '' : 's'}. La primera es la portada.
-                                        </p>
-                                    ) : (
-                                        <p className="sf-photo-caption">Fotos reales del trabajo ayudan a que los clientes confíen en tu servicio.</p>
-                                    )}
-                                </div>
+                                )}
                                 {formErrors.images && <p className="sf-error">{formErrors.images}</p>}
                                 {editingService && ((propImagesToDelete?.length ?? 0) > 0 || selectedImages.length > 0) && (
                                     <p className="sf-images-note">
@@ -620,12 +769,8 @@ export function ServiceForm({
                                 )}
                             </section>
 
-                            <hr className="sf-section-rule" />
-
-                            <div className="sf-form-grid">
-                            <section id="sf-section-offer" className="sf-section sf-section--offer">
-                                <h2 className="sf-section-title">Qué ofreces</h2>
-                                <div className="sf-section-fields">
+                            <section id="sf-section-details-core" className="sf-section sf-section--core">
+                                <div className="sf-section-fields sf-service-editor__offer-fields">
                                     <div id="sf-field-category" className="sf-field">
                                         <span className="sf-label" id="sf-category-label">Categoría</span>
                                         {renderCategories()}
@@ -661,69 +806,33 @@ export function ServiceForm({
                                 </div>
                             </section>
 
-                            <section id="sf-section-price" className="sf-section sf-section--price">
-                                <h2 className="sf-section-title">Precio</h2>
-                                <div className="sf-section-fields">
-                                    <div id="sf-field-price" className="sf-field-row">
-                                        <div className="sf-field">
-                                            <label htmlFor="price">Precio ({priceCurrencySymbol})</label>
-                                            <input
-                                                id="price"
-                                                type="number"
-                                                value={formData.price}
-                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                className={`sf-input${formErrors.price ? ' sf-input--error' : ''}`}
-                                                placeholder="0.00"
-                                                step="0.01"
-                                                required
-                                            />
-                                            {formErrors.price && <p className="sf-error">{formErrors.price}</p>}
-                                        </div>
-                                        {showDuration && (
-                                            <div id="sf-field-duration" className="sf-field">
-                                                <label htmlFor="duration">Duración (h)</label>
-                                                <input
-                                                    id="duration"
-                                                    type="number"
-                                                    value={formData.durationInHours}
-                                                    onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
-                                                    className={`sf-input${formErrors.durationInHours ? ' sf-input--error' : ''}`}
-                                                    min="1"
-                                                    required
-                                                />
-                                                {formErrors.durationInHours && (
-                                                    <p className="sf-error">{formErrors.durationInHours}</p>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {!editingService && expertCountry && (
-                                        <p className="sf-hint">
-                                            Moneda {priceCurrencyCode} según tu cuenta ({expertCountry}).
-                                        </p>
-                                    )}
-                                </div>
-                            </section>
-
-                            <section id="sf-section-details" className="sf-section sf-section--details sf-section--span">
-                                <h2 className="sf-section-title">Condiciones</h2>
+                            <section id="sf-section-conditions" className="sf-section sf-section--conditions">
                                 <div className="sf-section-fields">
                                     <div id="sf-field-conditions" className="sf-field">
-                                        <textarea
-                                            id="conditions"
-                                            aria-label="Condiciones del servicio"
-                                            value={formData.conditions}
-                                            onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                            className={`sf-textarea${formErrors.conditions ? ' sf-textarea--error' : ''}`}
-                                            rows={6}
-                                            placeholder="Qué incluye el servicio y qué debe saber el cliente antes de contratar."
-                                            required
-                                            minLength={400}
-                                            maxLength={1000}
-                                        />
-                                        <div className="sf-field-meta">
-                                            <span className="sf-hint">Entre 400 y 1000 caracteres (sin espacios al inicio o final).</span>
-                                            <span className="sf-counter">{formData.conditions.trim().length}/1000</span>
+                                        <div className="pf-profile-editor__field-head">
+                                            <div>
+                                                <label htmlFor="conditions" className="pf-profile-editor__label">
+                                                    Condiciones del servicio
+                                                </label>
+                                                <p id="conditions-hint" className="pf-profile-editor__hint">
+                                                    Qué incluye el servicio (400–1000 caracteres).
+                                                </p>
+                                            </div>
+                                            <span className="pf-profile-editor__count">{formData.conditions.trim().length}/1000</span>
+                                        </div>
+                                        <div className="pf-profile-editor__input">
+                                            <textarea
+                                                id="conditions"
+                                                value={formData.conditions}
+                                                onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
+                                                className={`sf-textarea sf-textarea--field pf-textarea pf-textarea--field${formErrors.conditions ? ' sf-textarea--error' : ''}`}
+                                                rows={2}
+                                                placeholder="Ej.: Revisión presencial con informe PDF. Compruebo instalaciones, humedades y estado general."
+                                                required
+                                                minLength={400}
+                                                maxLength={1000}
+                                                aria-describedby="conditions-hint"
+                                            />
                                         </div>
                                         {formErrors.conditions && <p className="sf-error">{formErrors.conditions}</p>}
                                         <div className="sf-ai-rewrite">
@@ -779,67 +888,109 @@ export function ServiceForm({
                                 </div>
                             </section>
 
-                            <section id="sf-section-reports" className="sf-section sf-section--reports sf-section--optional sf-section--span">
-                                <h2 className="sf-section-title">Informes incluidos</h2>
-                                <div className="sf-section-fields">
-                                    <div className="sf-field">
-                                        {isLoadingDeliverableTypes ? (
-                                            <p className="sf-loading">Cargando tipos de informe…</p>
-                                        ) : deliverableTypesError ? (
-                                            <p className="sf-error">{deliverableTypesError.message}</p>
-                                        ) : normalizedDeliverableTypes.length === 0 ? (
-                                            <p className="sf-hint">No hay tipos de informe disponibles.</p>
-                                        ) : (
-                                            <div className="sf-deliverables">
-                                                {normalizedDeliverableTypes.map((deliverableType) => {
-                                                    const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id!);
-                                                    const isPdf = deliverableType.name === 'PDF' || deliverableType.name === 'pdf';
-                                                    return (
-                                                        <div
-                                                            key={deliverableType.id}
-                                                            role="button"
-                                                            tabIndex={isPdf ? -1 : 0}
-                                                            className={`sf-deliverable${isSelected ? ' sf-deliverable--on' : ''}${isPdf ? ' sf-deliverable--locked' : ''}`}
-                                                            onClick={() => !isPdf && handleDeliverableTypeSelect(deliverableType.id)}
-                                                            onKeyDown={(e) => {
-                                                                if (!isPdf && (e.key === 'Enter' || e.key === ' ')) {
-                                                                    e.preventDefault();
-                                                                    handleDeliverableTypeSelect(deliverableType.id);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <span className="sf-deliverable-box" aria-hidden>
-                                                                {isSelected ? '✓' : ''}
-                                                            </span>
-                                                            <div>
-                                                                <span className="sf-deliverable-title">
-                                                                    {deliverableType.displayName}
-                                                                    {isPdf && <span className="sf-included">incluido</span>}
-                                                                </span>
-                                                                <p className="sf-deliverable-desc">
-                                                                    {isPdf
-                                                                        ? 'El informe PDF se incluye en todos los servicios.'
-                                                                        : deliverableType.description}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                        {formErrors.selectedDeliverableTypes && (
-                                            <p className="sf-error">{formErrors.selectedDeliverableTypes}</p>
+                            <section id="sf-section-price" className="sf-section sf-section--price">
+                                <div className="sf-service-editor__price-row">
+                                    <div className="sf-field sf-service-editor__price-field-wrap">
+                                        <label htmlFor="price" className="pf-profile-editor__label">
+                                            Precio ({priceCurrencyCode})
+                                        </label>
+                                        <p className="pf-profile-editor__hint sf-service-editor__price-hint-top">
+                                            Importe cerrado que verá el cliente en la ficha del servicio.
+                                        </p>
+                                        <div
+                                            className="sf-service-editor__price-field"
+                                            data-currency={priceCurrencySymbol}
+                                        >
+                                            <input
+                                                id="price"
+                                                type="number"
+                                                inputMode="decimal"
+                                                value={formData.price}
+                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                                className={`sf-input sf-input--price font-display${formErrors.price ? ' sf-input--error' : ''}`}
+                                                placeholder="0.00"
+                                                step="0.01"
+                                                required
+                                                aria-label={`Precio en ${priceCurrencyCode}`}
+                                            />
+                                        </div>
+                                        {formErrors.price && <p className="sf-error">{formErrors.price}</p>}
+                                        {!editingService && expertCountry && (
+                                            <p className="sf-hint sf-service-editor__price-hint">
+                                                Moneda según tu cuenta ({expertCountry}).
+                                            </p>
                                         )}
                                     </div>
+                                    {showDuration && (
+                                        <div id="sf-field-duration" className="sf-field sf-service-editor__duration-wrap">
+                                            <label htmlFor="duration" className="pf-profile-editor__label">Duración estimada</label>
+                                            <p className="pf-profile-editor__hint">Tiempo aproximado en horas.</p>
+                                            <input
+                                                id="duration"
+                                                type="number"
+                                                value={formData.durationInHours}
+                                                onChange={(e) => setFormData({ ...formData, durationInHours: e.target.value })}
+                                                className={`sf-input${formErrors.durationInHours ? ' sf-input--error' : ''}`}
+                                                min="1"
+                                                required
+                                            />
+                                            {formErrors.durationInHours && (
+                                                <p className="sf-error">{formErrors.durationInHours}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </section>
-                            </div>
+
+                            <section id="sf-section-reports" className="sf-section sf-section--reports">
+                                <span className="sf-label">Informes incluidos</span>
+                                {isLoadingDeliverableTypes ? (
+                                    <p className="sf-loading">Cargando…</p>
+                                ) : deliverableTypesError ? (
+                                    <p className="sf-error">{deliverableTypesError.message}</p>
+                                ) : normalizedDeliverableTypes.length === 0 ? (
+                                    <p className="sf-hint">No hay tipos disponibles.</p>
+                                ) : (
+                                    <div className="sf-deliverables sf-deliverables--inline">
+                                        {normalizedDeliverableTypes.map((deliverableType) => {
+                                            const isSelected = formData.selectedDeliverableTypes.includes(deliverableType.id!);
+                                            const isPdf = deliverableType.name === 'PDF' || deliverableType.name === 'pdf';
+                                            return (
+                                                <div
+                                                    key={deliverableType.id}
+                                                    role="button"
+                                                    tabIndex={isPdf ? -1 : 0}
+                                                    className={`sf-deliverable${isSelected ? ' sf-deliverable--on' : ''}${isPdf ? ' sf-deliverable--locked' : ''}`}
+                                                    onClick={() => !isPdf && handleDeliverableTypeSelect(deliverableType.id)}
+                                                    onKeyDown={(e) => {
+                                                        if (!isPdf && (e.key === 'Enter' || e.key === ' ')) {
+                                                            e.preventDefault();
+                                                            handleDeliverableTypeSelect(deliverableType.id);
+                                                        }
+                                                    }}
+                                                >
+                                                    <span className="sf-deliverable-box" aria-hidden>
+                                                        {isSelected ? '✓' : ''}
+                                                    </span>
+                                                    <span className="sf-deliverable-title">
+                                                        {deliverableType.displayName}
+                                                        {isPdf && <span className="sf-included">incluido</span>}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {formErrors.selectedDeliverableTypes && (
+                                    <p className="sf-error">{formErrors.selectedDeliverableTypes}</p>
+                                )}
+                            </section>
 
                             {formErrors.general && <div className="sf-alert sf-form-alert">{String(formErrors.general)}</div>}
                         </form>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <input
                 id="image-input"
@@ -854,21 +1005,6 @@ export function ServiceForm({
                 className="hidden"
                 ref={fileInputRef}
             />
-            <footer className="sf-editor-footer sf-editor-save-mobile">
-                <div className="sf-editor-footer-actions">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="sf-btn-back"
-                        onClick={handleClose}
-                        aria-label="Volver atrás"
-                    >
-                        <ArrowLeft className="w-4 h-4" aria-hidden />
-                        Atrás
-                    </Button>
-                    {saveButtonBar}
-                </div>
-            </footer>
         </div>
     );
 }
