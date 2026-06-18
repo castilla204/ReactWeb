@@ -153,7 +153,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
       {!isCheckout ? (
         <button
           type="button"
-          onClick={() => navigate('/como-funciona')}
+          onClick={() => navigate('/ayuda')}
           className={
             isMap
               ? 'sd-icon-btn'

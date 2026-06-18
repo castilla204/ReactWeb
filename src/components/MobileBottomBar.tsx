@@ -183,14 +183,14 @@ export const MobileBottomBar: React.FC = () => {
 
   const exploreActive = isActive('/');
   const messagesActive = isActive('/mis-mensajes');
-  const howItWorksActive = isActive('/como-funciona');
+  const howItWorksActive = isActive('/ayuda');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
 
   const handleHowItWorksClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/como-funciona');
+    navigate('/ayuda');
   };
 
   const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
