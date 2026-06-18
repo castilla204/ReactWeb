@@ -808,7 +808,7 @@ export function ServiceReviewPage({
                                     </p>
                                 ) : null}
 
-                                {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
+                                {(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport) && (
                                     <div className="mt-5 flex flex-col gap-5">
                                         {displayMainDescription ? (
                                             <section className="min-w-0 overflow-hidden">
@@ -840,6 +840,11 @@ export function ServiceReviewPage({
                                                     presentation="list"
                                                     showHeading
                                                 />
+                                            </section>
+                                        ) : null}
+                                        {showInspectionReport ? (
+                                            <section className={visibleDeliverableTypes.length > 0 || displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
+                                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
                                             </section>
                                         ) : null}
                                     </div>
@@ -890,9 +895,6 @@ export function ServiceReviewPage({
                                     />
                                 );
                             })()}
-                            {showInspectionReport && (
-                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} className="mt-3" />
-                            )}
                         </aside>
                     </div>
                 </div>
