@@ -201,9 +201,6 @@ export function ServiceReviewPage({
       (finalService as { categoryName?: string } | null)?.categoryName,
     );
     const showInspectionReport = inspectionCatalog != null;
-    const inspectionPdfUrl: string =
-      (finalService as { inspectionTemplatePdfUrl?: string | null } | null)?.inspectionTemplatePdfUrl
-      || '/plantillas/inspeccion-coche.pdf';
     const inspectionConfig: InspectionConfig | null = (() => {
       const rawCfg = (finalService as { inspectionTemplateConfig?: string | null } | null)?.inspectionTemplateConfig;
       if (!rawCfg) return null;
@@ -661,7 +658,7 @@ export function ServiceReviewPage({
                                     ) : null}
                                     {showInspectionReport ? (
                                         <>
-                                            <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                            <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
                                             {nonPdfDeliverableTypes.length > 0 ? (
                                                 <ServiceDetailDeliverablesGuide
                                                     items={nonPdfDeliverableTypes}
@@ -807,7 +804,7 @@ export function ServiceReviewPage({
                                         {showInspectionReport ? (
                                             <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
                                                 <h2 className="hp-section-title mb-3">Qué incluye</h2>
-                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
                                                 {nonPdfDeliverableTypes.length > 0 ? (
                                                     <div className="mt-3">
                                                         <ServiceDetailDeliverablesGuide
