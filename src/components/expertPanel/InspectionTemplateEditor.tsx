@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Lock, Plus, X } from 'lucide-react';
-import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
+import { type Catalog } from '../../lib/inspectionCatalog';
 import {
   emptyConfig, sanitizeConfig, resolveTemplate, countActivePoints,
   type InspectionConfig,
@@ -8,6 +8,7 @@ import {
 import { buildTemplatePdf } from '../../lib/inspectionPdf';
 
 interface Props {
+  catalog: Catalog;
   config: InspectionConfig | null;
   onChange: (cfg: InspectionConfig) => void;
 }
@@ -16,17 +17,17 @@ interface Props {
 // largo va completo en el PDF). Evita chips kilométricos.
 const short = (label: string) => label.split(':')[0].trim();
 
-export default function InspectionTemplateEditor({ config, onChange }: Props) {
-  const cfg = useMemo(() => sanitizeConfig(INSPECTION_CATALOG, config ?? emptyConfig()), [config]);
+export default function InspectionTemplateEditor({ catalog, config, onChange }: Props) {
+  const cfg = useMemo(() => sanitizeConfig(catalog, config ?? emptyConfig()), [catalog, config]);
   const disabledSections = new Set(cfg.disabledSections);
   const disabledPoints = new Set(cfg.disabledPoints);
   const [adding, setAdding] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
 
-  const resolved = useMemo(() => resolveTemplate(INSPECTION_CATALOG, cfg), [cfg]);
-  const totalPoints = INSPECTION_CATALOG.sections.reduce((a, s) => a + s.points.length, 0);
+  const resolved = useMemo(() => resolveTemplate(catalog, cfg), [catalog, cfg]);
+  const totalPoints = catalog.sections.reduce((a, s) => a + s.points.length, 0);
 
-  const update = (next: InspectionConfig) => onChange(sanitizeConfig(INSPECTION_CATALOG, next));
+  const update = (next: InspectionConfig) => onChange(sanitizeConfig(catalog, next));
 
   const toggleSection = (id: string) => {
     const has = disabledSections.has(id);
@@ -53,7 +54,7 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
     });
   };
   const preview = async () => {
-    const blob = await buildTemplatePdf(resolveTemplate(INSPECTION_CATALOG, cfg));
+    const blob = await buildTemplatePdf(resolveTemplate(catalog, cfg));
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 4000);
@@ -71,7 +72,7 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
       </p>
 
       <div className="divide-y divide-[hsl(var(--ep-border))]">
-        {INSPECTION_CATALOG.sections.map((sec) => {
+        {catalog.sections.map((sec) => {
           const off = disabledSections.has(sec.id);
           const hasRequired = sec.points.some((p) => p.required);
           const customs = cfg.customPoints.filter((c) => c.section === sec.id);
@@ -187,7 +188,7 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
 
       <div className="mt-4 flex items-center justify-between border-t border-[hsl(var(--ep-border))] pt-3 text-[13px]">
         <span className="font-medium text-[hsl(var(--ep-ink))]">
-          {countActivePoints(resolved)} de {totalPoints} puntos · {resolved.sections.length} de {INSPECTION_CATALOG.sections.length} secciones
+          {countActivePoints(resolved)} de {totalPoints} puntos · {resolved.sections.length} de {catalog.sections.length} secciones
         </span>
         <button type="button" onClick={preview} className="font-semibold text-[hsl(var(--brand))] hover:underline">
           Vista previa del PDF

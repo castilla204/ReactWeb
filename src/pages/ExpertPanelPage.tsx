@@ -59,9 +59,9 @@ import { ExpertMessagesInbox } from '../components/expertPanel/ExpertMessagesInb
 import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
-import { emptyConfig, sanitizeConfig, resolveTemplate, type InspectionConfig } from '../lib/inspectionTemplateConfig';
+import { emptyConfig, resolveTemplate, type InspectionConfig } from '../lib/inspectionTemplateConfig';
 import { buildTemplatePdf } from '../lib/inspectionPdf';
-import { INSPECTION_CATALOG } from '../lib/inspectionCatalog';
+import { getInspectionCatalog } from '../lib/inspectionCatalog';
 
 interface ServiceImage {
     id: number;
@@ -668,7 +668,8 @@ export function ExpertPanelPage() {
         if (rawCfg && typeof rawCfg === 'string') {
             try {
                 const parsed = JSON.parse(rawCfg);
-                setInspectionConfig(sanitizeConfig(INSPECTION_CATALOG, parsed));
+                // El editor saneará con el catálogo de la categoría del servicio.
+                setInspectionConfig(parsed);
             } catch {
                 setInspectionConfig(emptyConfig());
             }
@@ -777,17 +778,17 @@ export function ExpertPanelPage() {
             const parentCatUpdate = selectedCatUpdate?.parentId != null
                 ? categories.find((c) => c.id === selectedCatUpdate.parentId)
                 : undefined;
-            const isCarCategoryUpdate =
-                (selectedCatUpdate?.name ?? '').toLowerCase().includes('coche') ||
-                (parentCatUpdate?.name ?? '').toLowerCase().includes('coche');
+            const updateCatalog = getInspectionCatalog(
+                `${selectedCatUpdate?.name ?? ''} ${parentCatUpdate?.name ?? ''}`,
+            );
 
-            // Preparar config e PDF del informe de inspección (solo para servicios de coche)
+            // Preparar config e PDF del informe de inspección (solo categorías con catálogo)
             let updateInspectionPdfFile: File | null = null;
             let updateInspectionConfigJson: string | null = null;
-            if (isCarCategoryUpdate) {
+            if (updateCatalog) {
                 updateInspectionConfigJson = JSON.stringify(inspectionConfig);
                 try {
-                    const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                    const resolvedTpl = resolveTemplate(updateCatalog, inspectionConfig);
                     const pdfBlob = await buildTemplatePdf(resolvedTpl);
                     updateInspectionPdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
                 } catch (pdfErr) {
@@ -901,17 +902,17 @@ export function ExpertPanelPage() {
             const parentCatCreate = selectedCatCreate?.parentId != null
                 ? categories.find((c) => c.id === selectedCatCreate.parentId)
                 : undefined;
-            const isCarCategoryCreate =
-                (selectedCatCreate?.name ?? '').toLowerCase().includes('coche') ||
-                (parentCatCreate?.name ?? '').toLowerCase().includes('coche');
+            const createCatalog = getInspectionCatalog(
+                `${selectedCatCreate?.name ?? ''} ${parentCatCreate?.name ?? ''}`,
+            );
 
-            // Preparar config e PDF del informe de inspección (solo para servicios de coche)
+            // Preparar config e PDF del informe de inspección (solo categorías con catálogo)
             let inspectionTemplatePdfFile: File | null = null;
             let inspectionConfigJson: string | null = null;
-            if (isCarCategoryCreate) {
+            if (createCatalog) {
                 inspectionConfigJson = JSON.stringify(inspectionConfig);
                 try {
-                    const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                    const resolvedTpl = resolveTemplate(createCatalog, inspectionConfig);
                     const pdfBlob = await buildTemplatePdf(resolvedTpl);
                     inspectionTemplatePdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
                 } catch (pdfErr) {

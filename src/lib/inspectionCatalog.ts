@@ -18,11 +18,16 @@ export interface CatalogSection {
 }
 
 export interface Catalog {
+  /** Título y subtítulo de la cabecera del PDF generado. */
+  headerTitle?: string;
+  headerSubtitle?: string;
   headerFields: { key: string; label: string }[];
   sections: CatalogSection[];
 }
 
 export const INSPECTION_CATALOG: Catalog = {
+  headerTitle: 'INFORME DE INSPECCIÓN',
+  headerSubtitle: 'Coche de ocasión · revisión independiente antes de comprar',
   headerFields: [
     { key: 'marca_modelo', label: 'Marca y modelo' },
     { key: 'version_motor', label: 'Versión / motor' },
@@ -150,10 +155,219 @@ export const INSPECTION_CATALOG: Catalog = {
   ],
 };
 
+// ===================== MOTO =====================
+export const INSPECTION_CATALOG_MOTO: Catalog = {
+  headerTitle: 'INFORME DE INSPECCIÓN',
+  headerSubtitle: 'Moto de ocasión · revisión independiente antes de comprar',
+  headerFields: [
+    { key: 'marca_modelo', label: 'Marca y modelo' },
+    { key: 'cilindrada', label: 'Cilindrada / tipo' },
+    { key: 'matricula', label: 'Matrícula' },
+    { key: 'vin', label: 'Bastidor (VIN)' },
+    { key: 'anio', label: 'Año' },
+    { key: 'kilometros', label: 'Kilómetros' },
+    { key: 'precio', label: 'Precio pedido' },
+    { key: 'fecha_lugar', label: 'Fecha / lugar' },
+    { key: 'experto', label: 'Experto' },
+    { key: 'cliente', label: 'Cliente' },
+  ],
+  sections: [
+    {
+      id: 'A', title: 'Documentación y procedencia', subtitle: '¿Es legal, sin trampas ni deudas?',
+      points: [
+        { num: 1, label: 'Kilometraje real: coherencia cuadro / desgaste / facturas', required: true },
+        { num: 2, label: 'Bastidor (VIN) coincide con documentación y sin manipular', required: true },
+        { num: 3, label: 'No consta siniestro total, baja ni robo' },
+        { num: 4, label: 'Sin cargas, embargos ni reserva de dominio (informe DGT)', required: true },
+        { num: 5, label: 'ITV en vigor y sin defectos graves pendientes' },
+        { num: 6, label: 'Titularidad y nº de transferencias coherentes' },
+        { num: 7, label: 'Llaves y documentación completas' },
+      ],
+    },
+    {
+      id: 'B', title: 'Motor', subtitle: '¿El corazón de la moto está sano?',
+      points: [
+        { num: 8, label: 'Arranque en frío y ralentí estable' },
+        { num: 9, label: 'Humo de escape (color y cantidad)' },
+        { num: 10, label: 'Fugas de aceite o refrigerante' },
+        { num: 11, label: 'Nivel y estado de aceite' },
+        { num: 12, label: 'Ruidos anómalos de motor' },
+        { num: 13, label: 'Indicios de sobrecalentamiento' },
+      ],
+    },
+    {
+      id: 'C', title: 'Embrague y transmisión', subtitle: '¿Cambia y embraga bien?',
+      points: [
+        { num: 14, label: 'Embrague: tacto y patinamiento' },
+        { num: 15, label: 'Cambio: entra bien, sin ruidos' },
+        { num: 16, label: 'Cadena / correa / cardán: estado y tensión' },
+        { num: 17, label: 'Coronas y piñón: desgaste' },
+      ],
+    },
+    {
+      id: 'D', title: 'Frenos', subtitle: '¿Frena con seguridad?',
+      points: [
+        { num: 18, label: 'Discos y pastillas: desgaste (delante y detrás)' },
+        { num: 19, label: 'Eficacia de frenada, sin esponjosidad' },
+        { num: 20, label: 'ABS funcionando (si equipa)' },
+        { num: 21, label: 'Latiguillos y nivel de líquido' },
+      ],
+    },
+    {
+      id: 'E', title: 'Chasis y suspensión', subtitle: '¿Va estable y entera?',
+      points: [
+        { num: 22, label: 'Horquilla: fugas y holguras' },
+        { num: 23, label: 'Amortiguador trasero' },
+        { num: 24, label: 'Rodamientos de dirección' },
+        { num: 25, label: 'Basculante y rodamientos' },
+        { num: 26, label: 'Chasis: golpes, deformación o soldaduras no originales' },
+      ],
+    },
+    {
+      id: 'F', title: 'Ruedas y neumáticos', subtitle: '¿Cuánto me durarán?',
+      points: [
+        { num: 27, label: 'Profundidad de dibujo' },
+        { num: 28, label: 'Antigüedad de los neumáticos (DOT)' },
+        { num: 29, label: 'Llantas: golpes, fisuras o corrosión' },
+        { num: 30, label: 'Desgaste irregular' },
+      ],
+    },
+    {
+      id: 'G', title: 'Sistema eléctrico', subtitle: '¿Funciona todo lo eléctrico?',
+      points: [
+        { num: 31, label: 'Batería y carga' },
+        { num: 32, label: 'Luces, intermitentes y claxon' },
+        { num: 33, label: 'Testigos del cuadro' },
+        { num: 34, label: 'Arranque eléctrico' },
+      ],
+    },
+    {
+      id: 'H', title: 'Estética y equipamiento', subtitle: '¿En qué estado está?',
+      points: [
+        { num: 35, label: 'Carenados y plásticos' },
+        { num: 36, label: 'Asiento, manetas y mandos' },
+        { num: 37, label: 'Escape original / homologado' },
+        { num: 38, label: 'Corrosión general' },
+      ],
+    },
+    {
+      id: 'I', title: 'Prueba dinámica', subtitle: '¿Cómo se comporta de verdad?',
+      points: [
+        { num: 39, label: 'Comportamiento y estabilidad en marcha' },
+        { num: 40, label: 'Frenada y respuesta a velocidad' },
+        { num: 41, label: 'Ruidos o vibraciones anómalas' },
+      ],
+    },
+  ],
+};
+
+// ===================== INMUEBLE (vivienda / local) =====================
+export const INSPECTION_CATALOG_INMUEBLE: Catalog = {
+  headerTitle: 'INFORME DE INSPECCIÓN',
+  headerSubtitle: 'Inmueble · revisión técnica independiente antes de comprar o alquilar',
+  headerFields: [
+    { key: 'direccion', label: 'Dirección' },
+    { key: 'tipo', label: 'Tipo (piso / casa / local)' },
+    { key: 'superficie', label: 'Superficie (m²)' },
+    { key: 'anio', label: 'Año de construcción' },
+    { key: 'ref_catastral', label: 'Referencia catastral' },
+    { key: 'precio', label: 'Precio pedido' },
+    { key: 'fecha_lugar', label: 'Fecha / lugar' },
+    { key: 'experto', label: 'Experto' },
+    { key: 'cliente', label: 'Cliente' },
+  ],
+  sections: [
+    {
+      id: 'A', title: 'Documentación y cargas', subtitle: '¿Es legal, sin deudas ni sorpresas?',
+      points: [
+        { num: 1, label: 'Nota simple: titularidad y descripción coinciden', required: true },
+        { num: 2, label: 'Sin cargas, hipotecas ni embargos', required: true },
+        { num: 3, label: 'Sin afecciones urbanísticas ni expediente' },
+        { num: 4, label: 'Certificado energético' },
+        { num: 5, label: 'Cédula de habitabilidad / licencia de ocupación' },
+        { num: 6, label: 'ITE / IEE del edificio (si aplica)' },
+        { num: 7, label: 'Deudas de comunidad e IBI al corriente' },
+      ],
+    },
+    {
+      id: 'B', title: 'Estructura y exterior', subtitle: '¿El edificio está sano?',
+      points: [
+        { num: 8, label: 'Fachada y cubierta: estado general' },
+        { num: 9, label: 'Grietas o fisuras estructurales' },
+        { num: 10, label: 'Humedades por cubierta o exterior' },
+        { num: 11, label: 'Terrazas y balcones' },
+      ],
+    },
+    {
+      id: 'C', title: 'Interior: paredes, suelos y techos', subtitle: '¿Cómo está por dentro?',
+      points: [
+        { num: 12, label: 'Humedades, manchas o moho interiores' },
+        { num: 13, label: 'Estado de suelos' },
+        { num: 14, label: 'Estado de paredes y techos' },
+        { num: 15, label: 'Carpintería interior (puertas)' },
+      ],
+    },
+    {
+      id: 'D', title: 'Carpintería exterior y aislamiento', subtitle: '¿Aísla bien?',
+      points: [
+        { num: 16, label: 'Ventanas: cierre y estanqueidad' },
+        { num: 17, label: 'Persianas y cierres' },
+        { num: 18, label: 'Aislamiento térmico / acústico aparente' },
+      ],
+    },
+    {
+      id: 'E', title: 'Fontanería y agua', subtitle: '¿El agua funciona y no hay fugas?',
+      points: [
+        { num: 19, label: 'Presión de agua' },
+        { num: 20, label: 'Fugas visibles' },
+        { num: 21, label: 'Baños: sanitarios y grifería' },
+        { num: 22, label: 'Cocina: tomas y desagües' },
+        { num: 23, label: 'Agua caliente (caldera / termo)' },
+      ],
+    },
+    {
+      id: 'F', title: 'Electricidad', subtitle: '¿La instalación es segura?',
+      points: [
+        { num: 24, label: 'Cuadro eléctrico y diferencial' },
+        { num: 25, label: 'Enchufes y puntos de luz' },
+        { num: 26, label: 'Estado / antigüedad de la instalación' },
+      ],
+    },
+    {
+      id: 'G', title: 'Gas y climatización', subtitle: '¿Calienta y enfría?',
+      points: [
+        { num: 27, label: 'Instalación de gas (si aplica)' },
+        { num: 28, label: 'Calefacción' },
+        { num: 29, label: 'Aire acondicionado' },
+      ],
+    },
+    {
+      id: 'H', title: 'Entorno y zonas comunes', subtitle: '¿Y lo de alrededor?',
+      points: [
+        { num: 30, label: 'Portal, escalera y ascensor' },
+        { num: 31, label: 'Ruido del entorno' },
+        { num: 32, label: 'Orientación y luz natural' },
+      ],
+    },
+  ],
+};
+
 export function allPoints(catalog: Catalog): CatalogPoint[] {
   return catalog.sections.flatMap((s) => s.points);
 }
 
 export function requiredPointNums(catalog: Catalog): number[] {
   return allPoints(catalog).filter((p) => p.required).map((p) => p.num);
+}
+
+/** Devuelve el catálogo de inspección que corresponde a una categoría (por
+ *  nombre), o null si esa categoría no tiene informe de inspección. */
+export function getInspectionCatalog(categoryName?: string | null): Catalog | null {
+  const k = (categoryName || '').toLowerCase();
+  if (!k) return null;
+  if (k.includes('coche')) return INSPECTION_CATALOG;
+  if (k.includes('moto')) return INSPECTION_CATALOG_MOTO;
+  if (k.includes('inmobili') || k.includes('inmueble') || k.includes('vivienda')
+    || k.includes('piso') || k.includes('casa') || k.includes('local')) return INSPECTION_CATALOG_INMUEBLE;
+  return null;
 }
