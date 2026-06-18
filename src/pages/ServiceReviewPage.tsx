@@ -60,6 +60,7 @@ import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
 import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
+import { type InspectionConfig } from '../lib/inspectionTemplateConfig';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
@@ -201,6 +202,11 @@ export function ServiceReviewPage({
     const inspectionPdfUrl: string =
       (finalService as { inspectionTemplatePdfUrl?: string | null } | null)?.inspectionTemplatePdfUrl
       || '/plantillas/inspeccion-coche.pdf';
+    const inspectionConfig: InspectionConfig | null = (() => {
+      const rawCfg = (finalService as { inspectionTemplateConfig?: string | null } | null)?.inspectionTemplateConfig;
+      if (!rawCfg) return null;
+      try { return JSON.parse(rawCfg) as InspectionConfig; } catch { return null; }
+    })();
 
     // Normalizar imageUrls - puede venir de diferentes fuentes
     const normalizeImageUrls = (urls: any): string[] => {
@@ -651,7 +657,7 @@ export function ServiceReviewPage({
                                         />
                                     ) : null}
                                     {showInspectionReport && (
-                                        <InspectionReportPreview pdfUrl={inspectionPdfUrl} />
+                                        <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
                                     )}
                                     {(expertLocationLabel || expertRange !== null) ? (
                                         <div className={`flex items-start gap-2 ${SD_MOBILE_META_CLASS}`}>
@@ -885,7 +891,7 @@ export function ServiceReviewPage({
                                 );
                             })()}
                             {showInspectionReport && (
-                                <InspectionReportPreview pdfUrl={inspectionPdfUrl} className="mt-3" />
+                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} className="mt-3" />
                             )}
                         </aside>
                     </div>
