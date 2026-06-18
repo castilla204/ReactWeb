@@ -185,10 +185,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
                     <DrawerClose asChild>
                       <button
                         type="button"
-                        className="-mr-1 shrink-0 rounded-full p-1.5 text-[#717171] transition-colors hover:bg-black/[0.04] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="-mr-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-[#6b7280] transition-colors hover:bg-black/[0.1] hover:text-[#1c1c1c] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label="Cerrar"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-[18px] w-[18px]" />
                       </button>
                     </DrawerClose>
                   </div>
@@ -225,10 +225,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           <DialogClose asChild>
             <button
               type="button"
-              className="shrink-0 rounded-full p-2 text-[#717171] ring-offset-background transition-colors hover:bg-[#f0f0f0] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-[#6b7280] ring-offset-background transition-colors hover:bg-black/[0.1] hover:text-[#1c1c1c] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="Cerrar"
             >
-              <X className="h-5 w-5" />
+              <X className="h-[18px] w-[18px]" />
             </button>
           </DialogClose>
         </div>
