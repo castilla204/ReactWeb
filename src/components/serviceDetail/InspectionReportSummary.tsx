@@ -1,26 +1,43 @@
-import { FileText } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Loader2 } from 'lucide-react';
 import { type Catalog } from '../../lib/inspectionCatalog';
 import { resolveTemplate, countActivePoints, type InspectionConfig } from '../../lib/inspectionTemplateConfig';
+import { buildTemplatePdf } from '../../lib/inspectionPdf';
 
 const short = (label: string) => label.split(':')[0].trim();
 
 /**
  * Vista SOLO LECTURA de la inspección que recibirá el cliente: los apartados
  * (secciones) y puntos elegidos por el experto, con el mismo lenguaje de chips
- * del panel, pero sin controles para modificar. Incluye enlace al PDF.
+ * del panel, pero sin controles para modificar. El botón genera el PDF al vuelo
+ * a partir del catálogo + config (siempre el de la categoría correcta).
  */
 export default function InspectionReportSummary({
     catalog,
     config,
-    pdfUrl,
 }: {
     catalog: Catalog;
     config: InspectionConfig | null;
-    pdfUrl?: string;
 }) {
+    const [generating, setGenerating] = useState(false);
     const t = resolveTemplate(catalog, config);
     const total = catalog.sections.reduce((a, s) => a + s.points.length, 0);
     const chip = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none';
+
+    const openPdf = async () => {
+        if (generating) return;
+        setGenerating(true);
+        try {
+            const blob = await buildTemplatePdf(resolveTemplate(catalog, config));
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 8000);
+        } catch (err) {
+            console.error('No se pudo generar el informe PDF', err);
+        } finally {
+            setGenerating(false);
+        }
+    };
 
     return (
         <div className="px-4 py-3 sm:px-5 sm:py-4">
@@ -51,18 +68,19 @@ export default function InspectionReportSummary({
                 ))}
             </div>
 
-            {pdfUrl && (
-                <div className="mt-4 border-t border-[hsl(var(--ep-border))] pt-3">
-                    <a
-                        href={pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[hsl(var(--brand))] hover:underline"
-                    >
-                        <FileText className="h-4 w-4" aria-hidden /> Ver el informe en PDF
-                    </a>
-                </div>
-            )}
+            <div className="mt-4 border-t border-[hsl(var(--ep-border))] pt-4">
+                <button
+                    type="button"
+                    onClick={openPdf}
+                    disabled={generating}
+                    className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ep-border))] bg-white px-4 py-2 text-[13px] font-semibold text-[hsl(var(--ep-ink))] transition-colors hover:border-[hsl(var(--ep-border-strong))] hover:bg-[hsl(var(--ep-canvas))] disabled:opacity-60"
+                >
+                    {generating
+                        ? <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--brand))]" aria-hidden />
+                        : <FileText className="h-4 w-4 text-[hsl(var(--brand))]" aria-hidden />}
+                    {generating ? 'Generando informe…' : 'Ver el informe en PDF'}
+                </button>
+            </div>
         </div>
     );
 }

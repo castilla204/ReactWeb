@@ -18,12 +18,10 @@ const short = (label: string) => label.split(':')[0].trim();
 export default function InspectionReportPreview({
     catalog,
     config,
-    pdfUrl,
     className,
 }: {
     catalog: Catalog;
     config: InspectionConfig | null;
-    pdfUrl?: string;
     className?: string;
 }) {
     const [open, setOpen] = useState(false);
@@ -77,7 +75,7 @@ export default function InspectionReportPreview({
                 title="Puntos de la inspección"
                 desktopSidePanel
             >
-                <InspectionReportSummary catalog={catalog} config={config} pdfUrl={pdfUrl} />
+                <InspectionReportSummary catalog={catalog} config={config} />
             </ResponsiveModal>
         </div>
     );
