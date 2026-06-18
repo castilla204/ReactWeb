@@ -827,11 +827,25 @@
 }
 
 /* 🏠 Detalle del punto fijo (puerta/piso/observaciones), solo en modo "Ubicación fija" */
+/* Tarjeta flotante sobre el mapa (mismo patrón que .pf-map-radius). En modo fijo el
+   espacio inferior está libre (no hay slider de radio), así que la anclamos abajo. */
 .pf-map-fixed-details {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 8px 0 10px;
+  gap: 6px;
+  padding: 10px 12px;
+  max-height: 56%;
+  overflow-y: auto;
+  border-radius: 10px;
+  background: hsl(0 0% 100% / 0.97);
+  box-shadow: 0 2px 14px hsl(220 25% 15% / 0.12);
+  border: 1px solid hsl(220 14% 92%);
+  pointer-events: auto;
 }
 
 .pf-map-fixed-details__hint {
