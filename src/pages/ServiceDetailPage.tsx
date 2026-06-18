@@ -242,6 +242,8 @@ const ServiceDetailPage: React.FC = () => {
     (service as any).inspectionTemplatePdfUrl ?? null;
   const inspectionPdfFallback = '/plantillas/inspeccion-coche.pdf';
 
+  const isCarService = (service.categoryName || '').toLowerCase().includes('coche');
+
   return (
     <>
       <SEO
@@ -253,18 +255,21 @@ const ServiceDetailPage: React.FC = () => {
         ogImage={service.imageUrls?.[0]}
         jsonLd={jsonLd}
       />
-      {(inspectionPdfUrl || inspectionPdfFallback) && (
+      {isCarService && (
         <div className="mx-auto max-w-3xl px-4 py-4">
           <p className="mb-1.5 text-sm font-semibold text-gray-700">Plantilla del informe de inspección</p>
           <p className="mb-2 text-xs text-gray-500">Este es el informe rellenable que recibirás tras la inspección.</p>
-          <a
-            href={inspectionPdfUrl ?? inspectionPdfFallback}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+          <object
+            data={inspectionPdfUrl ?? inspectionPdfFallback}
+            type="application/pdf"
+            className="w-full rounded-lg border border-gray-200 bg-gray-100"
+            style={{ height: '70vh' }}
           >
-            Ver plantilla PDF →
-          </a>
+            <p className="p-4 text-sm text-gray-600">
+              Tu navegador no puede mostrar el PDF.{' '}
+              <a href={inspectionPdfUrl ?? inspectionPdfFallback} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Abrir el informe →</a>
+            </p>
+          </object>
         </div>
       )}
       <ServiceReviewPage
