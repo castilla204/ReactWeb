@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { ResponsiveModal } from '../ui/responsive-modal';
-import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
+import { type Catalog } from '../../lib/inspectionCatalog';
 import { resolveTemplate, countActivePoints, type InspectionConfig } from '../../lib/inspectionTemplateConfig';
 import InspectionReportSummary from './InspectionReportSummary';
 import '../../styles/inspection-marquee.css';
@@ -16,16 +16,18 @@ const short = (label: string) => label.split(':')[0].trim();
  * lectura). Sustituye a la lista de entregables genérica (no se duplica).
  */
 export default function InspectionReportPreview({
+    catalog,
     config,
     pdfUrl,
     className,
 }: {
+    catalog: Catalog;
     config: InspectionConfig | null;
     pdfUrl?: string;
     className?: string;
 }) {
     const [open, setOpen] = useState(false);
-    const t = resolveTemplate(INSPECTION_CATALOG, config);
+    const t = resolveTemplate(catalog, config);
     const points = countActivePoints(t);
     const allPoints = t.sections.flatMap((s) => s.points);
     // Cinta lenta y tranquila: ~2.6 s por punto.
@@ -75,7 +77,7 @@ export default function InspectionReportPreview({
                 title="Puntos de la inspección"
                 desktopSidePanel
             >
-                <InspectionReportSummary config={config} pdfUrl={pdfUrl} />
+                <InspectionReportSummary catalog={catalog} config={config} pdfUrl={pdfUrl} />
             </ResponsiveModal>
         </div>
     );

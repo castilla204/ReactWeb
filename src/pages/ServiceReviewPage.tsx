@@ -6,7 +6,6 @@ import {
     X,
     Heart,
     Image,
-    MapPin,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
 import FormacionPhotoOverlay from '../components/serviceDetail/FormacionPhotoOverlay';
@@ -24,7 +23,6 @@ import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDet
 import { ServiceDetailDesktopBookingAside } from '../components/serviceDetail/ServiceDetailDesktopBookingAside';
 import { pickPreviewReviews } from '../utils/reviewRatingDistribution';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
-import { EscrowTrustLine } from '../components/EscrowTrustLine';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
 import {
@@ -54,13 +52,14 @@ import {
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
-import { readWorkRadiusKm, formatWorkRadiusExplanation, formatWorkRadius } from '../utils/workRadius';
+import { readWorkRadiusKm } from '../utils/workRadius';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
 import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
 import { type InspectionConfig } from '../lib/inspectionTemplateConfig';
+import { getInspectionCatalog } from '../lib/inspectionCatalog';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
@@ -195,10 +194,13 @@ export function ServiceReviewPage({
 
     const service = serviceProp || services.find(s => s.id === serviceId);
     const finalService: Service | null = service || null;
-    // Informe de inspección: solo en servicios de coche; cae a la plantilla base.
-    const showInspectionReport = ((finalService as { categoryName?: string } | null)?.categoryName || '')
-      .toLowerCase()
-      .includes('coche');
+    // Informe de inspección: catálogo según la categoría del servicio (coche, moto,
+    // inmueble…); null = esa categoría no tiene informe. Cae a la plantilla base si
+    // no hay PDF personalizado.
+    const inspectionCatalog = getInspectionCatalog(
+      (finalService as { categoryName?: string } | null)?.categoryName,
+    );
+    const showInspectionReport = inspectionCatalog != null;
     const inspectionPdfUrl: string =
       (finalService as { inspectionTemplatePdfUrl?: string | null } | null)?.inspectionTemplatePdfUrl
       || '/plantillas/inspeccion-coche.pdf';
@@ -659,7 +661,7 @@ export function ServiceReviewPage({
                                     ) : null}
                                     {showInspectionReport ? (
                                         <>
-                                            <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                            <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
                                             {nonPdfDeliverableTypes.length > 0 ? (
                                                 <ServiceDetailDeliverablesGuide
                                                     items={nonPdfDeliverableTypes}
@@ -674,24 +676,6 @@ export function ServiceReviewPage({
                                             items={finalDeliverableTypes}
                                             variant="inline"
                                         />
-                                    ) : null}
-                                    {(expertLocationLabel || expertRange !== null) ? (
-                                        <div className={`flex items-start gap-2 ${SD_MOBILE_META_CLASS}`}>
-                                            <MapPin size={16} className="mt-0.5 shrink-0 text-[#1C63B4]" />
-                                            <span>
-                                                {expertLocationLabel ? (
-                                                    <span className="font-medium text-[#1c1c1c]">
-                                                        {expertLocationLabel}
-                                                    </span>
-                                                ) : null}
-                                                {expertLocationLabel && expertRange !== null ? (
-                                                    <br />
-                                                ) : null}
-                                                {expertRange !== null
-                                                    ? formatWorkRadiusExplanation(expertRange)
-                                                    : null}
-                                            </span>
-                                        </div>
                                     ) : null}
                                 </div>
                             )}
@@ -794,9 +778,6 @@ export function ServiceReviewPage({
                                     rating={finalRating > 0 ? finalRating : undefined}
                                     reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
                                     formacion={finalExpertFormacion}
-                                    coverageLabel={
-                                        expertRange !== null ? formatWorkRadius(expertRange) : null
-                                    }
                                     onAvatarClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
@@ -826,7 +807,7 @@ export function ServiceReviewPage({
                                         {showInspectionReport ? (
                                             <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
                                                 <h2 className="hp-section-title mb-3">Qué incluye</h2>
-                                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
                                                 {nonPdfDeliverableTypes.length > 0 ? (
                                                     <div className="mt-3">
                                                         <ServiceDetailDeliverablesGuide
@@ -857,7 +838,6 @@ export function ServiceReviewPage({
                                     </div>
                                 )}
 
-                                <EscrowTrustLine className="mt-5 border-t border-[#ebebeb] pt-4" />
                             </article>
                         </div>
 

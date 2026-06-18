@@ -27,7 +27,7 @@ export async function buildTemplatePdf(t: ResolvedTemplate): Promise<Blob> {
   let y = A4[1] - MARGIN;
 
   const footer = (p: PDFPage) => {
-    p.drawText('inspecciono.com · Revisión independiente de coche de ocasión', {
+    p.drawText('inspecciono.com · Revisión independiente', {
       x: MARGIN, y: 24, size: 8, font, color: GREY,
     });
   };
@@ -35,9 +35,9 @@ export async function buildTemplatePdf(t: ResolvedTemplate): Promise<Blob> {
   const ensure = (need: number) => { if (y - need < 50) newPage(); };
 
   // --- Título ---
-  page.drawText('INFORME DE INSPECCIÓN', { x: MARGIN, y: y - 6, size: 18, font: bold, color: DARK });
+  page.drawText(t.headerTitle, { x: MARGIN, y: y - 6, size: 18, font: bold, color: DARK });
   y -= 24;
-  page.drawText('Coche de ocasión · revisión independiente antes de comprar', {
+  page.drawText(t.headerSubtitle, {
     x: MARGIN, y, size: 9, font, color: GREY,
   });
   y -= 26;

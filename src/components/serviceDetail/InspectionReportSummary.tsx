@@ -1,5 +1,5 @@
 import { FileText } from 'lucide-react';
-import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
+import { type Catalog } from '../../lib/inspectionCatalog';
 import { resolveTemplate, countActivePoints, type InspectionConfig } from '../../lib/inspectionTemplateConfig';
 
 const short = (label: string) => label.split(':')[0].trim();
@@ -10,20 +10,22 @@ const short = (label: string) => label.split(':')[0].trim();
  * del panel, pero sin controles para modificar. Incluye enlace al PDF.
  */
 export default function InspectionReportSummary({
+    catalog,
     config,
     pdfUrl,
 }: {
+    catalog: Catalog;
     config: InspectionConfig | null;
     pdfUrl?: string;
 }) {
-    const t = resolveTemplate(INSPECTION_CATALOG, config);
-    const total = INSPECTION_CATALOG.sections.reduce((a, s) => a + s.points.length, 0);
+    const t = resolveTemplate(catalog, config);
+    const total = catalog.sections.reduce((a, s) => a + s.points.length, 0);
     const chip = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none';
 
     return (
         <div className="px-4 py-3 sm:px-5 sm:py-4">
             <p className="mb-4 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">
-                Puntos que el experto revisará en tu vehículo · {countActivePoints(t)} de {total} · {t.sections.length} secciones.
+                Puntos que revisará el experto · {countActivePoints(t)} de {total} · {t.sections.length} secciones.
             </p>
 
             <div className="divide-y divide-[hsl(var(--ep-border))]">
