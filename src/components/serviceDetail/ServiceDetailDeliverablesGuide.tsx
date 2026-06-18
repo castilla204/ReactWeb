@@ -55,6 +55,8 @@ interface ServiceDetailDeliverablesGuideProps {
   /** chips = pills (móvil/checkout); list = filas editoriales (ficha desktop) */
   presentation?: 'chips' | 'list';
   showHeading?: boolean;
+  /** Oculta el icono/badge de tipo en las filas (lista limpia solo con texto). */
+  hideIcon?: boolean;
   className?: string;
 }
 
@@ -145,6 +147,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   variant = 'overlay',
   presentation = 'chips',
   showHeading = true,
+  hideIcon = false,
   className = '',
 }) => {
   const visible = normalizeDeliverableTypes(items);
@@ -230,7 +233,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
-              <DeliverableTypeIcon deliverable={dt} variant="list" />
+              {!hideIcon ? <DeliverableTypeIcon deliverable={dt} variant="list" /> : null}
               <span className="sd-deliverable-list-label">{label}</span>
               <ChevronRight className="sd-deliverable-list-chevron" aria-hidden />
             </button>

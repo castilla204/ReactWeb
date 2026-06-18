@@ -664,6 +664,9 @@ export function ServiceReviewPage({
                                                 <ServiceDetailDeliverablesGuide
                                                     items={nonPdfDeliverableTypes}
                                                     variant="inline"
+                                                    presentation="list"
+                                                    showHeading={false}
+                                                    hideIcon
                                                 />
                                             ) : null}
                                         </>
@@ -854,6 +857,8 @@ export function ServiceReviewPage({
                                                             items={nonPdfDeliverableTypes}
                                                             variant="inline"
                                                             presentation="list"
+                                                            showHeading={false}
+                                                            hideIcon
                                                         />
                                                     </div>
                                                 ) : null}
