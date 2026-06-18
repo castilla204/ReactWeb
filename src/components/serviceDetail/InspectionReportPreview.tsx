@@ -4,12 +4,15 @@ import { ResponsiveModal } from '../ui/responsive-modal';
 import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
 import { resolveTemplate, countActivePoints, type InspectionConfig } from '../../lib/inspectionTemplateConfig';
 import InspectionReportSummary from './InspectionReportSummary';
+import '../../styles/inspection-marquee.css';
+
+const short = (label: string) => label.split(':')[0].trim();
 
 /**
- * Tarjeta del detalle del servicio. El propio botón muestra TODOS los puntos
- * elegidos por el experto como círculos numerados (preview compacto); al pulsar
- * abre un modal (escritorio) / drawer (móvil) con el detalle por secciones y
- * etiquetas, en SOLO LECTURA.
+ * Tarjeta del detalle del servicio (va dentro de "Qué incluye"). El propio
+ * botón muestra los puntos de la inspección "pasando" en una cinta animada;
+ * al pulsar abre un modal (escritorio) / drawer (móvil) con el detalle por
+ * secciones, en SOLO LECTURA.
  */
 export default function InspectionReportPreview({
     config,
@@ -24,6 +27,8 @@ export default function InspectionReportPreview({
     const t = resolveTemplate(INSPECTION_CATALOG, config);
     const points = countActivePoints(t);
     const allPoints = t.sections.flatMap((s) => s.points);
+    // Duración proporcional al nº de puntos (más puntos = cinta más larga).
+    const durationS = Math.max(24, Math.round(allPoints.length * 0.9));
 
     return (
         <div className={className}>
@@ -46,22 +51,25 @@ export default function InspectionReportPreview({
                         </span>
                     </div>
                     <span className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[hsl(var(--brand))]">
-                        Ver
+                        Ver todos
                         <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
                     </span>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                    {allPoints.map((p) => (
-                        <span
-                            key={p.fieldName}
-                            className={`inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full border px-1 text-[11px] font-semibold tabular-nums ${p.custom
-                                ? 'border-[hsl(var(--brand)/0.3)] bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))]'
-                                : 'border-[hsl(var(--ep-border))] bg-[hsl(var(--ep-canvas))] text-[hsl(var(--ep-muted))]'}`}
-                        >
-                            {p.displayNum}
-                        </span>
-                    ))}
+                <div className="insp-marquee">
+                    <div className="insp-marquee__track" style={{ '--insp-dur': `${durationS}s` } as React.CSSProperties}>
+                        {[...allPoints, ...allPoints].map((p, i) => (
+                            <span
+                                key={i}
+                                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none ${p.custom
+                                    ? 'border-[hsl(var(--brand)/0.3)] bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))]'
+                                    : 'border-[hsl(var(--ep-border))] bg-[hsl(var(--ep-canvas))] text-[hsl(var(--ep-ink))]'}`}
+                            >
+                                <span className="tabular-nums text-[hsl(var(--ep-muted))]">{p.displayNum}</span>
+                                {short(p.label)}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             </button>
 
