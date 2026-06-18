@@ -49,7 +49,9 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
   };
   const preview = async () => {
     const blob = await buildTemplatePdf(resolveTemplate(INSPECTION_CATALOG, cfg));
-    window.open(URL.createObjectURL(blob), '_blank');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
   return (
@@ -103,7 +105,7 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
                 })}
                 {customs.map((c, i) => (
                   <button
-                    type="button" key={`c${i}`} onClick={() => removeCustom(sec.id, i)}
+                    type="button" key={`${sec.id}-custom-${i}`} onClick={() => removeCustom(sec.id, i)}
                     className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-indigo-500 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700"
                   >
                     {c.label} <span className="opacity-60">✕</span>
