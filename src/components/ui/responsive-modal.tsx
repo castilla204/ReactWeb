@@ -171,7 +171,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
                   </div>
                 )}
                 {title && (
-                  <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-0.5 md:px-6">
+                  <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-0.5 md:px-6">
                     <div className="min-w-0 pr-1">
                       <h2 className="font-display text-[16px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
                         {title}
@@ -211,7 +211,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         )}
         style={{ background: AUTH_SURFACE_GRADIENT }}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 pr-2">
             <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
               {title}
@@ -282,7 +282,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             )}
             style={{ background: AUTH_SURFACE_GRADIENT }}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 pr-2">
                 <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
                   {title}
