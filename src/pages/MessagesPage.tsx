@@ -422,7 +422,7 @@ export function MessagesPage() {
                     title="Mis mensajes"
                     counter="Cargando conversaciones…"
                 />
-                <main className="w-full flex-1 px-0 pb-6 pt-1 sm:px-4 md:max-w-[380px] md:border-r md:border-[#ededed]">
+                <main className="w-full flex-1 px-0 pb-6 pt-1 md:max-w-[380px]">
                     <ul className="flex flex-col" aria-hidden>
                         {Array.from({ length: 7 }).map((_, i) => (
                             <li key={i}>
@@ -496,9 +496,9 @@ export function MessagesPage() {
             {/* Cuerpo: una columna en móvil · dos paneles (lista + conversación) en desktop */}
             <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(330px,380px)_minmax(0,1fr)]">
                 {/* ----- Panel lista ----- */}
-                <section className="flex min-h-0 min-w-0 flex-col md:border-r md:border-[#ededed]">
+                <section className="flex min-h-0 min-w-0 flex-col md:bg-[#fafafa]">
                     {(showSearch || showFilters) && (
-                        <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:pt-3.5">
+                        <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:px-3.5 md:pt-3">
                             {showSearch && (
                                 <div className="flex items-center gap-2">
                                     {/* Volver — solo móvil (en desktop el botón vive en la cabecera del panel) */}
@@ -564,7 +564,7 @@ export function MessagesPage() {
                                 </ul>
 
                                 {visibleConversations.length < 3 && (
-                                    <div className="px-4 pt-5 text-center">
+                                    <div className="px-3 pt-5 text-center md:px-3.5">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/crear-busqueda')}
@@ -688,7 +688,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
     onConversationLoaded,
 }) => (
     <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
-        <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
             <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
                 <AvatarImage
                     src={conversation.expertProfilePictureUrl || undefined}
@@ -776,7 +776,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
 
     return (
         <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
                 <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
                     <AvatarImage
                         src={conversation.expertProfilePictureUrl || undefined}
@@ -840,8 +840,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onBack, title, counter }) => (
-    <header className="hidden shrink-0 border-b border-[#ededed] bg-white md:block">
-        <div className="flex items-center gap-3 px-5 py-3.5">
+    <header className="hidden shrink-0 border-b border-[#f0f0f0] bg-white md:block">
+        <div className="flex items-center gap-3 px-3.5 py-3">
             <button
                 type="button"
                 onClick={onBack}
@@ -947,7 +947,7 @@ const FilterPills: React.FC<FilterPillsProps> = ({ value, onChange, counts }) =>
 
 const SkeletonRow: React.FC<{ index: number; isLast: boolean }> = ({ index, isLast }) => (
     <div
-        className="relative flex w-full items-center gap-3 px-4 py-3 animate-fade-in motion-reduce:animate-none"
+        className="relative flex w-full items-center gap-3 px-3 py-3 animate-fade-in motion-reduce:animate-none md:px-3.5"
         style={{ animationDelay: `${index * 55}ms` }}
     >
         <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-[#f0f0f0]" />
@@ -959,7 +959,7 @@ const SkeletonRow: React.FC<{ index: number; isLast: boolean }> = ({ index, isLa
             <div className="h-3 w-3/4 animate-pulse rounded-full bg-[#f4f4f4]" />
         </div>
         {!isLast && (
-            <span className="pointer-events-none absolute bottom-0 left-[80px] right-0 h-px bg-[#f1f1f1]" />
+            <span className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f1f1f1]" />
         )}
     </div>
 );
@@ -1053,7 +1053,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                 isUnread ? ` ${unread} sin leer.` : ''
             }${chip ? ` Estado: ${chip.label}.` : ''}`}
             className={[
-                'group relative flex w-full items-center gap-3 px-4 py-3 text-left',
+                'group relative flex w-full items-center gap-3 px-3 py-3 text-left md:px-3.5',
                 'transition-colors duration-150',
                 isActive
                     ? 'md:bg-brand/[0.06] md:hover:bg-brand/[0.06]'
@@ -1143,7 +1143,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
             {/* Separador inset (alineado con el texto), estilo iMessage */}
             {!isLast && (
                 <span
-                    className="pointer-events-none absolute bottom-0 left-[80px] right-0 h-px bg-[#f0f0f0]"
+                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f0f0f0]"
                     aria-hidden
                 />
             )}

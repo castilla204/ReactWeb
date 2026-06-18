@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Loader2, Pencil, Trash2, Plus, Search } from 'lucide-react';
 import { formatCurrency } from '../../utils/priceUtils';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '../../lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -33,7 +33,6 @@ interface ServicesTabProps {
     services: Service[];
     isLoadingServices: boolean;
     servicesError: Error | null;
-    showServiceForm: boolean;
     setShowServiceForm: (value: boolean) => void;
     currentImageIndex: { [key: number]: number };
     goToPreviousImage: (serviceId: number) => void;
@@ -48,7 +47,6 @@ interface ServicesTabProps {
     hasLocation?: boolean;
     profileIncomplete?: boolean;
     onGoToSetup?: () => void;
-    serviceEditor?: React.ReactNode;
 }
 
 type VisibilityTone = 'visible' | 'paused' | 'hidden' | 'location';
@@ -86,28 +84,27 @@ function getVisibilityMeta(
     return { label: 'Visible', tone: 'visible' };
 }
 
-function stripHtmlToText(raw: string): string {
-    return raw
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
+const STATUS_CLASS: Record<VisibilityTone, string> = {
+    visible: 'expert-service-status--visible',
+    paused: 'expert-service-status--paused',
+    hidden: 'expert-service-status--hidden',
+    location: 'expert-service-status--location',
+};
 
 function ServiceRowSkeleton() {
     return (
-        <li className="expert-service-row expert-service-row--skeleton" aria-hidden>
-            <div className="expert-service-media">
-                <Skeleton className="expert-service-thumb !rounded-none" />
+        <div className="sf-services__day sf-services__day--skeleton" aria-hidden>
+            <div className="sf-services__row">
+                <Skeleton className="sf-services__media !rounded-none" />
+                <div className="sf-services__info">
+                    <Skeleton className="h-4 w-36 rounded" />
+                    <Skeleton className="mt-2 h-3 w-28 rounded" />
+                </div>
+                <div className="sf-services__actions">
+                    <Skeleton className="h-9 w-[76px] rounded-lg" />
+                </div>
             </div>
-            <div className="expert-service-body">
-                <Skeleton className="h-4 w-44 rounded" />
-                <Skeleton className="h-3 w-full max-w-md rounded mt-2" />
-            </div>
-            <Skeleton className="h-8 w-20 rounded hidden sm:block" />
-        </li>
+        </div>
     );
 }
 
@@ -124,7 +121,6 @@ export function ServicesTab({
     hasLocation,
     profileIncomplete,
     onGoToSetup,
-    serviceEditor,
     deleteService,
     onEditService,
 }: ServicesTabProps) {
@@ -156,25 +152,12 @@ export function ServicesTab({
         });
     }, [services, searchQuery, categories]);
 
-    const showMobileActionBar =
-        activeTab === 'services' && !serviceEditor && !isLoadingServices && !servicesError;
-
-    useEffect(() => {
-        window.dispatchEvent(
-            new CustomEvent('expert-services-mobile-bar', { detail: { active: showMobileActionBar } }),
-        );
-        return () => {
-            window.dispatchEvent(
-                new CustomEvent('expert-services-mobile-bar', { detail: { active: false } }),
-            );
-        };
-    }, [showMobileActionBar]);
+    const visibleCount = useMemo(
+        () => services.filter((s) => getVisibilityMeta(s, visCtx).tone === 'visible').length,
+        [services, visCtx],
+    );
 
     if (!activeTab || activeTab !== 'services') return null;
-
-    if (serviceEditor) {
-        return <>{serviceEditor}</>;
-    }
 
     const handleDeleteService = async (serviceId: number) => {
         if (!deleteService) return;
@@ -199,179 +182,250 @@ export function ServicesTab({
         ? services.find((s) => s.id === deleteTargetId)
         : null;
 
-    return (
-        <div className={`expert-services${showMobileActionBar ? ' expert-services--mobile-action' : ''}`}>
-            {profileIncomplete && onGoToSetup && (
-                <p className="expert-services-hint" role="status">
-                    Completa tu perfil para que tus servicios sean visibles.{' '}
-                    <button type="button" onClick={onGoToSetup} className="expert-services-hint-link">
-                        Ir a configuración
-                    </button>
-                </p>
-            )}
-
-            {!isLoadingServices && !servicesError && services.length > 0 && (
-                <header className="expert-services-bar">
-                    <label className="expert-services-search-wrap">
-                        <Search aria-hidden className="expert-services-search-icon" />
-                        <Input
-                            type="search"
-                            placeholder="Buscar…"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="expert-services-search"
-                        />
-                    </label>
-                    <span className="expert-services-bar-spacer" aria-hidden="true" />
-                    <Button
-                        onClick={() => setShowServiceForm(true)}
-                        size="sm"
-                        variant="outline"
-                        className="expert-services-add"
-                        disabled={profileIncomplete}
-                    >
-                        <Plus aria-hidden className="expert-services-add-icon" />
-                        Nuevo servicio
-                    </Button>
-                </header>
-            )}
-
+    const catalogStats = (
+        <>
             {isLoadingServices ? (
-                <ul className="expert-services-list" aria-busy="true" aria-label="Cargando servicios">
-                    {[0, 1, 2].map((i) => (
-                        <ServiceRowSkeleton key={i} />
-                    ))}
-                </ul>
+                <span>Cargando catálogo…</span>
             ) : servicesError ? (
-                <div className="expert-services-state expert-services-state--error" role="alert">
-                    <p className="expert-services-state-title">No se pudieron cargar los servicios</p>
-                    <p className="expert-services-state-text">{servicesError.message}</p>
-                </div>
+                <span>No se pudieron cargar</span>
             ) : services.length === 0 ? (
-                <div className="expert-services-state" role="status">
-                    <p className="expert-services-state-title">Aún no tienes servicios</p>
-                    <p className="expert-services-state-text">
-                        Publica tu primer servicio con categoría, precio y condiciones para aparecer en búsquedas.
-                    </p>
-                    <Button
-                        className="expert-btn-brand mt-5 expert-services-state-cta"
-                        onClick={() => setShowServiceForm(true)}
-                        disabled={profileIncomplete}
-                    >
-                        Crear primer servicio
-                    </Button>
-                </div>
+                <span>Sin servicios publicados</span>
             ) : (
                 <>
-                    <div className="expert-services-list-head" aria-hidden="true">
-                        <span className="expert-services-list-head-media" />
-                        <span className="expert-services-list-head-label">Servicio</span>
-                        <span className="expert-services-list-head-label expert-services-list-head-label--end">Precio</span>
-                    </div>
-                    <ul className="expert-services-list" aria-label="Lista de servicios">
-                    {filteredAndSortedServices.length === 0 ? (
-                        <li className="expert-services-empty-filter">
-                            <p>No hay resultados para &ldquo;{searchQuery}&rdquo;</p>
-                            <button type="button" className="expert-services-hint-link" onClick={() => setSearchQuery('')}>
-                                Limpiar búsqueda
-                            </button>
-                        </li>
-                    ) : (
-                        filteredAndSortedServices.map((service) => {
-                            const category = categories?.find((c) => {
-                                const catId = c.id ?? (c as { Id?: number }).Id;
-                                return catId === service.categoryId;
-                            });
-                            const categoryName =
-                                category?.name ?? (category as { Name?: string })?.Name ?? service.categoryName ?? 'Sin categoría';
-                            const serviceTypeName =
-                                service.serviceTypeName ?? (service as { ServiceTypeName?: string }).ServiceTypeName ?? '';
-                            const imageUrl =
-                                service.imageUrls?.length > 0 ? service.imageUrls[0] : null;
-                            const vis = getVisibilityMeta(service, visCtx);
-                            const currencyCode = (service.priceCurrency ?? service.currency ?? 'EUR')
-                                .toString()
-                                .trim()
-                                .toUpperCase();
-                            const descriptionText = stripHtmlToText(service.conditions || '');
-
-                            return (
-                                <li
-                                    key={service.id}
-                                    className={`expert-service-row expert-service-row--${vis.tone}`}
-                                >
-                                    <div className="expert-service-media">
-                                        {imageUrl ? (
-                                            <img
-                                                src={imageUrl}
-                                                alt=""
-                                                className="expert-service-thumb"
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <span className="expert-service-thumb expert-service-thumb--empty" aria-hidden>
-                                                {categoryName.slice(0, 1).toUpperCase()}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="expert-service-body">
-                                        <h3 className="expert-service-title">{categoryName}</h3>
-                                        <div className="expert-service-meta">
-                                            {serviceTypeName ? (
-                                                <span className="expert-service-type">{serviceTypeName}</span>
-                                            ) : null}
-                                            <span className={`expert-service-status expert-service-status--${vis.tone}`}>
-                                                <span className="expert-service-status-dot" aria-hidden />
-                                                {vis.label}
-                                            </span>
-                                        </div>
-                                        {descriptionText && (
-                                            <p className="expert-service-desc">{descriptionText}</p>
-                                        )}
-                                        {vis.hint && vis.tone !== 'visible' && (
-                                            <p className="expert-service-hint">{vis.hint}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="expert-service-end">
-                                        <div className="expert-service-price-block">
-                                            <span className="expert-service-price">
-                                                {formatCurrency(service.price, currencyCode)}
-                                            </span>
-                                            <span className="expert-service-price-sub">
-                                                IVA incl.
-                                                {service.durationInHours != null && service.durationInHours > 0 && (
-                                                    <> · {service.durationInHours} h</>
-                                                )}
-                                            </span>
-                                        </div>
-                                        <div className="expert-service-actions">
-                                            <button
-                                                type="button"
-                                                className="expert-service-action"
-                                                onClick={() => onEditService?.(service)}
-                                                aria-label={`Editar ${categoryName}`}
-                                            >
-                                                <Pencil aria-hidden className="expert-service-action-icon" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="expert-service-action expert-service-action--danger"
-                                                onClick={() => setDeleteTargetId(service.id)}
-                                                aria-label={`Eliminar ${categoryName}`}
-                                            >
-                                                <Trash2 aria-hidden className="expert-service-action-icon" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </li>
-                            );
-                        })
-                    )}
-                </ul>
+                    <span>{services.length} en catálogo</span>
+                    <span className="av-calendar__stats-sep" aria-hidden>·</span>
+                    <span>{visibleCount} visible{visibleCount === 1 ? '' : 's'}</span>
                 </>
             )}
+        </>
+    );
+
+    return (
+        <div className="av-page">
+            <header className="av-page-intro">
+                <p className="av-page-intro__lead">
+                    Cada <strong>servicio</strong> fija categoría, precio y condiciones de lo que ofreces.
+                    Mantén la lista al día y publica nuevos cuando amplies tu catálogo.
+                </p>
+                <ol className="av-page-intro__steps" aria-label="Cómo gestionar servicios">
+                    <li>Revisa precio y visibilidad de cada fila</li>
+                    <li>Pulsa <strong>Nuevo servicio</strong> para añadir otro</li>
+                </ol>
+                {profileIncomplete && onGoToSetup && (
+                    <div className="pf-profile-pending-banner">
+                        <p className="pf-profile-pending-banner__text">
+                            Tus servicios no aparecen en búsquedas hasta completar los requisitos obligatorios.
+                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="pf-profile-pending-banner__cta"
+                            onClick={onGoToSetup}
+                        >
+                            Ir a configuración
+                        </Button>
+                    </div>
+                )}
+            </header>
+
+            <section className="av-calendar sf-services-catalog" aria-labelledby="sf-services-heading">
+                <div className="av-calendar__main">
+                    <div className="av-calendar__toolbar sf-services-catalog__toolbar">
+                        <div className="sf-services-catalog__toolbar-main">
+                            <div className="sf-services-catalog__toolbar-head">
+                                <h3 id="sf-services-heading" className="av-calendar__month">
+                                    Tus servicios
+                                </h3>
+                                {services.length > 0 && (
+                                    <Button
+                                        type="button"
+                                        className="pf-btn-save sf-services-catalog__add-mobile"
+                                        onClick={() => setShowServiceForm(true)}
+                                        disabled={profileIncomplete || isLoadingServices}
+                                    >
+                                        <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                                        Crear servicio
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="av-calendar__stats sf-services-catalog__stats--mobile">
+                                {catalogStats}
+                            </div>
+                            <div className="av-calendar__stats sf-services-catalog__stats--desktop">
+                                {catalogStats}
+                            </div>
+                        </div>
+                        <div className="av-calendar__toolbar-actions sf-services-catalog__add-desktop">
+                            <Button
+                                type="button"
+                                className="pf-btn-save"
+                                onClick={() => setShowServiceForm(true)}
+                                disabled={profileIncomplete || isLoadingServices}
+                            >
+                                <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                                Nuevo servicio
+                            </Button>
+                        </div>
+                    </div>
+
+                    {!isLoadingServices && !servicesError && services.length > 0 && (
+                        <label className="sf-services-catalog__search sf-services-catalog__search--desktop">
+                            <Search className="sf-services-catalog__search-icon" aria-hidden />
+                            <input
+                                type="search"
+                                className="sf-services-catalog__search-input"
+                                placeholder="Buscar por categoría o tipo…"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </label>
+                    )}
+
+                    {isLoadingServices ? (
+                        <div className="sf-services__days">
+                            {[0, 1, 2].map((i) => (
+                                <ServiceRowSkeleton key={i} />
+                            ))}
+                        </div>
+                    ) : servicesError ? (
+                        <p className="av-calendar__alert av-calendar__alert--error" role="alert">
+                            {servicesError.message}
+                        </p>
+                    ) : services.length === 0 ? (
+                        <div className="av-calendar__empty" role="status">
+                            <p className="av-calendar__empty-title">Aún no tienes servicios</p>
+                            <p className="av-calendar__empty-text">
+                                Añade categoría, precio y condiciones para que los clientes puedan contratarte.
+                            </p>
+                            <Button
+                                type="button"
+                                className="pf-btn-save mt-4"
+                                onClick={() => setShowServiceForm(true)}
+                                disabled={profileIncomplete}
+                            >
+                                Crear primer servicio
+                            </Button>
+                        </div>
+                    ) : filteredAndSortedServices.length === 0 ? (
+                        <div className="av-calendar__empty" role="status">
+                            <p className="av-calendar__empty-title">
+                                Sin resultados para &ldquo;{searchQuery}&rdquo;
+                            </p>
+                            <button
+                                type="button"
+                                className="sf-services-catalog__clear"
+                                onClick={() => setSearchQuery('')}
+                            >
+                                Limpiar búsqueda
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="sf-services__days">
+                            {filteredAndSortedServices.map((service) => {
+                                const category = categories?.find((c) => {
+                                    const catId = c.id ?? (c as { Id?: number }).Id;
+                                    return catId === service.categoryId;
+                                });
+                                const categoryName =
+                                    category?.name
+                                    ?? (category as { Name?: string })?.Name
+                                    ?? service.categoryName
+                                    ?? 'Sin categoría';
+                                const serviceTypeName =
+                                    service.serviceTypeName
+                                    ?? (service as { ServiceTypeName?: string }).ServiceTypeName
+                                    ?? '';
+                                const imageUrl = service.imageUrls?.length > 0 ? service.imageUrls[0] : null;
+                                const vis = getVisibilityMeta(service, visCtx);
+                                const currencyCode = (service.priceCurrency ?? service.currency ?? 'EUR')
+                                    .toString()
+                                    .trim()
+                                    .toUpperCase();
+
+                                return (
+                                    <article
+                                        key={service.id}
+                                        className={cn(
+                                            'sf-services__day',
+                                            vis.tone === 'visible' && 'sf-services__day--visible',
+                                        )}
+                                    >
+                                        <div className="sf-services__row">
+                                            <div className="sf-services__media" aria-hidden>
+                                                {imageUrl ? (
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        className="sf-services__thumb"
+                                                    />
+                                                ) : (
+                                                    <span className="sf-services__thumb sf-services__thumb-fallback">
+                                                        {categoryName.slice(0, 1).toUpperCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="sf-services__info">
+                                                <h4 className="sf-services__title">{categoryName}</h4>
+                                                <div className="sf-services__head">
+                                                    {serviceTypeName ? (
+                                                        <span className="sf-services__type">{serviceTypeName}</span>
+                                                    ) : null}
+                                                    <span
+                                                        className={cn(
+                                                            'expert-service-status',
+                                                            STATUS_CLASS[vis.tone],
+                                                        )}
+                                                    >
+                                                        <span className="expert-service-status-dot" aria-hidden />
+                                                        {vis.label}
+                                                    </span>
+                                                </div>
+                                                {vis.hint && vis.tone !== 'visible' ? (
+                                                    <p className="expert-service-hint">{vis.hint}</p>
+                                                ) : null}
+                                                <div className="sf-services__price expert-service-price-block">
+                                                    <span className="expert-service-price">
+                                                        {formatCurrency(service.price, currencyCode)}
+                                                    </span>
+                                                    <span className="expert-service-price-sub">
+                                                        IVA incl.
+                                                        {service.durationInHours != null
+                                                            && service.durationInHours > 0 && (
+                                                            <> · {service.durationInHours} h</>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="sf-services__actions expert-service-actions">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onEditService?.(service)}
+                                                    aria-label={`Editar ${categoryName}`}
+                                                    className="expert-service-action"
+                                                >
+                                                    <Pencil className="expert-service-action-icon" aria-hidden />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDeleteTargetId(service.id)}
+                                                    aria-label={`Eliminar ${categoryName}`}
+                                                    className="expert-service-action expert-service-action--danger"
+                                                >
+                                                    <Trash2 className="expert-service-action-icon" aria-hidden />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </section>
 
             <Dialog open={deleteTargetId != null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
                 <DialogContent className="sm:max-w-md">
@@ -404,19 +458,6 @@ export function ServicesTab({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            {showMobileActionBar && (
-                <div className="expert-services-mobile-bar">
-                    <Button
-                        onClick={() => setShowServiceForm(true)}
-                        className="expert-btn-brand expert-services-mobile-add"
-                        disabled={profileIncomplete}
-                    >
-                        <Plus aria-hidden className="expert-services-add-icon" />
-                        Nuevo servicio
-                    </Button>
-                </div>
-            )}
         </div>
     );
 }

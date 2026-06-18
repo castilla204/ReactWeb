@@ -7,7 +7,7 @@ import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
-import { Star, ChevronRight, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { readWorkRadiusKm, formatWorkRadius } from '../utils/workRadius';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -597,37 +597,42 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   }, []);
 
   useEffect(() => {
-    if (isMobile) return;
     checkScroll();
     const scrollElement = scrollRef.current;
-    if (scrollElement) {
-      // ✅ OPTIMIZADO: Throttling mejorado con performance.now para ~60fps
-      let rafId: number | null = null;
-      let lastScrollTime = 0;
-      const THROTTLE_MS = 16; // ~60fps
-      
-      const throttledCheckScroll = () => {
-        const now = performance.now();
-        if (now - lastScrollTime >= THROTTLE_MS) {
-          lastScrollTime = now;
-          if (rafId === null) {
-            rafId = requestAnimationFrame(() => {
-              checkScroll();
-              rafId = null;
-            });
-          }
+    if (!scrollElement) return;
+
+    // ✅ OPTIMIZADO: Throttling mejorado con performance.now para ~60fps
+    let rafId: number | null = null;
+    let lastScrollTime = 0;
+    const THROTTLE_MS = 16; // ~60fps
+
+    const throttledCheckScroll = () => {
+      const now = performance.now();
+      if (now - lastScrollTime >= THROTTLE_MS) {
+        lastScrollTime = now;
+        if (rafId === null) {
+          rafId = requestAnimationFrame(() => {
+            checkScroll();
+            rafId = null;
+          });
         }
-      };
-      
-      scrollElement.addEventListener('scroll', throttledCheckScroll, { passive: true });
-      return () => {
-        if (rafId !== null) {
-          cancelAnimationFrame(rafId);
-        }
-        scrollElement.removeEventListener('scroll', throttledCheckScroll);
-      };
-    }
-  }, [checkScroll, isMobile]);
+      }
+    };
+
+    scrollElement.addEventListener('scroll', throttledCheckScroll, { passive: true });
+    const resizeObserver = new ResizeObserver(() => checkScroll());
+    resizeObserver.observe(scrollElement);
+    window.addEventListener('resize', checkScroll);
+
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      scrollElement.removeEventListener('scroll', throttledCheckScroll);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll, services.length]);
 
   const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -654,18 +659,43 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         ...(priorityImages ? {} : { contentVisibility: 'auto' as const }),
       }}
     >
-      {/* Header sección */}
+      {/* Header sección + flechas de navegación */}
       <div className="mb-2 md:mb-3 md:px-0">
-        <h2 className="hp-section-title">
-          {title.replace(' >', '')}
-        </h2>
-        {subtitle && (
-          <p className="hp-section-subtitle">{subtitle}</p>
-        )}
+        <div className="flex items-center justify-between gap-3 md:gap-4">
+          <div className="min-w-0 flex-1">
+            <h2 className="hp-section-title truncate">
+              {title.replace(' >', '')}
+            </h2>
+            {subtitle && (
+              <p className="hp-section-subtitle truncate">{subtitle}</p>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+            <button
+              type="button"
+              onClick={() => scroll('left')}
+              disabled={!canScrollLeft}
+              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#222222] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              aria-label="Ver revisiones anteriores"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll('right')}
+              disabled={!canScrollRight}
+              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#222222] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              aria-label="Ver más revisiones"
+            >
+              <ChevronRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Tablón horizontal — ancho completo; sin degradé lateral */}
-      <div className="relative group/scroll w-full">
+      <div className="relative w-full">
         <div
           ref={scrollRef}
           className={`flex overflow-x-auto scrollbar-hide md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
@@ -698,74 +728,6 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
             </div>
           ))}
         </div>
-
-        {canScrollLeft && (
-          <button
-            type="button"
-            onClick={() => scroll('left')}
-            className="hidden md:flex absolute left-2 lg:left-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-[#e8e8e8] hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
-            style={{ 
-              width: '36px', 
-              height: '36px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-            }}
-            aria-label="Scroll left"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 32 32"
-              aria-hidden="true"
-              role="presentation"
-              focusable="false"
-              style={{
-                display: 'block',
-                fill: 'none',
-                height: '14px',
-                width: '14px',
-                stroke: 'currentColor',
-                strokeWidth: '4',
-                overflow: 'visible',
-                transform: 'rotate(180deg)',
-                color: '#222222',
-              }}
-            >
-              <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
-            </svg>
-          </button>
-        )}
-        {canScrollRight && (
-          <button
-            type="button"
-            onClick={() => scroll('right')}
-            className="hidden md:flex absolute right-2 lg:right-6 top-[42%] -translate-y-1/2 rounded-full bg-white shadow-md border border-[#e8e8e8] hover:shadow-lg transition-all z-10 items-center justify-center opacity-0 group-hover/scroll:opacity-100"
-            style={{ 
-              width: '36px', 
-              height: '36px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.18)',
-            }}
-            aria-label="Scroll right"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 32 32"
-              aria-hidden="true"
-              role="presentation"
-              focusable="false"
-              style={{
-                display: 'block',
-                fill: 'none',
-                height: '14px',
-                width: '14px',
-                stroke: 'currentColor',
-                strokeWidth: '4',
-                overflow: 'visible',
-                color: '#222222',
-              }}
-            >
-              <path fill="none" d="m12 4 11.3 11.3a1 1 0 0 1 0 1.4L12 28"></path>
-            </svg>
-          </button>
-        )}
       </div>
 
     </div>

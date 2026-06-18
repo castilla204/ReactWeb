@@ -528,6 +528,7 @@ export function useServices({
             durationInHours: number | null;
             images?: File[];
             imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
+            imagesSequence?: string[];
             selectedDeliverableTypes?: number[];
         }) => {
             setIsUpdatingService(true);
@@ -561,6 +562,12 @@ export function useServices({
                 console.log('🔍 useServices: ImagesToDelete type:', typeof imagesToDeleteJson);
             } else {
                 console.log('🔍 useServices: No ImagesToDelete to send (array is empty or undefined)');
+            }
+
+            if (serviceData.imagesSequence && serviceData.imagesSequence.length > 0) {
+                const imagesSequenceJson = JSON.stringify(serviceData.imagesSequence);
+                formData.append('ImagesSequence', imagesSequenceJson);
+                console.log('🔍 useServices: Adding ImagesSequence:', imagesSequenceJson);
             }
             
             // ✅ NUEVO: Agregar nuevas imágenes a agregar
