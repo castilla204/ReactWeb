@@ -7,11 +7,11 @@ import { ResponsiveModal } from '../ui/responsive-modal';
  * hay un informe de inspección y, al pulsar, abre el PDF completo en modal
  * (escritorio) / drawer (móvil).
  */
-export default function InspectionReportPreview({ pdfUrl }: { pdfUrl: string }) {
+export default function InspectionReportPreview({ pdfUrl, className }: { pdfUrl: string; className?: string }) {
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="mx-auto max-w-3xl px-4 py-4">
+        <div className={className}>
             <button
                 type="button"
                 onClick={() => setOpen(true)}

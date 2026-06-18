@@ -6,7 +6,6 @@ import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
 import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
-import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
 import {
   persistServiceReturnPath,
   resolveServiceReturnPath,
@@ -239,12 +238,6 @@ const ServiceDetailPage: React.FC = () => {
     ]),
   ];
 
-  const inspectionPdfUrl: string | null =
-    (service as any).inspectionTemplatePdfUrl ?? null;
-  const inspectionPdfFallback = '/plantillas/inspeccion-coche.pdf';
-
-  const isCarService = (service.categoryName || '').toLowerCase().includes('coche');
-
   return (
     <>
       <SEO
@@ -256,9 +249,6 @@ const ServiceDetailPage: React.FC = () => {
         ogImage={service.imageUrls?.[0]}
         jsonLd={jsonLd}
       />
-      {isCarService && (
-        <InspectionReportPreview pdfUrl={inspectionPdfUrl ?? inspectionPdfFallback} />
-      )}
       <ServiceReviewPage
         serviceId={service.id}
         expertProfilePicture={service.expert?.profilePictureUrl}

@@ -6,9 +6,10 @@ import {
     X,
     Heart,
     Image,
+    MapPin,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
-import FormacionDisplay from '../components/FormacionDisplay';
+import FormacionPhotoOverlay from '../components/serviceDetail/FormacionPhotoOverlay';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,11 +54,12 @@ import {
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
-import { readWorkRadiusKm } from '../utils/workRadius';
+import { readWorkRadiusKm, formatWorkRadiusExplanation } from '../utils/workRadius';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
 import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceDetailExpertHostRow';
+import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
@@ -192,6 +194,13 @@ export function ServiceReviewPage({
 
     const service = serviceProp || services.find(s => s.id === serviceId);
     const finalService: Service | null = service || null;
+    // Informe de inspección: solo en servicios de coche; cae a la plantilla base.
+    const showInspectionReport = ((finalService as { categoryName?: string } | null)?.categoryName || '')
+      .toLowerCase()
+      .includes('coche');
+    const inspectionPdfUrl: string =
+      (finalService as { inspectionTemplatePdfUrl?: string | null } | null)?.inspectionTemplatePdfUrl
+      || '/plantillas/inspeccion-coche.pdf';
 
     // Normalizar imageUrls - puede venir de diferentes fuentes
     const normalizeImageUrls = (urls: any): string[] => {
@@ -531,6 +540,12 @@ export function ServiceReviewPage({
                             location={expertLocation}
                             locationLabel={expertLocationLabel || undefined}
                             rangeKm={expertRange ?? 25}
+                            formacionOverlay={
+                                <FormacionPhotoOverlay
+                                    value={finalExpertFormacion}
+                                    variant="mobile"
+                                />
+                            }
                         />
                     </div>
 
@@ -635,22 +650,26 @@ export function ServiceReviewPage({
                                             variant="inline"
                                         />
                                     ) : null}
-                                    {expertLocation ? (
-                                        <p className={`${SD_MOBILE_META_CLASS} text-[#6a6a6a]`}>
-                                            {expertLocationLabel ? (
-                                                <span>{expertLocationLabel}</span>
-                                            ) : null}
-                                            {expertLocationLabel ? (
-                                                <span className="mx-1.5 text-[#d4d4d4]" aria-hidden>
-                                                    ·
-                                                </span>
-                                            ) : null}
+                                    {showInspectionReport && (
+                                        <InspectionReportPreview pdfUrl={inspectionPdfUrl} />
+                                    )}
+                                    {(expertLocationLabel || expertRange !== null) ? (
+                                        <div className={`flex items-start gap-2 ${SD_MOBILE_META_CLASS}`}>
+                                            <MapPin size={16} className="mt-0.5 shrink-0 text-[#1C63B4]" />
                                             <span>
-                                                {(expertRange ?? 25) === 0
-                                                    ? 'Solo en su taller'
-                                                    : `Cobertura ${expertRange ?? 25} km`}
+                                                {expertLocationLabel ? (
+                                                    <span className="font-medium text-[#1c1c1c]">
+                                                        {expertLocationLabel}
+                                                    </span>
+                                                ) : null}
+                                                {expertLocationLabel && expertRange !== null ? (
+                                                    <br />
+                                                ) : null}
+                                                {expertRange !== null
+                                                    ? formatWorkRadiusExplanation(expertRange)
+                                                    : null}
                                             </span>
-                                        </p>
+                                        </div>
                                     ) : null}
                                 </div>
                             )}
@@ -721,6 +740,9 @@ export function ServiceReviewPage({
                             location={expertLocation}
                             locationLabel={expertLocationLabel || undefined}
                             rangeKm={expertRange ?? 25}
+                            formacionOverlay={
+                                <FormacionPhotoOverlay value={finalExpertFormacion} />
+                            }
                             titleOverlay={
                                 <ServiceDetailPageHeadline
                                     variant="on-image"
@@ -759,7 +781,26 @@ export function ServiceReviewPage({
                                     onChatClick={handleChatClick}
                                 />
 
-                                <FormacionDisplay value={finalExpertFormacion} className="mt-4" />
+                                {(expertLocationLabel || expertRange !== null) ? (
+                                    <p className="mt-4 flex items-start gap-2 text-sm text-[#6a6a6a]">
+                                        <MapPin size={16} className="mt-0.5 shrink-0 text-[#1C63B4]" />
+                                        <span>
+                                            {expertLocationLabel ? (
+                                                <span className="font-medium text-[#1c1c1c]">
+                                                    {expertLocationLabel}
+                                                </span>
+                                            ) : null}
+                                            {expertLocationLabel && expertRange !== null ? (
+                                                <span className="mx-1.5 text-[#d4d4d4]" aria-hidden>
+                                                    ·
+                                                </span>
+                                            ) : null}
+                                            {expertRange !== null
+                                                ? formatWorkRadiusExplanation(expertRange)
+                                                : null}
+                                        </span>
+                                    </p>
+                                ) : null}
 
                                 {(displayMainDescription || visibleDeliverableTypes.length > 0) && (
                                     <div className="mt-5 flex flex-col gap-5">
@@ -843,6 +884,9 @@ export function ServiceReviewPage({
                                     />
                                 );
                             })()}
+                            {showInspectionReport && (
+                                <InspectionReportPreview pdfUrl={inspectionPdfUrl} className="mt-3" />
+                            )}
                         </aside>
                     </div>
                 </div>
