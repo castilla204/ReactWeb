@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search, Sparkles, MapPin, Car } from 'lucide-react';
+import { Loader2, Upload, X, Plane, Search, Sparkles, MapPin, Car, ChevronDown, ChevronUp } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -143,6 +143,8 @@ export function ProfileEditForm({
     const [workLocationDoor, setWorkLocationDoor] = useState<string>(profile?.workLocationDoor ?? '');
     const [workLocationFloor, setWorkLocationFloor] = useState<string>(profile?.workLocationFloor ?? '');
     const [workLocationDetails, setWorkLocationDetails] = useState<string>(profile?.workLocationDetails ?? '');
+    // Tarjeta de detalles del taller plegable: en móvil tapa mucho mapa, así que se puede cerrar.
+    const [fixedDetailsOpen, setFixedDetailsOpen] = useState<boolean>(true);
 
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
@@ -784,10 +786,23 @@ export function ProfileEditForm({
                 </button>
             </div>
             {isFixedWorkLocation && (
-                <div className="pf-map-fixed-details">
-                    <p className="pf-map-fixed-details__hint">
-                        Detalles para que el cliente llegue a tu taller (opcional).
-                    </p>
+                <div className={`pf-map-fixed-details${fixedDetailsOpen ? '' : ' pf-map-fixed-details--collapsed'}`}>
+                    <button
+                        type="button"
+                        className="pf-map-fixed-details__toggle"
+                        onClick={() => setFixedDetailsOpen((v) => !v)}
+                        aria-expanded={fixedDetailsOpen}
+                        aria-controls="pf-fixed-details-body"
+                    >
+                        <span className="pf-map-fixed-details__hint">
+                            Detalles para que el cliente llegue a tu taller (opcional).
+                        </span>
+                        {fixedDetailsOpen
+                            ? <ChevronDown size={16} aria-hidden />
+                            : <ChevronUp size={16} aria-hidden />}
+                    </button>
+                    {fixedDetailsOpen && (
+                    <div id="pf-fixed-details-body" className="pf-map-fixed-details__body">
                     <div className="pf-map-fixed-details__row">
                         <label className="pf-field">
                             <span className="pf-field__label">
@@ -829,6 +844,8 @@ export function ProfileEditForm({
                             placeholder="Portal, referencias para llegar, parking…"
                         />
                     </label>
+                    </div>
+                    )}
                 </div>
             )}
             <div className="pf-map-canvas" ref={mapCanvasRef}>
