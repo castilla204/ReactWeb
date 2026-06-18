@@ -42,6 +42,14 @@ function getOverlayDeliverableLabel(dt: ServiceDeliverableType): string {
   return full.length > 14 ? `${full.slice(0, 12)}…` : full;
 }
 
+const DELIVERABLE_DESC_FALLBACK: Record<string, string> = {
+  pdf: 'Informe detallado en PDF con hallazgos y fotos.',
+  video: 'Vídeo grabado durante la revisión presencial.',
+  photo: 'Fotos de los puntos revisados.',
+  call: 'Llamada para explicarte el informe y resolver tus dudas.',
+  default: 'Entregable incluido en este servicio.',
+};
+
 export function normalizeDeliverableTypes(
   items: ServiceDeliverableType[] | unknown[] | undefined | null
 ): ServiceDeliverableType[] {
@@ -52,8 +60,8 @@ export function normalizeDeliverableTypes(
 interface ServiceDetailDeliverablesGuideProps {
   items: ServiceDeliverableType[] | unknown[];
   variant?: 'overlay' | 'inline';
-  /** chips = pills (móvil/checkout); list = filas editoriales (ficha desktop) */
-  presentation?: 'chips' | 'list';
+  /** chips = pills (móvil/checkout); list = filas editoriales; card = tarjeta con descripción (ficha) */
+  presentation?: 'chips' | 'list' | 'card';
   showHeading?: boolean;
   /** Oculta el icono/badge de tipo en las filas (lista limpia solo con texto). */
   hideIcon?: boolean;
@@ -243,6 +251,37 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     </ul>
   );
 
+  const surfaceCards = (
+    <ul className="m-0 flex list-none flex-col gap-3 p-0">
+      {visible.map((dt, index) => {
+        const label = getDeliverableLabel(dt);
+        const kind = getDeliverableKind(dt);
+        const desc = (dt.description && dt.description.trim()) || DELIVERABLE_DESC_FALLBACK[kind] || '';
+        return (
+          <li key={dt.id ?? `${label}-${index}`}>
+            <button
+              type="button"
+              className="group block w-full rounded-2xl border border-[hsl(var(--ep-border))] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
+              onClick={(e) => openDetail(dt, e)}
+              aria-haspopup="dialog"
+              aria-expanded={open && active?.id === dt.id}
+              aria-label={`Ver qué incluye: ${label}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-semibold text-[hsl(var(--ep-ink))]">{label}</span>
+                <span className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[hsl(var(--brand))]">
+                  Ver qué incluye
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                </span>
+              </div>
+              {desc ? <p className="mt-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   const closeDetail = () => setOpen(false);
 
   const detailModal = detail && active ? (
@@ -326,7 +365,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             Qué incluye
           </p>
         ) : null}
-        {presentation === 'list' ? surfaceList : surfaceChipList}
+        {presentation === 'card' ? surfaceCards : presentation === 'list' ? surfaceList : surfaceChipList}
       </section>
       {detailModal}
     </>

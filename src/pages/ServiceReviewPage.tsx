@@ -54,7 +54,7 @@ import {
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
-import { readWorkRadiusKm, formatWorkRadiusExplanation } from '../utils/workRadius';
+import { readWorkRadiusKm, formatWorkRadiusExplanation, formatWorkRadius } from '../utils/workRadius';
 import { stripServiceDescriptionLocationSuffix } from '../utils/stripServiceDescriptionLocationSuffix';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { ServiceDetailPageHeadline } from '../components/serviceDetail/ServiceDetailPageHeadline';
@@ -664,9 +664,8 @@ export function ServiceReviewPage({
                                                 <ServiceDetailDeliverablesGuide
                                                     items={nonPdfDeliverableTypes}
                                                     variant="inline"
-                                                    presentation="list"
+                                                    presentation="card"
                                                     showHeading={false}
-                                                    hideIcon
                                                 />
                                             ) : null}
                                         </>
@@ -764,12 +763,6 @@ export function ServiceReviewPage({
                             location={expertLocation}
                             locationLabel={expertLocationLabel || undefined}
                             rangeKm={expertRange ?? 25}
-                            formacionOverlay={
-                                <FormacionPhotoOverlay
-                                    value={finalExpertFormacion}
-                                    placement="above-title"
-                                />
-                            }
                             titleOverlay={
                                 <ServiceDetailPageHeadline
                                     variant="on-image"
@@ -800,6 +793,10 @@ export function ServiceReviewPage({
                                     completedSearches={finalCompletedSearches}
                                     rating={finalRating > 0 ? finalRating : undefined}
                                     reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
+                                    formacion={finalExpertFormacion}
+                                    coverageLabel={
+                                        expertRange !== null ? formatWorkRadius(expertRange) : null
+                                    }
                                     onAvatarClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
@@ -807,27 +804,6 @@ export function ServiceReviewPage({
                                     }}
                                     onChatClick={handleChatClick}
                                 />
-
-                                {(expertLocationLabel || expertRange !== null) ? (
-                                    <p className="mt-4 flex items-start gap-2 text-sm text-[#6a6a6a]">
-                                        <MapPin size={16} className="mt-0.5 shrink-0 text-[#1C63B4]" />
-                                        <span>
-                                            {expertLocationLabel ? (
-                                                <span className="font-medium text-[#1c1c1c]">
-                                                    {expertLocationLabel}
-                                                </span>
-                                            ) : null}
-                                            {expertLocationLabel && expertRange !== null ? (
-                                                <span className="mx-1.5 text-[#d4d4d4]" aria-hidden>
-                                                    ·
-                                                </span>
-                                            ) : null}
-                                            {expertRange !== null
-                                                ? formatWorkRadiusExplanation(expertRange)
-                                                : null}
-                                        </span>
-                                    </p>
-                                ) : null}
 
                                 {(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport) && (
                                     <div className="mt-5 flex flex-col gap-5">
@@ -856,9 +832,8 @@ export function ServiceReviewPage({
                                                         <ServiceDetailDeliverablesGuide
                                                             items={nonPdfDeliverableTypes}
                                                             variant="inline"
-                                                            presentation="list"
+                                                            presentation="card"
                                                             showHeading={false}
-                                                            hideIcon
                                                         />
                                                     </div>
                                                 ) : null}
