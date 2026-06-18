@@ -28,8 +28,8 @@ export const Footer = () => {
 
         <Sep />
 
-        <Link to="/quienes-somos" className={linkClass}>
-          Quiénes somos
+        <Link to="/ayuda" className={linkClass}>
+          Ayuda
         </Link>
 
         {!isExpert && (
@@ -40,12 +40,6 @@ export const Footer = () => {
             </Link>
           </>
         )}
-
-        <Sep />
-
-        <Link to="/como-funciona" className={linkClass}>
-          Cómo funciona
-        </Link>
 
         <Sep />
 

@@ -55,9 +55,7 @@ export const ServiceDetailPage = lazyDefault(() => import('../pages/ServiceDetai
 export const CheckoutPage = lazyNamed(() => import('../pages/CheckoutPage'), 'CheckoutPage');
 export const PreHireChatPage = lazyNamed(() => import('../pages/PreHireChatPage'), 'PreHireChatPage');
 export const MessagesPage = lazyNamed(() => import('../pages/MessagesPage'), 'MessagesPage');
-export const QuienesSomosPage = lazyDefault(() => import('../pages/QuienesSomosPage'));
-export const ComoFuncionaPage = lazyDefault(() => import('../pages/ComoFuncionaPage'));
-export const FAQPage = lazyDefault(() => import('../pages/FAQPage'));
+export const CentroAyudaPage = lazyDefault(() => import('../pages/CentroAyudaPage'));
 export const FavoritesPage = lazyNamed(() => import('../pages/FavoritesPage'), 'FavoritesPage');
 // 🛡️ MUD-DI — página full-page para emails que apuntan a /notifications.
 export const NotificationsPage = lazyDefault(() => import('../pages/NotificationsPage'));
