@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Loader2, Sparkles, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Sparkles, Upload, ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
 import { useDeliverableTypes } from '../../hooks/useDeliverableTypes';
 import { CategoryWithDetailsDto } from '../../types/category';
 import { getCurrencyForCountry, getCurrencySymbol } from '../../utils/priceUtils';
@@ -9,7 +9,9 @@ import '../../styles/expert-service-form.css';
 import '../../styles/ai-rewrite-magic.css';
 import { rewriteDescription } from '../../services/aiService';
 import InspectionTemplateEditor from './InspectionTemplateEditor';
-import { type InspectionConfig } from '../../lib/inspectionTemplateConfig';
+import { type InspectionConfig, emptyConfig, resolveTemplate, countActivePoints } from '../../lib/inspectionTemplateConfig';
+import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
+import { ResponsiveModal } from '../ui/responsive-modal';
 
 interface ServiceFormProps {
     onClose: () => void;
@@ -598,6 +600,17 @@ export function ServiceForm({
         return false;
     }, [formData.categoryId, normalizedCategories]);
 
+    // Editor del informe: se abre en modal (desktop) / drawer (móvil).
+    const [showInspectionEditor, setShowInspectionEditor] = useState(false);
+    const inspectionSummary = useMemo(() => {
+        const t = resolveTemplate(INSPECTION_CATALOG, inspectionConfig ?? emptyConfig());
+        return { points: countActivePoints(t), sections: t.sections.length };
+    }, [inspectionConfig]);
+    const totalInspectionPoints = useMemo(
+        () => INSPECTION_CATALOG.sections.reduce((acc, s) => acc + s.points.length, 0),
+        [],
+    );
+
     const isSaving = editingService ? isUpdatingService : isCreatingService;
     const showDuration = parseInt(formData.serviceTypeId, 10) === 1;
 
@@ -1052,10 +1065,33 @@ export function ServiceForm({
                                 <section id="sf-section-inspection" className="sf-section">
                                     <span className="sf-label">Plantilla del informe de inspección</span>
                                     <p className="pf-profile-editor__hint">Personaliza qué puntos incluye el informe PDF que recibirá el cliente.</p>
-                                    <InspectionTemplateEditor
-                                        config={inspectionConfig}
-                                        onChange={onInspectionConfigChange}
-                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowInspectionEditor(true)}
+                                        className="mt-1 flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 text-left transition hover:border-blue-300 hover:bg-blue-50/40"
+                                    >
+                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                                            <ClipboardList className="h-5 w-5" aria-hidden />
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-sm font-semibold text-gray-900">Personalizar informe</span>
+                                            <span className="block text-xs text-gray-500">
+                                                {inspectionSummary.points} de {totalInspectionPoints} puntos · {inspectionSummary.sections} secciones
+                                            </span>
+                                        </span>
+                                        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                                    </button>
+                                    <ResponsiveModal
+                                        open={showInspectionEditor}
+                                        onOpenChange={setShowInspectionEditor}
+                                        title="Personalizar informe de inspección"
+                                        description="Quita secciones o puntos y añade preguntas propias."
+                                    >
+                                        <InspectionTemplateEditor
+                                            config={inspectionConfig}
+                                            onChange={onInspectionConfigChange}
+                                        />
+                                    </ResponsiveModal>
                                 </section>
                             )}
 
