@@ -783,6 +783,54 @@ export function ProfileEditForm({
                     </span>
                 </button>
             </div>
+            {isFixedWorkLocation && (
+                <div className="pf-map-fixed-details">
+                    <p className="pf-map-fixed-details__hint">
+                        Detalles para que el cliente llegue a tu taller (opcional).
+                    </p>
+                    <div className="pf-map-fixed-details__row">
+                        <label className="pf-field">
+                            <span className="pf-field__label">
+                                Puerta / garaje <span className="pf-field__optional">(opcional)</span>
+                            </span>
+                            <input
+                                type="text"
+                                className="pf-input"
+                                value={workLocationDoor}
+                                maxLength={60}
+                                onChange={(e) => setWorkLocationDoor(e.target.value)}
+                                placeholder="3B, garaje 12…"
+                            />
+                        </label>
+                        <label className="pf-field">
+                            <span className="pf-field__label">
+                                Piso / planta <span className="pf-field__optional">(opcional)</span>
+                            </span>
+                            <input
+                                type="text"
+                                className="pf-input"
+                                value={workLocationFloor}
+                                maxLength={40}
+                                onChange={(e) => setWorkLocationFloor(e.target.value)}
+                                placeholder="2ª planta, bajo…"
+                            />
+                        </label>
+                    </div>
+                    <label className="pf-field">
+                        <span className="pf-field__label">
+                            Observaciones de acceso <span className="pf-field__optional">(opcional)</span>
+                        </span>
+                        <textarea
+                            className="pf-input pf-textarea"
+                            value={workLocationDetails}
+                            maxLength={300}
+                            rows={2}
+                            onChange={(e) => setWorkLocationDetails(e.target.value)}
+                            placeholder="Portal, referencias para llegar, parking…"
+                        />
+                    </label>
+                </div>
+            )}
             <div className="pf-map-canvas" ref={mapCanvasRef}>
                 <div className="pf-map-canvas__map" aria-hidden={!mapCanRender}>
                     {mapCanRender && (
@@ -842,54 +890,6 @@ export function ProfileEditForm({
                         aria-valuetext={`${workRadiusKm} kilómetros`}
                         style={{ '--pf-range-pct': `${(workRadiusKm / MAX_WORK_RADIUS_KM) * 100}%` } as React.CSSProperties}
                     />
-                </div>
-            )}
-            {isFixedWorkLocation && (
-                <div className="pf-map-fixed-details">
-                    <p className="pf-map-fixed-details__hint">
-                        Detalles para que el cliente llegue a tu taller (opcional).
-                    </p>
-                    <div className="pf-map-fixed-details__row">
-                        <label className="pf-field">
-                            <span className="pf-field__label">
-                                Puerta / garaje <span className="pf-field__optional">(opcional)</span>
-                            </span>
-                            <input
-                                type="text"
-                                className="pf-input"
-                                value={workLocationDoor}
-                                maxLength={60}
-                                onChange={(e) => setWorkLocationDoor(e.target.value)}
-                                placeholder="3B, garaje 12…"
-                            />
-                        </label>
-                        <label className="pf-field">
-                            <span className="pf-field__label">
-                                Piso / planta <span className="pf-field__optional">(opcional)</span>
-                            </span>
-                            <input
-                                type="text"
-                                className="pf-input"
-                                value={workLocationFloor}
-                                maxLength={40}
-                                onChange={(e) => setWorkLocationFloor(e.target.value)}
-                                placeholder="2ª planta, bajo…"
-                            />
-                        </label>
-                    </div>
-                    <label className="pf-field">
-                        <span className="pf-field__label">
-                            Observaciones de acceso <span className="pf-field__optional">(opcional)</span>
-                        </span>
-                        <textarea
-                            className="pf-input pf-textarea"
-                            value={workLocationDetails}
-                            maxLength={300}
-                            rows={2}
-                            onChange={(e) => setWorkLocationDetails(e.target.value)}
-                            placeholder="Portal, referencias para llegar, parking…"
-                        />
-                    </label>
                 </div>
             )}
         </div>
