@@ -40,10 +40,7 @@ export default function InspectionReportPreview({
                 className="group block w-full rounded-2xl border border-[hsl(var(--ep-border))] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
             >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-2.5">
-                        <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-[hsl(var(--ep-border))] bg-[hsl(var(--ep-canvas))] px-1.5 text-[10px] font-bold tracking-wide text-[hsl(var(--ep-muted))]">
-                            PDF
-                        </span>
+                    <span className="flex min-w-0 items-center">
                         <span className="truncate text-[13px] font-semibold text-[hsl(var(--ep-ink))]">Informe PDF</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end text-right">
@@ -76,8 +73,7 @@ export default function InspectionReportPreview({
                 open={open}
                 onOpenChange={setOpen}
                 title="Puntos de la inspección"
-                description="Lo que revisará el experto, elegido por él."
-                dialogClassName="md:max-w-[640px]"
+                desktopSidePanel
             >
                 <InspectionReportSummary config={config} pdfUrl={pdfUrl} />
             </ResponsiveModal>
