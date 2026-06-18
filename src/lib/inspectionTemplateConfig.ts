@@ -31,6 +31,8 @@ export interface ResolvedSection {
 }
 
 export interface ResolvedTemplate {
+  headerTitle: string;
+  headerSubtitle: string;
   headerFields: { key: string; label: string; fieldName: string }[];
   sections: ResolvedSection[];
 }
@@ -90,6 +92,8 @@ export function resolveTemplate(catalog: Catalog, rawConfig: Partial<InspectionC
   }
 
   return {
+    headerTitle: catalog.headerTitle ?? 'INFORME DE INSPECCIÓN',
+    headerSubtitle: catalog.headerSubtitle ?? 'Revisión independiente',
     headerFields: catalog.headerFields.map((h) => ({ ...h, fieldName: `hdr_${h.key}` })),
     sections,
   };

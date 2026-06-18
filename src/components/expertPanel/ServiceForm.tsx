@@ -10,7 +10,7 @@ import '../../styles/ai-rewrite-magic.css';
 import { rewriteDescription } from '../../services/aiService';
 import InspectionTemplateEditor from './InspectionTemplateEditor';
 import { type InspectionConfig, emptyConfig, resolveTemplate, countActivePoints } from '../../lib/inspectionTemplateConfig';
-import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
+import { getInspectionCatalog } from '../../lib/inspectionCatalog';
 import { ResponsiveModal } from '../ui/responsive-modal';
 
 interface ServiceFormProps {
@@ -584,32 +584,30 @@ export function ServiceForm({
     const totalPhotoCount = orderedPhotos.length;
     const hasPhotos = totalPhotoCount > 0;
 
-    // Determinar si la categoría seleccionada (o su padre) corresponde a coche.
-    const isCarCategory = useMemo(() => {
-        if (!formData.categoryId) return false;
+    // Catálogo de inspección según la categoría seleccionada (o su padre).
+    // null = esa categoría no tiene informe de inspección.
+    const inspectionCatalog = useMemo(() => {
+        if (!formData.categoryId) return null;
         const selectedId = Number(formData.categoryId);
         const selected = normalizedCategories.find((c) => c.id === selectedId);
-        if (!selected) return false;
-        const nameLower = selected.name.toLowerCase();
-        if (nameLower.includes('coche')) return true;
-        // Comprobar también el nombre del padre
-        if (selected.parentId != null) {
-            const parent = normalizedCategories.find((c) => c.id === selected.parentId);
-            if (parent && parent.name.toLowerCase().includes('coche')) return true;
-        }
-        return false;
+        if (!selected) return null;
+        const parent = selected.parentId != null
+            ? normalizedCategories.find((c) => c.id === selected.parentId)
+            : undefined;
+        return getInspectionCatalog(`${selected.name} ${parent?.name ?? ''}`);
     }, [formData.categoryId, normalizedCategories]);
 
     // Editor del informe: se abre en modal (desktop) / drawer (móvil).
     const [showInspectionEditor, setShowInspectionEditor] = useState(false);
     const inspectionSummary = useMemo(() => {
-        const t = resolveTemplate(INSPECTION_CATALOG, inspectionConfig ?? emptyConfig());
-        return { points: countActivePoints(t), sections: t.sections.length };
-    }, [inspectionConfig]);
-    const totalInspectionPoints = useMemo(
-        () => INSPECTION_CATALOG.sections.reduce((acc, s) => acc + s.points.length, 0),
-        [],
-    );
+        if (!inspectionCatalog) return { points: 0, sections: 0, total: 0 };
+        const t = resolveTemplate(inspectionCatalog, inspectionConfig ?? emptyConfig());
+        return {
+            points: countActivePoints(t),
+            sections: t.sections.length,
+            total: inspectionCatalog.sections.reduce((acc, s) => acc + s.points.length, 0),
+        };
+    }, [inspectionCatalog, inspectionConfig]);
 
     const isSaving = editingService ? isUpdatingService : isCreatingService;
     const showDuration = parseInt(formData.serviceTypeId, 10) === 1;
@@ -1061,7 +1059,7 @@ export function ServiceForm({
                                 )}
                             </section>
 
-                            {isCarCategory && onInspectionConfigChange && (
+                            {inspectionCatalog && onInspectionConfigChange && (
                                 <section id="sf-section-inspection" className="sf-section">
                                     <span className="sf-label">Plantilla del informe de inspección</span>
                                     <p className="pf-profile-editor__hint">Personaliza qué puntos incluye el informe PDF que recibirá el cliente.</p>
@@ -1076,7 +1074,7 @@ export function ServiceForm({
                                         <span className="min-w-0 flex-1">
                                             <span className="block text-sm font-semibold text-gray-900">Personalizar informe</span>
                                             <span className="block text-xs text-gray-500">
-                                                {inspectionSummary.points} de {totalInspectionPoints} puntos · {inspectionSummary.sections} secciones
+                                                {inspectionSummary.points} de {inspectionSummary.total} puntos · {inspectionSummary.sections} secciones
                                             </span>
                                         </span>
                                         <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
@@ -1088,6 +1086,7 @@ export function ServiceForm({
                                         description="Quita secciones o puntos y añade preguntas propias."
                                     >
                                         <InspectionTemplateEditor
+                                            catalog={inspectionCatalog}
                                             config={inspectionConfig}
                                             onChange={onInspectionConfigChange}
                                         />
