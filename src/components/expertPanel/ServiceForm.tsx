@@ -8,6 +8,8 @@ import { markFilePickerOpening } from '../../utils/filePickerGuard';
 import '../../styles/expert-service-form.css';
 import '../../styles/ai-rewrite-magic.css';
 import { rewriteDescription } from '../../services/aiService';
+import InspectionTemplateEditor from './InspectionTemplateEditor';
+import { type InspectionConfig } from '../../lib/inspectionTemplateConfig';
 
 interface ServiceFormProps {
     onClose: () => void;
@@ -38,6 +40,8 @@ interface ServiceFormProps {
     setImagesToDelete?: (ids: number[]) => void;
     onImagesSequenceChange?: (sequence: string[]) => void;
     expertCountry?: string | null;
+    inspectionConfig?: InspectionConfig | null;
+    onInspectionConfigChange?: (cfg: InspectionConfig) => void;
 }
 
 type OrderedPhoto =
@@ -73,6 +77,8 @@ export function ServiceForm({
     setImagesToDelete: propSetImagesToDelete,
     onImagesSequenceChange,
     expertCountry,
+    inspectionConfig = null,
+    onInspectionConfigChange,
 }: ServiceFormProps) {
     const editingCurrencyCode = editingService?.currency ?? editingService?.priceCurrency;
     const priceCurrencyCode = editingCurrencyCode
@@ -101,6 +107,9 @@ export function ServiceForm({
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
     const [aiError, setAiError] = useState<string | null>(null);
+    // Los informes incluidos no tienen un baseline fiable (PDF se autogestiona),
+    // así que marcamos "tocado" cuando el usuario cambia la selección manualmente.
+    const [deliverablesTouched, setDeliverablesTouched] = useState(false);
 
     const handleRewriteConditions = async () => {
         const current = formData.conditions?.trim() ?? '';
@@ -213,6 +222,11 @@ export function ServiceForm({
             setHasInitializedDeliverableTypes(false);
         }
     }, [editingService]);
+
+    // Al abrir otro servicio (o uno nuevo) reseteamos el flag de informes tocados.
+    useEffect(() => {
+        setDeliverablesTouched(false);
+    }, [editingService?.id]);
 
     const normalizedCategories = useMemo(() => {
         if (!Array.isArray(categories)) return [];
@@ -344,6 +358,7 @@ export function ServiceForm({
             ? formData.selectedDeliverableTypes.filter((id) => id !== deliverableTypeId)
             : [...formData.selectedDeliverableTypes, deliverableTypeId];
 
+        setDeliverablesTouched(true);
         setFormData({ ...formData, selectedDeliverableTypes: newSelected });
     };
 
@@ -567,8 +582,55 @@ export function ServiceForm({
     const totalPhotoCount = orderedPhotos.length;
     const hasPhotos = totalPhotoCount > 0;
 
+    // Determinar si la categoría seleccionada (o su padre) corresponde a coche.
+    const isCarCategory = useMemo(() => {
+        if (!formData.categoryId) return false;
+        const selectedId = Number(formData.categoryId);
+        const selected = normalizedCategories.find((c) => c.id === selectedId);
+        if (!selected) return false;
+        const nameLower = selected.name.toLowerCase();
+        if (nameLower.includes('coche')) return true;
+        // Comprobar también el nombre del padre
+        if (selected.parentId != null) {
+            const parent = normalizedCategories.find((c) => c.id === selected.parentId);
+            if (parent && parent.name.toLowerCase().includes('coche')) return true;
+        }
+        return false;
+    }, [formData.categoryId, normalizedCategories]);
+
     const isSaving = editingService ? isUpdatingService : isCreatingService;
     const showDuration = parseInt(formData.serviceTypeId, 10) === 1;
+
+    // ¿Hay algo que guardar/publicar? Si no, el botón se apaga y se deshabilita.
+    // Sesgamos hacia "encendido" en casos dudosos: nunca queremos bloquear un
+    // guardado legítimo (mostrarlo encendido de más es inofensivo).
+    const isDirty = (() => {
+        if (!editingService) {
+            // Servicio nuevo: hay algo que publicar en cuanto se rellena cualquier campo.
+            return Boolean(
+                formData.categoryId
+                || formData.serviceTypeId
+                || formData.price?.trim()
+                || formData.conditions?.trim()
+                || (showDuration && formData.durationInHours?.trim())
+                || selectedImages.length > 0,
+            );
+        }
+        // Edición: comparamos contra el servicio original.
+        if (String(editingService.categoryId) !== (formData.categoryId || '')) return true;
+        if (String(editingService.serviceTypeId) !== (formData.serviceTypeId || '')) return true;
+        if (Number(formData.price) !== Number(editingService.price)) return true;
+        if ((formData.conditions || '') !== (editingService.conditions || '')) return true;
+        if (showDuration && (formData.durationInHours || '') !== String(editingService.durationInHours ?? '')) return true;
+        if (selectedImages.length > 0) return true;                    // fotos nuevas
+        if ((propImagesToDelete?.length ?? 0) > 0) return true;        // fotos eliminadas
+        if (deliverablesTouched) return true;                          // informes incluidos
+        // Reordenación de las fotos existentes (mismo número, distinto orden).
+        const baseUrls = editingService.imageUrls || [];
+        const curUrls = orderedPhotos.filter((p) => p.kind === 'existing').map((p) => p.url);
+        if (curUrls.length === baseUrls.length && curUrls.some((u, i) => u !== baseUrls[i])) return true;
+        return false;
+    })();
 
     const handlePublish = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -579,8 +641,8 @@ export function ServiceForm({
     const saveButton = (
         <Button
             type="button"
-            className="pf-btn-save"
-            disabled={isSaving || isLoadingServiceTypes}
+            className={`pf-btn-save${isDirty ? ' pf-btn-save--dirty' : ''}`}
+            disabled={isSaving || isLoadingServiceTypes || !isDirty}
             onClick={handlePublish}
         >
             {isSaving ? (
@@ -659,9 +721,9 @@ export function ServiceForm({
                                         <div className="pf-profile-editor__photo-meta">
                                             <p className="pf-profile-editor__label">
                                                 Fotos del servicio
-                                                <span className="sf-section-tag">Opcional</span>
+                                                <span className="sf-section-tag">Mínimo 2</span>
                                             </p>
-                                            <p className="pf-profile-editor__hint">PNG o JPG · La primera será la portada del servicio.</p>
+                                            <p className="pf-profile-editor__hint">PNG o JPG · Sube al menos 2 fotos · La primera será la portada del servicio.</p>
                                             <div className="pf-profile-editor__photo-actions">
                                                 <Button type="button" variant="outline" size="sm" className="pf-profile-editor__photo-btn" onClick={openFilePicker}>
                                                     Subir fotos
@@ -985,6 +1047,17 @@ export function ServiceForm({
                                     <p className="sf-error">{formErrors.selectedDeliverableTypes}</p>
                                 )}
                             </section>
+
+                            {isCarCategory && onInspectionConfigChange && (
+                                <section id="sf-section-inspection" className="sf-section">
+                                    <span className="sf-label">Plantilla del informe de inspección</span>
+                                    <p className="pf-profile-editor__hint">Personaliza qué puntos incluye el informe PDF que recibirá el cliente.</p>
+                                    <InspectionTemplateEditor
+                                        config={inspectionConfig}
+                                        onChange={onInspectionConfigChange}
+                                    />
+                                </section>
+                            )}
 
                             {formErrors.general && <div className="sf-alert sf-form-alert">{String(formErrors.general)}</div>}
                         </form>
