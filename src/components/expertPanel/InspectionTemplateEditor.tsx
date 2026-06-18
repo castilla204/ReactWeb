@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Lock, Plus, X } from 'lucide-react';
 import { INSPECTION_CATALOG } from '../../lib/inspectionCatalog';
 import {
   emptyConfig, sanitizeConfig, resolveTemplate, countActivePoints,
@@ -10,6 +11,10 @@ interface Props {
   config: InspectionConfig | null;
   onChange: (cfg: InspectionConfig) => void;
 }
+
+// Etiqueta corta para el chip: nos quedamos con lo previo a ":" (el detalle
+// largo va completo en el PDF). Evita chips kilométricos.
+const short = (label: string) => label.split(':')[0].trim();
 
 export default function InspectionTemplateEditor({ config, onChange }: Props) {
   const cfg = useMemo(() => sanitizeConfig(INSPECTION_CATALOG, config ?? emptyConfig()), [config]);
@@ -54,86 +59,139 @@ export default function InspectionTemplateEditor({ config, onChange }: Props) {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
+  // Chip base: una sola "forma" de chip en todo el editor (consistencia).
+  const chipBase = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none transition-colors';
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-      <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-        Si no quitas nada se entrega el informe completo. Los puntos en verde con 🔒 son obligatorios.
+    <div className="px-4 py-3 sm:px-5 sm:py-4">
+      <p className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">
+        Si no quitas nada se entrega el informe completo. Los puntos con
+        <Lock className="h-3 w-3 text-[hsl(var(--ep-muted))]" aria-hidden />
+        son obligatorios.
+      </p>
+
+      <div className="divide-y divide-[hsl(var(--ep-border))]">
+        {INSPECTION_CATALOG.sections.map((sec) => {
+          const off = disabledSections.has(sec.id);
+          const hasRequired = sec.points.some((p) => p.required);
+          const customs = cfg.customPoints.filter((c) => c.section === sec.id);
+          const active = off ? 0 : sec.points.filter((p) => !disabledPoints.has(p.num)).length + customs.length;
+          return (
+            <section key={sec.id} className="py-3.5 first:pt-0">
+              <header className="mb-2.5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h4 className={`truncate text-[13px] font-semibold text-[hsl(var(--ep-ink))] ${off ? 'opacity-50' : ''}`}>
+                    {sec.id} · {sec.title}
+                  </h4>
+                  <p className="mt-0.5 text-[11px] text-[hsl(var(--ep-muted))]">
+                    {off ? 'Sección desactivada' : `${sec.points.length} puntos · ${active} activos`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!off}
+                  disabled={hasRequired}
+                  onClick={() => toggleSection(sec.id)}
+                  title={hasRequired ? 'Contiene puntos obligatorios' : (off ? 'Activar sección' : 'Desactivar sección')}
+                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${off ? 'bg-[hsl(var(--ep-border-strong))]' : 'bg-[hsl(var(--brand))]'} ${hasRequired ? 'cursor-not-allowed opacity-50' : ''}`}
+                >
+                  <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${off ? 'left-0.5' : 'left-[18px]'}`} />
+                </button>
+              </header>
+
+              {!off && (
+                <div className="flex flex-wrap gap-2">
+                  {sec.points.map((p) => {
+                    const num = <span className="tabular-nums text-[hsl(var(--ep-muted))]">{p.num}</span>;
+                    if (p.required) {
+                      return (
+                        <span
+                          key={p.num}
+                          title="Punto obligatorio (no se puede quitar)"
+                          className={`${chipBase} cursor-default border-[hsl(var(--brand)/0.25)] bg-[hsl(var(--brand)/0.06)] text-[hsl(var(--ep-ink))]`}
+                        >
+                          {num} {short(p.label)} <Lock className="h-3 w-3 text-[hsl(var(--brand))]" aria-hidden />
+                        </span>
+                      );
+                    }
+                    const removed = disabledPoints.has(p.num);
+                    return (
+                      <button
+                        type="button"
+                        key={p.num}
+                        onClick={() => togglePoint(p.num)}
+                        aria-pressed={!removed}
+                        className={`${chipBase} ${removed
+                          ? 'border-dashed border-[hsl(var(--ep-border))] bg-[hsl(var(--ep-canvas))] text-[hsl(var(--ep-muted))]'
+                          : 'border-[hsl(var(--ep-border))] bg-white text-[hsl(var(--ep-ink))] hover:border-[hsl(var(--ep-border-strong))] hover:bg-[hsl(var(--ep-canvas))]'}`}
+                      >
+                        {num}
+                        <span className={removed ? 'line-through' : ''}>{short(p.label)}</span>
+                        {removed
+                          ? <Plus className="h-3 w-3 text-[hsl(var(--ep-muted))]" aria-hidden />
+                          : <X className="h-3 w-3 text-[hsl(var(--ep-muted))]" aria-hidden />}
+                      </button>
+                    );
+                  })}
+
+                  {customs.map((c, i) => (
+                    <button
+                      type="button"
+                      key={`${sec.id}-custom-${i}`}
+                      onClick={() => removeCustom(sec.id, i)}
+                      title="Pregunta propia · pulsa para quitar"
+                      className={`${chipBase} border-[hsl(var(--brand)/0.25)] bg-[hsl(var(--brand)/0.06)] text-[hsl(var(--ep-ink))] hover:bg-[hsl(var(--brand)/0.1)]`}
+                    >
+                      {short(c.label)} <X className="h-3 w-3 text-[hsl(var(--ep-muted))]" aria-hidden />
+                    </button>
+                  ))}
+
+                  {adding === sec.id ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <input
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); addCustom(sec.id); }
+                          if (e.key === 'Escape') { setAdding(null); setDraft(''); }
+                        }}
+                        onBlur={() => { if (!draft.trim()) setAdding(null); }}
+                        placeholder="Nueva pregunta…"
+                        className="h-[30px] rounded-full border border-[hsl(var(--ep-border))] bg-white px-3 text-[12px] text-[hsl(var(--ep-ink))] outline-none focus:border-[hsl(var(--brand))]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addCustom(sec.id)}
+                        className="h-[30px] rounded-full bg-[hsl(var(--brand))] px-3 text-[12px] font-semibold text-white hover:bg-[hsl(var(--brand-hover))]"
+                      >
+                        Añadir
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setAdding(sec.id); setDraft(''); }}
+                      className={`${chipBase} border-dashed border-[hsl(var(--ep-border-strong))] bg-transparent text-[hsl(var(--ep-muted))] hover:border-[hsl(var(--brand)/0.4)] hover:text-[hsl(var(--ep-ink))]`}
+                    >
+                      <Plus className="h-3 w-3" aria-hidden /> Añadir pregunta
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
 
-      {INSPECTION_CATALOG.sections.map((sec) => {
-        const off = disabledSections.has(sec.id);
-        const hasRequired = sec.points.some((p) => p.required);
-        const customs = cfg.customPoints.filter((c) => c.section === sec.id);
-        const active = off ? 0 : sec.points.filter((p) => !disabledPoints.has(p.num)).length + customs.length;
-        return (
-          <div key={sec.id} className={`mb-3 rounded-xl border border-gray-200 bg-white p-3 ${off ? 'opacity-60' : ''}`}>
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-gray-900">{sec.id} · {sec.title}</div>
-                <div className="text-xs text-gray-500">{off ? 'Desactivada' : `${sec.points.length} puntos · ${active} activos`}</div>
-              </div>
-              <button
-                type="button"
-                disabled={hasRequired}
-                onClick={() => toggleSection(sec.id)}
-                title={hasRequired ? 'Contiene obligatorios' : (off ? 'Activar sección' : 'Desactivar sección')}
-                className={`h-6 w-11 rounded-full transition ${off ? 'bg-gray-300' : 'bg-blue-600'} ${hasRequired ? 'opacity-40' : ''} relative`}
-              >
-                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${off ? 'left-0.5' : 'left-[22px]'}`} />
-              </button>
-            </div>
-
-            {!off && (
-              <div className="flex flex-wrap gap-2">
-                {sec.points.map((p) => {
-                  const removed = disabledPoints.has(p.num);
-                  if (p.required) {
-                    return (
-                      <span key={p.num} className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-green-600 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
-                        <span className="tabular-nums opacity-75">{p.num}</span> {p.label.split(':')[0]} 🔒
-                      </span>
-                    );
-                  }
-                  return (
-                    <button
-                      type="button" key={p.num} onClick={() => togglePoint(p.num)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-xs font-semibold ${removed ? 'border-gray-200 bg-gray-100 text-gray-400 line-through' : 'border-blue-600 bg-blue-50 text-blue-700'}`}
-                    >
-                      <span className="tabular-nums opacity-75">{p.num}</span> {p.label.split(':')[0]} <span className="opacity-60">{removed ? '＋' : '✕'}</span>
-                    </button>
-                  );
-                })}
-                {customs.map((c, i) => (
-                  <button
-                    type="button" key={`${sec.id}-custom-${i}`} onClick={() => removeCustom(sec.id, i)}
-                    className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-indigo-500 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700"
-                  >
-                    {c.label} <span className="opacity-60">✕</span>
-                  </button>
-                ))}
-                {adding === sec.id ? (
-                  <span className="inline-flex items-center gap-1">
-                    <input
-                      autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(sec.id); } }}
-                      placeholder="Nueva pregunta…" className="rounded-full border border-gray-300 px-3 py-1.5 text-xs"
-                    />
-                    <button type="button" onClick={() => addCustom(sec.id)} className="rounded-full bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white">Añadir</button>
-                  </span>
-                ) : (
-                  <button type="button" onClick={() => { setAdding(sec.id); setDraft(''); }} className="inline-flex items-center rounded-full border-[1.5px] border-dashed border-gray-400 px-3 py-1.5 text-xs font-semibold text-gray-600">
-                    ＋ Añadir pregunta
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <div className="mt-2 flex items-center justify-between text-sm font-semibold text-gray-700">
-        <span>📄 Tu informe: {countActivePoints(resolved)} de {totalPoints} puntos · {resolved.sections.length} de {INSPECTION_CATALOG.sections.length} secciones</span>
-        <button type="button" onClick={preview} className="text-blue-600">Vista previa del PDF →</button>
+      <div className="mt-4 flex items-center justify-between border-t border-[hsl(var(--ep-border))] pt-3 text-[13px]">
+        <span className="font-medium text-[hsl(var(--ep-ink))]">
+          {countActivePoints(resolved)} de {totalPoints} puntos · {resolved.sections.length} de {INSPECTION_CATALOG.sections.length} secciones
+        </span>
+        <button type="button" onClick={preview} className="font-semibold text-[hsl(var(--brand))] hover:underline">
+          Vista previa del PDF
+        </button>
       </div>
     </div>
   );
