@@ -395,6 +395,13 @@ export function ServiceReviewPage({
     
     const finalDeliverableTypes = finalService?.selectedDeliverableTypes ?? [];
     const visibleDeliverableTypes = normalizeDeliverableTypes(finalDeliverableTypes);
+    // En coche, el "Informe PDF" lo representa la tarjeta de inspección; el
+    // resto de entregables (vídeo, llamada…) se listan aparte para no duplicar.
+    const nonPdfDeliverableTypes = visibleDeliverableTypes.filter(
+        (dt) => (dt.name || dt.displayName || '').toLowerCase().replace('í', 'i') !== 'pdf'
+            && !(dt.name || '').toLowerCase().includes('pdf')
+            && !(dt.displayName || '').toLowerCase().includes('informe pdf'),
+    );
 
     // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
@@ -651,7 +658,15 @@ export function ServiceReviewPage({
                                         </p>
                                     ) : null}
                                     {showInspectionReport ? (
-                                        <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                        <>
+                                            <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                            {nonPdfDeliverableTypes.length > 0 ? (
+                                                <ServiceDetailDeliverablesGuide
+                                                    items={nonPdfDeliverableTypes}
+                                                    variant="inline"
+                                                />
+                                            ) : null}
+                                        </>
                                     ) : visibleDeliverableTypes.length > 0 ? (
                                         <ServiceDetailDeliverablesGuide
                                             items={finalDeliverableTypes}
@@ -730,12 +745,13 @@ export function ServiceReviewPage({
                 {/* Header unificado: el mismo topbar de la homepage en desktop
                     (logo→inicio, ayuda, moneda, notificaciones, cuenta) en lugar del
                     header propio de la ficha. Decisión del usuario 2026-06-16. */}
-                <HomepageDesktopTopBar variant="plain" showLogo onBack={onBack} />
+                <HomepageDesktopTopBar variant="plain" showLogo />
 
                 <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-5 lg:pt-6`}>
                     <div className="mb-5 overflow-hidden lg:mb-6">
                         <ServiceDetailDesktopPhotoMapHero
                             images={validImages}
+                            onBack={onBack}
                             onOpen={handleImageClick}
                             loadingImages={loadingImages}
                             failedImages={failedImages}
@@ -746,7 +762,10 @@ export function ServiceReviewPage({
                             locationLabel={expertLocationLabel || undefined}
                             rangeKm={expertRange ?? 25}
                             formacionOverlay={
-                                <FormacionPhotoOverlay value={finalExpertFormacion} />
+                                <FormacionPhotoOverlay
+                                    value={finalExpertFormacion}
+                                    placement="above-title"
+                                />
                             }
                             titleOverlay={
                                 <ServiceDetailPageHeadline
@@ -829,6 +848,15 @@ export function ServiceReviewPage({
                                             <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
                                                 <h2 className="hp-section-title mb-3">Qué incluye</h2>
                                                 <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                                {nonPdfDeliverableTypes.length > 0 ? (
+                                                    <div className="mt-3">
+                                                        <ServiceDetailDeliverablesGuide
+                                                            items={nonPdfDeliverableTypes}
+                                                            variant="inline"
+                                                            presentation="list"
+                                                        />
+                                                    </div>
+                                                ) : null}
                                             </section>
                                         ) : visibleDeliverableTypes.length > 0 ? (
                                             <section
