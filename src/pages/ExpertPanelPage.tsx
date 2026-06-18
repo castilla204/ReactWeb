@@ -772,15 +772,29 @@ export function ExpertPanelPage() {
                 return;
             }
             
-            // Preparar config e PDF del informe de inspección (solo si hay config)
+            // Determinar si la categoría seleccionada es de coches (por nombre propio o del padre)
+            const selectedCatUpdate = categories.find((c) => c.id === categoryId);
+            const parentCatUpdate = selectedCatUpdate?.parentId != null
+                ? categories.find((c) => c.id === selectedCatUpdate.parentId)
+                : undefined;
+            const isCarCategoryUpdate =
+                (selectedCatUpdate?.name ?? '').toLowerCase().includes('coche') ||
+                (parentCatUpdate?.name ?? '').toLowerCase().includes('coche');
+
+            // Preparar config e PDF del informe de inspección (solo para servicios de coche)
             let updateInspectionPdfFile: File | null = null;
-            const updateInspectionConfigJson = JSON.stringify(inspectionConfig);
-            try {
-                const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
-                const pdfBlob = await buildTemplatePdf(resolvedTpl);
-                updateInspectionPdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
-            } catch (pdfErr) {
-                console.warn('[ExpertPanelPage] No se pudo generar el PDF del informe (update):', pdfErr);
+            let updateInspectionConfigJson: string | null = null;
+            if (isCarCategoryUpdate) {
+                updateInspectionConfigJson = JSON.stringify(inspectionConfig);
+                try {
+                    const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                    const pdfBlob = await buildTemplatePdf(resolvedTpl);
+                    updateInspectionPdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
+                } catch (pdfErr) {
+                    console.error('[ExpertPanelPage] No se pudo generar el PDF del informe (update):', pdfErr);
+                    setFormErrors({ general: 'No se pudo generar el PDF del informe de inspección. Por favor, inténtalo de nuevo.' });
+                    return;
+                }
             }
 
             // ✅ Preparar datos para actualizar
@@ -881,16 +895,30 @@ export function ExpertPanelPage() {
             }
             
             console.log('🔍 Creating service with expertProfileId:', expertProfileId);
-            
-            // Preparar config e PDF del informe de inspección (solo si hay config no vacía)
+
+            // Determinar si la categoría seleccionada es de coches (por nombre propio o del padre)
+            const selectedCatCreate = categories.find((c) => c.id === categoryId);
+            const parentCatCreate = selectedCatCreate?.parentId != null
+                ? categories.find((c) => c.id === selectedCatCreate.parentId)
+                : undefined;
+            const isCarCategoryCreate =
+                (selectedCatCreate?.name ?? '').toLowerCase().includes('coche') ||
+                (parentCatCreate?.name ?? '').toLowerCase().includes('coche');
+
+            // Preparar config e PDF del informe de inspección (solo para servicios de coche)
             let inspectionTemplatePdfFile: File | null = null;
-            const inspectionConfigJson = JSON.stringify(inspectionConfig);
-            try {
-                const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
-                const pdfBlob = await buildTemplatePdf(resolvedTpl);
-                inspectionTemplatePdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
-            } catch (pdfErr) {
-                console.warn('[ExpertPanelPage] No se pudo generar el PDF del informe:', pdfErr);
+            let inspectionConfigJson: string | null = null;
+            if (isCarCategoryCreate) {
+                inspectionConfigJson = JSON.stringify(inspectionConfig);
+                try {
+                    const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                    const pdfBlob = await buildTemplatePdf(resolvedTpl);
+                    inspectionTemplatePdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
+                } catch (pdfErr) {
+                    console.error('[ExpertPanelPage] No se pudo generar el PDF del informe:', pdfErr);
+                    setFormErrors({ general: 'No se pudo generar el PDF del informe de inspección. Por favor, inténtalo de nuevo.' });
+                    return;
+                }
             }
 
             await createService({
