@@ -6,6 +6,7 @@ import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
 import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
+import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
 import {
   persistServiceReturnPath,
   resolveServiceReturnPath,
@@ -256,21 +257,7 @@ const ServiceDetailPage: React.FC = () => {
         jsonLd={jsonLd}
       />
       {isCarService && (
-        <div className="mx-auto max-w-3xl px-4 py-4">
-          <p className="mb-1.5 text-sm font-semibold text-gray-700">Plantilla del informe de inspección</p>
-          <p className="mb-2 text-xs text-gray-500">Este es el informe rellenable que recibirás tras la inspección.</p>
-          <object
-            data={inspectionPdfUrl ?? inspectionPdfFallback}
-            type="application/pdf"
-            className="w-full rounded-lg border border-gray-200 bg-gray-100"
-            style={{ height: '70vh' }}
-          >
-            <p className="p-4 text-sm text-gray-600">
-              Tu navegador no puede mostrar el PDF.{' '}
-              <a href={inspectionPdfUrl ?? inspectionPdfFallback} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Abrir el informe →</a>
-            </p>
-          </object>
-        </div>
+        <InspectionReportPreview pdfUrl={inspectionPdfUrl ?? inspectionPdfFallback} />
       )}
       <ServiceReviewPage
         serviceId={service.id}
