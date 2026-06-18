@@ -794,11 +794,11 @@
     }
 
     .sd-deliverable-type-badge--chip {
-        @apply h-5 min-w-[1.625rem] rounded border border-[#e3e3e3] bg-[#f7f7f7] px-1 text-[9px];
+        @apply h-5 w-5 rounded border border-[#e3e3e3] bg-[#f7f7f7] text-[#525252];
     }
 
     .sd-deliverable-type-badge--list {
-        @apply h-8 min-w-[2.375rem] rounded-md border border-[#e8e8e8] bg-[#fafafa] px-1.5 text-[10px] tracking-[0.06em];
+        @apply h-9 w-9 rounded-lg border border-[#e8e8e8] bg-[#fafafa] text-[#525252];
     }
 
     .sd-deliverable-include-marker {
