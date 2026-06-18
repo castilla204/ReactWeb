@@ -837,15 +837,46 @@
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  max-height: 56%;
+  gap: 8px;
+  padding: 9px 12px;
+  max-height: 62%;
   overflow-y: auto;
   border-radius: 10px;
   background: hsl(0 0% 100% / 0.97);
   box-shadow: 0 2px 14px hsl(220 25% 15% / 0.12);
   border: 1px solid hsl(220 14% 92%);
   pointer-events: auto;
+}
+
+/* Cabecera plegable: ocupa toda la fila, hint a la izquierda y chevron a la derecha. */
+.pf-map-fixed-details__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: hsl(var(--pf-muted));
+  font-family: inherit;
+}
+
+.pf-map-fixed-details__toggle svg {
+  flex-shrink: 0;
+}
+
+/* Plegada: solo se ve la cabecera, el mapa queda despejado. */
+.pf-map-fixed-details--collapsed {
+  overflow: visible;
+}
+
+.pf-map-fixed-details__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .pf-map-fixed-details__hint {
@@ -2509,8 +2540,8 @@
   }
 
   .pf-map-canvas {
-    height: min(440px, 58vh);
-    min-height: 400px;
+    height: min(480px, 62vh);
+    min-height: 440px;
   }
 
   .pf-avatar.pf-avatar--composer {
