@@ -60,3 +60,10 @@ android/local.properties
 *.iml
 *.tsbuildinfo
 .impeccable/
+
+# Claude Code / agentes
+.claude/
+# Este repo empuja via .git_disabled (ver memoria) - nunca versionarlo
+.git_disabled/
+# Temporales sueltos
+*.tmp

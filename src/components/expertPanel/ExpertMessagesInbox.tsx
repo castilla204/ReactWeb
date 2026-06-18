@@ -1,10 +1,12 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MessageCircle, Search as SearchIcon, X } from 'lucide-react';
+import { ClipboardList, MessageCircle, Search as SearchIcon, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { API_CONFIG } from '../../config/api';
 import { useApi } from '../../hooks/useApi';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { isActiveSearchHireStatus } from '../../constants/hireStatuses';
 import { ClientConversationSummaryDto, MessageSummaryDto } from '../../types/chat.types';
 import {
     FILTER_LABELS,
@@ -215,11 +217,11 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
     }
 
     return (
-        <div className="grid h-full min-h-[28rem] grid-cols-1 overflow-hidden rounded-2xl border border-[#ededed] bg-white md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+        <div className="expert-messages-inbox grid h-full min-h-0 flex-1 grid-cols-1 overflow-hidden bg-white md:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
             {/* ----- Lista ----- */}
             {showListColumn && (
-                <section className="flex min-h-0 min-w-0 flex-col md:border-r md:border-[#ededed]">
-                    <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] px-4 pb-3 pt-3.5">
+                <section className="flex min-h-0 min-w-0 flex-col md:bg-[#fafafa]">
+                    <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-3 pb-3 pt-3 md:px-3.5 md:pt-3">
                         <div className="relative flex w-full items-center">
                             <SearchIcon
                                 className="pointer-events-none absolute left-3.5 h-4 w-4 text-[#737373]"
@@ -390,7 +392,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
             onClick={onOpen}
             aria-current={isActive ? 'true' : undefined}
             className={[
-                'group relative flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150',
+                'group relative flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-150 md:px-3.5',
                 isActive ? 'bg-brand/[0.06] hover:bg-brand/[0.06]' : 'hover:bg-[#f6f6f6] active:bg-[#efefef]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand',
             ].join(' ')}
@@ -473,7 +475,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
 
             {!isLast && (
                 <span
-                    className="pointer-events-none absolute bottom-0 left-[80px] right-0 h-px bg-[#f0f0f0]"
+                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f0f0f0]"
                     aria-hidden
                 />
             )}
@@ -498,8 +500,15 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
     onClose,
     onReload,
 }) => {
+    const navigate = useNavigate();
     const isPreHire = conversation.conversationType === 'pre-hire';
     const client = conversation.clientName || 'Cliente';
+    // 📋 "Rellenar inspección" — única acción que tenía la antigua pestaña Contrataciones y
+    // que el detalle incrustado no ofrece. Solo en contrataciones activas (no finalizadas).
+    const canFillInspection =
+        !isPreHire
+        && conversation.searchHireId != null
+        && isActiveSearchHireStatus(conversation.hireStatus ?? '');
     const statusLabel = conversation.hireStatusTranslated?.trim() || null;
     const chip: { label: string; tone: StatusChipProps['tone']; icon?: 'shield' } = isPreHire
         ? { label: 'Consulta', tone: 'brand' }
@@ -514,7 +523,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
 
     return (
         <section className="flex min-h-0 min-w-0 flex-col bg-white">
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#ededed] px-4 py-2.5">
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
                 <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
                     <AvatarImage
                         src={conversation.clientProfilePictureUrl || undefined}
@@ -534,6 +543,17 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                     </div>
                     <p className="mt-0.5 truncate text-[12px] text-[#737373]">{subtitle}</p>
                 </div>
+                {canFillInspection && (
+                    <button
+                        type="button"
+                        onClick={() => navigate(`/expert-panel/inspeccion/${conversation.searchHireId}`)}
+                        aria-label="Rellenar inspección"
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand px-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:px-3.5"
+                    >
+                        <ClipboardList className="h-4 w-4" strokeWidth={2} aria-hidden />
+                        <span className="hidden sm:inline">Rellenar inspección</span>
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={onClose}

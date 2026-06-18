@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Briefcase, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
 import '../styles/expert-panel.css';
 /* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
 import '../styles/expert-profile-form.css';
@@ -55,22 +55,10 @@ import { usePhoneStatus } from '../components/expertPanel/PhoneStatusCard';
 import { ProfileSetupWizard, useProfileSetupState } from '../components/expertPanel/ProfileSetupWizard';
 import { isFiscalStepComplete } from '../components/expertPanel/profileSteps';
 import { ServicesTab } from '../components/expertPanel/ServicesTab';
-import { HiresTab } from '../components/expertPanel/HiresTab';
 import { ExpertMessagesInbox } from '../components/expertPanel/ExpertMessagesInbox';
 import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
-
-interface Hire {
-    id: number;
-    searchId: number | null;
-    client: { name: string; email: string };
-    service: { categoryId: number };
-    serviceType: { id: number; name: string; description: string; isActive: boolean; createdAt: string; updatedAt: string } | null;
-    status: 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
-    createdAt: string;
-    amount: number;
-}
 
 interface ServiceImage {
     id: number;
@@ -116,24 +104,31 @@ export function ExpertPanelPage() {
     const { serviceTypes, isLoading: isLoadingServiceTypes } = useServiceTypes();
 
     // Leer el tab desde los query params, por defecto 'services'
-    const tabFromUrl = searchParams.get('tab');
-    type ExpertTab = 'setup' | 'profile' | 'disponibilidad' | 'services' | 'hires' | 'messages';
-    const validTabs: ExpertTab[] = ['setup', 'profile', 'disponibilidad', 'services', 'hires', 'messages'];
+    // 🔀 'hires' se fusionó dentro de la bandeja 'messages' ("Contrataciones y mensajes"):
+    // las contrataciones ya viven ahí como conversaciones. Redirigimos enlaces antiguos.
+    const rawTabFromUrl = searchParams.get('tab');
+    const tabFromUrl = rawTabFromUrl === 'hires' ? 'messages' : rawTabFromUrl;
+    type ExpertTab = 'setup' | 'profile' | 'disponibilidad' | 'services' | 'messages';
+    const validTabs: ExpertTab[] = ['setup', 'profile', 'disponibilidad', 'services', 'messages'];
     const initialTab: ExpertTab = validTabs.includes(tabFromUrl as ExpertTab) ? tabFromUrl as ExpertTab : 'services';
     const [activeTab, setActiveTab] = useState<ExpertTab>(initialTab);
-    
+
     useEffect(() => {
+        // Reescribe la URL antigua ?tab=hires → ?tab=messages (sin entrada en el historial)
+        if (rawTabFromUrl === 'hires') {
+            setSearchParams({ tab: 'messages' }, { replace: true });
+            return;
+        }
         if (tabFromUrl && validTabs.includes(tabFromUrl as ExpertTab)) {
             setActiveTab(tabFromUrl as ExpertTab);
         }
-    }, [tabFromUrl]);
+    }, [tabFromUrl, rawTabFromUrl]);
     
     const handleTabChange = (value: ExpertTab) => {
         setActiveTab(value);
         setSearchParams({ tab: value });
         setSidebarOpen(false);
     };
-    const [hireTab, setHireTab] = useState<'active' | 'inactive'>('active');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -153,20 +148,11 @@ export function ExpertPanelPage() {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [existingImagesWithIds, setExistingImagesWithIds] = useState<ServiceImage[]>([]); // Imágenes con IDs
     const [imagesToDelete, setImagesToDelete] = useState<number[]>([]); // IDs de imágenes a eliminar
-    const [filters, setFilters] = useState<{
-        clientName: string;
-        status: '' | 'pending' | 'awaiting_client_decision' | 'disputed' | 'completed' | 'cancelled' | 'transfer_failed' | 'dispute_resolved' | 'dispute_resolved_client' | 'dispute_resolved_expert';
-        dateFrom: string;
-        dateTo: string;
-    }>({
-        clientName: '',
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-    });
+    const [imagesSequence, setImagesSequence] = useState<string[]>([]);
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
-    const [hiresPage, setHiresPage] = useState(1);
-    const [hiresPageSize, setHiresPageSize] = useState(20);
+    // Paginación fija: las contrataciones se consultan para el badge "sin leer" del sidebar.
+    const hiresPage = 1;
+    const hiresPageSize = 20;
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const formResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,7 +193,8 @@ export function ExpertPanelPage() {
     // → sidebar y card central mostraban "Contrataciones: 0" + "Activos: 0" aunque
     // el experto tuviera contrataciones reales. Mentira de UI visible al abrir el panel.
     // AHORA: siempre habilitado para que los contadores reflejen el estado real.
-    const { hires, pagination: hiresPagination, isLoading: isLoadingHires, error: hiresError } = useExpertHires(
+    // hires se sigue cargando para alimentar el badge "sin leer" de la bandeja del sidebar.
+    const { hires, error: hiresError } = useExpertHires(
         hiresPage,
         hiresPageSize
     );
@@ -493,6 +480,7 @@ export function ExpertPanelPage() {
         setExistingImages([]);
         setExistingImagesWithIds([]);
         setImagesToDelete([]);
+        setImagesSequence([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -669,7 +657,8 @@ export function ExpertPanelPage() {
             setExistingImagesWithIds([]);
         }
         
-        setImagesToDelete([]); // Resetear imágenes a eliminar
+        setImagesToDelete([]);
+        setImagesSequence([]); // Resetear imágenes a eliminar
         setFormErrors({});
         setShowServiceForm(true);
     };
@@ -691,6 +680,7 @@ export function ExpertPanelPage() {
         setExistingImages([]);
         setExistingImagesWithIds([]);
         setImagesToDelete([]);
+        setImagesSequence([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -776,6 +766,7 @@ export function ExpertPanelPage() {
                 durationInHours: durationInHours,
                 images: newImages, // Nuevas imágenes a agregar
                 imagesToDelete: validImagesToDelete.length > 0 ? validImagesToDelete : undefined, // IDs de imágenes a eliminar
+                imagesSequence: imagesSequence.length > 0 ? imagesSequence : undefined,
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
             };
             
@@ -971,23 +962,6 @@ export function ExpertPanelPage() {
         }
     };
 
-    const handleViewHire = (hireId: number | null) => {
-        if (hireId) {
-            const hire = hires.find((h: Hire) => h.id === hireId);
-            if (hire) {
-                navigate(`/searchhire/${hireId}`);
-            } else {
-                console.error('Hire not found:', hireId);
-                window.dispatchEvent(new CustomEvent('showNotification', {
-                    detail: {
-                        type: 'error',
-                        message: 'No se pudo encontrar la contratación',
-                    },
-                }));
-            }
-        }
-    };
-
     const goToPreviousImage = (serviceId: number) => {
         setCurrentImageIndex(prev => ({
             ...prev,
@@ -1013,14 +987,6 @@ export function ExpertPanelPage() {
             }
         });
     }, [services]);
-
-    const activeHires = hires
-        ? hires.filter((hire) =>
-            hire.statusInfo
-                ? !hire.statusInfo.isFinalizationStatus
-                : ['pending', 'awaiting_client_decision', 'disputed'].includes(hire.status)
-          )
-        : [];
 
     if (!user) {
         return (
@@ -1267,8 +1233,7 @@ export function ExpertPanelPage() {
         profile: 'Mi perfil',
         disponibilidad: 'Disponibilidad',
         services: 'Servicios',
-        hires: 'Contrataciones',
-        messages: 'Mensajes',
+        messages: 'Contrataciones y mensajes',
     };
 
     const openStripeDashboard = async () => {
@@ -1388,20 +1353,12 @@ export function ExpertPanelPage() {
                     </button>
                     <button
                         type="button"
-                        className={`expert-nav-item ${activeTab === 'hires' ? 'expert-nav-item--active' : ''}`}
-                        onClick={() => handleTabChange('hires')}
-                    >
-                        <Briefcase />
-                        Contrataciones
-                        {unreadHires > 0 && <span className="expert-nav-badge">{unreadHires > 9 ? '9+' : unreadHires}</span>}
-                    </button>
-                    <button
-                        type="button"
                         className={`expert-nav-item ${activeTab === 'messages' ? 'expert-nav-item--active' : ''}`}
                         onClick={() => handleTabChange('messages')}
                     >
                         <MessageCircle />
-                        Mensajes
+                        Contrataciones y mensajes
+                        {unreadHires > 0 && <span className="expert-nav-badge">{unreadHires > 9 ? '9+' : unreadHires}</span>}
                     </button>
                 </nav>
 
@@ -1462,7 +1419,7 @@ export function ExpertPanelPage() {
                     </div>
                 </header>
 
-                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'hires' ? ' expert-workspace--hires' : ''}${activeTab === 'disponibilidad' ? ' expert-workspace--availability' : ''}`}>
+                <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'disponibilidad' ? ' expert-workspace--availability' : ''}${activeTab === 'messages' ? ' expert-workspace--messages' : ''}`}>
                     {activeTab === 'setup' && profile ? (
                         <ProfileSetupWizard
                             profile={profile}
@@ -1503,14 +1460,75 @@ export function ExpertPanelPage() {
                                 }}
                             />
                         </>
+                    ) : activeTab === 'services' && showServiceForm ? (
+                        <ServiceForm
+                            onClose={() => {
+                                scheduleFormReset();
+                                setShowServiceForm(false);
+                            }}
+                            onClearForm={clearServiceForm}
+                            selectedImages={selectedImages}
+                            setSelectedImages={setSelectedImages}
+                            formErrors={formErrors}
+                            setFormErrors={setFormErrors}
+                            formData={formData}
+                            setFormData={setFormData}
+                            handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
+                            removeImage={removeImage}
+                            handleCreateService={handleCreateService}
+                            serviceTypes={serviceTypes}
+                            isLoadingServiceTypes={isLoadingServiceTypes}
+                            isCreatingService={isCreatingService}
+                            categories={categories}
+                            categoriesLoading={categoriesLoading}
+                            categoriesError={categoriesError}
+                            editingService={editingService}
+                            handleUpdateService={handleUpdateService}
+                            isUpdatingService={isUpdatingService}
+                            existingImages={existingImages}
+                            setExistingImages={setExistingImages}
+                            existingImagesWithIds={existingImagesWithIds}
+                            setExistingImagesWithIds={setExistingImagesWithIds}
+                            imagesToDelete={imagesToDelete}
+                            setImagesToDelete={setImagesToDelete}
+                            onImagesSequenceChange={setImagesSequence}
+                            expertCountry={profile?.country ?? null}
+                        />
+                    ) : activeTab === 'services' ? (
+                        <ServicesTab
+                            activeTab="services"
+                            services={services}
+                            isLoadingServices={isLoadingServices}
+                            servicesError={servicesError}
+                            setShowServiceForm={(value) => {
+                                if (value && !showServiceForm) resetForm();
+                                setShowServiceForm(value);
+                            }}
+                            currentImageIndex={currentImageIndex}
+                            goToPreviousImage={goToPreviousImage}
+                            goToNextImage={goToNextImage}
+                            categories={categories}
+                            deleteService={deleteService}
+                            isDeletingService={isDeletingService}
+                            onEditService={handleEditService}
+                            stripeStatus={stripeStatus?.stripeStatus}
+                            onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean }).onboardingCompleted ?? profile?.onboardingCompleted}
+                            isOnVacation={profile?.isOnVacation}
+                            hasLocation={Boolean(
+                                (profile as { latitude?: string | number })?.latitude != null && (profile as { latitude?: string | number })?.latitude !== ''
+                                && (profile as { longitude?: string | number })?.longitude != null && (profile as { longitude?: string | number })?.longitude !== '',
+                            )}
+                            profileIncomplete={!profileSetupComplete}
+                            onGoToSetup={() => handleTabChange('setup')}
+                        />
                     ) : (
                     <div className="expert-workspace-inner">
-                            <div className={`expert-panel-surface expert-tab-content${showServiceForm && activeTab === 'services' ? ' expert-panel-surface--service-editor' : ''}`}>
+                            <div className="expert-panel-surface expert-tab-content">
                                 {/* 🛡️ C1 + unificación: banner ÚNICO de visibilidad (consecuencia comercial +
                                     acción + plazo Stripe). Sustituye al StripeStatusBanner, que era redundante
                                     (mostrar ambos confundía). El desglose de requisitos vive en la pestaña Perfil
                                     (StripeStatusCard, M2). Visible en todas las pestañas del panel, incl. services. */}
-                                {profile && stripeStatus?.stripeStatus && activeTab !== 'disponibilidad' && !(showServiceForm && activeTab === 'services') && (
+                                {profile && stripeStatus?.stripeStatus && activeTab !== 'disponibilidad' && activeTab !== 'messages' && activeTab !== 'services' && (
                                     <div className="px-5 pt-4">
                                         <ExpertVisibilityBanner
                                             stripeStatus={stripeStatus.stripeStatus}
@@ -1529,93 +1547,7 @@ export function ExpertPanelPage() {
                                         />
                                     </div>
                                 )}
-                                {activeTab === 'services' ? (
-                                    <ServicesTab
-                                        activeTab="services"
-                                        services={services}
-                                        isLoadingServices={isLoadingServices}
-                                        servicesError={servicesError}
-                                        showServiceForm={showServiceForm}
-                                        setShowServiceForm={(value) => {
-                                            if (value && !showServiceForm) resetForm();
-                                            setShowServiceForm(value);
-                                        }}
-                                        currentImageIndex={currentImageIndex}
-                                        goToPreviousImage={goToPreviousImage}
-                                        goToNextImage={goToNextImage}
-                                        categories={categories}
-                                        deleteService={deleteService}
-                                        isDeletingService={isDeletingService}
-                                        onEditService={handleEditService}
-                                        stripeStatus={stripeStatus?.stripeStatus}
-                                        onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean })?.onboardingCompleted ?? profile?.onboardingCompleted}
-                                        isOnVacation={profile?.isOnVacation}
-                                        hasLocation={Boolean(
-                                            (profile as { latitude?: string | number })?.latitude != null && (profile as { latitude?: string | number })?.latitude !== ''
-                                            && (profile as { longitude?: string | number })?.longitude != null && (profile as { longitude?: string | number })?.longitude !== '',
-                                        )}
-                                        profileIncomplete={!profileSetupComplete}
-                                        onGoToSetup={() => handleTabChange('setup')}
-                                        serviceEditor={showServiceForm ? (
-                                            <ServiceForm
-                                                onClose={() => {
-                                                    scheduleFormReset();
-                                                    setShowServiceForm(false);
-                                                }}
-                                                onClearForm={clearServiceForm}
-                                                selectedImages={selectedImages}
-                                                setSelectedImages={setSelectedImages}
-                                                formErrors={formErrors}
-                                                setFormErrors={setFormErrors}
-                                                formData={formData}
-                                                setFormData={setFormData}
-                                                handleImageSelect={handleImageSelect as (e: React.ChangeEvent<any>) => void}
-                                                removeImage={removeImage}
-                                                handleCreateService={handleCreateService}
-                                                serviceTypes={serviceTypes}
-                                                isLoadingServiceTypes={isLoadingServiceTypes}
-                                                isCreatingService={isCreatingService}
-                                                categories={categories}
-                                                categoriesLoading={categoriesLoading}
-                                                categoriesError={categoriesError}
-                                                editingService={editingService}
-                                                handleUpdateService={handleUpdateService}
-                                                isUpdatingService={isUpdatingService}
-                                                existingImages={existingImages}
-                                                setExistingImages={setExistingImages}
-                                                existingImagesWithIds={existingImagesWithIds}
-                                                imagesToDelete={imagesToDelete}
-                                                setImagesToDelete={setImagesToDelete}
-                                                expertCountry={profile?.country ?? null}
-                                                expertPreview={{
-                                                    name: user?.name || 'Tu perfil',
-                                                    profilePictureUrl: (profile as { profilePictureUrl?: string })?.profilePictureUrl,
-                                                    city: (profile as { city?: string })?.city,
-                                                    country: profile?.country,
-                                                    latitude: (profile as { latitude?: string | number })?.latitude,
-                                                    longitude: (profile as { longitude?: string | number })?.longitude,
-                                                    workRadiusKm: (profile as { workRadiusKm?: number })?.workRadiusKm,
-                                                }}
-                                            />
-                                        ) : undefined}
-                                    />
-                                ) : activeTab === 'hires' ? (
-                                    <HiresTab
-                                        activeTab="hires"
-                                        hireTab={hireTab}
-                                        hires={hires}
-                                        isLoadingHires={isLoadingHires}
-                                        hiresError={hiresError}
-                                        filters={filters}
-                                        setHireTab={setHireTab}
-                                        setFilters={(value) => setFilters({ ...filters, ...value, status: value.status as typeof filters.status })}
-                                        handleViewHire={handleViewHire}
-                                        categories={categories}
-                                        pagination={hiresPagination}
-                                        onPageChange={setHiresPage}
-                                        onPageSizeChange={setHiresPageSize}
-                                    />
-                                ) : activeTab === 'disponibilidad' ? (
+                                {activeTab === 'disponibilidad' ? (
                                     <AvailabilityTab />
                                 ) : (
                                     <ExpertMessagesInbox

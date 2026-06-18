@@ -36,6 +36,11 @@ function hasMobileReserveFooter(pathname: string): boolean {
   return RESERVE_FOOTER_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+/** Panel del experto: el FAB tapa barras fijas y el área de trabajo. */
+function isExpertPanelRoute(pathname: string): boolean {
+  return pathname === '/expert-panel' || pathname.startsWith('/expert-panel/');
+}
+
 function getMobileBottomClass(pathname: string, expertServicesFooter: boolean): string {
   if (hasMobileTabBar(pathname)) return CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS;
   if (hasMobileReserveFooter(pathname)) return CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS;
@@ -61,7 +66,9 @@ export const ChatbotFab: React.FC = () => {
   const keyboardLayout = useMobileDrawerKeyboard(isMobile && isOpen);
 
   const isHidden =
-    HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path)) || mobileSearchOverlay;
+    HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path))
+    || isExpertPanelRoute(location.pathname)
+    || mobileSearchOverlay;
   const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
 
   useEffect(() => {

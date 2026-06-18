@@ -18,15 +18,17 @@ export default function ExpertInspectionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <div className="mx-auto max-w-[900px] px-3 pt-3">
+        <div className="flex h-[100dvh] flex-col bg-gray-100">
+            <div className="shrink-0 px-3 pt-3 pb-2">
                 <button
                     type="button"
                     onClick={() => navigate('/expert-panel')}
-                    className="mb-2 flex items-center gap-1.5 text-sm font-medium text-gray-600"
+                    className="flex items-center gap-1.5 text-sm font-medium text-gray-600"
                 >
                     <ArrowLeft size={16} /> Volver al panel
                 </button>
+            </div>
+            <div className="min-h-0 flex-1">
                 <PdfFormEditor
                     hireId={hireId}
                     onSaved={() => {

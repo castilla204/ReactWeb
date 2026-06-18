@@ -19,7 +19,7 @@ import {
     type MapboxFeature,
 } from '../../utils/mapboxGeocoding';
 import { useExpertProfile } from '../../hooks/useExpertProfile';
-import FormacionEditor from './FormacionEditor';
+import FormacionField from './FormacionField';
 import { rewriteDescription } from '../../services/aiService';
 import { CurrentExpertAvailabilityDto } from '../../types/stripe';
 import {
@@ -1202,7 +1202,7 @@ export function ProfileEditForm({
                                         {formErrors.description && <p className="pf-error">{formErrors.description}</p>}
                                     </div>
                                     <div className="pf-profile-editor__section" style={{ marginTop: 16 }}>
-                                        <FormacionEditor value={formacion} onChange={setFormacion} />
+                                        <FormacionField value={formacion} onChange={setFormacion} />
                                     </div>
                                 </div>
                             </div>
