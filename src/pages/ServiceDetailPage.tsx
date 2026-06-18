@@ -91,6 +91,7 @@ const ServiceDetailPage: React.FC = () => {
                 id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
                 profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
                 description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
+                formacion: (service.Expert || service.expert).Formacion ?? (service.Expert || service.expert).formacion ?? null,
                 stripeAccountId: (service.Expert || service.expert).StripeAccountId || (service.Expert || service.expert).stripeAccountId,
                 createdAt: (service.Expert || service.expert).CreatedAt || (service.Expert || service.expert).createdAt,
                 user: {
@@ -132,7 +133,10 @@ const ServiceDetailPage: React.FC = () => {
             };
           };
           
-          const mappedService = transformService(rawService);
+            const mappedService = transformService(rawService);
+          // Preservar URL del PDF del informe de inspección (ambos casings)
+          (mappedService as any).inspectionTemplatePdfUrl =
+              rawService.InspectionTemplatePdfUrl ?? rawService.inspectionTemplatePdfUrl ?? null;
           setService(mappedService);
         } else {
           setError('Servicio no encontrado');
@@ -234,6 +238,10 @@ const ServiceDetailPage: React.FC = () => {
     ]),
   ];
 
+  const inspectionPdfUrl: string | null =
+    (service as any).inspectionTemplatePdfUrl ?? null;
+  const inspectionPdfFallback = '/plantillas/inspeccion-coche.pdf';
+
   return (
     <>
       <SEO
@@ -245,6 +253,20 @@ const ServiceDetailPage: React.FC = () => {
         ogImage={service.imageUrls?.[0]}
         jsonLd={jsonLd}
       />
+      {(inspectionPdfUrl || inspectionPdfFallback) && (
+        <div className="mx-auto max-w-3xl px-4 py-4">
+          <p className="mb-1.5 text-sm font-semibold text-gray-700">Plantilla del informe de inspección</p>
+          <p className="mb-2 text-xs text-gray-500">Este es el informe rellenable que recibirás tras la inspección.</p>
+          <a
+            href={inspectionPdfUrl ?? inspectionPdfFallback}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+          >
+            Ver plantilla PDF →
+          </a>
+        </div>
+      )}
       <ServiceReviewPage
         serviceId={service.id}
         expertProfilePicture={service.expert?.profilePictureUrl}
