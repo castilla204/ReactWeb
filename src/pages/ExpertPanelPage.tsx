@@ -59,6 +59,9 @@ import { ExpertMessagesInbox } from '../components/expertPanel/ExpertMessagesInb
 import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
+import { emptyConfig, sanitizeConfig, resolveTemplate, type InspectionConfig } from '../lib/inspectionTemplateConfig';
+import { buildTemplatePdf } from '../lib/inspectionPdf';
+import { INSPECTION_CATALOG } from '../lib/inspectionCatalog';
 
 interface ServiceImage {
     id: number;
@@ -148,6 +151,7 @@ export function ExpertPanelPage() {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [existingImagesWithIds, setExistingImagesWithIds] = useState<ServiceImage[]>([]); // Imágenes con IDs
     const [imagesToDelete, setImagesToDelete] = useState<number[]>([]); // IDs de imágenes a eliminar
+    const [inspectionConfig, setInspectionConfig] = useState<InspectionConfig>(emptyConfig());
     const [imagesSequence, setImagesSequence] = useState<string[]>([]);
     const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
     // Paginación fija: las contrataciones se consultan para el badge "sin leer" del sidebar.
@@ -441,12 +445,13 @@ export function ExpertPanelPage() {
             }
         }
 
-        // Para creación, se requiere al menos una imagen
-        // Para edición, debe haber al menos una imagen (existente o nueva)
-        if (!editingService && selectedImages.length === 0) {
-            errors.images = 'Se requiere al menos una imagen';
-        } else if (editingService && existingImages.length === 0 && selectedImages.length === 0) {
-            errors.images = 'Debe mantener al menos una imagen';
+        // Se requieren al menos 2 fotos por servicio (creación y edición).
+        // En edición cuenta la suma de imágenes existentes conservadas + nuevas.
+        const totalImages = selectedImages.length + (editingService ? existingImages.length : 0);
+        if (totalImages < 2) {
+            errors.images = editingService
+                ? 'El servicio debe tener al menos 2 fotos'
+                : 'Se requieren al menos 2 fotos';
         }
 
         setFormErrors(errors);
@@ -455,15 +460,11 @@ export function ExpertPanelPage() {
     };
 
     const isValidImageFile = (file: File) => {
-        const mimeOk = [
-            'image/jpeg',
-            'image/png',
-            'image/webp',
-            'image/gif',
-            'image/bmp',
-            'image/svg+xml',
-        ].includes(file.type);
-        const extOk = /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(file.name);
+        // Solo JPG/PNG: el backend re-codifica todo a JPEG con ImageSharp, que NO
+        // puede cargar SVG (reventaría). Mantener este set alineado con el
+        // accept="image/jpeg,image/png" del input y con el drop handler de ServiceForm.
+        const mimeOk = ['image/jpeg', 'image/png'].includes(file.type);
+        const extOk = /\.(jpe?g|png)$/i.test(file.name);
         return mimeOk || (!file.type && extOk) || extOk;
     };
 
@@ -481,6 +482,7 @@ export function ExpertPanelPage() {
         setExistingImagesWithIds([]);
         setImagesToDelete([]);
         setImagesSequence([]);
+        setInspectionConfig(emptyConfig());
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -660,6 +662,20 @@ export function ExpertPanelPage() {
         setImagesToDelete([]);
         setImagesSequence([]); // Resetear imágenes a eliminar
         setFormErrors({});
+
+        // Cargar config de inspección del servicio (soporta ambos casings)
+        const rawCfg = (service as any).InspectionTemplateConfig ?? (service as any).inspectionTemplateConfig;
+        if (rawCfg && typeof rawCfg === 'string') {
+            try {
+                const parsed = JSON.parse(rawCfg);
+                setInspectionConfig(sanitizeConfig(INSPECTION_CATALOG, parsed));
+            } catch {
+                setInspectionConfig(emptyConfig());
+            }
+        } else {
+            setInspectionConfig(emptyConfig());
+        }
+
         setShowServiceForm(true);
     };
 
@@ -756,6 +772,17 @@ export function ExpertPanelPage() {
                 return;
             }
             
+            // Preparar config e PDF del informe de inspección (solo si hay config)
+            let updateInspectionPdfFile: File | null = null;
+            const updateInspectionConfigJson = JSON.stringify(inspectionConfig);
+            try {
+                const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                const pdfBlob = await buildTemplatePdf(resolvedTpl);
+                updateInspectionPdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
+            } catch (pdfErr) {
+                console.warn('[ExpertPanelPage] No se pudo generar el PDF del informe (update):', pdfErr);
+            }
+
             // ✅ Preparar datos para actualizar
             const updateData = {
                 serviceId: editingService.id,
@@ -768,6 +795,8 @@ export function ExpertPanelPage() {
                 imagesToDelete: validImagesToDelete.length > 0 ? validImagesToDelete : undefined, // IDs de imágenes a eliminar
                 imagesSequence: imagesSequence.length > 0 ? imagesSequence : undefined,
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
+                inspectionTemplateConfig: updateInspectionConfigJson,
+                inspectionTemplatePdf: updateInspectionPdfFile,
             };
             
             console.log('🔍 ExpertPanelPage: Enviando updateData:', {
@@ -853,6 +882,17 @@ export function ExpertPanelPage() {
             
             console.log('🔍 Creating service with expertProfileId:', expertProfileId);
             
+            // Preparar config e PDF del informe de inspección (solo si hay config no vacía)
+            let inspectionTemplatePdfFile: File | null = null;
+            const inspectionConfigJson = JSON.stringify(inspectionConfig);
+            try {
+                const resolvedTpl = resolveTemplate(INSPECTION_CATALOG, inspectionConfig);
+                const pdfBlob = await buildTemplatePdf(resolvedTpl);
+                inspectionTemplatePdfFile = new File([pdfBlob], 'informe-inspeccion.pdf', { type: 'application/pdf' });
+            } catch (pdfErr) {
+                console.warn('[ExpertPanelPage] No se pudo generar el PDF del informe:', pdfErr);
+            }
+
             await createService({
                 expertProfileId: expertProfileId,
                 categoryId: categoryId,
@@ -862,6 +902,8 @@ export function ExpertPanelPage() {
                 durationInHours: durationInHours,
                 images: selectedImages,
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
+                inspectionTemplateConfig: inspectionConfigJson,
+                inspectionTemplatePdf: inspectionTemplatePdfFile,
             });
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
@@ -1493,6 +1535,8 @@ export function ExpertPanelPage() {
                             setImagesToDelete={setImagesToDelete}
                             onImagesSequenceChange={setImagesSequence}
                             expertCountry={profile?.country ?? null}
+                            inspectionConfig={inspectionConfig}
+                            onInspectionConfigChange={setInspectionConfig}
                         />
                     ) : activeTab === 'services' ? (
                         <ServicesTab
