@@ -45,6 +45,9 @@ export interface Service {
         id: number;
         profilePictureUrl: string;
         description: string;
+        // Formación opcional del experto (JSON de items). La devuelve el backend en
+        // ExpertProfileDto.Formacion; se muestra en la ficha vía FormacionDisplay.
+        formacion?: string | null;
         stripeAccountId?: string;
         // 🛡️ Round 14 — Q14-S5 FIX: incluir stripeStatus + onboardingCompleted en el modelo
         // del frontend para que CheckoutPage pueda gate visualmente cuando el experto cae a
@@ -285,6 +288,7 @@ export function useServices({
                         id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
                         profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
                         description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
+                        formacion: (service.Expert || service.expert).Formacion ?? (service.Expert || service.expert).formacion ?? null,
                         stripeAccountId: (service.Expert || service.expert).StripeAccountId || (service.Expert || service.expert).stripeAccountId,
                         // 🛡️ Round 14 — Q14-S5: mapear status para gate en CheckoutPage.
                         // El backend lo devuelve como enum int (StripeStatus) en algunos endpoints
@@ -412,6 +416,8 @@ export function useServices({
             durationInHours: number | null;
             images: File[];
             selectedDeliverableTypes?: number[];
+            inspectionTemplateConfig?: string | null;
+            inspectionTemplatePdf?: File | null;
         }) => {
             setIsCreatingService(true);
             const token = getAuthToken();
@@ -433,6 +439,12 @@ export function useServices({
             }
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
+            }
+            if (serviceData.inspectionTemplateConfig) {
+                formData.append('InspectionTemplateConfig', serviceData.inspectionTemplateConfig);
+            }
+            if (serviceData.inspectionTemplatePdf) {
+                formData.append('InspectionTemplatePdf', serviceData.inspectionTemplatePdf);
             }
             serviceData.images.forEach((image) => {
                 formData.append('Images', image);
@@ -530,6 +542,8 @@ export function useServices({
             imagesToDelete?: number[]; // ✅ NUEVO: IDs de imágenes a eliminar
             imagesSequence?: string[];
             selectedDeliverableTypes?: number[];
+            inspectionTemplateConfig?: string | null;
+            inspectionTemplatePdf?: File | null;
         }) => {
             setIsUpdatingService(true);
             const token = getAuthToken();
@@ -552,7 +566,13 @@ export function useServices({
             if (serviceData.selectedDeliverableTypes && serviceData.selectedDeliverableTypes.length > 0) {
                 formData.append('SelectedDeliverableTypes', JSON.stringify(serviceData.selectedDeliverableTypes));
             }
-            
+            if (serviceData.inspectionTemplateConfig) {
+                formData.append('InspectionTemplateConfig', serviceData.inspectionTemplateConfig);
+            }
+            if (serviceData.inspectionTemplatePdf) {
+                formData.append('InspectionTemplatePdf', serviceData.inspectionTemplatePdf);
+            }
+
             // ✅ NUEVO: Agregar imágenes a eliminar (IDs) - DEBE SER STRING JSON
             if (serviceData.imagesToDelete && serviceData.imagesToDelete.length > 0) {
                 const imagesToDeleteJson = JSON.stringify(serviceData.imagesToDelete);
