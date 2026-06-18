@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe, Heart, User } from 'lucide-react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
@@ -449,7 +449,10 @@ const AppContent: React.FC = () => {
                                         Configuración
                                     </button>
                                     <button
-                                        onClick={() => setSidebarOpen(false)}
+                                        onClick={() => {
+                                            navigate('/ayuda');
+                                            setSidebarOpen(false);
+                                        }}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                         <HelpCircle className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
@@ -563,9 +566,10 @@ const AppContent: React.FC = () => {
                             <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/mis-mensajes" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/crear-busqueda" element={<RouteSuspense><LazyPages.SearchCreationPage /></RouteSuspense>} />
-                            <Route path="/quienes-somos" element={<RouteSuspense><LazyPages.QuienesSomosPage /></RouteSuspense>} />
-                            <Route path="/como-funciona" element={<RouteSuspense><LazyPages.ComoFuncionaPage /></RouteSuspense>} />
-                            <Route path="/faq" element={<RouteSuspense><LazyPages.FAQPage /></RouteSuspense>} />
+                            <Route path="/ayuda" element={<RouteSuspense><LazyPages.CentroAyudaPage /></RouteSuspense>} />
+                            <Route path="/quienes-somos" element={<Navigate to="/ayuda" replace />} />
+                            <Route path="/como-funciona" element={<Navigate to="/ayuda" replace />} />
+                            <Route path="/faq" element={<Navigate to="/ayuda" replace />} />
                             <Route path="/favoritos" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
                             {/* 🛡️ MUD-DI — `/notifications` antes daba 404 a pesar de que
                                 LoggingService.cs:1053 enviaba este link en TODOS los emails. */}
