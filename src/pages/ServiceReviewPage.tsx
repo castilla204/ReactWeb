@@ -650,15 +650,14 @@ export function ServiceReviewPage({
                                             {displayMainDescription}
                                         </p>
                                     ) : null}
-                                    {visibleDeliverableTypes.length > 0 ? (
+                                    {showInspectionReport ? (
+                                        <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                    ) : visibleDeliverableTypes.length > 0 ? (
                                         <ServiceDetailDeliverablesGuide
                                             items={finalDeliverableTypes}
                                             variant="inline"
                                         />
                                     ) : null}
-                                    {showInspectionReport && (
-                                        <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
-                                    )}
                                     {(expertLocationLabel || expertRange !== null) ? (
                                         <div className={`flex items-start gap-2 ${SD_MOBILE_META_CLASS}`}>
                                             <MapPin size={16} className="mt-0.5 shrink-0 text-[#1C63B4]" />
@@ -826,7 +825,12 @@ export function ServiceReviewPage({
                                                 </div>
                                             </section>
                                         ) : null}
-                                        {visibleDeliverableTypes.length > 0 ? (
+                                        {showInspectionReport ? (
+                                            <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
+                                                <h2 className="hp-section-title mb-3">Qué incluye</h2>
+                                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
+                                            </section>
+                                        ) : visibleDeliverableTypes.length > 0 ? (
                                             <section
                                                 className={
                                                     displayMainDescription
@@ -840,11 +844,6 @@ export function ServiceReviewPage({
                                                     presentation="list"
                                                     showHeading
                                                 />
-                                            </section>
-                                        ) : null}
-                                        {showInspectionReport ? (
-                                            <section className={visibleDeliverableTypes.length > 0 || displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
-                                                <InspectionReportPreview config={inspectionConfig} pdfUrl={inspectionPdfUrl} />
                                             </section>
                                         ) : null}
                                     </div>
