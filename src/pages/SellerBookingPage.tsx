@@ -28,6 +28,9 @@ export default function SellerBookingPage() {
     const [chosenLocation, setChosenLocation] = useState<CheckoutLocationData | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState(false);
+    const [declineConfirming, setDeclineConfirming] = useState(false);
+    const [declining, setDeclining] = useState(false);
+    const [declined, setDeclined] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [windowInfo, setWindowInfo] = useState<{
         fromYmd: string; days: number; windowExtended: boolean; hasAvailability: boolean;
@@ -99,6 +102,32 @@ export default function SellerBookingPage() {
         }
     };
 
+    // "No puedo quedar": el vendedor declina coordinar. Cancela la autorización (0 € de coste,
+    // captura diferida) y devuelve el importe al comprador. Confirmación en 2 pasos para no
+    // disparar la cancelación por un clic accidental.
+    const decline = async () => {
+        setError(null);
+        setDeclining(true);
+        try {
+            const res = await fetch(`${base}/decline`, { method: 'POST' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data?.message || 'No se pudo cancelar la coordinación.');
+            }
+            setDeclined(true);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'No se pudo cancelar la coordinación.');
+            // Recargar el contexto por si el enlace caducó o la cita ya estaba reservada.
+            try {
+                const r = await fetch(base);
+                if (r.ok) setCtx(await r.json());
+            } catch { /* ignore */ }
+        } finally {
+            setDeclining(false);
+            setDeclineConfirming(false);
+        }
+    };
+
     const slotConstraints = useMemo(() => {
         if (!windowInfo) return { minLeadDays: 0, windowDays: ctx?.maxDays ?? 14 };
         const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -131,12 +160,22 @@ export default function SellerBookingPage() {
                     </div>
                 )}
 
-                {status === 'ok' && (ctx?.alreadyBooked || done) && (
+                {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
                         <div>
                             <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Cita confirmada</p>
                             <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>El técnico acudirá en la fecha elegida. ¡Gracias!</p>
+                        </div>
+                    </div>
+                )}
+
+                {status === 'ok' && declined && (
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
+                        <div>
+                            <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Coordinación cancelada</p>
+                            <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
                         </div>
                     </div>
                 )}
@@ -158,7 +197,7 @@ export default function SellerBookingPage() {
                     </div>
                 )}
 
-                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && !declined
                     && windowInfo?.hasAvailability !== false && (
                     <div>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
@@ -221,6 +260,54 @@ export default function SellerBookingPage() {
                         >
                             {submitting ? 'Confirmando…' : 'Confirmar cita'}
                         </button>
+
+                        {/* "No puedo quedar": acción secundaria sutil. Confirmación en 2 pasos
+                            porque dispara la cancelación + devolución al comprador. */}
+                        {!declineConfirming ? (
+                            <button
+                                type="button"
+                                onClick={() => { setError(null); setDeclineConfirming(true); }}
+                                disabled={submitting || declining}
+                                style={{
+                                    marginTop: 10, width: '100%', background: 'transparent', color: '#6B7280',
+                                    border: 'none', padding: 8, fontSize: 13,
+                                    cursor: submitting ? 'default' : 'pointer', textDecoration: 'underline',
+                                }}
+                            >
+                                No voy a poder coordinar la cita
+                            </button>
+                        ) : (
+                            <div style={{ marginTop: 12, background: '#FBF1F1', border: '0.5px solid #F0C9C9', borderRadius: 10, padding: '12px 14px' }}>
+                                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#7A2E2E' }}>
+                                    Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
+                                </p>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button
+                                        type="button"
+                                        onClick={decline}
+                                        disabled={declining}
+                                        style={{
+                                            flex: 1, background: '#D32F2F', color: '#fff', border: 'none', borderRadius: 8,
+                                            padding: 10, fontSize: 14, fontWeight: 600,
+                                            cursor: declining ? 'default' : 'pointer', opacity: declining ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {declining ? 'Cancelando…' : 'Sí, cancelar'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeclineConfirming(false)}
+                                        disabled={declining}
+                                        style={{
+                                            flex: 1, background: '#fff', color: '#374151', border: '0.5px solid #DCE3EC',
+                                            borderRadius: 8, padding: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                                        }}
+                                    >
+                                        Volver
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

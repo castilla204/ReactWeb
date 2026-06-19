@@ -224,6 +224,14 @@ export const SD_ASIDE_MAP_PREVIEW_MIN_HEIGHT_PX = 144;
 export const SD_CHECKOUT_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[72rem] px-5 lg:px-8';
 
+/** Checkout desktop — paso cita + mapa (más ancho) */
+export const SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS =
+  'mx-auto w-full max-w-[90rem] px-5 lg:px-8 xl:px-10';
+
+/** Altura fija del bloque cita+mapa desktop (sin scroll interno entre columnas) */
+export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS =
+  'h-[min(84vh,800px)] max-h-[800px]';
+
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
 
@@ -234,17 +242,51 @@ export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-[#f7f7f7]';
 export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
   'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)]';
 
+/** Bloque cita+mapa desktop — una sola tarjeta */
+export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS =
+  'overflow-hidden rounded-2xl border border-[#eceef2] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]';
+
 /** Cabecera de sección dentro de tarjeta checkout desktop */
 export const SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS =
   'border-b border-[#f0f0f0] bg-white px-4 py-2.5';
 
 /** Cabecera compacta — bloques integrados (coordinación + calendario en la misma tarjeta) */
 export const SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS =
-  'border-b border-[#f0f0f0] bg-white px-4 py-2';
+  'border-b border-[#f0f0f0] bg-white px-5 py-2.5';
 
-/** Checkout desktop — columna cita + mapa pegado */
-export const SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS = 'w-full max-w-[500px]';
-export const SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS = 'w-[580px]';
+/** Título de sección integrado sin borde (checkout desktop) */
+export const SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS = 'px-5 pt-4 pb-1';
+
+/** Encabezado h3 de secciones integradas en checkout desktop */
+export const SD_CHECKOUT_EMBEDDED_SECTION_HEADING_CLASS =
+  'text-[14px] font-semibold tracking-[-0.02em] text-[#1c1c1c]';
+
+/** Texto explicativo bajo títulos integrados en checkout desktop */
+export const SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS =
+  'mt-1.5 max-w-none text-[13px] font-normal leading-[1.55] text-[#374151]';
+
+/** Sangrado horizontal del chrome respecto al contenido indentado del paso. */
+export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_BLEED_X_CLASS =
+  '-ml-[calc(1.25rem+1.5rem+0.625rem)] -mr-5';
+
+/** Contenido alineado con el texto del paso (tras badge + gap en cabecera numerada) */
+export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS =
+  'pl-[calc(1.25rem+1.5rem+0.625rem)] pr-5';
+
+/** Bloque interactivo embebido (calendario, mapa, horas) — contorno unificado */
+export const SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS =
+  'overflow-hidden rounded-xl border-2 border-[#cbd5e1] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.09),0_1px_3px_rgba(15,23,42,0.06)]';
+
+/** Padding interior del bloque calendario embebido (compacto). */
+export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2.5 lg:p-3';
+
+/** Checkout desktop — columna cita (calendario) */
+export const SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS =
+  'min-w-0 flex-[0_0_50%] xl:flex-[0_0_48%]';
+
+/** Checkout desktop — columna mapa */
+export const SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS =
+  'min-w-0 flex-1 lg:min-w-[50%]';
 
 /** SearchDetails desktop — layout marketplace (misma paleta que checkout) */
 export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-[#f7f7f7]';
@@ -334,11 +376,23 @@ export const SD_CHECKOUT_MOBILE_LEGAL_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} py-4`;
 
 /** Scroll checkout móvil — footer con nota + CTA */
+export const SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR =
+  'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)))';
+
 export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
-  'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]';
+  'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#ebebeb] bg-white/95 backdrop-blur-sm';
+  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#ebebeb] bg-white';
+
+/** Offset inferior compartido: drawer, mapa y scroll sobre el footer fijo checkout móvil. */
+export const SD_CHECKOUT_MOBILE_FOOTER_BOTTOM_OFFSET = SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR;
+
+export const SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS =
+  'bottom-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
+
+export const SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS =
+  'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
 

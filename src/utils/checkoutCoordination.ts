@@ -5,8 +5,6 @@ export interface CheckoutCoordinationPayload {
     sellerPhone?: string | null;
     sellerEmail?: string | null;
     sellerListingUrl?: string | null;
-    sellerMaxDays?: number | null;
-    sellerDeadlineHours?: number | null;
 }
 
 export interface CheckoutRouteState {
@@ -19,8 +17,6 @@ export interface CheckoutRouteState {
     sellerPhone?: string | null;
     sellerEmail?: string | null;
     sellerListingUrl?: string | null;
-    sellerMaxDays?: number | null;
-    sellerDeadlineHours?: number | null;
 }
 
 export function readCheckoutCoordinationFromState(
@@ -34,7 +30,5 @@ export function readCheckoutCoordinationFromState(
         sellerPhone: s.sellerPhone ?? null,
         sellerEmail: s.sellerEmail ?? null,
         sellerListingUrl: s.sellerListingUrl ?? null,
-        sellerMaxDays: s.sellerMaxDays ?? null,
-        sellerDeadlineHours: s.sellerDeadlineHours ?? null,
     };
 }

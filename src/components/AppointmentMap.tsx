@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { capMapWorkers } from '../lib/mapWorkers';
@@ -48,9 +49,21 @@ interface AppointmentMapProps {
   /** Posición del buscador flotante (p. ej. bajo stepper superpuesto). */
   searchOverlayClassName?: string;
   /** Checkout: mapa neutro, solo contorno discontinuo del radio — sin relleno ni máscara roja/verde. */
+  /** Checkout desktop: contorno discontinuo sin relleno (panel experto). `default`: zona rellena + máscara. */
   coverageStyle?: 'default' | 'minimal';
   /** Dirección fuera del radio de cobertura (p. ej. búsqueda). */
   onLocationRejected?: (info: { reason: 'out_of_range'; address: string }) => void;
+  /** Usuario borra la búsqueda / ubicación elegida. */
+  onLocationClear?: () => void;
+  /** Vista referencia checkout (Coordínalo Inspecciono): zoom más abierto para ver la zona. */
+  referencePreview?: boolean;
+  /** Búsqueda externa (cabecera del wizard): recentra mapa y coloca marcador sin overlay. */
+  externalAddressPick?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+    nonce: number;
+  } | null;
 }
 
 // ============================================================================
@@ -154,20 +167,18 @@ const buildExpertDotElement = (size: number): HTMLDivElement => {
 };
 
 /**
- * Pin de la ubicación elegida: lágrima estilo Google/Apple en azul de marca, con
- * punto blanco central y sombra. Se ancla por la PUNTA (anchor 'bottom') para que
- * señale el punto exacto.
+ * Ubicación elegida (checkout minimal): anillo suave + punto de marca preciso.
+ * Ancla en el centro — señala el pixel exacto sin lágrima genérica.
  */
 const buildSelectedPinElement = (): HTMLDivElement => {
   const el = document.createElement('div');
   el.style.cursor = 'pointer';
-  el.style.filter = 'drop-shadow(0 4px 5px rgba(0,0,0,0.3))';
   el.innerHTML = `
-    <svg width="30" height="40" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 20 12 20s12-11.6 12-20C24 5.4 18.6 0 12 0z" fill="#0066CC" stroke="#004C99" stroke-width="1"/>
-      <circle cx="12" cy="12" r="5" fill="#FFFFFF"/>
-      <circle cx="12" cy="12" r="2.5" fill="#0066CC"/>
-    </svg>`;
+    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px">
+      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,102,204,0.14)"></div>
+      <div style="position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,102,204,0.35);background:rgba(255,255,255,0.92)"></div>
+      <div style="position:relative;width:12px;height:12px;border-radius:50%;background:#0066CC;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,40,100,0.35)"></div>
+    </div>`;
   return el;
 };
 
@@ -196,7 +207,10 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   searchMinimal = false,
   searchOverlayClassName,
   coverageStyle = 'default',
+  referencePreview = false,
   onLocationRejected,
+  onLocationClear,
+  externalAddressPick = null,
 }) => {
   const isMinimalCoverage = coverageStyle === 'minimal';
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -329,7 +343,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       zoom: defaultZoom,
       minZoom: 3,
       maxZoom: 20,
-      interactive: !disabled,
+      interactive: !disabled || referencePreview,
       attributionControl: !isMinimalCoverage,
     });
 
@@ -380,26 +394,26 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       });
 
       if (isMinimalCoverage) {
-        // Zona elegible estilo panel de experto: relleno azul muy suave + contorno
-        // fino sólido (mismos valores que ProfileEditForm). Limpio, sin máscara roja
-        // ni líneas a rayas.
-        map.addLayer({
-          id: LAYER_CIRCLE_FILL,
-          type: 'fill',
-          source: SRC_CIRCLE,
-          paint: {
-            'fill-color': '#0066CC',
-            'fill-opacity': 0.12,
-          },
-        });
-
+        // Checkout / vista referencia: contorno discontinuo; en preview, relleno muy suave.
+        if (referencePreview) {
+          map.addLayer({
+            id: LAYER_CIRCLE_FILL,
+            type: 'fill',
+            source: SRC_CIRCLE,
+            paint: {
+              'fill-color': '#0066CC',
+              'fill-opacity': 0.07,
+            },
+          });
+        }
         map.addLayer({
           id: LAYER_CIRCLE_LINE,
           type: 'line',
           source: SRC_CIRCLE,
           paint: {
-            'line-color': 'rgba(0, 102, 204, 0.55)',
-            'line-width': 2,
+            'line-color': referencePreview ? 'rgba(0, 102, 204, 0.85)' : 'rgba(0, 102, 204, 0.62)',
+            'line-width': referencePreview ? 2.5 : 2,
+            'line-dasharray': [3, 3],
           },
         });
       } else {
@@ -460,18 +474,27 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       } // fin if (radius > 0)
 
       if (isMinimalCoverage && memoizedCoordinates.radius > 0) {
+        const fitRadiusKm = referencePreview
+          ? Math.max(memoizedCoordinates.radius * 2.8, 22)
+          : memoizedCoordinates.radius;
         const [[minLng, minLat], [maxLng, maxLat]] = boundsFromCircle(
           memoizedCoordinates.lng,
           memoizedCoordinates.lat,
-          memoizedCoordinates.radius,
+          fitRadiusKm,
         );
         map.fitBounds(
           [
             [minLng, minLat],
             [maxLng, maxLat],
           ],
-          { padding: 48, duration: 0, maxZoom: 13 },
+          {
+            padding: referencePreview ? 72 : 48,
+            duration: 0,
+            maxZoom: referencePreview ? 9.5 : 13,
+          },
         );
+      } else if (referencePreview && memoizedCoordinates.radius <= 0) {
+        map.setZoom(Math.min(defaultZoom, 11));
       }
 
       // 3) Marker del experto
@@ -501,7 +524,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
             : buildMarkerElement(SELECTED_MARKER_SVG, 32);
           selectedMarkerRef.current = new mapboxgl.Marker({
             element: el,
-            anchor: isMinimalCoverage ? 'bottom' : 'center',
+            anchor: 'center',
           })
             .setLngLat([initLng, initLat])
             .addTo(map);
@@ -511,7 +534,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
     // 5) Click handler con reverse geocoding
     const handleClick = async (e: mapboxgl.MapMouseEvent) => {
-      if (disabled || !onLocationSelect) return;
+      if (disabled || referencePreview || !onLocationSelect) return;
 
       dismissAutocomplete();
 
@@ -540,7 +563,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
           : buildMarkerElement(SELECTED_MARKER_SVG, 32);
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
-          anchor: isMinimalCoverage ? 'bottom' : 'center',
+          anchor: 'center',
         })
           .setLngLat([clickedLng, clickedLat])
           .addTo(map);
@@ -568,7 +591,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       commitSearchQuery(resolvedAddress);
     };
 
-    if (!disabled && onLocationSelect) {
+    if (!disabled && !referencePreview && onLocationSelect) {
       map.on('click', handleClick);
     }
 
@@ -594,6 +617,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     disabled,
     showExpertMarker,
     coverageStyle,
+    referencePreview,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -661,7 +685,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
           : buildMarkerElement(SELECTED_MARKER_SVG, 32);
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
-          anchor: isMinimalCoverage ? 'bottom' : 'center',
+          anchor: 'center',
         })
           .setLngLat([item.lng, item.lat])
           .addTo(map);
@@ -686,9 +710,72 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     }
   };
 
+  const applyExternalAddressPick = (pick: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.flyTo({ center: [pick.longitude, pick.latitude], zoom: 15 });
+
+    if (!disabled) {
+      if (selectedMarkerRef.current) {
+        selectedMarkerRef.current.setLngLat([pick.longitude, pick.latitude]);
+      } else {
+        const el = isMinimalCoverage
+          ? buildSelectedPinElement()
+          : buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        selectedMarkerRef.current = new mapboxgl.Marker({
+          element: el,
+          anchor: 'center',
+        })
+          .setLngLat([pick.longitude, pick.latitude])
+          .addTo(map);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!externalAddressPick) return;
+    applyExternalAddressPick(externalAddressPick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalAddressPick?.nonce]);
+
+  useEffect(() => {
+    if (initialLocation?.latitude != null && initialLocation?.longitude != null) return;
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.remove();
+      selectedMarkerRef.current = null;
+    }
+  }, [initialLocation?.latitude, initialLocation?.longitude]);
+
+  const handleClearSearch = () => {
+    committedQueryRef.current = null;
+    setSearchQuery('');
+    dismissAutocomplete();
+    setSearchError(null);
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.remove();
+      selectedMarkerRef.current = null;
+    }
+    onLocationClear?.();
+    const map = mapRef.current;
+    if (map) {
+      map.flyTo({
+        center: [memoizedCoordinates.lng, memoizedCoordinates.lat],
+        zoom: defaultZoom,
+      });
+    }
+    searchInputRef.current?.focus();
+  };
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+
+  const hasSearchText = searchQuery.length > 0;
 
   const shellCls = frameless
     ? 'relative bg-background'
@@ -755,19 +842,23 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
                 onBlur={() => setTimeout(() => dismissAutocomplete(), 150)}
                 disabled={disabled}
               />
-              <svg
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              {hasSearchText && !disabled ? (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleClearSearch}
+                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-black/[0.06] hover:text-[#1c1c1c]"
+                  aria-label="Borrar búsqueda"
+                >
+                  <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                </button>
+              ) : (
+                <Search
+                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748b]"
+                  strokeWidth={2.25}
+                  aria-hidden
                 />
-              </svg>
+              )}
 
               {showAutocomplete && autocompleteResults.length > 0 && (
                 <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-y-auto z-[10000]">

@@ -210,7 +210,6 @@ interface CreateSearchWithHireData {
     sellerEmail?: string | null;
     sellerListingUrl?: string | null;
     sellerBookingMaxDays?: number | null;
-    sellerBookingDeadlineHours?: number | null;
 }
 
 export const useSearch = (options: { enableQueries?: boolean } = {}) => {
@@ -296,7 +295,7 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
     });
 
     const createSearchWithHireMutation = useMutation({
-        mutationFn: ({ searchData, parameters, startsAtUtc, endsAtUtc, location, latitude, longitude, doorNumber, siteDetails, coordinationMode, sellerPhone, sellerEmail, sellerListingUrl, sellerBookingMaxDays, sellerBookingDeadlineHours }: CreateSearchWithHireData) =>
+        mutationFn: ({ searchData, parameters, startsAtUtc, endsAtUtc, location, latitude, longitude, doorNumber, siteDetails, coordinationMode, sellerPhone, sellerEmail, sellerListingUrl, sellerBookingMaxDays }: CreateSearchWithHireData) =>
             fetchApi<{ url?: string; searchId?: number; searchHireId?: number }>(
                 API_CONFIG.endpoints.search.createWithHire,
                 {
@@ -317,7 +316,6 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
                         sellerEmail: sellerEmail ?? null,
                         sellerListingUrl: sellerListingUrl ?? null,
                         sellerBookingMaxDays: sellerBookingMaxDays ?? null,
-                        sellerBookingDeadlineHours: sellerBookingDeadlineHours ?? null,
                     }),
                 }
             ),

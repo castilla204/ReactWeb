@@ -1144,6 +1144,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         console.log('[SearchDetails] handleAppointmentAction called:', { action, appointmentId: appointment.id, appointment });
         try {
             switch (action) {
+                // 🧟 LEGACY (2026-06-19): los case 'propose'/'confirm'/'reject' son del flujo antiguo retirado.
+                // Inalcanzables: ningún botón vivo dispara estas acciones (triggers desactivados en
+                // AppointmentStatus.tsx + flags showPropose/showAccept/showReject forzados a false). Se conservan
+                // por estructura del switch; las acciones vivas son 'cancel'/'chat'/'dispute'/'approve'/etc.
                 case 'propose':
                     setAppointmentData(appointment);
                     setShowAppointmentForm(true);

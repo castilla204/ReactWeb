@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Check, Maximize2, X, ChevronUp } from 'lucide-react';
+import { MapPin, Check, Maximize2, X } from 'lucide-react';
 import AppointmentMap from './AppointmentMap';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { cn } from '../lib/utils';
@@ -10,6 +10,16 @@ import {
     SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS,
 } from '../constants/homepageTypography';
 import { showToast } from '../lib/toast';
+import {
+    CheckoutSellerChoicePreviewMap,
+    CheckoutSellerChoicePreviewCalendar,
+    CheckoutSelfChoicePreviewMap,
+    CheckoutSelfChoicePickLocationShell,
+} from './checkout/CheckoutSellerChoiceLocked';
+import { CheckoutEmbeddedStepHeader } from './checkout/CheckoutEmbeddedStepHeader';
+import MapAddressSearchBar, { type MapAddressSelection } from './MapAddressSearchBar';
+import { haversineDistanceKm } from '../utils/mapboxCircle';
+import { CheckoutLocationDetailsDrawer } from './checkout/CheckoutLocationDetailsDrawer';
 
 /** Ubicación de la cita elegida en el checkout (strings: viajan como metadata al backend). */
 export interface CheckoutLocationData {
@@ -29,17 +39,21 @@ interface Props {
     onChange: (data: CheckoutLocationData | null) => void;
     /** Paso dedicado del wizard móvil: mapa a pantalla casi completa + drawer inferior. */
     variant?: 'default' | 'wizard' | 'sidebar';
+    /** Mapa informativo (Coordínalo Inspecciono): misma UI, sin elegir ubicación. */
+    referenceMode?: boolean;
 }
 
 const FIELD_INPUT_CLS =
     'w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#1c1c1c] placeholder:text-[#b0b0b0] transition-colors focus:border-[#c5c9d0] focus:outline-none focus:ring-2 focus:ring-[#1c1c1c]/8';
 
 const DRAWER_FIELD_INPUT_CLS =
-    'h-11 w-full rounded-lg border border-[#ebebeb] bg-white px-3 text-[15px] text-[#1c1c1c] placeholder:text-[#b0b0b0] transition-colors focus:border-[#1c1c1c]/30 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#fafafa] disabled:text-[#a3a3a3]';
+    'h-12 w-full rounded-2xl border border-transparent bg-[#f3f4f6] px-4 text-[15px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-all focus:border-brand/20 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15';
 
-/** Degradado de marca suave en todo el header del drawer. */
-const DRAWER_HEADER_GRADIENT =
-    'linear-gradient(128deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.44) 100%), linear-gradient(128deg, rgba(0,102,204,0.28) 0%, rgba(37,99,235,0.22) 52%, rgba(245,158,11,0.26) 100%)';
+const DRAWER_MOBILE_FIELD_INPUT_CLS =
+    'h-11 w-full rounded-full bg-[#f4f5f7] px-4 text-[15px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa] transition-colors focus:bg-white focus:ring-2 focus:ring-brand/20';
+
+const DESKTOP_SIDEBAR_FIELD_INPUT_CLS =
+    'h-9 w-full rounded-lg border border-[#e5e7eb] bg-white px-2.5 text-[13px] text-[#1c1c1c] placeholder:text-[#b0b0b0] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 interface LocationDetailsFieldsProps {
     picked: { address: string } | null;
@@ -50,6 +64,9 @@ interface LocationDetailsFieldsProps {
     compact?: boolean;
     minimal?: boolean;
     drawer?: boolean;
+    drawerDesktop?: boolean;
+    /** Drawer checkout móvil: la dirección va en la cabecera del panel. */
+    drawerCompact?: boolean;
     doorInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
@@ -62,30 +79,96 @@ function LocationDetailsFields({
     compact = false,
     minimal = false,
     drawer = false,
+    drawerDesktop = false,
+    drawerCompact = false,
     doorInputRef,
 }: LocationDetailsFieldsProps) {
-    const labelCls = drawer
-        ? 'text-[13px] font-medium leading-snug text-[#1c1c1c]'
-        : minimal
+    const labelCls = drawerCompact
+        ? 'mb-1.5 block text-[12px] font-medium text-[#64748b]'
+        : drawer
+          ? 'mb-2 block text-[13px] font-medium leading-snug text-[#374151]'
+          : minimal
           ? 'mb-0.5 block text-[10px] font-medium uppercase tracking-wide text-[#999]'
           : 'mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#888]';
 
-    const optionalCls = drawer
-        ? 'shrink-0 text-[11px] font-normal text-[#9ca3af]'
-        : 'ml-1 normal-case tracking-normal text-[#bbb]';
+    const optionalCls = drawerCompact
+        ? 'font-normal text-[#b0b0b0]'
+        : drawer
+          ? 'shrink-0 text-[11px] font-normal text-[#9ca3af]'
+          : 'ml-1 normal-case tracking-normal text-[#bbb]';
 
-    const inputCls = drawer
-        ? DRAWER_FIELD_INPUT_CLS
-        : minimal
-          ? 'w-full rounded-md border border-[#e8e8e8] bg-white px-2 py-1.5 text-xs text-[#1c1c1c] placeholder:text-[#c4c4c4] focus:border-[#c5c9d0] focus:outline-none focus:ring-1 focus:ring-[#1c1c1c]/8'
-          : FIELD_INPUT_CLS;
+    const inputCls = drawerDesktop
+        ? DESKTOP_SIDEBAR_FIELD_INPUT_CLS
+        : drawerCompact
+          ? DRAWER_MOBILE_FIELD_INPUT_CLS
+          : drawer
+            ? DRAWER_FIELD_INPUT_CLS
+            : minimal
+            ? 'w-full rounded-md border border-[#e8e8e8] bg-white px-2 py-1.5 text-xs text-[#1c1c1c] placeholder:text-[#c4c4c4] focus:border-[#c5c9d0] focus:outline-none focus:ring-1 focus:ring-[#1c1c1c]/8'
+            : FIELD_INPUT_CLS;
+
+    if (drawerDesktop) {
+        return (
+            <div className="space-y-2.5">
+                {picked ? (
+                    <p className="flex items-start gap-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c]">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
+                        <span className="line-clamp-1">{picked.address}</span>
+                    </p>
+                ) : (
+                    <p className="text-[12px] font-medium leading-snug text-[#64748b]">
+                        Marca un punto en el mapa o búscalo arriba
+                    </p>
+                )}
+                <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label
+                            htmlFor="checkout-door-sidebar"
+                            className="mb-1 block text-[11px] font-medium text-[#64748b]"
+                        >
+                            Puerta / garaje{' '}
+                            <span className="font-normal text-[#b0b0b0]">(opc.)</span>
+                        </label>
+                        <input
+                            ref={doorInputRef}
+                            id="checkout-door-sidebar"
+                            type="text"
+                            value={doorNumber}
+                            onChange={(e) => onDoorChange(e.target.value)}
+                            placeholder="3B, garaje 12…"
+                            className={inputCls}
+                            autoComplete="address-line2"
+                        />
+                    </div>
+                    <div>
+                        <label
+                            htmlFor="checkout-details-sidebar"
+                            className="mb-1 block text-[11px] font-medium text-[#64748b]"
+                        >
+                            Indicaciones{' '}
+                            <span className="font-normal text-[#b0b0b0]">(opc.)</span>
+                        </label>
+                        <input
+                            id="checkout-details-sidebar"
+                            type="text"
+                            value={siteDetails}
+                            onChange={(e) => onDetailsChange(e.target.value)}
+                            placeholder="Parking, portal…"
+                            className={inputCls}
+                        />
+                    </div>
+                </div>
+                <p className="text-[10px] leading-snug text-[#9ca3af]">
+                    Solo el experto que contrates verá la dirección exacta.
+                </p>
+            </div>
+        );
+    }
 
     if (drawer) {
-        const fieldsDisabled = !picked;
-
         return (
-            <div className="space-y-0">
-                {picked ? (
+            <div className={cn('space-y-0', drawerCompact && 'pb-1')}>
+                {picked && !drawerCompact ? (
                     <div className="border-b border-[#f0f0f0] pb-4">
                         <p className={SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS}>Dirección</p>
                         <p className="mt-1.5 text-[13px] font-medium leading-snug text-[#1c1c1c]">
@@ -96,43 +179,49 @@ function LocationDetailsFields({
 
                 <fieldset
                     className={cn(
-                        'min-w-0 space-y-3.5 border-0 p-0',
-                        picked ? 'pt-4' : 'pt-0',
-                        fieldsDisabled && 'pointer-events-none opacity-40',
+                        'min-w-0 space-y-3 border-0 p-0',
+                        picked && !drawerCompact ? 'pt-4' : 'pt-0',
                     )}
-                    disabled={fieldsDisabled}
                 >
-                    <div>
-                        <label htmlFor="checkout-door" className="mb-1.5 block text-xs text-[#6a6a6a]">
-                            Puerta o garaje <span className="text-[#b0b0b0]">(opcional)</span>
-                        </label>
-                        <input
-                            ref={doorInputRef}
-                            id="checkout-door"
-                            type="text"
-                            value={doorNumber}
-                            onChange={(e) => onDoorChange(e.target.value)}
-                            placeholder="3B, garaje 12…"
-                            className={inputCls}
-                            autoComplete="address-line2"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="checkout-details" className="mb-1.5 block text-xs text-[#6a6a6a]">
-                            Indicaciones de acceso <span className="text-[#b0b0b0]">(opcional)</span>
-                        </label>
-                        <input
-                            id="checkout-details"
-                            type="text"
-                            value={siteDetails}
-                            onChange={(e) => onDetailsChange(e.target.value)}
-                            placeholder="Parking, portal, referencias…"
-                            className={inputCls}
-                        />
-                    </div>
+                        <div>
+                            <label htmlFor="checkout-door" className={labelCls}>
+                                Puerta o garaje{' '}
+                                <span className={optionalCls}>(opcional)</span>
+                            </label>
+                            <input
+                                ref={doorInputRef}
+                                id="checkout-door"
+                                type="text"
+                                value={doorNumber}
+                                onChange={(e) => onDoorChange(e.target.value)}
+                                placeholder="3B, garaje 12…"
+                                className={inputCls}
+                                autoComplete="address-line2"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="checkout-details" className={labelCls}>
+                                Indicaciones de acceso{' '}
+                                <span className={optionalCls}>(opcional)</span>
+                            </label>
+                            <input
+                                id="checkout-details"
+                                type="text"
+                                value={siteDetails}
+                                onChange={(e) => onDetailsChange(e.target.value)}
+                                placeholder="Parking, portal, referencias…"
+                                className={inputCls}
+                            />
+                        </div>
                 </fieldset>
 
-                <p className={cn('border-t border-[#f5f5f5] pt-3.5', SD_CHECKOUT_MOBILE_META_CLASS)}>
+                <p
+                    className={cn(
+                        drawerCompact
+                            ? 'mt-3 text-[11px] leading-relaxed text-[#9ca3af]'
+                            : cn('border-t border-[#f5f5f5] pt-3.5', SD_CHECKOUT_MOBILE_META_CLASS),
+                    )}
+                >
                     Solo el experto que contrates verá la dirección exacta.
                 </p>
             </div>
@@ -208,15 +297,15 @@ function LocationDetailsFields({
             </div>
 
             {!minimal ? (
-                <p className={cn('leading-relaxed text-[#aaa]', compact ? 'mt-2.5 text-[10px]' : 'mt-3 text-[10px]')}>
-                    Solo el experto que contrates verá la dirección exacta.
+                <p className={cn('leading-relaxed text-[#aaa]', compact ? 'mt-2 text-[10px]' : 'mt-3 text-[10px]')}>
+                    Solo el experto verá la dirección exacta.
                 </p>
             ) : null}
         </>
     );
 }
 
-/** Drawer inferior superpuesto al mapa (móvil / wizard). */
+/** Drawer inferior superpuesto al mapa (móvil / wizard / sidebar desktop). */
 function LocationMapDrawer({
     picked,
     doorNumber,
@@ -226,106 +315,69 @@ function LocationMapDrawer({
     expanded,
     onToggle,
     doorInputRef,
-}: LocationDetailsFieldsProps & { expanded: boolean; onToggle: () => void }) {
-    return (
-        <>
-            {expanded ? (
-                <button
-                    type="button"
-                    className="absolute inset-0 z-[14] bg-black/15 transition-opacity duration-300 lg:hidden"
-                    onClick={onToggle}
-                    aria-label="Cerrar detalles de ubicación"
-                />
-            ) : null}
+    desktopSidebar = false,
+}: LocationDetailsFieldsProps & {
+    expanded: boolean;
+    onToggle: () => void;
+    desktopSidebar?: boolean;
+}) {
+    const [entered, setEntered] = useState(false);
 
-            <div className="absolute inset-x-0 bottom-0 z-[15] lg:hidden" aria-live="polite">
-                <div
-                    className={cn(
-                        'relative flex flex-col overflow-hidden rounded-t-2xl bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.1)] transition-[max-height] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
-                        expanded ? 'max-h-[min(54vh,380px)]' : 'max-h-[6.5rem]',
-                    )}
-                >
-                    <div
-                        className="relative shrink-0 overflow-hidden rounded-t-2xl"
-                        style={{ background: DRAWER_HEADER_GRADIENT }}
-                    >
-                        <button
-                            type="button"
-                            onClick={onToggle}
-                            className="relative flex w-full flex-col items-center pt-2.5 pb-0"
-                            aria-expanded={expanded}
-                            aria-label={expanded ? 'Contraer panel de ubicación' : 'Expandir panel de ubicación'}
-                        >
-                            <span className="h-[3px] w-9 rounded-full bg-[#d4d4d4]" aria-hidden />
-                        </button>
+    useEffect(() => {
+        if (!desktopSidebar) return;
+        const frame = window.requestAnimationFrame(() => setEntered(true));
+        return () => window.cancelAnimationFrame(frame);
+    }, [desktopSidebar]);
 
-                        <button
-                            type="button"
-                            onClick={onToggle}
-                            className="relative flex w-full items-center justify-between gap-3 px-5 pb-3.5 pt-1.5 text-left"
-                        >
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[15px] font-semibold tracking-[-0.02em] text-[#111111]">
-                                    {picked ? 'Detalles del lugar' : 'Ubicación'}
-                                </p>
-                                {!expanded ? (
-                                    picked ? (
-                                        <p className="mt-1 truncate text-[13px] font-medium text-[#2a2a2a]">
-                                            {picked.address}
-                                        </p>
-                                    ) : (
-                                        <p className="mt-0.5 text-[13px] font-medium text-[#3d3d3d]">
-                                            Marca un punto en el mapa
-                                        </p>
-                                    )
-                                ) : (
-                                    <p className="mt-1 text-[13px] leading-snug text-[#525252]">
-                                        {picked
-                                            ? 'Puerta, garaje o referencias para llegar.'
-                                            : 'Elige primero la dirección en el mapa.'}
-                                    </p>
-                                )}
-                            </div>
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/90">
-                                <ChevronUp
-                                    className={cn(
-                                        'h-[18px] w-[18px] text-[#555555] transition-transform duration-300',
-                                        expanded ? 'rotate-0' : 'rotate-180',
-                                    )}
-                                    aria-hidden
-                                />
-                            </span>
-                        </button>
-
-                        <span
-                            className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-[#ebebeb]"
-                            aria-hidden
-                        />
-                    </div>
-
-                    <div className="flex min-h-0 flex-1 flex-col">
-                        <div
-                            className={cn(
-                                'min-h-0 overflow-y-auto overscroll-contain bg-white px-5 transition-[opacity,max-height] duration-300',
-                                expanded
-                                    ? 'max-h-[min(40vh,300px)] pb-5 pt-4 opacity-100'
-                                    : 'max-h-0 pb-0 pt-0 opacity-0',
-                            )}
-                        >
-                            <LocationDetailsFields
-                                picked={picked}
-                                doorNumber={doorNumber}
-                                siteDetails={siteDetails}
-                                onDoorChange={onDoorChange}
-                                onDetailsChange={onDetailsChange}
-                                drawer
-                                doorInputRef={doorInputRef}
-                            />
-                        </div>
-                    </div>
+    if (desktopSidebar) {
+        return (
+            <div
+                className={cn(
+                    'absolute inset-x-0 bottom-0 z-[15] px-3 pb-3',
+                    entered ? 'translate-y-0' : 'translate-y-full',
+                    'transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                )}
+                aria-live="polite"
+            >
+                <div className="overflow-hidden rounded-xl border border-[#eceef2] bg-white/98 px-3.5 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.1)] backdrop-blur-sm">
+                    <LocationDetailsFields
+                        picked={picked}
+                        doorNumber={doorNumber}
+                        siteDetails={siteDetails}
+                        onDoorChange={onDoorChange}
+                        onDetailsChange={onDetailsChange}
+                        drawerDesktop
+                        doorInputRef={doorInputRef}
+                    />
                 </div>
             </div>
-        </>
+        );
+    }
+
+    const detailBadge =
+        doorNumber.trim() || siteDetails.trim()
+            ? [doorNumber.trim(), siteDetails.trim()].filter(Boolean).join(' · ')
+            : null;
+
+    return (
+        <CheckoutLocationDetailsDrawer
+            open={!!picked}
+            addressLabel={picked?.address ?? ''}
+            detailBadge={detailBadge}
+            expanded={expanded}
+            onToggle={onToggle}
+        >
+            <LocationDetailsFields
+                picked={picked}
+                doorNumber={doorNumber}
+                siteDetails={siteDetails}
+                onDoorChange={onDoorChange}
+                onDetailsChange={onDetailsChange}
+                drawer
+                drawerCompact
+                doorInputRef={doorInputRef}
+            />
+        </CheckoutLocationDetailsDrawer>
     );
 }
 
@@ -340,6 +392,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     workRadiusKm,
     onChange,
     variant = 'default',
+    referenceMode = false,
 }) => {
     const isWizard = variant === 'wizard';
     const isSidebar = variant === 'sidebar';
@@ -354,10 +407,20 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     const [siteDetails, setSiteDetails] = useState('');
     const [expanded, setExpanded] = useState(false);
     const [drawerExpanded, setDrawerExpanded] = useState(false);
+    const [externalAddressPick, setExternalAddressPick] = useState<{
+        address: string;
+        latitude: number;
+        longitude: number;
+        nonce: number;
+    } | null>(null);
     const emittedStatic = useRef(false);
     const doorInputRef = useRef<HTMLInputElement>(null);
 
     const expandDrawerForEdit = () => {
+        if (isSidebar) {
+            window.setTimeout(() => doorInputRef.current?.focus(), 180);
+            return;
+        }
         setDrawerExpanded(true);
         window.setTimeout(() => doorInputRef.current?.focus(), 320);
     };
@@ -377,7 +440,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     }, [isWorkshopOnly]);
 
     useEffect(() => {
-        if (isWorkshopOnly) return;
+        if (isWorkshopOnly || referenceMode) return;
         if (picked) {
             onChange({
                 location: picked.address,
@@ -393,49 +456,139 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [picked, doorNumber, siteDetails, isWorkshopOnly]);
 
-    if (isWorkshopOnly) {
+    const workshopMapProps = expertLocation
+        ? {
+              onLocationSelect: () => {},
+              onLocationRejected: () => {},
+              onLocationClear: () => {},
+              initialLocation: {
+                  latitude: expertLocation.latitude,
+                  longitude: expertLocation.longitude,
+              },
+              expertLocation,
+              expertRange: 0,
+              expertCountry,
+              disabled: true,
+              showSearch: false,
+              showCountrySelector: false as const,
+              frameless: true as const,
+              searchMinimal: true as const,
+              coverageStyle: 'minimal' as const,
+              referencePreview: true,
+          }
+        : null;
+
+    if (isWorkshopOnly && workshopMapProps && (isWizard || isSidebar)) {
         return (
             <div
                 className={cn(
-                    'rounded-2xl border border-blue-100 bg-blue-50/60 p-4 lg:mx-0',
-                    isSidebar && SD_CHECKOUT_DESKTOP_CARD_CLASS,
+                    isWizard ? 'relative h-full min-h-0' : 'flex h-full min-h-0 w-full flex-1 flex-col bg-white',
                 )}
             >
-                <div className="flex items-center gap-2 text-blue-900">
-                    <MapPin className="h-5 w-5" />
-                    <h3 className="text-base font-semibold">La inspección es en el taller del experto</h3>
+                <CheckoutSelfChoicePreviewMap className="h-full min-h-0">
+                    <AppointmentMap
+                        {...workshopMapProps}
+                        className="h-full w-full min-h-[inherit]"
+                    />
+                </CheckoutSelfChoicePreviewMap>
+            </div>
+        );
+    }
+
+    if (isWorkshopOnly) {
+        return (
+            <div className={cn('overflow-hidden', SD_CHECKOUT_DESKTOP_CARD_CLASS)}>
+                <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
+                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                        Ubicación del taller
+                    </h3>
+                    <p className="mt-0.5 text-[11px] text-[#6a6a6a]">
+                        La inspección es en el punto fijo del experto.
+                    </p>
                 </div>
-                <p className="mt-1 text-sm text-blue-800">
-                    Este experto trabaja en su punto fijo, así que no necesitas elegir ubicación: te desplazarás tú a su taller.
-                </p>
+                {workshopMapProps ? (
+                    <div className="h-[min(56vh,420px)]">
+                        <AppointmentMap {...workshopMapProps} className="h-full w-full" />
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                        <div className="flex items-center gap-2 text-blue-900">
+                            <MapPin className="h-5 w-5" />
+                            <h3 className="text-base font-semibold">La inspección es en el taller del experto</h3>
+                        </div>
+                        <p className="mt-1 text-sm text-blue-800">
+                            Este experto trabaja en su punto fijo, así que no necesitas elegir ubicación.
+                        </p>
+                    </div>
+                )}
             </div>
         );
     }
 
     const handleLocationSelect = (location: { address: string; latitude: number; longitude: number }) => {
+        if (referenceMode) return;
         setPicked(location);
         expandDrawerForEdit();
     };
 
     const handleLocationRejected = (_info: { reason: 'out_of_range'; address: string }) => {
+        if (referenceMode) return;
         showToast('error', 'Esta dirección está fuera del área del experto. Elige un punto dentro del círculo.');
     };
+
+    const handleLocationClear = () => {
+        if (referenceMode) return;
+        setPicked(null);
+        setExternalAddressPick(null);
+    };
+
+    const handleSearchAddressSelect = (selection: MapAddressSelection) => {
+        if (referenceMode || !expertLocation) return;
+
+        const rangeKm = expertRange ?? 25;
+        const distanceKm = haversineDistanceKm(
+            expertLocation.latitude,
+            expertLocation.longitude,
+            selection.lat,
+            selection.lng,
+        );
+
+        if (distanceKm > rangeKm) {
+            handleLocationRejected({ reason: 'out_of_range', address: selection.address });
+            return;
+        }
+
+        setExternalAddressPick({
+            address: selection.address,
+            latitude: selection.lat,
+            longitude: selection.lng,
+            nonce: Date.now(),
+        });
+        handleLocationSelect({
+            address: selection.address,
+            latitude: selection.lat,
+            longitude: selection.lng,
+        });
+    };
+
+    const wizardPickLocation = isWizard && !referenceMode && !isWorkshopOnly;
 
     const mapProps = {
         onLocationSelect: handleLocationSelect,
         onLocationRejected: handleLocationRejected,
+        onLocationClear: handleLocationClear,
         initialLocation: picked ? { latitude: picked.latitude, longitude: picked.longitude } : undefined,
         expertLocation,
         expertRange,
         expertCountry,
-        showSearch: true as const,
+        disabled: false,
+        showSearch: !referenceMode && !wizardPickLocation,
         showCountrySelector: false as const,
         frameless: true as const,
         searchMinimal: true as const,
         coverageStyle: 'minimal' as const,
-        searchOverlayClassName: isWizard
-            ? 'left-3 right-3 top-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4rem)]'
-            : undefined,
+        referencePreview: referenceMode,
+        externalAddressPick: wizardPickLocation ? externalAddressPick : null,
     };
 
     const mapHeightCls = isWizard || isSidebar ? 'h-full min-h-[inherit]' : 'h-[min(56vh,420px)] lg:h-full lg:min-h-0';
@@ -448,22 +601,84 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         onDetailsChange: setSiteDetails,
     };
 
+    if (wizardPickLocation) {
+        return (
+            <CheckoutSelfChoicePickLocationShell
+                searchBar={
+                    <MapAddressSearchBar
+                        overlay
+                        country={expertCountry}
+                        proximity={
+                            expertLocation
+                                ? { lat: expertLocation.latitude, lng: expertLocation.longitude }
+                                : null
+                        }
+                        placeholder="Buscar dirección…"
+                        value={picked?.address ?? null}
+                        onSelect={handleSearchAddressSelect}
+                        onClear={handleLocationClear}
+                    />
+                }
+            >
+                <div className="relative h-full min-h-0">
+                    <AppointmentMap {...mapProps} className="h-full w-full min-h-[inherit]" />
+                    <LocationMapDrawer
+                        {...fieldProps}
+                        expanded={drawerExpanded}
+                        onToggle={() => setDrawerExpanded((v) => !v)}
+                        doorInputRef={doorInputRef}
+                    />
+                </div>
+            </CheckoutSelfChoicePickLocationShell>
+        );
+    }
+
     if (isSidebar) {
         return (
-            <div className="flex h-full min-h-0 flex-col">
-                <div className="relative min-h-0 flex-1 lg:min-h-[300px]">
-                    <AppointmentMap {...mapProps} className="h-full w-full min-h-[inherit]" />
+            <div className="flex h-full min-h-0 w-full flex-1 flex-col bg-white">
+                <CheckoutEmbeddedStepHeader
+                    step={3}
+                    title="¿Dónde es la inspección?"
+                    description={
+                        referenceMode
+                            ? 'Explora el mapa y la zona de cobertura del experto. Puedes mover y ampliar la vista; la dirección exacta la confirmará el vendedor al reservar.'
+                            : 'Indica dónde está el vehículo para que el experto acuda a revisarlo. La inspección debe ser dentro del área marcada en el mapa. Solo el profesional que contrates verá la dirección exacta.'
+                    }
+                />
+                <div className="relative flex min-h-0 w-full flex-1 flex-col">
+                    {referenceMode ? (
+                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0 w-full flex-1">
+                            <AppointmentMap
+                                {...mapProps}
+                                className="h-full w-full min-h-[inherit]"
+                            />
+                        </CheckoutSellerChoicePreviewMap>
+                    ) : (
+                    <>
+                    <AppointmentMap
+                        {...mapProps}
+                        className="h-full w-full min-h-[inherit]"
+                    />
                     <button
                         type="button"
                         onClick={() => setExpanded(true)}
-                        className="absolute bottom-3 right-3 z-[10] inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/60 bg-white/95 text-[#334155] shadow-sm backdrop-blur-sm transition-transform active:scale-95"
+                        className={cn(
+                            'absolute right-4 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#475569] shadow-sm backdrop-blur-sm transition-[transform,bottom,top] duration-300 active:scale-95',
+                            'bottom-[8.75rem] top-auto',
+                        )}
                         aria-label="Ampliar mapa a pantalla completa"
                     >
-                        <Maximize2 className="h-3.5 w-3.5" aria-hidden />
+                        <Maximize2 className="h-4 w-4" aria-hidden />
                     </button>
-                </div>
-                <div className="shrink-0 border-t border-[#f0f0f0] bg-white px-3.5 py-3">
-                    <LocationDetailsFields {...fieldProps} compact doorInputRef={doorInputRef} />
+                    <LocationMapDrawer
+                        {...fieldProps}
+                        expanded={drawerExpanded}
+                        onToggle={() => setDrawerExpanded((v) => !v)}
+                        doorInputRef={doorInputRef}
+                        desktopSidebar
+                    />
+                    </>
+                    )}
                 </div>
                 <Dialog open={expanded} onOpenChange={setExpanded}>
                     <DialogContent
@@ -480,7 +695,9 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             <div className="min-w-0">
                                 <p className="text-sm font-semibold text-[#1c1c1c]">Ubicación de la inspección</p>
                                 <p className="truncate text-xs text-[#6a6a6a]">
-                                    {picked?.address ?? 'Marca un punto dentro del área del experto'}
+                                    {referenceMode
+                                        ? 'Zona de cobertura del experto'
+                                        : picked?.address ?? 'Marca un punto dentro del área del experto'}
                                 </p>
                             </div>
                             <button
@@ -495,9 +712,11 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         <div className="relative min-h-0 flex-1">
                             <AppointmentMap {...mapProps} className="h-full w-full" />
                         </div>
+                        {!referenceMode && picked ? (
                         <footer className="shrink-0 border-t border-[#f0f0f0] p-4">
-                            <LocationDetailsFields {...fieldProps} doorInputRef={doorInputRef} />
+                            <LocationDetailsFields {...fieldProps} drawerDesktop doorInputRef={doorInputRef} />
                         </footer>
+                        ) : null}
                     </DialogContent>
                 </Dialog>
             </div>
@@ -517,15 +736,20 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                         ¿Dónde es la inspección?
                     </h3>
-                    <p className="mt-0.5 hidden text-[11px] text-[#6a6a6a] lg:block">
-                        Busca la dirección o haz clic en el mapa.
+                    <p className="mt-0.5 text-[11px] text-[#6a6a6a] lg:block">
+                        {referenceMode
+                            ? 'Vista previa de la zona. La dirección la elige el vendedor al reservar.'
+                            : 'Busca la dirección o haz clic en el mapa.'}
                     </p>
                 </div>
             ) : null}
 
             <div
                 className={cn(
-                    'lg:grid lg:h-[248px] lg:grid-cols-[minmax(0,1fr)_260px] lg:items-stretch',
+                    'lg:grid lg:h-[248px] lg:items-stretch',
+                    picked && !referenceMode
+                        ? 'lg:grid-cols-[minmax(0,1fr)_260px]'
+                        : 'lg:grid-cols-1',
                     isWizard && 'absolute inset-0',
                 )}
             >
@@ -537,7 +761,19 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         mapHeightCls,
                     )}
                 >
-                    <AppointmentMap {...mapProps} className="h-full w-full min-h-[inherit]" />
+                    {referenceMode ? (
+                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0">
+                            <AppointmentMap
+                                {...mapProps}
+                                className="h-full w-full min-h-[inherit]"
+                            />
+                        </CheckoutSellerChoicePreviewMap>
+                    ) : (
+                    <>
+                    <AppointmentMap
+                        {...mapProps}
+                        className="h-full w-full min-h-[inherit]"
+                    />
 
                     {!isWizard ? (
                         <button
@@ -545,9 +781,11 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             onClick={() => setExpanded(true)}
                             className={cn(
                                 'absolute right-3 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/95 text-[#334155] shadow-[0_4px_16px_rgba(15,23,42,0.12)] backdrop-blur-sm transition-[transform,bottom] duration-300 active:scale-95 lg:bottom-3 lg:right-3',
-                                drawerExpanded
+                                picked && drawerExpanded
                                     ? 'bottom-[min(calc(54vh+0.5rem),calc(380px+0.5rem))] lg:bottom-3'
-                                    : 'bottom-[7rem] lg:bottom-3',
+                                    : picked
+                                      ? 'bottom-[7rem] lg:bottom-3'
+                                      : 'bottom-3 lg:bottom-3',
                             )}
                             aria-label="Ampliar mapa a pantalla completa"
                         >
@@ -561,12 +799,16 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         onToggle={() => setDrawerExpanded((v) => !v)}
                         doorInputRef={doorInputRef}
                     />
+                    </>
+                    )}
                 </div>
 
-                {/* Desktop: panel lateral alineado con el mapa */}
+                {/* Desktop: panel lateral solo tras elegir ubicación */}
+                {!referenceMode && picked ? (
                 <div className="hidden h-full min-h-0 flex-col overflow-y-auto bg-white p-3.5 lg:flex">
                     <LocationDetailsFields {...fieldProps} doorInputRef={doorInputRef} compact />
                 </div>
+                ) : null}
             </div>
 
             {!isWizard ? (

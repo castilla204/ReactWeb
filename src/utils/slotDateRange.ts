@@ -21,3 +21,12 @@ export function computeSlotDateRange(
     maxDate.setDate(maxDate.getDate() + windowDays - 1);
     return { minDate, maxDate };
 }
+
+/** Día siguiente (mañana) acotado al rango seleccionable — p. ej. consulta en modo vendedor. */
+export function resolveNextDayInRange(minDate: Date, maxDate: Date): Date {
+    const next = startOfDay(new Date());
+    next.setDate(next.getDate() + 1);
+    if (next < minDate) return new Date(minDate);
+    if (next > maxDate) return new Date(maxDate);
+    return next;
+}
