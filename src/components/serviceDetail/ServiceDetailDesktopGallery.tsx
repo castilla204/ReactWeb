@@ -2,6 +2,13 @@ import React from 'react';
 import { Image, LayoutGrid } from 'lucide-react';
 import { SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS } from '../../constants/homepageTypography';
 
+interface ServiceDetailDesktopGalleryPrimaryOverlays {
+  /** Arriba-izquierda de la foto principal (p. ej. volver) */
+  topLeft?: React.ReactNode;
+  /** Abajo con degradado (p. ej. formación + título del servicio) */
+  bottom?: React.ReactNode;
+}
+
 interface ServiceDetailDesktopGalleryProps {
   images: string[];
   onOpen: (index: number) => void;
@@ -12,6 +19,8 @@ interface ServiceDetailDesktopGalleryProps {
   onImageLoadStart: (url: string) => void;
   /** split = mitad izquierda del hero (mosaico adaptado al ancho reducido) */
   layout?: 'default' | 'split';
+  /** Overlays anclados SOLO a la celda de la foto principal (índice 0) */
+  primaryOverlays?: ServiceDetailDesktopGalleryPrimaryOverlays;
   className?: string;
 }
 
@@ -30,11 +39,34 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   onImageLoad,
   onImageLoadStart,
   layout = 'default',
+  primaryOverlays,
   className = '',
 }) => {
   const shellHeight = resolveShellHeight(className);
   const isSplit = layout === 'split';
   const shellClass = `sd-gallery-shell ${isSplit ? '!rounded-none' : ''}`;
+  const hasPrimaryOverlays = Boolean(primaryOverlays?.topLeft || primaryOverlays?.bottom);
+
+  const wrapPrimaryCell = (node: React.ReactNode, cellClassName: string) => {
+    if (!hasPrimaryOverlays) {
+      return node;
+    }
+    return (
+      <div className={`relative min-h-0 ${cellClassName}`}>
+        {node}
+        {primaryOverlays?.topLeft ? (
+          <div className="pointer-events-none absolute left-0 top-0 z-20 p-3">
+            <div className="pointer-events-auto">{primaryOverlays.topLeft}</div>
+          </div>
+        ) : null}
+        {primaryOverlays?.bottom ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10">
+            {primaryOverlays.bottom}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   const cell = (
     src: string,
@@ -104,7 +136,10 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   if (images.length === 1) {
     return (
       <div className={`${shellClass} relative ${shellHeight} ${className}`}>
-        {cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true)}
+        {wrapPrimaryCell(
+          cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true),
+          'h-full w-full',
+        )}
       </div>
     );
   }
@@ -117,7 +152,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
         <div className={`${shellClass} grid ${shellHeight} ${twoColClass} ${GAP}`}>
-          {cell(images[0], 'Imagen 1', 0, 'h-full min-h-0', true)}
+          {wrapPrimaryCell(cell(images[0], 'Imagen 1', 0, 'h-full min-h-0', true), 'h-full min-h-0')}
           {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         </div>
         {showAllButton}
@@ -129,7 +164,10 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
         <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
-          {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+          {wrapPrimaryCell(
+            cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
+            'col-span-2 row-span-2 h-full min-h-0',
+          )}
           {cell(images[1], 'Imagen 2', 1, 'col-span-2 h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'col-span-2 h-full min-h-0')}
         </div>
@@ -142,7 +180,10 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
     return (
       <div className={`relative h-full min-h-0 ${className}`}>
         <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
-          {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+          {wrapPrimaryCell(
+            cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
+            'col-span-2 row-span-2 h-full min-h-0',
+          )}
           {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
           {cell(images[3], 'Imagen 4', 3, 'col-span-2 h-full min-h-0')}
@@ -157,7 +198,10 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   return (
     <div className={`relative h-full min-h-0 ${className}`}>
       <div className={`${shellClass} grid ${shellHeight} grid-cols-4 grid-rows-2 ${GAP}`}>
-        {cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true)}
+        {wrapPrimaryCell(
+          cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
+          'col-span-2 row-span-2 h-full min-h-0',
+        )}
         {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
         {cell(images[3], 'Imagen 4', 3, 'h-full min-h-0')}

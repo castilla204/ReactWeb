@@ -1,17 +1,48 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, ArrowRight, Link2, AlertTriangle } from 'lucide-react';
 import { useStatusMappings } from '../../hooks/useStatusMappings';
 import { Pagination } from '../../components/Pagination';
+import { showToast } from '../../lib/toast';
+import {
+  AdminButton,
+  AdminCard,
+  AdminCardHeader,
+  AdminCardBody,
+  AdminBadge,
+  AdminStatusPill,
+  AdminTable,
+  AdminTHead,
+  AdminTH,
+  AdminTBody,
+  AdminTR,
+  AdminTD,
+  AdminEmptyState,
+  AdminTableSkeleton,
+  AdminModal,
+} from '../../components/admin/ui';
+import { StatusMapping } from '../../types/admin';
+import { isLegacyStatus, statusValueOf } from '../../constants/legacyStatuses';
 
 const AdminMappingsPage: React.FC = () => {
   const [mappingsPage, setMappingsPage] = useState(1);
   const [mappingsPageSize, setMappingsPageSize] = useState(20);
+  // Ocultar por defecto los estados legacy (flujo antiguo retirado) del catálogo. Toggle para mostrarlos.
+  const [showLegacyStatuses, setShowLegacyStatuses] = useState(false);
   const [showMappingForm, setShowMappingForm] = useState(false);
   const [mappingFormData, setMappingFormData] = useState({
     sourceStatusId: 0,
     targetStatusId: 0,
     isActive: true
   });
+
+  // Edición del estado destino de un mapeo (sustituye al modal imperativo)
+  const [editing, setEditing] = useState<StatusMapping | null>(null);
+  const [editTargetStatusId, setEditTargetStatusId] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
+
+  // Confirmación de borrado (sustituye al window.confirm)
+  const [confirmDelete, setConfirmDelete] = useState<StatusMapping | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const statusMappings = useStatusMappings(mappingsPage, mappingsPageSize);
 
@@ -26,299 +57,248 @@ const AdminMappingsPage: React.FC = () => {
   const handleCreateMapping = async () => {
     try {
       if (mappingFormData.sourceStatusId === 0 || mappingFormData.targetStatusId === 0) {
-        alert('Por favor selecciona tanto el estado origen como el estado destino');
+        showToast('error', 'Por favor selecciona tanto el estado origen como el estado destino');
         return;
       }
 
       if (mappingFormData.sourceStatusId === mappingFormData.targetStatusId) {
-        alert('El estado origen y destino no pueden ser el mismo');
+        showToast('error', 'El estado origen y destino no pueden ser el mismo');
         return;
       }
 
       await statusMappings.createMapping(mappingFormData);
-      alert('✅ Mapeo creado exitosamente');
+      showToast('success', 'Mapeo creado exitosamente', undefined, { surface: 'homepage' });
       setShowMappingForm(false);
       resetMappingForm();
     } catch (error: any) {
       console.error('Error creating mapping:', error);
-      
+
       if (error.message?.includes('han cambiado') || error.message?.includes('no existe')) {
-        alert(`⚠️ ${error.message}\n\nLos datos se han refrescado automáticamente.`);
+        showToast('error', `${error.message} Los datos se han refrescado automáticamente.`);
         await statusMappings.refreshAllData();
       } else {
-        alert(`❌ Error al crear mapeo: ${error.message || 'Error desconocido'}`);
+        showToast('error', `Error al crear mapeo: ${error.message || 'Error desconocido'}`);
       }
     }
   };
 
   const handleUpdateMapping = async (mappingId: number, updates: any) => {
     try {
-      const currentMapping = (statusMappings.mappings || []).find(m => (m.id || m.Id) === mappingId);
+      const currentMapping = (statusMappings.mappings || []).find(m => (m.id || (m as any).Id) === mappingId);
       if (!currentMapping) {
         throw new Error("Mapeo no encontrado");
       }
-      
-      const targetStatusExists = (statusMappings.searchHireStatuses || []).some(s => (s.id || s.Id) === updates.targetStatusId);
+
+      const targetStatusExists = (statusMappings.searchHireStatuses || []).some(s => (s.id || (s as any).Id) === updates.targetStatusId);
       if (!targetStatusExists) {
         throw new Error(`El estado con ID ${updates.targetStatusId} no existe`);
       }
-      
+
+      const sourceStatus: any = currentMapping.sourceStatus || (currentMapping as any).SourceStatus;
       const fullUpdateData = {
-        sourceStatusId: currentMapping.sourceStatus?.id || currentMapping.SourceStatus?.id || currentMapping.sourceStatus?.Id || currentMapping.SourceStatus?.Id,
+        sourceStatusId: sourceStatus?.id || (currentMapping as any).SourceStatus?.id || sourceStatus?.Id || (currentMapping as any).SourceStatus?.Id,
         targetStatusId: updates.targetStatusId
       };
-      
+
       await statusMappings.updateMapping(mappingId, fullUpdateData);
-      alert('✅ Mapeo actualizado exitosamente');
+      showToast('success', 'Mapeo actualizado', undefined, { surface: 'homepage' });
     } catch (error: any) {
       console.error('Error updating mapping:', error);
-      alert(`❌ Error al actualizar mapeo: ${error.message || 'Error desconocido'}`);
+      showToast('error', `Error al actualizar mapeo: ${error.message || 'Error desconocido'}`);
     }
   };
 
-  const handleDeleteMapping = async (mappingId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este mapeo?')) return;
+  const handleSaveMapping = async () => {
+    if (!editing) return;
 
+    const targetStatus: any = editing.targetStatus || (editing as any).TargetStatus;
+    const currentTargetId = targetStatus?.id || targetStatus?.Id;
+    const mappingId = editing.id || (editing as any).Id;
+    const newTargetStatusId = editTargetStatusId;
+
+    const selectedStatusExists = (statusMappings.searchHireStatuses || []).some(s => (s.id || (s as any).Id) === newTargetStatusId);
+
+    if (!selectedStatusExists) {
+      showToast('error', `El estado con ID ${newTargetStatusId} no existe en la lista actual. Refrescando datos...`);
+      statusMappings.refreshAllData();
+      setEditing(null);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (newTargetStatusId !== currentTargetId) {
+        await handleUpdateMapping(mappingId, { targetStatusId: newTargetStatusId });
+      }
+      setEditing(null);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMapping = async () => {
+    if (!confirmDelete) return;
+    const mappingId = confirmDelete.id || (confirmDelete as any).Id;
+
+    setDeleting(true);
     try {
       await statusMappings.deleteMapping(mappingId);
-      alert('✅ Mapeo eliminado exitosamente');
+      showToast('success', 'Mapeo eliminado exitosamente', undefined, { surface: 'homepage' });
+      setConfirmDelete(null);
     } catch (error: any) {
       console.error('Error deleting mapping:', error);
-      alert(`❌ Error al eliminar mapeo: ${error.message || 'Error desconocido'}`);
+      showToast('error', `Error al eliminar mapeo: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setDeleting(false);
     }
   };
+
+  const openEdit = (mapping: StatusMapping) => {
+    if (!statusMappings.searchHireStatuses || statusMappings.searchHireStatuses.length === 0) {
+      showToast('error', 'Los estados no están cargados. Refrescando datos...');
+      statusMappings.refreshAllData();
+      return;
+    }
+    const targetStatus: any = mapping.targetStatus || (mapping as any).TargetStatus;
+    setEditTargetStatusId(targetStatus?.id || targetStatus?.Id || 0);
+    setEditing(mapping);
+  };
+
+  const editingSource: any = editing
+    ? editing.sourceStatus || (editing as any).SourceStatus
+    : null;
+  const editingSourceDisplayName =
+    editingSource?.displayName || editingSource?.DisplayName || 'Estado desconocido';
 
   return (
     <div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mapeos de Estado</h2>
-          <p className="text-gray-600 mt-1">Configuración de qué estados de cita se mapean a qué estados generales</p>
-        </div>
-        <div className="flex space-x-3">
-          <button
+      <div className="mb-6 flex justify-end items-center">
+        <div className="flex gap-3">
+          <AdminButton
+            variant="outline"
+            icon={<RefreshCw className="w-4 h-4" />}
+            title="Refrescar datos de mapeos y estados"
             onClick={async () => {
               try {
                 await statusMappings.refreshAllData();
-                alert('✅ Datos refrescados exitosamente');
-              } catch (error) {
-                alert('❌ Error al refrescar datos');
+                showToast('success', 'Datos refrescados exitosamente', undefined, { surface: 'homepage' });
+              } catch {
+                showToast('error', 'Error al refrescar datos');
               }
             }}
-            className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-            title="Refrescar datos de mapeos y estados"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
             Refrescar
-          </button>
-          <button
+          </AdminButton>
+          <AdminButton
+            variant="brand"
+            icon={<Plus className="w-4 h-4" />}
             onClick={() => {
               resetMappingForm();
               setShowMappingForm(true);
             }}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
-            <Plus className="w-4 h-4 mr-2" />
             Agregar Mapeo
-          </button>
+          </AdminButton>
         </div>
       </div>
 
       {statusMappings.isLoading ? (
-        <div className="text-center py-8">
-          <div className="text-gray-500">Cargando mapeos de estado...</div>
-        </div>
+        <AdminCard>
+          <AdminTableSkeleton rows={5} cols={3} />
+        </AdminCard>
       ) : statusMappings.error ? (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
-                Error al cargar mapeos
-              </h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p>{statusMappings.error}</p>
+        <AdminCard>
+          <AdminCardBody>
+            <div className="flex items-start gap-3 text-[hsl(var(--ap-warning))]">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-bold text-[hsl(var(--ap-ink))]">Error al cargar mapeos</h3>
+                <p className="mt-1 text-[13px] text-[hsl(var(--ap-muted))]">{statusMappings.error}</p>
               </div>
             </div>
-          </div>
-        </div>
+          </AdminCardBody>
+        </AdminCard>
       ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <AdminCard>
           {!statusMappings.mappings || statusMappings.mappings.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">No hay mapeos configurados</div>
-            </div>
+            <AdminEmptyState
+              icon={<Link2 className="h-5 w-5" />}
+              title="No hay mapeos configurados"
+              description="Crea un mapeo para relacionar un estado de cita con un estado general."
+            />
           ) : (
-            <ul className="divide-y divide-gray-200">
-              {(statusMappings.mappings || []).map((mapping) => {
-                const sourceStatus = mapping.sourceStatus || mapping.SourceStatus;
-                const targetStatus = mapping.targetStatus || mapping.TargetStatus;
-                const sourceDisplayName = sourceStatus?.displayName || sourceStatus?.DisplayName || 'Estado desconocido';
-                const sourceStatusValue = sourceStatus?.statusValue || sourceStatus?.StatusValue || 'N/A';
-                const targetDisplayName = targetStatus?.displayName || targetStatus?.DisplayName || 'Estado desconocido';
-                const targetStatusValue = targetStatus?.statusValue || targetStatus?.StatusValue || 'N/A';
-                const sourceStatusType = sourceStatus?.statusType || sourceStatus?.StatusType || 'Unknown';
-                const isActive = mapping.isActive ?? mapping.IsActive ?? false;
-                
-                return (
-                  <li key={mapping.id || mapping.Id} className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-medium text-sm">
-                              {sourceStatusType === 'AppointmentStatus' ? 'A' : 'S'}
-                            </span>
+            <AdminTable>
+              <AdminTHead>
+                <AdminTH>Estado origen (Cita)</AdminTH>
+                <AdminTH>Estado destino (General)</AdminTH>
+                <AdminTH>Estado</AdminTH>
+                <AdminTH className="text-right">Acciones</AdminTH>
+              </AdminTHead>
+              <AdminTBody>
+                {(statusMappings.mappings || []).map((mapping) => {
+                  const sourceStatus: any = mapping.sourceStatus || (mapping as any).SourceStatus;
+                  const targetStatus: any = mapping.targetStatus || (mapping as any).TargetStatus;
+                  const sourceDisplayName = sourceStatus?.displayName || sourceStatus?.DisplayName || 'Estado desconocido';
+                  const sourceStatusValue = sourceStatus?.statusValue || sourceStatus?.StatusValue || 'N/A';
+                  const targetDisplayName = targetStatus?.displayName || targetStatus?.DisplayName || 'Estado desconocido';
+                  const targetStatusValue = targetStatus?.statusValue || targetStatus?.StatusValue || 'N/A';
+                  const sourceStatusType = sourceStatus?.statusType || sourceStatus?.StatusType || 'Unknown';
+                  const isActive = mapping.isActive ?? (mapping as any).IsActive ?? false;
+                  const rowKey = mapping.id || (mapping as any).Id;
+
+                  return (
+                    <AdminTR key={rowKey}>
+                      <AdminTD>
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(var(--ap-brand)/0.12)] text-[12px] font-bold text-[hsl(var(--ap-brand))]">
+                            {sourceStatusType === 'AppointmentStatus' ? 'A' : 'S'}
+                          </span>
+                          <div>
+                            <div className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{sourceDisplayName}</div>
+                            <div className="text-[12px] text-[hsl(var(--ap-muted))]">{sourceStatusValue}</div>
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="flex items-center">
-                            <p className="text-sm font-medium text-gray-900">
-                              {sourceDisplayName}
-                            </p>
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({sourceStatusValue})
-                            </span>
-                          </div>
-                          <div className="flex items-center mt-1">
-                            <span className="text-sm text-gray-500">→</span>
-                            <p className="ml-2 text-sm text-gray-900">
-                              {targetDisplayName}
-                            </p>
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({targetStatusValue})
-                            </span>
+                      </AdminTD>
+                      <AdminTD>
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="h-4 w-4 flex-shrink-0 text-[hsl(var(--ap-muted))]" />
+                          <div>
+                            <div className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{targetDisplayName}</div>
+                            <div className="text-[12px] text-[hsl(var(--ap-muted))]">{targetStatusValue}</div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                      </AdminTD>
+                      <AdminTD>
+                        <AdminStatusPill tone={isActive ? 'success' : 'error'}>
                           {isActive ? 'Activo' : 'Inactivo'}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const modal = document.createElement('div');
-                            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
-                            
-                            const modalContent = document.createElement('div');
-                            modalContent.className = 'relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white';
-                            
-                            if (!statusMappings.searchHireStatuses || statusMappings.searchHireStatuses.length === 0) {
-                              alert('⚠️ Los estados no están cargados. Refrescando datos...');
-                              statusMappings.refreshAllData();
-                              return;
-                            }
-                            
-                            modalContent.innerHTML = `
-                              <div class="mt-3">
-                                <div class="flex items-center justify-between mb-4">
-                                  <h3 class="text-lg font-medium text-gray-900">Editar Estado Destino</h3>
-                                  <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                  </button>
-                                </div>
-                                <div class="mb-4">
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Estado Origen: <strong>${sourceDisplayName}</strong>
-                                  </label>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Nuevo Estado Destino:
-                                  </label>
-                                  <select id="newTargetStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    ${(statusMappings.searchHireStatuses || []).map(status => {
-                                      const statusDisplayName = status.displayName || status.DisplayName || 'Estado desconocido';
-                                      const statusValue = status.statusValue || status.StatusValue || 'N/A';
-                                      const statusId = status.id || status.Id;
-                                      const targetStatusId = targetStatus?.id || targetStatus?.Id;
-                                      return `<option value="${statusId}" ${statusId === targetStatusId ? 'selected' : ''}>
-                                        ${statusDisplayName} (${statusValue})
-                                      </option>`;
-                                    }).join('')}
-                                  </select>
-                                </div>
-                                <div class="flex justify-end space-x-3">
-                                  <button id="cancelEdit" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
-                                    Cancelar
-                                  </button>
-                                  <button id="saveEdit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                                    Guardar
-                                  </button>
-                                </div>
-                              </div>
-                            `;
-                            
-                            modal.appendChild(modalContent);
-                            document.body.appendChild(modal);
-                            
-                            document.getElementById('closeModal')?.addEventListener('click', () => {
-                              document.body.removeChild(modal);
-                            });
-                            
-                            document.getElementById('cancelEdit')?.addEventListener('click', () => {
-                              document.body.removeChild(modal);
-                            });
-                            
-                            document.getElementById('saveEdit')?.addEventListener('click', () => {
-                              const select = document.getElementById('newTargetStatus') as HTMLSelectElement;
-                              const newTargetStatusId = Number(select.value);
-                              
-                              const selectedStatusExists = (statusMappings.searchHireStatuses || []).some(s => (s.id || s.Id) === newTargetStatusId);
-                              
-                              if (!selectedStatusExists) {
-                                alert(`⚠️ El estado con ID ${newTargetStatusId} no existe en la lista actual. Refrescando datos...`);
-                                statusMappings.refreshAllData();
-                                document.body.removeChild(modal);
-                                return;
-                              }
-                              
-                              const currentTargetId = targetStatus?.id || targetStatus?.Id;
-                              const mappingId = mapping.id || mapping.Id;
-                              if (newTargetStatusId !== currentTargetId) {
-                                handleUpdateMapping(mappingId, { targetStatusId: newTargetStatusId });
-                              }
-                              
-                              document.body.removeChild(modal);
-                            });
-                            
-                            modal.addEventListener('click', (e) => {
-                              if (e.target === modal) {
-                                document.body.removeChild(modal);
-                              }
-                            });
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Editar estado destino"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMapping(mapping.id || mapping.Id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Eliminar mapeo"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                        </AdminStatusPill>
+                      </AdminTD>
+                      <AdminTD className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <AdminButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<Pencil className="h-4 w-4" />}
+                            title="Editar estado destino"
+                            onClick={() => openEdit(mapping)}
+                          />
+                          <AdminButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<Trash2 className="h-4 w-4 text-[hsl(var(--ap-error))]" />}
+                            title="Eliminar mapeo"
+                            onClick={() => setConfirmDelete(mapping)}
+                          />
+                        </div>
+                      </AdminTD>
+                    </AdminTR>
+                  );
+                })}
+              </AdminTBody>
+            </AdminTable>
           )}
           {statusMappings.mappingsPagination && (
-            <div className="border-t border-gray-200">
+            <div className="border-t border-[hsl(var(--ap-border))]">
               <Pagination
                 page={statusMappings.mappingsPagination.page}
                 pageSize={statusMappings.mappingsPagination.pageSize}
@@ -337,151 +317,200 @@ const AdminMappingsPage: React.FC = () => {
               />
             </div>
           )}
-        </div>
+        </AdminCard>
       )}
 
       {/* Información de estados disponibles */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Estados de Cita Disponibles
-          </h3>
-          <div className="space-y-2">
-            {(statusMappings.appointmentStatuses || []).map((status) => (
-              <div key={status.id || status.Id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-900">{status.displayName || status.DisplayName || 'Estado desconocido'}</span>
-                <span className="text-gray-500">({status.statusValue || status.StatusValue || 'N/A'})</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="mt-8 mb-3 flex items-center justify-end">
+        <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showLegacyStatuses}
+            onChange={(e) => setShowLegacyStatuses(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          Mostrar estados legacy (flujo antiguo retirado)
+        </label>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AdminCard>
+          <AdminCardHeader title="Estados de Cita Disponibles" />
+          <AdminCardBody>
+            <div className="flex flex-wrap gap-2">
+              {(statusMappings.appointmentStatuses || [])
+                .filter((status) => showLegacyStatuses || !isLegacyStatus(status))
+                .map((status) => (
+                <AdminBadge key={status.id || (status as any).Id} tone="neutral">
+                  {status.displayName || (status as any).DisplayName || 'Estado desconocido'}
+                  <span className="opacity-60">({statusValueOf(status) || 'N/A'})</span>
+                </AdminBadge>
+              ))}
+            </div>
+          </AdminCardBody>
+        </AdminCard>
 
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Estados Generales Disponibles
-          </h3>
-          <div className="space-y-2">
-            {(statusMappings.searchHireStatuses || []).map((status) => (
-              <div key={status.id || status.Id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-900">{status.displayName || status.DisplayName || 'Estado desconocido'}</span>
-                <span className="text-gray-500">({status.statusValue || status.StatusValue || 'N/A'})</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AdminCard>
+          <AdminCardHeader title="Estados Generales Disponibles" />
+          <AdminCardBody>
+            <div className="flex flex-wrap gap-2">
+              {(statusMappings.searchHireStatuses || [])
+                .filter((status) => showLegacyStatuses || !isLegacyStatus(status))
+                .map((status) => (
+                <AdminBadge key={status.id || (status as any).Id} tone="info">
+                  {status.displayName || (status as any).DisplayName || 'Estado desconocido'}
+                  <span className="opacity-60">({statusValueOf(status) || 'N/A'})</span>
+                </AdminBadge>
+              ))}
+            </div>
+          </AdminCardBody>
+        </AdminCard>
       </div>
 
-      {/* Formulario para crear mapeos */}
-      {showMappingForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Crear Nuevo Mapeo</h3>
-                <button
-                  onClick={() => {
-                    setShowMappingForm(false);
-                    resetMappingForm();
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={(e) => { e.preventDefault(); handleCreateMapping(); }}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado Origen (Cita)
-                    </label>
-                    <select
-                      value={mappingFormData.sourceStatusId}
-                      onChange={(e) => setMappingFormData({ ...mappingFormData, sourceStatusId: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value={0}>Seleccionar estado de cita</option>
-                      {(statusMappings.appointmentStatuses || []).map((status) => {
-                        const statusId = status.id || status.Id;
-                        const displayName = status.displayName || status.DisplayName || 'Estado desconocido';
-                        const statusValue = status.statusValue || status.StatusValue || 'N/A';
-                        return (
-                          <option key={statusId} value={statusId}>
-                            {displayName} ({statusValue})
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Estado Destino (General)
-                    </label>
-                    <select
-                      value={mappingFormData.targetStatusId}
-                      onChange={(e) => setMappingFormData({ ...mappingFormData, targetStatusId: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value={0}>Seleccionar estado general</option>
-                      {(statusMappings.searchHireStatuses || []).map((status) => {
-                        const statusId = status.id || status.Id;
-                        const displayName = status.displayName || status.DisplayName || 'Estado desconocido';
-                        const statusValue = status.statusValue || status.StatusValue || 'N/A';
-                        return (
-                          <option key={statusId} value={statusId}>
-                            {displayName} ({statusValue})
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={mappingFormData.isActive}
-                      onChange={(e) => setMappingFormData({ ...mappingFormData, isActive: e.target.checked })}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Mapeo activo</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowMappingForm(false);
-                      resetMappingForm();
-                    }}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Crear Mapeo
-                  </button>
-                </div>
-              </form>
+      {/* Modal: editar estado destino de un mapeo */}
+      <AdminModal
+        open={!!editing}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        title="Editar mapeo de estado"
+        description="Selecciona el estado general destino para este estado de cita."
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={() => setEditing(null)}>Cancelar</AdminButton>
+            <AdminButton variant="brand" loading={saving} onClick={handleSaveMapping}>Guardar</AdminButton>
+          </>
+        }
+      >
+        {editing && (
+          <div className="space-y-4">
+            <div className="text-[13px] text-[hsl(var(--ap-muted))]">
+              Estado origen: <strong className="text-[hsl(var(--ap-ink))]">{editingSourceDisplayName}</strong>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[hsl(var(--ap-ink))]">
+                Nuevo estado destino
+              </label>
+              <select
+                value={editTargetStatusId}
+                onChange={(e) => setEditTargetStatusId(Number(e.target.value))}
+                className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+              >
+                {(statusMappings.searchHireStatuses || []).map((status) => {
+                  const statusDisplayName = status.displayName || (status as any).DisplayName || 'Estado desconocido';
+                  const statusValue = status.statusValue || (status as any).StatusValue || 'N/A';
+                  const statusId = status.id || (status as any).Id;
+                  return (
+                    <option key={statusId} value={statusId}>
+                      {statusDisplayName} ({statusValue})
+                    </option>
+                  );
+                })}
+              </select>
             </div>
           </div>
+        )}
+      </AdminModal>
+
+      {/* Modal: confirmar eliminación de un mapeo */}
+      <AdminModal
+        open={!!confirmDelete}
+        onOpenChange={(o) => { if (!o) setConfirmDelete(null); }}
+        title="Eliminar mapeo"
+        description="¿Estás seguro de que quieres eliminar este mapeo? Esta acción no se puede deshacer."
+        footer={
+          <>
+            <AdminButton variant="outline" onClick={() => setConfirmDelete(null)}>Cancelar</AdminButton>
+            <AdminButton variant="danger" loading={deleting} onClick={handleDeleteMapping}>Eliminar</AdminButton>
+          </>
+        }
+      />
+
+      {/* Formulario para crear mapeos */}
+      <AdminModal
+        open={showMappingForm}
+        onOpenChange={(o) => {
+          if (!o) {
+            setShowMappingForm(false);
+            resetMappingForm();
+          }
+        }}
+        title="Crear Nuevo Mapeo"
+        description="Relaciona un estado de cita con un estado general."
+        footer={
+          <>
+            <AdminButton
+              variant="outline"
+              onClick={() => {
+                setShowMappingForm(false);
+                resetMappingForm();
+              }}
+            >
+              Cancelar
+            </AdminButton>
+            <AdminButton variant="brand" icon={<Plus className="w-4 h-4" />} onClick={handleCreateMapping}>
+              Crear Mapeo
+            </AdminButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[hsl(var(--ap-ink))]">
+              Estado Origen (Cita)
+            </label>
+            <select
+              value={mappingFormData.sourceStatusId}
+              onChange={(e) => setMappingFormData({ ...mappingFormData, sourceStatusId: Number(e.target.value) })}
+              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+            >
+              <option value={0}>Seleccionar estado de cita</option>
+              {(statusMappings.appointmentStatuses || []).map((status) => {
+                const statusId = status.id || (status as any).Id;
+                const displayName = status.displayName || (status as any).DisplayName || 'Estado desconocido';
+                const statusValue = status.statusValue || (status as any).StatusValue || 'N/A';
+                return (
+                  <option key={statusId} value={statusId}>
+                    {displayName} ({statusValue})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[hsl(var(--ap-ink))]">
+              Estado Destino (General)
+            </label>
+            <select
+              value={mappingFormData.targetStatusId}
+              onChange={(e) => setMappingFormData({ ...mappingFormData, targetStatusId: Number(e.target.value) })}
+              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+            >
+              <option value={0}>Seleccionar estado general</option>
+              {(statusMappings.searchHireStatuses || []).map((status) => {
+                const statusId = status.id || (status as any).Id;
+                const displayName = status.displayName || (status as any).DisplayName || 'Estado desconocido';
+                const statusValue = status.statusValue || (status as any).StatusValue || 'N/A';
+                return (
+                  <option key={statusId} value={statusId}>
+                    {displayName} ({statusValue})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-[hsl(var(--ap-ink))]">
+            <input
+              type="checkbox"
+              checked={mappingFormData.isActive}
+              onChange={(e) => setMappingFormData({ ...mappingFormData, isActive: e.target.checked })}
+              className="rounded border-[hsl(var(--ap-border-strong))] text-[hsl(var(--ap-brand))] focus:ring-[hsl(var(--ap-brand))]"
+            />
+            Mapeo activo
+          </label>
         </div>
-      )}
+      </AdminModal>
     </div>
   );
 };
 
 export default AdminMappingsPage;
-
-
-
-
-
-

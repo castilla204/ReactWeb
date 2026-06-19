@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, ExternalLink, Lightbulb } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { API_CONFIG } from '../config/api';
 import { isAdmin } from '../utils/admin';
+import { AdminButton, AdminCard, AdminCardHeader, AdminSpinner } from './admin/ui';
 
 const HangfirePanel: React.FC = () => {
     const [hangfireUrl, setHangfireUrl] = useState<string>('');
@@ -120,34 +121,31 @@ const HangfirePanel: React.FC = () => {
                 )}
             </div>
             
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden relative">
+            <AdminCard className="relative overflow-hidden">
+                <AdminCardHeader
+                    title="Trabajos en segundo plano"
+                    description="Si el dashboard no se muestra correctamente, puedes abrirlo en una nueva pestaña"
+                    actions={
+                        hangfireUrl ? (
+                            <AdminButton
+                                variant="outline"
+                                icon={<ExternalLink className="h-4 w-4" />}
+                                onClick={() => window.open(hangfireUrl, '_blank', 'noopener,noreferrer')}
+                            >
+                                Abrir en pestaña nueva
+                            </AdminButton>
+                        ) : undefined
+                    }
+                />
                 {hangfireUrl ? (
                     <>
                         {/* Indicador de carga */}
                         {isLoading && (
-                            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
-                                <div className="text-center">
-                                    <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                    <p className="text-gray-600">Cargando Hangfire Dashboard...</p>
-                                </div>
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[hsl(var(--ap-surface)/0.6)]">
+                                <AdminSpinner size={28} />
                             </div>
                         )}
-                        
-                        {/* Botón para abrir en nueva pestaña */}
-                        <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                            <p className="text-sm text-gray-600">
-                                Si el dashboard no se muestra correctamente, puedes abrirlo en una nueva pestaña
-                            </p>
-                            <a
-                                href={hangfireUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ml-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
-                            >
-                                Abrir en nueva pestaña
-                            </a>
-                        </div>
-                        
+
                         <iframe
                             src={hangfireUrl}
                             className="w-full"
@@ -220,20 +218,23 @@ const HangfirePanel: React.FC = () => {
                         {/* Mensaje informativo si no hay error pero el iframe puede no estar visible */}
                         {!error && iframeLoaded && !isLoading && (
                             <div className="p-3 bg-blue-50 border-t border-blue-200">
-                                <p className="text-xs text-blue-700">
-                                    💡 Si no ves el contenido del dashboard, haz clic en "Abrir en nueva pestaña" arriba. 
-                                    Esto puede ocurrir debido a restricciones de seguridad del navegador.
+                                <p className="flex items-start gap-2 text-xs text-blue-700">
+                                    <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                    <span>
+                                        Si no ves el contenido del dashboard, haz clic en "Abrir en pestaña nueva" arriba.
+                                        Esto puede ocurrir debido a restricciones de seguridad del navegador.
+                                    </span>
                                 </p>
                             </div>
                         )}
                     </>
                 ) : (
-                    <div className="p-8 text-center text-gray-500">
-                        <div className="inline-block w-8 h-8 border-4 border-gray-300 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className="flex flex-col items-center gap-3 p-8 text-center text-gray-500">
+                        <AdminSpinner size={28} />
                         <p>Cargando Hangfire Dashboard...</p>
                     </div>
                 )}
-            </div>
+            </AdminCard>
         </div>
     );
 };

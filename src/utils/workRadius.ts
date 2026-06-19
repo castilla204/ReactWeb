@@ -72,6 +72,18 @@ export function formatWorkRadius(km: number): string {
   return km === 0 ? 'Solo en su taller' : `Hasta ${km} km`;
 }
 
+/**
+ * Frase explicativa de cómo trabaja el experto según su radio:
+ *   - 0  → ubicación fija (el cliente se desplaza a su taller).
+ *   - >0 → el experto se desplaza dentro de un radio.
+ * Pensada para la ficha de servicio (texto, no badge).
+ */
+export function formatWorkRadiusExplanation(km: number): string {
+  return km === 0
+    ? 'Ubicación fija · el cliente acude a su taller'
+    : `Se desplaza en un radio de ${Math.max(5, km)} km desde su ubicación`;
+}
+
 /** Ubicación + rango de cobertura (una línea). */
 export function formatLocationWithWorkRadius(
   locationName: string,

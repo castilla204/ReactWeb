@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { Settings, Plus, Edit, Trash2, Search, Save, X, FolderTree } from 'lucide-react';
+import {
+  Settings, Plus, Edit, Trash2, Search, Save, X,
+  BarChart3, Tags, Crosshair, CreditCard, CalendarX,
+  Target, Lightbulb, RefreshCw, CheckCircle2, AlertTriangle, Clock, Inbox,
+} from 'lucide-react';
+import {
+  AdminButton, AdminBadge,
+  AdminTable, AdminTHead, AdminTH, AdminTBody, AdminTR, AdminTD,
+  AdminEmptyState, AdminSpinner, AdminModal,
+} from './admin/ui';
+import { showToast } from '../lib/toast';
 import { useAppointmentStatusConfigs, useServiceTypeCategoryConfigs, useCategoryServiceTypeConfigs, useMoneyDistributionQuery, useConfigValidation, useAppointmentStatusManagement } from '../hooks/useAdminConfig';
 import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import { ConfigFormData } from '../types/admin';
+import { isLegacyStatus } from '../constants/legacyStatuses';
 import PriorityInfo from './PriorityInfo';
 import PriorityBadge from './PriorityBadge';
 import { API_CONFIG } from '../config/api';
@@ -35,6 +46,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | null>(null);
   const [loadingBasicData, setLoadingBasicData] = useState(true);
+  const [confirmDeleteConfig, setConfirmDeleteConfig] = useState<number | null>(null);
 
 
 
@@ -43,6 +55,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
   const [granularPageSize, setGranularPageSize] = useState(20);
   const [statusManagementPage, setStatusManagementPage] = useState(1);
   const [statusManagementPageSize, setStatusManagementPageSize] = useState(20);
+  // Ocultar por defecto los estados legacy (flujo antiguo retirado) en "Gestión de Estados de Finalización".
+  const [showLegacyStatuses, setShowLegacyStatuses] = useState(false);
 
   // Hooks
   const appointmentStatusConfigs = useAppointmentStatusConfigs();
@@ -52,6 +66,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
   const { validateForm } = useConfigValidation();
   const { data: appointmentStatuses } = useAppointmentStatuses();
   const statusManagement = useAppointmentStatusManagement(statusManagementPage, statusManagementPageSize);
+  // Lista filtrada SOLO para la sección "Gestión de Estados de Finalización" (resumen + 3 grupos).
+  // No afecta a los lookups por id de las tablas de config (esos siguen usando statusManagement.statuses completo).
+  const finalizationStatusesView = showLegacyStatuses
+    ? statusManagement.statuses
+    : statusManagement.statuses.filter(s => !isLegacyStatus(s));
 
   // Cargar datos básicos solo cuando se necesiten (lazy loading)
   React.useEffect(() => {
@@ -64,7 +83,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
     const loadBasicData = async () => {
       try {
         setLoadingBasicData(true);
-        console.log('🔄 Cargando datos básicos...');
+        console.log('Cargando datos básicos...');
         
         // Hacer los 3 GETs en paralelo solo si no están cargados
         const [statusesRes, categoriesRes, serviceTypesRes] = await Promise.all([
@@ -85,9 +104,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
           serviceTypesRes.json()
         ]);
 
-        console.log('✅ Estados cargados:', statusesData);
-        console.log('✅ Categorías cargadas:', categoriesData);
-        console.log('✅ Tipos de servicio cargados:', serviceTypesData);
+        console.log('Estados cargados:', statusesData);
+        console.log('Categorías cargadas:', categoriesData);
+        console.log('Tipos de servicio cargados:', serviceTypesData);
 
         // Actualizar el estado
         setCategories(categoriesData);
@@ -100,8 +119,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         }
 
       } catch (error: any) {
-        console.error('❌ Error cargando datos básicos:', error);
-        alert('Error cargando datos: ' + error.message);
+        console.error('Error cargando datos básicos:', error);
+        showToast('error', 'Error cargando datos: ' + error.message);
       } finally {
         setLoadingBasicData(false);
       }
@@ -163,25 +182,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
     // Validar que los porcentajes sumen 100%
     const total = formData.clientPercentage + formData.expertPercentage + formData.platformPercentage;
     if (total !== 100) {
-      alert(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+      showToast('error', `Los porcentajes deben sumar 100%. Actual: ${total}%`);
       return;
     }
 
     // Validar que se haya seleccionado una categoría para configuraciones por categoría y granulares
     if ((activeTab === 'category' || activeTab === 'granular') && !selectedCategoryId) {
-      alert('Debes seleccionar una categoría para crear esta configuración');
+      showToast('error', 'Debes seleccionar una categoría para crear esta configuración');
       return;
     }
 
     // Validar que se haya seleccionado un tipo de servicio para configuraciones granulares
     if (activeTab === 'granular' && !selectedServiceTypeId) {
-      alert('Debes seleccionar un tipo de servicio para crear una configuración granular');
+      showToast('error', 'Debes seleccionar un tipo de servicio para crear una configuración granular');
       return;
     }
 
     const errors = validateForm(formData, activeTab);
     if (errors.length > 0) {
-      alert(errors.join('\n'));
+      showToast('error', errors.join('\n'));
       return;
     }
 
@@ -252,14 +271,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       }
       
       // Mostrar mensaje de éxito
-      alert('✅ Configuración creada correctamente');
-      
+      showToast('success', 'Configuración creada correctamente', undefined, { surface: 'homepage' });
+
       setShowForm(false);
       resetForm();
       
-      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
+      // CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
       setTimeout(() => {
-        console.log('🔄 Refrescando datos después de crear...');
+        console.log('Refrescando datos después de crear...');
         if (activeTab === 'status') {
           appointmentStatusConfigs.fetchConfigs();
         } else if (activeTab === 'category') {
@@ -267,52 +286,52 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         } else if (activeTab === 'granular') {
           granularConfigs.fetchConfigs();
         }
-        console.log('✅ Datos refrescados exitosamente');
+        console.log('Datos refrescados exitosamente');
       }, 500);
     } catch (error: any) {
       console.error('Error creating config:', error);
-      alert(`❌ Error: ${error.message || 'Error al crear la configuración'}`);
+      showToast('error', `Error: ${error.message || 'Error al crear la configuración'}`);
     }
   };
 
   const handleUpdateConfig = async () => {
     try {
-      console.log('🔄 DEBUG - handleUpdateConfig - Iniciando actualización');
-      console.log('🔄 DEBUG - handleUpdateConfig - editingConfig:', editingConfig);
-      console.log('🔄 DEBUG - handleUpdateConfig - formData:', formData);
-      console.log('🔄 DEBUG - handleUpdateConfig - activeTab:', activeTab);
-      console.log('🔄 DEBUG - handleUpdateConfig - selectedCategoryId:', selectedCategoryId);
-      console.log('🔄 DEBUG - handleUpdateConfig - selectedServiceTypeId:', selectedServiceTypeId);
+      console.log('DEBUG - handleUpdateConfig - Iniciando actualización');
+      console.log('DEBUG - handleUpdateConfig - editingConfig:', editingConfig);
+      console.log('DEBUG - handleUpdateConfig - formData:', formData);
+      console.log('DEBUG - handleUpdateConfig - activeTab:', activeTab);
+      console.log('DEBUG - handleUpdateConfig - selectedCategoryId:', selectedCategoryId);
+      console.log('DEBUG - handleUpdateConfig - selectedServiceTypeId:', selectedServiceTypeId);
 
       // Validar datos
       if (!formData.statusId || formData.statusId <= 0) {
-        alert('Debe seleccionar un estado válido');
+        showToast('error', 'Debe seleccionar un estado válido');
         return;
       }
 
       // Validar que los porcentajes sumen 100%
       const total = formData.clientPercentage + formData.expertPercentage + formData.platformPercentage;
       if (total !== 100) {
-        alert(`Los porcentajes deben sumar 100%. Actual: ${total}%`);
+        showToast('error', `Los porcentajes deben sumar 100%. Actual: ${total}%`);
         return;
       }
 
       // Validaciones específicas para configuraciones granulares
       if (activeTab === 'granular') {
         if (!formData.categoryId) {
-          alert('Debe seleccionar una categoría para configuraciones granulares');
+          showToast('error', 'Debe seleccionar una categoría para configuraciones granulares');
           return;
         }
         if (!formData.serviceTypeCategoryId) {
-          alert('Debe seleccionar un tipo de servicio para configuraciones granulares');
+          showToast('error', 'Debe seleccionar un tipo de servicio para configuraciones granulares');
           return;
         }
       }
 
       const errors = validateForm(formData, activeTab);
       if (errors.length > 0) {
-        console.log('🔄 DEBUG - handleUpdateConfig - Errores de validación:', errors);
-        alert(errors.join('\n'));
+        console.log('DEBUG - handleUpdateConfig - Errores de validación:', errors);
+        showToast('error', errors.join('\n'));
         return;
       }
 
@@ -327,11 +346,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
           isActive: formData.isActive
         };
 
-        console.log('🔄 DEBUG - handleUpdateConfig - updateData final (status):', updateData);
+        console.log('DEBUG - handleUpdateConfig - updateData final (status):', updateData);
         await appointmentStatusConfigs.updateConfig(editingConfig.id, updateData);
             } else if (activeTab === 'category') {
         await serviceTypeCategoryConfigs.updateConfig(editingConfig.id, {
-          categoryId: formData.categoryId!, // ✅ AGREGADO: Incluir categoryId
+          categoryId: formData.categoryId!, // AGREGADO: Incluir categoryId
           serviceTypeCategoryId: formData.serviceTypeCategoryId!,
           status: formData.statusId.toString(),
           clientPercentage: formData.clientPercentage,
@@ -356,9 +375,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       setEditingConfig(null);
       resetForm();
       
-      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
+      // CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
       setTimeout(() => {
-        console.log('🔄 Refrescando datos después de actualizar...');
+        console.log('Refrescando datos después de actualizar...');
         if (activeTab === 'status') {
           appointmentStatusConfigs.fetchConfigs();
         } else if (activeTab === 'category') {
@@ -366,25 +385,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         } else if (activeTab === 'granular') {
           granularConfigs.fetchConfigs();
         }
-        console.log('✅ Datos refrescados exitosamente');
+        console.log('Datos refrescados exitosamente');
       }, 500);
       
       // Mostrar mensaje de éxito
-      alert('✅ Configuración actualizada correctamente');
-      
+      showToast('success', 'Configuración actualizada correctamente', undefined, { surface: 'homepage' });
+
     } catch (error: any) {
-      console.error('❌ Error updating config:', error);
-      alert(`❌ Error: ${error.message || 'Error al actualizar la configuración'}`);
+      console.error('Error updating config:', error);
+      showToast('error', `Error: ${error.message || 'Error al actualizar la configuración'}`);
     }
   };
 
   const handleDeleteConfig = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta configuración?')) {
-      return;
-    }
-
     try {
-      console.log('🗑️ Eliminando configuración ID:', id);
+      console.log('Eliminando configuración ID:', id);
       
       if (activeTab === 'status') {
         await appointmentStatusConfigs.deleteConfig(id);
@@ -394,9 +409,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         await granularConfigs.deleteConfig(id);
       }
       
-      // ✅ CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
+      // CORREGIDO: Solo refrescar el hook correspondiente al tipo de configuración
       setTimeout(() => {
-        console.log('🔄 Refrescando datos después de eliminar...');
+        console.log('Refrescando datos después de eliminar...');
         if (activeTab === 'status') {
           appointmentStatusConfigs.fetchConfigs();
         } else if (activeTab === 'category') {
@@ -404,38 +419,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         } else if (activeTab === 'granular') {
           granularConfigs.fetchConfigs();
         }
-        console.log('✅ Datos refrescados exitosamente');
+        console.log('Datos refrescados exitosamente');
       }, 500);
       
-      alert('✅ Configuración eliminada correctamente');
+      showToast('success', 'Configuración eliminada correctamente', undefined, { surface: 'homepage' });
     } catch (error: any) {
-      console.error('❌ Error deleting config:', error);
-      alert(`❌ Error: ${error.message || 'Error al eliminar la configuración'}`);
+      console.error('Error deleting config:', error);
+      showToast('error', `Error: ${error.message || 'Error al eliminar la configuración'}`);
     }
   };
 
-  // ✅ MAPEO DE NOMBRES DE ESTADOS (usando la nueva estructura del backend)
+  // MAPEO DE NOMBRES DE ESTADOS (usando la nueva estructura del backend)
   const getStatusDisplayName = (status: any) => {
-    // ✅ PRIORIDAD 1: Usar displayName del backend (más confiable) - manejar camelCase y PascalCase
+    // PRIORIDAD 1: Usar displayName del backend (más confiable) - manejar camelCase y PascalCase
     const displayName = status.displayName || status.DisplayName;
     if (displayName && displayName.trim() !== '') {
       return displayName.trim();
     }
     
-    // ✅ PRIORIDAD 2: Usar statusName como fallback - manejar camelCase y PascalCase
+    // PRIORIDAD 2: Usar statusName como fallback - manejar camelCase y PascalCase
     const statusName = status.statusName || status.StatusName;
     if (statusName && statusName.trim() !== '') {
       return statusName.trim();
     }
     
-    // ✅ PRIORIDAD 3: Usar name (compatibilidad con estructura anterior)
+    // PRIORIDAD 3: Usar name (compatibilidad con estructura anterior)
     const name = status.name || status.Name;
     if (name && name.trim() !== '') {
       return name.trim();
     }
     
-    // ✅ FALLBACK: Estado genérico
-    console.warn(`⚠️ getStatusDisplayName - Sin nombre para estado:`, { 
+    // FALLBACK: Estado genérico
+    console.warn(`getStatusDisplayName - Sin nombre para estado:`, { 
       id: status.id || status.Id, 
       status: status,
       keys: Object.keys(status)
@@ -443,7 +458,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
     return `Estado ${status.id || status.Id || 'desconocido'}`;
   };
 
-  // ✅ FUNCIÓN PARA VERIFICAR SI UN ESTADO TIENE CONFIGURACIÓN
+  // FUNCIÓN PARA VERIFICAR SI UN ESTADO TIENE CONFIGURACIÓN
   const hasConfiguration = (statusId: number) => {
     // Verificar en configuraciones por estado
     const hasStatusConfig = appointmentStatusConfigs.configs.some(config => 
@@ -463,27 +478,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
     return hasStatusConfig || hasCategoryConfig || hasGranularConfig;
   };
 
-  // ✅ FUNCIÓN PARA TOGGLE DE ESTADO DE FINALIZACIÓN
+  // FUNCIÓN PARA TOGGLE DE ESTADO DE FINALIZACIÓN
   const handleToggleFinalizationStatus = async (statusId: number, currentStatus: boolean) => {
     try {
-      console.log(`🔄 Cambiando estado de finalización para statusId: ${statusId}, de ${currentStatus} a ${!currentStatus}`);
+      console.log(`Cambiando estado de finalización para statusId: ${statusId}, de ${currentStatus} a ${!currentStatus}`);
       
       await statusManagement.updateFinalizationStatus(statusId, !currentStatus);
       
-      alert(`✅ Estado de finalización ${!currentStatus ? 'activado' : 'desactivado'} correctamente`);
+      showToast('success', `Estado de finalización ${!currentStatus ? 'activado' : 'desactivado'} correctamente`, undefined, { surface: 'homepage' });
     } catch (error) {
       console.error('Error actualizando estado de finalización:', error);
-      alert('❌ Error al actualizar el estado de finalización');
+      showToast('error', 'Error al actualizar el estado de finalización');
     }
   };
 
   const handleEditConfig = (config: any) => {
-    console.log('🔍 DEBUG - handleEditConfig - Config recibida:', config);
-    console.log('🔍 DEBUG - handleEditConfig - Campos disponibles:', Object.keys(config));
-    console.log('🔍 DEBUG - handleEditConfig - categoryId:', config.categoryId);
-    console.log('🔍 DEBUG - handleEditConfig - serviceTypeCategoryId:', config.serviceTypeCategoryId);
-    console.log('🔍 DEBUG - handleEditConfig - activeTab actual:', activeTab);
-    console.log('🔍 DEBUG - handleEditConfig - Config completa para granular:', {
+    console.log('DEBUG - handleEditConfig - Config recibida:', config);
+    console.log('DEBUG - handleEditConfig - Campos disponibles:', Object.keys(config));
+    console.log('DEBUG - handleEditConfig - categoryId:', config.categoryId);
+    console.log('DEBUG - handleEditConfig - serviceTypeCategoryId:', config.serviceTypeCategoryId);
+    console.log('DEBUG - handleEditConfig - activeTab actual:', activeTab);
+    console.log('DEBUG - handleEditConfig - Config completa para granular:', {
       id: config.id,
       statusId: config.statusId,
       categoryId: config.categoryId,
@@ -498,7 +513,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       isActive: config.isActive
     });
     
-    // ✅ CORREGIDO: Buscar el statusId correcto si no viene directamente
+    // CORREGIDO: Buscar el statusId correcto si no viene directamente
     // Usar statusManagement.statuses que incluye TODOS los estados (AppointmentStatus y SearchHireStatus)
     // en lugar de solo appointmentStatuses que solo incluye AppointmentStatus
     const allStatuses = statusManagement.statuses && statusManagement.statuses.length > 0 
@@ -513,7 +528,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       const statusAsNumber = Number(config.status);
       if (!isNaN(statusAsNumber) && statusAsNumber > 0) {
         resolvedStatusId = statusAsNumber;
-        console.log('🔍 DEBUG - handleEditConfig - StatusId obtenido del campo status (string):', resolvedStatusId);
+        console.log('DEBUG - handleEditConfig - StatusId obtenido del campo status (string):', resolvedStatusId);
       }
     }
     
@@ -523,7 +538,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         (status: any) => status.id === resolvedStatusId
       );
       if (!statusExists) {
-        console.log('⚠️ DEBUG - handleEditConfig - StatusId no existe en la lista, buscando por statusValue/statusName');
+        console.log('DEBUG - handleEditConfig - StatusId no existe en la lista, buscando por statusValue/statusName');
         resolvedStatusId = null; // Forzar búsqueda alternativa
       }
     }
@@ -536,7 +551,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       );
       if (foundStatus) {
         resolvedStatusId = foundStatus.id;
-        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por statusValue/status:', {
+        console.log('DEBUG - handleEditConfig - StatusId encontrado por statusValue/status:', {
           searchValue: searchValue,
           statusId: resolvedStatusId,
           statusType: foundStatus.statusType
@@ -551,7 +566,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       );
       if (foundStatus) {
         resolvedStatusId = foundStatus.id;
-        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por statusName:', {
+        console.log('DEBUG - handleEditConfig - StatusId encontrado por statusName:', {
           statusName: config.statusName,
           statusId: resolvedStatusId,
           statusType: foundStatus.statusType
@@ -567,7 +582,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
       );
       if (foundStatus) {
         resolvedStatusId = foundStatus.id;
-        console.log('🔍 DEBUG - handleEditConfig - StatusId encontrado por estado/displayName:', {
+        console.log('DEBUG - handleEditConfig - StatusId encontrado por estado/displayName:', {
           searchName: searchName,
           statusId: resolvedStatusId,
           statusType: foundStatus.statusType
@@ -578,23 +593,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
     // Si aún no se encontró, usar 0 como fallback
     if (!resolvedStatusId || resolvedStatusId === 0) {
       resolvedStatusId = 0;
-      console.log('⚠️ DEBUG - handleEditConfig - No se pudo encontrar statusId, usando 0 como fallback');
-      console.log('⚠️ DEBUG - handleEditConfig - Config completa:', config);
-      console.log('⚠️ DEBUG - handleEditConfig - AllStatuses disponibles:', allStatuses.map((s: any) => ({ id: s.id, statusType: s.statusType, statusValue: s.statusValue, displayName: s.displayName })));
+      console.log('DEBUG - handleEditConfig - No se pudo encontrar statusId, usando 0 como fallback');
+      console.log('DEBUG - handleEditConfig - Config completa:', config);
+      console.log('DEBUG - handleEditConfig - AllStatuses disponibles:', allStatuses.map((s: any) => ({ id: s.id, statusType: s.statusType, statusValue: s.statusValue, displayName: s.displayName })));
     }
     
     setEditingConfig(config);
     setFormData({
       statusId: resolvedStatusId,
-      categoryId: config.categoryId || null, // ✅ AGREGADO: Incluir categoryId
+      categoryId: config.categoryId || null, // AGREGADO: Incluir categoryId
       serviceTypeCategoryId: config.serviceTypeCategoryId,
-      clientPercentage: Number(config.Cliente ?? config.cliente ?? config.clientPercentage ?? 0), // ✅ Asegurar que sea número
-      expertPercentage: Number(config.Experto ?? config.experto ?? config.expertPercentage ?? 0), // ✅ Asegurar que sea número
-      platformPercentage: Number(config.Plataforma ?? config.plataforma ?? config.platformPercentage ?? 0), // ✅ Asegurar que sea número
+      clientPercentage: Number(config.Cliente ?? config.cliente ?? config.clientPercentage ?? 0), // Asegurar que sea número
+      expertPercentage: Number(config.Experto ?? config.experto ?? config.expertPercentage ?? 0), // Asegurar que sea número
+      platformPercentage: Number(config.Plataforma ?? config.plataforma ?? config.platformPercentage ?? 0), // Asegurar que sea número
       isActive: (config.Activo ?? config.activo) === 'Activo' || config.isActive || true
     });
     
-    console.log('🔍 DEBUG - handleEditConfig - FormData establecida:', {
+    console.log('DEBUG - handleEditConfig - FormData establecida:', {
       statusId: resolvedStatusId,
       categoryId: config.categoryId || null,
       serviceTypeCategoryId: config.serviceTypeCategoryId,
@@ -610,8 +625,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
   const resetForm = () => {
     setFormData({
       statusId: 0,
-      categoryId: undefined, // ✅ AGREGADO: Resetear categoryId
-      serviceTypeCategoryId: undefined, // ✅ AGREGADO: Resetear serviceTypeCategoryId
+      categoryId: undefined, // AGREGADO: Resetear categoryId
+      serviceTypeCategoryId: undefined, // AGREGADO: Resetear serviceTypeCategoryId
       clientPercentage: 0,
       expertPercentage: 0,
       platformPercentage: 0,
@@ -623,7 +638,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
 
   const handleQueryConfig = () => {
     if (!queryStatus) {
-      alert('Debe seleccionar un estado de cita');
+      showToast('error', 'Debe seleccionar un estado de cita');
       return;
     }
     moneyDistributionQuery.queryConfig(queryStatus, queryCategoryId, queryServiceTypeCategoryId);
@@ -631,7 +646,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
 
   const getStatusLabel = (config: any) => {
     // Usar el campo 'estado' que viene del backend
-    // ✅ Usar PascalCase primero (backend), luego minúsculas (compatibilidad)
+    // Usar PascalCase primero (backend), luego minúsculas (compatibilidad)
     return config.Estado || config.estado || config.status || 'Estado no disponible';
   };
 
@@ -657,45 +672,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-start space-x-3 mb-4">
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-blue-600 font-bold">🎯</span>
+              <Target className="w-4 h-4 text-blue-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Sistema de Prioridades</h2>
               <p className="text-gray-600 mb-4">El sistema busca configuraciones en este orden de prioridad:</p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <span className="text-3xl">🥇</span>
+                <AdminBadge tone="brand">Prioridad 1</AdminBadge>
                 <span className="font-bold text-green-800 text-lg">Nivel 1</span>
               </div>
               <p className="text-sm text-green-700 font-semibold mb-2">Máxima Granularidad</p>
               <p className="text-xs text-green-600 leading-relaxed">Category + ServiceTypeCategory + Status</p>
             </div>
-            
+
             <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <span className="text-3xl">🥈</span>
+                <AdminBadge tone="info">Prioridad 2</AdminBadge>
                 <span className="font-bold text-blue-800 text-lg">Nivel 2</span>
               </div>
               <p className="text-sm text-blue-700 font-semibold mb-2">Granularidad Media</p>
               <p className="text-xs text-blue-600 leading-relaxed">ServiceTypeCategory + Status</p>
             </div>
-            
+
             <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <span className="text-3xl">🥉</span>
+                <AdminBadge tone="neutral">Prioridad 3</AdminBadge>
                 <span className="font-bold text-orange-800 text-lg">Nivel 3</span>
               </div>
               <p className="text-sm text-orange-700 font-semibold mb-2">Granularidad Básica</p>
               <p className="text-xs text-orange-600 leading-relaxed">Solo Status</p>
             </div>
-            
+
             <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <span className="text-3xl">🏅</span>
+                <AdminBadge tone="neutral">Prioridad 4</AdminBadge>
                 <span className="font-bold text-gray-800 text-lg">Nivel 4</span>
               </div>
               <p className="text-sm text-gray-700 font-semibold mb-2">Por Defecto</p>
@@ -705,7 +720,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start space-x-2">
-              <span className="text-blue-600 mt-0.5">💡</span>
+              <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-blue-800">
                 <p className="font-medium mb-1">¿Cómo funciona?</p>
                 <p>El sistema busca configuraciones desde el Nivel 1 hasta el Nivel 4. Si encuentra una configuración en un nivel superior, no busca en los niveles inferiores. Esto permite máxima flexibilidad con configuraciones específicas y fallbacks automáticos.</p>
@@ -717,70 +732,50 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
-              <button
-                onClick={() => setActiveTab('status')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'status'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                📊 Configuraciones por Estado
-              </button>
-              <button
-                onClick={() => setActiveTab('category')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'category'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🏷️ Configuraciones por Categoría
-              </button>
-              <button
-                onClick={() => setActiveTab('granular')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'granular'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🎯 Configuraciones Granulares
-              </button>
-              <button
-                onClick={() => setActiveTab('query')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'query'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🔍 Consulta de Configuración
-              </button>
-              <button
-                onClick={() => setActiveTab('stripe')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'stripe'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                💳 Configuración Stripe
-              </button>
-              <button
-                onClick={() => setActiveTab('cancellation')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'cancellation'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                🗓️ Cancelaciones
-              </button>
-            </nav>
-          </div>
+          <nav className="admin-tabs px-6">
+            <button
+              onClick={() => setActiveTab('status')}
+              className={`admin-tab ${activeTab === 'status' ? 'admin-tab--active' : ''}`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Configuraciones por Estado
+            </button>
+            <button
+              onClick={() => setActiveTab('category')}
+              className={`admin-tab ${activeTab === 'category' ? 'admin-tab--active' : ''}`}
+            >
+              <Tags className="w-4 h-4" />
+              Configuraciones por Categoría
+            </button>
+            <button
+              onClick={() => setActiveTab('granular')}
+              className={`admin-tab ${activeTab === 'granular' ? 'admin-tab--active' : ''}`}
+            >
+              <Crosshair className="w-4 h-4" />
+              Configuraciones Granulares
+            </button>
+            <button
+              onClick={() => setActiveTab('query')}
+              className={`admin-tab ${activeTab === 'query' ? 'admin-tab--active' : ''}`}
+            >
+              <Search className="w-4 h-4" />
+              Consulta de Configuración
+            </button>
+            <button
+              onClick={() => setActiveTab('stripe')}
+              className={`admin-tab ${activeTab === 'stripe' ? 'admin-tab--active' : ''}`}
+            >
+              <CreditCard className="w-4 h-4" />
+              Configuración Stripe
+            </button>
+            <button
+              onClick={() => setActiveTab('cancellation')}
+              className={`admin-tab ${activeTab === 'cancellation' ? 'admin-tab--active' : ''}`}
+            >
+              <CalendarX className="w-4 h-4" />
+              Cancelaciones
+            </button>
+          </nav>
         </div>
 
         {/* Content */}
@@ -789,51 +784,63 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Configuraciones por Estado de Cita</h2>
-                <button
+                <AdminButton
+                  variant="brand"
+                  icon={<Plus className="w-4 h-4" />}
                   onClick={() => {
                     setEditingConfig(null);
                     resetForm();
                     setShowForm(true);
                   }}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Crear Nueva
-                </button>
+                </AdminButton>
               </div>
-              
+
 
               {/* Mensaje informativo sobre funcionalidad completa */}
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
+                    <CheckCircle2 className="h-5 w-5 text-green-400" />
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-green-800">
                       Sistema Completamente Funcional
                     </h3>
                     <div className="mt-2 text-sm text-green-700">
-                      <p>✅ Crear, editar y eliminar configuraciones funcionando correctamente. ✅ Soporte para configuraciones por estado, categoría y granular.</p>
+                      <p>Crear, editar y eliminar configuraciones funcionando correctamente. Soporte para configuraciones por estado, categoría y granular.</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ✅ NUEVA SECCIÓN: GESTIÓN DE ESTADOS DE FINALIZACIÓN */}
+              {/* NUEVA SECCIÓN: GESTIÓN DE ESTADOS DE FINALIZACIÓN */}
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-blue-900">
-                    🎯 Gestión de Estados de Finalización
+                  <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    Gestión de Estados de Finalización
                   </h3>
-                  <button
-                    onClick={() => statusManagement.fetchAllStatuses()}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                  >
-                    🔄 Actualizar
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm text-blue-800 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={showLegacyStatuses}
+                        onChange={(e) => setShowLegacyStatuses(e.target.checked)}
+                        className="rounded border-blue-300"
+                      />
+                      Mostrar legacy
+                    </label>
+                    <AdminButton
+                      variant="brand"
+                      size="sm"
+                      icon={<RefreshCw className="w-4 h-4" />}
+                      onClick={() => statusManagement.fetchAllStatuses()}
+                    >
+                      Actualizar
+                    </AdminButton>
+                  </div>
                 </div>
                 
                 <p className="text-sm text-blue-700 mb-4">
@@ -841,38 +848,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                 </p>
 
 
-                {/* ✅ RESUMEN ESTADÍSTICO COMPACTO */}
+                {/* RESUMEN ESTADÍSTICO COMPACTO */}
                 <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded text-sm">
                   <div className="flex items-center gap-4">
-                    <span className="text-gray-600">📊 {statusManagement.statuses.length}</span>
-                    {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
-                      <span className="text-red-600">⚠️ {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length}</span>
+                    <span className="text-gray-600 inline-flex items-center gap-1"><BarChart3 className="w-4 h-4" /> {finalizationStatusesView.length}</span>
+                    {finalizationStatusesView.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
+                      <span className="text-red-600 inline-flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> {finalizationStatusesView.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length}</span>
                     )}
-                    <span className="text-green-600">✅ {statusManagement.statuses.filter(s => s.isFinalizationStatus).length}</span>
-                    <span className="text-gray-600">⏳ {statusManagement.statuses.filter(s => !s.isFinalizationStatus).length}</span>
+                    <span className="text-green-600 inline-flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> {finalizationStatusesView.filter(s => s.isFinalizationStatus).length}</span>
+                    <span className="text-gray-600 inline-flex items-center gap-1"><Clock className="w-4 h-4" /> {finalizationStatusesView.filter(s => !s.isFinalizationStatus).length}</span>
                   </div>
                 </div>
 
                 {statusManagement.isLoading ? (
                   <div className="text-center py-4">
-                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <AdminSpinner />
                     <p className="mt-2 text-sm text-blue-600">Cargando estados...</p>
                   </div>
                 ) : statusManagement.error ? (
                   <div className="text-center py-4">
-                    <p className="text-red-600 text-sm">❌ {statusManagement.error}</p>
+                    <p className="text-red-600 text-sm inline-flex items-center gap-1"><X className="w-4 h-4" /> {statusManagement.error}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* ✅ GRUPO: ESTADOS SIN CONFIGURACIÓN (PRIMERO) */}
-                    {statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
+                    {/* GRUPO: ESTADOS SIN CONFIGURACIÓN (PRIMERO) */}
+                    {finalizationStatusesView.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length > 0 && (
                       <div>
-                        <h4 className="text-base font-semibold text-red-800 mb-2 flex items-center">
-                          <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                          ⚠️ Sin Config ({statusManagement.statuses.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length})
+                        <h4 className="text-base font-semibold text-red-800 mb-2 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          <AlertTriangle className="w-4 h-4" />
+                          Sin Config ({finalizationStatusesView.filter(s => s.isFinalizationStatus && !hasConfiguration(s.id)).length})
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                          {statusManagement.statuses
+                          {finalizationStatusesView
                             .filter(status => status.isFinalizationStatus && !hasConfiguration(status.id))
                             .sort((a, b) => a.id - b.id)
                             .map((status) => (
@@ -889,14 +897,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                                   </span>
                                 </div>
                                 
-                                {/* ✅ STATUS VALUE COMPACTO */}
+                                {/* STATUS VALUE COMPACTO */}
                                 {status.statusValue && (
                                   <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 break-all">
                                     {status.statusValue}
                                   </p>
                                 )}
                                 
-                                {/* ✅ STATUS TYPE */}
+                                {/* STATUS TYPE */}
                                 {status.statusType && (
                                   <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
                                     {status.statusType}
@@ -904,14 +912,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                                 )}
                                 
                                 <div className="flex items-center justify-between">
-                                  <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                    ⚠️
-                                  </span>
+                                  <AdminBadge tone="error" icon={<AlertTriangle className="w-3 h-3" />}>Sin config</AdminBadge>
                                   <button
                                     onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
-                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200 inline-flex items-center"
+                                    aria-label="Quitar finalización"
                                   >
-                                    ❌
+                                    <X className="w-3 h-3" />
                                   </button>
                                 </div>
                               </div>
@@ -920,15 +927,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                       </div>
                     )}
 
-                    {/* ✅ GRUPO: ESTADOS DE FINALIZACIÓN (TODOS) */}
-                    {statusManagement.statuses.filter(s => s.isFinalizationStatus).length > 0 && (
+                    {/* GRUPO: ESTADOS DE FINALIZACIÓN (TODOS) */}
+                    {finalizationStatusesView.filter(s => s.isFinalizationStatus).length > 0 && (
                       <div>
-                        <h4 className="text-base font-semibold text-green-800 mb-2 flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                          ✅ Final ({statusManagement.statuses.filter(s => s.isFinalizationStatus).length})
+                        <h4 className="text-base font-semibold text-green-800 mb-2 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Final ({finalizationStatusesView.filter(s => s.isFinalizationStatus).length})
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                          {statusManagement.statuses
+                          {finalizationStatusesView
                             .filter(status => status.isFinalizationStatus)
                             .sort((a, b) => a.id - b.id)
                             .map((status) => (
@@ -949,14 +957,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                                   </span>
                                 </div>
                                 
-                                {/* ✅ STATUS VALUE COMPACTO */}
+                                {/* STATUS VALUE COMPACTO */}
                                 {status.statusValue && (
                                   <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 break-all">
                                     {status.statusValue}
                                   </p>
                                 )}
                                 
-                                {/* ✅ STATUS TYPE */}
+                                {/* STATUS TYPE */}
                                 {status.statusType && (
                                   <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
                                     {status.statusType}
@@ -965,20 +973,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                                 
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-1">
-                                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                      ✅
-                                    </span>
+                                    <AdminBadge tone="success" icon={<CheckCircle2 className="w-3 h-3" />}>Final</AdminBadge>
                                     {!hasConfiguration(status.id) && (
-                                      <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                        ⚠️
-                                      </span>
+                                      <AdminBadge tone="error" icon={<AlertTriangle className="w-3 h-3" />}>Sin config</AdminBadge>
                                     )}
                                   </div>
                                   <button
                                     onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
-                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200"
+                                    className="px-2 py-0.5 text-xs rounded transition-colors bg-red-100 text-red-700 hover:bg-red-200 inline-flex items-center"
+                                    aria-label="Quitar finalización"
                                   >
-                                    ❌
+                                    <X className="w-3 h-3" />
                                   </button>
                                 </div>
                               </div>
@@ -987,14 +992,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                       </div>
                     )}
 
-                    {/* ✅ GRUPO: ESTADOS INTERMEDIOS */}
+                    {/* GRUPO: ESTADOS INTERMEDIOS */}
                     <div>
-                      <h4 className="text-base font-semibold text-gray-700 mb-2 flex items-center">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                        ⏳ Inter ({statusManagement.statuses.filter(s => !s.isFinalizationStatus).length})
+                      <h4 className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                        <Clock className="w-4 h-4" />
+                        Inter ({finalizationStatusesView.filter(s => !s.isFinalizationStatus).length})
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                        {statusManagement.statuses
+                        {finalizationStatusesView
                           .filter(status => !status.isFinalizationStatus)
                           .sort((a, b) => a.id - b.id)
                           .map((status) => (
@@ -1011,14 +1017,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                                 </span>
                               </div>
                               
-                              {/* ✅ STATUS VALUE COMPACTO */}
+                              {/* STATUS VALUE COMPACTO */}
                               {status.statusValue && (
                                 <p className="text-xs font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded mb-1 truncate">
                                   {status.statusValue}
                                 </p>
                               )}
                               
-                              {/* ✅ STATUS TYPE */}
+                              {/* STATUS TYPE */}
                               {status.statusType && (
                                 <p className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mb-1 truncate">
                                   {status.statusType}
@@ -1026,14 +1032,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                               )}
                               
                               <div className="flex items-center justify-between">
-                                <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                  ⏳
-                                </span>
+                                <AdminBadge tone="neutral" icon={<Clock className="w-3 h-3" />}>Intermedio</AdminBadge>
                                 <button
                                   onClick={() => handleToggleFinalizationStatus(status.id, status.isFinalizationStatus)}
-                                  className="px-2 py-0.5 text-xs rounded transition-colors bg-green-100 text-green-700 hover:bg-green-200"
+                                  className="px-2 py-0.5 text-xs rounded transition-colors bg-green-100 text-green-700 hover:bg-green-200 inline-flex items-center"
+                                  aria-label="Marcar como finalización"
                                 >
-                                  ✅
+                                  <CheckCircle2 className="w-3 h-3" />
                                 </button>
                               </div>
                             </div>
@@ -1070,7 +1075,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
 
               {getLoadingForTab() ? (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <AdminSpinner size={32} />
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
               ) : getErrorForTab() ? (
@@ -1080,79 +1085,73 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                   fullScreen={false}
                 />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experto</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plataforma</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioridad</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {(getConfigsForTab() || []).map((config) => (
-                        <tr key={config.id}>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            <div>
-                              <div>{getStatusLabel(config)}</div>
-                              <div className="text-xs text-gray-500 font-mono mt-1 break-all">
-                                {config.statusValue}
-                              </div>
-                              {(() => {
-                                // Buscar el tipo de estado en la lista de todos los estados
-                                const statusInfo = (statusManagement.statuses || []).find(
-                                  (s: any) => s.statusValue === config.statusValue || s.id === config.statusId
-                                );
-                                return statusInfo?.statusType ? (
-                                  <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
-                                    {statusInfo.statusType}
-                                  </div>
-                                ) : null;
-                              })()}
+                <AdminTable>
+                  <AdminTHead>
+                    <AdminTH>Estado</AdminTH>
+                    <AdminTH>Cliente</AdminTH>
+                    <AdminTH>Experto</AdminTH>
+                    <AdminTH>Plataforma</AdminTH>
+                    <AdminTH>Prioridad</AdminTH>
+                    <AdminTH>Activo</AdminTH>
+                    <AdminTH>Acciones</AdminTH>
+                  </AdminTHead>
+                  <AdminTBody>
+                    {(getConfigsForTab() || []).map((config) => (
+                      <AdminTR key={config.id}>
+                        <AdminTD>
+                          <div>
+                            <div>{getStatusLabel(config)}</div>
+                            <div className="text-xs text-gray-500 font-mono mt-1 break-all">
+                              {config.statusValue}
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {(config.Experto ?? config.experto ?? 0).toFixed(1)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <PriorityBadge type="status" />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              (config.Activo || config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {config.Activo || config.activo || 'Inactivo'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleEditConfig(config)}
-                              className="text-blue-600 hover:text-blue-900 mr-3"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteConfig(config.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            {(() => {
+                              // Buscar el tipo de estado en la lista de todos los estados
+                              const statusInfo = (statusManagement.statuses || []).find(
+                                (s: any) => s.statusValue === config.statusValue || s.id === config.statusId
+                              );
+                              return statusInfo?.statusType ? (
+                                <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                  {statusInfo.statusType}
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
+                        </AdminTD>
+                        <AdminTD>{(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%</AdminTD>
+                        <AdminTD>{(config.Experto ?? config.experto ?? 0).toFixed(1)}%</AdminTD>
+                        <AdminTD>{(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%</AdminTD>
+                        <AdminTD>
+                          <PriorityBadge type="status" />
+                        </AdminTD>
+                        <AdminTD>
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            (config.Activo || config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {config.Activo || config.activo || 'Inactivo'}
+                          </span>
+                        </AdminTD>
+                        <AdminTD>
+                          <AdminButton
+                            variant="ghost"
+                            size="sm"
+                            className="mr-1"
+                            icon={<Edit className="w-4 h-4" />}
+                            onClick={() => handleEditConfig(config)}
+                            aria-label="Editar"
+                          />
+                          <AdminButton
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-900"
+                            icon={<Trash2 className="w-4 h-4" />}
+                            onClick={() => setConfirmDeleteConfig(config.id)}
+                            aria-label="Eliminar"
+                          />
+                        </AdminTD>
+                      </AdminTR>
+                    ))}
+                  </AdminTBody>
+                </AdminTable>
               )}
             </div>
           )}
@@ -1161,22 +1160,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Configuraciones por Categoría de Servicio</h2>
-                <button
+                <AdminButton
+                  variant="brand"
+                  icon={<Plus className="w-4 h-4" />}
                   onClick={() => {
                     setEditingConfig(null);
                     resetForm();
                     setShowForm(true);
                   }}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Crear Nueva
-                </button>
+                </AdminButton>
               </div>
 
               {getLoadingForTab() ? (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <AdminSpinner size={32} />
                   <p className="mt-2 text-gray-600">Cargando configuraciones...</p>
                 </div>
               ) : getErrorForTab() ? (
@@ -1188,10 +1187,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
               ) : (
                 <div className="space-y-6">
                   {getConfigsForTab().length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 text-lg">No hay configuraciones por categoría</p>
-                      <p className="text-gray-400 text-sm mt-2">Crea una nueva configuración para verla aquí</p>
-                    </div>
+                    <AdminEmptyState
+                      icon={<Inbox className="w-6 h-6" />}
+                      title="No hay configuraciones por categoría"
+                      description="Crea una nueva configuración para verla aquí"
+                    />
                   ) : (
                     (categories || []).map((category) => {
                       const categoryConfigs = (getConfigsForTab() || []).filter((config: any) => {
@@ -1203,76 +1203,70 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                         {categoryConfigs.length === 0 ? (
                           <p className="text-gray-500 text-sm">No hay configuraciones para esta categoría</p>
                         ) : (
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experto</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plataforma</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioridad</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {(categoryConfigs || []).map((config) => (
-                                  <tr key={config.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                      <div>
-                                        <div>{getStatusLabel(config)}</div>
-                                        {(() => {
-                                          // Buscar el tipo de estado en la lista de todos los estados
-                                          const statusInfo = (statusManagement.statuses || []).find(
-                                            (s: any) => s.statusValue === config.status || s.id === config.statusId || s.id.toString() === config.status
-                                          );
-                                          return statusInfo?.statusType ? (
-                                            <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
-                                              {statusInfo.statusType}
-                                            </div>
-                                          ) : null;
-                                        })()}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {(config.Experto ?? config.experto ?? 0).toFixed(1)}%
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                      {(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <PriorityBadge type="service-type" />
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                        (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                      }`}>
-                                        {config.Activo ?? config.activo ?? 'Inactivo'}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                      <button
-                                        onClick={() => handleEditConfig(config)}
-                                        className="text-blue-600 hover:text-blue-900 mr-3"
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteConfig(config.id)}
-                                        className="text-red-600 hover:text-red-900"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                          <AdminTable>
+                            <AdminTHead>
+                              <AdminTH>Estado</AdminTH>
+                              <AdminTH>Cliente</AdminTH>
+                              <AdminTH>Experto</AdminTH>
+                              <AdminTH>Plataforma</AdminTH>
+                              <AdminTH>Prioridad</AdminTH>
+                              <AdminTH>Activo</AdminTH>
+                              <AdminTH>Acciones</AdminTH>
+                            </AdminTHead>
+                            <AdminTBody>
+                              {(categoryConfigs || []).map((config) => (
+                                <AdminTR key={config.id}>
+                                  <AdminTD>
+                                    <div>
+                                      <div>{getStatusLabel(config)}</div>
+                                      {(() => {
+                                        // Buscar el tipo de estado en la lista de todos los estados
+                                        const statusInfo = (statusManagement.statuses || []).find(
+                                          (s: any) => s.statusValue === config.status || s.id === config.statusId || s.id.toString() === config.status
+                                        );
+                                        return statusInfo?.statusType ? (
+                                          <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                            {statusInfo.statusType}
+                                          </div>
+                                        ) : null;
+                                      })()}
+                                    </div>
+                                  </AdminTD>
+                                  <AdminTD>{(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%</AdminTD>
+                                  <AdminTD>{(config.Experto ?? config.experto ?? 0).toFixed(1)}%</AdminTD>
+                                  <AdminTD>{(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%</AdminTD>
+                                  <AdminTD>
+                                    <PriorityBadge type="service-type" />
+                                  </AdminTD>
+                                  <AdminTD>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {config.Activo ?? config.activo ?? 'Inactivo'}
+                                    </span>
+                                  </AdminTD>
+                                  <AdminTD>
+                                    <AdminButton
+                                      variant="ghost"
+                                      size="sm"
+                                      className="mr-1"
+                                      icon={<Edit className="w-4 h-4" />}
+                                      onClick={() => handleEditConfig(config)}
+                                      aria-label="Editar"
+                                    />
+                                    <AdminButton
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-900"
+                                      icon={<Trash2 className="w-4 h-4" />}
+                                      onClick={() => setConfirmDeleteConfig(config.id)}
+                                      aria-label="Eliminar"
+                                    />
+                                  </AdminTD>
+                                </AdminTR>
+                              ))}
+                            </AdminTBody>
+                          </AdminTable>
                         )}
                       </div>
                     );
@@ -1287,7 +1281,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Configuraciones Granulares (Category + ServiceType)</h2>
-                <button
+                <AdminButton
+                  variant="brand"
+                  icon={<Plus className="w-4 h-4" />}
                   onClick={() => {
                     setEditingConfig(null);
                     setFormData({
@@ -1299,16 +1295,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                     });
                     setShowForm(true);
                   }}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Crear Nueva Configuración
-                </button>
+                </AdminButton>
               </div>
 
               {getLoadingForTab() ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <AdminSpinner size={32} />
                   <span className="ml-3 text-gray-600">Cargando configuraciones granulares...</span>
                 </div>
               ) : getErrorForTab() ? (
@@ -1320,10 +1314,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
               ) : (
                 <div className="space-y-8">
                   {getConfigsForTab().length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 text-lg">No hay configuraciones granulares</p>
-                      <p className="text-gray-400 text-sm mt-2">Crea una nueva configuración para verla aquí</p>
-                    </div>
+                    <AdminEmptyState
+                      icon={<Inbox className="w-6 h-6" />}
+                      title="No hay configuraciones granulares"
+                      description="Crea una nueva configuración para verla aquí"
+                    />
                   ) : (
                     (categories || []).map((category: any) => {
                       const granularConfigs = (getConfigsForTab() || []).filter((config: any) => {
@@ -1332,72 +1327,72 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                       return (
                     <div key={category.id} className="border border-gray-200 rounded-lg p-4">
                       <h3 className="text-xl font-semibold text-gray-700 mb-4">{category.name}</h3>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Servicio</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente (%)</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experto (%)</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plataforma (%)</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioridad</th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
-                              <th scope="col" className="relative px-6 py-3"><span className="sr-only">Acciones</span></th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                             {(granularConfigs || []).map((config) => (
-                              <tr key={config.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{config.serviceTypeCategoryName || 'N/A'}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <div>
-                                    <div>{config.Estado || config.estado || 'Estado no disponible'}</div>
-                                    {(() => {
-                                      // Buscar el tipo de estado en la lista de todos los estados
-                                      const statusInfo = (statusManagement.statuses || []).find(
-                                        (s: any) => s.statusValue === config.statusValue || s.id === config.statusId || s.displayName === (config.Estado || config.estado)
-                                      );
-                                      return statusInfo?.statusType ? (
-                                        <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
-                                          {statusInfo.statusType}
-                                        </div>
-                                      ) : null;
-                                    })()}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Experto ?? config.experto ?? 0).toFixed(1)}%</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <PriorityBadge type="granular" />
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {config.Activo ?? config.activo ?? 'Inactivo'}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <button
-                                    onClick={() => handleEditConfig(config)}
-                                    className="text-blue-600 hover:text-blue-900 mr-3"
-                                  >
-                                    <Edit className="w-5 h-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteConfig(config.id)}
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    <Trash2 className="w-5 h-5" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <AdminTable>
+                        <AdminTHead>
+                          <AdminTH scope="col">Tipo de Servicio</AdminTH>
+                          <AdminTH scope="col">Estado</AdminTH>
+                          <AdminTH scope="col">Cliente (%)</AdminTH>
+                          <AdminTH scope="col">Experto (%)</AdminTH>
+                          <AdminTH scope="col">Plataforma (%)</AdminTH>
+                          <AdminTH scope="col">Prioridad</AdminTH>
+                          <AdminTH scope="col">Activo</AdminTH>
+                          <AdminTH scope="col"><span className="sr-only">Acciones</span></AdminTH>
+                        </AdminTHead>
+                        <AdminTBody>
+                           {(granularConfigs || []).map((config) => (
+                            <AdminTR key={config.id}>
+                              <AdminTD>{config.serviceTypeCategoryName || 'N/A'}</AdminTD>
+                              <AdminTD>
+                                <div>
+                                  <div>{config.Estado || config.estado || 'Estado no disponible'}</div>
+                                  {(() => {
+                                    // Buscar el tipo de estado en la lista de todos los estados
+                                    const statusInfo = (statusManagement.statuses || []).find(
+                                      (s: any) => s.statusValue === config.statusValue || s.id === config.statusId || s.displayName === (config.Estado || config.estado)
+                                    );
+                                    return statusInfo?.statusType ? (
+                                      <div className="text-xs text-purple-600 bg-purple-50 px-1 py-0.5 rounded mt-1 inline-block">
+                                        {statusInfo.statusType}
+                                      </div>
+                                    ) : null;
+                                  })()}
+                                </div>
+                              </AdminTD>
+                              <AdminTD>{(config.Cliente ?? config.cliente ?? 0).toFixed(1)}%</AdminTD>
+                              <AdminTD>{(config.Experto ?? config.experto ?? 0).toFixed(1)}%</AdminTD>
+                              <AdminTD>{(config.Plataforma ?? config.plataforma ?? 0).toFixed(1)}%</AdminTD>
+                              <AdminTD>
+                                <PriorityBadge type="granular" />
+                              </AdminTD>
+                              <AdminTD>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  (config.Activo ?? config.activo) === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {config.Activo ?? config.activo ?? 'Inactivo'}
+                                </span>
+                              </AdminTD>
+                              <AdminTD className="text-right">
+                                <AdminButton
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mr-1"
+                                  icon={<Edit className="w-5 h-5" />}
+                                  onClick={() => handleEditConfig(config)}
+                                  aria-label="Editar"
+                                />
+                                <AdminButton
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-900"
+                                  icon={<Trash2 className="w-5 h-5" />}
+                                  onClick={() => setConfirmDeleteConfig(config.id)}
+                                  aria-label="Eliminar"
+                                />
+                              </AdminTD>
+                            </AdminTR>
+                          ))}
+                        </AdminTBody>
+                      </AdminTable>
                     </div>
                     );
                   })
@@ -1487,17 +1482,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                 </div>
               </div>
               
-              <button
+              <AdminButton
+                variant="brand"
+                icon={<Search className="w-4 h-4" />}
                 onClick={handleQueryConfig}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
-                <Search className="w-4 h-4 mr-2" />
                 Consultar Configuración
-              </button>
+              </AdminButton>
 
               {moneyDistributionQuery.isLoading && (
                 <div className="mt-4 text-center">
-                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <AdminSpinner />
                   <p className="mt-2 text-gray-600">Consultando configuración...</p>
                 </div>
               )}
@@ -1551,16 +1546,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                 <h3 className="text-lg font-semibold text-gray-900">
                   {editingConfig ? 'Editar Configuración' : 'Crear Nueva Configuración'}
                 </h3>
-                <button
+                <AdminButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  icon={<X className="w-5 h-5" />}
                   onClick={() => {
                     setShowForm(false);
                     setEditingConfig(null);
                     resetForm();
                   }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  aria-label="Cerrar"
+                />
               </div>
 
               <form onSubmit={(e) => { e.preventDefault(); editingConfig ? handleUpdateConfig() : handleCreateConfig(); }}>
@@ -1575,8 +1572,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                       required
                       disabled={loadingBasicData}
                       onFocus={() => {
-                        console.log('🔍 DEBUG - Select estado - onFocus - formData.statusId:', formData.statusId);
-                        console.log('🔍 DEBUG - Select estado - onFocus - editingConfig:', editingConfig);
+                        console.log('DEBUG - Select estado - onFocus - formData.statusId:', formData.statusId);
+                        console.log('DEBUG - Select estado - onFocus - editingConfig:', editingConfig);
                       }}
                     >
                       <option value={0}>
@@ -1604,22 +1601,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                         onChange={(e) => {
                           const value = e.target.value ? parseInt(e.target.value) : null;
                           if (editingConfig) {
-                            // ✅ CORREGIDO: Al editar, actualizar formData en lugar de selectedCategoryId
+                            // CORREGIDO: Al editar, actualizar formData en lugar de selectedCategoryId
                             setFormData({ ...formData, categoryId: value || undefined });
-                            console.log('🔍 DEBUG - Select categoría - Actualizando formData.categoryId:', value);
+                            console.log('DEBUG - Select categoría - Actualizando formData.categoryId:', value);
                           } else {
                             setSelectedCategoryId(value);
-                            console.log('🔍 DEBUG - Select categoría - Actualizando selectedCategoryId:', value);
+                            console.log('DEBUG - Select categoría - Actualizando selectedCategoryId:', value);
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={loadingBasicData}
                         onFocus={() => {
-                          console.log('🔍 DEBUG - Select categoría - onFocus - editingConfig:', editingConfig);
-                          console.log('🔍 DEBUG - Select categoría - onFocus - formData.categoryId:', formData.categoryId);
-                          console.log('🔍 DEBUG - Select categoría - onFocus - selectedCategoryId:', selectedCategoryId);
-                          console.log('🔍 DEBUG - Select categoría - onFocus - value mostrado:', editingConfig ? (formData.categoryId || '') : (selectedCategoryId || ''));
+                          console.log('DEBUG - Select categoría - onFocus - editingConfig:', editingConfig);
+                          console.log('DEBUG - Select categoría - onFocus - formData.categoryId:', formData.categoryId);
+                          console.log('DEBUG - Select categoría - onFocus - selectedCategoryId:', selectedCategoryId);
+                          console.log('DEBUG - Select categoría - onFocus - value mostrado:', editingConfig ? (formData.categoryId || '') : (selectedCategoryId || ''));
                         }}
                       >
                         <option value="">
@@ -1650,22 +1647,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                         onChange={(e) => {
                           const value = e.target.value ? parseInt(e.target.value) : null;
                           if (editingConfig) {
-                            // ✅ CORREGIDO: Al editar, actualizar formData en lugar de selectedServiceTypeId
+                            // CORREGIDO: Al editar, actualizar formData en lugar de selectedServiceTypeId
                             setFormData({ ...formData, serviceTypeCategoryId: value || undefined });
-                            console.log('🔍 DEBUG - Select tipo servicio - Actualizando formData.serviceTypeCategoryId:', value);
+                            console.log('DEBUG - Select tipo servicio - Actualizando formData.serviceTypeCategoryId:', value);
                           } else {
                             setSelectedServiceTypeId(value);
-                            console.log('🔍 DEBUG - Select tipo servicio - Actualizando selectedServiceTypeId:', value);
+                            console.log('DEBUG - Select tipo servicio - Actualizando selectedServiceTypeId:', value);
                           }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={loadingBasicData}
                         onFocus={() => {
-                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - editingConfig:', editingConfig);
-                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - formData.serviceTypeCategoryId:', formData.serviceTypeCategoryId);
-                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - selectedServiceTypeId:', selectedServiceTypeId);
-                          console.log('🔍 DEBUG - Select tipo servicio - onFocus - value mostrado:', editingConfig ? (formData.serviceTypeCategoryId || '') : (selectedServiceTypeId || ''));
+                          console.log('DEBUG - Select tipo servicio - onFocus - editingConfig:', editingConfig);
+                          console.log('DEBUG - Select tipo servicio - onFocus - formData.serviceTypeCategoryId:', formData.serviceTypeCategoryId);
+                          console.log('DEBUG - Select tipo servicio - onFocus - selectedServiceTypeId:', selectedServiceTypeId);
+                          console.log('DEBUG - Select tipo servicio - onFocus - value mostrado:', editingConfig ? (formData.serviceTypeCategoryId || '') : (selectedServiceTypeId || ''));
                         }}
                       >
                         <option value="">
@@ -1756,29 +1753,54 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
                 </div>
 
                 <div className="flex justify-end space-x-3">
-                  <button
+                  <AdminButton
                     type="button"
+                    variant="outline"
                     onClick={() => {
                       setShowForm(false);
                       setEditingConfig(null);
                       resetForm();
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
                   >
                     Cancelar
-                  </button>
-                  <button
+                  </AdminButton>
+                  <AdminButton
                     type="submit"
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    variant="brand"
+                    icon={<Save className="w-4 h-4" />}
                   >
-                    <Save className="w-4 h-4 mr-2" />
                     {editingConfig ? 'Actualizar' : 'Crear'}
-                  </button>
+                  </AdminButton>
                 </div>
               </form>
             </div>
           </div>
         )}
+
+          {/* Modal de confirmación de eliminación */}
+          <AdminModal
+            open={!!confirmDeleteConfig}
+            onOpenChange={(o) => { if (!o) setConfirmDeleteConfig(null); }}
+            title="Eliminar configuración"
+            description="Esta acción no se puede deshacer."
+            footer={
+              <>
+                <AdminButton variant="outline" onClick={() => setConfirmDeleteConfig(null)}>Cancelar</AdminButton>
+                <AdminButton
+                  variant="danger"
+                  onClick={async () => {
+                    const id = confirmDeleteConfig;
+                    setConfirmDeleteConfig(null);
+                    if (id != null) {
+                      await handleDeleteConfig(id);
+                    }
+                  }}
+                >
+                  Eliminar
+                </AdminButton>
+              </>
+            }
+          />
 
           {/* Secciones de mapeos y categorías movidas a /admin/mappings y /admin/categories */}
 

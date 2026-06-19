@@ -350,22 +350,13 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           )}
         </div>
 
-        {/* Indicador a la derecha · check brand cuando activa, chevron sutil cuando no. */}
+        {/* Indicador a la derecha · chevron sutil (sin tick en la activa). */}
         <div className="flex shrink-0 items-center pr-0.5">
-          {isSelected ? (
-            <span
-              aria-hidden
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-brand shadow-[0_2px_6px_hsl(var(--brand)/0.45)]"
-            >
-              <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} />
-            </span>
-          ) : (
-            <ChevronRight
-              className="h-4 w-4 text-[#cccccc] transition-colors group-hover:text-brand"
-              strokeWidth={2}
-              aria-hidden
-            />
-          )}
+          <ChevronRight
+            className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand' : 'text-[#cccccc] group-hover:text-brand'}`}
+            strokeWidth={2}
+            aria-hidden
+          />
         </div>
       </button>
     );
@@ -512,14 +503,6 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
       <span className="min-w-0 flex-1 truncate text-[15px] font-medium leading-tight text-[#1c1c1c]">
         {name}
       </span>
-      {isSelected && (
-        <span
-          aria-hidden
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand"
-        >
-          <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
-        </span>
-      )}
     </button>
   );
 };
@@ -1317,68 +1300,153 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                             </div>
                           </SkeletonTheme>
                         ) : isMobile ? (
-                          // GRID 3-COL · cuadradas (el diseño que prefieres). Las
-                          // labels largas usan `line-clamp-2 min-h-[2.2em]` en el
-                          // tile para que NUNCA descuadren el aspect-square del
-                          // resto. Coming-soon se mezcla en el mismo grid después
-                          // de las activas como tiles disabled con badge "Pronto".
-                          //
-                          // Nota: el código de variant="office-row" + ComingSoonGrid
-                          // queda definido arriba por si se quiere volver al layout
-                          // lista vertical + sección "Próximamente" más rica.
-                          <div className="grid grid-cols-3 gap-2.5">
-                            {mobilePickerCategories.map((category) => (
-                              <CategoryPickerRow
-                                key={category.id}
-                                name={category.name}
-                                isSelected={categoryId === category.id}
-                                variant="tile"
-                                onClick={() => {
-                                  setCategoryId(category.id);
-                                  setCategorySearchQuery('');
+                          // LISTA VERTICAL minimalista (igual que el drawer desktop):
+                          // ilustración + nombre + entrega + "desde X€ · N expertos",
+                          // sin contornos. Coming-soon como filas sutiles con pastilla
+                          // "Pronto", separadas por un eyebrow "Próximamente".
+                          ((() => {
+                            const csImg = (n: string): string | null => {
+                              const l = n.toLowerCase();
+                              if (l.includes('agua')) return motoaguaImg;
+                              if (l.includes('cámara') || l.includes('camara')) return camarapngImg;
+                              if (l.includes('fontaner') || l.includes('caldera')) return calderaImg;
+                              if (l.includes('online') || l.includes('internet') || l.includes('web')) return internet61Img;
+                              return null;
+                            };
+                            const comingSoon = COMING_SOON_CATEGORIES.filter(
+                              (csName) =>
+                                !mobilePickerCategories.some(
+                                  (c) => c.name.toLowerCase() === csName.toLowerCase(),
+                                ),
+                            );
+                            return (
+                              <div className="flex flex-col">
+                                {mobilePickerCategories.map((category) => {
+                                  const meta = getCategoryMeta(category.id);
+                                  const img = getCategoryImage(category.name);
+                                  const selected = categoryId === category.id;
+                                  return (
+                                    <button
+                                      key={category.id}
+                                      type="button"
+                                      aria-pressed={selected}
+                                      onClick={() => {
+                                        setCategoryId(category.id);
+                                        setCategorySearchQuery('');
 
-                                  const defaultServiceTypeId = serviceTypeId || 2;
-                                  const params = new URLSearchParams();
-                                  params.append('categoryId', category.id.toString());
-                                  params.append('serviceTypeId', defaultServiceTypeId.toString());
-                                  if (adUrl) {
-                                    params.append('adUrl', adUrl);
-                                  }
+                                        const defaultServiceTypeId = serviceTypeId || 2;
+                                        const params = new URLSearchParams();
+                                        params.append('categoryId', category.id.toString());
+                                        params.append('serviceTypeId', defaultServiceTypeId.toString());
+                                        if (adUrl) {
+                                          params.append('adUrl', adUrl);
+                                        }
 
-                                  window.location.href = `/crear-busqueda?${params.toString()}`;
+                                        window.location.href = `/crear-busqueda?${params.toString()}`;
 
-                                  if (onSearch) {
-                                    onSearch({
-                                      serviceTypeId: defaultServiceTypeId,
-                                      categoryId: category.id,
-                                      adUrl,
-                                    });
-                                  }
-                                }}
-                              />
-                            ))}
+                                        if (onSearch) {
+                                          onSearch({
+                                            serviceTypeId: defaultServiceTypeId,
+                                            categoryId: category.id,
+                                            adUrl,
+                                          });
+                                        }
+                                      }}
+                                      className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
+                                        selected ? 'bg-brand/[0.06]' : 'active:bg-[#f6f6f7]'
+                                      }`}
+                                    >
+                                      <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+                                        {img ? (
+                                          <img
+                                            src={img}
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async"
+                                            draggable={false}
+                                            className="h-full w-full select-none object-contain"
+                                          />
+                                        ) : (
+                                          <FolderTree className="h-6 w-6 text-[#bdbdbd]" strokeWidth={1.75} />
+                                        )}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                                          {category.name}
+                                        </h3>
+                                        {meta ? (
+                                          <>
+                                            <p className="mt-0.5 truncate text-[12.5px] leading-snug text-[#8a8a8a]">
+                                              {meta.delivery}
+                                            </p>
+                                            <p className="mt-1 text-[12.5px] leading-none text-[#717171]">
+                                              <span className="font-semibold text-[#1c1c1c]">desde {meta.priceFromEur}€</span>
+                                              {' · '}
+                                              {meta.expertCount} expertos
+                                            </p>
+                                          </>
+                                        ) : (
+                                          <p className="mt-0.5 text-[12.5px] leading-snug text-[#8a8a8a]">
+                                            Toca para ver expertos
+                                          </p>
+                                        )}
+                                      </div>
+                                      <ChevronRight
+                                        className={`h-4 w-4 shrink-0 ${selected ? 'text-brand' : 'text-[#d0d0d0]'}`}
+                                        strokeWidth={2}
+                                        aria-hidden
+                                      />
+                                    </button>
+                                  );
+                                })}
 
-                            {/* Coming-soon en el mismo grid después de las activas */}
-                            {COMING_SOON_CATEGORIES
-                              .filter((csName) => {
-                                const lower = csName.toLowerCase();
-                                return !mobilePickerCategories.some(
-                                  (c) => c.name.toLowerCase() === lower,
-                                );
-                              })
-                              .map((csName) => (
-                                <CategoryPickerRow
-                                  key={`coming-soon-${csName}`}
-                                  name={csName}
-                                  isSelected={false}
-                                  variant="tile"
-                                  comingSoon
-                                  onClick={() => {
-                                    /* noop: anunciada, no clickable */
-                                  }}
-                                />
-                              ))}
-                          </div>
+                                {comingSoon.length > 0 && (
+                                  <>
+                                    <p className="px-1 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-[0.1em] text-[#b0b0b0]">
+                                      Próximamente
+                                    </p>
+                                    {comingSoon.map((csName) => {
+                                      const img = csImg(csName);
+                                      return (
+                                        <div
+                                          key={`coming-soon-${csName}`}
+                                          aria-disabled
+                                          aria-label={`${csName} (próximamente)`}
+                                          className="flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left opacity-70"
+                                        >
+                                          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+                                            {img ? (
+                                              <img
+                                                src={img}
+                                                alt=""
+                                                loading="lazy"
+                                                decoding="async"
+                                                draggable={false}
+                                                className="h-full w-full select-none object-contain grayscale"
+                                              />
+                                            ) : (
+                                              <FolderTree className="h-6 w-6 text-[#cfcfcf]" strokeWidth={1.75} />
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
+                                              {csName}
+                                            </h3>
+                                            <p className="mt-0.5 text-[12.5px] leading-snug text-[#a0a0a0]">
+                                              Lo añadiremos pronto
+                                            </p>
+                                          </div>
+                                          <span className="shrink-0 rounded-full bg-[#1c1c1c] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
+                                            Pronto
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })())
                         ) : (
                     <div className="flex flex-col gap-1">
                               {normalizedCategories
@@ -1750,100 +1818,162 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             setDrawerIntent('filter');
           }
         }}
-        title={drawerIntent === 'map' ? '¿Qué quieres buscar en el mapa?' : 'Más Categorías'}
+        title={drawerIntent === 'map' ? '¿Qué quieres revisar?' : 'Más categorías'}
+        description={
+          drawerIntent === 'map'
+            ? 'Elige una categoría y te llevamos al mapa con los expertos disponibles.'
+            : 'Explora todas las categorías del catálogo de inspecciones.'
+        }
         drawerClassName="w-full"
         desktopSidePanel
-        snapPoints={[0.82]}
+        snapPoints={[0.9]}
       >
-        <div className="flex flex-col h-full" style={{ height: '100%', overflow: 'hidden' }}>
-          {/* Barra de búsqueda — el título lo aporta la cabecera de ResponsiveModal */}
-          <div className="px-4 pt-4 pb-3 flex-shrink-0">
+        <div className="flex h-full flex-col overflow-hidden" style={{ fontFamily: HP_FONT }}>
+          {/* Buscador — el título lo aporta la cabecera de ResponsiveModal */}
+          <div className="flex-shrink-0 px-4 pb-3 pt-4 md:px-5">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a0a0a0] pointer-events-none" />
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]"
+                strokeWidth={2.2}
+              />
               <input
                 type="text"
-                placeholder="Buscar categorías..."
+                placeholder="Buscar categoría…"
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-[#f9fafb] rounded-lg text-sm text-[#1c1c1c] placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-brand focus:bg-white transition-all border border-[#ebebeb]/80"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  fontWeight: 400,
-                  fontFamily: HP_FONT,
-                }}
+                className="h-12 w-full rounded-full bg-[#f4f4f5] pl-12 pr-5 text-[15px] text-[#1c1c1c] transition-colors placeholder:text-[#9ca3af] focus:bg-[#ededf0] focus:outline-none"
+                style={{ fontFamily: HP_FONT }}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-label="Buscar categorías"
               />
             </div>
           </div>
-          
-          {/* Lista de categorías mejorada - Scroll habilitado */}
-          <div 
-            className="flex-1 overflow-y-auto px-4" 
-            style={{ 
-              minHeight: 0, 
-              maxHeight: '100%',
+
+          {/* Lista de categorías — cards ricas con foto del oficio, precio y expertos */}
+          <div
+            className="flex-1 overflow-y-auto px-4 pb-5 md:px-5"
+            style={{
+              minHeight: 0,
               WebkitOverflowScrolling: 'touch',
-              overflowY: 'auto',
-              overscrollBehavior: 'contain'
+              overscrollBehavior: 'contain',
             }}
           >
             {categoriesLoading ? (
               <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                <div className="flex flex-col px-4 py-6 space-y-2">
+                <div className="flex flex-col gap-2.5 py-2">
                   {[...Array(4)].map((_, index) => (
-                    <Skeleton key={index} height={64} borderRadius={8} />
+                    <Skeleton key={index} height={100} borderRadius={14} />
                   ))}
                 </div>
               </SkeletonTheme>
             ) : (
-              <div className="flex flex-col gap-2 pb-4">
-                {(drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal)
-                  .filter(cat => {
-                    if (categorySearchQuery.trim()) {
-                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                    }
-                    return true;
-                  })
-                  .map((category) => (
-                      <CategoryPickerRow
-                        key={category.id}
-                        name={category.name}
-                        isSelected={categoryId === category.id}
-                        onClick={() =>
-                          drawerIntent === 'map'
-                            ? goToCategoryMap(category.id)
-                            : handleDrawerCategoryClick(category.id, category.name)
-                        }
-                      />
-                    ))}
-                
-                {normalizedCategories
-                  .filter(cat => {
-                    // ✅ Mostrar todas las categorías, incluyendo Coches e Inmobiliaria
-                    if (categorySearchQuery.trim()) {
-                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                    }
-                    return true;
-                  })
-                  .filter(cat => cat.isActive).length === 0 && (
-                  <div className="flex items-center justify-center py-12">
-                    <div 
-                      className="text-sm text-[#737373]"
-                      style={{
-                        fontSize: '14px',
-                        lineHeight: '18px',
-                        fontWeight: 400,
-                        fontFamily: HP_FONT,
-                        color: 'rgb(113, 113, 113)',
-                      }}
-                    >
-                      {categorySearchQuery.trim() 
-                        ? 'No se encontraron categorías' 
-                        : 'No hay categorías disponibles'}
+              (() => {
+                const list = (drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal).filter(
+                  (cat) =>
+                    !categorySearchQuery.trim() ||
+                    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()),
+                );
+
+                if (list.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f3f4f6]">
+                        <Search className="h-5 w-5 text-[#9ca3af]" strokeWidth={2} />
+                      </div>
+                      <p className="text-[14px] font-semibold text-[#1c1c1c]">
+                        {categorySearchQuery.trim()
+                          ? `Sin resultados para “${categorySearchQuery.trim()}”`
+                          : 'No hay categorías disponibles'}
+                      </p>
+                      <p className="max-w-[16rem] text-[12.5px] leading-snug text-[#737373]">
+                        Prueba con otra palabra o revisa más tarde: el catálogo crece cada semana.
+                      </p>
                     </div>
-                  </div>
-                )}
-              </div>
+                  );
+                }
+
+                return (
+                  <>
+                    <p className="px-1 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[#b0b0b0]">
+                      {list.length} {list.length === 1 ? 'categoría' : 'categorías'}
+                    </p>
+                    <div className="flex flex-col">
+                      {list.map((category) => {
+                        const meta = getCategoryMeta(category.id);
+                        const img = getCategoryImage(category.name);
+                        const selected = categoryId === category.id;
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() =>
+                              drawerIntent === 'map'
+                                ? goToCategoryMap(category.id)
+                                : handleDrawerCategoryClick(category.id, category.name)
+                            }
+                            className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
+                              selected ? 'bg-brand/[0.06]' : 'hover:bg-[#f6f6f7]'
+                            }`}
+                          >
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+                              {img ? (
+                                <img
+                                  src={img}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable={false}
+                                  className="h-full w-full select-none object-contain"
+                                />
+                              ) : (
+                                <FolderTree className="h-6 w-6 text-[#bdbdbd]" strokeWidth={1.75} />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                                {category.name}
+                              </h3>
+                              {meta ? (
+                                <>
+                                  <p className="mt-0.5 truncate text-[12.5px] leading-snug text-[#8a8a8a]">
+                                    {meta.delivery}
+                                  </p>
+                                  <p className="mt-1 text-[12.5px] leading-none text-[#717171]">
+                                    <span className="font-semibold text-[#1c1c1c]">desde {meta.priceFromEur}€</span>
+                                    {' · '}
+                                    {meta.expertCount} expertos
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="mt-0.5 text-[12.5px] leading-snug text-[#8a8a8a]">
+                                  Toca para ver expertos
+                                </p>
+                              )}
+                            </div>
+                            {selected ? (
+                              <span
+                                aria-hidden
+                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand"
+                              >
+                                <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
+                              </span>
+                            ) : (
+                              <ChevronRight
+                                className="h-4 w-4 shrink-0 text-[#d0d0d0] transition-colors group-hover:text-[#9ca3af]"
+                                strokeWidth={2}
+                                aria-hidden
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()
             )}
           </div>
         </div>

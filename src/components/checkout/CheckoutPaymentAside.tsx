@@ -4,26 +4,22 @@ import {
   SD_CHECKOUT_MOBILE_TABLE_CLASS,
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
-import { ESCROW_TRUST_TAGLINE } from '../../constants/escrowCopy';
-import { CheckoutSecurePaymentNote } from './CheckoutSecurePaymentNote';
 
 interface CheckoutPaymentAsideProps {
   priceDisplay: React.ReactNode;
   canPay: boolean;
   isProcessing: boolean;
   onPay: () => void;
-  legalNotices: React.ReactNode;
   /** Dentro de la tarjeta sticky del sidebar desktop (sin sticky propio). */
   embedded?: boolean;
 }
 
-/** Panel de pago desktop — compacto. */
+/** Panel de pago desktop — minimalista. */
 export function CheckoutPaymentAside({
   priceDisplay,
   canPay,
   isProcessing,
   onPay,
-  legalNotices,
   embedded = false,
 }: CheckoutPaymentAsideProps) {
   const content = (
@@ -43,8 +39,6 @@ export function CheckoutPaymentAside({
           </p>
         ) : null}
 
-        <p className={`${SD_CHECKOUT_MOBILE_META_CLASS} leading-snug`}>{ESCROW_TRUST_TAGLINE}.</p>
-
         <button
           onClick={onPay}
           disabled={!canPay || isProcessing}
@@ -55,9 +49,16 @@ export function CheckoutPaymentAside({
           {isProcessing ? 'Procesando…' : 'Reservar y pagar'}
         </button>
 
-        <CheckoutSecurePaymentNote />
-
-        {legalNotices}
+        <p className="text-center">
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${SD_CHECKOUT_MOBILE_META_CLASS} underline decoration-[#d4d4d4] underline-offset-2 hover:no-underline`}
+          >
+            Condiciones
+          </a>
+        </p>
       </footer>
     </>
   );
