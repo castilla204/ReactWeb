@@ -6,12 +6,20 @@ import { getAuthToken } from '../lib/auth';
 import { Calendar } from './ui/calendar';
 import { cn } from '../lib/utils';
 import { SlotPeriodPanel, type PeriodFilter } from './checkout/SlotPeriodPanel';
-import { computeSlotDateRange } from '../utils/slotDateRange';
+import {
+    CheckoutSellerChoicePreviewCalendar,
+    CheckoutSelfChoicePreviewCalendar,
+} from './checkout/CheckoutSellerChoiceLocked';
+import { CHECKOUT_SELLER_PLAZO_SUMMARY, COORD_SELF_SLOT_STEP_DESC } from './checkout/CheckoutSellerCoordinationFields';
+import { CheckoutSlotHoursDrawer } from './checkout/CheckoutSlotHoursDrawer';
+import { CheckoutEmbeddedStepHeader } from './checkout/CheckoutEmbeddedStepHeader';
+import { computeSlotDateRange, startOfDay } from '../utils/slotDateRange';
 import {
     SD_CHECKOUT_DESKTOP_CARD_CLASS,
     SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS,
-    SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS,
-    SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS,
+    SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
+    SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
+    SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS,
 } from '../constants/homepageTypography';
 
 /** Hueco elegido que se manda al checkout (intervalo UTC + etiqueta local para mostrar). */
@@ -54,13 +62,24 @@ interface Props {
 const pad = (n: number) => String(n).padStart(2, '0');
 const toYmd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-const startOfDay = (d: Date) => {
-    const copy = new Date(d);
-    copy.setHours(0, 0, 0, 0);
-    return copy;
-};
-
 const BOOKING_WINDOW_DAYS = 14;
+
+/** Calendario checkout desktop embebido — compacto en lg; ancho completo en móvil. */
+const EMBEDDED_CALENDAR_CLASS =
+    'w-full p-0 max-lg:[--cell-size:2.5rem] lg:[--cell-size:2.125rem]';
+const EMBEDDED_CALENDAR_MAX_WIDTH_CLASS = 'w-full max-lg:max-w-none lg:max-w-[15.5rem]';
+const EMBEDDED_CALENDAR_GRID_CLASS =
+    'grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(14rem,15.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-3';
+const EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS;
+const EMBEDDED_CALENDAR_CLASS_NAMES = {
+    root: 'w-full',
+    month: 'flex w-full flex-col gap-1',
+    month_caption:
+        'flex h-7 w-full items-center justify-center text-[13px] font-semibold capitalize text-[#1c1c1c]',
+    weekdays: 'flex gap-0.5',
+    weekday: 'text-[9px] font-medium uppercase tracking-wide text-[#9ca3af]',
+    week: 'mt-0.5 flex w-full gap-0.5',
+} as const;
 
 /** Mismo patrón visual que el panel del experto cuando aún no hay día elegido. */
 function PickDayEmptyState() {
@@ -83,10 +102,63 @@ function PickDayEmptyState() {
                 ))}
             </div>
             <p className="text-sm font-semibold text-[#1c1c1c]">Elige un día en el calendario</p>
-            <p className="mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-[#6b7280]">
+            <p className="mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-[#6b7280] max-lg:hidden">
                 Los días en verde tienen más huecos libres. Al pulsar uno verás las franjas de mañana
                 y tarde con las horas concretas del experto.
             </p>
+            <p className="mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-[#6b7280] lg:hidden">
+                Los días en verde tienen más huecos libres. Al pulsar uno se abrirá el selector de hora.
+            </p>
+        </div>
+    );
+}
+
+const AVAILABILITY_LEGEND_ITEMS = [
+    { label: 'Libre', swatch: 'bg-emerald-200 ring-1 ring-emerald-400/45' },
+    { label: 'Pocos', swatch: 'bg-amber-200 ring-1 ring-amber-400/45' },
+    { label: 'Lleno', swatch: 'bg-slate-200 ring-1 ring-slate-400/40' },
+] as const;
+
+/** Leyenda de disponibilidad bajo el calendario (colores = celdas del mes). */
+function AvailabilityLegend({
+    align = 'center',
+    fullLabel = false,
+    trailing,
+    compact = false,
+}: {
+    align?: 'center' | 'between';
+    fullLabel?: boolean;
+    trailing?: React.ReactNode;
+    compact?: boolean;
+}) {
+    return (
+        <div
+            className={cn(
+                'flex flex-wrap items-center border-t border-[#e8ecf1]',
+                compact ? 'mt-2 gap-x-2 gap-y-1 pt-2' : 'mt-2.5 gap-x-3 gap-y-1.5 pt-2.5',
+                align === 'between' ? 'justify-between' : 'justify-center',
+            )}
+            role="note"
+            aria-label="Leyenda de disponibilidad del calendario"
+        >
+            <div className="inline-flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
+                {AVAILABILITY_LEGEND_ITEMS.map(({ label, swatch }) => (
+                    <span
+                        key={label}
+                        className={cn(
+                            'inline-flex items-center gap-1.5 font-medium leading-none text-[#374151]',
+                            compact ? 'text-[11px]' : 'text-[12px]',
+                        )}
+                    >
+                        <span
+                            className={cn('h-3.5 w-3.5 shrink-0 rounded-[4px]', swatch)}
+                            aria-hidden
+                        />
+                        {fullLabel && label === 'Lleno' ? 'Completo' : label}
+                    </span>
+                ))}
+            </div>
+            {trailing}
         </div>
     );
 }
@@ -113,14 +185,25 @@ const SlotPicker: React.FC<Props> = ({
         [minLeadDays, effWindow],
     );
     const defaultDate = useMemo(() => minDate, [minDate]);
+    const initialSelectedDate = useMemo((): Date | null => {
+        if (embedded && previewMode) return null;
+        if (embedded) return null;
+        return defaultDate;
+    }, [embedded, previewMode, defaultDate]);
 
-    const [selectedDate, setSelectedDate] = useState<Date | null>(embedded ? null : defaultDate);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(initialSelectedDate);
     const [slots, setSlots] = useState<ChosenSlot[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     // Nº de huecos libres por día (ymd → count) para colorear el calendario por ocupación.
     const [availByDate, setAvailByDate] = useState<Record<string, number>>({});
     const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
+    const [hoursDrawerExpanded, setHoursDrawerExpanded] = useState(false);
+
+    useEffect(() => {
+        if (previewMode || !selectedDate) return;
+        setHoursDrawerExpanded(true);
+    }, [previewMode, selectedDate]);
 
     const dayShort = (d: Date) =>
         d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -240,14 +323,23 @@ const SlotPicker: React.FC<Props> = ({
                 <button
                     type="button"
                     {...props}
+                    onClick={(e) => {
+                        if (previewMode) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+                        props.onClick?.(e);
+                    }}
                     className={cn(
                         'flex h-full w-full items-center justify-center rounded-md font-semibold transition-all',
-                        embedded ? 'text-[13px]' : 'rounded-lg text-sm',
-                        selected && 'bg-brand text-white shadow-sm ring-2 ring-brand/30',
+                        embedded ? 'text-[12px]' : 'rounded-lg text-sm',
+                        selected && !previewMode && 'bg-brand text-white shadow-sm ring-2 ring-brand/30',
                         !selected && tint,
-                        !selected && tint && 'hover:brightness-[0.96] active:scale-[0.97]',
-                        !selected && !tint && 'text-[#333] hover:bg-[#f3f4f6]',
-                        !selected && isToday && 'ring-2 ring-inset ring-brand/50',
+                        !selected && tint && !previewMode && 'hover:brightness-[0.96] active:scale-[0.97]',
+                        !selected && !tint && !previewMode && 'text-[#333] hover:bg-[#f3f4f6]',
+                        !selected && isToday && !previewMode && 'ring-2 ring-inset ring-brand/50',
+                        previewMode && 'cursor-not-allowed',
                         disabled && 'opacity-35',
                         className,
                     )}
@@ -257,22 +349,28 @@ const SlotPicker: React.FC<Props> = ({
             );
         };
         return Btn;
-    }, [availByDate, embedded]);
+    }, [availByDate, embedded, previewMode]);
 
     const handleDateSelect = (date: Date | undefined) => {
+        if (previewMode) return;
         if (!date || isDateDisabled(date)) return;
         setSelectedDate(startOfDay(date));
-        if (!previewMode) onSelect(null);
+        onSelect(null);
     };
 
     const gridClass = embedded
-        ? 'grid-cols-1 gap-3 lg:grid-cols-[minmax(17.5rem,19rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-5 lg:gap-y-0'
+        ? previewMode
+            ? 'grid-cols-1'
+            : 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(14rem,15.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-3 lg:gap-y-0'
         : 'grid-cols-1 lg:grid-cols-2';
 
     const calendarColClass = cn(
         'flex flex-col',
         embedded
-            ? 'px-5 pt-1 pb-0 lg:items-start lg:self-start'
+            ? cn(
+                  'pt-0 pb-0 lg:items-start lg:border-r lg:border-[#eceef2] lg:pr-4',
+                  previewMode ? 'lg:self-stretch' : 'lg:self-start',
+              )
             : 'max-lg:border-b max-lg:border-[#f0f0f0] max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-[#f0f0f0]/70 lg:p-3 lg:py-3',
     );
 
@@ -280,32 +378,99 @@ const SlotPicker: React.FC<Props> = ({
         'flex min-h-0 flex-col',
         embedded
             ? cn(
-                  'px-5 pb-4 pt-0 lg:min-h-full lg:min-w-0 lg:px-0 lg:pr-5 lg:pb-4 lg:pt-0',
-                  !selectedDate ? 'lg:justify-center' : 'lg:justify-start lg:pt-1',
+                  'pb-0 pt-0 lg:min-h-full lg:min-w-0 lg:pl-4',
+                  previewMode
+                      ? 'lg:h-full lg:justify-stretch'
+                      : !selectedDate
+                        ? 'lg:justify-center'
+                        : 'lg:justify-start lg:pt-0',
               )
             : 'max-lg:p-4 max-lg:pt-3 lg:justify-center lg:p-3 lg:pl-4',
     );
 
     const navBtnClass = cn(
         'inline-flex items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
-        embedded ? 'size-8' : 'size-9',
+        embedded ? 'size-7' : 'size-8',
+    );
+
+    const useMobileHoursDrawer = !previewMode;
+
+    const renderSelectableHoursBody = (opts?: { embeddedSlots?: boolean; splitPeriodsOnMobile?: boolean }) => {
+        const slotEmbedded = opts?.embeddedSlots ?? !!embedded;
+        if (loading) {
+            return (
+                <div className="flex min-h-[72px] items-center justify-center gap-2 text-xs text-[#9ca3af]">
+                    <Loader2 className="h-4 w-4 animate-spin text-brand" />
+                    <span>Cargando…</span>
+                </div>
+            );
+        }
+        if (error) {
+            return (
+                <div className="flex min-h-[72px] items-center justify-center px-2">
+                    <p className="text-center text-xs text-[#0b5cad]">{error}</p>
+                </div>
+            );
+        }
+        if (slots.length === 0) {
+            return (
+                <div className="flex min-h-[72px] flex-col items-center justify-center gap-0.5 px-2 text-center">
+                    <p className="text-xs font-medium text-[#555]">Sin huecos este día</p>
+                    <p className="text-[11px] text-[#9ca3af]">Elige otra fecha</p>
+                </div>
+            );
+        }
+        return (
+            <SlotPeriodPanel
+                slots={slots}
+                selected={selected}
+                previewMode={false}
+                compact={slotEmbedded}
+                embedded={slotEmbedded}
+                showPeriodFilter={false}
+                splitPeriodsOnMobile={opts?.splitPeriodsOnMobile}
+                periodFilter={periodFilter}
+                onPeriodFilterChange={setPeriodFilter}
+                onSelectSlot={onSelect}
+            />
+        );
+    };
+
+    const mobileHoursDrawer =
+        useMobileHoursDrawer && selectedDate ? (
+            <CheckoutSlotHoursDrawer
+                open
+                dateLabel={dayLong(selectedDate)}
+                selectedLabel={selected?.label ?? null}
+                expanded={hoursDrawerExpanded}
+                onToggle={() => setHoursDrawerExpanded((v) => !v)}
+            >
+                {renderSelectableHoursBody({ splitPeriodsOnMobile: true })}
+            </CheckoutSlotHoursDrawer>
+        ) : null;
+
+    const inlineSlotsColumnClass = cn(
+        slotsColClass,
+        useMobileHoursDrawer && 'hidden lg:flex',
     );
 
     return (
         <div className={cn(!embedded && 'max-lg:shadow-sm', !embedded && SD_CHECKOUT_DESKTOP_CARD_CLASS)}>
             {sectionTitle ? (
                 embedded ? (
-                    <div className={SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS}>
-                        <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                            {sectionTitle}
-                        </h3>
-                        <p className={SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS}>
-                            {previewMode
-                                ? `Consulta en qué días y franjas (mañana o tarde) tendrá huecos el experto dentro de los próximos ${effWindow} días que fijaste para el vendedor.`
-                                : 'Marca un día con huecos en el calendario (verde = más disponibilidad), elige franja y hora, y confirma la cita al pagar.'}
-                        </p>
+                    <div className="max-lg:hidden">
+                        <CheckoutEmbeddedStepHeader
+                            step={2}
+                            borderedTop
+                            title={sectionTitle}
+                            description={
+                                previewMode
+                                    ? `Solo consulta: el vendedor elegirá el hueco al reservar. ${CHECKOUT_SELLER_PLAZO_SUMMARY}`
+                                    : COORD_SELF_SLOT_STEP_DESC
+                            }
+                        />
                     </div>
-                ) : (
+                ) : previewMode ? (
                 <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
                     <h3
                         className={cn(
@@ -317,7 +482,7 @@ const SlotPicker: React.FC<Props> = ({
                     </h3>
                     {previewMode ? (
                         <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                            Consulta qué días y franjas (mañana o tarde) tendrá el vendedor disponibles.
+                            Solo consulta: el vendedor elige día y franja al reservar. {CHECKOUT_SELLER_PLAZO_SUMMARY}
                         </p>
                     ) : (
                         <p className="mt-0.5 text-xs text-[#6a6a6a]">
@@ -325,13 +490,107 @@ const SlotPicker: React.FC<Props> = ({
                         </p>
                     )}
                 </div>
-                )
+                ) : null
             ) : null}
 
-            <div className={cn('grid lg:items-stretch lg:min-h-0', gridClass)}>
+            {embedded && previewMode ? (
+                <CheckoutSellerChoicePreviewCalendar>
+                    <div
+                        className={cn(
+                            'w-full lg:flex lg:h-full lg:flex-col',
+                            EMBEDDED_CALENDAR_MAX_WIDTH_CLASS,
+                            'max-lg:mx-auto',
+                        )}
+                    >
+                        <Calendar
+                            mode="single"
+                            locale={es}
+                            selected={undefined}
+                            onSelect={undefined}
+                            defaultMonth={defaultDate}
+                            disabled={isDateDisabled}
+                            showOutsideDays={false}
+                            components={{ DayButton: AvailabilityDayButton }}
+                            classNames={{
+                                button_previous: navBtnClass,
+                                button_next: navBtnClass,
+                                ...EMBEDDED_CALENDAR_CLASS_NAMES,
+                            }}
+                            className={EMBEDDED_CALENDAR_CLASS}
+                        />
+                        <AvailabilityLegend align="between" fullLabel compact />
+                    </div>
+                </CheckoutSellerChoicePreviewCalendar>
+            ) : embedded ? (
+                <>
+                <CheckoutSelfChoicePreviewCalendar
+                    className={cn(useMobileHoursDrawer && selectedDate && 'max-lg:pb-24')}
+                >
+                    <div className={cn('grid lg:items-stretch lg:min-h-0', gridClass)}>
+                        <div className={calendarColClass}>
+                            <div
+                                className={cn(
+                                    'w-full lg:flex lg:h-full lg:flex-col',
+                                    EMBEDDED_CALENDAR_MAX_WIDTH_CLASS,
+                                )}
+                            >
+                                <Calendar
+                                    mode="single"
+                                    locale={es}
+                                    selected={selectedDate ?? undefined}
+                                    onSelect={handleDateSelect}
+                                    defaultMonth={selectedDate ?? defaultDate}
+                                    disabled={isDateDisabled}
+                                    showOutsideDays={false}
+                                    components={{ DayButton: AvailabilityDayButton }}
+                                    classNames={{
+                                        button_previous: navBtnClass,
+                                        button_next: navBtnClass,
+                                        ...EMBEDDED_CALENDAR_CLASS_NAMES,
+                                    }}
+                                    className={EMBEDDED_CALENDAR_CLASS}
+                                />
+                                <AvailabilityLegend align="between" compact />
+                            </div>
+                        </div>
+                        <div className={inlineSlotsColumnClass}>
+                            {!selectedDate ? (
+                                <PickDayEmptyState />
+                            ) : (
+                                <>
+                                    <p className="mb-2.5 text-[13px] font-semibold capitalize leading-snug text-[#1c1c1c]">
+                                        {dayLong(selectedDate)}
+                                    </p>
+                                    <div className="flex flex-1 flex-col justify-start">
+                                        {renderSelectableHoursBody()}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CheckoutSelfChoicePreviewCalendar>
+                {mobileHoursDrawer}
+                </>
+            ) : (
+            <>
+            <CheckoutSelfChoicePreviewCalendar
+                className={cn('pt-0', useMobileHoursDrawer && selectedDate && 'max-lg:pb-24')}
+            >
+            <div
+                className={cn(
+                    'grid lg:items-stretch lg:min-h-0',
+                    gridClass,
+                )}
+            >
             {/* Calendario */}
             <div className={calendarColClass}>
-                <div className={cn(embedded && 'w-full max-w-[19rem]')}>
+                <div
+                    className={cn(
+                        embedded && cn('w-full', EMBEDDED_CALENDAR_MAX_WIDTH_CLASS),
+                        embedded && previewMode && 'lg:flex lg:h-full lg:flex-col',
+                        previewMode && !embedded && 'pointer-events-none select-none opacity-[0.88]',
+                    )}
+                >
                 <Calendar
                     mode="single"
                     locale={es}
@@ -344,102 +603,49 @@ const SlotPicker: React.FC<Props> = ({
                     classNames={{
                         button_previous: navBtnClass,
                         button_next: navBtnClass,
-                        ...(embedded
-                            ? {
-                                  root: 'w-full',
-                                  month: 'flex w-full flex-col gap-1.5',
-                                  month_caption:
-                                      'flex h-9 w-full items-center justify-center text-sm font-semibold capitalize text-[#1c1c1c]',
-                                  weekdays: 'flex gap-1',
-                                  weekday:
-                                      'text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]',
-                                  week: 'mt-1 flex w-full gap-1',
-                              }
-                            : {}),
+                        ...(embedded ? EMBEDDED_CALENDAR_CLASS_NAMES : {}),
                     }}
                     className={cn(
-                        embedded ? 'w-full p-0 [--cell-size:2.5rem]' : 'w-full p-0',
+                        embedded ? EMBEDDED_CALENDAR_CLASS : 'w-full p-0',
                     )}
                 />
                 {!embedded ? (
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-2.5 text-[10px] text-[#6a6a6a]">
-                    <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-sm bg-emerald-200" aria-hidden />
-                        Libre
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-sm bg-amber-200" aria-hidden />
-                        Pocos
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-sm bg-slate-200" aria-hidden />
-                        Completo
-                    </span>
-                </div>
+                <AvailabilityLegend align="center" fullLabel />
                 ) : embedded ? (
-                <div className="mt-2 flex items-center gap-3 text-[10px] text-[#9ca3af]">
-                    <span className="inline-flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-emerald-200" aria-hidden />
-                        Libre
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-amber-200" aria-hidden />
-                        Pocos
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-slate-200" aria-hidden />
-                        Lleno
-                    </span>
-                </div>
+                <AvailabilityLegend
+                    align="between"
+                    compact
+                />
                 ) : null}
                 </div>
             </div>
 
             {/* Huecos horarios */}
-            <div className={slotsColClass}>
-                {embedded && !selectedDate ? (
+            <div className={inlineSlotsColumnClass}>
+                {previewMode ? null : embedded && !selectedDate ? (
                     <PickDayEmptyState />
-                ) : (
+                ) : !previewMode ? (
                 <>
                 <p
-                    className="mb-2 text-sm font-medium capitalize leading-snug text-[#1c1c1c]"
+                    className={cn(
+                        'mb-2.5 font-semibold capitalize leading-snug text-[#1c1c1c]',
+                        embedded ? 'text-[13px]' : 'mb-2 text-sm',
+                    )}
                 >
                     {selectedDate ? dayLong(selectedDate) : ''}
                 </p>
 
                 <div className={cn('flex flex-1 flex-col', embedded ? 'justify-start' : 'justify-center')}>
-                    {loading ? (
-                        <div className="flex min-h-[72px] items-center justify-center gap-2 text-xs text-[#9ca3af]">
-                            <Loader2 className="h-4 w-4 animate-spin text-brand" />
-                            <span>Cargando…</span>
-                        </div>
-                    ) : error ? (
-                        <div className="flex min-h-[72px] items-center justify-center px-2">
-                            <p className="text-center text-xs text-[#0b5cad]">{error}</p>
-                        </div>
-                    ) : slots.length === 0 ? (
-                        <div className="flex min-h-[72px] flex-col items-center justify-center gap-0.5 px-2 text-center">
-                            <p className="text-xs font-medium text-[#555]">Sin huecos este día</p>
-                            <p className="text-[11px] text-[#9ca3af]">
-                                {previewMode ? 'Prueba otro día dentro del plazo' : 'Elige otra fecha'}
-                            </p>
-                        </div>
-                    ) : (
-                        <SlotPeriodPanel
-                            slots={slots}
-                            selected={selected}
-                            previewMode={previewMode}
-                            compact={false}
-                            periodFilter={periodFilter}
-                            onPeriodFilterChange={setPeriodFilter}
-                            onSelectSlot={onSelect}
-                        />
-                    )}
+                    {renderSelectableHoursBody({ embeddedSlots: embedded })}
                 </div>
                 </>
-                )}
+                ) : null}
             </div>
             </div>
+            </CheckoutSelfChoicePreviewCalendar>
+            {mobileHoursDrawer}
+            </>
+            )}
         </div>
     );
 };

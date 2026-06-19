@@ -27,6 +27,10 @@ export function splitSlotsByPeriod<T extends SlotTimeLike>(slots: T[]) {
     return { morning, afternoon };
 }
 
+export function sortSlotsByTime<T extends SlotTimeLike>(slots: T[]): T[] {
+    return [...slots].sort((a, b) => parseSlotHour(a.label) - parseSlotHour(b.label));
+}
+
 export function filterSlotsByPeriod<T extends SlotTimeLike>(slots: T[], period: SlotDayPeriod | 'all') {
     if (period === 'all') return slots;
     return slots.filter((s) => slotPeriod(s.label) === period);

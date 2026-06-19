@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 import {
   SD_CHECKOUT_MOBILE_TABLE_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS,
@@ -20,8 +21,12 @@ export interface CheckoutSummaryTableProps {
   expertPicture?: string;
   expertRating?: number;
   expertReviewCount?: number;
+  coordinationLabel?: string | null;
   appointmentLabel?: string | null;
   locationLabel?: string | null;
+  locationHint?: string | null;
+  sellerContactLabel?: string | null;
+  sellerListingLabel?: string | null;
   locationRangeKm?: number;
   timezoneLabel?: string | null;
   deliverables: ServiceDeliverableType[];
@@ -31,15 +36,40 @@ export interface CheckoutSummaryTableProps {
   onTogglePriceDetails?: () => void;
   includePrice?: boolean;
   showFooterNotes?: boolean;
+  /** Resumen reducido durante el wizard (fecha/ubicación). */
+  compact?: boolean;
   className?: string;
 }
 
-function CheckoutSummaryTableRow({ label, children }: { label: string; children: React.ReactNode }) {
+function CheckoutSummaryTableRow({
+  label,
+  children,
+  compact = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
-    <div className={SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS}>
+    <div className={cn(SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS, compact && 'py-2.5')}>
       <dt className={SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS}>{label}</dt>
       <dd className={`m-0 ${SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS}`}>{children}</dd>
     </div>
+  );
+}
+
+function SummaryValue({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: string | null;
+}) {
+  return (
+    <>
+      <span>{children}</span>
+      {hint ? <span className="mt-0.5 block text-[11px] font-normal leading-snug text-[#64748b]">{hint}</span> : null}
+    </>
   );
 }
 
@@ -54,24 +84,44 @@ export function CheckoutSummaryTable({
   categoryName,
   expertName,
   expertPicture,
+  coordinationLabel,
   appointmentLabel,
   locationLabel,
+  locationHint,
+  sellerContactLabel,
+  sellerListingLabel,
   priceDisplay,
+  priceSubline,
   includePrice = true,
   showFooterNotes = false,
+  compact = false,
   className = '',
 }: CheckoutSummaryTableProps) {
   const headerMeta = buildHeaderMeta(categoryName, durationLabel);
 
   return (
     <div className={className}>
-      <article className={SD_CHECKOUT_MOBILE_TABLE_CLASS}>
-        <header className={SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS}>
-          <h2 className={SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS}>{serviceName}</h2>
-          {headerMeta ? <p className={SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS}>{headerMeta}</p> : null}
-        </header>
+      <article
+        className={cn(
+          SD_CHECKOUT_MOBILE_TABLE_CLASS,
+          compact && 'rounded-xl border border-[#eceef2] shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
+        )}
+      >
+        {!compact ? (
+          <header className={SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS}>
+            <h2 className={SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS}>{serviceName}</h2>
+            {headerMeta ? <p className={SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS}>{headerMeta}</p> : null}
+          </header>
+        ) : (
+          <header className="border-b border-[#f0f0f0] px-4 py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#64748b]">
+              Resumen
+            </p>
+            <p className="mt-0.5 truncate text-[13px] font-semibold text-[#1c1c1c]">{serviceName}</p>
+          </header>
+        )}
 
-        {expertName ? (
+        {!compact && expertName ? (
           <div className="flex items-center gap-2.5 border-t border-[#f5f5f5] px-4 py-3">
             <Avatar className="h-8 w-8 shrink-0 rounded-full">
               <AvatarImage src={expertPicture} alt={expertName} />
@@ -84,23 +134,54 @@ export function CheckoutSummaryTable({
         ) : null}
 
         <dl aria-label="Detalles del servicio">
-          {appointmentLabel ? (
-            <CheckoutSummaryTableRow label="Cita">{appointmentLabel}</CheckoutSummaryTableRow>
+          {coordinationLabel ? (
+            <CheckoutSummaryTableRow label="Coordinación" compact={compact}>
+              {coordinationLabel}
+            </CheckoutSummaryTableRow>
           ) : null}
 
-          {locationLabel ? (
-            <CheckoutSummaryTableRow label="Ubicación">{locationLabel}</CheckoutSummaryTableRow>
+          {appointmentLabel ? (
+            <CheckoutSummaryTableRow label="Cita" compact={compact}>
+              {appointmentLabel}
+            </CheckoutSummaryTableRow>
+          ) : null}
+
+          {locationLabel || locationHint ? (
+            <CheckoutSummaryTableRow label="Ubicación" compact={compact}>
+              <SummaryValue hint={locationHint}>{locationLabel ?? '—'}</SummaryValue>
+            </CheckoutSummaryTableRow>
+          ) : null}
+
+          {sellerContactLabel ? (
+            <CheckoutSummaryTableRow label="Vendedor" compact={compact}>
+              {sellerContactLabel}
+            </CheckoutSummaryTableRow>
+          ) : null}
+
+          {sellerListingLabel ? (
+            <CheckoutSummaryTableRow label="Anuncio" compact={compact}>
+              <span className="break-all">{sellerListingLabel}</span>
+            </CheckoutSummaryTableRow>
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className="border-t border-[#f5f5f5] px-4 py-3.5">
+            <div className={cn('border-t border-[#f5f5f5] px-4', compact ? 'py-3' : 'py-3.5')}>
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-xs text-[#6a6a6a]">Total</p>
-                <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]">
+                <p
+                  className={cn(
+                    'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]',
+                    compact ? 'text-lg' : 'text-xl',
+                  )}
+                >
                   {priceDisplay}
                 </p>
               </div>
-              <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>Impuestos incluidos</p>
+              {priceSubline ? (
+                <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>{priceSubline}</p>
+              ) : (
+                <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>Impuestos incluidos</p>
+              )}
             </div>
           ) : null}
         </dl>

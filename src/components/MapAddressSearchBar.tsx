@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import {
     searchMapboxAutocomplete,
     isMapboxTokenConfigured,
@@ -24,6 +24,14 @@ interface MapAddressSearchBarProps {
     placeholder?: string;
     /** Clase del wrapper (controla el ancho/posición desde fuera). */
     className?: string;
+    /** Estilo integrado en cabecera (sin sombra flotante sobre el mapa). */
+    embedded?: boolean;
+    /** Pill flotante sobre el mapa (checkout wizard). */
+    overlay?: boolean;
+    /** Sincroniza el texto cuando la dirección viene del mapa u otra fuente. */
+    value?: string | null;
+    /** Al borrar el campo de búsqueda. */
+    onClear?: () => void;
 }
 
 /**
@@ -42,6 +50,10 @@ export function MapAddressSearchBar({
     proximity,
     placeholder = 'Buscar dirección, ciudad o código postal…',
     className = '',
+    embedded = false,
+    overlay = false,
+    value,
+    onClear,
 }: MapAddressSearchBarProps) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<MapboxAutocompleteItem[]>([]);
@@ -52,6 +64,14 @@ export function MapAddressSearchBar({
     const committedRef = useRef<string | null>(null);
 
     const tokenOk = isMapboxTokenConfigured();
+
+    useEffect(() => {
+        if (value == null) return;
+        committedRef.current = value.trim() || null;
+        setQuery(value);
+        setShowList(false);
+        setResults([]);
+    }, [value]);
 
     useEffect(() => {
         if (!tokenOk) return;
@@ -112,6 +132,23 @@ export function MapAddressSearchBar({
 
     if (!tokenOk) return null;
 
+    const hasQuery = query.length > 0;
+
+    const inputCls = embedded
+        ? 'w-full rounded-xl border border-[#e5e7eb] bg-[#fafafa] py-2.5 pl-4 pr-10 text-[15px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15'
+        : overlay
+          ? 'w-full rounded-full border-0 bg-white/96 py-3 pl-4 pr-10 text-[15px] text-[#1c1c1c] shadow-[0_4px_20px_rgba(15,23,42,0.14),0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-md placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-brand/25'
+          : 'w-full rounded-full border-0 bg-white/95 py-2.5 pl-4 pr-10 font-display text-sm text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
+
+    const handleClear = () => {
+        committedRef.current = null;
+        setQuery('');
+        setShowList(false);
+        setResults([]);
+        setError(null);
+        onClear?.();
+    };
+
     return (
         <div className={`relative ${className}`}>
             <input
@@ -128,17 +165,29 @@ export function MapAddressSearchBar({
                     }
                 }}
                 onBlur={() => setTimeout(() => setShowList(false), 150)}
-                className="w-full rounded-full border-0 bg-white/95 py-2.5 pl-4 pr-10 font-display text-sm text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30"
+                className={inputCls}
                 aria-label="Buscar dirección"
             />
-            <Search
-                className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171]"
-                strokeWidth={2.2}
-                aria-hidden
-            />
+            {hasQuery ? (
+                <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleClear}
+                    className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-black/[0.06] hover:text-[#1c1c1c]"
+                    aria-label="Borrar búsqueda"
+                >
+                    <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                </button>
+            ) : (
+                <Search
+                    className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171]"
+                    strokeWidth={2.2}
+                    aria-hidden
+                />
+            )}
 
             {showList && results.length > 0 && (
-                <ul className="absolute left-0 right-0 top-full z-[10000] mt-2 max-h-72 overflow-y-auto rounded-2xl border border-black/[0.06] bg-white py-1 shadow-[0_12px_32px_rgba(14,20,36,0.18)]">
+                <ul className="absolute left-0 right-0 top-full z-[10000] mt-2 max-h-60 overflow-y-auto rounded-2xl border border-black/[0.06] bg-white py-1 shadow-[0_12px_32px_rgba(14,20,36,0.18)]">
                     {results.map((item) => (
                         <li
                             key={item.id}
