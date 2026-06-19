@@ -29,6 +29,9 @@ export default function SellerBookingPage() {
     const [submitting, setSubmitting] = useState(false);
     const [done, setDone] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [windowInfo, setWindowInfo] = useState<{
+        fromYmd: string; days: number; windowExtended: boolean; hasAvailability: boolean;
+    } | null>(null);
 
     const base = useMemo(
         () => (token ? `${API_CONFIG.baseUrl}/api/seller-booking/${encodeURIComponent(token)}` : ''),
@@ -47,6 +50,11 @@ export default function SellerBookingPage() {
                 if (cancelled) return;
                 setCtx(data);
                 setStatus('ok');
+                // Cargar la ventana efectiva (objetivo vs ampliada) del experto.
+                try {
+                    const wr = await fetch(`${base}/window`);
+                    if (wr.ok && !cancelled) setWindowInfo(await wr.json());
+                } catch { /* sin ventana: caemos al fallback de abajo */ }
             } catch {
                 if (!cancelled) setStatus('invalid');
             }
@@ -91,6 +99,15 @@ export default function SellerBookingPage() {
         }
     };
 
+    const slotConstraints = useMemo(() => {
+        if (!windowInfo) return { minLeadDays: 0, windowDays: ctx?.maxDays ?? 14 };
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const [y, m, d] = windowInfo.fromYmd.split('-').map(Number);
+        const from = new Date(y, m - 1, d);
+        const minLeadDays = Math.max(0, Math.round((from.getTime() - today.getTime()) / 86400000));
+        return { minLeadDays, windowDays: windowInfo.days };
+    }, [windowInfo, ctx?.maxDays]);
+
     const card: React.CSSProperties = {
         background: '#fff', border: '0.5px solid #DCE3EC', borderRadius: 16,
         maxWidth: 560, width: '100%', padding: 24,
@@ -131,7 +148,18 @@ export default function SellerBookingPage() {
                     </div>
                 )}
 
-                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && (
+                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                    && windowInfo && !windowInfo.hasAvailability && (
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
+                        <p style={{ margin: 0, fontSize: 14 }}>
+                            El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
+                        </p>
+                    </div>
+                )}
+
+                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                    && windowInfo?.hasAvailability !== false && (
                     <div>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
                             <CalendarClock size={20} style={{ color: '#1C63B4', flexShrink: 0 }} />
@@ -143,12 +171,22 @@ export default function SellerBookingPage() {
                             </div>
                         </div>
 
+                        {windowInfo?.windowExtended && (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 12, background: '#FFF7E6', border: '0.5px solid #F0D38A', borderRadius: 10, padding: '10px 12px' }}>
+                                <AlertTriangle size={16} style={{ color: '#B8860B', flexShrink: 0, marginTop: 1 }} />
+                                <p style={{ margin: 0, fontSize: 13, color: '#7A5C00' }}>
+                                    El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
+                                </p>
+                            </div>
+                        )}
+
                         <SlotPicker
                             serviceId={ctx.serviceId}
                             selected={slot}
                             onSelect={setSlot}
                             slotsBaseUrl={base}
-                            windowDays={ctx.maxDays}
+                            windowDays={slotConstraints.windowDays}
+                            minLeadDays={slotConstraints.minLeadDays}
                             sectionTitle="Fecha y hora"
                         />
 
