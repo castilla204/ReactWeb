@@ -238,6 +238,14 @@ export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
 export const SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS =
   'border-b border-[#f0f0f0] bg-white px-4 py-2.5';
 
+/** Cabecera compacta — bloques integrados (coordinación + calendario en la misma tarjeta) */
+export const SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS =
+  'border-b border-[#f0f0f0] bg-white px-4 py-2';
+
+/** Checkout desktop — columna cita + mapa pegado */
+export const SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS = 'w-full max-w-[500px]';
+export const SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS = 'w-[580px]';
+
 /** SearchDetails desktop — layout marketplace (misma paleta que checkout) */
 export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-[#f7f7f7]';
 
@@ -497,9 +505,10 @@ export const MAP_DESKTOP_PANEL_GUTTER = 'px-5 xl:px-6';
 export const MAP_DESKTOP_LIST_CLASS = `${MAP_DESKTOP_PANEL_GUTTER} pb-6 pt-4`;
 
 export const MAP_DESKTOP_GRID_CLASS =
-  // 2 columnas estables en desktop: tarjetas elevadas con aire, nunca apretadas
-  // (3 cols dejaba cada card demasiado estrecha en monitores grandes).
-  'grid w-full grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-5 xl:gap-6';
+  // UNA sola columna de tarjetas verticales (foto arriba, info abajo) al estilo del
+  // popover del mapa. El grid de 2 columnas dejaba cada card apretada (anti-patrón
+  // Baymard/Booking); una columna da aire para que la tarjeta se vea "pro".
+  'grid w-full grid-cols-1 gap-4';
 
 /**
  * Desktop: una sola fila lista + mapa bajo la topbar.
@@ -510,15 +519,27 @@ export const MAP_DESKTOP_GRID_CLASS =
  * Lista más ancha en pantallas grandes para encajar 3 cards/fila a partir de 2xl.
  */
 export const MAP_DESKTOP_SPLIT_CLASS =
-  // Lista a la izquierda (acotada para 2 cols cómodas) + mapa protagonista a la derecha.
-  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(460px,44vw,780px)_minmax(0,1fr)]';
+  // Lista a la izquierda (1 columna de filas) + mapa PROTAGONISTA a la derecha (~60%).
+  // El experto se elige espacialmente ("¿quién está cerca / vendrá a mí?") → el mapa
+  // merece la mitad grande. Lista clamp(380–520px); el resto, mapa.
+  'grid min-h-0 w-full flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[clamp(380px,36vw,520px)_minmax(0,1fr)]';
 
 /** Cabecera de resultados a TODO el ancho, encima del split → lista y mapa nacen
- *  debajo, a la misma altura (el mapa ya no sube hasta la topbar).
- *  Fondo degradado azul → amarillo (tintes de marca: azul #0066CC + ámbar #F59E0B),
- *  suave para mantener legible el texto oscuro. */
+ *  debajo, a la misma altura. Sobria ("el gabinete del perito"): blanco con hairline
+ *  inferior. Sin degradado azul→amarillo decorativo — el color de marca se reserva
+ *  para donde paga (CTA, foco, pin seleccionado). */
 export const MAP_DESKTOP_PANEL_HEADER_CLASS =
-  'shrink-0 border-b border-[#e6e3d8] bg-[linear-gradient(90deg,#cfe3f7_0%,#eaf1f0_46%,#fcecbb_100%)] px-6 pt-3.5 pb-3.5';
+  'shrink-0 border-b border-[#ececec] bg-white px-6 py-3';
+
+/** Barra de resultados: cuenta (izq) + controles de orden/filtro (der), todo el ancho. */
+export const MAP_DESKTOP_RESULTS_BAR_CLASS =
+  'flex shrink-0 items-center justify-between gap-4 border-b border-[#ececec] bg-white px-6 py-2.5';
+
+/** Chip/botón de filtro desktop — reposo gris relleno (con peso), activo tinta. */
+export const MAP_DESKTOP_FILTER_TRIGGER_CLASS =
+  'inline-flex h-9 items-center gap-1.5 rounded-full bg-[#f0f1f3] px-3.5 font-display text-[13px] font-semibold text-[#2a2a2a] transition-colors hover:bg-[#e6e7ea] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
+export const MAP_DESKTOP_FILTER_TRIGGER_ACTIVE_CLASS =
+  'inline-flex h-9 items-center gap-1.5 rounded-full bg-[#1c1c1c] px-3.5 font-display text-[13px] font-semibold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
 
 export const MAP_DESKTOP_PANEL_HEADER_TITLE_CLASS =
   'font-display text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
@@ -570,7 +591,9 @@ export const MAP_META_CHIP_MUTED_CLASS =
   'inline-flex items-center rounded-full bg-[#f5f5f5] ring-1 ring-[#ececec] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
 
 export const MAP_DESKTOP_LIST_CELL_CLASS =
-  'hidden min-h-0 overflow-hidden bg-white lg:col-start-1 lg:row-start-1 lg:block';
+  // Fondo tintado sutil (#f6f7f8) → las tarjetas blancas resaltan con profundidad
+  // (antes todo blanco-sobre-blanco se veía plano y "de juguete").
+  'hidden min-h-0 overflow-hidden bg-[#f6f7f8] lg:col-start-1 lg:row-start-1 lg:block';
 
 export const MAP_PANEL_SCROLL_CLASS = 'map-panel-scroll';
 
@@ -580,7 +603,7 @@ export const MAP_DESKTOP_SCROLL_CLASS =
 /** Mapa — única fila bajo la topbar. Padding superior reducido para que el mapa
  *  arranque casi pegado a la topbar (antes pt-1.5 colaba bajo el header editorial). */
 export const MAP_DESKTOP_MAP_WRAP_CLASS =
-  'relative hidden min-h-0 flex-col bg-white pl-1.5 pr-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-6 xl:pt-4';
+  'relative hidden min-h-0 flex-col bg-[#f6f7f8] pl-1.5 pr-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-6 xl:pt-4';
 
 export const MAP_DESKTOP_MAP_INNER_CLASS =
   // Mapa enmarcado como tarjeta: hairline + sombra suave; fondo #dce9f2 (mismo cielo
@@ -639,7 +662,7 @@ export const MAP_MOBILE_LIST_TUTORIAL_CLASS = `${SD_MOBILE_GUTTER_CLASS} pt-2 pb
 export const MAP_CARD_BODY_CLASS = 'px-3.5 py-2.5 font-display';
 
 /** Imagen un poco más baja que 4/3 (desktop y móvil) */
-export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/10]';
+export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/10]'; // usado en card móvil/legacy
 
 export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
@@ -699,3 +722,38 @@ export const MAP_CARD_MOBILE_PRICE_CLASS =
   'text-[16px] font-semibold leading-[1.15] tabular-nums tracking-tight text-[#1c1c1c]';
 export const MAP_CARD_MOBILE_FAV_BTN_CLASS =
   'absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-[#1c1c1c] active:bg-[#f4f4f4] transition-colors';
+
+/**
+ * Card DESKTOP en fila horizontal (rediseño 2026): foto izquierda + info derecha,
+ * una por fila. Da espacio para evaluar al experto (precio, valoración, distancia,
+ * especialidad) sin apelmazar, y hace inequívoca la sincronización con el pin.
+ */
+export const MAP_CARD_ROW_WRAP_CLASS =
+  'relative flex items-stretch gap-3.5 rounded-2xl bg-white p-2.5 font-display transition-[box-shadow,transform,border-color] duration-200';
+export const MAP_CARD_ROW_IMG_CLASS =
+  'relative h-[132px] w-[156px] shrink-0 overflow-hidden rounded-xl bg-[#eceff3]';
+// Columna info: cabecera arriba (eyebrow+nombre+meta) y precio abajo → llena el alto de la foto,
+// sin el hueco muerto que dejaba el layout anterior.
+export const MAP_CARD_ROW_INFO_CLASS =
+  'flex min-w-0 flex-1 flex-col justify-between py-0.5 pr-1';
+export const MAP_CARD_ROW_EYEBROW_CLASS =
+  'truncate text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#9a9a9a]';
+export const MAP_CARD_ROW_NAME_CLASS =
+  'truncate text-[16px] font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c]';
+// Meta de una línea: ★ valoración (reseñas) · ciudad · distancia.
+export const MAP_CARD_ROW_META_CLASS =
+  'mt-1 flex items-center gap-1 truncate text-[12.5px] font-normal leading-[1.3] text-[#525252]';
+export const MAP_CARD_ROW_PRICE_CLASS =
+  'text-[17px] font-semibold leading-none tabular-nums tracking-tight text-[#1c1c1c]';
+export const MAP_CARD_ROW_PRICE_SUFFIX_CLASS =
+  'text-[12px] font-normal text-[#737373]';
+export const MAP_CARD_ROW_AVAIL_CLASS =
+  'inline-flex items-center gap-1 rounded-full bg-[#f4f5f6] px-2 py-0.5 text-[11.5px] font-medium text-[#525252]';
+
+/* Sombras de la fila — base hairline + elevación en hover, anillo de marca al seleccionar. */
+export const MAP_CARD_ROW_SHADOW =
+  'shadow-[0_1px_2px_rgba(16,24,40,0.05)] ring-1 ring-[#e8e8e8]';
+export const MAP_CARD_ROW_SHADOW_HOVER =
+  'shadow-[0_8px_22px_rgba(16,24,40,0.13)] ring-1 ring-[#d4d4d4] -translate-y-px';
+export const MAP_CARD_ROW_SHADOW_ACTIVE =
+  'shadow-[0_8px_24px_hsl(var(--brand)/0.18)] ring-2 ring-brand';

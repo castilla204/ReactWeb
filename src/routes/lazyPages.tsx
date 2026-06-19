@@ -51,6 +51,7 @@ export const SearchResultsPage = lazyNamed(
 );
 export const TransactionsPage = lazyDefault(() => import('../pages/TransactionsPage'));
 export const ExpertInspectionPage = lazyDefault(() => import('../pages/ExpertInspectionPage'));
+export const SellerBookingPage = lazyDefault(() => import('../pages/SellerBookingPage'));
 export const ServiceDetailPage = lazyDefault(() => import('../pages/ServiceDetailPage'));
 export const CheckoutPage = lazyNamed(() => import('../pages/CheckoutPage'), 'CheckoutPage');
 export const PreHireChatPage = lazyNamed(() => import('../pages/PreHireChatPage'), 'PreHireChatPage');

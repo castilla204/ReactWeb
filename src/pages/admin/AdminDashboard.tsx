@@ -1,81 +1,42 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Users, Settings, Bell, AlertTriangle, Activity, LayoutDashboard } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, Settings, Bell, AlertTriangle, Activity, ChevronRight } from 'lucide-react';
+import { AdminCard, AdminPageHeader } from '../../components/admin/ui';
+
+const cards = [
+  { to: '/admin/users', icon: Users, title: 'Usuarios', desc: 'Administra usuarios, bloqueos y permisos', tone: 'text-[hsl(var(--ap-info))]' },
+  { to: '/admin/config', icon: Settings, title: 'Configuración', desc: 'Porcentajes, estados y mapeos', tone: 'text-[hsl(var(--ap-brand))]' },
+  { to: '/admin/notifications', icon: Bell, title: 'Notificaciones', desc: 'Gestiona notificaciones del sistema', tone: 'text-[hsl(var(--ap-warning))]' },
+  { to: '/admin/disputes', icon: AlertTriangle, title: 'Disputas', desc: 'Revisa y resuelve disputas', tone: 'text-[hsl(var(--ap-error))]' },
+  { to: '/admin/hangfire', icon: Activity, title: 'Hangfire', desc: 'Monitoreo de trabajos en segundo plano', tone: 'text-[hsl(var(--ap-success))]' },
+];
 
 const AdminDashboard: React.FC = () => {
-  const navigate = useNavigate();
-
-  const cards = [
-    {
-      title: 'Gestión de Usuarios',
-      description: 'Administra usuarios, bloqueos y permisos',
-      icon: Users,
-      path: '/admin/users',
-      color: 'bg-blue-500',
-    },
-    {
-      title: 'Configuración',
-      description: 'Porcentajes, estados y mapeos',
-      icon: Settings,
-      path: '/admin/config',
-      color: 'bg-green-500',
-    },
-    {
-      title: 'Notificaciones',
-      description: 'Gestiona notificaciones del sistema',
-      icon: Bell,
-      path: '/admin/notifications',
-      color: 'bg-yellow-500',
-    },
-    {
-      title: 'Disputas',
-      description: 'Revisa y resuelve disputas',
-      icon: AlertTriangle,
-      path: '/admin/disputes',
-      color: 'bg-red-500',
-    },
-    {
-      title: 'Hangfire',
-      description: 'Monitoreo de trabajos en segundo plano',
-      icon: Activity,
-      path: '/admin/hangfire',
-      color: 'bg-purple-500',
-    },
-  ];
-
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Dashboard de Administración</h2>
-        <p className="text-gray-600 mt-2">Gestiona todas las áreas del sistema desde aquí</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <button
-              key={card.path}
-              onClick={() => navigate(card.path)}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group"
-            >
-              <div className={`${card.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-6 h-6 text-white" />
+    <>
+      <AdminPageHeader title="Panel de administración" subtitle="Accesos rápidos a las áreas de gestión" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map(({ to, icon: Icon, title, desc, tone }) => (
+          <Link key={to} to={to} className="group">
+            <AdminCard className="h-full transition-shadow hover:shadow-md">
+              <div className="admin-card-body flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(220_16%_96%)]">
+                  <Icon className={`h-5 w-5 ${tone}`} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[hsl(var(--ap-ink))]">{title}</span>
+                    <ChevronRight className="h-4 w-4 text-[hsl(var(--ap-muted))] transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <p className="mt-1 text-[13px] text-[hsl(var(--ap-muted))]">{desc}</p>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{card.title}</h3>
-              <p className="text-sm text-gray-600">{card.description}</p>
-            </button>
-          );
-        })}
+            </AdminCard>
+          </Link>
+        ))}
       </div>
-    </div>
+    </>
   );
 };
 
 export default AdminDashboard;
-
-
-
-
-
-

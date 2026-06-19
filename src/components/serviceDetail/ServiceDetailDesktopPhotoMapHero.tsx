@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin } from 'lucide-react';
 import { ServiceDetailDesktopGallery } from './ServiceDetailDesktopGallery';
 import {
   SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS,
@@ -25,6 +25,10 @@ interface ServiceDetailDesktopPhotoMapHeroProps {
   rangeKm?: number;
   /** Título/meta superpuesto sobre la imagen principal (columna izquierda) */
   titleOverlay?: React.ReactNode;
+  /** Formación en cascada superpuesta sobre la foto */
+  formacionOverlay?: React.ReactNode;
+  /** Volver — disco flotante arriba-derecha de la galería (desktop) */
+  onBack?: () => void;
   className?: string;
 }
 
@@ -40,6 +44,8 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   locationLabel,
   rangeKm = 25,
   titleOverlay,
+  formacionOverlay,
+  onBack,
   className = '',
 }) => {
   // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
@@ -63,12 +69,29 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
           onImageError={onImageError}
           onImageLoad={onImageLoad}
           onImageLoadStart={onImageLoadStart}
+          primaryOverlays={{
+            topLeft: onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="sd-mobile-topbar-btn"
+                aria-label="Volver"
+              >
+                <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+              </button>
+            ) : undefined,
+            bottom: titleOverlay || formacionOverlay ? (
+              <div className="bg-gradient-to-t from-black/70 via-black/35 to-transparent px-5 pb-4 pt-16">
+                <div className="flex flex-col items-start gap-2">
+                  {formacionOverlay}
+                  {titleOverlay ? (
+                    <div className="pointer-events-auto w-full">{titleOverlay}</div>
+                  ) : null}
+                </div>
+              </div>
+            ) : undefined,
+          }}
         />
-        {titleOverlay ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 via-black/35 to-transparent px-5 pb-4 pt-20">
-            {titleOverlay}
-          </div>
-        ) : null}
       </div>
 
       <div

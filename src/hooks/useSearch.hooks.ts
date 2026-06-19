@@ -204,6 +204,13 @@ interface CreateSearchWithHireData {
     longitude?: string | null;
     doorNumber?: string | null;
     siteDetails?: string | null;
+    // 🤝 Coordinación con el vendedor (modo "seller"). Vacíos en el modo "self".
+    coordinationMode?: string | null;
+    sellerPhone?: string | null;
+    sellerEmail?: string | null;
+    sellerListingUrl?: string | null;
+    sellerBookingMaxDays?: number | null;
+    sellerBookingDeadlineHours?: number | null;
 }
 
 export const useSearch = (options: { enableQueries?: boolean } = {}) => {
@@ -289,7 +296,7 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
     });
 
     const createSearchWithHireMutation = useMutation({
-        mutationFn: ({ searchData, parameters, startsAtUtc, endsAtUtc, location, latitude, longitude, doorNumber, siteDetails }: CreateSearchWithHireData) =>
+        mutationFn: ({ searchData, parameters, startsAtUtc, endsAtUtc, location, latitude, longitude, doorNumber, siteDetails, coordinationMode, sellerPhone, sellerEmail, sellerListingUrl, sellerBookingMaxDays, sellerBookingDeadlineHours }: CreateSearchWithHireData) =>
             fetchApi<{ url?: string; searchId?: number; searchHireId?: number }>(
                 API_CONFIG.endpoints.search.createWithHire,
                 {
@@ -305,6 +312,12 @@ export const useSearch = (options: { enableQueries?: boolean } = {}) => {
                         longitude: longitude ?? null,
                         doorNumber: doorNumber ?? null,
                         siteDetails: siteDetails ?? null,
+                        coordinationMode: coordinationMode ?? null,
+                        sellerPhone: sellerPhone ?? null,
+                        sellerEmail: sellerEmail ?? null,
+                        sellerListingUrl: sellerListingUrl ?? null,
+                        sellerBookingMaxDays: sellerBookingMaxDays ?? null,
+                        sellerBookingDeadlineHours: sellerBookingDeadlineHours ?? null,
                     }),
                 }
             ),

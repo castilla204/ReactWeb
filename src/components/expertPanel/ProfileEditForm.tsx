@@ -615,10 +615,45 @@ export function ProfileEditForm({
         });
     }, [workRadiusKm]);
 
+    // ¿Hay cambios sin guardar respecto al perfil actual? Si no los hay, el botón
+    // de guardar se muestra apagado y deshabilitado; en cuanto algo cambia, se enciende.
+    const isDirty = useMemo(() => {
+        if (!profile) return false;
+        const baseDesc = profile.description || '';
+        const baseLat = profile.latitude?.toString() || '';
+        const baseLng = profile.longitude?.toString() || '';
+        const baseRadius = readWorkRadiusKm(profile);
+        const baseFormacion = profile.formacion ?? '';
+        const baseDoor = profile.workLocationDoor ?? '';
+        const baseFloor = profile.workLocationFloor ?? '';
+        const baseDetails = profile.workLocationDetails ?? '';
+        const basePhoto = (profile as { ProfilePictureUrl?: string }).ProfilePictureUrl
+            || profile.profilePictureUrl
+            || null;
+
+        if (formData.description !== baseDesc) return true;
+        if (formData.latitude !== baseLat) return true;
+        if (formData.longitude !== baseLng) return true;
+        if (workRadiusKm !== baseRadius) return true;
+        if ((formacion ?? '') !== baseFormacion) return true;
+        if (profilePicture) return true;            // foto nueva seleccionada
+        if (!previewUrl && basePhoto) return true;  // foto existente eliminada
+        if (isFixedWorkLocation) {
+            if (workLocationDoor !== baseDoor) return true;
+            if (workLocationFloor !== baseFloor) return true;
+            if (workLocationDetails !== baseDetails) return true;
+        }
+        return false;
+    }, [
+        profile, formData.description, formData.latitude, formData.longitude,
+        workRadiusKm, formacion, profilePicture, previewUrl, isFixedWorkLocation,
+        workLocationDoor, workLocationFloor, workLocationDetails,
+    ]);
+
     if (!profile) return null;
 
     const saveButton = (
-        <Button type="button" className="pf-btn-save" onClick={handleSubmit} disabled={isUpdating}>
+        <Button type="button" className={`pf-btn-save${isDirty ? ' pf-btn-save--dirty' : ''}`} onClick={handleSubmit} disabled={isUpdating || !isDirty}>
             {isUpdating ? (
                 <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Guardando…</>
             ) : 'Guardar cambios'}
@@ -626,7 +661,7 @@ export function ProfileEditForm({
     );
 
     const saveButtonBar = (
-        <Button type="button" className="pf-btn-save pf-btn-save--bar" onClick={handleSubmit} disabled={isUpdating}>
+        <Button type="button" className={`pf-btn-save pf-btn-save--bar${isDirty ? ' pf-btn-save--dirty' : ''}`} onClick={handleSubmit} disabled={isUpdating || !isDirty}>
             {isUpdating ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Guardando…</>
             ) : 'Guardar cambios'}

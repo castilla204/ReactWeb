@@ -66,6 +66,8 @@ import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceD
 import { LoginModal } from '../components/LoginModal';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
+// La elección "¿Cómo se fija la cita?" ya no se decide aquí (ni en popup): se resuelve
+// como primer paso dedicado dentro del checkout. Aquí solo navegamos al checkout.
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -109,7 +111,7 @@ export function ServiceReviewPage({
     const navigate = useNavigate();
     const location = useLocation();
     const isMobile = useIsMobile();
-    
+
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
     const [isFavorite, setIsFavorite] = useState(false);
@@ -477,6 +479,8 @@ export function ServiceReviewPage({
 
         if (hireSearchLocation) persistHireSearchLocation(hireSearchLocation);
 
+        // Servicios con cita o sin ella navegan igual: la coordinación se decide
+        // en el primer paso del checkout (pantalla dedicada, no popup).
         navigate(checkoutPath, {
             replace: false,
             state: hireSearchLocation ? { hireSearchLocation } : undefined,

@@ -15,6 +15,25 @@ const CategoryContext = createContext<CategoryContextType>({
     error: null
 });
 
+// ✅ La NewApi serializa en PascalCase (Program.cs: PropertyNamingPolicy = null), pero todo
+// el front consume camelCase. Sin normalizar, AdminCategoriesPage y demás consumidores leían
+// `id/name/parentId/createdAt` => undefined => celdas "-" y el badge salía siempre "Activa"
+// (isActive undefined !== false). Toleramos AMBOS casings en el único boundary del fetch.
+function normalizeCategory(raw: any): CategoryWithDetailsDto {
+    const parentId = raw?.parentId ?? raw?.ParentId ?? null;
+    return {
+        id: raw?.id ?? raw?.Id,
+        name: raw?.name ?? raw?.Name ?? '',
+        parentId,
+        isActive: raw?.isActive ?? raw?.IsActive ?? true,
+        createdAt: raw?.createdAt ?? raw?.CreatedAt ?? '',
+        updatedAt: raw?.updatedAt ?? raw?.UpdatedAt ?? '',
+        isParent: raw?.isParent ?? raw?.IsParent ?? (parentId == null),
+        hasSubcategories: raw?.hasSubcategories ?? raw?.HasSubcategories ?? false,
+        subcategoriesCount: raw?.subcategoriesCount ?? raw?.SubcategoriesCount ?? 0,
+    };
+}
+
 // ✅ Cache global para evitar múltiples llamadas simultáneas (similar a useServiceTypes)
 let globalCategoriesCache: { data: CategoryWithDetailsDto[] | null; timestamp: number; promise: Promise<CategoryWithDetailsDto[]> | null } = {
     data: null,
@@ -85,7 +104,8 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
                         }
                         throw new Error(`Failed to fetch categories: ${res.status} ${res.statusText}`);
                     }
-                    return res.json();
+                    const json = await res.json();
+                    return Array.isArray(json) ? json.map(normalizeCategory) : [];
                 } catch (e: any) {
                     clearTimeout(timeoutId);
                     if (e?.name === 'AbortError') {

@@ -522,6 +522,8 @@ const AppContent: React.FC = () => {
                             <Route path="/privacy-policy.html" element={<RouteSuspense><PrivacyPolicy /></RouteSuspense>} />
                             <Route path="/terms.html" element={<RouteSuspense><TermsPage /></RouteSuspense>} />
                             <Route path="/status" element={<RouteSuspense><StatusPage /></RouteSuspense>} />
+                            {/* 🤝 Magic link del vendedor: PÚBLICO, sin login (el token es la credencial). */}
+                            <Route path="/coordinar-cita/:token" element={<RouteSuspense><LazyPages.SellerBookingPage /></RouteSuspense>} />
                             <Route path="/success" element={<RouteSuspense><PaymentSuccessPage /></RouteSuspense>} />
                             <Route path="/cancel" element={<RouteSuspense><PaymentCancelPage /></RouteSuspense>} />
                             {/* 🛡️ Round 15 — R5 FIX: ruta /login real. Antes navigate('/login') iba a 404. */}

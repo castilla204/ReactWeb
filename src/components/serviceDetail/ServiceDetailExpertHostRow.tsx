@@ -1,7 +1,8 @@
 import React from 'react';
-import { BadgeCheck, Star } from 'lucide-react';
+import { BadgeCheck, GraduationCap, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
+import { parseFormacion } from '../expertPanel/formacion';
 import {
   SD_DESKTOP_HOST_BIO_CLASS,
   SD_DESKTOP_HOST_CHAT_CLASS,
@@ -20,6 +21,8 @@ interface ServiceDetailExpertHostRowProps {
   completedSearches?: number;
   rating?: number;
   reviewCount?: number;
+  /** JSON de formación del experto; se muestra como chips junto al nombre (solo desktop). */
+  formacion?: string | null;
   onAvatarClick: () => void;
   onChatClick: () => void;
   variant?: 'mobile' | 'desktop';
@@ -33,12 +36,14 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
   completedSearches = 0,
   rating,
   reviewCount,
+  formacion,
   onAvatarClick,
   onChatClick,
   variant = 'desktop',
   className = '',
 }) => {
   const isMobile = variant === 'mobile';
+  const formacionItems = !isMobile ? parseFormacion(formacion) : [];
   const showMobileRating = isMobile && rating != null && rating > 0 && (reviewCount ?? 0) > 0;
   const ratingLabel =
     rating != null && rating > 0 ? rating.toFixed(1).replace('.', ',') : null;
@@ -71,9 +76,27 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
 
   const identityBlock = (
     <div className={isMobile ? 'min-w-0 flex-1' : SD_DESKTOP_HOST_CONTENT_CLASS}>
-      <p className={isMobile ? `truncate ${SD_MOBILE_EMPHASIS_CLASS}` : SD_DESKTOP_HOST_NAME_CLASS}>
-        {expertName}
-      </p>
+      {isMobile ? (
+        <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>{expertName}</p>
+      ) : (
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={`max-w-full ${SD_DESKTOP_HOST_NAME_CLASS}`}>{expertName}</span>
+          {formacionItems.length > 0 ? (
+            <span className="flex flex-wrap items-center gap-1.5">
+              {formacionItems.map((it, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-full bg-[#EAF1FB] px-2 py-0.5 text-[11px] font-medium leading-tight text-[#1C63B4]"
+                  title={it.titulo}
+                >
+                  <GraduationCap size={12} strokeWidth={2} className="shrink-0" />
+                  <span className="max-w-[160px] truncate">{it.titulo}</span>
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
+      )}
 
       {showDesktopExpertBio ? (
         <p className={SD_DESKTOP_HOST_BIO_CLASS}>

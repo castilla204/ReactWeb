@@ -110,6 +110,7 @@
   font-weight: 600;
   border: none;
   border-radius: 8px;
+  transition: box-shadow 0.2s ease, opacity 0.2s ease, filter 0.2s ease, transform 0.1s ease;
 }
 
 .pf-btn-save--bar {
@@ -118,6 +119,21 @@
   min-height: 40px;
   justify-content: center;
   border-radius: 10px;
+}
+
+/* Estado del botón Guardar según haya cambios sin guardar.
+   Apagado (sin cambios → deshabilitado): atenuado y sin sombra.
+   Encendido (--dirty): color de marca a plena intensidad con un brillo sutil
+   para que destaque y se note que hay algo que guardar. */
+.pf-btn-save:disabled {
+  opacity: 0.5;
+  filter: saturate(0.6);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.pf-btn-save--dirty:not(:disabled) {
+  box-shadow: 0 3px 12px hsl(var(--brand) / 0.5), 0 0 0 1px hsl(var(--brand) / 0.18);
 }
 
 .pf-editor-footer-actions {

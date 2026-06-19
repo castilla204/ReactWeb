@@ -5,9 +5,11 @@ import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { Calendar } from './ui/calendar';
 import { cn } from '../lib/utils';
+import { SlotPeriodPanel, type PeriodFilter } from './checkout/SlotPeriodPanel';
 import {
     SD_CHECKOUT_DESKTOP_CARD_CLASS,
     SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS,
+    SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS,
 } from '../constants/homepageTypography';
 
 /** Hueco elegido que se manda al checkout (intervalo UTC + etiqueta local para mostrar). */
@@ -31,6 +33,18 @@ interface Props {
     onSelect: (slot: ChosenSlot | null) => void;
     /** Cabecera integrada en la tarjeta (checkout desktop). */
     sectionTitle?: string;
+    /** Sin contenedor de tarjeta propio; va dentro del bloque de cita del checkout. */
+    embedded?: boolean;
+    /** Solo consulta disponibilidad (modo vendedor): no exige elegir hueco. */
+    previewMode?: boolean;
+    /**
+     * Base de los endpoints de disponibilidad. Por defecto el del cliente autenticado
+     * (`/api/Availability/service/{serviceId}`). El magic link del vendedor pasa el público
+     * token-gated (`/api/seller-booking/{token}`). Ambos exponen `/slots?date=` y `/summary?from=&days=`.
+     */
+    slotsBaseUrl?: string;
+    /** Nº de días a futuro ofrecibles. Por defecto 14. El magic link usa el tope del cliente. */
+    windowDays?: number;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -48,13 +62,24 @@ const BOOKING_WINDOW_DAYS = 14;
  * Selector de cita estilo Calendly: calendario mensual + huecos horarios.
  * El cliente elige día y hora ANTES de pagar; el hueco viaja al checkout.
  */
-const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTitle }) => {
+const SlotPicker: React.FC<Props> = ({
+    serviceId,
+    selected,
+    onSelect,
+    sectionTitle,
+    embedded,
+    previewMode = false,
+    slotsBaseUrl,
+    windowDays,
+}) => {
+    const availBase = slotsBaseUrl ?? `${API_CONFIG.baseUrl}/api/Availability/service/${serviceId}`;
+    const effWindow = windowDays && windowDays > 0 ? windowDays : BOOKING_WINDOW_DAYS;
     const minDate = useMemo(() => startOfDay(new Date()), []);
     const maxDate = useMemo(() => {
         const d = new Date(minDate);
-        d.setDate(d.getDate() + BOOKING_WINDOW_DAYS - 1);
+        d.setDate(d.getDate() + effWindow - 1);
         return d;
-    }, [minDate]);
+    }, [minDate, effWindow]);
 
     const defaultDate = useMemo(() => {
         const tomorrow = new Date(minDate);
@@ -68,6 +93,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
     const [error, setError] = useState<string | null>(null);
     // Nº de huecos libres por día (ymd → count) para colorear el calendario por ocupación.
     const [availByDate, setAvailByDate] = useState<Record<string, number>>({});
+    const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
 
     const dayShort = (d: Date) =>
         d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -92,7 +118,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
         setError(null);
         try {
             const token = getAuthToken();
-            const url = `${API_CONFIG.baseUrl}/api/Availability/service/${serviceId}/slots?date=${toYmd(date)}`;
+            const url = `${availBase}/slots?date=${toYmd(date)}`;
             const res = await fetch(url, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
@@ -115,7 +141,17 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
         } finally {
             setLoading(false);
         }
-    }, [serviceId]);
+    }, [availBase]);
+
+    useEffect(() => {
+        setPeriodFilter('all');
+    }, [selectedDate]);
+
+    useEffect(() => {
+        if (selectedDate > maxDate) {
+            setSelectedDate(defaultDate <= maxDate ? defaultDate : minDate);
+        }
+    }, [maxDate, selectedDate, defaultDate, minDate]);
 
     useEffect(() => {
         fetchSlots(selectedDate);
@@ -127,7 +163,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
         (async () => {
             try {
                 const token = getAuthToken();
-                const url = `${API_CONFIG.baseUrl}/api/Availability/service/${serviceId}/summary?from=${toYmd(minDate)}&days=${BOOKING_WINDOW_DAYS}`;
+                const url = `${availBase}/summary?from=${toYmd(minDate)}&days=${effWindow}`;
                 const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
                 if (!res.ok) return;
                 const data: Array<{ Date?: string; date?: string; FreeSlots?: number; freeSlots?: number }> = await res.json();
@@ -143,7 +179,7 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
             }
         })();
         return () => { cancelled = true; };
-    }, [serviceId, minDate]);
+    }, [availBase, minDate, effWindow]);
 
     // Color en cada celda del día (no en el contenedor del calendario).
     const AvailabilityDayButton = useMemo(() => {
@@ -174,7 +210,8 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                     type="button"
                     {...props}
                     className={cn(
-                        'flex h-full w-full items-center justify-center rounded-lg text-sm font-semibold transition-all',
+                        'flex h-full w-full items-center justify-center rounded-md font-semibold transition-all',
+                        embedded ? 'text-[11px]' : 'rounded-lg text-sm',
                         selected && 'bg-brand text-white shadow-sm ring-2 ring-brand/30',
                         !selected && tint,
                         !selected && tint && 'hover:brightness-[0.96] active:scale-[0.97]',
@@ -189,27 +226,75 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
             );
         };
         return Btn;
-    }, [availByDate]);
+    }, [availByDate, embedded]);
 
     const handleDateSelect = (date: Date | undefined) => {
         if (!date || isDateDisabled(date)) return;
         setSelectedDate(startOfDay(date));
-        onSelect(null);
+        if (!previewMode) onSelect(null);
     };
 
+    const isFramed = !!embedded;
+    const gridClass = embedded
+        ? 'md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]'
+        : 'grid-cols-1 lg:grid-cols-2';
+
+    const calendarColClass = cn(
+        'flex flex-col',
+        embedded
+            ? 'max-md:border-b max-md:border-[#f0f0f0] max-md:px-4 max-md:py-3.5 md:border-r md:border-[#f0f0f0]/70 md:px-3 md:py-2.5'
+            : 'max-lg:border-b max-lg:border-[#f0f0f0] max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-[#f0f0f0]/70 lg:p-3 lg:py-3',
+    );
+
+    const slotsColClass = cn(
+        'flex min-h-0 flex-col',
+        embedded
+            ? 'max-md:p-4 max-md:pt-3 md:justify-center md:px-3 md:py-2.5'
+            : 'max-lg:p-4 max-lg:pt-3 lg:justify-center lg:p-3 lg:pl-4',
+    );
+
+    const navBtnClass = cn(
+        'inline-flex items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
+        embedded ? 'size-7' : 'size-9',
+    );
+
     return (
-        <div className={cn('max-md:shadow-sm', SD_CHECKOUT_DESKTOP_CARD_CLASS)}>
+        <div className={cn(!embedded && 'max-lg:shadow-sm', !embedded && SD_CHECKOUT_DESKTOP_CARD_CLASS)}>
             {sectionTitle ? (
-                <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
-                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c] lg:text-[15px]">
+                <div
+                    className={
+                        isFramed ? SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS : SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS
+                    }
+                >
+                    <h3
+                        className={cn(
+                            'font-semibold tracking-[-0.01em] text-[#1c1c1c]',
+                            embedded ? 'text-sm' : 'text-sm lg:text-[15px]',
+                        )}
+                    >
                         {sectionTitle}
                     </h3>
+                    {embedded ? (
+                        <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                            {previewMode
+                                ? `Disponibilidad del experto en los próximos ${effWindow} días.`
+                                : 'Elige un día y la franja horaria.'}
+                        </p>
+                    ) : previewMode ? (
+                        <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                            Consulta qué días y franjas (mañana o tarde) tendrá el vendedor disponibles.
+                        </p>
+                    ) : (
+                        <p className="mt-0.5 text-xs text-[#6a6a6a]">
+                            Elige día, franja y hora de la cita.
+                        </p>
+                    )}
                 </div>
             ) : null}
 
-            <div className="grid max-md:overflow-hidden md:grid-cols-2 md:items-stretch lg:min-h-0">
+            <div className={cn('grid lg:items-stretch lg:min-h-0', gridClass)}>
             {/* Calendario */}
-            <div className="flex flex-col max-md:border-b max-md:border-[#f0f0f0] max-md:px-4 max-md:py-3.5 md:border-r md:border-[#f0f0f0] md:p-3 md:py-3">
+            <div className={calendarColClass}>
                 <Calendar
                     mode="single"
                     locale={es}
@@ -220,13 +305,21 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                     showOutsideDays={false}
                     components={{ DayButton: AvailabilityDayButton }}
                     classNames={{
-                        button_previous:
-                            'inline-flex size-9 items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
-                        button_next:
-                            'inline-flex size-9 items-center justify-center rounded-lg text-[#6a6a6a] transition-colors hover:bg-[#f3f4f6] hover:text-[#1c1c1c]',
+                        button_previous: navBtnClass,
+                        button_next: navBtnClass,
+                        ...(embedded
+                            ? {
+                                  month_caption:
+                                      'text-xs font-semibold capitalize text-[#1c1c1c]',
+                                  weekday:
+                                      'text-[9px] font-medium uppercase tracking-wide text-[#9ca3af]',
+                                  week: 'mt-0.5 flex w-full gap-px',
+                              }
+                            : {}),
                     }}
-                    className="w-full p-0"
+                    className={cn('w-full p-0', embedded && '[--cell-size:1.875rem]')}
                 />
+                {!embedded ? (
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-2.5 text-[10px] text-[#6a6a6a]">
                     <span className="inline-flex items-center gap-1.5">
                         <span className="h-2.5 w-2.5 rounded-sm bg-emerald-200" aria-hidden />
@@ -241,19 +334,40 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                         Completo
                     </span>
                 </div>
+                ) : isFramed ? (
+                <div className="mt-1.5 flex items-center justify-center gap-2 text-[9px] text-[#9ca3af]">
+                    <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-sm bg-emerald-200" aria-hidden />
+                        Libre
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-sm bg-amber-200" aria-hidden />
+                        Pocos
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-sm bg-slate-200" aria-hidden />
+                        Lleno
+                    </span>
+                </div>
+                ) : null}
             </div>
 
             {/* Huecos horarios */}
-            <div className="flex min-h-0 flex-col justify-center max-md:p-4 max-md:pt-3 md:p-3 md:pl-4">
-                <p className="mb-2 text-sm font-medium capitalize text-[#1c1c1c]">
+            <div className={slotsColClass}>
+                <p
+                    className={cn(
+                        'mb-2 font-medium capitalize leading-snug text-[#1c1c1c]',
+                        embedded ? 'text-[11px] [text-wrap:balance]' : 'text-sm',
+                    )}
+                >
                     {dayLong(selectedDate)}
                 </p>
 
-                <div className="flex-1">
+                <div className={cn('flex flex-1 flex-col justify-center', embedded && 'min-h-[8.5rem]')}>
                     {loading ? (
                         <div className="flex min-h-[72px] items-center justify-center gap-2 text-xs text-[#9ca3af]">
                             <Loader2 className="h-4 w-4 animate-spin text-brand" />
-                            <span>Cargando huecos…</span>
+                            <span>Cargando…</span>
                         </div>
                     ) : error ? (
                         <div className="flex min-h-[72px] items-center justify-center px-2">
@@ -262,31 +376,20 @@ const SlotPicker: React.FC<Props> = ({ serviceId, selected, onSelect, sectionTit
                     ) : slots.length === 0 ? (
                         <div className="flex min-h-[72px] flex-col items-center justify-center gap-0.5 px-2 text-center">
                             <p className="text-xs font-medium text-[#555]">Sin huecos este día</p>
-                            <p className="text-[11px] text-[#9ca3af]">Elige otra fecha</p>
+                            <p className="text-[11px] text-[#9ca3af]">
+                                {previewMode ? 'Prueba otro día dentro del plazo' : 'Elige otra fecha'}
+                            </p>
                         </div>
                     ) : (
-                        <div className="flex flex-wrap gap-2" role="listbox" aria-label="Horarios disponibles">
-                            {slots.map((s) => {
-                                const active = selected?.startUtc === s.startUtc;
-                                return (
-                                    <button
-                                        key={s.startUtc}
-                                        type="button"
-                                        role="option"
-                                        aria-selected={active}
-                                        onClick={() => onSelect(active ? null : s)}
-                                        className={cn(
-                                            'inline-flex h-9 min-w-[3.75rem] items-center justify-center rounded-lg border px-2.5 text-[13px] font-medium tabular-nums transition-colors sm:min-w-[4.25rem] sm:px-3',
-                                            active
-                                                ? 'border-brand bg-brand text-white shadow-sm'
-                                                : 'border-[#e5e7eb] bg-white text-[#1c1c1c] hover:border-brand/45 hover:bg-brand/[0.04] active:scale-[0.98]',
-                                        )}
-                                    >
-                                        {s.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        <SlotPeriodPanel
+                            slots={slots}
+                            selected={selected}
+                            previewMode={previewMode}
+                            compact={embedded}
+                            periodFilter={periodFilter}
+                            onPeriodFilterChange={setPeriodFilter}
+                            onSelectSlot={onSelect}
+                        />
                     )}
                 </div>
             </div>
