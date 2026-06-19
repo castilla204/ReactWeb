@@ -63,10 +63,9 @@ const DEFAULT_WORK_RADIUS_KM = 100;
 const MAX_WORK_RADIUS_KM = 200;
 const MIN_MOBILE_RADIUS_KM = 5;
 
-const CIRCLE_FILL_COLOR = '#0066CC';
-const CIRCLE_FILL_OPACITY = 0.12;
-const CIRCLE_LINE_COLOR = 'rgba(0, 102, 204, 0.55)';
+const CIRCLE_LINE_COLOR = 'rgba(0, 102, 204, 0.62)';
 const CIRCLE_LINE_WIDTH = 2;
+const CIRCLE_LINE_DASH: [number, number] = [3, 3];
 
 function readWorkRadiusKm(profile: unknown): number {
     const p = profile as { workRadiusKm?: unknown; WorkRadiusKm?: unknown } | null | undefined;
@@ -903,8 +902,15 @@ export function ProfileEditForm({
                         >
                             {coverageGeoJSON && (
                                 <Source id="coverage" type="geojson" data={coverageGeoJSON}>
-                                    <Layer id="coverage-fill" type="fill" paint={{ 'fill-color': CIRCLE_FILL_COLOR, 'fill-opacity': CIRCLE_FILL_OPACITY }} />
-                                    <Layer id="coverage-line" type="line" paint={{ 'line-color': CIRCLE_LINE_COLOR, 'line-width': CIRCLE_LINE_WIDTH }} />
+                                    <Layer
+                                        id="coverage-line"
+                                        type="line"
+                                        paint={{
+                                            'line-color': CIRCLE_LINE_COLOR,
+                                            'line-width': CIRCLE_LINE_WIDTH,
+                                            'line-dasharray': CIRCLE_LINE_DASH,
+                                        }}
+                                    />
                                 </Source>
                             )}
                             <Marker longitude={selectedLocation.lng} latitude={selectedLocation.lat} draggable onDragEnd={handleMarkerDragEnd} anchor="center">

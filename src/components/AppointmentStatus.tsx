@@ -95,8 +95,11 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
   const actionButtons = useMemo(() => {
     const buttons = [];
 
+    // 🧟 LEGACY (2026-06-19): flujo antiguo proponer/aceptar/rechazar RETIRADO (endpoints /api/Appointment/propose|confirm|reject en #if false).
+    // Los estados que activaban estos botones (awaiting_appointment / appointment_proposed) ya NO los produce el flujo Calendly,
+    // así que nunca se renderizaban; se desactivan con `false &&` para dejar el flujo antiguo 100% inerte también en frontend.
     // Botón para proponer cita (solo clientes) - NO mostrar si ya hay sección específica para rechazada
-    if (userRole === 'client' && ['awaiting_appointment', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
+    if (false && userRole === 'client' && ['awaiting_appointment', 'appointment_cancelled_by_client'].includes(appointment.status) && !isLocked) {
       buttons.push(
         <button
           key="propose"
@@ -108,8 +111,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para confirmar (solo expertos)
-    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
+    // 🧟 LEGACY (2026-06-19): confirmar propuesta — flujo retirado (#if false), estado appointment_proposed ya no se produce. Desactivado.
+    if (false && userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
       buttons.push(
         <button
           key="confirm"
@@ -126,8 +129,8 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       );
     }
 
-    // Botón para rechazar (solo expertos)
-    if (userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
+    // 🧟 LEGACY (2026-06-19): rechazar propuesta — flujo retirado (#if false), estado appointment_proposed ya no se produce. Desactivado.
+    if (false && userRole === 'expert' && appointment.status === 'appointment_proposed' && !isLocked) {
       buttons.push(
         <button
           key="reject"
@@ -351,8 +354,10 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
       )}
 
 
-      {/* Mensaje específico para cita rechazada por el experto - VISTA CLIENTE */}
-      {appointment.status === 'appointment_rejected' && userRole === 'client' && (
+      {/* 🧟 LEGACY (2026-06-19): bloque "cita rechazada por el experto" + botón "Proponer Nueva Cita" del flujo
+          antiguo de propuesta (retirado, endpoints en #if false). El estado appointment_rejected ya no se produce
+          en el flujo Calendly; se desactiva con `false &&` (nunca se renderizaba). */}
+      {false && appointment.status === 'appointment_rejected' && userRole === 'client' && (
         <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <div className="flex items-start space-x-3">
             <XCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />

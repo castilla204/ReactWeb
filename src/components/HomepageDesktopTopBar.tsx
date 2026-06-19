@@ -235,8 +235,33 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     </a>
   );
 
-  const leftControl = onBack ? (
-    isCheckout ? (
+  const checkoutLogoLink = (
+    <a
+      href="/"
+      onClick={(e) => {
+        e.preventDefault();
+        navigate('/');
+      }}
+      className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-0.5"
+      aria-label="Inspecciono — inicio"
+    >
+      <img
+        src={erizoImg}
+        alt=""
+        className="h-8 w-8 -scale-x-100 shrink-0 object-contain sm:h-9 sm:w-9"
+        style={{ imageRendering: '-webkit-optimize-contrast' }}
+      />
+      <span
+        className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
+        style={{ fontFamily: HP_FONT }}
+      >
+        Inspecciono<span className="text-[#F59E0B]">.</span>
+      </span>
+    </a>
+  );
+
+  const leftControl = isCheckout ? (
+    onBack ? (
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
@@ -246,28 +271,14 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         >
           <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
         </button>
-        <a
-          href="/"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate('/');
-          }}
-          className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-0.5"
-          aria-label="Inspecciono — inicio"
-        >
-          <img
-            src={erizoImg}
-            alt=""
-            className="h-8 w-8 -scale-x-100 shrink-0 object-contain sm:h-9 sm:w-9"
-            style={{ imageRendering: '-webkit-optimize-contrast' }}
-          />
-          <span className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[#2563EB]">
-            Inspecciono<span className="text-[#F59E0B]">.</span>
-          </span>
-        </a>
+        {checkoutLogoLink}
         {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
       </div>
-    ) : isMap ? (
+    ) : (
+      checkoutLogoLink
+    )
+  ) : onBack ? (
+    isMap ? (
       <button
         type="button"
         onClick={onBack}

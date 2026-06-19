@@ -1,50 +1,72 @@
-import { Check } from 'lucide-react';
-import { CheckoutSellerCoordinationFields } from './CheckoutSellerCoordinationFields';
-import { HP_FONT, SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS, SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS } from '../../constants/homepageTypography';
+import { Check, Info, ShieldCheck } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { CheckoutSellerCoordinationFields, CheckoutSelfCoordinationInfoNote, CheckoutSellerEnlaceInfoNote, COORD_OPTION_SELF_DESC, COORD_OPTION_SELF_TITLE, COORD_OPTION_SELLER_OFFER, COORD_OPTION_SELLER_TITLE } from './CheckoutSellerCoordinationFields';
+import { CheckoutEmbeddedStepHeader } from './CheckoutEmbeddedStepHeader';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS } from '../../constants/homepageTypography';
+import { HP_FONT } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
-import coordSelfImg from '../../media/coord-self.jpg';
-import coordSellerImg from '../../media/coord-seller.jpg';
+import coordSellerImg from '../../media/la1.png';
+import coordSelfImg from '../../media/la2.png';
 
-export type CoordinationView = 'choose' | 'seller' | 'seller-plazos' | 'seller-contact';
+export type CoordinationView = 'choose' | 'seller' | 'seller-plazos' | 'seller-map' | 'seller-contact';
 export type CoordinationSelection = 'self' | 'seller';
 
 type Theme = 'blue' | 'amber';
 
-// Tinte suave alineado con el degradado de marca del checkout (ubicación / títulos).
-// Deja ver la foto y mantiene legibilidad con la viñeta inferior.
-const THEME_TINT: Record<Theme, string> = {
-    blue: [
-        'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%)',
-        'linear-gradient(105deg, rgba(0,38,84,0.72) 0%, rgba(0,78,160,0.56) 50%, rgba(37,99,235,0.34) 100%)',
-    ].join(', '),
-    amber: [
-        'linear-gradient(180deg, rgba(255,255,255,0.16) 0%, transparent 38%)',
-        'linear-gradient(105deg, rgba(251,191,36,0.34) 0%, rgba(245,158,11,0.5) 48%, rgba(180,83,9,0.62) 100%)',
-    ].join(', '),
-};
-
-const FOOTER_TINT: Record<Theme, string> = {
-    blue: 'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,51,102,0.42) 100%)',
-    amber: 'linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(146,64,14,0.4) 100%)',
+// Color de fondo del banner, igualado al fondo de cada ilustración 3D (la1/la2).
+// Sirve de fallback bajo la imagen a sangre (object-cover) — sin costuras visibles.
+const PANEL_BG: Record<Theme, string> = {
+    amber: '#efdcb6',
+    blue: '#c4ddf4',
 };
 
 interface OptionCardProps {
-    image: string;
     theme: Theme;
+    illustration: ReactNode;
     title: string;
-    description: string;
+    description: ReactNode;
     recommended?: boolean;
     selected: boolean;
     dimmed: boolean;
     disabled?: boolean;
     compact?: boolean;
-    embedded?: boolean;
+    infoLabel?: string;
+    infoContent?: ReactNode;
+    /** Texto de oferta destacado en el cuerpo (p. ej. «Cancelación gratis»). */
+    offerLabel?: string;
     onSelect: () => void;
 }
 
+function OptionCardInfoTrigger({ label, children }: { label: string; children: ReactNode }) {
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={label}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="grid h-6 w-6 place-items-center rounded-full bg-white/70 text-[#475569] ring-1 ring-black/5 backdrop-blur-sm transition-colors hover:bg-white hover:text-[#1c1c1c]"
+                >
+                    <Info className="h-3.5 w-3.5" aria-hidden />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent
+                side="bottom"
+                align="end"
+                className="max-w-[18rem] border-[#e8ecf1] bg-white p-3 shadow-md"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {children}
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 function OptionCard({
-    image,
     theme,
+    illustration,
     title,
     description,
     recommended,
@@ -52,94 +74,107 @@ function OptionCard({
     dimmed,
     disabled,
     compact,
-    embedded,
+    infoLabel,
+    infoContent,
+    offerLabel,
     onSelect,
 }: OptionCardProps) {
     return (
-        <button
-            type="button"
+        <div
             role="radio"
             aria-checked={selected}
             aria-disabled={disabled}
-            disabled={disabled}
+            tabIndex={disabled ? -1 : 0}
             onClick={disabled ? undefined : onSelect}
+            onKeyDown={(e) => {
+                if (disabled) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
             className={cn(
-                'group relative isolate flex flex-col justify-end overflow-hidden text-left',
-                compact ? 'aspect-[16/10] rounded-xl lg:aspect-[2/1]' : 'aspect-[5/3] rounded-xl sm:aspect-[3/2] sm:rounded-2xl',
-                embedded
-                    ? 'border-0 shadow-none'
-                    : 'border border-[#ebebeb]/70 shadow-[0_1px_6px_rgba(15,23,42,0.05)]',
-                'transition-[box-shadow,opacity,transform] duration-200',
+                'group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border bg-white text-left',
+                'transition-[border-color,box-shadow,opacity,transform] duration-200 ease-out',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2',
                 selected
-                    ? embedded
-                        ? 'ring-2 ring-brand/50 ring-offset-2 ring-offset-white'
-                        : 'border-brand/40 ring-2 ring-brand/20 shadow-[0_4px_16px_rgba(0,102,204,0.1)]'
-                    : embedded
-                      ? 'opacity-90 hover:opacity-100'
-                      : 'hover:border-[#d1d5db] hover:shadow-[0_4px_12px_rgba(15,23,42,0.07)]',
+                    ? 'border-brand shadow-[0_8px_28px_-8px_rgba(0,102,204,0.35)]'
+                    : 'border-[#e7e9ee] shadow-[0_1px_3px_rgba(15,23,42,0.05)] hover:-translate-y-0.5 hover:border-[#cdd5e0] hover:shadow-[0_10px_26px_-12px_rgba(15,23,42,0.22)]',
                 disabled
-                    ? 'pointer-events-none cursor-not-allowed opacity-40 grayscale'
-                    : dimmed ? 'opacity-55' : 'opacity-100',
+                    ? 'pointer-events-none cursor-not-allowed opacity-45 grayscale'
+                    : dimmed
+                      ? 'opacity-90'
+                      : 'opacity-100',
             )}
         >
-            <img
-                src={image}
-                alt=""
-                aria-hidden
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                className="absolute inset-0 -z-30 h-full w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-            <div aria-hidden className="absolute inset-0 -z-20" style={{ background: THEME_TINT[theme] }} />
+            {/* Banner con ilustración */}
             <div
-                aria-hidden
-                className="absolute inset-0 -z-10 bg-gradient-to-t from-black/40 via-transparent to-transparent"
-            />
-
-            {recommended ? (
-                <span
-                    className="absolute left-3 top-2.5 z-10 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/35 backdrop-blur-sm"
-                    style={{ fontFamily: HP_FONT }}
-                >
-                    Recomendado
-                </span>
-            ) : null}
-
-            <span
-                aria-hidden
-                className={cn(
-                    'absolute right-3 top-2.5 z-10 grid h-6 w-6 place-items-center rounded-full transition-all duration-200',
-                    selected
-                        ? 'bg-white text-brand shadow-md'
-                        : 'bg-black/20 ring-1 ring-white/50 backdrop-blur-sm',
-                )}
+                className={cn('relative w-full overflow-hidden', compact ? 'aspect-[16/9]' : 'aspect-[16/10]')}
+                style={{ background: PANEL_BG[theme] }}
             >
-                <Check className={cn('h-3.5 w-3.5 stroke-[2.75]', selected ? 'opacity-100' : 'opacity-0')} />
-            </span>
+                {illustration}
 
-            <div
-                className={cn(
-                    'relative z-[1] w-full border-t border-white/20',
-                    compact ? 'px-3.5 py-2' : 'px-3.5 py-2',
-                )}
-                style={{ background: FOOTER_TINT[theme] }}
-            >
+                {recommended ? (
+                    <span
+                        className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.04em] text-white shadow-sm"
+                        style={{ fontFamily: HP_FONT }}
+                    >
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/90" />
+                        Recomendado
+                    </span>
+                ) : null}
+
+                <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
+                    {infoContent && infoLabel ? (
+                        <OptionCardInfoTrigger label={infoLabel}>{infoContent}</OptionCardInfoTrigger>
+                    ) : null}
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'grid h-6 w-6 shrink-0 place-items-center rounded-full transition-all duration-200',
+                            selected
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'border-2 border-white bg-white/70 text-transparent ring-1 ring-black/5 backdrop-blur-sm',
+                        )}
+                    >
+                        <Check className={cn('h-3.5 w-3.5 stroke-[3]', selected ? 'opacity-100' : 'opacity-0')} />
+                    </span>
+                </div>
+            </div>
+
+            {/* Cuerpo */}
+            <div className={cn('flex flex-1 flex-col', compact ? 'px-3.5 py-3' : 'px-4 py-3.5')}>
                 <h3
                     className={cn(
-                        'font-bold leading-snug tracking-[-0.015em] text-white',
+                        'font-bold leading-snug tracking-[-0.015em] text-[#14161a]',
                         compact ? 'text-[14px]' : 'text-[15px]',
                     )}
                     style={{ fontFamily: HP_FONT }}
                 >
                     {title}
                 </h3>
-                <p className={cn('leading-snug text-white/90', compact ? 'mt-0.5 text-[11px]' : 'mt-0.5 text-[12px]')}>
+                <p
+                    className={cn(
+                        'mt-1.5 leading-[1.55] text-[#565d6b]',
+                        compact ? 'text-[12px]' : 'text-[13px]',
+                    )}
+                >
                     {description}
                 </p>
+
+                {offerLabel ? (
+                    <span
+                        className={cn(
+                            'mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-600/15',
+                            compact ? 'px-2 py-0.5 text-[11px]' : 'mt-3 px-2.5 py-1 text-[12px]',
+                        )}
+                    >
+                        <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+                        {offerLabel}
+                    </span>
+                ) : null}
             </div>
-        </button>
+        </div>
     );
 }
 
@@ -161,71 +196,283 @@ export interface CheckoutCoordinationStepProps {
     headingClassName?: string;
 }
 
+interface MobileSplitCardProps {
+    image: string;
+    theme: Theme;
+    title: string;
+    description: ReactNode;
+    recommended?: boolean;
+    selected: boolean;
+    dimmed: boolean;
+    disabled?: boolean;
+    infoLabel?: string;
+    infoContent?: ReactNode;
+    offerLabel?: string;
+    onSelect: () => void;
+}
+
+const IMG_TILE_BG: Record<Theme, string> = {
+    amber: '#ecd8b8',
+    blue: '#cfe3f6',
+};
+
+/** Móvil: panel alto al 50% — tarjeta blanca, ilustración apaisada entera + texto oscuro. */
+function MobileSplitCard({
+    image,
+    theme,
+    title,
+    description,
+    recommended,
+    selected,
+    dimmed,
+    disabled,
+    infoLabel,
+    infoContent,
+    offerLabel,
+    onSelect,
+}: MobileSplitCardProps) {
+    return (
+        <div
+            role="radio"
+            aria-checked={selected}
+            aria-disabled={disabled}
+            tabIndex={disabled ? -1 : 0}
+            onClick={disabled ? undefined : onSelect}
+            onKeyDown={(e) => {
+                if (disabled) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
+            className={cn(
+                'group relative flex h-full cursor-pointer flex-col justify-center overflow-hidden rounded-2xl border bg-white px-3 py-3 text-left',
+                'transition-[border-color,box-shadow,opacity] duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2',
+                selected
+                    ? 'border-brand shadow-[0_8px_28px_-10px_rgba(0,102,204,0.35)]'
+                    : 'border-[#e7e9ee] shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
+                disabled ? 'pointer-events-none opacity-45 grayscale' : dimmed ? 'opacity-90' : 'opacity-100',
+            )}
+        >
+            <div className="relative w-full overflow-hidden rounded-xl" style={{ background: IMG_TILE_BG[theme] }}>
+                <img
+                    src={image}
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    decoding="async"
+                    draggable={false}
+                    className="block aspect-[16/10] w-full select-none object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                />
+
+                {recommended ? (
+                    <span
+                        className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-white shadow-sm"
+                        style={{ fontFamily: HP_FONT }}
+                    >
+                        <span className="h-1 w-1 rounded-full bg-white/90" />
+                        Recomendado
+                    </span>
+                ) : null}
+
+                <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5">
+                    {infoContent && infoLabel ? (
+                        <OptionCardInfoTrigger label={infoLabel}>{infoContent}</OptionCardInfoTrigger>
+                    ) : null}
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'grid h-6 w-6 place-items-center rounded-full transition-all duration-200',
+                            selected
+                                ? 'bg-brand text-white shadow-sm'
+                                : 'border-2 border-white bg-white/70 text-transparent ring-1 ring-black/5 backdrop-blur-sm',
+                        )}
+                    >
+                        <Check className={cn('h-3.5 w-3.5 stroke-[3]', selected ? 'opacity-100' : 'opacity-0')} />
+                    </span>
+                </div>
+            </div>
+
+            <h3
+                className="mt-3 text-[15px] font-bold leading-snug tracking-[-0.015em] text-[#14161a]"
+                style={{ fontFamily: HP_FONT }}
+            >
+                {title}
+            </h3>
+            <p className="mt-1 text-[12px] leading-[1.5] text-[#565d6b]">{description}</p>
+            {offerLabel ? (
+                <span className="mt-2.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-600/15">
+                    <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+                    {offerLabel}
+                </span>
+            ) : null}
+        </div>
+    );
+}
+
 function CoordinationOptionCards({
     selection,
     compact,
-    embedded,
     sellerOptionDisabled,
     onSelect,
 }: {
     selection: CoordinationSelection | null;
     compact?: boolean;
-    embedded?: boolean;
     sellerOptionDisabled?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
+    const sellerDescription = (
+        <>
+            Compraste por internet. El vendedor recibe un{' '}
+            <span className="font-bold text-inherit">enlace</span> y elige la cita.
+        </>
+    );
+    const sellerInfoLabel = 'Cómo funciona el enlace al vendedor';
+    const selfInfoLabel = `Cuándo elegir ${COORD_OPTION_SELF_TITLE}`;
+    const sellerSelected = selection === 'seller';
+    const selfSelected = selection === 'self';
+
+    const sellerImg = (
+        <img
+            src={coordSellerImg}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="absolute inset-0 h-full w-full select-none object-cover"
+        />
+    );
+    const selfImg = (
+        <img
+            src={coordSelfImg}
+            alt=""
+            aria-hidden
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="absolute inset-0 h-full w-full select-none object-cover"
+        />
+    );
+
+    const disabledNote = sellerOptionDisabled ? (
+        <p role="note" className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]">
+            Este técnico no tiene disponibilidad en plazo. Elige «{COORD_OPTION_SELF_TITLE}» o prueba más tarde.
+        </p>
+    ) : null;
+
+    // Checkout desktop integrado (embedded): tarjetas compactas en 2 columnas.
+    if (compact) {
+        return (
+            <>
+                <div
+                    role="radiogroup"
+                    aria-label="¿Quién fija la cita?"
+                    className="coordination-step-from-left grid grid-cols-2 items-stretch gap-3"
+                >
+                    <OptionCard
+                        theme="amber"
+                        illustration={sellerImg}
+                        title={COORD_OPTION_SELLER_TITLE}
+                        description={sellerDescription}
+                        infoLabel={sellerInfoLabel}
+                        infoContent={<CheckoutSellerEnlaceInfoNote />}
+                        offerLabel={COORD_OPTION_SELLER_OFFER}
+                        recommended
+                        compact
+                        disabled={sellerOptionDisabled}
+                        selected={sellerSelected}
+                        dimmed={selfSelected}
+                        onSelect={() => onSelect('seller')}
+                    />
+                    <OptionCard
+                        theme="blue"
+                        illustration={selfImg}
+                        title={COORD_OPTION_SELF_TITLE}
+                        description={COORD_OPTION_SELF_DESC}
+                        infoLabel={selfInfoLabel}
+                        infoContent={<CheckoutSelfCoordinationInfoNote />}
+                        compact
+                        selected={selfSelected}
+                        dimmed={sellerSelected}
+                        onSelect={() => onSelect('self')}
+                    />
+                </div>
+                {disabledNote}
+            </>
+        );
+    }
+
     return (
         <>
+            {/* Móvil: split a sangre 50/50, alto grande (imagen a sangre + texto sobre degradado). */}
             <div
                 role="radiogroup"
-                aria-label="¿Cómo se fija la cita?"
-                className={cn(
-                    'coordination-step-from-left grid gap-2.5',
-                    compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2',
-                )}
+                aria-label="¿Quién fija la cita?"
+                className="coordination-step-from-left -mx-5 grid h-[56svh] min-h-[400px] grid-cols-2 gap-2 sm:hidden"
             >
-                <OptionCard
-                    image={coordSelfImg}
-                    theme="blue"
-                    title="Yo me encargo"
-                    description={
-                        embedded
-                            ? 'Tú acuerdas con el vendedor y reservas aquí día, hora y dirección de la inspección.'
-                            : 'Si ya hablas con el vendedor, eliges tú fecha, hora y dirección.'
-                    }
-                    compact={compact}
-                    embedded={embedded}
-                    selected={selection === 'self'}
-                    dimmed={selection === 'seller'}
-                    onSelect={() => onSelect('self')}
-                />
-                <OptionCard
+                <MobileSplitCard
                     image={coordSellerImg}
                     theme="amber"
-                    title="Coordínalo Inspecciono"
-                    description={
-                        embedded
-                            ? 'Compraste en un portal o anuncio: contactamos al vendedor y le enviamos un enlace para que elija cita.'
-                            : 'Si compraste en un portal o anuncio, contactamos al vendedor por ti.'
-                    }
+                    title={COORD_OPTION_SELLER_TITLE}
+                    description={sellerDescription}
+                    infoLabel={sellerInfoLabel}
+                    infoContent={<CheckoutSellerEnlaceInfoNote />}
+                    offerLabel={COORD_OPTION_SELLER_OFFER}
                     recommended
-                    compact={compact}
-                    embedded={embedded}
                     disabled={sellerOptionDisabled}
-                    selected={selection === 'seller'}
-                    dimmed={selection === 'self'}
+                    selected={sellerSelected}
+                    dimmed={selfSelected}
                     onSelect={() => onSelect('seller')}
                 />
+                <MobileSplitCard
+                    image={coordSelfImg}
+                    theme="blue"
+                    title={COORD_OPTION_SELF_TITLE}
+                    description={COORD_OPTION_SELF_DESC}
+                    infoLabel={selfInfoLabel}
+                    infoContent={<CheckoutSelfCoordinationInfoNote />}
+                    selected={selfSelected}
+                    dimmed={sellerSelected}
+                    onSelect={() => onSelect('self')}
+                />
             </div>
-            {sellerOptionDisabled ? (
-                <p
-                    role="note"
-                    className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]"
-                >
-                    Este técnico no tiene disponibilidad en plazo. Elige «Yo me encargo» o prueba más
-                    tarde.
-                </p>
-            ) : null}
+
+            {/* Tablet/desktop: tarjetas verticales (imagen + texto debajo). */}
+            <div
+                role="radiogroup"
+                aria-label="¿Quién fija la cita?"
+                className="coordination-step-from-left hidden grid-cols-2 items-stretch gap-3 sm:grid"
+            >
+                <OptionCard
+                    theme="amber"
+                    illustration={sellerImg}
+                    title={COORD_OPTION_SELLER_TITLE}
+                    description={sellerDescription}
+                    infoLabel={sellerInfoLabel}
+                    infoContent={<CheckoutSellerEnlaceInfoNote />}
+                    offerLabel={COORD_OPTION_SELLER_OFFER}
+                    recommended
+                    disabled={sellerOptionDisabled}
+                    selected={sellerSelected}
+                    dimmed={selfSelected}
+                    onSelect={() => onSelect('seller')}
+                />
+                <OptionCard
+                    theme="blue"
+                    illustration={selfImg}
+                    title={COORD_OPTION_SELF_TITLE}
+                    description={COORD_OPTION_SELF_DESC}
+                    infoLabel={selfInfoLabel}
+                    infoContent={<CheckoutSelfCoordinationInfoNote />}
+                    selected={selfSelected}
+                    dimmed={sellerSelected}
+                    onSelect={() => onSelect('self')}
+                />
+            </div>
+
+            {disabledNote}
         </>
     );
 }
@@ -258,49 +505,28 @@ export function CheckoutCoordinationStep({
     if (embedded) {
         return (
             <>
-                <div className={SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS}>
-                    <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                        ¿Cómo se fija la cita?
-                    </h3>
-                    <p className={SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS}>
-                        Hay que acordar con el vendedor cuándo y dónde inspeccionar el coche. Elige si
-                        lo gestionas tú —porque ya habláis— o si prefieres que Inspecciono le contacte
-                        y le envíe un enlace para reservar.
-                    </p>
-                </div>
-                <div className="px-5 pb-4 pt-2">
+                <CheckoutEmbeddedStepHeader
+                    step={1}
+                    title="¿Quién fija la cita?"
+                    description={
+                        !showSellerFields
+                            ? '¿Compraste por internet o ya hablas con el vendedor?'
+                            : (
+                                  <>
+                                      Indica teléfono o email del vendedor para enviarle el{' '}
+                                      <span className="font-bold text-[#1c1c1c]">enlace</span> de reserva.
+                                  </>
+                              )
+                    }
+                />
+                <div className={cn(SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS, 'pb-3 pt-2.5')}>
                     <CoordinationOptionCards
                         selection={effectiveSelection}
                         compact
-                        embedded
                         sellerOptionDisabled={sellerOptionDisabled}
                         onSelect={onSelect}
                     />
                 </div>
-                {showSellerFields ? (
-                    <div key="seller" className="coordination-step-from-right px-5 pb-2 pt-1">
-                        <div className={cn(SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS, 'px-0 pt-2')}>
-                            <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                                Plazos para el vendedor
-                            </h3>
-                            <p className={cn(SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS, 'max-w-none')}>
-                                Cuánto tiempo puede tardar el vendedor en reservar. El calendario de
-                                abajo muestra la disponibilidad del experto dentro de ese plazo.
-                            </p>
-                        </div>
-                        <div className="pt-3">
-                            <CheckoutSellerCoordinationFields
-                                variant="plazos"
-                                sellerPhone={sellerPhone}
-                                sellerEmail={sellerEmail}
-                                sellerListingUrl={sellerListingUrl}
-                                onSellerPhoneChange={onSellerPhoneChange}
-                                onSellerEmailChange={onSellerEmailChange}
-                                onSellerListingUrlChange={onSellerListingUrlChange}
-                            />
-                        </div>
-                    </div>
-                ) : null}
             </>
         );
     }
@@ -308,16 +534,21 @@ export function CheckoutCoordinationStep({
     const isSubStep = view === 'seller-plazos' || view === 'seller-contact';
     const title =
         view === 'choose'
-            ? '¿Cómo se fija la cita?'
+            ? '¿Quién fija la cita?'
             : view === 'seller-plazos'
               ? 'Plazos para el vendedor'
               : 'Datos del vendedor';
     const subtitle =
         view === 'choose'
-            ? 'Acuerda con el vendedor cuándo y dónde inspeccionar el coche. Elige la opción que encaje con tu compra.'
+            ? '¿Compraste por internet o ya hablas con el vendedor?'
             : view === 'seller-plazos'
               ? null
-              : 'Teléfono o email para enviarle el enlace de reserva. El anuncio es opcional.';
+              : (
+                  <>
+                      Teléfono o email para enviarle el <span className="font-bold text-[#1c1c1c]">enlace</span>{' '}
+                      de reserva. El anuncio es opcional.
+                  </>
+              );
 
     return (
         <div>

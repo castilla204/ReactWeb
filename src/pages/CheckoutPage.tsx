@@ -17,7 +17,7 @@ import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAsid
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
 import { CheckoutMobileStepper, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepper';
-import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
+import { CheckoutCoordinationStep, type CoordinationView } from '../components/checkout/CheckoutCoordinationStep';
 import { CheckoutSellerCoordinationFields } from '../components/checkout/CheckoutSellerCoordinationFields';
 import { readCheckoutCoordinationFromState, type CheckoutCoordinationPayload } from '../utils/checkoutCoordination';
 import { getAuthToken } from '../lib/auth';
@@ -32,6 +32,7 @@ import CheckoutLocationPicker, { CheckoutLocationData } from '../components/Chec
 import { normalizeDeliverableTypes } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
 import { readServiceReturnPath } from '../utils/servicePageNavigation';
 import { resolveCheckoutLocation, persistHireSearchLocation } from '../utils/hireSearchContext';
+import { buildCheckoutSummaryDisplay } from '../utils/checkoutSummary';
 import { resolveExpertWorkRadiusKm } from '../utils/workRadius';
 import { cn } from '../lib/utils';
 // Verificación de móvil/SMS: NO se exige al cliente para contratar (solo a expertos).
@@ -42,6 +43,7 @@ import {
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
+    SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_HEADER_CLASS,
     SD_CHECKOUT_GRID_CLASS,
     SD_CHECKOUT_INNER_MAX_CLASS,
@@ -51,9 +53,15 @@ import {
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
     SD_CHECKOUT_DESKTOP_CARD_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS,
+    SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS,
     SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS,
 } from '../constants/homepageTypography';
+
+const MOBILE_SELLER_PREVIEW_STEPS = [
+    { id: 1, label: 'Disponibilidad' },
+    { id: 2, label: 'Ubicación' },
+] as const;
 
 interface CheckoutPageProps {}
 
@@ -82,20 +90,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // 🤝 Coordinación con el vendedor. "self" = el cliente elige hueco ahora (flujo de siempre).
     // "seller" = el cliente NO elige hueco; el experto propondrá la cita tras coordinar con el vendedor.
     const [coordinationMode, setCoordinationMode] = useState<'self' | 'seller' | null>(null);
-    // Declarado arriba (no depende de `service`) para poder usarse en handlePayment sin TDZ.
-    const effectiveCoordinationMode = coordinationMode ?? 'self';
     // 🤝 Paso de coordinación (primer paso del wizard): vista (elegir/datos vendedor)
     // y opción marcada. El footer compartido del wizard controla Atrás/Continuar.
-    const [coordView, setCoordView] = useState<
-        'choose' | 'seller' | 'seller-plazos' | 'seller-contact'
-    >('choose');
-    const [coordSelection, setCoordSelection] = useState<'self' | 'seller' | null>(null);
+    const [coordView, setCoordView] = useState<CoordinationView>(() =>
+        typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+            ? 'seller'
+            : 'choose',
+    );
+    const [coordSelection, setCoordSelection] = useState<'self' | 'seller' | null>('seller');
     const [sellerPhone, setSellerPhone] = useState('');
     const [sellerEmail, setSellerEmail] = useState('');
     const [sellerListingUrl, setSellerListingUrl] = useState('');
     // 🚪 Gate: ¿el experto tiene algún hueco en la ventana [+3, +14]? null = aún sin comprobar.
     // Si es false se deshabilita el modo "Coordínalo Inspecciono".
     const [sellerHasAvailability, setSellerHasAvailability] = useState<boolean | null>(null);
+    const effectiveCoordinationMode =
+        coordinationMode ?? (sellerHasAvailability === false ? 'self' : 'seller');
     // 📱 Móvil: wizard (1 = fecha/hora, 2 = ubicación, 3 = pago). En desktop no aplica.
     const [mobileStep, setMobileStep] = useState<CheckoutMobileWizardStep>(1);
     // 🖥️ Desktop con cita: 1 = cita (coord + calendario + mapa), 2 = confirmar y pagar.
@@ -331,9 +341,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         if (coordinationFromRoute) {
                             applyCoordinationPayload(coordinationFromRoute);
                         } else {
-                            // Sin modo elegido → se renderiza el paso dedicado de coordinación
-                            // (no un modal auto-abierto).
                             setCoordinationMode(null);
+                            setCoordSelection('seller');
+                            setCoordView(
+                                window.matchMedia('(min-width: 1024px)').matches ? 'seller' : 'choose',
+                            );
                         }
                     } else {
                         setCoordinationMode('self');
@@ -547,8 +559,36 @@ export function CheckoutPage({}: CheckoutPageProps) {
             setCoordinationMode('self');
             setCoordView('choose');
         }
-        if (coordSelection === 'seller') setCoordSelection('self');
-    }, [sellerOptionDisabled, coordinationMode, coordSelection]);
+        if (coordSelection === 'seller') {
+            setCoordSelection('self');
+            if (isDesktop) {
+                setCoordinationMode('self');
+                setCoordView('choose');
+                setChosenSlot(null);
+                setChosenLocation(null);
+            }
+        }
+    }, [sellerOptionDisabled, coordinationMode, coordSelection, isDesktop]);
+
+    // Taller fijo: prefijar ubicación sin mostrar el picker en móvil (como en desktop).
+    useEffect(() => {
+        if (!service || coordinationMode !== 'self') return;
+        const radius = resolveExpertWorkRadiusKm(service);
+        const lat = Number(service.expert?.latitude);
+        const lng = Number(service.expert?.longitude);
+        const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+        if (radius !== 0 || !hasCoords) return;
+        setChosenLocation((prev) => {
+            if (prev?.location === 'Taller del experto (punto fijo)') return prev;
+            return {
+                location: 'Taller del experto (punto fijo)',
+                latitude: String(lat),
+                longitude: String(lng),
+                doorNumber: null,
+                siteDetails: null,
+            };
+        });
+    }, [service, coordinationMode]);
 
     if (loading) {
         return (
@@ -598,7 +638,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
         latitude: service.expert?.latitude,
         longitude: service.expert?.longitude,
     });
-    const checkoutLocationLabel = hireSearchLocation?.locationName ?? null;
     const expertWorkRadiusKm = resolveExpertWorkRadiusKm(service);
     const timezoneLabel = formatTimezoneFriendly(service.expert?.timezone) || null;
     const isProcessing = isSubmitting || createSearchWithHire.isPending;
@@ -610,6 +649,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         coordinationMode === 'seller' ||
         coordView === 'seller' ||
         coordView === 'seller-plazos' ||
+        coordView === 'seller-map' ||
         coordView === 'seller-contact' ||
         coordSelection === 'seller';
     const desktopSelfFlowActive = requiresAppointment && !desktopInSellerFlow;
@@ -636,8 +676,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
         )
     ) : null;
     const slotPickerMobileNode =
-        requiresAppointment && !isDesktop && effectiveCoordinationMode === 'self' ? (
-            <SlotPicker {...slotPickerProps} />
+        requiresAppointment && !isDesktop && coordinationMode === 'self' ? (
+            <SlotPicker {...slotPickerProps} embedded sectionTitle="Fecha y hora" />
         ) : null;
 
     // 🗓️ Fase E: ubicación. Radio>0 → el cliente la elige en el mapa; estático (radio 0) → taller del experto.
@@ -655,25 +695,26 @@ export function CheckoutPage({}: CheckoutPageProps) {
         workRadiusKm: expertWorkRadiusKm,
         onChange: setChosenLocation,
     };
-    const locationPickerNode = !isDesktop && requiresAppointment && coordinationMode === 'self' ? (
-        <CheckoutLocationPicker {...locationPickerProps} />
-    ) : null;
+    const desktopMapInSidebar =
+        isDesktop && requiresAppointment && desktopStep === 1 && coordinationMode === 'self';
     const locationPickerWorkshopDesktopNode =
-        isDesktop && (desktopSelfFlowActive || desktopInSellerFlow) && isWorkshopOnly ? (
+        isDesktop &&
+        (desktopSelfFlowActive || desktopInSellerFlow) &&
+        isWorkshopOnly &&
+        !desktopMapInSidebar ? (
             <CheckoutLocationPicker {...locationPickerProps} />
         ) : null;
-    const desktopMapInSidebar =
-        isDesktop && requiresAppointment && desktopStep === 1 && !isWorkshopOnly;
     const locationPickerSidebarNode = desktopMapInSidebar ? (
         <CheckoutLocationPicker
             {...locationPickerProps}
             variant="sidebar"
-            referenceMode={desktopInSellerFlow}
+            referenceMode={desktopInSellerFlow && !isWorkshopOnly}
         />
     ) : null;
-    const locationPickerWizardNode = requiresAppointment && effectiveCoordinationMode === 'self' ? (
-        <CheckoutLocationPicker {...locationPickerProps} variant="wizard" />
-    ) : null;
+    const locationPickerWizardNode =
+        requiresAppointment && coordinationMode === 'self' ? (
+            <CheckoutLocationPicker {...locationPickerProps} variant="wizard" />
+        ) : null;
 
     const priceInfo = formatPriceDisplay(finalTotal);
     const priceDisplayNode = priceInfo.wasConverted ? (
@@ -687,6 +728,25 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const priceSublineNode = priceInfo.wasConverted
         ? `${priceInfo.sourceFormatted} · cargo en ${sourceCurrency}`
         : undefined;
+
+    const checkoutSummary = buildCheckoutSummaryDisplay({
+        requiresAppointment,
+        coordinationMode:
+            coordinationMode ??
+            (coordSelection === 'self' || coordSelection === 'seller' ? coordSelection : null),
+        chosenSlot,
+        chosenLocation,
+        isWorkshopOnly,
+        hireSearchLocation,
+        expert: {
+            city: service.expert?.city,
+            country: service.expert?.country,
+            countryName: service.expert?.country ? getCountryName(service.expert.country) : null,
+        },
+        sellerPhone,
+        sellerEmail,
+        sellerListingUrl,
+    });
 
     const sellerContactReady = sellerPhone.trim() !== '' || sellerEmail.trim() !== '';
     const desktopSlotReady = !requiresAppointment || !desktopSelfFlowActive || !!chosenSlot;
@@ -710,8 +770,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
         expertRating,
         expertReviewCount,
         expertCompletedSearches,
-        appointmentLabel: chosenSlot ? `${chosenSlot.dateLabel} · ${chosenSlot.label}` : null,
-        locationLabel: checkoutLocationLabel,
+        coordinationLabel: checkoutSummary.coordinationLabel,
+        appointmentLabel: checkoutSummary.appointmentLabel,
+        locationLabel: checkoutSummary.locationLabel,
+        locationHint: checkoutSummary.locationHint,
+        sellerContactLabel: checkoutSummary.sellerContactLabel,
+        sellerListingLabel: checkoutSummary.sellerListingLabel,
         locationRangeKm: expertWorkRadiusKm,
         timezoneLabel,
         deliverables: finalDeliverableTypes,
@@ -764,12 +828,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
         setDesktopStep(2);
     };
 
-    // 📱 Móvil en 3 pasos cuando hay que elegir UBICACIÓN (servicio con radio).
-    // Taller estático o sin cita → flujo de una pantalla.
+    // 📱 Móvil en 3 pasos (fecha → ubicación/mapa → pago), también con taller fijo.
     // 🤝 En modo "seller" no hay pasos de fecha/ubicación; el móvil va directo al pago.
-    const mobileThreeStep = requiresAppointment && !isWorkshopOnly && effectiveCoordinationMode === 'self';
+    const mobileThreeStep = requiresAppointment && coordinationMode === 'self';
+    const mobileInSelfWizard = mobileThreeStep;
     const handleMobileBack = () => {
-        if (mobileThreeStep && mobileStep > 1) {
+        if (mobileInSelfWizard && mobileStep > 1) {
             setMobileStep((s) => (s - 1) as CheckoutMobileWizardStep);
             return;
         }
@@ -779,21 +843,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // 🤝 Fase de coordinación: mientras no haya modo elegido, es el PRIMER paso del
     // wizard (mismo chrome: stepper arriba + footer Atrás/Continuar), no un modal.
     const inCoordinationChoice = requiresAppointment && coordinationMode === null;
-    const mobileInSellerCoordination =
-        coordSelection === 'seller' ||
-        coordView === 'seller' ||
-        coordView === 'seller-plazos' ||
-        coordView === 'seller-contact';
-    const mobileSellerMapNode =
-        !isDesktop && requiresAppointment && inCoordinationChoice && mobileInSellerCoordination && !isWorkshopOnly ? (
-            <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mt-4`}>
-                <CheckoutLocationPicker {...locationPickerProps} referenceMode />
-            </div>
-        ) : null;
+    const mobileInSellerPreview =
+        coordView === 'seller-plazos' || coordView === 'seller-map';
     const coordCanContinue =
         coordView === 'choose'
             ? !!coordSelection
-            : coordView === 'seller-plazos'
+            : coordView === 'seller-plazos' || coordView === 'seller-map'
               ? true
               : sellerPhone.trim() !== '' || sellerEmail.trim() !== '';
     const handleCoordPrimary = () => {
@@ -804,6 +859,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
             return;
         }
         if (coordView === 'seller-plazos') {
+            if (isWorkshopOnly) setCoordView('seller-contact');
+            else setCoordView('seller-map');
+            return;
+        }
+        if (coordView === 'seller-map') {
             setCoordView('seller-contact');
             return;
         }
@@ -811,6 +871,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
     };
     const handleCoordBack = () => {
         if (coordView === 'seller-contact') {
+            if (isWorkshopOnly) setCoordView('seller-plazos');
+            else setCoordView('seller-map');
+            return;
+        }
+        if (coordView === 'seller-map') {
             setCoordView('seller-plazos');
             return;
         }
@@ -860,12 +925,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
             </>
         ) : null;
 
+    const desktopShowTopBarBack = !desktopAppointmentFlow;
+
     const desktopAppointmentFooter = (
-        <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-[#f0f0f0]/70 bg-white px-5 py-3.5">
+        <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-t-2 border-[#e5e7eb] bg-white px-5 py-4 shadow-[0_-6px_16px_rgba(15,23,42,0.06)]">
             <button
                 type="button"
                 onClick={handleDesktopBack}
-                className="inline-flex h-9 items-center justify-center rounded-full border border-[#e5e7eb] bg-white px-4 text-[13px] font-semibold text-[#565d6b] transition-colors hover:border-[#d1d5db] hover:text-[#1c1c1c]"
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white px-4 text-[13px] font-semibold text-[#565d6b] transition-colors hover:border-[#d1d5db] hover:text-[#1c1c1c]"
             >
                 Atrás
             </button>
@@ -873,7 +940,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopStep1Ready}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-brand px-5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand px-5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continuar
                 <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -886,7 +953,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
             {/* Versión Desktop (C1: montada solo en ≥lg, nunca a la vez que la móvil) */}
             {isDesktop && (
             <div className={`checkout-page hidden min-h-screen lg:block ${SD_CHECKOUT_DESKTOP_PAGE_CLASS}`}>
-                <HomepageDesktopTopBar variant="checkout" onBack={handleDesktopBack} />
+                <HomepageDesktopTopBar
+                    variant="checkout"
+                    onBack={desktopShowTopBarBack ? handleDesktopBack : undefined}
+                />
                 {desktopOnPaymentStep ? (
                     <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-6 pt-4`}>
                         <div className={`${SD_CHECKOUT_GRID_CLASS} gap-y-2.5`}>
@@ -901,9 +971,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                                             Datos del vendedor
                                         </h3>
-                                        <p className="mt-1 text-[13px] leading-relaxed text-[#6b7280]">
-                                            Teléfono o email para enviarle el enlace de reserva. El anuncio
-                                            es opcional.
+                                        <p className="mt-1 text-[13px] leading-[1.55] text-[#374151]">
+                                            Teléfono o email para enviarle el{' '}
+                                            <span className="font-bold text-[#1c1c1c]">enlace</span> de reserva.
+                                            El anuncio es opcional.
                                         </p>
                                         <div className="mt-3">
                                             <CheckoutSellerCoordinationFields
@@ -917,6 +988,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             />
                                         </div>
                                     </div>
+                                ) : null}
+                                {desktopAppointmentFlow ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleDesktopBack}
+                                        className="inline-flex h-9 items-center justify-center self-start rounded-full border border-[#e5e7eb] bg-white px-4 text-[13px] font-semibold text-[#565d6b] transition-colors hover:border-[#d1d5db] hover:text-[#1c1c1c]"
+                                    >
+                                        Atrás
+                                    </button>
                                 ) : null}
                             </section>
                             <aside
@@ -944,29 +1024,36 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 ) : (
                     <div className={`${SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS} pb-10 pt-5`}>
                         <div className={SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS}>
-                            <div className="flex min-h-[min(78vh,720px)] items-stretch">
-                                <div
-                                    className={cn(
-                                        SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS,
-                                        'flex min-h-0 flex-col',
-                                    )}
-                                >
-                                    <div className="min-h-0 flex-1">
-                                        {desktopAppointmentBody}
-                                        {locationPickerWorkshopDesktopNode}
-                                    </div>
-                                    {desktopAppointmentFooter}
-                                </div>
-                                {desktopMapInSidebar ? (
-                                    <aside
+                            <div
+                                className={cn(
+                                    'flex flex-col',
+                                    SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
+                                )}
+                            >
+                                <div className="flex min-h-0 flex-1 items-stretch overflow-hidden pt-1">
+                                    <div
                                         className={cn(
-                                            'hidden min-h-[min(78vh,720px)] lg:flex lg:flex-col lg:self-stretch',
-                                            SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS,
+                                            SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS,
+                                            'flex h-full min-h-0 flex-col overflow-hidden px-5 pb-4',
                                         )}
                                     >
-                                        {locationPickerSidebarNode}
-                                    </aside>
-                                ) : null}
+                                        <div className="min-h-0 flex-1 overflow-hidden">
+                                            {desktopAppointmentBody}
+                                            {locationPickerWorkshopDesktopNode}
+                                        </div>
+                                    </div>
+                                    {desktopMapInSidebar ? (
+                                        <aside
+                                            className={cn(
+                                                'hidden h-full min-h-0 min-w-0 overflow-hidden border-l border-[#f0f0f0]/80 lg:flex lg:flex-col lg:self-stretch',
+                                                SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS,
+                                            )}
+                                        >
+                                            {locationPickerSidebarNode}
+                                        </aside>
+                                    ) : null}
+                                </div>
+                                {desktopAppointmentFooter}
                             </div>
                         </div>
                     </div>
@@ -981,44 +1068,84 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     'checkout-page lg:hidden',
                     !inCoordinationChoice && mobileThreeStep && mobileStep === 2
                         ? 'relative h-[100dvh] max-h-[100dvh] overflow-hidden'
-                        : 'min-h-screen bg-white',
+                        : inCoordinationChoice && coordView === 'seller-map'
+                          ? 'relative h-[100dvh] max-h-[100dvh] overflow-hidden'
+                          : 'min-h-[100dvh] bg-white',
                 )}
             >
                 {inCoordinationChoice ? (
+                    coordView === 'seller-map' && requiresAppointment && !isWorkshopOnly ? (
+                        <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
+                            <header
+                                className={cn(
+                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+                                    'shrink-0 border-b border-[#ebebeb] bg-white pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                )}
+                            >
+                                <CheckoutMobileStepper
+                                    currentStep={2}
+                                    steps={MOBILE_SELLER_PREVIEW_STEPS}
+                                    className="mb-0"
+                                />
+                            </header>
+                            <div className="relative min-h-0 flex-1 overflow-hidden">
+                                <div className={cn('absolute inset-x-0 top-0', SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS)}>
+                                    <CheckoutLocationPicker
+                                        {...locationPickerProps}
+                                        variant="wizard"
+                                        referenceMode
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
                     <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
                         <div
                             className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pt-[max(0.75rem,env(safe-area-inset-top,0px))]`}
                         >
-                            {coordinationStepMobileNode}
+                            {!mobileInSellerPreview && coordinationStepMobileNode}
                             {coordView === 'seller-plazos' && requiresAppointment ? (
-                                <div className="mt-4">
+                                <>
+                                    {!isWorkshopOnly ? (
+                                        <CheckoutMobileStepper
+                                            currentStep={1}
+                                            steps={MOBILE_SELLER_PREVIEW_STEPS}
+                                            className="mb-3"
+                                        />
+                                    ) : null}
                                     <SlotPicker
                                         {...slotPickerProps}
+                                        embedded
                                         previewMode
                                         windowDays={SELLER_BOOKING_MAX_DAYS}
                                         sectionTitle="Disponibilidad del experto"
                                     />
-                                </div>
+                                </>
                             ) : null}
-                            {mobileSellerMapNode}
                         </div>
                     </div>
+                    )
                 ) : mobileThreeStep && mobileStep === 2 ? (
-                    <>
-                        <div className="absolute inset-x-0 top-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-0">
-                            {locationPickerWizardNode}
-                        </div>
-                        <header className="pointer-events-none absolute inset-x-0 top-0 z-20">
+                    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
+                        <header
+                            className={cn(
+                                SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+                                'shrink-0 border-b border-[#ebebeb] bg-white pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                            )}
+                        >
+                            <CheckoutMobileStepper currentStep={mobileStep} className="mb-0" />
+                        </header>
+                        <div className="relative min-h-0 flex-1 overflow-hidden">
                             <div
                                 className={cn(
-                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    'bg-gradient-to-b from-white/96 via-white/80 to-transparent pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                    'absolute inset-x-0 top-0',
+                                    SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
                                 )}
                             >
-                                <CheckoutMobileStepper currentStep={mobileStep} className="mb-0" />
+                                {locationPickerWizardNode}
                             </div>
-                        </header>
-                    </>
+                        </div>
+                    </div>
                 ) : (
                 <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
                     <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
@@ -1032,8 +1159,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
                     {mobileThreeStep ? (
                         mobileStep === 1 ? (
-                            <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{slotPickerMobileNode}</div>
-                        ) : (
+                            <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>
+                                {slotPickerMobileNode}
+                            </div>
+                        ) : mobileStep === 3 ? (
                             <>
                                 <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3`}>
                                     <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#1c1c1c]">
@@ -1046,17 +1175,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     showFooterNotes
                                 />
                             </>
-                        )
+                        ) : null
                     ) : (
-                        <>
-                            {slotPickerMobileNode && (
-                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{slotPickerMobileNode}</div>
-                            )}
-                            {locationPickerNode && (
-                                <div className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-4`}>{locationPickerNode}</div>
-                            )}
-                            <CheckoutMobileSheet {...summaryTableProps} includePrice showFooterNotes />
-                        </>
+                        <CheckoutMobileSheet {...summaryTableProps} includePrice showFooterNotes />
                     )}
                 </div>
                 )}
@@ -1077,7 +1198,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 disabled={!coordCanContinue}
                                 className={`${SD_CHECKOUT_MOBILE_CTA_CLASS} gap-2`}
                             >
-                                Continuar
+                                {coordView === 'seller-plazos' || coordView === 'seller-map'
+                                    ? 'Siguiente'
+                                    : 'Continuar'}
                                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                             </button>
                         ) : mobileThreeStep && mobileStep < 3 ? (

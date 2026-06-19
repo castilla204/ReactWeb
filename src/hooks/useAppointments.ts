@@ -81,6 +81,11 @@ export const useAppointments = () => {
     return cleaned;
   };
 
+  // 🧟 LEGACY (2026-06-19): las 3 mutations y funciones siguientes (propose/confirm/reject) pertenecen al flujo
+  // antiguo de proponer/aceptar/rechazar cita, RETIRADO. Sus endpoints (/api/Appointment/propose|confirm|reject)
+  // están en #if false en el backend y ningún disparador vivo del frontend las invoca (los botones están
+  // desactivados en AppointmentStatus.tsx y los flags showPropose/showAccept/showReject de SearchDetails.tsx
+  // están forzados a false). Se conservan para no romper imports/exports; NO añadir nuevas llamadas.
   // Mutations
   const proposeAppointmentMutation = useMutation({
     mutationFn: ({ searchHireId, data }: { searchHireId: number; data: ProposeAppointmentDto }) => {
