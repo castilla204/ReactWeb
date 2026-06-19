@@ -179,6 +179,10 @@ export const API_CONFIG = {
         sellerBooking: {
             context: (token: string) => `${API_PATH}/seller-booking/${token}`,
         },
+        // 🔧 Confirmación del experto (sin login; el token es la credencial).
+        expertConfirmation: {
+            context: (token: string) => `${API_PATH}/expert-confirmation/${token}`,
+        },
         appointment: {
             get: (id: number) => `${API_PATH}/appointment/${id}`,
             getBySearchHire: (searchHireId: number) => `${API_PATH}/appointment/search-hire/${searchHireId}`,
