@@ -1,7 +1,6 @@
 import { Check } from 'lucide-react';
 import { CheckoutSellerCoordinationFields } from './CheckoutSellerCoordinationFields';
-import type { SellerDaySummary } from '../../utils/sellerBookingWindow';
-import { HP_FONT, SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS } from '../../constants/homepageTypography';
+import { HP_FONT, SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS, SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
 import coordSelfImg from '../../media/coord-self.jpg';
 import coordSellerImg from '../../media/coord-seller.jpg';
@@ -37,7 +36,9 @@ interface OptionCardProps {
     recommended?: boolean;
     selected: boolean;
     dimmed: boolean;
+    disabled?: boolean;
     compact?: boolean;
+    embedded?: boolean;
     onSelect: () => void;
 }
 
@@ -49,7 +50,9 @@ function OptionCard({
     recommended,
     selected,
     dimmed,
+    disabled,
     compact,
+    embedded,
     onSelect,
 }: OptionCardProps) {
     return (
@@ -57,17 +60,27 @@ function OptionCard({
             type="button"
             role="radio"
             aria-checked={selected}
-            onClick={onSelect}
+            aria-disabled={disabled}
+            disabled={disabled}
+            onClick={disabled ? undefined : onSelect}
             className={cn(
-                'group relative isolate flex flex-col justify-end overflow-hidden rounded-xl text-left',
-                compact ? 'aspect-[16/10]' : 'aspect-[5/3] sm:aspect-[3/2] sm:rounded-2xl',
-                'border border-[#ebebeb]/70 shadow-[0_1px_6px_rgba(15,23,42,0.05)]',
-                'transition-[box-shadow,opacity,border-color] duration-200',
+                'group relative isolate flex flex-col justify-end overflow-hidden text-left',
+                compact ? 'aspect-[16/10] rounded-xl lg:aspect-[2/1]' : 'aspect-[5/3] rounded-xl sm:aspect-[3/2] sm:rounded-2xl',
+                embedded
+                    ? 'border-0 shadow-none'
+                    : 'border border-[#ebebeb]/70 shadow-[0_1px_6px_rgba(15,23,42,0.05)]',
+                'transition-[box-shadow,opacity,transform] duration-200',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2',
                 selected
-                    ? 'border-brand/40 ring-2 ring-brand/20 shadow-[0_4px_16px_rgba(0,102,204,0.1)]'
-                    : 'hover:border-[#d1d5db] hover:shadow-[0_4px_12px_rgba(15,23,42,0.07)]',
-                dimmed ? 'opacity-65' : 'opacity-100',
+                    ? embedded
+                        ? 'ring-2 ring-brand/50 ring-offset-2 ring-offset-white'
+                        : 'border-brand/40 ring-2 ring-brand/20 shadow-[0_4px_16px_rgba(0,102,204,0.1)]'
+                    : embedded
+                      ? 'opacity-90 hover:opacity-100'
+                      : 'hover:border-[#d1d5db] hover:shadow-[0_4px_12px_rgba(15,23,42,0.07)]',
+                disabled
+                    ? 'pointer-events-none cursor-not-allowed opacity-40 grayscale'
+                    : dimmed ? 'opacity-55' : 'opacity-100',
             )}
         >
             <img
@@ -140,59 +153,80 @@ export interface CheckoutCoordinationStepProps {
     sellerPhone: string;
     sellerEmail: string;
     sellerListingUrl: string;
-    sellerMaxDays: number;
-    sellerDeadlineHours: number;
     onSellerPhoneChange: (value: string) => void;
     onSellerEmailChange: (value: string) => void;
     onSellerListingUrlChange: (value: string) => void;
-    onSellerMaxDaysChange: (value: number) => void;
-    minBookingDays?: number;
-    maxBookingDays?: number;
-    daySummaries?: SellerDaySummary[];
-    limitsLoading?: boolean;
+    /** El experto no tiene disponibilidad en plazo → opción "Coordínalo Inspecciono" deshabilitada. */
+    sellerOptionDisabled?: boolean;
     headingClassName?: string;
 }
 
 function CoordinationOptionCards({
     selection,
     compact,
+    embedded,
+    sellerOptionDisabled,
     onSelect,
 }: {
     selection: CoordinationSelection | null;
     compact?: boolean;
+    embedded?: boolean;
+    sellerOptionDisabled?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
     return (
-        <div
-            role="radiogroup"
-            aria-label="¿Cómo se fija la cita?"
-            className={cn(
-                'coordination-step-from-left grid gap-2.5',
-                compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2',
-            )}
-        >
-            <OptionCard
-                image={coordSelfImg}
-                theme="blue"
-                title="Yo me encargo"
-                description="Si ya hablas con el vendedor, eliges tú fecha, hora y dirección."
-                compact={compact}
-                selected={selection === 'self'}
-                dimmed={selection === 'seller'}
-                onSelect={() => onSelect('self')}
-            />
-            <OptionCard
-                image={coordSellerImg}
-                theme="amber"
-                title="Coordínalo Inspecciono"
-                description="Si compraste en un portal o anuncio, contactamos al vendedor por ti."
-                recommended
-                compact={compact}
-                selected={selection === 'seller'}
-                dimmed={selection === 'self'}
-                onSelect={() => onSelect('seller')}
-            />
-        </div>
+        <>
+            <div
+                role="radiogroup"
+                aria-label="¿Cómo se fija la cita?"
+                className={cn(
+                    'coordination-step-from-left grid gap-2.5',
+                    compact ? 'grid-cols-2 gap-3' : 'grid-cols-1 sm:grid-cols-2',
+                )}
+            >
+                <OptionCard
+                    image={coordSelfImg}
+                    theme="blue"
+                    title="Yo me encargo"
+                    description={
+                        embedded
+                            ? 'Tú acuerdas con el vendedor y reservas aquí día, hora y dirección de la inspección.'
+                            : 'Si ya hablas con el vendedor, eliges tú fecha, hora y dirección.'
+                    }
+                    compact={compact}
+                    embedded={embedded}
+                    selected={selection === 'self'}
+                    dimmed={selection === 'seller'}
+                    onSelect={() => onSelect('self')}
+                />
+                <OptionCard
+                    image={coordSellerImg}
+                    theme="amber"
+                    title="Coordínalo Inspecciono"
+                    description={
+                        embedded
+                            ? 'Compraste en un portal o anuncio: contactamos al vendedor y le enviamos un enlace para que elija cita.'
+                            : 'Si compraste en un portal o anuncio, contactamos al vendedor por ti.'
+                    }
+                    recommended
+                    compact={compact}
+                    embedded={embedded}
+                    disabled={sellerOptionDisabled}
+                    selected={selection === 'seller'}
+                    dimmed={selection === 'self'}
+                    onSelect={() => onSelect('seller')}
+                />
+            </div>
+            {sellerOptionDisabled ? (
+                <p
+                    role="note"
+                    className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]"
+                >
+                    Este técnico no tiene disponibilidad en plazo. Elige «Yo me encargo» o prueba más
+                    tarde.
+                </p>
+            ) : null}
+        </>
     );
 }
 
@@ -205,16 +239,10 @@ export function CheckoutCoordinationStep({
     sellerPhone,
     sellerEmail,
     sellerListingUrl,
-    sellerMaxDays,
-    sellerDeadlineHours,
     onSellerPhoneChange,
     onSellerEmailChange,
     onSellerListingUrlChange,
-    onSellerMaxDaysChange,
-    minBookingDays,
-    maxBookingDays,
-    daySummaries,
-    limitsLoading,
+    sellerOptionDisabled,
     headingClassName,
 }: CheckoutCoordinationStepProps) {
     const showSellerFields =
@@ -230,40 +258,47 @@ export function CheckoutCoordinationStep({
     if (embedded) {
         return (
             <>
-                <div className={SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS}>
-                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                <div className={SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS}>
+                    <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                         ¿Cómo se fija la cita?
                     </h3>
-                    <p className="mt-0.5 text-xs text-[#6a6a6a]">
-                        Elige quién coordina con el vendedor.
+                    <p className={SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS}>
+                        Hay que acordar con el vendedor cuándo y dónde inspeccionar el coche. Elige si
+                        lo gestionas tú —porque ya habláis— o si prefieres que Inspecciono le contacte
+                        y le envíe un enlace para reservar.
                     </p>
                 </div>
-                <div className="border-b border-[#f0f0f0] px-4 py-3">
+                <div className="px-5 pb-4 pt-2">
                     <CoordinationOptionCards
                         selection={effectiveSelection}
                         compact
+                        embedded
+                        sellerOptionDisabled={sellerOptionDisabled}
                         onSelect={onSelect}
                     />
                 </div>
                 {showSellerFields ? (
-                    <div key="seller" className="coordination-step-from-right border-b border-[#f0f0f0] px-4 py-3.5">
-                        <p className="mb-2.5 text-xs font-medium text-[#6a6a6a]">Datos del vendedor</p>
-                        <CheckoutSellerCoordinationFields
-                            variant="full"
-                            sellerPhone={sellerPhone}
-                            sellerEmail={sellerEmail}
-                            sellerListingUrl={sellerListingUrl}
-                            sellerMaxDays={sellerMaxDays}
-                            sellerDeadlineHours={sellerDeadlineHours}
-                            onSellerPhoneChange={onSellerPhoneChange}
-                            onSellerEmailChange={onSellerEmailChange}
-                            onSellerListingUrlChange={onSellerListingUrlChange}
-                            onSellerMaxDaysChange={onSellerMaxDaysChange}
-                            minBookingDays={minBookingDays}
-                            maxBookingDays={maxBookingDays}
-                            daySummaries={daySummaries}
-                            limitsLoading={limitsLoading}
-                        />
+                    <div key="seller" className="coordination-step-from-right px-5 pb-2 pt-1">
+                        <div className={cn(SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS, 'px-0 pt-2')}>
+                            <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                                Plazos para el vendedor
+                            </h3>
+                            <p className={cn(SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS, 'max-w-none')}>
+                                Cuánto tiempo puede tardar el vendedor en reservar. El calendario de
+                                abajo muestra la disponibilidad del experto dentro de ese plazo.
+                            </p>
+                        </div>
+                        <div className="pt-3">
+                            <CheckoutSellerCoordinationFields
+                                variant="plazos"
+                                sellerPhone={sellerPhone}
+                                sellerEmail={sellerEmail}
+                                sellerListingUrl={sellerListingUrl}
+                                onSellerPhoneChange={onSellerPhoneChange}
+                                onSellerEmailChange={onSellerEmailChange}
+                                onSellerListingUrlChange={onSellerListingUrlChange}
+                            />
+                        </div>
                     </div>
                 ) : null}
             </>
@@ -314,7 +349,11 @@ export function CheckoutCoordinationStep({
 
             <div className={cn(isSubStep ? 'mt-3' : 'mt-4 sm:mt-5')}>
                 {view === 'choose' ? (
-                    <CoordinationOptionCards selection={effectiveSelection} onSelect={onSelect} />
+                    <CoordinationOptionCards
+                        selection={effectiveSelection}
+                        sellerOptionDisabled={sellerOptionDisabled}
+                        onSelect={onSelect}
+                    />
                 ) : (
                     <div key={view} className="coordination-step-from-right">
                         <CheckoutSellerCoordinationFields
@@ -322,16 +361,9 @@ export function CheckoutCoordinationStep({
                             sellerPhone={sellerPhone}
                             sellerEmail={sellerEmail}
                             sellerListingUrl={sellerListingUrl}
-                            sellerMaxDays={sellerMaxDays}
-                            sellerDeadlineHours={sellerDeadlineHours}
                             onSellerPhoneChange={onSellerPhoneChange}
                             onSellerEmailChange={onSellerEmailChange}
                             onSellerListingUrlChange={onSellerListingUrlChange}
-                            onSellerMaxDaysChange={onSellerMaxDaysChange}
-                            minBookingDays={minBookingDays}
-                            maxBookingDays={maxBookingDays}
-                            daySummaries={daySummaries}
-                            limitsLoading={limitsLoading}
                         />
                     </div>
                 )}

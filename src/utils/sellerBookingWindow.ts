@@ -95,3 +95,13 @@ export function countWorkingDaysInWindow(
 ): number {
     return summaries.slice(0, windowDays).filter((d) => d.isWorking).length;
 }
+
+/** Días de antelación mínima fijos (suelo de la cita). */
+export const SELLER_BOOKING_MIN_LEAD_DAYS = 3;
+/** Objetivo de la ventana (días a futuro preferentes). */
+export const SELLER_BOOKING_TARGET_DAYS = 7;
+
+/** ¿El experto tiene al menos un hueco libre en la ventana resumida? */
+export function hasAvailabilityInWindow(summaries: SellerDaySummary[]): boolean {
+    return summaries.some((d) => d.freeSlots > 0);
+}
