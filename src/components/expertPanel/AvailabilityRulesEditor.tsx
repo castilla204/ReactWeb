@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Loader2, Plus, Trash2, Save, CalendarClock, Copy, Info, ChevronDown } from 'lucide-react';
 import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
@@ -43,6 +43,11 @@ const defaultWeek = (): WeekState => {
 
 const hhmm = (v: unknown): string => String(v ?? '').slice(0, 5);
 
+// Firma canónica de la semana = lo que realmente se guardaría (días activos y sus franjas).
+// Sirve para comparar el estado actual con el último guardado y saber si hay cambios.
+const serializeWeek = (w: WeekState): string =>
+    JSON.stringify(DAYS.map((d) => (w[d.id]?.enabled ? w[d.id].ranges.map((r) => `${r.start}-${r.end}`) : null)));
+
 /**
  * 🗓️ Editor semanal de horario del experto (fuente de verdad de las reservas de cita).
  * Pensado para "configúralo una vez": presets, interruptor por día, turnos partidos y
@@ -59,6 +64,9 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [prefilledFromLegacy, setPrefilledFromLegacy] = useState<boolean>(false);
+    // Firma del último horario guardado (o vacío si aún no hay reglas en el servidor),
+    // para encender el botón "Guardar horario" solo cuando hay cambios pendientes.
+    const baselineRef = useRef<string>('');
 
     const authHeaders = (): Record<string, string> => {
         const t = getAuthToken();
@@ -113,7 +121,12 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
             }
 
             const stillEmpty = Object.values(next).every((d) => d.ranges.length === 0);
-            setWeek(stillEmpty ? defaultWeek() : next);
+            const finalWeek = stillEmpty ? defaultWeek() : next;
+            setWeek(finalWeek);
+            // Si el servidor ya tenía reglas, el baseline es ese horario guardado.
+            // Si no (prefijado desde legacy o por defecto), dejamos baseline "vacío" para
+            // que el botón aparezca encendido y el experto pueda activar su horario.
+            baselineRef.current = hasRules ? serializeWeek(next) : serializeWeek(emptyWeek());
         } catch {
             setError('No se pudo cargar tu horario.');
         } finally {
@@ -236,6 +249,8 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                 throw new Error(e.message || 'No se pudo guardar el horario.');
             }
             setPrefilledFromLegacy(false);
+            // Lo recién guardado pasa a ser el nuevo baseline → el botón se apaga.
+            baselineRef.current = serializeWeek(week);
             setSuccess(
                 flat.length === 0
                     ? 'Horario guardado: no atiendes ningún día (no aparecerás disponible para reservas).'
@@ -249,6 +264,8 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
     };
 
     const anyEnabled = Object.values(week).some((d) => d.enabled);
+    // ¿El horario actual difiere del último guardado? Controla el estado del botón.
+    const isDirty = serializeWeek(week) !== baselineRef.current;
 
     return (
         <section className="av-schedule">
@@ -388,8 +405,11 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
 
                     <div className="mt-4 flex items-center justify-end gap-3">
                         <span className="hidden text-[12px] text-[#9aa0a8] sm:inline">Recuerda guardar para que tenga efecto</span>
-                        <button type="button" onClick={save} disabled={saving}
-                            className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-[13px] font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.25)] transition-colors hover:bg-brand-hover disabled:opacity-50">
+                        <button type="button" onClick={save} disabled={saving || !isDirty}
+                            className={cn(
+                                'inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-[0.6] disabled:shadow-none',
+                                isDirty && !saving ? 'shadow-[0_3px_12px_hsl(var(--brand)/0.5)]' : 'shadow-none',
+                            )}>
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             {saving ? 'Guardando…' : 'Guardar horario'}
                         </button>

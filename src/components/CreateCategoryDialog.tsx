@@ -14,7 +14,7 @@ import { useCreateCategory } from '../hooks/useCreateCategory';
 import { Loader2, Plus, FolderTree } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
-import { ParentCategoryDto, ParentCategoriesResponse } from '../types/category';
+import { ParentCategoryDto } from '../types/category';
 
 interface CreateCategoryDialogProps {
     open: boolean;
@@ -72,21 +72,26 @@ export function CreateCategoryDialog({ open, onOpenChange, onCategoryCreated }: 
                 throw new Error(`Error ${response.status}: ${response.statusText}. ${errorText}`);
             }
 
-            const result: ParentCategoriesResponse = await response.json();
+            const result: any = await response.json();
             console.log('📦 Resultado parseado:', result);
-            
-            // Manejar diferentes formatos de respuesta
-            if (result.success && result.data && Array.isArray(result.data)) {
-                setParentCategories(result.data);
-                console.log('✅ Categorías padre cargadas:', result.data.length, 'categorías');
-            } else if (Array.isArray(result)) {
-                // Si el backend devuelve un array directamente
-                console.log('📋 Resultado es un array directo, usando como categorías padre');
-                setParentCategories(result);
-            } else {
-                console.warn('⚠️ Formato de respuesta inesperado:', result);
-                setParentCategories([]);
-            }
+
+            // La NewApi serializa en PascalCase: tolerar ambos casings tanto en la
+            // envoltura ({ data | Data }) como en cada item ({ id | Id }).
+            const rawList: any[] = Array.isArray(result)
+                ? result
+                : (result?.data ?? result?.Data ?? []);
+
+            const parents: ParentCategoryDto[] = (Array.isArray(rawList) ? rawList : []).map((p: any) => ({
+                id: p?.id ?? p?.Id,
+                name: p?.name ?? p?.Name ?? '',
+                isActive: p?.isActive ?? p?.IsActive ?? true,
+                createdAt: p?.createdAt ?? p?.CreatedAt ?? '',
+                updatedAt: p?.updatedAt ?? p?.UpdatedAt ?? '',
+                subcategoriesCount: p?.subcategoriesCount ?? p?.SubcategoriesCount ?? 0,
+            }));
+
+            setParentCategories(parents);
+            console.log('✅ Categorías padre cargadas:', parents.length, 'categorías');
         } catch (err) {
             console.error('❌ Error loading parent categories:', err);
             const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar las categorías padre';

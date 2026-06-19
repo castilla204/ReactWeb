@@ -1,6 +1,5 @@
 import React from 'react';
 import { SD_DESKTOP_ASIDE_MAX_H_CLASS } from '../../constants/homepageTypography';
-import { ESCROW_TRUST_TAGLINE } from '../../constants/escrowCopy';
 import { ServiceDetailReviewStars } from './ServiceDetailReviewStars';
 import { formatRatingDisplay } from '../../utils/reviewFormat';
 import type { ServiceReviewItem } from './ServiceDetailReviewsSection';
@@ -127,7 +126,6 @@ export function ServiceDetailDesktopBookingAside({
       </AsideSection>
 
       <footer className="mt-auto border-t border-[#f0f0f0] px-5 py-4">
-        <p className="mb-3 text-xs leading-relaxed text-[#717171]">{ESCROW_TRUST_TAGLINE}.</p>
         {isAuthenticated ? (
           <button type="button" onClick={onReserve} className="sd-aside-cta">
             Reservar

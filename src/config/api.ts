@@ -175,6 +175,10 @@ export const API_CONFIG = {
             ws: `${API_PATH}/chat/ws`,
             deliverable: (searchHireId: number) => `${API_PATH}/Chat/deliverable/${searchHireId}`,
         },
+        // 🤝 Magic link del vendedor (sin login; el token es la credencial).
+        sellerBooking: {
+            context: (token: string) => `${API_PATH}/seller-booking/${token}`,
+        },
         appointment: {
             get: (id: number) => `${API_PATH}/appointment/${id}`,
             getBySearchHire: (searchHireId: number) => `${API_PATH}/appointment/search-hire/${searchHireId}`,

@@ -13,6 +13,7 @@ capMapWorkers(maplibregl);
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
+import { getCurrencySymbol } from '../../utils/priceUtils';
 // ✅ Default import → activa React.memo del ClusteredMarkers. Antes (named import)
 //    cada hover/select sobre la lista forzaba el bucle remove+create de TODOS los markers.
 import ClusteredMarkers from './ClusteredMarkers';
@@ -255,13 +256,28 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const lngSpan = ne.lng - sw.lng;
       const padLat = Math.min(latSpan * 0.35, Math.max(0, (75 - latSpan) / 2));
       const padLng = Math.min(lngSpan * 0.35, Math.max(0, (75 - lngSpan) / 2));
-      const exp = {
-        n: Math.min(85, ne.lat + padLat),
-        s: Math.max(-85, sw.lat - padLat),
-        e: Math.min(180, ne.lng + padLng),
-        w: Math.max(-180, sw.lng - padLng),
-        zoom,
-      };
+      let n = Math.min(85, ne.lat + padLat);
+      let s = Math.max(-85, sw.lat - padLat);
+      let e = Math.min(180, ne.lng + padLng);
+      let w = Math.max(-180, sw.lng - padLng);
+      // 🛡️ Recorte duro del tamaño del box al límite del backend (rechaza >90°,
+      //    ver SearchServiceService.GetMapExpertsWithDetails). El padding de arriba
+      //    SOLO acota cuando el span es <75°; en pantallas anchas a zoom bajo el
+      //    viewport ya supera 90° de longitud y se enviaba tal cual → 400 Bad Request
+      //    ("Bounds demasiado grandes"). Encogemos el box (centrado) a un máximo
+      //    seguro. Al clusterizar en cliente con tope 500, basta con el área central.
+      const MAX_SPAN_DEG = 80;
+      if (n - s > MAX_SPAN_DEG) {
+        const c = (n + s) / 2;
+        n = c + MAX_SPAN_DEG / 2;
+        s = c - MAX_SPAN_DEG / 2;
+      }
+      if (e - w > MAX_SPAN_DEG) {
+        const c = (e + w) / 2;
+        e = c + MAX_SPAN_DEG / 2;
+        w = c - MAX_SPAN_DEG / 2;
+      }
+      const exp = { n, s, e, w, zoom };
       fetchedAreaRef.current = exp;
 
       if (debounceTimerRef.current) {
@@ -444,6 +460,77 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       duration: 400,
     });
   }, [mapInstance, initialCenter, initialZoom, recenterMode, isMobile]);
+
+  // 📌 Popover anclado al pin seleccionado (desktop): tarjeta compacta sobre el marcador
+  //    con foto, nombre, valoración, precio y CTA — la pieza de sincronización lista↔mapa
+  //    que faltaba. Additivo: una instancia maplibregl.Popup propia, no toca los markers.
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  useEffect(() => {
+    const map = mapInstance;
+    if (!map || isMobile) return;
+    const svc = selectedServiceId != null ? services.find((s) => s.id === selectedServiceId) : null;
+    if (!svc || !Number.isFinite(svc.lat) || !Number.isFinite(svc.lng)) {
+      if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; }
+      return;
+    }
+    const raw: any = (svc as any).raw || {};
+    const expert: any = raw.expert || raw.Expert || (svc as any).expert || {};
+    const esc = (s: string) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+    const name = esc(svc.name || expert?.user?.name || 'Experto');
+    const avatar = expert.profilePictureUrl || expert.ProfilePictureUrl || '';
+    const img = (raw.imageUrls || raw.ImageUrls || [])[0] || '';
+    const rating = Number(raw.averageRating ?? raw.AverageRating ?? 0);
+    const reviews = Number(raw.totalReviews ?? raw.TotalReviews ?? 0);
+    const cur = (svc as any).priceCurrency || (svc as any).currency || 'EUR';
+    const price = svc.price > 0 ? `${getCurrencySymbol(cur)}${Math.round(svc.price)}` : 'Consultar';
+    const typeLabel = esc(raw.serviceTypeName || raw.ServiceTypeName || 'Revisión');
+    const ratingHtml = rating > 0
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#222">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 17.3l-6.16 3.7 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.48 4.73 1.64 7.03z"/></svg>
+           <strong style="font-weight:600">${rating.toFixed(1).replace('.', ',')}</strong>
+           ${reviews > 0 ? `<span style="color:#737373">(${reviews})</span>` : ''}
+         </span>`
+      : '';
+    const html = `
+      <a href="/service/${svc.id}" style="display:block;text-decoration:none;color:inherit;width:236px">
+        ${img ? `<div style="height:108px;width:100%;overflow:hidden;border-radius:12px 12px 0 0;background:#eceff3"><img src="${esc(img)}" style="height:100%;width:100%;object-fit:cover;display:block"/></div>` : ''}
+        <div style="padding:9px 11px 11px;font-family:Manrope,system-ui,sans-serif">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${avatar ? `<img src="${esc(avatar)}" style="height:26px;width:26px;border-radius:50%;object-fit:cover;flex:none;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.18)"/>` : ''}
+            <div style="min-width:0;flex:1">
+              <div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a8a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typeLabel}</div>
+              <div style="font-size:14px;font-weight:600;letter-spacing:-.01em;color:#1c1c1c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            </div>
+          </div>
+          <div style="margin-top:7px;display:flex;align-items:center;justify-content:space-between">
+            ${ratingHtml}
+            <span style="font-size:14px;font-weight:600;color:#1c1c1c;font-variant-numeric:tabular-nums">${price}<span style="font-size:11px;font-weight:400;color:#737373"> / servicio</span></span>
+          </div>
+        </div>
+      </a>`;
+    if (!popupRef.current) {
+      popupRef.current = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 20,
+        maxWidth: '260px',
+        className: 'ip-map-popup',
+      });
+    }
+    popupRef.current.setLngLat([svc.lng, svc.lat]).setHTML(html).addTo(map);
+    // Pulir el contenedor por defecto del popup (sin padding, esquinas redondas, sombra).
+    const el = popupRef.current.getElement();
+    const content = el?.querySelector('.maplibregl-popup-content') as HTMLElement | null;
+    if (content) {
+      content.style.padding = '0';
+      content.style.borderRadius = '14px';
+      content.style.overflow = 'hidden';
+      content.style.boxShadow = '0 10px 30px rgba(16,24,40,.18),0 2px 8px rgba(16,24,40,.10)';
+    }
+  }, [mapInstance, selectedServiceId, services, isMobile]);
+
+  // Limpiar el popup al desmontar.
+  useEffect(() => () => { if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; } }, []);
 
   return (
     <div

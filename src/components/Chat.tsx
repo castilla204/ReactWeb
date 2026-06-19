@@ -6,7 +6,6 @@ import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId
 import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Button } from './ui/button';
 import { showToast } from '../lib/toast';
 import Map, { Marker, NavigationControl, type MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -821,9 +820,86 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
             )}
 
-            {/* Input */}
-            <div className="relative z-10 shrink-0 border-t border-[#e8e8e8] bg-white pt-3 shadow-[0_-2px_12px_rgba(15,23,42,0.04)] sm:pt-4 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))] lg:pb-0">
-                <div className="flex items-end gap-2 px-3 sm:px-4">
+            {/* Input — composer unificado (adjuntos · ubicación · enviar) */}
+            <div className="relative z-10 shrink-0 border-t border-[#f0f0f0] bg-white px-3 pt-2.5 shadow-[0_-1px_12px_rgba(15,23,42,0.04)] sm:px-4 sm:pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] lg:pb-3">
+                {/* Previsualización de adjuntos / ubicación seleccionados */}
+                {(selectedFiles.length > 0 || location) && (
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                        {selectedFiles.map((file, idx) => (
+                            <span
+                                key={`${file.name}-${idx}`}
+                                className="inline-flex max-w-[200px] items-center gap-1.5 rounded-full bg-brand/[0.08] py-1 pl-2.5 pr-1 text-[12px] font-medium text-brand"
+                            >
+                                <Paperclip className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
+                                <span className="truncate">{file.name}</span>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSelectedFiles((prev) => prev.filter((_, i) => i !== idx))
+                                    }
+                                    aria-label={`Quitar ${file.name}`}
+                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-brand/70 transition-colors hover:bg-brand/15 hover:text-brand"
+                                >
+                                    <X className="h-3 w-3" strokeWidth={2.5} />
+                                </button>
+                            </span>
+                        ))}
+                        {location && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 py-1 pl-2.5 pr-1 text-[12px] font-medium text-emerald-700">
+                                <MapPin className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
+                                <span>Ubicación adjunta</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setLocation(null)}
+                                    aria-label="Quitar ubicación"
+                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-emerald-600/70 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+                                >
+                                    <X className="h-3 w-3" strokeWidth={2.5} />
+                                </button>
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                <div
+                    className={[
+                        'flex items-center gap-0.5 rounded-[1.6rem] border bg-[#f6f7f9] py-1 pl-1 pr-1 transition-all duration-200',
+                        isSending
+                            ? 'border-[#e6e8eb] opacity-70'
+                            : 'border-[#e6e8eb] focus-within:border-brand/40 focus-within:bg-white focus-within:shadow-[0_2px_12px_hsl(var(--brand)/0.10)] focus-within:ring-2 focus-within:ring-brand/12',
+                    ].join(' ')}
+                >
+                    {/* Adjuntar foto o vídeo */}
+                    <label
+                        title="Adjuntar foto o vídeo"
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-black/[0.05] hover:text-[#1c1c1c] ${
+                            isSending ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                        }`}
+                    >
+                        <Paperclip className="h-[19px] w-[19px]" strokeWidth={1.9} aria-hidden />
+                        <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.mp4"
+                            multiple
+                            onChange={handleFileChange}
+                            disabled={isSending}
+                            className="hidden"
+                        />
+                        <span className="sr-only">Adjuntar archivo</span>
+                    </label>
+
+                    {/* Compartir ubicación */}
+                    <button
+                        type="button"
+                        onClick={handleOpenMapModal}
+                        disabled={isSending}
+                        aria-label="Compartir ubicación"
+                        title="Compartir ubicación"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-black/[0.05] hover:text-[#1c1c1c] disabled:opacity-50"
+                    >
+                        <MapPin className="h-[19px] w-[19px]" strokeWidth={1.9} aria-hidden />
+                    </button>
+
                     <input
                         type="text"
                         value={newMessage}
@@ -846,25 +922,33 @@ const Chat: React.FC<ChatProps> = ({
                                 }
                             }
                         }}
-                        placeholder={isSending ? 'Enviando…' : 'Mensaje…'}
+                        placeholder={isSending ? 'Enviando…' : 'Escribe un mensaje…'}
                         disabled={isSending}
-                        className="flex-1 rounded-2xl border border-[#e8e8e8]/90 bg-gray-50/90 px-4 py-3 text-sm shadow-inner transition-all placeholder:text-[#a0a0a0] focus:border-primary/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-[15px] leading-relaxed text-[#1c1c1c] placeholder:text-[#9aa0a6] focus:outline-none disabled:cursor-not-allowed"
                     />
-                    <Button
+
+                    {/* Enviar */}
+                    <button
+                        type="button"
                         onClick={handleSendMessage}
                         disabled={
                             (!newMessage.trim() && selectedFiles.length === 0 && !location) || isSending
                         }
-                        className="h-11 w-11 shrink-0 rounded-full p-0 shadow-md shadow-primary/25 transition-transform hover:scale-[1.03] active:scale-95"
-                        size="icon"
                         aria-label="Enviar mensaje"
+                        className={[
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1',
+                            (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending
+                                ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)] hover:bg-brand-hover hover:scale-[1.06] active:scale-95'
+                                : 'cursor-not-allowed bg-[#e3e5e8] text-[#a8adb3]',
+                        ].join(' ')}
                     >
                         {isSending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-[18px] w-[18px] animate-spin" />
                         ) : (
-                            <Send className="h-4 w-4" />
+                            <Send className="ml-px h-[17px] w-[17px]" strokeWidth={2.25} aria-hidden />
                         )}
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Botón de detalles — solo en móvil, debajo del input */}

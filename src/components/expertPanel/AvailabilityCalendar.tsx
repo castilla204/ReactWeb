@@ -631,7 +631,7 @@ const AvailabilityCalendar: React.FC = () => {
                             <Undo2 className="h-4 w-4" /> Descartar
                         </button>
                         <button type="button" onClick={saveAll} disabled={saving}
-                            className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+                            className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white shadow-[0_3px_12px_hsl(var(--brand)/0.45)] transition-all hover:opacity-90 disabled:opacity-50 disabled:shadow-none disabled:saturate-[0.6]">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             {saving ? 'Guardando…' : 'Guardar cambios'}
                         </button>

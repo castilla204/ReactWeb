@@ -380,16 +380,26 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       });
 
       if (isMinimalCoverage) {
-        // Zona elegible: solo contorno discontinuo, sin relleno interior.
+        // Zona elegible estilo panel de experto: relleno azul muy suave + contorno
+        // fino sólido (mismos valores que ProfileEditForm). Limpio, sin máscara roja
+        // ni líneas a rayas.
+        map.addLayer({
+          id: LAYER_CIRCLE_FILL,
+          type: 'fill',
+          source: SRC_CIRCLE,
+          paint: {
+            'fill-color': '#0066CC',
+            'fill-opacity': 0.12,
+          },
+        });
+
         map.addLayer({
           id: LAYER_CIRCLE_LINE,
           type: 'line',
           source: SRC_CIRCLE,
           paint: {
-            'line-color': '#0066CC',
-            'line-opacity': 0.55,
+            'line-color': 'rgba(0, 102, 204, 0.55)',
             'line-width': 2,
-            'line-dasharray': [5, 3],
           },
         });
       } else {

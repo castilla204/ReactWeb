@@ -1,0 +1,110 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Admin Panel — Control-room UI shell
+   Mismo lenguaje que expert-panel.css, identidad "zona admin":
+   sidebar grafito + acento índigo. Tokens --ap-*.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ap-canvas: 220 16% 95%;
+  --ap-surface: 0 0% 100%;
+  --ap-border: 220 13% 88%;
+  --ap-border-strong: 220 11% 78%;
+  --ap-ink: 222 24% 12%;
+  --ap-muted: 215 12% 44%;
+
+  /* Acento admin = índigo (distinto del azul #0066CC del experto) */
+  --ap-brand: 243 75% 59%;        /* ~#4F46E5 indigo-600 */
+  --ap-brand-strong: 245 58% 51%; /* hover */
+  --ap-brand-soft: 243 90% 97%;
+  --ap-on-brand: 0 0% 100%;
+
+  /* Sidebar grafito */
+  --ap-sidebar: 222 22% 14%;
+  --ap-sidebar-ink: 220 16% 86%;
+  --ap-sidebar-muted: 220 10% 60%;
+  --ap-sidebar-active: 243 75% 59%;
+  --ap-sidebar-hover: 222 18% 20%;
+  --ap-sidebar-border: 222 16% 24%;
+
+  --ap-success: 152 42% 30%; --ap-success-bg: 152 45% 95%; --ap-success-border: 152 38% 78%;
+  --ap-warning: 32 75% 32%;  --ap-warning-bg: 38 80% 95%;  --ap-warning-border: 32 58% 76%;
+  --ap-error:   0 72% 40%;   --ap-error-bg:   0 80% 96%;   --ap-error-border:   0 58% 80%;
+  --ap-info:    210 80% 38%; --ap-info-bg:    210 90% 96%;  --ap-info-border:    210 65% 80%;
+}
+
+/* ── Layout shell ─────────────────────────────────────────────────────── */
+.admin-shell { display: flex; min-height: 100vh; background: hsl(var(--ap-canvas)); color: hsl(var(--ap-ink)); }
+.admin-sidebar {
+  width: 248px; flex-shrink: 0; position: sticky; top: 0; align-self: flex-start;
+  height: 100vh; display: flex; flex-direction: column;
+  background: hsl(var(--ap-sidebar)); color: hsl(var(--ap-sidebar-ink));
+  border-right: 1px solid hsl(var(--ap-sidebar-border));
+}
+.admin-sidebar-brand { display: flex; flex-direction: column; gap: 4px; padding: 18px 16px; border-bottom: 1px solid hsl(var(--ap-sidebar-border)); }
+.admin-sidebar-nav { padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.admin-nav-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 9px 12px; border-radius: 8px; font-size: 13.5px; font-weight: 500;
+  color: hsl(var(--ap-sidebar-muted)); background: transparent; border: 0; cursor: pointer;
+  transition: background .12s ease, color .12s ease; text-align: left;
+}
+.admin-nav-item:hover { background: hsl(var(--ap-sidebar-hover)); color: hsl(var(--ap-sidebar-ink)); }
+.admin-nav-item--active { background: hsl(var(--ap-sidebar-active)); color: hsl(var(--ap-on-brand)); }
+.admin-nav-item--active:hover { background: hsl(var(--ap-sidebar-active)); color: hsl(var(--ap-on-brand)); }
+.admin-sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid hsl(var(--ap-sidebar-border)); font-size: 11.5px; color: hsl(var(--ap-sidebar-muted)); }
+
+.admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.admin-topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; background: hsl(var(--ap-surface) / .85); backdrop-filter: blur(8px); border-bottom: 1px solid hsl(var(--ap-border)); }
+.admin-topbar-title { font-size: 16px; font-weight: 700; line-height: 1.1; }
+.admin-topbar-subtitle { font-size: 12.5px; color: hsl(var(--ap-muted)); }
+.admin-workspace { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
+
+/* ── Card ─────────────────────────────────────────────────────────────── */
+.admin-card { background: hsl(var(--ap-surface)); border: 1px solid hsl(var(--ap-border)); border-radius: 12px; box-shadow: 0 1px 2px hsl(220 30% 10% / .04); }
+.admin-card-header { padding: 14px 16px; border-bottom: 1px solid hsl(var(--ap-border)); }
+.admin-card-title { font-size: 14px; font-weight: 700; }
+.admin-card-desc { font-size: 12.5px; color: hsl(var(--ap-muted)); margin-top: 2px; }
+.admin-card-body { padding: 16px; }
+
+/* ── Table ────────────────────────────────────────────────────────────── */
+.admin-table-wrap { overflow: auto; border: 1px solid hsl(var(--ap-border)); border-radius: 12px; background: hsl(var(--ap-surface)); }
+.admin-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.admin-table thead th { position: sticky; top: 0; z-index: 1; background: hsl(220 16% 97%); color: hsl(var(--ap-muted)); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 1px solid hsl(var(--ap-border)); white-space: nowrap; }
+.admin-table tbody td { padding: 11px 14px; border-bottom: 1px solid hsl(var(--ap-border) / .7); vertical-align: middle; }
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table tbody tr { transition: background .1s ease; }
+.admin-table tbody tr:hover { background: hsl(243 90% 98%); }
+.admin-table--zebra tbody tr:nth-child(even) { background: hsl(220 16% 98%); }
+.admin-table--zebra tbody tr:nth-child(even):hover { background: hsl(243 90% 98%); }
+
+/* ── Badge / pill ─────────────────────────────────────────────────────── */
+.admin-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; line-height: 1.6; border: 1px solid transparent; }
+.admin-badge--neutral { background: hsl(220 14% 95%); color: hsl(var(--ap-muted)); border-color: hsl(var(--ap-border)); }
+.admin-badge--success { background: hsl(var(--ap-success-bg)); color: hsl(var(--ap-success)); border-color: hsl(var(--ap-success-border)); }
+.admin-badge--warning { background: hsl(var(--ap-warning-bg)); color: hsl(var(--ap-warning)); border-color: hsl(var(--ap-warning-border)); }
+.admin-badge--error   { background: hsl(var(--ap-error-bg));   color: hsl(var(--ap-error));   border-color: hsl(var(--ap-error-border)); }
+.admin-badge--info    { background: hsl(var(--ap-info-bg));    color: hsl(var(--ap-info));    border-color: hsl(var(--ap-info-border)); }
+.admin-badge--brand   { background: hsl(var(--ap-brand-soft)); color: hsl(var(--ap-brand-strong)); border-color: hsl(var(--ap-brand) / .35); }
+
+/* ── Alert ────────────────────────────────────────────────────────────── */
+.admin-alert { display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid; font-size: 13px; }
+.admin-alert--info { background: hsl(var(--ap-info-bg)); border-color: hsl(var(--ap-info-border)); color: hsl(var(--ap-info)); }
+.admin-alert--warning { background: hsl(var(--ap-warning-bg)); border-color: hsl(var(--ap-warning-border)); color: hsl(var(--ap-warning)); }
+.admin-alert--error { background: hsl(var(--ap-error-bg)); border-color: hsl(var(--ap-error-border)); color: hsl(var(--ap-error)); }
+.admin-alert--success { background: hsl(var(--ap-success-bg)); border-color: hsl(var(--ap-success-border)); color: hsl(var(--ap-success)); }
+
+/* ── Tabs (estilo experto) ────────────────────────────────────────────── */
+.admin-tabs { display: flex; gap: 4px; border-bottom: 1px solid hsl(var(--ap-border)); overflow-x: auto; }
+.admin-tab { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; font-size: 13px; font-weight: 600; color: hsl(var(--ap-muted)); border: 0; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; white-space: nowrap; transition: color .12s ease, border-color .12s ease; }
+.admin-tab:hover { color: hsl(var(--ap-ink)); }
+.admin-tab--active { color: hsl(var(--ap-brand-strong)); border-bottom-color: hsl(var(--ap-brand)); }
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
+.admin-spinner { display: inline-block; border-radius: 999px; border: 2px solid hsl(var(--ap-border-strong)); border-top-color: hsl(var(--ap-brand)); animation: admin-spin .7s linear infinite; }
+@keyframes admin-spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive: sidebar colapsa en móvil ─────────────────────────────── */
+@media (max-width: 860px) {
+  .admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 70; transform: translateX(-100%); transition: transform .2s ease; }
+  .admin-sidebar--open { transform: translateX(0); }
+  .admin-workspace { padding: 16px; }
+}

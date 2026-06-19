@@ -1,4 +1,3 @@
-import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -10,22 +9,34 @@ const STEPS = [
 
 export type CheckoutMobileWizardStep = (typeof STEPS)[number]['id'];
 
-interface CheckoutMobileStepperProps {
-  currentStep: CheckoutMobileWizardStep;
-  className?: string;
+interface StepDef {
+  id: number;
+  label: string;
 }
 
-/** Indicador de paso — tres pasos: fecha, ubicación, pago. */
-export function CheckoutMobileStepper({ currentStep, className }: CheckoutMobileStepperProps) {
+interface CheckoutMobileStepperProps {
+  currentStep: number;
+  className?: string;
+  /** Lista de pasos a mostrar; por defecto fecha · ubicación · pago. */
+  steps?: readonly StepDef[];
+}
+
+/** Indicador de paso — misma píldora para el wizard y el paso de coordinación. */
+export function CheckoutMobileStepper({
+  currentStep,
+  className,
+  steps = STEPS,
+}: CheckoutMobileStepperProps) {
   return (
     <nav className={cn('mb-1.5', className)} aria-label="Pasos de la reserva">
       <div
         className={cn(
-          'grid grid-cols-3 gap-1 rounded-full border border-[#e5e7eb]/80 bg-[#f0f1f3] p-1.5',
+          'grid gap-1 rounded-full border border-[#e5e7eb]/80 bg-[#f0f1f3] p-1.5',
+          steps.length === 2 ? 'grid-cols-2' : 'grid-cols-3',
           'shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]',
         )}
       >
-        {STEPS.map((step) => {
+        {steps.map((step) => {
           const active = currentStep === step.id;
           const done = currentStep > step.id;
           return (

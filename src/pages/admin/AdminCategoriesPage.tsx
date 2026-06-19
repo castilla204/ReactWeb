@@ -1,130 +1,126 @@
 import React, { useState } from 'react';
-import { Plus, FolderTree } from 'lucide-react';
+import { Plus, FolderTree, Folder } from 'lucide-react';
 import { useCategories } from '../../contexts/CategoryContext';
 import { CreateCategoryDialog } from '../../components/CreateCategoryDialog';
+import {
+  AdminButton,
+  AdminCard,
+  AdminCardHeader,
+  AdminCardBody,
+  AdminStatusPill,
+  AdminTable,
+  AdminTHead,
+  AdminTH,
+  AdminTBody,
+  AdminTR,
+  AdminTD,
+  AdminEmptyState,
+  AdminTableSkeleton,
+} from '../../components/admin/ui';
 
 const AdminCategoriesPage: React.FC = () => {
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] = useState(false);
   const { categories: allCategories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
-  if (categoriesLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">Cargando categorías...</div>
-      </div>
-    );
-  }
+  const newCategoryButton = (
+    <AdminButton
+      variant="brand"
+      icon={<Plus className="h-4 w-4" />}
+      onClick={() => setShowCreateCategoryDialog(true)}
+    >
+      Nueva Categoría
+    </AdminButton>
+  );
 
-  if (categoriesError) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Error al cargar categorías: {categoriesError}</p>
-      </div>
-    );
-  }
+  const count = allCategories?.length ?? 0;
+  const headerDescription =
+    count === 0
+      ? 'Administra las categorías del sistema'
+      : `${count} ${count === 1 ? 'categoría' : 'categorías'} en el sistema`;
 
   return (
-    <div>
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestión de Categorías</h2>
-          <p className="text-gray-600 mt-1">Administra las categorías del sistema</p>
-        </div>
-        <button
-          onClick={() => setShowCreateCategoryDialog(true)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Categoría
-        </button>
-      </div>
+    <>
+      <AdminCard>
+        <AdminCardHeader
+          title="Categorías"
+          description={headerDescription}
+          actions={newCategoryButton}
+        />
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nombre
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Categoría Padre
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha de Creación
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+        {categoriesLoading ? (
+          <AdminTableSkeleton rows={6} cols={5} />
+        ) : categoriesError ? (
+          <AdminCardBody>
+            <AdminEmptyState
+              icon={<FolderTree className="h-6 w-6" />}
+              title="No se pudieron cargar las categorías"
+              description={categoriesError}
+            />
+          </AdminCardBody>
+        ) : count === 0 ? (
+          <AdminEmptyState
+            icon={<FolderTree className="h-6 w-6" />}
+            title="Sin categorías"
+            description="Crea la primera categoría con «Nueva Categoría»."
+            action={newCategoryButton}
+          />
+        ) : (
+          <AdminTable zebra>
+            <AdminTHead>
+              <AdminTH>ID</AdminTH>
+              <AdminTH>Nombre</AdminTH>
+              <AdminTH>Categoría Padre</AdminTH>
+              <AdminTH>Estado</AdminTH>
+              <AdminTH>Fecha de Creación</AdminTH>
+            </AdminTHead>
+            <AdminTBody>
               {(allCategories || []).map((category) => {
-                const isParent = category.isParent !== undefined 
-                  ? category.isParent 
+                const isParent = category.isParent !== undefined
+                  ? category.isParent
                   : category.parentId === null;
-                
-                const parentCategory = category.parentId 
-                  ? (allCategories || []).find(c => c.id === category.parentId)
+
+                const parentCategory = category.parentId
+                  ? (allCategories || []).find((c) => c.id === category.parentId)
                   : null;
-                
+
                 return (
-                  <tr key={category.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {category.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                  <AdminTR key={category.id}>
+                    <AdminTD>{category.id}</AdminTD>
+                    <AdminTD>
+                      <div className="flex items-center gap-2">
                         {isParent ? (
-                          <FolderTree className="w-4 h-4 text-blue-500 mr-2" />
+                          <FolderTree className="h-4 w-4 text-[hsl(var(--ap-brand))]" />
                         ) : (
-                          <div className="w-4 h-4 mr-2" />
+                          <Folder className="h-4 w-4 text-[hsl(var(--ap-muted))]" />
                         )}
-                        <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                        <span className="font-medium">{category.name}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {parentCategory ? parentCategory.name : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        category.isActive !== false
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                    </AdminTD>
+                    <AdminTD>{parentCategory ? parentCategory.name : '-'}</AdminTD>
+                    <AdminTD>
+                      <AdminStatusPill tone={category.isActive !== false ? 'success' : 'neutral'}>
                         {category.isActive !== false ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {category.createdAt 
+                      </AdminStatusPill>
+                    </AdminTD>
+                    <AdminTD>
+                      {category.createdAt
                         ? new Date(category.createdAt).toLocaleDateString('es-ES')
                         : '-'}
-                    </td>
-                  </tr>
+                    </AdminTD>
+                  </AdminTR>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </AdminTBody>
+          </AdminTable>
+        )}
+      </AdminCard>
 
-      {showCreateCategoryDialog && (
-        <CreateCategoryDialog
-          isOpen={showCreateCategoryDialog}
-          onClose={() => setShowCreateCategoryDialog(false)}
-        />
-      )}
-    </div>
+      <CreateCategoryDialog
+        open={showCreateCategoryDialog}
+        onOpenChange={setShowCreateCategoryDialog}
+      />
+    </>
   );
 };
 
 export default AdminCategoriesPage;
-
-
-
-
-
-
