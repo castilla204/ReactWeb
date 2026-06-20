@@ -64,6 +64,8 @@ interface AppointmentMapProps {
     longitude: number;
     nonce: number;
   } | null;
+  /** Padding al encuadrar el radio de cobertura (checkout móvil con chrome superior/inferior). */
+  boundsPadding?: number | { top: number; bottom: number; left: number; right: number };
 }
 
 // ============================================================================
@@ -211,6 +213,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
   onLocationRejected,
   onLocationClear,
   externalAddressPick = null,
+  boundsPadding,
 }) => {
   const isMinimalCoverage = coverageStyle === 'minimal';
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -488,7 +491,9 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
             [maxLng, maxLat],
           ],
           {
-            padding: referencePreview ? 72 : 48,
+            padding:
+              boundsPadding ??
+              (referencePreview ? 72 : 48),
             duration: 0,
             maxZoom: referencePreview ? 9.5 : 13,
           },

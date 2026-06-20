@@ -255,6 +255,7 @@ export const API_CONFIG = {
         accountDeletion: {
             status: `${API_PATH}/AccountDeletion/status`,
             delete: `${API_PATH}/AccountDeletion/delete`,
+            requestOtp: `${API_PATH}/AccountDeletion/request-otp`,
             adminStatus: (userId: number) => `${API_PATH}/AccountDeletion/admin/status/${userId}`,
             adminDelete: (userId: number) => `${API_PATH}/AccountDeletion/admin/delete/${userId}`,
         },

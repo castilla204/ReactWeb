@@ -41,6 +41,8 @@ interface Props {
     variant?: 'default' | 'wizard' | 'sidebar';
     /** Mapa informativo (Coordínalo Inspecciono): misma UI, sin elegir ubicación. */
     referenceMode?: boolean;
+    /** Oculta la cabecera numerada (layout 50/50 desktop: el paso va en la columna izquierda). */
+    showEmbeddedHeader?: boolean;
 }
 
 const FIELD_INPUT_CLS =
@@ -393,6 +395,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     onChange,
     variant = 'default',
     referenceMode = false,
+    showEmbeddedHeader = true,
 }) => {
     const isWizard = variant === 'wizard';
     const isSidebar = variant === 'sidebar';
@@ -485,7 +488,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     isWizard ? 'relative h-full min-h-0' : 'flex h-full min-h-0 w-full flex-1 flex-col bg-white',
                 )}
             >
-                <CheckoutSelfChoicePreviewMap className="h-full min-h-0">
+                <CheckoutSelfChoicePreviewMap className="h-full min-h-0" showInnerHeader={!isWizard}>
                     <AppointmentMap
                         {...workshopMapProps}
                         className="h-full w-full min-h-[inherit]"
@@ -604,6 +607,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     if (wizardPickLocation) {
         return (
             <CheckoutSelfChoicePickLocationShell
+                showInnerHeader={false}
                 searchBar={
                     <MapAddressSearchBar
                         overlay
@@ -620,8 +624,12 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     />
                 }
             >
-                <div className="relative h-full min-h-0">
-                    <AppointmentMap {...mapProps} className="h-full w-full min-h-[inherit]" />
+                <div className="relative h-full min-h-0 w-full">
+                    <AppointmentMap
+                        {...mapProps}
+                        boundsPadding={{ top: 88, bottom: 96, left: 28, right: 28 }}
+                        className="h-full w-full min-h-[inherit]"
+                    />
                     <LocationMapDrawer
                         {...fieldProps}
                         expanded={drawerExpanded}
@@ -636,15 +644,17 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     if (isSidebar) {
         return (
             <div className="flex h-full min-h-0 w-full flex-1 flex-col bg-white">
-                <CheckoutEmbeddedStepHeader
-                    step={3}
-                    title="¿Dónde es la inspección?"
-                    description={
-                        referenceMode
-                            ? 'Explora el mapa y la zona de cobertura del experto. Puedes mover y ampliar la vista; la dirección exacta la confirmará el vendedor al reservar.'
-                            : 'Indica dónde está el vehículo para que el experto acuda a revisarlo. La inspección debe ser dentro del área marcada en el mapa. Solo el profesional que contrates verá la dirección exacta.'
-                    }
-                />
+                {showEmbeddedHeader ? (
+                    <CheckoutEmbeddedStepHeader
+                        step={3}
+                        title="¿Dónde es la inspección?"
+                        description={
+                            referenceMode
+                                ? 'Explora el mapa y la zona de cobertura del experto. Puedes mover y ampliar la vista; la dirección exacta la confirmará el vendedor al reservar.'
+                                : 'Indica dónde está el vehículo para que el experto acuda a revisarlo. La inspección debe ser dentro del área marcada en el mapa. Solo el profesional que contrates verá la dirección exacta.'
+                        }
+                    />
+                ) : null}
                 <div className="relative flex min-h-0 w-full flex-1 flex-col">
                     {referenceMode ? (
                         <CheckoutSellerChoicePreviewMap className="h-full min-h-0 w-full flex-1">

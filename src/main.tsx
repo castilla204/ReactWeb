@@ -4,7 +4,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { GoogleOAuthProvider } from '@react-oauth/google'
 // ✅ ReactQueryDevtools solo en desarrollo - importación condicional
 // En producción, Vite tree-shake eliminará este código
-import { toast } from 'sonner'
+import { toast } from './lib/toast'
 import App from './App.tsx'
 import { initRum } from './lib/rum'
 import { schedulePrefetchOfLikelyRoutes } from './lib/prefetchRoutes'

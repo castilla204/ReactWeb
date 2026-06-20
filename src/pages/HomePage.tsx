@@ -133,7 +133,7 @@ const HomePage: React.FC = () => {
         description="¿Vas a comprar un coche, un piso o una moto de segunda mano? Un experto verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow."
         canonical="/"
         ogTitle="Antes de comprar, que un experto lo revise por ti"
-        ogDescription="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. Tú no pagas hasta dar el visto bueno."
+        ogDescription="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. No pagas al experto hasta dar el visto bueno."
         jsonLd={[faqPageSchema(homeFaq)]}
       />
       <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">

@@ -18,7 +18,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'how-it-works',
     question: '¿Cómo funciona Inspecciono?',
     answer:
-      'En cuatro pasos: (1) eliges un experto en el mapa comparando precio, reseñas y cobertura; (2) reservas con pago seguro — el importe queda retenido; (3) coordináis la inspección por chat y recibes informe, fotos y vídeo; (4) si todo está bien, confirmas y se libera el pago al experto.',
+      'En cuatro pasos: (1) eliges un experto en el mapa comparando precio, reseñas y cobertura; (2) reservas con pago seguro — autorizamos el importe y solo se cobra cuando el experto confirma la cita; (3) coordináis la inspección y recibes informe, fotos y vídeo; (4) si todo está bien, confirmas y se libera el pago al experto.',
   },
   {
     id: 'explore-without-account',
@@ -48,7 +48,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'payments',
     question: '¿Cómo se procesan los pagos?',
     answer:
-      'Con Stripe. Al reservar, el importe queda en custodia (retenido). Ni Inspecciono ni el experto reciben el dinero hasta que confirmas que el servicio se completó correctamente o hasta que se resuelva una disputa.',
+      'Con Stripe. Al reservar solo autorizamos el importe en tu tarjeta; no se cobra nada hasta que el experto confirma la cita, y entonces queda en custodia. Ni Inspecciono ni el experto reciben el dinero hasta que confirmas que el servicio se completó correctamente o hasta que se resuelva una disputa.',
   },
   {
     id: 'escrow',
@@ -66,7 +66,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'checkout',
     question: '¿Qué pasa en el checkout?',
     answer:
-      'Revisas el resumen de tu reserva (experto, servicio, precio) y pagas con Stripe. El importe queda retenido hasta que apruebes el informe. Puedes cancelar sin coste antes de que empiece la revisión presencial.',
+      'Revisas el resumen de tu reserva (experto, servicio, precio) y autorizas el pago con Stripe. No se cobra nada hasta que el experto confirma la cita; después el importe queda retenido hasta que apruebes el informe. Puedes cancelar sin coste antes de que empiece la revisión presencial.',
   },
   {
     id: 'report-time',

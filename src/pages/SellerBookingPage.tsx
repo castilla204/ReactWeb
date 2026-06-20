@@ -4,10 +4,14 @@ import { CheckCircle2, CalendarClock, AlertTriangle, Loader2 } from 'lucide-reac
 import { API_CONFIG } from '../config/api';
 import SlotPicker, { type ChosenSlot } from '../components/SlotPicker';
 import CheckoutLocationPicker, { type CheckoutLocationData } from '../components/CheckoutLocationPicker';
+import { cn } from '../lib/utils';
+import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
 
 // Página PÚBLICA del magic link del vendedor. Sin login: el token de la URL es la credencial.
 // El vendedor elige día/hora (calendario del experto, hasta el tope de días que fijó el cliente)
 // y el lugar (mapa dentro del rango, igual que el checkout), y confirma la cita.
+// 🎨 Estética unificada con el checkout del cliente: tarjeta shadcn (SD_CHECKOUT_*), calendario
+// SlotPicker embebido a 2 columnas y mapa guiado CheckoutLocationPicker (variant wizard).
 interface Context {
     serviceId: number;
     alreadyBooked: boolean;
@@ -137,179 +141,166 @@ export default function SellerBookingPage() {
         return { minLeadDays, windowDays: windowInfo.days };
     }, [windowInfo, ctx?.maxDays]);
 
-    const card: React.CSSProperties = {
-        background: '#fff', border: '0.5px solid #DCE3EC', borderRadius: 16,
-        maxWidth: 560, width: '100%', padding: 24,
-    };
+    const showForm = status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && !declined
+        && windowInfo?.hasAvailability !== false;
 
     return (
-        <div style={{ minHeight: '100dvh', background: '#F3F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <div style={card}>
-                <strong style={{ fontSize: 18, color: '#1C63B4', display: 'block', marginBottom: 12 }}>Inspecciono</strong>
-
-                {status === 'loading' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6B7280', fontSize: 14 }}>
-                        <Loader2 size={18} className="animate-spin" /> Comprobando el enlace…
-                    </div>
-                )}
-
-                {status === 'invalid' && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: 14 }}>Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
-                    </div>
-                )}
-
-                {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
-                        <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Cita confirmada</p>
-                            <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>El técnico acudirá en la fecha elegida. ¡Gracias!</p>
+        <div className="flex min-h-[100dvh] items-start justify-center bg-[#f7f7f7] px-4 py-8 sm:py-12">
+            <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'w-full max-w-3xl')}>
+                <div className="px-5 py-6 sm:px-6">
+                    {status === 'loading' && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 size={18} className="animate-spin" /> Comprobando el enlace…
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {status === 'ok' && declined && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
-                        <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Coordinación cancelada</p>
-                            <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
+                    {status === 'invalid' && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: 14 }}>El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
-                    </div>
-                )}
-
-                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
-                    && windowInfo && !windowInfo.hasAvailability && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: 14 }}>
-                            El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
-                        </p>
-                    </div>
-                )}
-
-                {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && !declined
-                    && windowInfo?.hasAvailability !== false && (
-                    <div>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
-                            <CalendarClock size={20} style={{ color: '#1C63B4', flexShrink: 0 }} />
+                    {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
+                        <div className="flex items-start gap-3">
+                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
                             <div>
-                                <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Elige cuándo y dónde ver el vehículo</p>
-                                <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>
-                                    Un comprador ha <strong>pagado</strong> una inspección profesional. Elige un hueco del técnico y dónde está el coche.
-                                </p>
+                                <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
+                                <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
                             </div>
                         </div>
+                    )}
 
-                        {windowInfo?.windowExtended && (
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 12, background: '#FFF7E6', border: '0.5px solid #F0D38A', borderRadius: 10, padding: '10px 12px' }}>
-                                <AlertTriangle size={16} style={{ color: '#B8860B', flexShrink: 0, marginTop: 1 }} />
-                                <p style={{ margin: 0, fontSize: 13, color: '#7A5C00' }}>
-                                    El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
-                                </p>
+                    {status === 'ok' && declined && (
+                        <div className="flex items-start gap-3">
+                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
+                            <div>
+                                <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
+                                <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
                             </div>
-                        )}
-
-                        <SlotPicker
-                            serviceId={ctx.serviceId}
-                            selected={slot}
-                            onSelect={setSlot}
-                            slotsBaseUrl={base}
-                            windowDays={slotConstraints.windowDays}
-                            minLeadDays={slotConstraints.minLeadDays}
-                            sectionTitle="Fecha y hora"
-                        />
-
-                        <div style={{ marginTop: 14 }}>
-                            {isWorkshop ? (
-                                <p style={{ fontSize: 13, color: '#6B7280', margin: 0 }}>
-                                    La inspección se hará en el taller del experto.
-                                </p>
-                            ) : (
-                                <CheckoutLocationPicker
-                                    expertLatitude={ctx.expertLatitude ?? undefined}
-                                    expertLongitude={ctx.expertLongitude ?? undefined}
-                                    expertCountry={ctx.expertCountry ?? undefined}
-                                    expertRange={ctx.workRadiusKm ?? undefined}
-                                    workRadiusKm={ctx.workRadiusKm ?? undefined}
-                                    onChange={setChosenLocation}
-                                />
-                            )}
                         </div>
+                    )}
 
-                        {error && <p style={{ color: '#D32F2F', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
+                    {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
+                        </div>
+                    )}
 
-                        <button
-                            type="button"
-                            onClick={confirm}
-                            disabled={submitting || !slot || (!isWorkshop && !chosenLocation)}
-                            style={{
-                                marginTop: 14, width: '100%', background: '#1C63B4', color: '#fff',
-                                border: 'none', borderRadius: 10, padding: 12, fontSize: 15, fontWeight: 600,
-                                cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1,
-                            }}
-                        >
-                            {submitting ? 'Confirmando…' : 'Confirmar cita'}
-                        </button>
+                    {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                        && windowInfo && !windowInfo.hasAvailability && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">
+                                El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
+                            </p>
+                        </div>
+                    )}
 
-                        {/* "No puedo quedar": acción secundaria sutil. Confirmación en 2 pasos
-                            porque dispara la cancelación + devolución al comprador. */}
-                        {!declineConfirming ? (
-                            <button
-                                type="button"
-                                onClick={() => { setError(null); setDeclineConfirming(true); }}
-                                disabled={submitting || declining}
-                                style={{
-                                    marginTop: 10, width: '100%', background: 'transparent', color: '#6B7280',
-                                    border: 'none', padding: 8, fontSize: 13,
-                                    cursor: submitting ? 'default' : 'pointer', textDecoration: 'underline',
-                                }}
-                            >
-                                No voy a poder coordinar la cita
-                            </button>
-                        ) : (
-                            <div style={{ marginTop: 12, background: '#FBF1F1', border: '0.5px solid #F0C9C9', borderRadius: 10, padding: '12px 14px' }}>
-                                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#7A2E2E' }}>
-                                    Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
-                                </p>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <button
-                                        type="button"
-                                        onClick={decline}
-                                        disabled={declining}
-                                        style={{
-                                            flex: 1, background: '#D32F2F', color: '#fff', border: 'none', borderRadius: 8,
-                                            padding: 10, fontSize: 14, fontWeight: 600,
-                                            cursor: declining ? 'default' : 'pointer', opacity: declining ? 0.7 : 1,
-                                        }}
-                                    >
-                                        {declining ? 'Cancelando…' : 'Sí, cancelar'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeclineConfirming(false)}
-                                        disabled={declining}
-                                        style={{
-                                            flex: 1, background: '#fff', color: '#374151', border: '0.5px solid #DCE3EC',
-                                            borderRadius: 8, padding: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                                        }}
-                                    >
-                                        Volver
-                                    </button>
+                    {showForm && (
+                        <div>
+                            <div className="mb-5 flex items-start gap-3">
+                                <CalendarClock size={20} className="shrink-0 text-brand" />
+                                <div>
+                                    <p className="mb-1 text-[15px] font-semibold">Elige cuándo y dónde ver el vehículo</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Un comprador ha <strong>pagado</strong> una inspección profesional. Elige un hueco del técnico y dónde está el coche.
+                                    </p>
                                 </div>
                             </div>
-                        )}
-                    </div>
-                )}
+
+                            {windowInfo?.windowExtended && (
+                                <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                                    <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                                    <p className="text-[13px] text-amber-800">
+                                        El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
+                                    </p>
+                                </div>
+                            )}
+
+                            <SlotPicker
+                                serviceId={ctx.serviceId}
+                                selected={slot}
+                                onSelect={setSlot}
+                                slotsBaseUrl={base}
+                                windowDays={slotConstraints.windowDays}
+                                minLeadDays={slotConstraints.minLeadDays}
+                                sectionTitle="Fecha y hora"
+                                embedded
+                                embeddedSplitColumn
+                            />
+
+                            <div className="mt-5">
+                                {isWorkshop ? (
+                                    <div className="rounded-xl border border-[#ebebeb] bg-[#fafafa] px-4 py-3">
+                                        <p className="text-sm text-muted-foreground">
+                                            La inspección se hará en el taller del experto.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <CheckoutLocationPicker
+                                        variant="wizard"
+                                        expertLatitude={ctx.expertLatitude ?? undefined}
+                                        expertLongitude={ctx.expertLongitude ?? undefined}
+                                        expertCountry={ctx.expertCountry ?? undefined}
+                                        expertRange={ctx.workRadiusKm ?? undefined}
+                                        workRadiusKm={ctx.workRadiusKm ?? undefined}
+                                        onChange={setChosenLocation}
+                                    />
+                                )}
+                            </div>
+
+                            {error && <p className="mt-3 text-[13px] text-red-600">{error}</p>}
+
+                            <button
+                                type="button"
+                                onClick={confirm}
+                                disabled={submitting || !slot || (!isWorkshop && !chosenLocation)}
+                                className="mt-5 h-11 w-full rounded-full bg-brand text-[15px] font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {submitting ? 'Confirmando…' : 'Confirmar cita'}
+                            </button>
+
+                            {/* "No puedo quedar": acción secundaria sutil. Confirmación en 2 pasos
+                                porque dispara la cancelación + devolución al comprador. */}
+                            {!declineConfirming ? (
+                                <button
+                                    type="button"
+                                    onClick={() => { setError(null); setDeclineConfirming(true); }}
+                                    disabled={submitting || declining}
+                                    className="mt-3 w-full py-2 text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+                                >
+                                    No voy a poder coordinar la cita
+                                </button>
+                            ) : (
+                                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
+                                    <p className="mb-2.5 text-[13px] text-red-800">
+                                        Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={decline}
+                                            disabled={declining}
+                                            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                                        >
+                                            {declining ? 'Cancelando…' : 'Sí, cancelar'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeclineConfirming(false)}
+                                            disabled={declining}
+                                            className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                                        >
+                                            Volver
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

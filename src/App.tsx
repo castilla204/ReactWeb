@@ -6,8 +6,8 @@ import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
 // import { PhoneVerification as PhoneVerificationPage } from './pages/PhoneVerificationPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner';
+import { Toaster } from './components/ui/sileo';
+import { toast } from './lib/toast';
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -44,6 +44,7 @@ import CountryFlag from './components/CountryFlag';
 import CountrySelector from './components/CountrySelector';
 import { CurrencySelector } from './components/CurrencySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ApiStatusGate } from './components/feedback/ApiStatusGate';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
 import { ScrollToTop } from './components/ScrollToTop';
@@ -612,6 +613,10 @@ const AppContent: React.FC = () => {
                     </Suspense>
                 )}
                 <Toaster />
+
+                {/* 🛡️ Pantalla global de "API caída": se activa solo cuando el interceptor
+                    confirma vía /health que el servidor no responde. Reintenta en segundo plano. */}
+                <ApiStatusGate />
 
                 {/* 🍪 Round 9 — A9 FIX: LSSI-CE Spain exige consentimiento previo al uso de cookies
                     no esenciales. El componente existía pero nunca se renderizaba (sanción hasta €91k).

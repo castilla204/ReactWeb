@@ -15,7 +15,7 @@ export const COMO_FUNCIONA_STEPS: ComoFuncionaStep[] = [
   },
   {
     title: 'Reserva con pago seguro',
-    body: 'Precio cerrado. El importe queda retenido hasta que confirmes que el trabajo está bien hecho.',
+    body: 'Precio cerrado. Al reservar solo autorizamos el importe; se cobra cuando el experto confirma la cita y queda retenido hasta tu visto bueno.',
     Icon: ShoppingBag,
   },
   {

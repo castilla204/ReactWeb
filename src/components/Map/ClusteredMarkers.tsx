@@ -291,7 +291,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
           const el = document.createElement('button');
           el.type = 'button';
           applyClusterStyle(el, pointCount);
-          el.addEventListener('click', () => {
+          el.addEventListener('click', (e) => {
+            // ⛔ stopPropagation: el click del marker BURBUJEA al contenedor del canvas y
+            //    MapLibre dispararía su evento 'click' de mapa → el handler onDeselect de
+            //    MapContainer deseleccionaría justo después de seleccionar. Sin esto, tocar
+            //    un pin "no se quedaba" seleccionado (badge no se ponía azul).
+            e.stopPropagation();
             if (!supercluster) return;
             const currentZoom = map.getZoom();
             const suggestedZoom = supercluster.getClusterExpansionZoom(cluster.id as number);
@@ -327,7 +332,12 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
         const el = document.createElement('button');
         el.type = 'button';
         applyServiceStyle(el, service, isSelected, isHovered);
-        el.addEventListener('click', () => onServiceClickRef.current?.(service));
+        el.addEventListener('click', (e) => {
+          // ⛔ Igual que el cluster: evita que el click burbujee y MapLibre emita 'click' de
+          //    mapa → onDeselect deseleccionaría inmediatamente (badge no se ponía azul).
+          e.stopPropagation();
+          onServiceClickRef.current?.(service);
+        });
         const marker = new maplibregl.Marker({
           element: el,
           anchor: 'center',

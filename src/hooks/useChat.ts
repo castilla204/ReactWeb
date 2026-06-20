@@ -689,7 +689,7 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
         },
         onError: (error: any, variables, context) => {
             console.error('[Supabase Chat] Failed to send message:', error.message, error, { variables, context });
-            showToast('error', `Error al enviar el mensaje: ${error.message || 'Error desconocido'}`, 5000);
+            showToast('error', 'No se pudo enviar el mensaje. Inténtalo de nuevo.', 5000);
             if (error.message.includes('400') || error.message.includes('404')) {
                 refetch();
             }

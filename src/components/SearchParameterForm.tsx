@@ -83,17 +83,16 @@ interface MapServiceCardProps {
     variant?: 'auto' | 'strip';
 }
 
-/** Contorno de selección: degradado azul→ámbar de marca (máscara → sin layout shift). */
+/** Contorno de selección: borde SÓLIDO de marca, superpuesto (z-20) sobre la foto.
+ *  Antes se usaba un degradado azul→ámbar con `mask-composite: xor`, pero esa técnica
+ *  no se renderiza en el WebView de Capacitor/Android (el borde no salía en móvil).
+ *  Un borde sólido absoluto se ve siempre y no provoca layout shift. */
 const MapCardGradientOutline: React.FC = () => (
     <span
         aria-hidden
         className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
         style={{
-            padding: '2px',
-            background: 'linear-gradient(to right, #0066CC, #F59E0B)',
-            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-            WebkitMaskComposite: 'xor',
-            maskComposite: 'exclude',
+            border: '2.5px solid #0066CC',
         }}
     />
 );
@@ -306,20 +305,22 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
             <a
                 href={`/service/${serviceId}`}
                 onClick={handleCardClick}
-                className="group block w-[250px] cursor-pointer focus-visible:outline-none"
+                className={`group block ${isMobile ? 'w-[176px]' : 'w-[250px]'} cursor-pointer focus-visible:outline-none`}
                 style={{ textDecoration: 'none', color: 'inherit' }}
             >
                 <div
-                    className={`overflow-hidden rounded-2xl bg-white transition-[box-shadow,transform] duration-200 ${
+                    className={`relative overflow-hidden rounded-2xl bg-white transition-[box-shadow,transform] duration-200 ${
                         isSelected
-                            ? 'shadow-[0_12px_32px_rgba(0,102,204,0.24)] ring-2 ring-brand'
+                            ? 'shadow-[0_12px_32px_rgba(0,102,204,0.24)]'
                             : isHovered
                               ? 'shadow-[0_12px_30px_rgba(16,24,40,0.20)] -translate-y-0.5'
                               : 'shadow-[0_6px_18px_rgba(16,24,40,0.16)]'
                     }`}
                 >
+                    {/* Contorno de selección: mismo degradado azul→ámbar que la card grande. */}
+                    {isSelected && <MapCardGradientOutline />}
                     {/* Imagen */}
-                    <div className="relative h-[118px] w-full overflow-hidden bg-[#eceff3]">
+                    <div className={`relative ${isMobile ? 'h-[88px]' : 'h-[118px]'} w-full overflow-hidden bg-[#eceff3]`}>
                         {imageUrls.length > 0 ? (
                             <>
                                 <img
@@ -365,9 +366,9 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                     </div>
 
                     {/* Info */}
-                    <div className="p-2.5 font-display">
-                        <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0] ring-1 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]">
+                    <div className={`${isMobile ? 'p-2' : 'p-2.5'} font-display`}>
+                        <div className={`flex items-center ${isMobile ? 'gap-1.5' : 'gap-2'}`}>
+                            <div className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7'} shrink-0 overflow-hidden rounded-full bg-[#f0f0f0] ring-1 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]`}>
                                 {service.expert?.profilePictureUrl ? (
                                     <img src={service.expert.profilePictureUrl} alt={expertName} className="h-full w-full object-cover" />
                                 ) : (
@@ -378,12 +379,12 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#8a8a8a]">{serviceTypeLabel}</p>
-                                <h3 className="truncate text-[14px] font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c]">{expertName}</h3>
+                                <h3 className={`truncate ${isMobile ? 'text-[12.5px]' : 'text-[14px]'} font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c]`}>{expertName}</h3>
                             </div>
                         </div>
 
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                            <span className="flex min-w-0 items-center gap-1 text-[12px] leading-none text-[#525252]">
+                        <div className={`${isMobile ? 'mt-1.5' : 'mt-2'} flex items-center justify-between gap-2`}>
+                            <span className={`flex min-w-0 items-center gap-1 ${isMobile ? 'text-[11px]' : 'text-[12px]'} leading-none text-[#525252]`}>
                                 {ratingNum > 0 ? (
                                     <>
                                         <Star className="h-3.5 w-3.5 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
@@ -396,7 +397,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 {(distLabel || cityLabel) && <span className="truncate text-[#737373]">· {distLabel ? `a ${distLabel}` : cityLabel}</span>}
                             </span>
                             <span className="flex shrink-0 items-baseline gap-0.5">
-                                <span className="text-[15px] font-semibold leading-none tabular-nums tracking-tight text-[#1c1c1c]">{price}</span>
+                                <span className={`${isMobile ? 'text-[13.5px]' : 'text-[15px]'} font-semibold leading-none tabular-nums tracking-tight text-[#1c1c1c]`}>{price}</span>
                                 <span className="text-[11px] font-normal text-[#737373]">/ serv.</span>
                             </span>
                         </div>
@@ -2374,6 +2375,11 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         (service: Service) => { handleServiceSelect(service.id); },
         [handleServiceSelect],
     );
+    // Click en zona vacía del mapa → deseleccionar (cierra el bocadillo y des-resalta la card).
+    const handleMapDeselect = useCallback(
+        () => { handleServiceSelect(null); },
+        [handleServiceSelect],
+    );
     const desktopInitialCenter = useMemo(() => {
         if (selectedLocation) return selectedLocation;
         const c = getCountryCoordinates(selectedCountry);
@@ -2453,6 +2459,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 initialZoom={Math.max(3, getMapOverviewZoom(selectedCountry) - 1)}
                                 recenterMode="pan-only"
                                 onServiceSelect={handleMapServiceSelect}
+                                onDeselect={handleMapDeselect}
                                 selectedServiceId={selectedService}
                                 hoveredServiceId={hoveredServiceId}
                                 isMobile={false}
@@ -2600,6 +2607,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         })()}
                                         recenterMode="pan-only"
                                         onServiceSelect={handleMapServiceSelect}
+                                        onDeselect={handleMapDeselect}
                                         selectedServiceId={selectedService}
                                         isMobile={true}
                                         style={mapStyleFull}
@@ -2636,7 +2644,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         {(displayedServices.length > 0 || mapLoading) && (
                                         <div
                                             ref={mobileStripScroll.scrollRef}
-                                            className="flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                                            // -mx-5 px-5: el carrusel sangra hasta los bordes de la pantalla (cancela el
+                                            // gutter px-5 del contenedor) y reañade el padding como scroll-padding interno,
+                                            // así las cards usan todo el ancho sin márgenes laterales muertos en el deslizable.
+                                            className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                                         >
                                         {displayedServices.length > 0 ? (
                                             displayedServices.map((service) => {
@@ -2658,7 +2669,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             })
                                         ) : (
                                             [1, 2, 3].map((i) => (
-                                                <div key={i} className="h-[196px] w-[250px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
+                                                <div key={i} className="h-[150px] w-[176px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
                                             ))
                                         )}
                                         </div>
