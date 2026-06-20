@@ -5,6 +5,10 @@ import {
     COORD_OPTION_SELLER_TITLE,
 } from '../components/checkout/CheckoutSellerCoordinationFields';
 import { buildExpertLocationLabel, type HireSearchLocation } from './hireSearchContext';
+import {
+    SELLER_BOOKING_MIN_LEAD_DAYS,
+    SELLER_BOOKING_TARGET_WINDOW_DAYS,
+} from './sellerBookingWindow';
 
 export function formatCheckoutLocationLabel(
     location: CheckoutLocationData | null | undefined,
@@ -92,7 +96,7 @@ export function buildCheckoutSummaryDisplay(
             locationHint = `Zona de búsqueda: ${hireSearchLocation.locationName}`;
         }
     } else if (coordinationMode === 'seller') {
-        appointmentLabel = 'El vendedor elige día y hora al reservar';
+        appointmentLabel = `El vendedor elige en la agenda del experto (${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago)`;
 
         if (isWorkshopOnly) {
             locationLabel = pickedLocationLabel ?? 'Taller del experto (punto fijo)';

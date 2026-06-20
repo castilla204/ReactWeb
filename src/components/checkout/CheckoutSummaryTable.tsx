@@ -11,7 +11,9 @@ import {
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import type { ServiceDeliverableType } from '../serviceDetail/ServiceDetailDeliverablesGuide';
+import { BrandChatGradientAccent } from '../brand/BrandChatGradientAccent';
 
 export interface CheckoutSummaryTableProps {
   serviceName: string;
@@ -38,6 +40,10 @@ export interface CheckoutSummaryTableProps {
   showFooterNotes?: boolean;
   /** Resumen reducido durante el wizard (fecha/ubicación). */
   compact?: boolean;
+  /** Línea y lavado ámbar→azul (paso pago) */
+  brandAccent?: boolean;
+  /** Resumen embebido en tarjeta desktop — sin línea superior duplicada */
+  brandAccentEmbedded?: boolean;
   className?: string;
 }
 
@@ -73,8 +79,8 @@ function SummaryValue({
   );
 }
 
-function buildHeaderMeta(categoryName?: string, durationLabel?: string): string | null {
-  return [categoryName, durationLabel].filter(Boolean).join(' · ') || null;
+function buildHeaderMeta(durationLabel?: string): string | null {
+  return durationLabel?.trim() || null;
 }
 
 /** Resumen minimalista de checkout — móvil y desktop. */
@@ -95,22 +101,35 @@ export function CheckoutSummaryTable({
   includePrice = true,
   showFooterNotes = false,
   compact = false,
+  brandAccent = false,
+  brandAccentEmbedded = false,
   className = '',
 }: CheckoutSummaryTableProps) {
-  const headerMeta = buildHeaderMeta(categoryName, durationLabel);
+  const headerMeta = buildHeaderMeta(durationLabel);
 
   return (
     <div className={className}>
       <article
         className={cn(
           SD_CHECKOUT_MOBILE_TABLE_CLASS,
+          brandAccent && 'relative overflow-hidden',
           compact && 'rounded-xl border border-[#eceef2] shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
         )}
       >
         {!compact ? (
-          <header className={SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS}>
-            <h2 className={SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS}>{serviceName}</h2>
-            {headerMeta ? <p className={SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS}>{headerMeta}</p> : null}
+          <header
+            className={cn(
+              SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS,
+              brandAccent && 'relative overflow-hidden',
+            )}
+          >
+            {brandAccent ? (
+              <BrandChatGradientAccent placement="header" tone="blue" withLine={false} />
+            ) : null}
+            <div className={cn(brandAccent && 'relative')}>
+              <h2 className={SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS}>{serviceName}</h2>
+              {headerMeta ? <p className={SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS}>{headerMeta}</p> : null}
+            </div>
           </header>
         ) : (
           <header className="border-b border-[#f0f0f0] px-4 py-2.5">
@@ -134,6 +153,12 @@ export function CheckoutSummaryTable({
         ) : null}
 
         <dl aria-label="Detalles del servicio">
+          {categoryName ? (
+            <CheckoutSummaryTableRow label="Categoría" compact={compact}>
+              {categoryName}
+            </CheckoutSummaryTableRow>
+          ) : null}
+
           {coordinationLabel ? (
             <CheckoutSummaryTableRow label="Coordinación" compact={compact}>
               {coordinationLabel}
@@ -187,7 +212,8 @@ export function CheckoutSummaryTable({
         </dl>
 
         {showFooterNotes ? (
-          <footer className="border-t border-[#f5f5f5] px-4 py-3">
+          <footer className="space-y-3 border-t border-[#f5f5f5] px-4 py-3">
+            <CheckoutReserveHint />
             <a
               href="/terms.html"
               target="_blank"

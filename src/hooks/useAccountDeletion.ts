@@ -1,16 +1,34 @@
 import { useState } from 'react';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
-import { 
-  AccountDeletionStatus, 
-  AccountDeletionRequest, 
-  AccountDeletionResponse 
+import {
+  AccountDeletionStatus,
+  AccountDeletionRequest,
+  AccountDeletionResponse,
+  DeletionOtpResponse
 } from '../types/accountDeletion';
 
 export const useAccountDeletion = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { get, post } = useApi();
+
+  // 🛡️ SEC-1: solicita el OTP step-up por email para confirmar el borrado (cuentas OAuth).
+  const requestDeletionOtp = async (): Promise<DeletionOtpResponse | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await post<DeletionOtpResponse>(API_CONFIG.endpoints.accountDeletion.requestOtp, {});
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al solicitar el código de verificación';
+      setError(errorMessage);
+      console.error('Error requesting deletion OTP:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkDeletionStatus = async (): Promise<AccountDeletionStatus | null> => {
     try {
@@ -84,6 +102,7 @@ export const useAccountDeletion = () => {
     loading,
     error,
     checkDeletionStatus,
+    requestDeletionOtp,
     deleteAccount,
     checkAdminDeletionStatus,
     deleteUserAccount,

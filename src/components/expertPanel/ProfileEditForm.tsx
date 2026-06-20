@@ -814,6 +814,7 @@ export function ProfileEditForm({
                         <span className="pf-map-work-mode__label">
                             <span className="pf-map-work-mode__label-full">Rango de trabajo</span>
                             <span className="pf-map-work-mode__label-short">Con radio</span>
+                            <span className="pf-map-work-mode__rec">Recomendado</span>
                         </span>
                         <span className="pf-map-work-mode__hint">Tú te desplazas</span>
                     </span>

@@ -4,7 +4,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
 import { RoleChecker } from '../utils/roleChecker';

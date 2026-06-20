@@ -108,6 +108,47 @@ export function CheckoutSelfChoiceBadge({
     );
 }
 
+/** Franja superior modo «Yo reservo la cita» — calendario (columna split desktop). */
+export function CheckoutSelfChoiceLockedStripe({
+    className,
+    compactSplit,
+}: {
+    className?: string;
+    compactSplit?: boolean;
+}) {
+    return (
+        <div
+            className={cn(
+                'relative flex items-start gap-2 bg-gradient-to-r from-sky-50 via-white to-amber-50/40 px-3 py-2',
+                CHAT_GRADIENT_DIVIDER_CLASS,
+                className,
+            )}
+            role="status"
+        >
+            <span
+                className={cn(
+                    'mt-px inline-flex shrink-0 items-center justify-center rounded-full bg-white text-brand shadow-[inset_0_0_0_1px_rgba(0,102,204,0.2)]',
+                    compactSplit ? 'size-6' : 'size-7',
+                )}
+                aria-hidden
+            >
+                <CalendarDays className="h-3 w-3" strokeWidth={2.25} />
+            </span>
+            <div className="min-w-0">
+                <p className="text-[12px] font-semibold leading-snug text-[#1c1c1c] lg:text-[13px]">
+                    {COORD_SELF_CALENDAR_HEADER_LEAD}
+                    <span className="font-medium text-[#64748b]"> · tú reservas la cita</span>
+                </p>
+                {!compactSplit ? (
+                    <p className="mt-1 text-[12px] font-medium leading-snug text-[#475569]">
+                        {COORD_SELF_CALENDAR_HEADER_DETAIL}
+                    </p>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
 /** Franja superior modo «Yo reservo la cita» — calendario. */
 export function CheckoutSelfChoicePreviewHeader({ className }: { className?: string }) {
     return (
@@ -173,14 +214,18 @@ export function CheckoutSelfChoicePickLocationShell({
     children,
     searchBar,
     className,
+    showInnerHeader = true,
 }: {
     children: React.ReactNode;
     searchBar?: React.ReactNode;
     className?: string;
+    showInnerHeader?: boolean;
 }) {
     return (
         <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white', className)}>
-            <CheckoutSelfChoicePickLocationHeader className="w-full shrink-0 py-2.5" />
+            {showInnerHeader ? (
+                <CheckoutSelfChoicePickLocationHeader className="w-full shrink-0 py-2.5" />
+            ) : null}
             <div className="relative min-h-0 w-full flex-1">
                 {searchBar ? (
                     <div
@@ -200,13 +245,17 @@ export function CheckoutSelfChoicePickLocationShell({
 export function CheckoutSelfChoicePreviewMap({
     children,
     className,
+    showInnerHeader = true,
 }: {
     children: React.ReactNode;
     className?: string;
+    showInnerHeader?: boolean;
 }) {
     return (
         <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
-            <CheckoutSelfChoicePreviewLocationHeader className="w-full shrink-0" />
+            {showInnerHeader ? (
+                <CheckoutSelfChoicePreviewLocationHeader className="w-full shrink-0" />
+            ) : null}
             <div className="relative min-h-0 w-full flex-1">{children}</div>
         </div>
     );
@@ -216,21 +265,43 @@ export function CheckoutSelfChoicePreviewMap({
 export function CheckoutSelfChoicePreviewCalendar({
     children,
     className,
+    splitColumn = false,
+    showInnerHeader = true,
 }: {
     children: React.ReactNode;
     className?: string;
+    splitColumn?: boolean;
+    showInnerHeader?: boolean;
 }) {
     return (
         <div
             className={cn(
-                'pb-3 pt-2',
-                'max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
+                splitColumn
+                    ? 'flex h-full w-full flex-col px-3 py-2 lg:px-4 lg:py-2'
+                    : 'w-full pb-3 pt-2 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
                 className,
             )}
         >
-            <div className={SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS}>
-                <CheckoutSelfChoicePreviewHeader />
-                <div className={SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS}>{children}</div>
+            <div
+                className={cn(
+                    SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
+                    splitColumn
+                        ? 'mx-auto flex h-full min-h-0 w-full max-w-[46rem] flex-col xl:max-w-[48rem]'
+                        : 'mx-auto w-full lg:w-fit lg:max-w-full',
+                )}
+            >
+                {showInnerHeader ? <CheckoutSelfChoicePreviewHeader /> : null}
+                {splitColumn && !showInnerHeader ? (
+                    <CheckoutSelfChoiceLockedStripe className="px-3 py-2" compactSplit />
+                ) : null}
+                <div
+                    className={cn(
+                        SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
+                        splitColumn && 'flex min-h-0 flex-1 flex-col lg:p-2.5',
+                    )}
+                >
+                    {children}
+                </div>
             </div>
         </div>
     );
@@ -321,35 +392,42 @@ function highlightEnlace(text: string): React.ReactNode {
 export function CheckoutSellerChoiceLockedStripe({
     variant,
     className,
+    compactSplit,
 }: {
     variant: keyof typeof LOCKED_COPY;
     className?: string;
+    compactSplit?: boolean;
 }) {
     const { stripeLead, stripeMessage } = LOCKED_COPY[variant];
 
     return (
         <div
             className={cn(
-                'relative flex items-start gap-2.5 bg-gradient-to-r from-sky-50 via-white to-amber-50/40 px-3.5 py-3',
+                'relative flex items-start gap-2 bg-gradient-to-r from-sky-50 via-white to-amber-50/40 px-3 py-2',
                 CHAT_GRADIENT_DIVIDER_CLASS,
                 className,
             )}
             role="status"
         >
             <span
-                className="mt-px inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-brand shadow-[inset_0_0_0_1px_rgba(0,102,204,0.2)]"
+                className={cn(
+                    'mt-px inline-flex shrink-0 items-center justify-center rounded-full bg-white text-brand shadow-[inset_0_0_0_1px_rgba(0,102,204,0.2)]',
+                    compactSplit ? 'size-6' : 'size-7',
+                )}
                 aria-hidden
             >
-                <Lock className="h-3.5 w-3.5" strokeWidth={2.25} />
+                <Lock className="h-3 w-3" strokeWidth={2.25} />
             </span>
             <div className="min-w-0">
-                <p className="text-[13px] font-semibold leading-snug text-[#1c1c1c]">
+                <p className="text-[12px] font-semibold leading-snug text-[#1c1c1c] lg:text-[13px]">
                     {stripeLead}
                     <span className="font-medium text-[#64748b]"> · no necesitas elegir nada aquí</span>
                 </p>
-                <p className="mt-1 text-[12px] font-medium leading-snug text-[#475569]">
-                    {highlightEnlace(stripeMessage)}
-                </p>
+                {!compactSplit ? (
+                    <p className="mt-1 text-[12px] font-medium leading-snug text-[#475569]">
+                        {highlightEnlace(stripeMessage)}
+                    </p>
+                ) : null}
             </div>
         </div>
     );
@@ -403,27 +481,44 @@ export function CheckoutSellerChoicePreviewMap({
 export function CheckoutSellerChoicePreviewCalendar({
     children,
     className,
+    splitColumn = false,
+    showInnerHeader = true,
 }: {
     children: React.ReactNode;
     className?: string;
+    splitColumn?: boolean;
+    showInnerHeader?: boolean;
 }) {
     return (
         <div
             className={cn(
-                'pb-3 pt-2',
-                'max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
+                splitColumn
+                    ? 'flex h-full w-full flex-col px-3 py-2 lg:px-4 lg:py-2'
+                    : 'pb-3 pt-2 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
                 className,
             )}
         >
-            <div className={SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS}>
-                <CheckoutSellerChoicePreviewHeader variant="calendar" />
-                <CheckoutSellerChoiceLockedStripe variant="calendar" />
-                {/* Solo consulta: los días son inertes (sin cursor de botón ni hover),
-                    pero las flechas de mes siguen activas para ver otras fechas. */}
+            <div
+                className={cn(
+                    SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
+                    splitColumn
+                        ? 'flex h-full min-h-0 w-full max-w-none flex-col'
+                        : 'w-fit max-w-full',
+                )}
+            >
+                {showInnerHeader ? (
+                    <CheckoutSellerChoicePreviewHeader variant="calendar" />
+                ) : null}
+                <CheckoutSellerChoiceLockedStripe
+                    variant="calendar"
+                    compactSplit={splitColumn}
+                />
                 <div
                     className={cn(
                         SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
-                        'select-none [&_td_button]:pointer-events-none [&_td_button]:cursor-default',
+                        !splitColumn &&
+                            'select-none [&_td_button]:pointer-events-none [&_td_button]:cursor-default',
+                        splitColumn && 'flex min-h-0 flex-1 flex-col lg:p-2.5',
                     )}
                 >
                     {children}

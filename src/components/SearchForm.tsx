@@ -172,7 +172,10 @@ export default function SearchForm({
                 return;
             }
 
-            showToast('success', `✅ Búsqueda creada exitosamente para el servicio de ${expertName}.`);
+            showToast('success', '¡Búsqueda creada!', 6000, {
+                description: `Has contactado con ${expertName}. Te avisaremos en cuanto responda.`,
+                action: { label: 'Ver mis búsquedas', onClick: () => navigate('/busquedas') },
+            });
             onComplete();
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Error al crear la búsqueda';

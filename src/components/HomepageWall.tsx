@@ -7,12 +7,12 @@ import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
-import { Star, ChevronLeft, ChevronRight, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, X, AlertCircle, RefreshCw, Heart } from 'lucide-react';
 import { readWorkRadiusKm, formatWorkRadius } from '../utils/workRadius';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
-import { homepageToast } from '../lib/toast';
+import { homepageToast, toast } from '../lib/toast';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
@@ -63,22 +63,37 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
     onOpenService(service.id);
   }, [onOpenService, service.id]);
 
+  const navigate = useNavigate();
+
   const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
 
+    // Toast de promesa: "Actualizando…" → morphea a éxito/error según resuelva.
+    const request = onToggleFavorite(service.id);
+    toast.promise(request, {
+      loading: { title: 'Actualizando favorito…' },
+      success: (result) => {
+        if (!result) return { title: 'Favorito actualizado' };
+        return result.isFavorite
+          ? {
+              title: 'Añadido a favoritos',
+              description: 'Lo tienes guardado en tu lista de favoritos.',
+              icon: <Heart className="h-[18px] w-[18px] fill-current" />,
+              button: { title: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+            }
+          : { title: 'Quitado de favoritos' };
+      },
+      error: { title: 'No se pudo actualizar el favorito' },
+    });
+
     try {
-      const result = await onToggleFavorite(service.id);
-      if (result) {
-        setIsFavorite(result.isFavorite);
-        homepageToast.favoriteUpdated(result.message);
-      }
+      const result = await request;
+      if (result) setIsFavorite(result.isFavorite);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error al actualizar favorito';
       console.error('Error al actualizar favorito:', error);
-      homepageToast.error(message, 3000);
     }
-  }, [onToggleFavorite, service.id]);
+  }, [onToggleFavorite, service.id, navigate]);
 
   const handleImageNavigation = useCallback((e: React.MouseEvent, direction: 'prev' | 'next') => {
     e.stopPropagation();

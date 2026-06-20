@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 
 type CookiePreference = 'all' | 'necessary' | 'none' | null;
@@ -12,22 +13,21 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({
     onAccept,
     cookiePolicyUrl = '/terms/cookie_policy'
 }) => {
+    const location = useLocation();
     const [isVisible, setIsVisible] = useState(false);
     // `entered` controla la animación de entrada/salida (slide + fade) sin depender de plugins.
     const [entered, setEntered] = useState(false);
 
     useEffect(() => {
-        // Verificar si el usuario ya ha aceptado/rechazado cookies
         const cookieConsent = localStorage.getItem('cookie-consent');
-        if (!cookieConsent) {
-            // Mostrar el aviso tras un pequeño delay para no competir con la carga inicial
-            const showTimer = setTimeout(() => setIsVisible(true), 600);
-            return () => clearTimeout(showTimer);
+        if (cookieConsent || location.pathname.startsWith('/checkout/')) {
+            setIsVisible(false);
+            return;
         }
-    }, []);
+        const showTimer = setTimeout(() => setIsVisible(true), 600);
+        return () => clearTimeout(showTimer);
+    }, [location.pathname]);
 
-    // Activamos la transición de entrada en cuanto el aviso se monta (un tick después
-    // de pintar el estado inicial, para que el slide-up se aprecie).
     useEffect(() => {
         if (!isVisible) return;
         const enterTimer = setTimeout(() => setEntered(true), 20);

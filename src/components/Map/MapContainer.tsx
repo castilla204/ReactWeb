@@ -25,6 +25,8 @@ interface MapContainerProps {
   initialCenter?: { lat: number; lng: number };
   initialZoom?: number;
   onServiceSelect?: (service: Service) => void;
+  /** Click en zona vacía del mapa (ni pin ni bocadillo) → deseleccionar / cerrar popup. */
+  onDeselect?: () => void;
   selectedServiceId?: number | null;
   hoveredServiceId?: number | null;
   isMobile?: boolean;
@@ -56,6 +58,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   initialCenter = { lat: 40.0, lng: -3.0 },
   initialZoom = 5, // Zoom 5 para ver toda España
   onServiceSelect,
+  onDeselect,
   selectedServiceId,
   hoveredServiceId,
   isMobile = false,
@@ -461,9 +464,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     });
   }, [mapInstance, initialCenter, initialZoom, recenterMode, isMobile]);
 
-  // 📌 Popover anclado al pin seleccionado (desktop): tarjeta compacta sobre el marcador
-  //    con foto, nombre, valoración, precio y CTA — la pieza de sincronización lista↔mapa
-  //    que faltaba. Additivo: una instancia maplibregl.Popup propia, no toca los markers.
+  // 📌 Popover anclado al pin seleccionado (SOLO desktop): tarjeta compacta sobre el
+  //    marcador con foto, nombre, valoración, precio y CTA — la pieza de sincronización
+  //    lista↔mapa. Additivo: una instancia maplibregl.Popup propia, no toca los markers.
+  //    En MÓVIL NO se muestra bocadillo: la selección se ve en el pin (azul) y en la card
+  //    del strip inferior; el bocadillo tapaba demasiado mapa en pantalla pequeña.
   const popupRef = useRef<maplibregl.Popup | null>(null);
   useEffect(() => {
     const map = mapInstance;
@@ -531,6 +536,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   // Limpiar el popup al desmontar.
   useEffect(() => () => { if (popupRef.current) { popupRef.current.remove(); popupRef.current = null; } }, []);
+
+  // 🫧 Cerrar al tocar fuera: un click sobre el lienzo del mapa (NO sobre un marker ni
+  //    sobre el bocadillo, que son overlays HTML y no emiten el 'click' del mapa) deselecciona
+  //    → el effect de arriba quita el popup y la card del strip se des-resalta.
+  const onDeselectRef = useRef(onDeselect);
+  useEffect(() => { onDeselectRef.current = onDeselect; }, [onDeselect]);
+  useEffect(() => {
+    const map = mapInstance;
+    if (!map) return;
+    const handleMapClick = () => { onDeselectRef.current?.(); };
+    map.on('click', handleMapClick);
+    return () => { map.off('click', handleMapClick); };
+  }, [mapInstance]);
 
   return (
     <div

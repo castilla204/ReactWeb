@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { Button } from './ui/button';
+import { ErrorState } from './feedback/ErrorState';
 
 const isDevelopment = import.meta.env.DEV;
 
@@ -129,76 +130,50 @@ export class ErrorBoundary extends Component<Props, State> {
                 return this.props.fallback;
             }
 
-            // UI por defecto para mostrar errores
+            // UI por defecto: estado de error unificado, minimalista y profesional.
+            // En PRODUCCIÓN nunca se muestra el error real; el detalle solo aparece en
+            // desarrollo, plegado y bajo demanda.
             return (
-                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-                    <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 text-center">
-                        <div className="flex justify-center mb-4">
-                            <div className="rounded-full bg-red-100 dark:bg-red-900/20 p-4">
-                                <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400" />
+                <div className="min-h-screen flex flex-col items-center justify-center">
+                    <ErrorState
+                        variant="generic"
+                        title="Algo salió mal"
+                        description="Ha ocurrido un error inesperado. Puedes reintentar o volver al inicio."
+                        primaryAction={{ label: 'Reintentar', onClick: this.handleReset }}
+                        secondaryAction={{ label: 'Ir al inicio', onClick: this.handleGoHome }}
+                    />
+
+                    {isDevelopment && this.state.error && (
+                        <details className="mb-8 -mt-2 w-full max-w-md px-6 text-left">
+                            <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer mb-2">
+                                Detalles del error (solo en desarrollo)
+                            </summary>
+                            <div className="relative">
+                                <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-auto max-h-40 text-red-600 dark:text-red-400">
+                                    {this.state.error.toString()}
+                                    {this.state.errorInfo?.componentStack}
+                                </pre>
+                                <Button
+                                    onClick={this.handleCopyError}
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute top-2 right-2"
+                                >
+                                    {this.state.copied ? (
+                                        <>
+                                            <Check className="w-4 h-4 mr-2" />
+                                            Copiado
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-4 h-4 mr-2" />
+                                            Copiar error
+                                        </>
+                                    )}
+                                </Button>
                             </div>
-                        </div>
-                        
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            ¡Ups! Algo salió mal
-                        </h1>
-                        
-                        <p className="text-gray-600 dark:text-gray-300 mb-6">
-                            Ha ocurrido un error inesperado. Por favor, intenta recargar la página o volver al inicio.
-                        </p>
-
-        {isDevelopment && this.state.error && (
-                            <details className="mb-6 text-left">
-                                <summary className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer mb-2">
-                                    Detalles del error (solo en desarrollo)
-                                </summary>
-                                <div className="relative">
-                                    <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-auto max-h-40 text-red-600 dark:text-red-400">
-                                        {this.state.error.toString()}
-                                        {this.state.errorInfo?.componentStack}
-                                    </pre>
-                                    <Button
-                                        onClick={this.handleCopyError}
-                                        variant="outline"
-                                        size="sm"
-                                        className="absolute top-2 right-2"
-                                    >
-                                        {this.state.copied ? (
-                                            <>
-                                                <Check className="w-4 h-4 mr-2" />
-                                                Copiado
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-4 h-4 mr-2" />
-                                                Copiar error
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                            </details>
-                        )}
-
-                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <Button
-                                onClick={this.handleReset}
-                                className="flex items-center gap-2"
-                                variant="default"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                                Reintentar
-                            </Button>
-                            
-                            <Button
-                                onClick={this.handleGoHome}
-                                className="flex items-center gap-2"
-                                variant="outline"
-                            >
-                                <Home className="w-4 h-4" />
-                                Ir al inicio
-                            </Button>
-                        </div>
-                    </div>
+                        </details>
+                    )}
                 </div>
             );
         }

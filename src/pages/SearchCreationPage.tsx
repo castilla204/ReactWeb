@@ -482,7 +482,10 @@ const SearchCreationPage: React.FC = () => {
 
 
     const handleSearchComplete = () => {
-        showToast('success', '🎉 ¡Búsqueda creada con éxito! Te notificaremos cuando encontremos coincidencias.');
+        showToast('success', '¡Búsqueda creada con éxito!', 6000, {
+            description: 'Te avisaremos en cuanto un experto coincida con tu búsqueda.',
+            action: { label: 'Ver mis búsquedas', onClick: () => navigate('/busquedas') },
+        });
         setCurrentStep(0);
         setSearchParameters({
             keywords: '',

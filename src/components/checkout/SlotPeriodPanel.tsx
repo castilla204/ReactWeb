@@ -99,25 +99,34 @@ function PreviewPeriodBlock({ period, count }: { period: SlotDayPeriod; count: n
     );
 }
 
-/** Solo consulta (Coordínalo Inspecciono): horas en texto, sin cajas ni botones. */
+/** Solo consulta (Coordínalo Inspecciono): chips informativos en desktop; texto compacto en móvil. */
 function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
     const { morning, afternoon } = splitSlotsByPeriod(slots);
     const sorted = sortSlotsByTime(slots);
 
     const flatText = (
-        <p className="text-[13px] font-medium leading-relaxed tabular-nums text-[#1c1c1c] max-lg:text-[12px] max-lg:leading-snug">
+        <p className="text-[12px] font-medium leading-relaxed tabular-nums text-[#1c1c1c]">
             {sorted.map((s) => s.label).join(' · ')}
         </p>
     );
 
-    const renderRow = (period: SlotDayPeriod, periodSlots: ChosenSlot[]) => {
+    const browseChipClass =
+        'inline-flex items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f8f9fb] px-2.5 py-1.5 text-[13px] font-semibold tabular-nums text-[#1c1c1c]';
+
+    const renderChipRow = (period: SlotDayPeriod, periodSlots: ChosenSlot[]) => {
         if (periodSlots.length === 0) return null;
         return (
             <div key={period}>
-                <p className="mb-1 text-[11px] font-medium text-[#64748b]">{SLOT_PERIOD_LABELS[period]}</p>
-                <p className="text-[13px] font-medium leading-relaxed tabular-nums text-[#1c1c1c]">
-                    {periodSlots.map((s) => s.label).join(' · ')}
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#64748b] lg:text-xs">
+                    {SLOT_PERIOD_LABELS[period]}
                 </p>
+                <div className="flex flex-wrap gap-1.5">
+                    {periodSlots.map((s) => (
+                        <span key={s.startUtc} className={browseChipClass}>
+                            {s.label}
+                        </span>
+                    ))}
+                </div>
             </div>
         );
     };
@@ -129,11 +138,17 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
             <div className="lg:hidden">{flatText}</div>
             <div className="hidden lg:block">
                 {!hasBoth ? (
-                    flatText
+                    <div className="flex flex-wrap gap-1.5">
+                        {sorted.map((s) => (
+                            <span key={s.startUtc} className={browseChipClass}>
+                                {s.label}
+                            </span>
+                        ))}
+                    </div>
                 ) : (
-                    <div className="space-y-2.5">
-                        {renderRow('morning', morning)}
-                        {renderRow('afternoon', afternoon)}
+                    <div className="space-y-3.5">
+                        {renderChipRow('morning', morning)}
+                        {renderChipRow('afternoon', afternoon)}
                     </div>
                 )}
             </div>
@@ -193,7 +208,7 @@ function FlatEmbeddedSlotGrid({
 
     return (
         <div
-            className="grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3"
+            className="grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3 lg:gap-2"
             role="listbox"
             aria-label="Horarios disponibles"
         >
@@ -238,17 +253,17 @@ function SelectableEmbeddedSlotHours({
         if (periodSlots.length === 0) return null;
         return (
             <div key={period} className={splitPeriodsOnMobile ? 'rounded-lg bg-white px-2.5 py-2' : undefined}>
-                <div className={cn('mb-1.5 flex items-center gap-2', splitPeriodsOnMobile && 'mb-1')}>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[#475569]">
+                <div className={cn('mb-2 flex items-center gap-2', splitPeriodsOnMobile && 'mb-1.5')}>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.07em] text-[#475569] lg:text-xs">
                         {SLOT_PERIOD_LABELS[period]}
                     </p>
-                    <span className="text-[10px] text-[#94a3b8]">{SLOT_PERIOD_HINTS[period]}</span>
+                    <span className="text-[10px] text-[#94a3b8] lg:text-[11px]">{SLOT_PERIOD_HINTS[period]}</span>
                 </div>
                 <div
                     className={cn(
                         splitPeriodsOnMobile
                             ? 'flex flex-wrap gap-1.5'
-                            : 'grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3',
+                            : 'grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3 lg:gap-2',
                     )}
                     role="listbox"
                     aria-label={`Horarios de ${SLOT_PERIOD_LABELS[period].toLowerCase()}`}

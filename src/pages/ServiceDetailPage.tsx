@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { ServiceDetailSkeleton } from '../components/ui/service-detail-skeleton';
+import { ErrorState } from '../components/feedback/ErrorState';
 import { mapSelectedDeliverableTypes } from '../utils/mapSelectedDeliverableTypes';
 import {
   persistServiceReturnPath,
@@ -189,17 +190,13 @@ const ServiceDetailPage: React.FC = () => {
 
   if (error || !service) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Servicio no encontrado'}</p>
-          <button
-            onClick={handleBack}
-            className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
-          >
-            Volver
-          </button>
-        </div>
-      </div>
+      <ErrorState
+        variant="notFound"
+        title="No pudimos cargar este servicio"
+        description="Puede que ya no esté disponible o que haya un problema temporal. Vuelve a intentarlo."
+        primaryAction={{ label: 'Reintentar', onClick: () => window.location.reload() }}
+        secondaryAction={{ label: 'Volver', onClick: handleBack }}
+      />
     );
   }
 

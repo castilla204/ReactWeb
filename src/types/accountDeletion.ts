@@ -22,6 +22,20 @@ export interface ActiveContract {
 
 export interface AccountDeletionRequest {
   reason?: string; // Opcional: razón para eliminar la cuenta
+  // 🛡️ SEC-1: reautenticación obligatoria. Cuentas con contraseña → password;
+  // cuentas OAuth (Google/Apple) → verificationToken + code del OTP step-up.
+  password?: string;
+  verificationToken?: string;
+  code?: string;
+}
+
+/** 🛡️ SEC-1: respuesta de POST /AccountDeletion/request-otp. */
+export interface DeletionOtpResponse {
+  requiresOtp: boolean;
+  success?: boolean;
+  verificationToken?: string;
+  expiresAt?: string;
+  message?: string;
 }
 
 export interface AccountDeletionResponse {

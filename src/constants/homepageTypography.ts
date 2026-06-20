@@ -226,11 +226,14 @@ export const SD_CHECKOUT_INNER_MAX_CLASS =
 
 /** Checkout desktop — paso cita + mapa (más ancho) */
 export const SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS =
-  'mx-auto w-full max-w-[90rem] px-5 lg:px-8 xl:px-10';
+  'mx-auto w-full max-w-[94rem] px-4 sm:px-5 lg:px-6 xl:px-8 2xl:max-w-[100rem]';
 
-/** Altura fija del bloque cita+mapa desktop (sin scroll interno entre columnas) */
+/** Altura fija del bloque cita+mapa desktop (mapa en paso 2; paso 1 va a altura de contenido). */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS =
-  'h-[min(84vh,800px)] max-h-[800px]';
+  'h-[min(72vh,680px)] max-h-[680px]';
+
+/** Paso 1 desktop — altura según contenido; el footer queda pegado al bloque. */
+export const SD_CHECKOUT_DESKTOP_COORD_SHELL_HEIGHT_CLASS = 'h-auto';
 
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
@@ -338,6 +341,10 @@ export const SD_CHECKOUT_MOBILE_ROW_CLASS =
 export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-3 pt-1`;
 
+/** Resumen paso pago — el scroll ya aporta padding superior */
+export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-2 pt-0`;
+
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
   'overflow-hidden rounded-xl border border-[#ebebeb] bg-white';
 
@@ -382,8 +389,35 @@ export const SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR =
 export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
   'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
+/** Degradado marca — asistente / chat (ámbar → crema → azul) */
+export const SD_BRAND_CHAT_GRADIENT_WASH =
+  'linear-gradient(90deg, rgba(247,193,75,0.45) 0%, rgba(253,237,205,0.42) 36%, rgba(221,233,250,0.48) 62%, rgba(63,127,224,0.45) 100%)';
+
+export const SD_BRAND_CHAT_GRADIENT_LINE =
+  'linear-gradient(90deg, rgba(247,193,75,0.55) 0%, rgba(63,127,224,0.55) 100%)';
+
+/** Variante más suave para checkout y superficies grandes */
+export const SD_BRAND_CHAT_GRADIENT_WASH_SUBTLE =
+  'linear-gradient(90deg, rgba(247,193,75,0.22) 0%, rgba(253,237,205,0.18) 36%, rgba(221,233,250,0.22) 62%, rgba(63,127,224,0.22) 100%)';
+
+export const SD_BRAND_CHAT_GRADIENT_LINE_SUBTLE =
+  'linear-gradient(90deg, rgba(247,193,75,0.42) 0%, rgba(63,127,224,0.42) 100%)';
+
+/** Variante azul (sin ámbar) — degradado de azul claro a azul marca */
+export const SD_BRAND_BLUE_GRADIENT_WASH_SUBTLE =
+  'linear-gradient(90deg, rgba(63,127,224,0.13) 0%, rgba(99,160,240,0.22) 48%, rgba(63,127,224,0.36) 100%)';
+
+export const SD_BRAND_BLUE_GRADIENT_LINE_SUBTLE =
+  'linear-gradient(90deg, rgba(99,160,240,0.30) 0%, rgba(63,127,224,0.55) 100%)';
+
+/** Paso pago / resumen checkout móvil — aire superior y fondo tipo desktop */
+export const SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS = 'min-h-[100dvh] bg-[#f7f7f7]';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS =
+  'relative pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))] pt-[max(1.25rem,env(safe-area-inset-top,0px))]';
+
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#ebebeb] bg-white';
+  'fixed bottom-0 left-0 right-0 z-[70] border-t border-[#ebebeb] bg-white';
 
 /** Offset inferior compartido: drawer, mapa y scroll sobre el footer fijo checkout móvil. */
 export const SD_CHECKOUT_MOBILE_FOOTER_BOTTOM_OFFSET = SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR;
@@ -411,7 +445,7 @@ export const SD_CHECKOUT_PICKER_FRAME_CLASS =
 export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
 
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
 
 /** Separador entre mapa y resumen en checkout móvil paso 2 */
 export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =

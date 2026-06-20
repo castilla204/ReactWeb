@@ -188,85 +188,6 @@ interface CategoryPickerRowProps {
   meta?: CategoryOfficeMeta | null;
 }
 
-/**
- * Categorías "Próximamente" que aún NO existen en el backend pero queremos
- * anunciar visualmente para que el usuario vea el roadmap. Cuando se añadan
- * al backend, simplemente las quitamos de aquí. Si una de estas se solapa
- * en nombre con una categoría real del backend, la real gana (filtramos
- * abajo).
- */
-const COMING_SOON_CATEGORIES: readonly string[] = [
-  'Cámaras',
-  'Motos de agua',
-  // "Fontanería" en vez de "Fontanería y calderas": el label largo rompía
-  // aspect-square al partirse a 2 líneas en mobile (118px/card). La PNG
-  // `caldera.png` ya comunica el ámbito de calderas visualmente.
-  'Fontanería',
-  'Revisión online',
-];
-
-/**
- * Tile compacto para sección "Próximamente". No es un botón — es un anuncio
- * del roadmap. Sin onClick, sin tab-stop, sin afordancia clickable.
- */
-const ComingSoonTile: React.FC<{ name: string }> = ({ name }) => {
-  const Icon = getCategoryLucideIcon(name);
-  const illustration = getCategoryImage(name);
-  return (
-    <div
-      aria-disabled
-      aria-label={`${name} (próximamente)`}
-      className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-[#e8e8e8] bg-[#fafafa] p-2 text-center"
-    >
-      <div className="flex h-9 w-9 items-center justify-center opacity-60">
-        {illustration ? (
-          <img
-            src={illustration}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            className="h-full w-full select-none object-contain grayscale"
-          />
-        ) : (
-          <Icon className="h-5 w-5 text-[#a0a0a0]" strokeWidth={2} />
-        )}
-      </div>
-      <span className="line-clamp-2 text-[10.5px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
-        {name}
-      </span>
-    </div>
-  );
-};
-
-/**
- * Sección "Próximamente en el catálogo": divider eyebrow + grid 4-col compacto.
- * No compite visualmente con las cards activas (rows) y comunica que el
- * catálogo crece, no que está cerrado.
- */
-const ComingSoonGrid: React.FC<{ names: readonly string[] }> = ({ names }) => {
-  if (names.length === 0) return null;
-  return (
-    <section className="mt-6" aria-labelledby="coming-soon-heading">
-      <div className="mb-3 flex items-center gap-3">
-        <span className="h-px flex-1 bg-[#ebebeb]" aria-hidden />
-        <h3
-          id="coming-soon-heading"
-          className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#737373]"
-        >
-          Próximamente en el catálogo
-        </h3>
-        <span className="h-px flex-1 bg-[#ebebeb]" aria-hidden />
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {names.map((name) => (
-          <ComingSoonTile key={`coming-soon-${name}`} name={name} />
-        ))}
-      </div>
-    </section>
-  );
-};
-
 const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
   name,
   isSelected,
@@ -281,7 +202,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
   // VARIANT OFFICE-ROW · lista vertical con foto real + ficha técnica del oficio.
   // Mismo lenguaje "carpeta del despacho" que SearchInspectionListItem en
   // /busquedas. Altura uniforme garantizada por thumb 80px fijo + line-clamp-1
-  // en todos los textos. Coming-soon NO usa esta variant (va por ComingSoonGrid).
+  // en todos los textos.
   if (variant === 'office-row') {
     const photo = getCategoryPhoto(name);
     const thumbSrc = photo || imgSrc;
@@ -1302,24 +1223,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         ) : isMobile ? (
                           // LISTA VERTICAL minimalista (igual que el drawer desktop):
                           // ilustración + nombre + entrega + "desde X€ · N expertos",
-                          // sin contornos. Coming-soon como filas sutiles con pastilla
-                          // "Pronto", separadas por un eyebrow "Próximamente".
-                          ((() => {
-                            const csImg = (n: string): string | null => {
-                              const l = n.toLowerCase();
-                              if (l.includes('agua')) return motoaguaImg;
-                              if (l.includes('cámara') || l.includes('camara')) return camarapngImg;
-                              if (l.includes('fontaner') || l.includes('caldera')) return calderaImg;
-                              if (l.includes('online') || l.includes('internet') || l.includes('web')) return internet61Img;
-                              return null;
-                            };
-                            const comingSoon = COMING_SOON_CATEGORIES.filter(
-                              (csName) =>
-                                !mobilePickerCategories.some(
-                                  (c) => c.name.toLowerCase() === csName.toLowerCase(),
-                                ),
-                            );
-                            return (
+                          // sin contornos.
+                          (
                               <div className="flex flex-col">
                                 {mobilePickerCategories.map((category) => {
                                   const meta = getCategoryMeta(category.id);
@@ -1399,54 +1304,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                     </button>
                                   );
                                 })}
-
-                                {comingSoon.length > 0 && (
-                                  <>
-                                    <p className="px-1 pb-1.5 pt-5 text-[11px] font-medium uppercase tracking-[0.1em] text-[#b0b0b0]">
-                                      Próximamente
-                                    </p>
-                                    {comingSoon.map((csName) => {
-                                      const img = csImg(csName);
-                                      return (
-                                        <div
-                                          key={`coming-soon-${csName}`}
-                                          aria-disabled
-                                          aria-label={`${csName} (próximamente)`}
-                                          className="flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left opacity-70"
-                                        >
-                                          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-                                            {img ? (
-                                              <img
-                                                src={img}
-                                                alt=""
-                                                loading="lazy"
-                                                decoding="async"
-                                                draggable={false}
-                                                className="h-full w-full select-none object-contain grayscale"
-                                              />
-                                            ) : (
-                                              <FolderTree className="h-6 w-6 text-[#cfcfcf]" strokeWidth={1.75} />
-                                            )}
-                                          </div>
-                                          <div className="min-w-0 flex-1">
-                                            <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
-                                              {csName}
-                                            </h3>
-                                            <p className="mt-0.5 text-[12.5px] leading-snug text-[#a0a0a0]">
-                                              Lo añadiremos pronto
-                                            </p>
-                                          </div>
-                                          <span className="shrink-0 rounded-full bg-[#1c1c1c] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
-                                            Pronto
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </>
-                                )}
                               </div>
-                            );
-                          })())
+                            )
                         ) : (
                     <div className="flex flex-col gap-1">
                               {normalizedCategories

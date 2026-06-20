@@ -2030,10 +2030,27 @@
 }
 
 .pf-map-work-mode__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.25;
   white-space: nowrap;
+}
+
+.pf-map-work-mode__rec {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: hsl(152 58% 42% / 0.14);
+  color: hsl(152 52% 32%);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.4;
 }
 
 .pf-map-work-mode__hint {
