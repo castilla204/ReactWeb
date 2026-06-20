@@ -45,7 +45,7 @@ export function ServiceTypeSelectionPage({ selectedCategory }: ServiceTypeSelect
     if (error) {
         return (
             <ErrorDisplay
-                message={`Error al cargar los tipos de servicio: ${(error as Error).message}`}
+                message="No pudimos cargar los tipos de servicio. Vuelve a intentarlo en unos segundos."
                 fullScreen={false}
             />
         );

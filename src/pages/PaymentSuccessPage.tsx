@@ -46,8 +46,8 @@ export function PaymentSuccessPage() {
                     sessionStorage.removeItem('pendingHire');
                     showToast(
                         'success',
-                        '✨ ¡Pago realizado con éxito! Tu contratación ya está en marcha.',
-                        4000,
+                        '✨ ¡Reserva confirmada! No se ha cobrado nada todavía: el cargo se hace cuando el experto confirma la cita.',
+                        5000,
                         { surface: 'homepage' },
                     );
                 } else {
@@ -65,7 +65,7 @@ export function PaymentSuccessPage() {
     return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
             <div className="animate-spin h-10 w-10 border-4 border-gray-300 border-t-gray-900 rounded-full mb-4" />
-            <p className="text-gray-500 text-sm">Confirmando tu pago…</p>
+            <p className="text-gray-500 text-sm">Confirmando tu reserva…</p>
         </div>
     );
 }

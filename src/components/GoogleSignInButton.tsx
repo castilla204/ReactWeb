@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { nativeAuthService } from '../services/nativeAuthService';
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
+import { toast } from '../lib/toast';
 import { Loader2 } from 'lucide-react';
 import {
   ensureGoogleIdentityReady,

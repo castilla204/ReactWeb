@@ -34,8 +34,9 @@ export const useErrorHandler = (error: Error | null | undefined, isError: boolea
         });
         return; // No mostrar toast
       } else if (!errorMessage.includes('401') && !errorMessage.includes('403') && !errorMessage.includes('Sesión expirada')) {
-        // No mostrar toasts para errores de autenticación (ya se manejan en otros lugares)
-        showToast('error', errorMessage, 5000);
+        // No mostrar toasts para errores de autenticación (ya se manejan en otros lugares).
+        // Siempre vía getFriendlyErrorMessage → nunca se filtra texto interno al usuario.
+        showToast('error', getFriendlyErrorMessage(error), 5000);
       }
     } else if (!isError) {
       // Resetear cuando no hay error
@@ -86,7 +87,28 @@ export const getFriendlyErrorMessage = (error: any): string => {
   if (errorMessage.includes('500')) {
     return 'Error del servidor. Por favor, intenta nuevamente más tarde.';
   }
-  
+
+  // 🛡️ Nunca devolver al usuario texto que parezca interno/técnico (trazas, SQL,
+  // nombres de excepción, JSON, URLs). Si huele a detalle de implementación → genérico.
+  if (looksTechnical(errorMessage)) {
+    return 'Ha ocurrido un error inesperado. Vuelve a intentarlo.';
+  }
+
   return errorMessage || 'Ha ocurrido un error inesperado';
+};
+
+/**
+ * Heurística defensiva: detecta mensajes que NO deberían mostrarse al usuario porque
+ * delatan detalles internos (defensa en profundidad; el backend ya redacta sus errores).
+ */
+const looksTechnical = (message: string): boolean => {
+  if (!message) return false;
+  if (message.length > 160) return true;
+  const technicalSignals = [
+    'Exception', 'StackTrace', 'stack', ' at ', 'Npgsql', 'SQL', 'SqlState',
+    'EntityFramework', 'System.', 'null reference', 'NullReference', 'undefined',
+    'Traceback', 'http://', 'https://', '{', '}', '<', '>', 'at line', 'errorCode',
+  ];
+  return technicalSignals.some((signal) => message.includes(signal));
 };
 

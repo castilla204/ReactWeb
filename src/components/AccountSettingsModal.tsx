@@ -96,13 +96,20 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [deletionReason, setDeletionReason] = useState('');
   const [deletionPassword, setDeletionPassword] = useState('');
   const [deletionResult, setDeletionResult] = useState<any>(null);
-  
-  const { 
-    loading: deletionLoading, 
-    error: deletionError, 
-    checkDeletionStatus, 
-    deleteAccount, 
-    clearError 
+  // 🛡️ SEC-1: reautenticación. usesOtp=null mientras se determina el método;
+  // true para cuentas OAuth (OTP step-up por email), false para cuentas con contraseña.
+  const [deletionUsesOtp, setDeletionUsesOtp] = useState<boolean | null>(null);
+  const [deletionToken, setDeletionToken] = useState('');
+  const [deletionCode, setDeletionCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+
+  const {
+    loading: deletionLoading,
+    error: deletionError,
+    checkDeletionStatus,
+    requestDeletionOtp,
+    deleteAccount,
+    clearError
   } = useAccountDeletion();
 
   // ✏️ Mantener el input de nombre en sync con el usuario (al abrir el modal o tras refresh).
@@ -180,8 +187,31 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     if (status) {
       setDeletionStatus(status);
       setDeletionStep('confirm');
+      // 🛡️ SEC-1: determinar método de reautenticación. Para cuentas OAuth esto
+      // además envía el OTP step-up por email; para cuentas con contraseña, requiresOtp=false.
+      const otp = await requestDeletionOtp();
+      if (otp) {
+        setDeletionUsesOtp(otp.requiresOtp);
+        if (otp.requiresOtp && otp.verificationToken) {
+          setDeletionToken(otp.verificationToken);
+          setOtpSent(otp.success !== false);
+        }
+      } else {
+        // Fallback conservador: si no se pudo determinar, asumimos OTP (cuenta OAuth).
+        setDeletionUsesOtp(true);
+      }
     } else {
       setDeletionStep('initial');
+    }
+  };
+
+  // 🛡️ SEC-1: reenviar el código OTP.
+  const resendDeletionOtp = async () => {
+    const otp = await requestDeletionOtp();
+    if (otp?.requiresOtp && otp.verificationToken) {
+      setDeletionToken(otp.verificationToken);
+      setOtpSent(otp.success !== false);
+      setDeletionCode('');
     }
   };
 
@@ -189,8 +219,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setDeletionStep('processing');
     clearError();
 
-    // ✅ El backend ya no requiere contraseña, solo razón opcional
-    const request: any = deletionReason.trim() ? { reason: deletionReason.trim() } : {};
+    // 🛡️ SEC-1: el backend exige reautenticación. Enviamos contraseña (cuentas con
+    // password) u OTP step-up (verificationToken + code) para cuentas OAuth.
+    const request: any = {};
+    if (deletionReason.trim()) request.reason = deletionReason.trim();
+    if (deletionUsesOtp) {
+      request.verificationToken = deletionToken;
+      request.code = deletionCode.trim();
+    } else {
+      request.password = deletionPassword;
+    }
 
     const response = await deleteAccount(request);
 
@@ -222,6 +260,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setDeletionStatus(null);
     setDeletionReason('');
     setDeletionResult(null);
+    setDeletionPassword('');
+    setDeletionUsesOtp(null);
+    setDeletionToken('');
+    setDeletionCode('');
+    setOtpSent(false);
     clearError();
   };
 
@@ -728,8 +771,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   </div>
                   <div className="flex-1">
                     <h4 className="text-base font-semibold mb-2">Eliminar Cuenta Permanentemente</h4>
-                    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                      Esta acción eliminará tu cuenta y todos los datos asociados de forma irreversible. 
+                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                      Esta acción eliminará o anonimizará tu cuenta y tus datos personales de forma irreversible.
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                      Por obligación legal contable y fiscal, los registros de tus transacciones (facturas y pagos)
+                      se conservarán de forma anonimizada durante el plazo que exija la ley (hasta 6 años) y no se
+                      eliminan de inmediato.
                     </p>
                   </div>
                 </div>
@@ -786,6 +834,54 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               </div>
 
 
+              {/* 🛡️ SEC-1: reautenticación obligatoria */}
+              {deletionUsesOtp === null && (
+                <p className="text-sm text-muted-foreground">Preparando verificación de seguridad…</p>
+              )}
+
+              {deletionUsesOtp === false && (
+                <div>
+                  <Label>Confirma tu contraseña para continuar</Label>
+                  <input
+                    type="password"
+                    value={deletionPassword}
+                    onChange={(e) => setDeletionPassword(e.target.value)}
+                    placeholder="Tu contraseña"
+                    autoComplete="current-password"
+                    className="mt-2 w-full p-3 border border-input rounded-md bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+              )}
+
+              {deletionUsesOtp === true && (
+                <div>
+                  <Label>Introduce el código de verificación</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    {otpSent
+                      ? 'Te hemos enviado un código de 6 dígitos a tu correo electrónico. Caduca en 10 minutos.'
+                      : 'No pudimos enviar el código. Pulsa "Reenviar código" para intentarlo de nuevo.'}
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={deletionCode}
+                    onChange={(e) => setDeletionCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    autoComplete="one-time-code"
+                    className="w-full p-3 border border-input rounded-md bg-background text-sm tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={resendDeletionOtp}
+                    disabled={deletionLoading}
+                    className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
+                  >
+                    Reenviar código
+                  </button>
+                </div>
+              )}
+
               {/* Action buttons */}
               <div className="flex gap-3 pt-4">
                 <Button
@@ -798,7 +894,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <Button
                   variant="destructive"
                   onClick={handleDelete}
-                  disabled={deletionLoading}
+                  disabled={
+                    deletionLoading ||
+                    deletionUsesOtp === null ||
+                    (deletionUsesOtp
+                      ? deletionCode.trim().length < 6
+                      : deletionPassword.trim().length === 0)
+                  }
                   className="flex-1"
                 >
                   {deletionLoading ? 'Eliminando...' : 'Eliminar Cuenta'}

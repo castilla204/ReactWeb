@@ -183,7 +183,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [showAppointmentForm, setShowAppointmentForm] = useState(false);
     const [appointmentFormError, setAppointmentFormError] = useState<string | null>(null);
     const [appointmentData, setAppointmentData] = useState<any>(null);
-    const [timeRemaining, setTimeRemaining] = useState<string>('00:00:00');
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
     const [modalActionType, setModalActionType] = useState<'reject' | 'cancel'>('reject');
@@ -779,39 +778,19 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     
     // Usar cualquiera de las dos condiciones, pero solo si hay searchHire
     const needsAppointment = hasSearchHireData && (isAppointmentCategory || requiresAppointment);
-    
-    // Función para calcular el tiempo restante para crear cita (24 horas desde la contratación)
-    const calculateTimeRemaining = () => {
-        const searchHire: SearchHire | undefined = search?.searchHire;
-        if (!searchHire?.createdAt) return '00:00:00';
-        
-        const hiredAt = new Date(searchHire.createdAt);
-        const deadline = new Date(hiredAt.getTime() + 24 * 60 * 60 * 1000); // 24 horas después
-        const now = new Date();
-        const diff = deadline.getTime() - now.getTime();
-        
-        if (diff <= 0) return '00:00:00';
-        
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
 
-    // Actualizar el temporizador cada segundo
-    useEffect(() => {
-        if (needsAppointment && !appointment) {
-            const updateTimer = () => {
-                setTimeRemaining(calculateTimeRemaining());
-            };
-            
-            updateTimer();
-            const interval = setInterval(updateTimer, 1000);
-            
-            return () => clearInterval(interval);
-        }
-    }, [needsAppointment, appointment, search?.searchHire?.createdAt]);
+    // 🤝 Modo de coordinación (self/seller). Cuando aún NO hay cita, el cliente NO debe "proponer" nada
+    // (eso era el flujo VIEJO de proponer/aceptar, ya retirado): en modo "seller" el vendedor coordina la
+    // cita por magic-link; en "self" el cliente ya eligió el hueco en el checkout (y la cita aparece en
+    // cuanto el webhook la crea). Mensaje correcto según el modo, sin el contador de 24h legacy.
+    const coordinationMode: string | null =
+        (search?.searchHire as any)?.coordinationMode ?? (search?.searchHire as any)?.CoordinationMode ?? null;
+    const noAppointmentMessage =
+        coordinationMode === 'seller'
+            ? 'Estamos coordinando la cita con el vendedor. Te avisaremos en cuanto elija día, hora y lugar.'
+            : coordinationMode === 'self'
+            ? 'Estamos preparando tu cita. Aparecerá aquí en unos instantes.'
+            : 'Estamos coordinando tu cita. Te avisaremos en cuanto esté confirmada.';
 
     const userId = getUserId(user);
     const clientId = Number(
@@ -1731,27 +1710,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             )}
                                                         </>
                                                     ) : (
-                                                        <div className="space-y-2">
-                                                        <div 
-                                                            className="flex items-center gap-2 text-sm text-gray-700"
+                                                        <div
+                                                            className="flex items-start gap-2 text-sm text-gray-700"
                                                             style={{
                                                                 fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                             }}
                                                         >
-                                                            <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                                <span>Debes proponer una cita</span>
-                                                            </div>
-                                                            {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                            <div 
-                                                                className="flex items-center gap-2 text-sm text-amber-600 ml-6"
-                                                                style={{
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                    <Clock className="w-4 h-4 flex-shrink-0" />
-                                                                    <span className="font-medium">Tiempo restante: {timeRemaining}</span>
-                                                                </div>
-                                                            )}
+                                                            <Clock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                                                            <span className="leading-relaxed">{noAppointmentMessage}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2527,12 +2493,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     )}
                                                 </>
                                             ) : (
-                                                <div className="space-y-1">
-                                                    <p className="text-[13px] text-[#6a6a6a]">Debes proponer una cita</p>
-                                                    {timeRemaining && timeRemaining !== '00:00:00' && (
-                                                        <p className="text-[12.5px] font-medium text-amber-600">Tiempo restante: {timeRemaining}</p>
-                                                    )}
-                                                </div>
+                                                <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
                                             )}
                                         </div>
                                     </div>

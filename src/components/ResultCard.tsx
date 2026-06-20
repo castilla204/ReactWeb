@@ -3,7 +3,7 @@ import { useLikes } from '../hooks/useLikes.hooks';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { NotificationType } from './Notification';
+import { NotificationType } from '../lib/toast';
 import { useCurrency } from '../contexts/CurrencyContext';
 
 interface ResultCardProps {

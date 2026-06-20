@@ -1,0 +1,44 @@
+/*
+ * Tema de Sileo afinado a la marca Inspecciono.
+ * Se importa DESPUÉS de `sileo/styles.css` para ganar por orden de cascada.
+ * Sileo define sus variables en :root; las redefinimos en el viewport (ancestro
+ * de badge/title/description) para que se hereden solo dentro de los toasts.
+ */
+
+[data-sileo-viewport] {
+  /* `info` y `action` adoptan el azul de marca; `success`/`error`/`warning`
+     se quedan con la semántica estándar (verde/rojo/ámbar). --brand vive en :root. */
+  --sileo-state-info: hsl(var(--brand));
+  --sileo-state-action: hsl(var(--brand));
+
+  /* Un pelín más anchos en desktop para que respiren las descripciones.
+     En móvil el viewport ya lo limita a 100vw - 1.5rem. */
+  --sileo-width: 380px;
+}
+
+/* Título en frase normal (no "Capitaliza Cada Palabra") + tipografía de marca. */
+[data-sileo-title] {
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", sans-serif;
+}
+
+/* La descripción (la "más info") un punto más legible sobre el pill oscuro. */
+[data-sileo-viewport][data-theme="light"] [data-sileo-description] {
+  color: rgba(255, 255, 255, 0.72);
+}
+[data-sileo-viewport][data-theme="dark"] [data-sileo-description] {
+  color: rgba(0, 0, 0, 0.66);
+}
+[data-sileo-description] {
+  font-family: Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", sans-serif;
+  /* Sileo aplica `content-visibility:auto` aquí, lo que hace que la descripción
+     informe solo de la altura de su texto (excluyendo el botón de acción que
+     cuelga dentro). Eso deja el "pill" demasiado bajo y el botón se sale por
+     debajo. Forzamos la medición real. */
+  content-visibility: visible;
+  contain: none;
+}

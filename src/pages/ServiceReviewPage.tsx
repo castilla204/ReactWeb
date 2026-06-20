@@ -662,6 +662,7 @@ export function ServiceReviewPage({
                                     ) : null}
                                     {showInspectionReport ? (
                                         <>
+                                            <h2 className="sd-section-label mb-3">Qué entregará</h2>
                                             <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
                                             {nonPdfDeliverableTypes.length > 0 ? (
                                                 <ServiceDetailDeliverablesGuide
@@ -807,7 +808,7 @@ export function ServiceReviewPage({
                                         ) : null}
                                         {showInspectionReport ? (
                                             <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
-                                                <h2 className="hp-section-title mb-3">Qué incluye</h2>
+                                                <h2 className="hp-section-title mb-3">Qué entregará</h2>
                                                 <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
                                                 {nonPdfDeliverableTypes.length > 0 ? (
                                                     <div className="mt-3">

@@ -4,6 +4,7 @@ import {
   SD_CHECKOUT_MOBILE_TABLE_CLASS,
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
+import { CheckoutReserveHint } from './CheckoutReserveGuide';
 
 interface CheckoutPaymentAsideProps {
   priceDisplay: React.ReactNode;
@@ -48,6 +49,8 @@ export function CheckoutPaymentAside({
         >
           {isProcessing ? 'Procesando…' : 'Reservar y pagar'}
         </button>
+
+        <CheckoutReserveHint />
 
         <p className="text-center">
           <a

@@ -16,7 +16,7 @@
  * - Mostramos un toast solo si detectamos un SW nuevo esperando (offline-ready
  *   o needs-refresh). Sin diálogo bloqueante — el usuario refresca cuando quiera.
  */
-import { toast } from 'sonner';
+import { toast } from './toast';
 
 function isCapacitorNative(): boolean {
     const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };

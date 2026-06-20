@@ -1,6 +1,8 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 import {
   SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS,
   SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS,
 } from '../../constants/homepageTypography';
@@ -11,6 +13,8 @@ type CheckoutMobileSheetProps = CheckoutSummaryTableProps & {
   separated?: boolean;
   /** Resumen más ligero tras el mapa en checkout móvil paso 2 */
   compact?: boolean;
+  /** Paso final de pago (sin stepper) */
+  paymentStep?: boolean;
 };
 
 /** Checkout móvil — tabla unificada a ancho completo. */
@@ -18,14 +22,21 @@ export function CheckoutMobileSheet({
   sectionTitle,
   separated = false,
   compact = false,
+  paymentStep = false,
   ...props
 }: CheckoutMobileSheetProps) {
+  const wrapClass = paymentStep
+    ? SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS
+    : SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS;
+
   const inner = (
-    <CheckoutSummaryTable {...props} className={SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS} />
+    <CheckoutSummaryTable {...props} brandAccent={paymentStep} className={wrapClass} />
   );
 
   if (!separated) {
-    return <div className="checkout-mobile-sheet bg-white">{inner}</div>;
+    return (
+      <div className={cn('checkout-mobile-sheet', paymentStep && 'relative z-[1]')}>{inner}</div>
+    );
   }
 
   const sectionCls = compact

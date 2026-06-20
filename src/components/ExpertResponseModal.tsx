@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { MessageCircle, Upload, X, AlertTriangle, User, Calendar, FileText } from 'lucide-react';
-import { NotificationType } from './Notification';
 import { DisputeDto } from '../types/searchDetails';
 import {
     Drawer,

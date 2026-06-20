@@ -3,7 +3,7 @@
  * Detecta errores de red, API caída, 404, 500, etc.
  */
 
-import { toast } from 'sonner';
+import { toast } from '../lib/toast';
 import { isExternalMapTileUrl, resolveFetchUrl } from '../utils/mapTileUrls';
 
 interface ErrorResponse {
@@ -144,13 +144,17 @@ export async function handleNetworkError(error: Error, url: string): Promise<voi
     const isApiDown = !(await checkApiHealth());
 
     if (isApiDown) {
-        // Solo loguear en consola, no mostrar notificación al usuario
+        // Loguear en consola y notificar al guardián global (ApiStatusGate), que mostrará
+        // una pantalla de mantenimiento profesional y reintentará en segundo plano.
+        // NO se expone ningún detalle del error al usuario.
         console.error('🔴 API no disponible:', {
             url,
             error: error.message,
             timestamp: new Date().toISOString()
         });
-        // No mostrar toast - solo consola
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('api:unavailable'));
+        }
         return;
     } else {
         // Error de red del cliente - también solo consola
