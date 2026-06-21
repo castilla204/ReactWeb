@@ -1,5 +1,5 @@
 import React from 'react';
-import { BadgeCheck, GraduationCap, Star } from 'lucide-react';
+import { BadgeCheck, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { parseFormacion } from '../expertPanel/formacion';
@@ -86,11 +86,10 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
               {formacionItems.map((it, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 rounded-full bg-[#EAF1FB] px-2 py-0.5 text-[11px] font-medium leading-tight text-[#1C63B4]"
+                  className="inline-flex max-w-[200px] items-center rounded-full bg-[#f4f7fb] px-2.5 py-1 text-[12px] font-medium leading-none text-[#1C63B4] ring-1 ring-[#1C63B4]/10"
                   title={it.titulo}
                 >
-                  <GraduationCap size={12} strokeWidth={2} className="shrink-0" />
-                  <span className="max-w-[160px] truncate">{it.titulo}</span>
+                  <span className="truncate">{it.titulo}</span>
                 </span>
               ))}
             </span>

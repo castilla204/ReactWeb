@@ -930,23 +930,23 @@
     }
 
     .sd-reviews-preview-summary-mobile {
-        @apply w-full pb-4;
+        @apply w-full pb-3;
     }
 
     .sd-reviews-preview-summary-mobile__row {
-        @apply flex w-full items-center gap-4;
+        @apply flex w-full items-start gap-5;
     }
 
     .sd-reviews-preview-summary-mobile__score-col {
-        @apply flex w-[4.25rem] shrink-0 flex-col;
+        @apply flex w-auto min-w-[4.5rem] shrink-0 flex-col items-start justify-center pr-4;
     }
 
     .sd-reviews-preview-summary-mobile__bars-col {
-        @apply min-w-0 flex-1 border-l border-[#ebebeb] pl-4;
+        @apply min-w-0 flex-1;
     }
 
     .sd-reviews-mobile-score {
-        @apply font-display text-[1.75rem] font-semibold leading-none tracking-tight;
+        @apply font-display text-[1.875rem] font-semibold leading-none tracking-tight;
     }
 
     .sd-reviews-drawer-summary {
@@ -1280,6 +1280,36 @@ input, textarea {
 
 .animate-fade-in {
     animation: fade-in 0.3s ease-out forwards;
+}
+
+/* ── Sileo Loader / Skeleton system ──────────────────────────────────────── */
+.sileo-loader-typing-dot {
+    animation: sileo-typing-wave 1.25s ease-in-out infinite;
+}
+
+@keyframes sileo-typing-wave {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+    30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.sileo-loader-bar-track {
+    animation: sileo-bar-shuttle 1.25s ease-in-out infinite;
+}
+
+@keyframes sileo-bar-shuttle {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(340%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sileo-loader-typing-dot,
+    .sileo-loader-bar-track {
+        animation: none;
+    }
+    .sileo-loader-bar-track {
+        left: 33%;
+        transform: none;
+    }
 }
 
 /* Transición entre pasos del overlay "¿Cómo se fija la cita?".

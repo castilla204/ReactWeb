@@ -1,4 +1,4 @@
-import { GraduationCap, BadgeCheck } from 'lucide-react';
+import { Building2, CalendarDays } from 'lucide-react';
 import { parseFormacion } from './expertPanel/formacion';
 
 interface FormacionDisplayProps {
@@ -7,62 +7,46 @@ interface FormacionDisplayProps {
     className?: string;
 }
 
-// Muestra la formación del experto al cliente como señal positiva.
-// Si el experto no ha añadido nada, no renderiza nada.
+/**
+ * Muestra la formación del experto en la ficha de servicio como señal de confianza.
+ * Mismo estilo visual que "Qué entregará": lista limpia con filas divisibles,
+ * tipografía sobria y metadatos secundarios. Sin iconos repetitivos.
+ */
 export default function FormacionDisplay({ value, className }: FormacionDisplayProps) {
     const items = parseFormacion(value);
     if (items.length === 0) return null;
 
     return (
-        <div className={className} style={{ marginTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <GraduationCap size={18} style={{ color: '#1C63B4' }} />
-                <strong style={{ fontSize: 15 }}>Formación</strong>
-            </div>
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <section className={className} aria-labelledby="sd-formacion-heading">
+            <p id="sd-formacion-heading" className="sd-section-label mb-3">
+                Formación y certificaciones
+            </p>
+
+            <ul className="m-0 list-none divide-y divide-[#ebebeb] border-y border-[#ebebeb] p-0">
                 {items.map((it, i) => (
-                    <li
-                        key={i}
-                        style={{
-                            display: 'flex',
-                            gap: 12,
-                            alignItems: 'flex-start',
-                            border: '0.5px solid #E5EAF0',
-                            borderRadius: 12,
-                            padding: 10,
-                        }}
-                    >
-                        {it.imagen && (
-                            <img
-                                src={it.imagen}
-                                alt={it.titulo}
-                                style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '0.5px solid #E5EAF0' }}
-                            />
-                        )}
-                        <div style={{ minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 500, fontSize: 14 }}>{it.titulo}</span>
-                                {it.esOficial && (
-                                    <span
-                                        style={{
-                                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                                            fontSize: 11, fontWeight: 500, color: '#0F6E56',
-                                            background: '#E1F5EE', borderRadius: 999, padding: '2px 8px',
-                                        }}
-                                    >
-                                        <BadgeCheck size={13} /> Título oficial
+                    <li key={i} className="py-3.5 first:pt-0 last:pb-0">
+                        <div className="text-sm font-medium leading-snug text-[#1c1c1c]">
+                            {it.titulo}
+                        </div>
+                        {(it.centro || it.anio) && (
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] leading-snug text-[#6a6a6a]">
+                                {it.centro && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <Building2 size={12} strokeWidth={2} className="shrink-0" />
+                                        {it.centro}
+                                    </span>
+                                )}
+                                {it.anio && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <CalendarDays size={12} strokeWidth={2} className="shrink-0" />
+                                        {it.anio}
                                     </span>
                                 )}
                             </div>
-                            {(it.centro || it.anio) && (
-                                <div style={{ color: '#6B7280', fontSize: 13, marginTop: 2 }}>
-                                    {[it.centro, it.anio].filter(Boolean).join(' · ')}
-                                </div>
-                            )}
-                        </div>
+                        )}
                     </li>
                 ))}
             </ul>
-        </div>
+        </section>
     );
 }

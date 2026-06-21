@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { ErrorDisplay } from '../components/ErrorDisplay';
-import { Spinner } from '../components/ui/spinner';
+import { SileoLoader } from '../components/ui/sileo-loader';
 
 const TRANSACTION_TYPES = [
     { value: 'all', label: 'Todas las transacciones' },
@@ -149,7 +149,7 @@ export default function TransactionsPage() {
                 <div className="bg-card border border-border rounded-lg overflow-hidden">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Spinner className="w-5 h-5" />
+                            <SileoLoader size="md" message="Cargando transacciones…" color="muted" />
                         </div>
                     ) : !data?.transactions || data.transactions.length === 0 ? (
                         <div className="text-center py-12">

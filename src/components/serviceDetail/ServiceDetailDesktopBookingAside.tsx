@@ -30,7 +30,7 @@ function AsideSection({
   className?: string;
 }) {
   return (
-    <section className={cn('border-t border-[#f0f0f0] px-5 py-4 first:border-t-0', className)}>
+    <section className={cn('border-t border-[#ebebeb] px-5 py-5 first:border-t-0', className)}>
       <p className="text-[12px] font-medium text-[#9ca3af]">{label}</p>
       <div className="mt-1.5">{children}</div>
     </section>
@@ -63,13 +63,16 @@ export function ServiceDetailDesktopBookingAside({
     <article
       className={`sd-aside-card sd-service-booking-aside flex flex-col overflow-hidden ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
     >
-      <AsideSection label="Precio" className="border-t-0 pt-5">
-        <p className="sd-aside-price">{priceDisplay}</p>
-        <p className="mt-1 text-xs leading-snug text-[#717171]">Impuestos incluidos</p>
+      <div className="relative overflow-hidden border-b border-[#ebebeb] bg-[#e0ecff] px-5 py-5">
+        <div className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 rounded-full bg-[#1C63B4]/20 blur-xl" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-[#F59E0B]/18 blur-xl" aria-hidden />
+        <p className="relative z-10 text-[12px] font-medium text-[#9ca3af]">Precio</p>
+        <p className="sd-aside-price relative z-10 mt-1">{priceDisplay}</p>
+        <p className="relative z-10 mt-1 text-xs leading-snug text-[#717171]">Impuestos incluidos</p>
         {priceWasConverted && priceSourceFormatted ? (
-          <p className="mt-1 text-[11px] leading-snug text-[#9ca3af]">{priceSourceFormatted}</p>
+          <p className="relative z-10 mt-1 text-[11px] leading-snug text-[#9ca3af]">{priceSourceFormatted}</p>
         ) : null}
-      </AsideSection>
+      </div>
 
       <AsideSection label="Experto">
         <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#1c1c1c]">
@@ -125,7 +128,7 @@ export function ServiceDetailDesktopBookingAside({
         )}
       </AsideSection>
 
-      <footer className="mt-auto border-t border-[#f0f0f0] px-5 py-4">
+      <footer className="mt-auto border-t border-[#ebebeb] px-5 py-5">
         {isAuthenticated ? (
           <button type="button" onClick={onReserve} className="sd-aside-cta">
             Reservar

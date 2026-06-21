@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Check } from 'lucide-react';
+import { SileoLoader } from '../ui/sileo-loader';
 import revisionCocheImg from '../../media/revisioncoche.jpg';
 import erizoImg from '../../media/erizo.png';
 import { HomepageHeroTrustLines } from '../HomepageHeroTrustLines';
@@ -262,9 +263,8 @@ export function BecomeExpertWizardShell({
                 >
                     <div className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full py-5 lg:max-w-none lg:px-10 lg:py-8 xl:px-12`}>
                         {initialLoading ? (
-                            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                                <Loader2 className="h-8 w-8 animate-spin text-brand" aria-hidden />
-                                <p className="text-sm text-[#6a6a6a]">Comprobando tu cuenta…</p>
+                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                                <SileoLoader size="lg" message="Comprobando tu cuenta…" color="brand" />
                             </div>
                         ) : (
                             <>

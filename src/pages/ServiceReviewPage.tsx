@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { SileoPageLoader } from '../components/ui/sileo-loader';
 import {
     ArrowLeft,
     ChevronLeft,
@@ -8,7 +9,7 @@ import {
     Image,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
-import FormacionPhotoOverlay from '../components/serviceDetail/FormacionPhotoOverlay';
+import FormacionDisplay from '../components/FormacionDisplay';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -509,12 +510,7 @@ export function ServiceReviewPage({
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-500 text-sm">Cargando...</p>
-                </div>
-            </div>
+            <SileoPageLoader message="Cargando reseñas…" className="bg-white" />
         );
     }
 
@@ -556,12 +552,6 @@ export function ServiceReviewPage({
                             location={expertLocation}
                             locationLabel={expertLocationLabel || undefined}
                             rangeKm={expertRange ?? 25}
-                            formacionOverlay={
-                                <FormacionPhotoOverlay
-                                    value={finalExpertFormacion}
-                                    variant="mobile"
-                                />
-                            }
                         />
                     </div>
 
@@ -679,6 +669,9 @@ export function ServiceReviewPage({
                                             variant="inline"
                                         />
                                     ) : null}
+                                    {finalExpertFormacion && (
+                                        <FormacionDisplay value={finalExpertFormacion} />
+                                    )}
                                 </div>
                             )}
 
@@ -696,6 +689,7 @@ export function ServiceReviewPage({
                                         reviews={finalReviews}
                                         averageRating={finalRating}
                                         onShowAll={() => setReviewsModalOpen(true)}
+                                        neutral
                                     />
                                 </div>
                             )}
@@ -788,7 +782,7 @@ export function ServiceReviewPage({
                                     onChatClick={handleChatClick}
                                 />
 
-                                {(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport) && (
+                                {(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport || finalExpertFormacion) && (
                                     <div className="mt-5 flex flex-col gap-5">
                                         {displayMainDescription ? (
                                             <section className="min-w-0 overflow-hidden">
@@ -837,6 +831,11 @@ export function ServiceReviewPage({
                                                 />
                                             </section>
                                         ) : null}
+                                        {finalExpertFormacion && (
+                                            <section className={(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport) ? 'border-t border-[#ebebeb] pt-5' : undefined}>
+                                                <FormacionDisplay value={finalExpertFormacion} />
+                                            </section>
+                                        )}
                                     </div>
                                 )}
 

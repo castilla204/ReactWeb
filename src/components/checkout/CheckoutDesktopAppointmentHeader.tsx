@@ -16,11 +16,11 @@ export function CheckoutDesktopAppointmentHeader({
     return (
         <header
             className={cn(
-                'shrink-0 bg-white px-5 pb-5 pt-4 lg:px-6 lg:pb-6 lg:pt-5',
+                'shrink-0 bg-white px-3.5 pb-3.5 pt-3 lg:px-5 lg:pb-4 lg:pt-4',
                 className,
             )}
         >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5">
                 {onBack ? (
                     <button
                         type="button"

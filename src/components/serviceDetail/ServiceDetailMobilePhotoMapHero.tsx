@@ -18,8 +18,6 @@ interface ServiceDetailMobilePhotoMapHeroProps {
   location: { latitude: number; longitude: number } | null;
   locationLabel?: string;
   rangeKm?: number;
-  /** Formación en cascada superpuesta sobre la foto */
-  formacionOverlay?: React.ReactNode;
 }
 
 function PhotoCell({
@@ -178,7 +176,6 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
   location,
   locationLabel,
   rangeKm = 25,
-  formacionOverlay,
 }) => {
   const isWorkshopOnly = rangeKm === 0;
   const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
@@ -226,8 +223,6 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
           </div>
         )}
       </div>
-
-      {formacionOverlay}
     </div>
   );
 };

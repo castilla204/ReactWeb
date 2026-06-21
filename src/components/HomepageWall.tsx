@@ -13,8 +13,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { homepageToast, toast } from '../lib/toast';
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import { SileoSkeleton } from './ui/sileo-skeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpCardText, hpType, HP_WALL_CARD_WIDTH_CLASS } from '../constants/homepageTypography';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -79,7 +78,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
           ? {
               title: 'Añadido a favoritos',
               description: 'Lo tienes guardado en tu lista de favoritos.',
-              icon: <Heart className="h-[18px] w-[18px] fill-current" />,
               button: { title: 'Ver favoritos', onClick: () => navigate('/favoritos') },
             }
           : { title: 'Quitado de favoritos' };
@@ -784,18 +782,18 @@ interface HomepageWallProps {
 const WallSkeletonGrid: React.FC = () => (
   <>
     <div className="mb-2 md:mb-3 md:hidden">
-      <Skeleton height={28} width={220} borderRadius={8} />
+      <SileoSkeleton className="h-7 w-56 rounded-lg" />
     </div>
     <div className="hidden md:block mb-5">
-      <Skeleton height={12} width={80} borderRadius={4} className="mb-2" />
-      <Skeleton height={32} width={280} borderRadius={8} />
+      <SileoSkeleton className="h-3 w-20 mb-2 rounded" />
+      <SileoSkeleton className="h-8 w-72 rounded-lg" />
     </div>
     <div className="space-y-6 md:space-y-12 lg:space-y-14">
       <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
         {[...Array(6)].map((_, index) => (
           <div key={index} className={`flex-shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-            <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
-            <Skeleton height={16} width="100%" borderRadius={4} />
+            <SileoSkeleton className="h-[138px] w-full mb-1.5 rounded-xl" />
+            <SileoSkeleton className="h-4 w-full rounded" />
           </div>
         ))}
       </div>
@@ -980,11 +978,9 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
 
   if (showFullSkeleton) {
     return (
-      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-          <WallSkeletonGrid />
-        </div>
-      </SkeletonTheme>
+      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+        <WallSkeletonGrid />
+      </div>
     );
   }
 
@@ -996,30 +992,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     // el layout no colapse.
     console.error('❌ HomepageWall - Error:', error);
     return (
-      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-          <div
-            role="alert"
-            aria-live="polite"
-            className="mb-4 md:mb-5 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 md:px-4 md:py-3"
+      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-4 md:mb-5 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2.5 md:px-4 md:py-3"
+        >
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+          <p className="flex-1 text-sm leading-snug text-amber-900">
+            No pudimos cargar los servicios. Vuelve a intentarlo en un momento.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-wait disabled:opacity-60"
           >
-            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-            <p className="flex-1 text-sm leading-snug text-amber-900">
-              No pudimos cargar los servicios. Vuelve a intentarlo en un momento.
-            </p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-wait disabled:opacity-60"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} aria-hidden />
-              {isFetching ? 'Reintentando' : 'Reintentar'}
-            </button>
-          </div>
-          <WallSkeletonGrid />
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} aria-hidden />
+            {isFetching ? 'Reintentando' : 'Reintentar'}
+          </button>
         </div>
-      </SkeletonTheme>
+        <WallSkeletonGrid />
+      </div>
     );
   }
 
@@ -1028,32 +1022,28 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     // amable sin tono de error, encima del skeleton, para no romper el layout.
     console.warn('⚠️ HomepageWall - No hay secciones');
     return (
-      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-          <p className="mb-4 md:mb-5 text-sm text-[#6a6a6a]">
-            Aún no hay servicios disponibles en esta categoría.
-          </p>
-          <WallSkeletonGrid />
-        </div>
-      </SkeletonTheme>
+      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+        <p className="mb-4 md:mb-5 text-sm text-[#6a6a6a]">
+          Aún no hay servicios disponibles en esta categoría.
+        </p>
+        <WallSkeletonGrid />
+      </div>
     );
   }
 
   if (!hasVisibleServices) {
     if (fallbackLoading) {
       return (
-        <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-          <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1">
-            <div className="flex overflow-x-auto gap-4 pb-0">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-                  <Skeleton height={138} className="w-full mb-1.5" borderRadius={12} />
-                  <Skeleton height={14} width="90%" borderRadius={4} />
-                </div>
-              ))}
-            </div>
+        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1">
+          <div className="flex overflow-x-auto gap-4 pb-0">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
+                <SileoSkeleton className="h-[138px] w-full mb-1.5 rounded-xl" />
+                <SileoSkeleton className="h-3.5 w-[90%] rounded" />
+              </div>
+            ))}
           </div>
-        </SkeletonTheme>
+        </div>
       );
     }
 

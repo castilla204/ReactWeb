@@ -3,7 +3,6 @@ import { Link2, Mail } from 'lucide-react';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { cn } from '../../lib/utils';
-import { SD_BRAND_CHAT_GRADIENT_LINE_SUBTLE } from '../../constants/homepageTypography';
 import {
     CHECKOUT_SELLER_PLAZO_SUMMARY,
     COORD_OPTION_SELLER_DESC,
@@ -70,6 +69,8 @@ export function isValidSellerPhone(phone: string) {
     return /^[67]\d{8}$/.test(nat);
 }
 
+export { PhoneInput };
+
 /**
  * Se puede continuar si hay AL MENOS un canal que FUNCIONE: email válido o MÓVIL válido (un fijo no
  * recibe SMS → no cuenta). Un campo presente pero inválido NO bloquea si el otro es válido (igual que
@@ -83,12 +84,12 @@ export function sellerCoordinationCanContinue(phone: string, email: string) {
 // CHECKOUT_SELLER_PLAZO_SUMMARY — ver sellerBookingWindow.ts
 
 /** Copy tarjetas paso 1 — coordinación de la cita. */
-export const COORD_OPTION_SELF_TITLE = 'Yo reservo la cita';
+export const COORD_OPTION_SELF_TITLE = 'Yo la reservo';
 export const COORD_OPTION_SELF_DESC =
-    'Ya hablas con el vendedor. Tú eliges aquí el día, la hora y el sitio al pagar.';
+    'Tú eliges día, hora y lugar en el calendario del experto al pagar. La cita queda confirmada en el acto.';
 // COORD_OPTION_SELLER_TITLE + COORD_OPTION_SELLER_DESC — sellerBookingWindow.ts re-export arriba
-export const COORD_OPTION_SELLER_TITLE = 'Inspecciono lo coordina';
-export const COORD_OPTION_FREE_CANCEL = 'Cancelación gratuita';
+export const COORD_OPTION_SELLER_TITLE = 'Que lo coordine Inspecciono';
+export const COORD_OPTION_FREE_CANCEL = 'Cancelación sin coste';
 /** @deprecated Usar COORD_OPTION_FREE_CANCEL */
 export const COORD_OPTION_SELLER_OFFER = COORD_OPTION_FREE_CANCEL;
 
@@ -121,17 +122,12 @@ export function CheckoutSellerEnlaceInfoNote({
         return (
             <div
                 className={cn(
-                    'overflow-hidden rounded-xl border border-[#e8ecf1] bg-[#f8fafc]',
+                    'rounded-xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5',
                     className,
                 )}
                 role="note"
             >
-                <div
-                    aria-hidden
-                    className="h-px"
-                    style={{ background: SD_BRAND_CHAT_GRADIENT_LINE_SUBTLE }}
-                />
-                <p className="px-3.5 py-2.5 text-[12px] leading-relaxed text-[#475569]">
+                <p className="text-[12px] leading-relaxed text-[#565d6b]">
                     {SELLER_COORD_ENLACE_DETAILED}
                 </p>
             </div>
@@ -139,7 +135,7 @@ export function CheckoutSellerEnlaceInfoNote({
     }
 
     return (
-        <p className={cn('text-[12px] leading-relaxed text-[#475569]', className)}>
+        <p className={cn('text-[12px] leading-relaxed text-[#565d6b]', className)}>
             {SELLER_COORD_CARD_NOTE}
         </p>
     );
@@ -149,8 +145,7 @@ export function CheckoutSellerEnlaceInfoNote({
 export function CheckoutSelfCoordinationInfoNote({ className }: { className?: string }) {
     return (
         <p className={cn('text-[12px] leading-relaxed text-[#475569]', className)}>
-            Úsalo si ya hablas con el vendedor o podéis acordar la visita entre vosotros. Al pagar,
-            reservas tú el día, la hora y la dirección de la inspección.
+            Ideal si ya tienes contacto con el vendedor. Al pagar, eliges tú el día, la hora y la dirección.
         </p>
     );
 }
@@ -160,12 +155,12 @@ export function CheckoutSellerPlazoNotice({ className }: { className?: string })
     return (
         <div
             className={cn(
-                'rounded-xl border border-[#e8ecf1] bg-[#f8fafc] px-3.5 py-2.5',
+                'rounded-xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5',
                 className,
             )}
             role="note"
         >
-            <p className="text-[13px] leading-[1.55] text-[#374151]">{CHECKOUT_SELLER_PLAZO_SUMMARY}</p>
+            <p className="text-[13px] leading-[1.55] text-[#565d6b]">{CHECKOUT_SELLER_PLAZO_SUMMARY}</p>
         </div>
     );
 }
@@ -235,7 +230,7 @@ export function CheckoutSellerCoordinationFields({
                         ya entiende. Mismo componente que la verificación del experto. */}
                     <div className="space-y-1.5">
                         <label htmlFor="seller-phone" className="block text-[12px] font-semibold text-[#374151]">
-                            Móvil del vendedor
+                            Teléfono del vendedor
                         </label>
                         <PhoneInput
                             country={'es'}
@@ -267,9 +262,7 @@ export function CheckoutSellerCoordinationFields({
                     </IconField>
                     {variant !== 'contact' ? (
                         <p className="text-[12px] leading-relaxed text-[#6b7280]">
-                            Indica un móvil o un email (el móvil debe poder recibir SMS). Le enviaremos un{' '}
-                            <span className="font-semibold text-[#374151]">enlace</span> para que elija día, hora
-                            y lugar.
+                            Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
                         </p>
                     ) : null}
                     <IconField id="seller-listing" label="Enlace del anuncio" icon={Link2} optional>
@@ -286,8 +279,8 @@ export function CheckoutSellerCoordinationFields({
                     {showContactError ? (
                         <p role="alert" className="text-[12px] font-medium text-red-600">
                             {bothEmpty
-                                ? 'Añade un móvil o un email para continuar.'
-                                : 'Revisa el contacto: un móvil que pueda recibir SMS o un email válido.'}
+                                ? 'Añade un teléfono o un email para continuar.'
+                                : 'Revisa el contacto: un móvil o un email válido.'}
                         </p>
                     ) : null}
                 </div>

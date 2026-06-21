@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
+import { SileoLoader } from '../components/ui/sileo-loader';
 
 export function TermsPage() {
     const navigate = useNavigate();
@@ -41,16 +42,16 @@ export function TermsPage() {
                 <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
                     {loading ? (
                         <div className="flex justify-center py-12">
-                            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            <SileoLoader size="lg" color="brand" />
                         </div>
                     ) : error ? (
                         <div className="text-center py-12 text-red-600">
                             {error}
                         </div>
                     ) : (
-                        <div 
+                        <div
                             className="prose prose-blue max-w-none text-gray-700"
-                            dangerouslySetInnerHTML={{ __html: content }} 
+                            dangerouslySetInnerHTML={{ __html: content }}
                         />
                     )}
                 </div>
@@ -58,4 +59,3 @@ export function TermsPage() {
         </div>
     );
 }
-

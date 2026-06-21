@@ -2,18 +2,15 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG } from '../config/api';
 import { showToast } from '../lib/toast';
+import { SileoPageLoader } from '../components/ui/sileo-loader';
 
 // 🛡️ N12: verificamos la session contra el backend ANTES de dar el pago por bueno.
 // Sin esta verificación, alguien podría navegar a /success sin haber pagado y ver una
 // confirmación falsa. El endpoint valida con Stripe que la sesión está completada y que
 // el userId del metadata coincide con el usuario autenticado del JWT.
-//
-// UX: ya no mostramos una página dedicada con botones. En cuanto verificamos, lanzamos un
-// toast y redirigimos al panel de "Mis búsquedas/contrataciones". Solo se ve un spinner breve.
 export function PaymentSuccessPage() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    // Evita doble verificación / doble toast si el efecto se re-ejecuta.
     const handledRef = useRef(false);
 
     useEffect(() => {
@@ -42,7 +39,6 @@ export function PaymentSuccessPage() {
                 });
                 const data = res.ok ? await res.json() : null;
                 if (data?.valid === true) {
-                    // El pago se confirmó: ya no necesitamos el estado pendiente.
                     sessionStorage.removeItem('pendingHire');
                     showToast(
                         'success',
@@ -63,9 +59,6 @@ export function PaymentSuccessPage() {
     }, [searchParams, navigate]);
 
     return (
-        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-            <div className="animate-spin h-10 w-10 border-4 border-gray-300 border-t-gray-900 rounded-full mb-4" />
-            <p className="text-gray-500 text-sm">Confirmando tu reserva…</p>
-        </div>
+        <SileoPageLoader message="Confirmando tu reserva…" className="bg-white" />
     );
 }

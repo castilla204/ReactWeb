@@ -1,5 +1,7 @@
 import { cn } from '../../../lib/utils';
+import { SileoLoader } from '../../ui/sileo-loader';
 
+/** Skeleton unificado para el panel de administración. */
 export const AdminSkeleton = ({ className }: { className?: string }) => (
   <div className={cn('animate-pulse rounded-md bg-[hsl(220_14%_92%)]', className)} />
 );
@@ -18,5 +20,7 @@ export const AdminTableSkeleton = ({ rows = 5, cols = 4 }: { rows?: number; cols
 );
 
 export const AdminSpinner = ({ size = 18 }: { size?: number }) => (
-  <span className="admin-spinner" style={{ width: size, height: size }} />
+  <span className="admin-spinner" style={{ width: size, height: size }}>
+    <SileoLoader size="sm" color="current" />
+  </span>
 );

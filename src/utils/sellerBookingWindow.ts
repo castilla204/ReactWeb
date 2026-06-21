@@ -12,19 +12,19 @@ export const SELLER_BOOKING_LINK_DEADLINE_HOURS = 48;
 
 /** Resumen ventana de fechas — alineado con SellerBookingWindow (NewApi). */
 export const CHECKOUT_SELLER_PLAZO_SUMMARY =
-    `Cita habitual entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago (máx. ${SELLER_BOOKING_MAX_DAYS} si no hay huecos). Reembolso si no reserva a tiempo.`;
+    `El vendedor reserva entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago (máx. ${SELLER_BOOKING_MAX_DAYS}). Si no reserva a tiempo, te devolvemos el dinero.`;
 
 /** Paso contacto vendedor — qué hace el enlace. */
 export const SELLER_COORD_ENLACE_DETAILED =
-    `Indica el móvil o email del vendedor. Tras pagar, le enviamos un enlace para que reserve día y hora entre los huecos del experto (según su horario en la app), de ${SELLER_BOOKING_MIN_LEAD_DAYS} a ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días después del pago (hasta ${SELLER_BOOKING_MAX_DAYS} si no hay disponibilidad antes).`;
+    `Tras pagar, le enviamos un enlace al vendedor para que reserve día y hora entre los huecos libres del experto. Suele ser entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días después del pago.`;
 
 /** Tarjeta paso 1 — modo Inspecciono lo coordina (texto visible en la card). */
 export const COORD_OPTION_SELLER_DESC =
-    `Necesitamos el móvil o email del vendedor. Tras pagar, le enviamos un enlace para que elija día y hora entre la agenda del experto (huecos de su horario en la app), de ${SELLER_BOOKING_MIN_LEAD_DAYS} a ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días después del pago (hasta ${SELLER_BOOKING_MAX_DAYS} si no hay disponibilidad).`;
+    `Tras pagar enviamos un enlace al vendedor para que reserve día y hora. Suele ser entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago.`;
 
 /** Popover «más info» en la tarjeta Inspecciono lo coordina. */
 export const SELLER_COORD_CARD_NOTE =
-    `${SELLER_COORD_ENLACE_DETAILED} Reembolso íntegro si no reserva a tiempo.`;
+    `Necesitamos móvil o email del vendedor. Le mandamos un enlace para que elija un hueco libre del experto entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago. Si no reserva a tiempo, te reembolsamos el importe.`;
 
 /** Calendario solo consulta (preview) en checkout modo vendedor. */
 export const SELLER_COORD_CALENDAR_PREVIEW_NOTE =

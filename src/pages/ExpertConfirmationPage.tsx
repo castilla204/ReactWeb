@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, CalendarClock, MapPin, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle2, CalendarClock, MapPin, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
+import { SileoLoader } from '../components/ui/sileo-loader';
+import { SileoButton } from '../components/ui/sileo-button';
 
-// Página PÚBLICA de confirmación del experto. Sin login: el token de la URL es la credencial.
-// La cita YA está fijada (fecha/hora/lugar). El experto solo aprueba o rechaza.
-// Espejo simplificado de SellerBookingPage: sin SlotPicker ni mapa, sin datos del cliente.
+// Página PÚBLICA de confirmación del experto.
 interface Context {
     serviceId: number;
     startsAtUtc: string;
@@ -61,7 +61,6 @@ export default function ExpertConfirmationPage() {
         return () => { cancelled = true; };
     }, [token, base]);
 
-    // Fecha/hora legible (es-ES) a partir de startsAtUtc.
     const prettyDate = useMemo(() => {
         if (!ctx?.startsAtUtc) return '';
         const d = new Date(ctx.startsAtUtc);
@@ -86,11 +85,9 @@ export default function ExpertConfirmationPage() {
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
                 if (res.status === 409) {
-                    // Ya no está pendiente: recargamos el contexto para transicionar a la pantalla correcta.
                     await reload();
                     throw new Error('La cita ya no está pendiente de confirmación.');
                 }
-                // p.ej. 402 captura fallida → mostramos el mensaje del backend.
                 throw new Error(data?.message || 'No se pudo confirmar la cita.');
             }
             setDone('approved');
@@ -101,7 +98,6 @@ export default function ExpertConfirmationPage() {
         }
     };
 
-    // Rechazo en 2 pasos: cancela la cita y devuelve el 100% al comprador.
     const reject = async () => {
         setError(null);
         setRejecting(true);
@@ -135,9 +131,7 @@ export default function ExpertConfirmationPage() {
                 <strong style={{ fontSize: 18, color: '#1C63B4', display: 'block', marginBottom: 12 }}>Inspecciono</strong>
 
                 {status === 'loading' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6B7280', fontSize: 14 }}>
-                        <Loader2 size={18} className="animate-spin" /> Comprobando el enlace…
-                    </div>
+                    <SileoLoader message="Comprobando el enlace…" color="muted" />
                 )}
 
                 {status === 'invalid' && (
@@ -190,7 +184,6 @@ export default function ExpertConfirmationPage() {
                             </div>
                         </div>
 
-                        {/* Resumen de la cita (fecha/hora + lugar). */}
                         <div style={{ background: '#F7FAFD', border: '0.5px solid #DCE3EC', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
                             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                                 <CalendarClock size={18} style={{ color: '#1C63B4', flexShrink: 0, marginTop: 1 }} />
@@ -212,21 +205,16 @@ export default function ExpertConfirmationPage() {
 
                         {error && <p style={{ color: '#D32F2F', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
 
-                        <button
-                            type="button"
+                        <SileoButton
                             onClick={approve}
                             disabled={submitting || rejecting}
-                            style={{
-                                width: '100%', background: '#1C63B4', color: '#fff',
-                                border: 'none', borderRadius: 10, padding: 12, fontSize: 15, fontWeight: 600,
-                                cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.7 : 1,
-                            }}
+                            loading={submitting}
+                            loadingText="Confirmando…"
+                            className="w-full rounded-xl py-3 text-[15px] font-semibold"
                         >
-                            {submitting ? 'Confirmando…' : 'Confirmar cita'}
-                        </button>
+                            Confirmar cita
+                        </SileoButton>
 
-                        {/* "No podré atender la cita": acción secundaria sutil. Confirmación en 2 pasos
-                            porque dispara la cancelación + devolución al comprador. */}
                         {!rejectConfirming ? (
                             <button
                                 type="button"
@@ -246,18 +234,15 @@ export default function ExpertConfirmationPage() {
                                     Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
                                 </p>
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                    <button
-                                        type="button"
+                                    <SileoButton
                                         onClick={reject}
                                         disabled={rejecting}
-                                        style={{
-                                            flex: 1, background: '#D32F2F', color: '#fff', border: 'none', borderRadius: 8,
-                                            padding: 10, fontSize: 14, fontWeight: 600,
-                                            cursor: rejecting ? 'default' : 'pointer', opacity: rejecting ? 0.7 : 1,
-                                        }}
+                                        loading={rejecting}
+                                        loadingText="Rechazando…"
+                                        className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
                                     >
-                                        {rejecting ? 'Rechazando…' : 'Sí, rechazar'}
-                                    </button>
+                                        Sí, rechazar
+                                    </SileoButton>
                                     <button
                                         type="button"
                                         onClick={() => setRejectConfirming(false)}

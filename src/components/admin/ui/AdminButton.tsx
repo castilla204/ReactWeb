@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Loader2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { SileoLoader } from '../../ui/sileo-loader';
 
 type Variant = 'brand' | 'outline' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -36,9 +36,10 @@ export const AdminButton = React.forwardRef<HTMLButtonElement, AdminButtonProps>
       ref={ref}
       className={cn(base, variants[variant], sizes[size], className)}
       disabled={disabled || loading}
+      aria-busy={loading}
       {...props}
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      {loading ? <SileoLoader size="sm" color="current" /> : icon}
       {children}
     </button>
   ),
