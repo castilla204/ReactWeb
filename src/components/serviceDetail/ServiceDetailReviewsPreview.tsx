@@ -22,6 +22,8 @@ interface ServiceDetailReviewsPreviewProps {
   /** En pestaña móvil el título ya está en el tab. */
   hideHeading?: boolean;
   headingId?: string;
+  /** Estrellas y barras en carbón (p. ej. pestaña móvil sobria). */
+  neutral?: boolean;
 }
 
 const MIN_REVIEWS_FOR_HISTOGRAM = 3;
@@ -35,6 +37,7 @@ function MobileReviewsPreview({
   onShowAll,
   headingId,
   hideHeading,
+  neutral = false,
 }: Omit<ServiceDetailReviewsPreviewProps, 'variant'>) {
   const distribution = useMemo(() => computeReviewRatingDistribution(reviews), [reviews]);
   const previewReviews = useMemo(() => pickPreviewReviews(reviews, MOBILE_PREVIEW_COUNT), [reviews]);
@@ -75,6 +78,7 @@ function MobileReviewsPreview({
             averageRating={averageRating}
             reviewCount={reviews.length}
             distribution={distribution}
+            neutral={neutral}
           />
         ) : (
           <ServiceDetailReviewsMobileStatsRow
@@ -82,12 +86,13 @@ function MobileReviewsPreview({
             reviewCount={reviews.length}
             distribution={distribution}
             showHistogram={false}
+            neutral={neutral}
           />
         )}
       </div>
 
       {previewReviews.length > 0 ? (
-        <ul className="mt-4 w-full divide-y divide-[#ebebeb] border-t border-[#ebebeb]">
+        <ul className="mt-3 w-full divide-y divide-[#ebebeb] border-t border-[#ebebeb]">
           {previewReviews.map((review, idx) => {
             const key = review.id ?? `${review.createdAt}-${idx}`;
             return (
@@ -96,7 +101,8 @@ function MobileReviewsPreview({
                   review={review}
                   variant="mobile"
                   onClick={onShowAll}
-                  className="py-3"
+                  neutral={neutral}
+                  className="py-2.5"
                 />
               </li>
             );
@@ -309,6 +315,7 @@ export const ServiceDetailReviewsPreview: React.FC<ServiceDetailReviewsPreviewPr
   layout = 'default',
   hideHeading = false,
   headingId = 'sd-reviews-heading',
+  neutral = false,
 }) => {
   if (variant === 'mobile') {
     return (
@@ -318,6 +325,7 @@ export const ServiceDetailReviewsPreview: React.FC<ServiceDetailReviewsPreviewPr
         onShowAll={onShowAll}
         hideHeading={hideHeading}
         headingId={headingId}
+        neutral={neutral}
       />
     );
   }

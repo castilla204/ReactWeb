@@ -99,8 +99,18 @@
 .admin-tab--active { color: hsl(var(--ap-brand-strong)); border-bottom-color: hsl(var(--ap-brand)); }
 
 /* ── Spinner ──────────────────────────────────────────────────────────── */
-.admin-spinner { display: inline-block; border-radius: 999px; border: 2px solid hsl(var(--ap-border-strong)); border-top-color: hsl(var(--ap-brand)); animation: admin-spin .7s linear infinite; }
-@keyframes admin-spin { to { transform: rotate(360deg); } }
+.admin-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: hsl(var(--ap-brand));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-spinner {
+    animation: none;
+  }
+}
 
 /* ── Responsive: sidebar colapsa en móvil ─────────────────────────────── */
 @media (max-width: 860px) {

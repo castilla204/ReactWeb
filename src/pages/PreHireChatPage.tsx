@@ -23,7 +23,7 @@ import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
 import AppointmentMap from '../components/AppointmentMap';
 import { LoginModal } from '../components/LoginModal';
-import { PRE_HIRE_CHAT_COPY } from '../constants/chatCopy.es';
+
 import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 
@@ -418,6 +418,13 @@ export function PreHireChatPage() {
                                     {isChatConnected ? 'En directo' : locationLabel}
                                 </span>
                             </Link>
+                            <Button
+                                type="button"
+                                onClick={handleHireClick}
+                                className="ml-auto shrink-0 rounded-full bg-brand hover:bg-brand-hover text-white text-[13px] font-semibold px-4 py-1.5 shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-all hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] active:scale-[0.98]"
+                            >
+                                Contratar{priceLabel ? ` · ${priceLabel}` : ''}
+                            </Button>
                         </div>
 
                         {/* Información del experto en desktop */}
@@ -645,20 +652,14 @@ export function PreHireChatPage() {
                         onConnectionChange={setIsChatConnected}
                         peerName={expertName}
                         embedded
+                        service={service}
+                        onClose={undefined}
                     />
                 </div>
             )}
 
             {service && !loading && (
-                <div className="shrink-0 border-t border-gray-200 bg-white px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:hidden">
-                    <Button
-                        type="button"
-                        onClick={handleHireClick}
-                        className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-brand text-sm font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)] transition-colors hover:bg-brand-hover active:scale-[0.99]"
-                    >
-                        <span>{PRE_HIRE_CHAT_COPY.hireCta}</span>
-                        {priceLabel && <span className="font-normal opacity-90">· {priceLabel}</span>}
-                    </Button>
+                <div className="shrink-0 bg-white px-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:hidden">
                 </div>
             )}
             

@@ -8,10 +8,12 @@ import {
     DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
+import { SileoButton } from './ui/sileo-button';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { useCreateCategory } from '../hooks/useCreateCategory';
-import { Loader2, Plus, FolderTree } from 'lucide-react';
+import { Plus, FolderTree } from 'lucide-react';
+import { SileoLoader } from './ui/sileo-loader';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { ParentCategoryDto } from '../types/category';
@@ -218,10 +220,7 @@ export function CreateCategoryDialog({ open, onOpenChange, onCategoryCreated }: 
                                     Categoría Padre <span className="text-destructive">*</span>
                                 </Label>
                                 {loadingParents ? (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Cargando categorías padre...
-                                    </div>
+                                    <SileoLoader size="sm" message="Cargando categorías padre…" color="muted" />
                                 ) : (
                                     <select
                                         id="parent-category"
@@ -275,22 +274,15 @@ export function CreateCategoryDialog({ open, onOpenChange, onCategoryCreated }: 
                         >
                             Cancelar
                         </Button>
-                        <Button
+                        <SileoButton
                             type="submit"
-                            disabled={isCreating || !categoryName.trim()}
+                            loading={isCreating}
+                            loadingText="Creando…"
+                            disabled={!categoryName.trim()}
+                            icon={<Plus className="w-4 h-4 mr-2" />}
                         >
-                            {isCreating ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Creando...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    {isSubcategory ? 'Crear subcategoría' : 'Crear categoría'}
-                                </>
-                            )}
-                        </Button>
+                            {isSubcategory ? 'Crear subcategoría' : 'Crear categoría'}
+                        </SileoButton>
                     </DialogFooter>
                 </form>
             </DialogContent>

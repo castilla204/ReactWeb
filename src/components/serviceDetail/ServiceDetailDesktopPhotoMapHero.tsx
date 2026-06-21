@@ -25,8 +25,6 @@ interface ServiceDetailDesktopPhotoMapHeroProps {
   rangeKm?: number;
   /** Título/meta superpuesto sobre la imagen principal (columna izquierda) */
   titleOverlay?: React.ReactNode;
-  /** Formación en cascada superpuesta sobre la foto */
-  formacionOverlay?: React.ReactNode;
   /** Volver — disco flotante arriba-derecha de la galería (desktop) */
   onBack?: () => void;
   className?: string;
@@ -44,7 +42,6 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   locationLabel,
   rangeKm = 25,
   titleOverlay,
-  formacionOverlay,
   onBack,
   className = '',
 }) => {
@@ -80,10 +77,9 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
                 <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
               </button>
             ) : undefined,
-            bottom: titleOverlay || formacionOverlay ? (
+            bottom: titleOverlay ? (
               <div className="bg-gradient-to-t from-black/70 via-black/35 to-transparent px-5 pb-4 pt-16">
                 <div className="flex flex-col items-start gap-2">
-                  {formacionOverlay}
                   {titleOverlay ? (
                     <div className="pointer-events-auto w-full">{titleOverlay}</div>
                   ) : null}

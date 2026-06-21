@@ -49,7 +49,7 @@ function ReviewsDrawerHeader({
   return (
     <header
       className={`sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#ebebeb] bg-white ${
-        isDesktop ? 'px-6 py-4' : 'px-5 pb-3 pt-1'
+        isDesktop ? 'px-6 py-4' : 'px-5 py-3'
       }`}
     >
       <div className="min-w-0 pr-3">
@@ -59,7 +59,7 @@ function ReviewsDrawerHeader({
       <button
         type="button"
         onClick={onClose}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#222222]"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#222222]"
         aria-label="Cerrar reseñas"
       >
         <X className="h-5 w-5" aria-hidden />

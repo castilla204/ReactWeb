@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
+import { SileoLoader } from './ui/sileo-loader';
 import { useSearchDetailsWithLazyLoading } from '../hooks/useSearchDetailsOptimized';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 
@@ -58,8 +59,7 @@ export const SearchDetailsOptimized: React.FC<SearchDetailsOptimizedProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Cargando detalles de la búsqueda...</span>
+        <SileoLoader message="Cargando detalles de la búsqueda…" color="brand" />
       </div>
     );
   }

@@ -85,7 +85,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             <div
               className={`overflow-hidden rounded-full bg-[#dddddd] ${
                 isProminent ? 'h-2.5' : isMobile ? (hidePercent ? 'h-[7px]' : 'h-[7px]') : isCompact ? 'h-1' : 'h-1.5'
-              }`}
+              } ${isMobile ? 'self-center' : ''}`}
             >
               <div
                 className={`h-full rounded-full transition-[width] duration-300 ${

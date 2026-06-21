@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SileoPageLoader, SileoFullscreenLoader } from '../components/ui/sileo-loader';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +13,6 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
 import { CheckoutSummaryTable } from '../components/checkout/CheckoutSummaryTable';
-import { BrandChatGradientAccent } from '../components/brand/BrandChatGradientAccent';
 import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAside';
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
@@ -20,11 +20,12 @@ import { CheckoutMobileStepper, type CheckoutMobileWizardStep } from '../compone
 import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, COORD_DESKTOP_STEP1_LEAD } from '../components/checkout/CheckoutCoordinationStep';
 import { CheckoutDesktopAppointmentHeader } from '../components/checkout/CheckoutDesktopAppointmentHeader';
 import {
-    CheckoutSellerCoordinationFields,
     sellerCoordinationCanContinue,
     COORD_SELF_PICK_LOCATION_HEADER_DETAIL,
     COORD_SELF_PICK_LOCATION_HEADER_LEAD,
 } from '../components/checkout/CheckoutSellerCoordinationFields';
+import { CheckoutDesktopLocationStepBody } from '../components/checkout/CheckoutDesktopLocationStepBody';
+import { CheckoutSellerChoiceMobileWarning } from '../components/checkout/CheckoutSellerChoiceLocked';
 import { readCheckoutCoordinationFromState, type CheckoutCoordinationPayload } from '../utils/checkoutCoordination';
 import { getAuthToken } from '../lib/auth';
 import {
@@ -54,8 +55,7 @@ import {
     SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_HEADER_CLASS,
-    SD_CHECKOUT_GRID_CLASS,
-    SD_CHECKOUT_INNER_MAX_CLASS,
+    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
     SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS,
     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
     SD_DESKTOP_STICKY_TOP_CLASS,
@@ -613,12 +613,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-[#fafafa]">
-                <div className="text-center">
-                    <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-                    <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>Cargando…</p>
-                </div>
-            </div>
+            <SileoPageLoader message="Preparando tu reserva…" className="bg-[#fafafa]" />
         );
     }
 
@@ -688,25 +683,27 @@ export function CheckoutPage({}: CheckoutPageProps) {
         (desktopSelfFlowActive || desktopInSellerFlow);
     const slotPickerDesktopNode = desktopShowCalendar ? (
         desktopInSellerFlow ? (
-            <SlotPicker
-                {...slotPickerProps}
-                embedded
-                embeddedSplitColumn
-                previewMode
-                showSectionHeader={false}
-                windowDays={SELLER_BOOKING_MAX_DAYS}
-                sectionTitle="Disponibilidad del experto"
-            />
-        ) : (
-            <SlotPicker
-                {...slotPickerProps}
-                embedded
-                embeddedSplitColumn
-                showSectionHeader={false}
-                sectionTitle="Fecha y hora"
-            />
-        )
-    ) : null;
+        <SlotPicker
+            {...slotPickerProps}
+            embedded
+            embeddedSplitColumn
+            bare
+            previewMode
+            showSectionHeader={false}
+            windowDays={SELLER_BOOKING_MAX_DAYS}
+            sectionTitle="Disponibilidad del experto"
+        />
+    ) : (
+        <SlotPicker
+            {...slotPickerProps}
+            embedded
+            embeddedSplitColumn
+            bare
+            showSectionHeader={false}
+            sectionTitle="Fecha y hora"
+        />
+    )
+) : null;
     const slotPickerMobileNode =
         requiresAppointment && !isDesktop && coordinationMode === 'self' ? (
             <SlotPicker {...slotPickerProps} embedded sectionTitle="Fecha y hora" />
@@ -788,7 +785,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
         (desktopSelfFlowActive && desktopSlotReady);
     const desktopStep2Ready =
         !requiresAppointment ||
+        // 🤝 "Que lo coordine Inspecciono" → contacto del vendedor OBLIGATORIO (le mandamos el enlace).
         (coordinationMode === 'seller' && sellerContactReady) ||
+        // 🤝 "Yo la reservo" → el contacto del vendedor es OPCIONAL: solo exige la ubicación.
         (coordinationMode === 'self' && desktopLocationReady);
     const desktopContinueReady =
         desktopStep === 1 ? desktopStep1Ready : desktopStep === 2 ? desktopStep2Ready : false;
@@ -891,7 +890,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         }
         if (desktopStep === 2) {
             if (!desktopStep2Ready) {
-                if (coordinationMode === 'seller') setShowSellerValidation(true);
+                setShowSellerValidation(true);
                 return;
             }
             setDesktopStep(3);
@@ -1008,47 +1007,39 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const desktopCalendarColumnNode = desktopShowCalendar ? slotPickerDesktopNode : null;
 
     const desktopSplitLeftClass = cn(
-        SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS,
-        desktopOnCoordCalendarStep && 'lg:flex-[0_0_50%]',
-        'flex flex-col bg-white',
+        'min-w-0 flex-[0_0_45%] xl:flex-[0_0_42%] flex flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
         desktopOnCoordCalendarStep && 'min-h-0 self-stretch',
         desktopOnMapDetailsStep && 'h-full min-h-0',
     );
     const desktopSplitRightClass = cn(
-        SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS,
-        'flex flex-col border-l border-[#eceef2] bg-[#f8fafc]',
-        desktopOnCoordCalendarStep && 'min-h-0 flex-[0_0_50%] items-stretch self-stretch px-3 py-3 lg:px-4 lg:py-4',
+        'relative min-w-0 flex-1 flex flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+        desktopOnCoordCalendarStep && 'min-h-0 items-stretch self-stretch',
         desktopOnMapDetailsStep && 'h-full min-h-0',
     );
     const desktopSplitPanelScrollClass = cn(
-        'px-5 pb-4',
-        desktopOnCoordCalendarStep && 'flex min-h-0 flex-col justify-start pt-4 lg:px-6 lg:pb-5',
-        desktopOnMapDetailsStep && 'flex min-h-0 flex-1 flex-col overflow-y-auto pt-3',
+        'px-5 pb-4 pt-4',
+        desktopOnCoordCalendarStep && 'flex min-h-0 flex-col justify-start',
+        desktopOnMapDetailsStep && 'flex min-h-0 flex-1 flex-col overflow-y-auto',
     );
 
     const desktopMapDetailsBody =
         requiresAppointment && isDesktop && desktopStep === 2 ? (
-            coordinationMode === 'seller' ? (
-                <div className="px-5 py-4">
-                    <CheckoutSellerCoordinationFields
-                        variant="contact"
-                        sellerPhone={sellerPhone}
-                        sellerEmail={sellerEmail}
-                        sellerListingUrl={sellerListingUrl}
-                        onSellerPhoneChange={setSellerPhone}
-                        onSellerEmailChange={setSellerEmail}
-                        onSellerListingUrlChange={setSellerListingUrl}
-                        showValidation={showSellerValidation}
-                    />
-                </div>
-            ) : coordinationMode === 'self' ? (
-                <div className="flex min-h-[min(40vh,360px)] flex-col justify-center px-5 py-4">
-                    <p className="max-w-sm text-[13px] leading-[1.55] text-[#64748b]">
-                        Marca en el mapa de la derecha el punto exacto donde quieres que se realice la
-                        inspección.
-                    </p>
-                </div>
-            ) : null
+            <CheckoutDesktopLocationStepBody
+                mode={coordinationMode === 'seller' ? 'seller' : 'self'}
+                expertLatitude={service.expert?.latitude}
+                expertLongitude={service.expert?.longitude}
+                expertCountry={service.expert?.country}
+                expertRange={expertWorkRadiusKm}
+                chosenLocation={chosenLocation}
+                onLocationChange={setChosenLocation}
+                sellerPhone={sellerPhone}
+                sellerEmail={sellerEmail}
+                sellerListingUrl={sellerListingUrl}
+                onSellerPhoneChange={setSellerPhone}
+                onSellerEmailChange={setSellerEmail}
+                onSellerListingUrlChange={setSellerListingUrl}
+                showSellerValidation={showSellerValidation}
+            />
         ) : null;
 
     const desktopStep2Header =
@@ -1068,15 +1059,27 @@ export function CheckoutPage({}: CheckoutPageProps) {
               };
 
     const desktopAppointmentFooter = (
-        <div className="relative z-10 flex shrink-0 items-center justify-end gap-3 border-t-2 border-[#e5e7eb] bg-white px-5 py-4 shadow-[0_-6px_16px_rgba(15,23,42,0.06)]">
+        <div className="relative z-10 flex shrink-0 items-center justify-between gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+            {desktopOnCoordCalendarStep && desktopInSellerFlow ? (
+                <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-2.5 text-[13px] leading-snug text-[#1e40af]">
+                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#3b82f6]" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                    </svg>
+                    <span className="min-w-0">
+                        No tienes que tocar nada. Nosotros nos pondremos en contacto con el vendedor y el experto para coordinar día y hora.
+                    </span>
+                </div>
+            ) : (
+                <span />
+            )}
             <button
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-brand px-5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-6 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continuar
-                <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
             </button>
         </div>
     );
@@ -1088,80 +1091,111 @@ export function CheckoutPage({}: CheckoutPageProps) {
             <div className={`checkout-page hidden min-h-screen lg:block ${SD_CHECKOUT_DESKTOP_PAGE_CLASS}`}>
                 <HomepageDesktopTopBar
                     variant="checkout"
-                    onBack={desktopOnPaymentStep ? handleDesktopBack : undefined}
                 />
                 {desktopOnPaymentStep ? (
-                    <div className={`${SD_CHECKOUT_INNER_MAX_CLASS} pb-6 pt-4`}>
-                        <div className={`${SD_CHECKOUT_GRID_CLASS} gap-y-2.5`}>
-                            <section className="flex min-w-0 flex-col gap-2.5">
-                                {desktopAppointmentFlow ? (
-                                    <h2 className="text-lg font-semibold tracking-[-0.02em] text-[#1c1c1c]">
-                                        Confirmar y pagar
-                                    </h2>
-                                ) : null}
+                    <div className="mx-auto w-full max-w-[1060px] px-8 pb-12 pt-8 lg:px-12">
+                        <button
+                            type="button"
+                            onClick={handleDesktopBack}
+                            className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#64748b] transition-colors hover:text-[#1c1c1c]"
+                        >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19 12H5m7-7l-7 7 7 7" />
+                            </svg>
+                            Atrás
+                        </button>
+                        <div className="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-[1fr_360px]">
+                            <section className="min-w-0 flex">
+                                <CheckoutSummaryTable
+                                    {...summaryTableProps}
+                                    includePrice={false}
+                                    brandAccentEmbedded
+                                    hideExpertHeader
+                                    className="flex flex-1 [&_>div]:flex [&_>div]:flex-1 [&_>div]:flex-col [&_article]:rounded-2xl [&_article]:border [&_article]:border-[#ebebeb] [&_article]:shadow-[0_1px_3px_rgba(15,23,42,0.04)] [&_article]:flex-1"
+                                />
                             </section>
-                            <aside
-                                className={`flex h-full lg:sticky lg:self-stretch ${SD_DESKTOP_STICKY_TOP_CLASS}`}
-                            >
-                                <div
-                                    className={`relative flex h-full min-h-full w-full flex-col ${SD_CHECKOUT_DESKTOP_CARD_CLASS}`}
-                                >
-                                    <BrandChatGradientAccent />
-                                    <CheckoutSummaryTable
-                                        {...summaryTableProps}
-                                        includePrice={false}
-                                        brandAccent
-                                        brandAccentEmbedded
-                                        className="relative z-[1] flex min-h-0 flex-1 flex-col [&_article]:rounded-none [&_article]:border-0 [&_article]:bg-transparent [&_article]:shadow-none"
-                                    />
-                                    <CheckoutPaymentAside
-                                        embedded
-                                        priceDisplay={priceDisplayNode}
-                                        canPay={expertCanReceivePayments && desktopPaymentReady}
-                                        isProcessing={isProcessing}
-                                        onPay={handlePayment}
-                                    />
-                                </div>
+                            <aside className="flex">
+                                <CheckoutPaymentAside
+                                    embedded
+                                    priceDisplay={priceDisplayNode}
+                                    canPay={expertCanReceivePayments && desktopPaymentReady}
+                                    isProcessing={isProcessing}
+                                    onPay={handlePayment}
+                                    expertName={finalExpertName}
+                                    expertPicture={expertPicture}
+                                    serviceName={finalServiceTypeName}
+                                />
                             </aside>
+                        </div>
+
+                        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
+                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <div>
+                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Pago seguro</p>
+                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Los datos de tu tarjeta se procesan con cifrado SSL a través de Stripe.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
+                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                                <div>
+                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Garantía Inspecciono</p>
+                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Si el experto no realiza la revisión, te devolvemos el importe al instante.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
+                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <div>
+                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Cancelación gratuita</p>
+                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Puedes cancelar sin coste antes de que empiece la revisión.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (
-                    <div className={`${SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS} pb-6 pt-5`}>
-                        <div className="flex flex-col gap-4 lg:gap-5">
-                            {desktopOnCoordCalendarStep ? (
-                                <div className={SD_CHECKOUT_DESKTOP_CARD_CLASS}>
-                                    <CheckoutDesktopAppointmentHeader
-                                        title={COORD_CHOOSE_TITLE}
-                                        description={COORD_DESKTOP_STEP1_LEAD}
-                                        onBack={handleDesktopBack}
-                                    />
-                                </div>
-                            ) : null}
-                            {desktopOnMapDetailsStep ? (
-                                <div className={SD_CHECKOUT_DESKTOP_CARD_CLASS}>
-                                    <CheckoutDesktopAppointmentHeader
-                                        title={desktopStep2Header.title}
-                                        description={desktopStep2Header.description}
-                                        onBack={handleDesktopBack}
-                                    />
-                                </div>
-                            ) : null}
-                            <div className={SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS}>
-                                <div
-                                    className={cn(
-                                        'flex flex-col',
-                                        desktopOnCoordCalendarStep
-                                            ? `${SD_CHECKOUT_DESKTOP_COORD_SHELL_HEIGHT_CLASS} flex`
-                                            : SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            'flex overflow-hidden',
-                                            desktopOnCoordCalendarStep && 'items-stretch',
-                                            desktopOnMapDetailsStep && 'min-h-0 flex-1 items-stretch',
-                                        )}
-                                    >
+                    <div className="mx-auto w-full max-w-[72rem] px-4 pb-3 pt-8 sm:px-5 lg:px-6">
+                        {desktopOnCoordCalendarStep ? (
+                            <CheckoutDesktopAppointmentHeader
+                                title={COORD_CHOOSE_TITLE}
+                                description={COORD_DESKTOP_STEP1_LEAD}
+                                onBack={handleDesktopBack}
+                                className="mb-2.5 rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                            />
+                        ) : null}
+                        {desktopOnMapDetailsStep ? (
+                            <CheckoutDesktopAppointmentHeader
+                                title={desktopStep2Header.title}
+                                description={desktopStep2Header.description}
+                                onBack={handleDesktopBack}
+                                className="mb-2.5 rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                            />
+                        ) : null}
+                        <div
+                            className={cn(
+                                'flex flex-col',
+                                desktopOnCoordCalendarStep && 'h-auto',
+                                // 🗺️ FIX mapa desktop: el shell de paso 2 fija altura (h-[min(72vh,680px)])
+                                // pero era display:block, así que el `flex-1` de la fila interior no surtía
+                                // efecto y la altura no se propagaba al mapa (h-full → 0 → mapa invisible).
+                                // Con `flex flex-col` la fila flex-1 llena el alto y el mapa hereda altura
+                                // definida (igual que el wizard móvil, que sí funciona). El footer queda
+                                // pinchado abajo como hermano shrink-0.
+                                desktopOnMapDetailsStep && SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
+                            )}
+                        >
+                            <div
+                                className={cn(
+                                    'flex flex-1 gap-4 overflow-hidden',
+                                    desktopOnCoordCalendarStep && 'items-stretch',
+                                    desktopOnMapDetailsStep && 'min-h-0 items-stretch',
+                                )}
+                            >
                                     {desktopOnCoordCalendarStep ? (
                                         <>
                                             <div className={desktopSplitLeftClass}>
@@ -1169,43 +1203,39 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className={desktopSplitRightClass}>
-                                                <div className="flex w-full min-h-0 flex-1 flex-col">
-                                                    {desktopCalendarColumnNode}
-                                                </div>
+                                            <aside className={cn(desktopSplitRightClass, 'p-5')}>
+                                                {desktopCalendarColumnNode}
                                             </aside>
                                         </>
                                     ) : null}
-                                    {desktopOnMapDetailsStep ? (
-                                        <>
-                                            <div className={desktopSplitLeftClass}>
-                                                <div className={desktopSplitPanelScrollClass}>
-                                                    {desktopMapDetailsBody}
-                                                </div>
+                                {desktopOnMapDetailsStep ? (
+                                    <>
+                                        <div className={desktopSplitLeftClass}>
+                                            <div className={desktopSplitPanelScrollClass}>
+                                                {desktopMapDetailsBody}
                                             </div>
-                                            {desktopShowMapOnStep2 ? (
-                                                <aside className={desktopSplitRightClass}>
-                                                    {locationPickerSidebarNode}
-                                                </aside>
-                                            ) : (
-                                                <aside
-                                                    className={cn(
-                                                        desktopSplitRightClass,
-                                                        'items-center justify-center bg-[#fafbfc] px-6',
-                                                    )}
-                                                >
-                                                    <p className="max-w-sm text-center text-[13px] leading-[1.55] text-[#64748b]">
-                                                        La inspección será en el taller del experto. No hace falta
-                                                        indicar ubicación en el mapa.
-                                                    </p>
-                                                </aside>
-                                            )}
-                                        </>
-                                    ) : null}
-                                </div>
-                                    {desktopAppointmentFooter}
-                                </div>
+                                        </div>
+                                        {desktopShowMapOnStep2 ? (
+                                            <aside className={desktopSplitRightClass}>
+                                                {locationPickerSidebarNode}
+                                            </aside>
+                                        ) : (
+                                            <aside
+                                                className={cn(
+                                                    desktopSplitRightClass,
+                                                    'items-center justify-center bg-[#fafbfc] px-6',
+                                                )}
+                                            >
+                                                <p className="max-w-sm text-center text-[13px] leading-[1.55] text-[#64748b]">
+                                                    La inspección será en el taller del experto. No hace falta
+                                                    indicar ubicación en el mapa.
+                                                </p>
+                                            </aside>
+                                        )}
+                                    </>
+                                ) : null}
                             </div>
+                            <div className="mt-4">{desktopAppointmentFooter}</div>
                         </div>
                     </div>
                 )}
@@ -1232,7 +1262,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             <header
                                 className={cn(
                                     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    'shrink-0 border-b border-[#ebebeb] bg-white pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
+                                    'shrink-0 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
                                 )}
                             >
                                 <CheckoutMobileStepper
@@ -1241,6 +1272,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     className="mb-0"
                                 />
                             </header>
+                            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'shrink-0 bg-white pt-3')}>
+                                <CheckoutSellerChoiceMobileWarning variant="location" />
+                            </div>
                             <div className="relative min-h-0 flex-1 overflow-hidden">
                                 <div className={cn('absolute inset-x-0 top-0', SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS)}>
                                     <CheckoutLocationPicker
@@ -1273,12 +1307,17 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             className="mb-3"
                                         />
                                     ) : null}
+                                    <CheckoutSellerChoiceMobileWarning
+                                        variant="calendar"
+                                        className="mb-3"
+                                    />
                                     <SlotPicker
                                         {...slotPickerProps}
                                         embedded
                                         previewMode
                                         windowDays={SELLER_BOOKING_MAX_DAYS}
                                         sectionTitle="Disponibilidad del experto"
+                                        minLeadDays={SELLER_BOOKING_MIN_LEAD_DAYS}
                                     />
                                 </>
                             ) : null}
@@ -1313,9 +1352,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     )}
                 >
                     {mobileThreeStep && mobileStep < 3 ? (
-                        <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
-                            <CheckoutMobileStepper currentStep={mobileStep} />
-                        </header>
+                        <>
+                            <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
+                                <CheckoutMobileStepper currentStep={mobileStep} />
+                            </header>
+                        </>
                     ) : null}
 
                     {mobileThreeStep ? (
@@ -1384,7 +1425,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 aria-busy={isProcessing}
                                 className={SD_CHECKOUT_MOBILE_CTA_CLASS}
                             >
-                                {isProcessing ? 'Procesando…' : 'Reservar y pagar'}
+                                {isProcessing ? 'Procesando…' : (
+                                    <>
+                                        Reservar y pagar
+                                        <svg className="ml-1.5 h-3.5 w-3.5 shrink-0 translate-y-[1px] opacity-70" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3.5" y="8" width="13" height="8.5" rx="1.5" />
+                                            <path d="M6.5 8V5.5a3.5 3.5 0 117 0V8" />
+                                        </svg>
+                                    </>
+                                )}
                             </button>
                         )}
                     </div>
@@ -1393,18 +1442,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
             )}
 
             {isSubmitting && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-white/95 backdrop-blur-sm"
-                    role="status"
-                    aria-live="polite"
-                >
-                    <div className="text-center">
-                        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-                        <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
-                            Conectando con el pago seguro…
-                        </p>
-                    </div>
-                </div>
+                <SileoFullscreenLoader message="Conectando con el pago seguro…" className="bg-white/95" />
             )}
         </>
     );

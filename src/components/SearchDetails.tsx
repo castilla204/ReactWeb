@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List } from 'lucide-react';
+import { SileoPageLoader } from './ui/sileo-loader';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -1240,14 +1241,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // ✅ Manejo elegante de errores con toast (DEBE estar antes de cualquier return)
     useErrorHandler(error, isError);
 
-    // Only show loading for critical queries
     if (isLoading) {
         return (
             <div className={`flex items-center justify-center bg-gray-50 ${embedded ? 'h-full min-h-[20rem]' : 'h-screen'}`}>
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
-                    <p className="text-sm text-gray-600">Cargando...</p>
-                </div>
+                <SileoPageLoader message="Cargando detalles…" className="bg-transparent" />
             </div>
         );
     }
@@ -1988,7 +1985,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <Separator />
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                <Star className="w-4 h-4" />
                                                 <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
                                             </div>
                                     </div>
@@ -2001,7 +1998,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                    <Star className="w-4 h-4" />
                                                     <span className="text-sm font-semibold text-foreground">Reseña</span>
                                     </div>
                                                 <Badge variant="secondary">{review.score}/5</Badge>
@@ -2958,7 +2955,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <div className="flex items-center justify-between">
                                         <SdSectionTitle>Reseña</SdSectionTitle>
                                         <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1c1c1c]">
-                                            <Star className="h-3.5 w-3.5 fill-[#F5A623] text-[#F5A623]" />
+                                            <Star className="h-3.5 w-3.5" />
                                             {review.score}/5
                                         </span>
                                     </div>

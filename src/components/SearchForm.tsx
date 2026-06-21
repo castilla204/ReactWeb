@@ -7,6 +7,7 @@ import { showToast } from '../lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { SileoButton } from './ui/sileo-button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
@@ -364,7 +365,7 @@ export default function SearchForm({
                                     if (servicePrice === undefined) {
                                         return (
                                             <div className="flex justify-center p-4">
-                                                <div className="w-5 h-5 border-2 border-[#222222]/20 border-t-[#222222] rounded-full animate-spin" />
+                                                <SileoLoader size="sm" color="current" />
                                     </div>
                                         );
                                     }
@@ -440,25 +441,17 @@ export default function SearchForm({
 
                     {/* Submit Button - Moderno */}
                     <div className="flex justify-end pt-10 border-t border-[#DDDDDD]">
-                        <Button
+                        <SileoButton
                                 type="submit"
-                                disabled={createSearchWithHire.isPending || isSubmitting || !isDataComplete}
+                                loading={createSearchWithHire.isPending || isSubmitting}
+                                loadingText={servicePrice !== undefined ? 'Procesando…' : 'Creando…'}
+                                disabled={!isDataComplete}
                             size="lg"
+                            icon={<><Wallet className="w-5 h-5 mr-2" />{servicePrice !== undefined ? 'Pagar ahora' : 'Confirmar'}<ArrowRight className="w-5 h-5 ml-2" /></>}
                             className="w-full sm:w-auto min-w-[220px] h-12 px-8 bg-brand hover:bg-[#0052A3] active:bg-[#004080] text-white font-semibold rounded-full transition-colors duration-200 text-[15px] shadow-[0_2px_8px_rgba(10,61,143,0.18)] focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
                             >
-                                {createSearchWithHire.isPending || isSubmitting ? (
-                                    <>
-                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
-                                    {servicePrice !== undefined ? 'Procesando...' : 'Creando...'}
-                                    </>
-                                ) : (
-                                    <>
-                                    <Wallet className="w-5 h-5 mr-2" />
-                                    {servicePrice !== undefined ? 'Pagar ahora' : 'Confirmar'}
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                    </>
-                                )}
-                        </Button>
+                                {servicePrice !== undefined ? 'Pagar ahora' : 'Confirmar'}
+                        </SileoButton>
                     </div>
                 </form>
             </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
+import { SileoPageLoader } from '../components/ui/sileo-loader';
 import '../styles/expert-panel.css';
 /* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
 import '../styles/expert-profile-form.css';
 import '../styles/expert-service-form.css';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { SileoButton } from '../components/ui/sileo-button';
 import { Separator } from '../components/ui/separator';
 import {
     Drawer,
@@ -1082,9 +1084,7 @@ export function ExpertPanelPage() {
     // falla de verdad, profileError se setea y caemos al bloque de error de abajo.
     if (!profile && !profileError && (isLoadingProfile || isExpert)) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            </div>
+            <SileoPageLoader message="Cargando tu panel de experto…" className="bg-white" />
         );
     }
 
@@ -1136,9 +1136,7 @@ export function ExpertPanelPage() {
     // ✅ Mostrar spinner mientras se carga el estado de Stripe
     if (isLoadingStripeStatus && stripeStatus === null) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            </div>
+            <SileoPageLoader message="Verificando estado de pagos…" className="bg-white" />
         );
     }
 
@@ -1765,23 +1763,17 @@ export function ExpertPanelPage() {
                                 >
                                     Cancelar
                                 </Button>
-                                <Button
+                                <SileoButton
                                     onClick={handleVacationModeToggle}
-                                    disabled={isToggling}
-                                    className={profile?.isOnVacation 
-                                        ? 'bg-green-600 hover:bg-green-700' 
+                                    loading={isToggling}
+                                    loadingText="Procesando…"
+                                    className={profile?.isOnVacation
+                                        ? 'bg-green-600 hover:bg-green-700'
                                         : 'bg-orange-600 hover:bg-orange-700'
                                     }
                                 >
-                                    {isToggling ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Procesando...
-                                        </>
-                                    ) : (
-                                        profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'
-                                    )}
-                                </Button>
+                                    {profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'}
+                                </SileoButton>
                             </div>
                         </DrawerFooter>
                     </div>

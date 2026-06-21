@@ -21,14 +21,13 @@ export type CoordinationSelection = 'self' | 'seller';
 type Theme = 'blue' | 'amber';
 
 const PANEL_BG: Record<Theme, string> = {
-    amber: '#F59E0B',
-    blue: '#0066CC',
+    amber: '#1c1c1c',
+    blue: 'hsl(var(--brand))',
 };
 
 const RECOMMENDED_BADGE_STYLE: CSSProperties = {
-    border: '1px solid transparent',
-    background:
-        'linear-gradient(rgba(255,255,255,0.96), rgba(255,255,255,0.96)) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box',
+    border: '1px solid hsl(var(--brand)/0.22)',
+    background: 'hsl(var(--brand)/0.08)',
 };
 
 interface OptionCardProps {
@@ -56,7 +55,7 @@ function OptionCardInfoTrigger({ label, children }: { label: string; children: R
                     aria-label={label}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f4f5f7] text-[#64748b] ring-1 ring-[#e8eaed] transition-colors hover:bg-[#eef0f3] hover:text-[#1c1c1c]"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f4f5f7] text-[#6a6a6a] ring-1 ring-[#e8eaed] transition-colors hover:bg-brand/10 hover:text-brand hover:ring-brand/20"
                 >
                     <Info className="h-3.5 w-3.5" aria-hidden />
                 </button>
@@ -75,8 +74,8 @@ function OptionCardInfoTrigger({ label, children }: { label: string; children: R
 
 function OptionCardCancelNote({ hint }: { hint: string }) {
     return (
-        <p className="text-[12px] leading-[1.55] text-[#94a3b8]">
-            <span className="font-semibold text-[#475569]">{COORD_OPTION_FREE_CANCEL}</span> {hint}
+        <p className="text-[11px] leading-[1.55] text-[#7a7a7a]">
+            {COORD_OPTION_FREE_CANCEL} {hint}
         </p>
     );
 }
@@ -85,12 +84,12 @@ function OptionCardSelectionIndicator({ selected }: { selected: boolean }) {
     return (
         <span
             aria-hidden
-            className={cn(
-                'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-[border-color,background-color,box-shadow] duration-200',
-                selected
-                    ? 'border-brand bg-brand shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]'
-                    : 'border-[#cbd5e1] bg-white group-hover:border-[#94a3b8]',
-            )}
+                className={cn(
+                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-[border-color,background-color,box-shadow] duration-200',
+                    selected
+                        ? 'border-brand bg-brand shadow-[0_0_0_3px_hsl(var(--brand)/0.15)]'
+                        : 'border-[#d1d5db] bg-white group-hover:border-[#9ca3af]',
+                )}
         >
             <span
                 className={cn(
@@ -132,54 +131,51 @@ function OptionCard({
                 }
             }}
             className={cn(
-                'group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-b-2xl rounded-t-none border-x border-b bg-white text-left',
+                'group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-b-2xl rounded-t-sm border bg-white text-left',
                 'shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_14px_rgba(15,23,42,0.04)]',
                 'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out',
                 'hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(15,23,42,0.07),0_8px_20px_rgba(15,23,42,0.06)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                 selected
-                    ? 'border-brand/50 border-t-0 bg-brand/[0.03] shadow-[0_0_0_1px_hsl(var(--brand)/0.22),0_4px_18px_rgba(0,102,204,0.1)] hover:translate-y-0'
+                    ? theme === 'blue'
+                        ? 'border-brand/40 bg-brand/[0.03] shadow-[0_0_0_1px_hsl(var(--brand)/0.15),0_6px_20px_rgba(0,102,204,0.08)] hover:translate-y-0'
+                        : 'border-[#1c1c1c] bg-white shadow-[0_0_0_1px_rgba(28,28,28,0.12),0_6px_20px_rgba(0,0,0,0.06)] hover:translate-y-0'
                     : cn(
-                          'border-[#d8e0ea] border-t-0 hover:border-[#b8c5d6]',
-                          dimmed && 'border-[#e2e8f0] bg-[#fafbfc]/80 opacity-90 hover:opacity-100',
+                          theme === 'blue'
+                              ? 'border-[#d2d2d2] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_3px_8px_rgba(0,0,0,0.03)] hover:border-[#b8b8b8] hover:shadow-[0_2px_6px_rgba(0,0,0,0.05),0_6px_16px_rgba(0,0,0,0.04)]'
+                              : 'border-[#e0e0e0] bg-[#f8f8f8] shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:border-[#c0c0c0] hover:shadow-[0_2px_6px_rgba(0,0,0,0.04)]',
+                          dimmed && 'border-[#dedede] bg-[#f3f3f3]/80 opacity-85 hover:opacity-100',
                       ),
                 disabled && 'pointer-events-none cursor-not-allowed opacity-40 grayscale hover:translate-y-0',
             )}
         >
+            {recommended ? (
+                <span className="absolute right-0 top-0 z-10 rounded-bl-lg bg-brand px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                    Recomendado
+                </span>
+            ) : null}
             <div
-                className={cn('w-full shrink-0', compact ? 'h-2' : 'h-3')}
+                className={cn('w-full shrink-0', compact ? 'h-1.5' : 'h-2')}
                 style={{ background: PANEL_BG[theme] }}
                 aria-hidden
             />
-
             <div
                 className={cn(
-                    'flex flex-1 flex-col px-4 pb-4 pt-4',
-                    compact ? 'lg:px-4 lg:pb-3 lg:pt-3' : 'lg:px-5 lg:pb-5 lg:pt-4',
+                    'flex flex-1 flex-col px-3.5 pb-3.5 pt-3',
+                    compact ? 'lg:px-3.5 lg:pb-2.5 lg:pt-2.5' : 'lg:px-4.5 lg:pb-4.5 lg:pt-3.5',
                 )}
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                            <h3
-                                className={cn(
-                                    'text-[16px] font-bold leading-snug tracking-[-0.02em]',
-                                    compact ? 'lg:text-[15px]' : 'lg:text-[17px]',
-                                    selected ? 'text-brand' : 'text-[#14161a]',
-                                )}
-                                style={{ fontFamily: HP_FONT }}
-                            >
-                                {title}
-                            </h3>
-                            {recommended ? (
-                                <span
-                                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-[#475569]"
-                                    style={RECOMMENDED_BADGE_STYLE}
-                                >
-                                    Recomendado
-                                </span>
-                            ) : null}
-                        </div>
+                        <h3
+                            className={cn(
+                                'text-[15px] font-semibold leading-snug tracking-[-0.01em]',
+                                compact ? 'lg:text-[14px]' : 'lg:text-[16px]',
+                                selected ? 'text-[#1c1c1c]' : 'text-[#1c1c1c]',
+                            )}
+                        >
+                            {title}
+                        </h3>
                     </div>
                     <div className="flex shrink-0 items-start gap-2">
                         {infoContent && infoLabel ? (
@@ -189,20 +185,20 @@ function OptionCard({
                     </div>
                 </div>
                 {tagline ? (
-                    <p className="mt-2.5 text-[13px] font-medium leading-snug text-[#64748b]">{tagline}</p>
+                    <p className="mt-2 text-[12px] font-medium leading-snug text-[#64748b]">{tagline}</p>
                 ) : null}
                 <p
                     className={cn(
-                        'flex-1 text-[13px] text-[#5c6370]',
+                        'flex-1 text-[13px] text-[#565d6b]',
                         compact
-                            ? 'mt-2 leading-[1.55] lg:text-[13px] lg:leading-[1.52]'
-                            : 'mt-3 leading-[1.62] lg:text-[14px] lg:leading-[1.65]',
+                            ? 'mt-2 leading-[1.55] lg:text-[12px] lg:leading-[1.52]'
+                            : 'mt-2.5 leading-[1.6] lg:text-[13px] lg:leading-[1.6]',
                     )}
                 >
                     {description}
                 </p>
                 {cancelHint ? (
-                    <div className={cn('border-t border-[#eef0f3]', compact ? 'mt-3 pt-3' : 'mt-4 pt-4')}>
+                    <div className={cn('border-t border-[#eef0f3]', compact ? 'mt-3 pt-3' : 'mt-3.5 pt-3.5')}>
                         <OptionCardCancelNote hint={cancelHint} />
                     </div>
                 ) : null}
@@ -211,13 +207,13 @@ function OptionCard({
     );
 }
 
-export const COORD_CHOOSE_TITLE = 'Coordinación de la visita';
-const COORD_CHOOSE_LEAD = 'Indica quién concertará la cita con el vendedor.';
+export const COORD_CHOOSE_TITLE = 'Coordinación de la cita';
+const COORD_CHOOSE_LEAD = 'Elige quién fijará día y hora con el vendedor.';
 export const COORD_DESKTOP_STEP1_LEAD =
-    'Indica quién concertará la cita y consulta la disponibilidad del experto.';
-const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién concertará la cita con el vendedor?';
+    'Elige quién fijará día y hora con el vendedor.';
+const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién coordina la cita?';
 const COORD_DESKTOP_CARDS_INTRO_LEAD =
-    'Elige si prefieres que Inspecciono gestione la reserva con el vendedor o si tú mismo fijas día, hora y lugar.';
+    'Inspecciono puede gestionarlo por ti, o puedes reservar tú mismo.';
 
 function CoordinationOptionCardsIntro({
     className,
@@ -254,7 +250,7 @@ function CoordinationChooseHeader({ className }: { className?: string }) {
             <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c]">
                 {COORD_CHOOSE_TITLE}
             </h2>
-            <p className="mt-1.5 max-w-[42ch] text-[13px] leading-[1.55] text-[#565d6b]">{COORD_CHOOSE_LEAD}</p>
+            <p className="mt-1 max-w-[46ch] text-[13px] leading-[1.5] text-[#6a6a6a]">{COORD_CHOOSE_LEAD}</p>
         </header>
     );
 }
@@ -309,7 +305,7 @@ function CoordinationOptionCards({
                     compact
                         ? duo
                             ? 'grid-cols-2 gap-3 lg:gap-4'
-                            : 'grid-cols-1 gap-3'
+                            : 'grid-cols-1 gap-3.5'
                         : duo
                           ? 'grid-cols-2 gap-4 lg:gap-5'
                           : 'grid-cols-1 gap-4',
@@ -386,7 +382,7 @@ export function CheckoutCoordinationStep({
                 <div
                     className={cn(
                         showStepHeader ? SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS : undefined,
-                        showStepHeader ? 'pb-3 pt-3' : 'flex min-h-0 flex-col pb-3',
+                        showStepHeader ? 'pb-3 pt-2' : 'flex min-h-0 flex-col pb-3',
                     )}
                 >
                     {!showStepHeader ? <CoordinationOptionCardsIntro compact /> : null}

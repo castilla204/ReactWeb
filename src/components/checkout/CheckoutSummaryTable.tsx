@@ -2,18 +2,13 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import {
   SD_CHECKOUT_MOBILE_TABLE_CLASS,
-  SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS,
-  SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS,
-  SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS,
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import type { ServiceDeliverableType } from '../serviceDetail/ServiceDetailDeliverablesGuide';
-import { BrandChatGradientAccent } from '../brand/BrandChatGradientAccent';
 
 export interface CheckoutSummaryTableProps {
   serviceName: string;
@@ -44,6 +39,8 @@ export interface CheckoutSummaryTableProps {
   brandAccent?: boolean;
   /** Resumen embebido en tarjeta desktop — sin línea superior duplicada */
   brandAccentEmbedded?: boolean;
+  /** Oculta el header del experto (cuando ya se muestra en el panel de pago) */
+  hideExpertHeader?: boolean;
   className?: string;
 }
 
@@ -57,9 +54,9 @@ function CheckoutSummaryTableRow({
   compact?: boolean;
 }) {
   return (
-    <div className={cn(SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS, compact && 'py-2.5')}>
-      <dt className={SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS}>{label}</dt>
-      <dd className={`m-0 ${SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS}`}>{children}</dd>
+    <div className={cn(SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS, compact ? 'py-1.5' : 'px-6 py-3.5')}>
+      <dt className={cn(SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS, !compact && 'text-[13px] w-[28%]')}>{label}</dt>
+      <dd className={cn('m-0', SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS, !compact && 'text-[14px]')}>{children}</dd>
     </div>
   );
 }
@@ -79,10 +76,6 @@ function SummaryValue({
   );
 }
 
-function buildHeaderMeta(durationLabel?: string): string | null {
-  return durationLabel?.trim() || null;
-}
-
 /** Resumen minimalista de checkout — móvil y desktop. */
 export function CheckoutSummaryTable({
   serviceName,
@@ -90,6 +83,8 @@ export function CheckoutSummaryTable({
   categoryName,
   expertName,
   expertPicture,
+  expertRating,
+  expertReviewCount,
   coordinationLabel,
   appointmentLabel,
   locationLabel,
@@ -103,10 +98,9 @@ export function CheckoutSummaryTable({
   compact = false,
   brandAccent = false,
   brandAccentEmbedded = false,
+  hideExpertHeader = false,
   className = '',
 }: CheckoutSummaryTableProps) {
-  const headerMeta = buildHeaderMeta(durationLabel);
-
   return (
     <div className={className}>
       <article
@@ -116,22 +110,7 @@ export function CheckoutSummaryTable({
           compact && 'rounded-xl border border-[#eceef2] shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
         )}
       >
-        {!compact ? (
-          <header
-            className={cn(
-              SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS,
-              brandAccent && 'relative overflow-hidden',
-            )}
-          >
-            {brandAccent ? (
-              <BrandChatGradientAccent placement="header" tone="blue" withLine={false} />
-            ) : null}
-            <div className={cn(brandAccent && 'relative')}>
-              <h2 className={SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS}>{serviceName}</h2>
-              {headerMeta ? <p className={SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS}>{headerMeta}</p> : null}
-            </div>
-          </header>
-        ) : (
+        {!compact ? null : (
           <header className="border-b border-[#f0f0f0] px-4 py-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#64748b]">
               Resumen
@@ -140,22 +119,44 @@ export function CheckoutSummaryTable({
           </header>
         )}
 
-        {!compact && expertName ? (
-          <div className="flex items-center gap-2.5 border-t border-[#f5f5f5] px-4 py-3">
-            <Avatar className="h-8 w-8 shrink-0 rounded-full">
-              <AvatarImage src={expertPicture} alt={expertName} />
-              <AvatarFallback className="rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-white">
-                {expertName.charAt(0) || 'E'}
-              </AvatarFallback>
-            </Avatar>
-            <p className="min-w-0 flex-1 truncate text-[13px] font-medium text-[#1c1c1c]">{expertName}</p>
+        {!compact && !hideExpertHeader && expertName ? (
+          <div className="flex items-center gap-3.5 bg-gradient-to-br from-[hsl(210_86%_53%)] via-[hsl(210_84%_45%)] to-[hsl(210_82%_38%)] px-5 py-4">
+            {expertPicture ? (
+              <img
+                src={expertPicture}
+                alt={expertName}
+                className="h-11 w-11 shrink-0 rounded-full bg-[#e2e8f0] object-cover ring-2 ring-white/45 shadow-[0_2px_8px_rgba(0,0,0,0.18)]"
+              />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/35">
+                <span className="text-sm font-bold text-white">{expertName.charAt(0) || 'E'}</span>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-semibold text-white">{expertName}</p>
+              <span className="mt-0.5 inline-block text-[11px] font-medium text-white/85">Experto verificado</span>
+            </div>
+          </div>
+        ) : null}
+
+        {!compact && hideExpertHeader ? (
+          <div className="px-6 py-5 border-b border-[#f5f5f5]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Detalles del servicio</p>
+            <p className="mt-1 text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">{serviceName}</p>
+            <p className="mt-0.5 text-[13px] text-[#6a6a6a]">{durationLabel}</p>
           </div>
         ) : null}
 
         <dl aria-label="Detalles del servicio">
           {categoryName ? (
-            <CheckoutSummaryTableRow label="Categoría" compact={compact}>
+            <CheckoutSummaryTableRow label="Categoría" compact={compact} className="py-2">
               {categoryName}
+            </CheckoutSummaryTableRow>
+          ) : null}
+
+          {durationLabel ? (
+            <CheckoutSummaryTableRow label="Duración" compact={compact}>
+              {durationLabel}
             </CheckoutSummaryTableRow>
           ) : null}
 
@@ -190,29 +191,29 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className={cn('border-t border-[#f5f5f5] px-4', compact ? 'py-3' : 'py-3.5')}>
+            <div className={cn('border-t border-[#f5f5f5] px-3.5', compact ? 'py-2.5' : 'py-3')}>
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-xs text-[#6a6a6a]">Total</p>
+                <p className="text-xs text-[#6a6a6a] font-medium">Total a pagar</p>
                 <p
                   className={cn(
                     'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]',
-                    compact ? 'text-lg' : 'text-xl',
+                    compact ? 'text-xl' : 'text-2xl',
                   )}
                 >
                   {priceDisplay}
                 </p>
               </div>
               {priceSubline ? (
-                <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>{priceSubline}</p>
+                <p className="mt-1 text-xs text-[#64748b]">{priceSubline}</p>
               ) : (
-                <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>Impuestos incluidos</p>
+                <p className="mt-1 text-xs text-[#64748b]">Impuestos incluidos</p>
               )}
             </div>
           ) : null}
         </dl>
 
         {showFooterNotes ? (
-          <footer className="space-y-3 border-t border-[#f5f5f5] px-4 py-3">
+          <footer className="space-y-2.5 border-t border-[#f5f5f5] px-3.5 py-2.5">
             <CheckoutReserveHint />
             <a
               href="/terms.html"

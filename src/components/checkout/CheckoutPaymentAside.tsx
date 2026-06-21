@@ -5,6 +5,7 @@ import {
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface CheckoutPaymentAsideProps {
   priceDisplay: React.ReactNode;
@@ -13,29 +14,56 @@ interface CheckoutPaymentAsideProps {
   onPay: () => void;
   /** Dentro de la tarjeta sticky del sidebar desktop (sin sticky propio). */
   embedded?: boolean;
+  expertName?: string;
+  expertPicture?: string;
+  serviceName?: string;
 }
 
-/** Panel de pago desktop — minimalista. */
+/** Panel de pago desktop — más informativo. */
 export function CheckoutPaymentAside({
   priceDisplay,
   canPay,
   isProcessing,
   onPay,
   embedded = false,
+  expertName = 'Experto',
+  expertPicture,
+  serviceName = 'Servicio',
 }: CheckoutPaymentAsideProps) {
   const content = (
     <>
-      <section className={embedded ? 'px-4 py-4' : 'px-4 py-4'}>
-        <p className={SD_CHECKOUT_MOBILE_META_CLASS}>Total</p>
-        <p className="mt-1 font-display text-[1.5rem] font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]">
-          {priceDisplay}
-        </p>
-        <p className={`mt-1 ${SD_CHECKOUT_MOBILE_META_CLASS}`}>Impuestos incluidos</p>
+      <section className={embedded ? 'flex-1 px-5 py-5 bg-white' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
+        <p className={`text-[13px] font-medium text-[#6a6a6a] mb-3`}>Resumen del pago</p>
+        <div className="flex items-center gap-3 mb-4">
+          {expertPicture ? (
+            <Avatar className="h-10 w-10 shrink-0 rounded-full">
+              <AvatarImage src={expertPicture} alt={expertName} />
+              <AvatarFallback className="rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-white">
+                {expertName.charAt(0) || 'E'}
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="h-10 w-10 shrink-0 rounded-full bg-[#1c1c1c] flex items-center justify-center">
+              <span className="text-sm font-semibold text-white">{expertName.charAt(0) || 'E'}</span>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-[#1c1c1c] truncate">{serviceName}</p>
+            <p className="text-[11px] text-[#64748b] truncate">{expertName}</p>
+          </div>
+        </div>
+        <div className="flex items-baseline justify-between gap-4 border-t border-[#bfdbfe] pt-4">
+          <p className="text-[13px] text-[#6a6a6a]">Total</p>
+          <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]">
+            {priceDisplay}
+          </p>
+        </div>
+        <p className="mt-1 text-[11px] text-[#94a3b8]">Impuestos incluidos</p>
       </section>
 
-      <footer className="space-y-3 border-t border-[#f5f5f5] px-4 py-4">
+      <footer className={embedded ? 'space-y-4 border-t border-[#ebebeb] px-5 py-5' : 'space-y-3 border-t border-[#f5f5f5] px-3.5 py-3'}>
         {!canPay ? (
-          <p className="text-xs text-amber-800">
+          <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-md">
             Este experto no puede recibir contrataciones ahora.
           </p>
         ) : null}
@@ -45,21 +73,38 @@ export function CheckoutPaymentAside({
           disabled={!canPay || isProcessing}
           type="button"
           aria-busy={isProcessing}
-          className="inline-flex h-11 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-75"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
         >
-          {isProcessing ? 'Procesando…' : 'Reservar y pagar'}
+          {isProcessing ? (
+            <>
+              <svg className="h-4 w-4 animate-spin inline mr-1.5" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Procesando…
+            </>
+          ) : (
+            <>
+              Reservar y pagar
+              <svg className="ml-1.5 h-3.5 w-3.5 shrink-0 translate-y-[1px] opacity-70" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3.5" y="8" width="13" height="8.5" rx="1.5" />
+                <path d="M6.5 8V5.5a3.5 3.5 0 117 0V8" />
+              </svg>
+            </>
+          )}
         </button>
 
         <CheckoutReserveHint />
 
-        <p className="text-center">
+        <p className="text-center text-[11px] text-[#94a3b8]">
+          Al reservar, aceptas los{' '}
           <a
             href="/terms.html"
             target="_blank"
             rel="noopener noreferrer"
-            className={`${SD_CHECKOUT_MOBILE_META_CLASS} underline decoration-[#d4d4d4] underline-offset-2 hover:no-underline`}
+            className="text-brand hover:text-brand-hover transition-colors"
           >
-            Condiciones
+            Términos de servicio
           </a>
         </p>
       </footer>
@@ -67,12 +112,18 @@ export function CheckoutPaymentAside({
   );
 
   if (embedded) {
-    return <div className="mt-auto w-full shrink-0 border-t border-[#f0f0f0]">{content}</div>;
+    return (
+      <div className="w-full h-full shrink-0 rounded-xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex flex-col">
+        {content}
+      </div>
+    );
   }
 
   return (
     <aside className={`lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}>
-      <article className={`flex flex-col ${SD_CHECKOUT_MOBILE_TABLE_CLASS}`}>{content}</article>
+      <div className="rounded-xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        {content}
+      </div>
     </aside>
   );
 }
