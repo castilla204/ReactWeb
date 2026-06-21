@@ -65,7 +65,11 @@ const sameState = (a: DayState, b: DayState) =>
  * y guardarlos TODOS con un único PUT batch a /api/ExpertAvailability/exceptions/batch.
  * El COLOR de cada día refleja sus franjas (jornada completa / reducida / turnos partidos / cerrado).
  */
-const AvailabilityCalendar: React.FC = () => {
+const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId }) => {
+    // Base de la API: en modo admin apunta al experto objetivo; si no, al experto autenticado.
+    const avBase = adminUserId != null
+        ? `/api/admin/expert/${adminUserId}/availability`
+        : '/api/ExpertAvailability';
     const today = useMemo(() => startOfDay(new Date()), []);
     const [month, setMonth] = useState<Date>(today);
     const [rules, setRules] = useState<RuleDto[]>([]);
@@ -113,8 +117,8 @@ const AvailabilityCalendar: React.FC = () => {
         try {
             const { from, to } = rangeFromTo(m);
             const [rRes, eRes] = await Promise.all([
-                fetch(`${API_CONFIG.baseUrl}/api/ExpertAvailability/rules`, { headers: authHeaders() }),
-                fetch(`${API_CONFIG.baseUrl}/api/ExpertAvailability/exceptions?from=${from}&to=${to}`, { headers: authHeaders() }),
+                fetch(`${API_CONFIG.baseUrl}${avBase}/rules`, { headers: authHeaders() }),
+                fetch(`${API_CONFIG.baseUrl}${avBase}/exceptions?from=${from}&to=${to}`, { headers: authHeaders() }),
             ]);
             const rData: any[] = rRes.ok ? await rRes.json() : [];
             const eData: any[] = eRes.ok ? await eRes.json() : [];
@@ -138,7 +142,7 @@ const AvailabilityCalendar: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [rangeFromTo]);
+    }, [rangeFromTo, avBase]);
 
     useEffect(() => { load(month); }, [month, load]);
 
@@ -292,7 +296,7 @@ const AvailabilityCalendar: React.FC = () => {
                 'remove' in p && p.remove
                     ? { date, remove: true, isWorking: false, ranges: [] as Range[] }
                     : { date, isWorking: (p as any).isWorking, ranges: (p as any).isWorking ? (p as any).ranges : [] });
-            const res = await fetch(`${API_CONFIG.baseUrl}/api/ExpertAvailability/exceptions/batch`, {
+            const res = await fetch(`${API_CONFIG.baseUrl}${avBase}/exceptions/batch`, {
                 method: 'PUT', headers: authHeaders(), body: JSON.stringify({ exceptions: items }),
             });
             if (!res.ok) {
