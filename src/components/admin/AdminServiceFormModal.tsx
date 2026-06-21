@@ -17,6 +17,8 @@ interface EditingServiceShape {
     conditions: string;
     durationInHours: number | null;
     imageUrls: string[];
+    /** Imágenes existentes con su ID real, necesarias para poder eliminarlas. */
+    images?: Array<{ id: number; url: string }>;
     currency?: string;
     selectedDeliverableTypes?: number[];
     inspectionTemplateConfig?: string | null;
@@ -61,7 +63,12 @@ export function AdminServiceFormModal({ userId, expertProfileId, expertCountry, 
         selectedDeliverableTypes: editingService?.selectedDeliverableTypes ?? [],
     });
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>(editingService?.imageUrls ?? []);
+    // Imágenes existentes CON id real (filtrando ids válidos > 0) para permitir su borrado.
+    const initialWithIds = (editingService?.images ?? []).filter((im) => im && im.id > 0);
+    const [existingImagesWithIds, setExistingImagesWithIds] = useState<Array<{ id: number; url: string }>>(initialWithIds);
+    const [existingImages, setExistingImages] = useState<string[]>(
+        initialWithIds.length > 0 ? initialWithIds.map((im) => im.url) : (editingService?.imageUrls ?? []),
+    );
     const [imagesToDelete, setImagesToDelete] = useState<number[]>([]);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
     const [inspectionConfig, setInspectionConfig] = useState<InspectionConfig>(emptyConfig());
@@ -111,7 +118,11 @@ export function AdminServiceFormModal({ userId, expertProfileId, expertCountry, 
         const conds = formData.conditions.trim();
         if (conds.length < 400 || conds.length > 1000) errs.conditions = 'La descripción debe tener entre 400 y 1000 caracteres';
         if (!(parseFloat(formData.price) > 0)) errs.price = 'El precio debe ser mayor que 0';
-        const keptImages = editingService ? existingImages.length : 0;
+        // Fotos conservadas = existentes con id menos las marcadas para borrar (o, sin ids, las urls).
+        const validDeletes = imagesToDelete.filter((id) => id > 0).length;
+        const keptImages = editingService
+            ? (existingImagesWithIds.length > 0 ? existingImagesWithIds.length - validDeletes : existingImages.length)
+            : 0;
         if (keptImages + selectedImages.length < 2) errs.images = 'Debe haber al menos 2 fotos';
         setFormErrors(errs);
         return Object.keys(errs).length === 0;
@@ -144,6 +155,12 @@ export function AdminServiceFormModal({ userId, expertProfileId, expertCountry, 
 
     const submit = async (isUpdate: boolean) => {
         if (!validate()) return;
+        if (!isUpdate && !(expertProfileId > 0)) {
+            const msg = 'No se pudo obtener el perfil del experto. Recarga la página.';
+            setFormErrors((prev) => ({ ...prev, general: msg }));
+            showToast('error', msg);
+            return;
+        }
         setBusy(true);
         try {
             const fd = await buildBaseFormData();
@@ -177,9 +194,9 @@ export function AdminServiceFormModal({ userId, expertProfileId, expertCountry, 
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/40 overflow-y-auto" onClick={onClose}>
+        <div className="fixed inset-0 z-50 bg-black/40 overflow-y-auto">
             <div className="min-h-full flex items-start justify-center p-4">
-                <div className="bg-white rounded-xl w-full max-w-3xl my-8" onClick={(ev) => ev.stopPropagation()}>
+                <div className="bg-white rounded-xl w-full max-w-3xl my-8">
                     <ServiceForm
                         onClose={onClose}
                         onClearForm={() => {
@@ -207,6 +224,8 @@ export function AdminServiceFormModal({ userId, expertProfileId, expertCountry, 
                         editingService={editingService ?? null}
                         existingImages={existingImages}
                         setExistingImages={setExistingImages}
+                        existingImagesWithIds={existingImagesWithIds}
+                        setExistingImagesWithIds={setExistingImagesWithIds}
                         imagesToDelete={imagesToDelete}
                         setImagesToDelete={setImagesToDelete}
                         expertCountry={expertCountry}

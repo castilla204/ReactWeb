@@ -163,9 +163,9 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                 </div>
                             </AdminTD>
                             <AdminTD>
-                                {(user.role === 'Expert' || user.isExpert) ? (
+                                {((user.role ?? (user as any).Role) === 'Expert' || (user.isExpert ?? (user as any).IsExpert)) ? (
                                     <AdminStatusPill tone="info">Experto</AdminStatusPill>
-                                ) : user.role === 'Admin' ? (
+                                ) : (user.role ?? (user as any).Role) === 'Admin' ? (
                                     <AdminStatusPill tone="brand">Admin</AdminStatusPill>
                                 ) : (
                                     <AdminStatusPill tone="neutral">Cliente</AdminStatusPill>
@@ -238,7 +238,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                             </AdminTD>
                             <AdminTD className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    {(user.role === 'Expert' || user.isExpert) && (
+                                    {((user.role ?? (user as any).Role) === 'Expert' || (user.isExpert ?? (user as any).IsExpert)) && (
                                         <AdminButton
                                             variant="outline"
                                             size="sm"
