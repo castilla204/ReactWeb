@@ -274,6 +274,7 @@ export const API_CONFIG = {
                 webhooks: `${API_PATH}/Admin/stripe/webhooks`,
                 webhook: (webhookId: string) => `${API_PATH}/Admin/stripe/webhooks/${webhookId}`,
             },
+            emailTemplatePreviews: `${API_PATH}/Admin/email-templates/previews`,
         },
         legal: {
             terms: `${API_PATH}/Legal/terms`,
