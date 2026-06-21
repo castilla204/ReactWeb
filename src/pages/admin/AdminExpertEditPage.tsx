@@ -9,6 +9,9 @@ import AvailabilityRulesEditor from '../../components/expertPanel/AvailabilityRu
 import { AdminServiceFormModal } from '../../components/admin/AdminServiceFormModal';
 import { showToast } from '../../lib/toast';
 import { AdminCard, AdminCardHeader, AdminButton, AdminStatusPill } from '../../components/admin/ui';
+// Estilos de maquetación del panel del experto (pf-*/av-*), necesarios para que el
+// ProfileEditForm y los componentes de disponibilidad embebidos se vean igual que en su panel.
+import '../../styles/expert-panel.css';
 
 type Tab = 'profile' | 'availability' | 'services';
 

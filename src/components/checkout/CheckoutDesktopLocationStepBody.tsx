@@ -55,7 +55,6 @@ export function CheckoutDesktopLocationStepBody({
     expertLatitude,
     expertLongitude,
     expertCountry,
-    expertRange,
     chosenLocation,
     onLocationChange,
     sellerPhone,
@@ -114,8 +113,9 @@ export function CheckoutDesktopLocationStepBody({
     return (
         <div className="flex h-full flex-col gap-5">
             {/* Dirección + detalles SOLO en "Yo la reservo": el cliente marca el punto en el
-                mapa. En "Que lo coordine Inspecciono" la dirección la fija el vendedor al reservar,
-                así que aquí no se pide (el mapa de la derecha es solo la zona de cobertura). */}
+                mapa de la derecha (que ya no lleva formulario superpuesto) y rellena aquí los
+                datos. En "Que lo coordine Inspecciono" la dirección la fija el vendedor al
+                reservar, así que aquí no se pide (el mapa es solo la zona de cobertura). */}
             {mode === 'self' ? (
                 <>
                     <section className="space-y-3">
