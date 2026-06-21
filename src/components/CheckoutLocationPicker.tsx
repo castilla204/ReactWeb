@@ -43,6 +43,12 @@ interface Props {
     referenceMode?: boolean;
     /** Oculta la cabecera numerada (layout 50/50 desktop: el paso va en la columna izquierda). */
     showEmbeddedHeader?: boolean;
+    /** El formulario (dirección/puerta/indicaciones) vive FUERA del mapa, en la columna
+     *  izquierda. El mapa no muestra buscador ni tarjeta superpuesta: solo deja clicar el punto
+     *  y refleja la ubicación que controla el padre (`controlledLocation`). */
+    externalForm?: boolean;
+    /** Ubicación controlada por el padre (con `externalForm`): el mapa coloca aquí su marcador. */
+    controlledLocation?: CheckoutLocationData | null;
 }
 
 const FIELD_INPUT_CLS =
@@ -396,6 +402,8 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     variant = 'default',
     referenceMode = false,
     showEmbeddedHeader = true,
+    externalForm = false,
+    controlledLocation = null,
 }) => {
     const isWizard = variant === 'wizard';
     const isSidebar = variant === 'sidebar';
@@ -449,8 +457,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                 location: picked.address,
                 latitude: String(picked.latitude),
                 longitude: String(picked.longitude),
-                doorNumber: doorNumber.trim() || null,
-                siteDetails: siteDetails.trim() || null,
+                // En externalForm la puerta/indicaciones las gestiona la columna izquierda; las
+                // tomamos de `controlledLocation` para no machacarlas al recolocar el punto.
+                doorNumber: externalForm ? (controlledLocation?.doorNumber ?? null) : (doorNumber.trim() || null),
+                siteDetails: externalForm ? (controlledLocation?.siteDetails ?? null) : (siteDetails.trim() || null),
             });
         } else {
             onChange(null);
@@ -458,6 +468,33 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [picked, doorNumber, siteDetails, isWorkshopOnly]);
+
+    // 🔁 externalForm: el formulario vive en la columna izquierda y el mapa SOLO refleja la
+    //    ubicación que controla el padre. Cuando el padre cambia la dirección (búsqueda a la
+    //    izquierda), recolocamos el marcador con un externalAddressPick. Guard por lat/lng
+    //    (epsilon) para NO entrar en bucle con nuestro propio onChange: click en mapa → padre →
+    //    aquí → mismo punto → no hace nada.
+    useEffect(() => {
+        if (!externalForm || referenceMode || isWorkshopOnly) return;
+        const cl = controlledLocation;
+        if (cl && cl.latitude != null && cl.longitude != null) {
+            const lat = Number(cl.latitude);
+            const lng = Number(cl.longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            const samePoint =
+                !!picked &&
+                Math.abs(picked.latitude - lat) < 1e-7 &&
+                Math.abs(picked.longitude - lng) < 1e-7;
+            if (!samePoint) {
+                setPicked({ address: cl.location, latitude: lat, longitude: lng });
+                setExternalAddressPick({ address: cl.location, latitude: lat, longitude: lng, nonce: Date.now() });
+            }
+        } else if (!cl && picked) {
+            setPicked(null);
+            setExternalAddressPick(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [controlledLocation, externalForm, referenceMode, isWorkshopOnly]);
 
     const workshopMapProps = expertLocation
         ? {
@@ -585,13 +622,13 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         expertRange,
         expertCountry,
         disabled: false,
-        showSearch: !referenceMode && !wizardPickLocation,
+        showSearch: !referenceMode && !wizardPickLocation && !externalForm,
         showCountrySelector: false as const,
         frameless: true as const,
         searchMinimal: true as const,
         coverageStyle: 'minimal' as const,
         referencePreview: referenceMode,
-        externalAddressPick: wizardPickLocation ? externalAddressPick : null,
+        externalAddressPick: wizardPickLocation || externalForm ? externalAddressPick : null,
     };
 
     const mapHeightCls = isWizard || isSidebar ? 'h-full min-h-[inherit]' : 'h-[min(56vh,420px)] lg:h-full lg:min-h-0';
@@ -674,12 +711,13 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         onClick={() => setExpanded(true)}
                         className={cn(
                             'absolute right-4 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#475569] shadow-sm backdrop-blur-sm transition-[transform,bottom,top] duration-300 active:scale-95',
-                            'bottom-[8.75rem] top-auto',
+                            externalForm ? 'bottom-4 top-auto' : 'bottom-[8.75rem] top-auto',
                         )}
                         aria-label="Ampliar mapa a pantalla completa"
                     >
                         <Maximize2 className="h-4 w-4" aria-hidden />
                     </button>
+                    {!externalForm ? (
                     <LocationMapDrawer
                         {...fieldProps}
                         expanded={drawerExpanded}
@@ -687,6 +725,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         doorInputRef={doorInputRef}
                         desktopSidebar
                     />
+                    ) : null}
                     </>
                     )}
                 </div>
@@ -722,7 +761,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         <div className="relative min-h-0 flex-1">
                             <AppointmentMap {...mapProps} className="h-full w-full" />
                         </div>
-                        {!referenceMode && picked ? (
+                        {!referenceMode && !externalForm && picked ? (
                         <footer className="shrink-0 border-t border-[#f0f0f0] p-4">
                             <LocationDetailsFields {...fieldProps} drawerDesktop doorInputRef={doorInputRef} />
                         </footer>

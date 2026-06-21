@@ -410,7 +410,7 @@ export function CheckoutSellerChoiceMobileWarning({
                 <Lock className="h-3 w-3" strokeWidth={2.25} />
             </span>
             <p className="min-w-0 text-[12.5px] leading-[1.45] text-[#5b6472]">
-                <span className="font-semibold text-[#1c1c1c]">Solo consulta.</span>{' '}
+                <span className="font-semibold text-brand">Solo consulta.</span>{' '}
                 {stripeMessage}
             </p>
         </div>
@@ -453,7 +453,7 @@ export function CheckoutSellerChoiceLockedStripe({
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#94a3b8]" strokeWidth={2} aria-hidden />
             <div className="min-w-0">
                 <p className="text-[12px] leading-snug text-[#64748b]">
-                    <span className="font-medium text-[#475569]">{stripeLead}</span>
+                    <span className="font-medium text-brand">{stripeLead}</span>
                     {' · '}
                     {compactSplit ? (
                         <span className="text-[#64748b]">no necesitas elegir nada aquí</span>

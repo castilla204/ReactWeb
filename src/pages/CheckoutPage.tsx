@@ -735,6 +735,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
             variant="sidebar"
             referenceMode={coordinationMode === 'seller'}
             showEmbeddedHeader={false}
+            externalForm={coordinationMode === 'self'}
+            controlledLocation={chosenLocation}
         />
     ) : null;
     const locationPickerWizardNode =
