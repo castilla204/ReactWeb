@@ -37,7 +37,27 @@ export default function AdminExpertEditPage() {
         enabled: Number.isFinite(userId) && tab === 'services',
     });
 
-    const e = expertQuery.data;
+    // Lectura defensiva de casing (NewApi puede serializar PascalCase en algunos contextos).
+    const raw = expertQuery.data;
+    const e = raw ? {
+        expertProfileId: raw.expertProfileId ?? raw.ExpertProfileId,
+        name: raw.name ?? raw.Name,
+        email: raw.email ?? raw.Email,
+        profilePictureUrl: raw.profilePictureUrl ?? raw.ProfilePictureUrl,
+        description: raw.description ?? raw.Description,
+        formacion: raw.formacion ?? raw.Formacion,
+        latitude: raw.latitude ?? raw.Latitude,
+        longitude: raw.longitude ?? raw.Longitude,
+        workRadiusKm: raw.workRadiusKm ?? raw.WorkRadiusKm,
+        workLocationDoor: raw.workLocationDoor ?? raw.WorkLocationDoor,
+        workLocationFloor: raw.workLocationFloor ?? raw.WorkLocationFloor,
+        workLocationDetails: raw.workLocationDetails ?? raw.WorkLocationDetails,
+        isOnVacation: raw.isOnVacation ?? raw.IsOnVacation,
+        stripeStatus: raw.stripeStatus ?? raw.StripeStatus,
+        onboardingCompleted: raw.onboardingCompleted ?? raw.OnboardingCompleted,
+        country: raw.country ?? raw.Country,
+        createdAt: raw.createdAt ?? raw.CreatedAt,
+    } : null;
 
     const toggleVacation = async () => {
         try {
@@ -219,6 +239,7 @@ export default function AdminExpertEditPage() {
                                                             conditions: s.conditions ?? s.Conditions ?? '',
                                                             durationInHours: s.durationInHours ?? s.DurationInHours ?? null,
                                                             imageUrls: s.imageUrls ?? s.ImageUrls ?? [],
+                                                            images: (s.images ?? s.Images ?? []).map((im: any) => ({ id: im.id ?? im.Id, url: im.url ?? im.Url ?? im.imageUrl ?? im.ImageUrl })),
                                                             currency: s.currency ?? s.Currency,
                                                             selectedDeliverableTypes: s.selectedDeliverableTypes ?? s.SelectedDeliverableTypes ?? [],
                                                             inspectionTemplateConfig: s.inspectionTemplateConfig ?? s.InspectionTemplateConfig ?? null,
