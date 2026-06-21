@@ -27,7 +27,9 @@ export function useExpertProfile() {
     const { signOut } = useAuth();
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const updateExpertProfile = async (data: UpdateExpertProfileData) => {
+    // targetUserId: cuando lo pasa el panel de admin, la edición va al endpoint admin
+    // (/api/admin/expert/{userId}/profile) en vez del endpoint del propio experto.
+    const updateExpertProfile = async (data: UpdateExpertProfileData, targetUserId?: number) => {
         setIsUpdating(true);
         try {
             const token = getAuthToken();
@@ -104,7 +106,10 @@ export function useExpertProfile() {
                 }
             }
 
-            const response = await fetch(`${API_CONFIG.baseUrl}/api/User/expert-profile`, {
+            const endpoint = typeof targetUserId === 'number'
+                ? `/api/admin/expert/${targetUserId}/profile`
+                : '/api/User/expert-profile';
+            const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
