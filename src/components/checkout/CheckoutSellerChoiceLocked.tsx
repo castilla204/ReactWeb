@@ -398,16 +398,21 @@ export function CheckoutSellerChoiceMobileWarning({
     return (
         <div
             className={cn(
-                'flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2.5 text-[12px] leading-snug text-amber-900',
+                'flex items-start gap-2.5 rounded-xl border border-[#e6e9ef] bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
                 className,
             )}
             role="status"
         >
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" aria-hidden />
-            <span>
-                <span className="font-semibold">Solo consulta:</span>{' '}
-                {stripeMessage}
+            <span
+                className="mt-px inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#eef1f6] text-[#64748b]"
+                aria-hidden
+            >
+                <Lock className="h-3 w-3" strokeWidth={2.25} />
             </span>
+            <p className="min-w-0 text-[12.5px] leading-[1.45] text-[#5b6472]">
+                <span className="font-semibold text-[#1c1c1c]">Solo consulta.</span>{' '}
+                {stripeMessage}
+            </p>
         </div>
     );
 }

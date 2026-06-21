@@ -54,7 +54,6 @@ import {
     SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
-    SD_CHECKOUT_MOBILE_HEADER_CLASS,
     SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
     SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS,
     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
@@ -1272,7 +1271,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     className="mb-0"
                                 />
                             </header>
-                            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'shrink-0 bg-white pt-3')}>
+                            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'shrink-0 bg-white pt-2 pb-2.5')}>
                                 <CheckoutSellerChoiceMobileWarning variant="location" />
                             </div>
                             <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -1304,12 +1303,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                         <CheckoutMobileStepper
                                             currentStep={1}
                                             steps={MOBILE_SELLER_PREVIEW_STEPS}
-                                            className="mb-3"
+                                            className="mb-5"
                                         />
                                     ) : null}
                                     <CheckoutSellerChoiceMobileWarning
                                         variant="calendar"
-                                        className="mb-3"
+                                        className="mb-2.5"
                                     />
                                     <SlotPicker
                                         {...slotPickerProps}
@@ -1353,8 +1352,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 >
                     {mobileThreeStep && mobileStep < 3 ? (
                         <>
-                            <header className={SD_CHECKOUT_MOBILE_HEADER_CLASS}>
-                                <CheckoutMobileStepper currentStep={mobileStep} />
+                            <header
+                                className={cn(
+                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+                                    'pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                )}
+                            >
+                                <CheckoutMobileStepper currentStep={mobileStep} className="mb-5" />
                             </header>
                         </>
                     ) : null}

@@ -82,9 +82,26 @@ export function UserManagement({ onBack }: UserManagementProps) {
             if (role) params.set('role', role);
             const response = await fetchApi<any>(`/api/User/all?${params.toString()}`);
 
-            // NORMALIZAR respuesta según la guía
+            // NORMALIZAR respuesta. La API serializa PascalCase (Program.cs PropertyNamingPolicy=null);
+            // leemos ambos casings para que nombre/email/fecha/foto/estado no salgan vacíos.
+            const rawUsers: any[] = response.users ?? response.Users ?? [];
             return {
-                users: response.users || [],
+                users: rawUsers.map((u: any) => ({
+                    id: u.id ?? u.Id,
+                    name: u.name ?? u.Name,
+                    email: u.email ?? u.Email,
+                    phoneNumber: u.phoneNumber ?? u.PhoneNumber ?? null,
+                    phoneVerified: Boolean(u.phoneVerified ?? u.PhoneVerified),
+                    phoneLineType: u.phoneLineType ?? u.PhoneLineType ?? null,
+                    phoneVerificationSource: u.phoneVerificationSource ?? u.PhoneVerificationSource ?? null,
+                    isBlocked: Boolean(u.isBlocked ?? u.IsBlocked),
+                    createdAt: u.createdAt ?? u.CreatedAt,
+                    searchCount: u.searchCount ?? u.SearchCount ?? 0,
+                    subscriptionPlan: u.subscriptionPlan ?? u.SubscriptionPlan ?? '—',
+                    role: u.role ?? u.Role,
+                    isExpert: u.isExpert ?? u.IsExpert,
+                    expertStripeStatus: u.expertStripeStatus ?? u.ExpertStripeStatus ?? null,
+                })) as User[],
                 pagination: response.pagination ? {
                     page: response.pagination.page || 1,
                     pageSize: response.pagination.pageSize || pageSize,
@@ -233,7 +250,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
                             <AdminTD>
                                 <div className="flex items-center gap-2 text-sm text-[hsl(var(--ap-muted))]">
                                     <Calendar className="w-4 h-4" />
-                                    {new Date(user.createdAt).toLocaleDateString()}
+                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
                                 </div>
                             </AdminTD>
                             <AdminTD className="text-right">
