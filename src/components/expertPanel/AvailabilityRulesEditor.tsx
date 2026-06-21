@@ -54,9 +54,11 @@ const serializeWeek = (w: WeekState): string =>
  * "copiar a todos los días". Lee/escribe ExpertAvailabilityRule vía /api/ExpertAvailability/rules.
  * Si aún no hay reglas, precarga el horario clásico del perfil para que el experto solo confirme.
  */
-interface Props { collapsible?: boolean; defaultOpen?: boolean; }
+interface Props { collapsible?: boolean; defaultOpen?: boolean; adminUserId?: number; }
 
-const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, defaultOpen = false }) => {
+const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, defaultOpen = false, adminUserId }) => {
+    // En modo admin las reglas se leen/escriben sobre el experto objetivo.
+    const rulesUrl = adminUserId != null ? `/api/admin/expert/${adminUserId}/availability/rules` : URL;
     const [open, setOpen] = useState<boolean>(collapsible ? defaultOpen : true);
     const [week, setWeek] = useState<WeekState>(emptyWeek());
     const [loading, setLoading] = useState<boolean>(true);
@@ -80,7 +82,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
         setError(null);
         setPrefilledFromLegacy(false);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl}${URL}`, { headers: authHeaders() });
+            const res = await fetch(`${API_CONFIG.baseUrl}${rulesUrl}`, { headers: authHeaders() });
             if (!res.ok) throw new Error();
             const data: any[] = await res.json();
 
@@ -98,7 +100,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
             // Sin reglas todavía → precargar el horario clásico del perfil (legacy) para que el
             // experto vea su horario actual y solo tenga que pulsar Guardar para activarlo en reservas.
             const hasRules = Object.values(next).some((d) => d.ranges.length > 0);
-            if (!hasRules) {
+            if (!hasRules && adminUserId == null) {
                 try {
                     const legacyRes = await fetch(`${API_CONFIG.baseUrl}${CURRENT_URL}`, { headers: authHeaders() });
                     if (legacyRes.ok) {
@@ -132,7 +134,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [rulesUrl, adminUserId]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -239,7 +241,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                     flat.push({ dayOfWeek: d.id, startLocal: r.start, endLocal: r.end });
                 }
             }
-            const res = await fetch(`${API_CONFIG.baseUrl}${URL}`, {
+            const res = await fetch(`${API_CONFIG.baseUrl}${rulesUrl}`, {
                 method: 'PUT',
                 headers: authHeaders(),
                 body: JSON.stringify({ rules: flat }),
