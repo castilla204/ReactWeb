@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Search, Sparkles, Settings, HelpCircle, CreditCard, LogOut, Menu, Bell, UserPlus, Briefcase, Wallet, Globe, Heart, User } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { SileoTransitionProvider } from './components/providers/SileoTransitionProvider';
 import { useAuth } from './contexts/AuthContext';
 import { useUnreadNotificationCount } from './hooks/useNotifications';
 // Verificación de teléfono desactivada temporalmente
@@ -517,6 +518,7 @@ const AppContent: React.FC = () => {
                 <main className="relative">
                     <Background />
                     <section className="w-full flex flex-col relative z-10" style={{ minHeight: 0, height: 'auto' }}>
+                      <SileoTransitionProvider>
                         <Routes>
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
@@ -553,6 +555,7 @@ const AppContent: React.FC = () => {
                             <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
                                 <Route index element={<RouteSuspense><LazyPages.AdminDashboard /></RouteSuspense>} />
                                 <Route path="users" element={<RouteSuspense><LazyPages.UserManagement onBack={() => window.location.href = '/'} /></RouteSuspense>} />
+                                <Route path="experts/:expertId/edit" element={<RouteSuspense><LazyPages.AdminExpertEditPage /></RouteSuspense>} />
                                 <Route path="config/*" element={<RouteSuspense><LazyPages.AdminConfigPage /></RouteSuspense>} />
                                 <Route path="categories" element={<RouteSuspense><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
                                 <Route path="mappings" element={<RouteSuspense><LazyPages.AdminMappingsPage /></RouteSuspense>} />
@@ -585,6 +588,7 @@ const AppContent: React.FC = () => {
                             {/* Ruta 404 - debe ir al final */}
                             <Route path="*" element={<NotFoundPage />} />
                         </Routes>
+                      </SileoTransitionProvider>
                     </section>
                 </main>
 

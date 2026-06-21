@@ -101,6 +101,8 @@ interface ProfileEditFormProps {
         pendingRequired: number;
         onOpenSetup?: () => void;
     };
+    /** Cuando lo pasa el panel admin, la edición va al endpoint admin de ese experto. */
+    adminTargetUserId?: number;
 }
 
 export function ProfileEditForm({
@@ -110,6 +112,7 @@ export function ProfileEditForm({
     profile,
     onProfileUpdated,
     profileSetup,
+    adminTargetUserId,
 }: ProfileEditFormProps) {
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -532,7 +535,7 @@ export function ProfileEditForm({
                 workLocationDoor: isFixedWorkLocation ? workLocationDoor.trim() : '',
                 workLocationFloor: isFixedWorkLocation ? workLocationFloor.trim() : '',
                 workLocationDetails: isFixedWorkLocation ? workLocationDetails.trim() : '',
-            });
+            }, adminTargetUserId);
             if (!embedded) setShowEditForm?.(false);
             onProfileUpdated();
             window.dispatchEvent(new CustomEvent('showNotification', {

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useDeferredValue } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
-import { Shield, ShieldOff, CheckCircle, XCircle, Users, Search, CreditCard, Calendar, ArrowLeft, Check } from 'lucide-react';
+import { Shield, ShieldOff, CheckCircle, XCircle, Users, Search, CreditCard, Calendar, ArrowLeft, Check, UserCog } from 'lucide-react';
 import { UserAccountActions } from './UserAccountActions';
 import { Pagination } from './Pagination';
 import { showToast } from '../lib/toast';
@@ -34,6 +35,12 @@ interface User {
     createdAt: string;
     searchCount: number;
     subscriptionPlan: string;
+    /** "Client" | "Expert" | "Admin" */
+    role?: string;
+    /** true si el usuario tiene ExpertProfile (es experto). */
+    isExpert?: boolean;
+    /** Estado de Stripe del experto (solo informativo). */
+    expertStripeStatus?: string | null;
 }
 
 interface PaginatedUsersResponse {
@@ -52,18 +59,28 @@ interface UserManagementProps {
     onBack: () => void;
 }
 
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 8;
 
 export function UserManagement({ onBack }: UserManagementProps) {
     const { fetchApi } = useApi();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
+    const [search, setSearch] = useState('');
+    const [role, setRole] = useState<'' | 'Client' | 'Expert' | 'Admin'>('');
+    const deferredSearch = useDeferredValue(search);
+
+    // Al cambiar búsqueda o filtro, volver a la primera página.
+    useEffect(() => { setPage(1); }, [deferredSearch, role]);
 
     const usersQuery = useQuery({
-        queryKey: ['users', page, pageSize],
+        queryKey: ['users', page, pageSize, deferredSearch, role],
         queryFn: async () => {
-            const response = await fetchApi<any>(`/api/User/all?page=${page}&pageSize=${pageSize}`);
+            const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+            if (deferredSearch.trim()) params.set('search', deferredSearch.trim());
+            if (role) params.set('role', role);
+            const response = await fetchApi<any>(`/api/User/all?${params.toString()}`);
 
             // NORMALIZAR respuesta según la guía
             return {
@@ -118,6 +135,7 @@ export function UserManagement({ onBack }: UserManagementProps) {
         <AdminTable zebra>
             <AdminTHead>
                 <AdminTH>Usuario</AdminTH>
+                <AdminTH>Tipo</AdminTH>
                 <AdminTH>Estado</AdminTH>
                 <AdminTH>Teléfono</AdminTH>
                 <AdminTH>Plan</AdminTH>
@@ -143,6 +161,15 @@ export function UserManagement({ onBack }: UserManagementProps) {
                                         <div className="text-sm text-[hsl(var(--ap-muted))]">{user.email || 'Sin email'}</div>
                                     </div>
                                 </div>
+                            </AdminTD>
+                            <AdminTD>
+                                {(user.role === 'Expert' || user.isExpert) ? (
+                                    <AdminStatusPill tone="info">Experto</AdminStatusPill>
+                                ) : user.role === 'Admin' ? (
+                                    <AdminStatusPill tone="brand">Admin</AdminStatusPill>
+                                ) : (
+                                    <AdminStatusPill tone="neutral">Cliente</AdminStatusPill>
+                                )}
                             </AdminTD>
                             <AdminTD>
                                 {user.isBlocked ? (
@@ -211,6 +238,17 @@ export function UserManagement({ onBack }: UserManagementProps) {
                             </AdminTD>
                             <AdminTD className="text-right">
                                 <div className="flex items-center justify-end gap-2">
+                                    {(user.role === 'Expert' || user.isExpert) && (
+                                        <AdminButton
+                                            variant="outline"
+                                            size="sm"
+                                            icon={<UserCog className="w-4 h-4" />}
+                                            onClick={() => navigate(`/admin/experts/${user.id}/edit`)}
+                                            title="Editar perfil del experto"
+                                        >
+                                            Editar perfil
+                                        </AdminButton>
+                                    )}
                                     <AdminButton
                                         variant="outline"
                                         size="sm"
@@ -257,6 +295,29 @@ export function UserManagement({ onBack }: UserManagementProps) {
                     }
                     description="Gestiona los usuarios del sistema: estado, plan y acceso."
                 />
+
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--ap-muted))]" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar por nombre o email…"
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[hsl(var(--ap-border))] bg-white text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+                        />
+                    </div>
+                    <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value as typeof role)}
+                        className="py-2 px-3 text-sm rounded-lg border border-[hsl(var(--ap-border))] bg-white text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+                    >
+                        <option value="">Todos los roles</option>
+                        <option value="Client">Clientes</option>
+                        <option value="Expert">Expertos</option>
+                        <option value="Admin">Admins</option>
+                    </select>
+                </div>
 
                 {usersQuery.isLoading ? (
                     <AdminTableSkeleton rows={6} cols={COLUMN_COUNT} />
