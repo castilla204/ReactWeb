@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Plane, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plane, CheckCircle2, XCircle, Trash2, Pencil, Plus } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
 import { ProfileEditForm } from '../../components/expertPanel/ProfileEditForm';
 import AvailabilityCalendar from '../../components/expertPanel/AvailabilityCalendar';
 import AvailabilityRulesEditor from '../../components/expertPanel/AvailabilityRulesEditor';
+import { AdminServiceFormModal } from '../../components/admin/AdminServiceFormModal';
 import { showToast } from '../../lib/toast';
 import { AdminCard, AdminCardHeader, AdminButton, AdminStatusPill } from '../../components/admin/ui';
 
@@ -22,6 +23,7 @@ export default function AdminExpertEditPage() {
     const navigate = useNavigate();
     const { fetchApi } = useApi();
     const [tab, setTab] = useState<Tab>('profile');
+    const [serviceModal, setServiceModal] = useState<{ open: boolean; editing: any | null }>({ open: false, editing: null });
 
     const expertQuery = useQuery({
         queryKey: ['admin-expert', userId],
@@ -171,6 +173,16 @@ export default function AdminExpertEditPage() {
 
                     {tab === 'services' && (
                         <AdminCard>
+                            <div className="flex justify-end mb-3">
+                                <AdminButton
+                                    variant="primary"
+                                    size="sm"
+                                    icon={<Plus className="w-4 h-4" />}
+                                    onClick={() => setServiceModal({ open: true, editing: null })}
+                                >
+                                    Crear servicio
+                                </AdminButton>
+                            </div>
                             {servicesQuery.isLoading ? (
                                 <div className="py-8 text-center text-[hsl(var(--ap-muted))]">Cargando servicios…</div>
                             ) : services.length === 0 ? (
@@ -196,6 +208,28 @@ export default function AdminExpertEditPage() {
                                                 <AdminButton
                                                     variant="outline"
                                                     size="sm"
+                                                    icon={<Pencil className="w-4 h-4" />}
+                                                    onClick={() => setServiceModal({
+                                                        open: true,
+                                                        editing: {
+                                                            id: s.id ?? s.Id,
+                                                            categoryId: s.categoryId ?? s.CategoryId,
+                                                            serviceTypeId: s.serviceTypeId ?? s.ServiceTypeId,
+                                                            price: s.price ?? s.Price,
+                                                            conditions: s.conditions ?? s.Conditions ?? '',
+                                                            durationInHours: s.durationInHours ?? s.DurationInHours ?? null,
+                                                            imageUrls: s.imageUrls ?? s.ImageUrls ?? [],
+                                                            currency: s.currency ?? s.Currency,
+                                                            selectedDeliverableTypes: s.selectedDeliverableTypes ?? s.SelectedDeliverableTypes ?? [],
+                                                            inspectionTemplateConfig: s.inspectionTemplateConfig ?? s.InspectionTemplateConfig ?? null,
+                                                        },
+                                                    })}
+                                                >
+                                                    Editar
+                                                </AdminButton>
+                                                <AdminButton
+                                                    variant="outline"
+                                                    size="sm"
                                                     icon={<Trash2 className="w-4 h-4" />}
                                                     onClick={() => deleteService(s.id ?? s.Id)}
                                                 >
@@ -206,11 +240,18 @@ export default function AdminExpertEditPage() {
                                     ))}
                                 </ul>
                             )}
-                            <p className="mt-4 text-xs text-[hsl(var(--ap-muted))]">
-                                El alta y edición de servicios desde el panel admin se añadirá próximamente
-                                (el backend ya lo soporta). De momento puedes consultar y eliminar.
-                            </p>
                         </AdminCard>
+                    )}
+
+                    {serviceModal.open && (
+                        <AdminServiceFormModal
+                            userId={userId}
+                            expertProfileId={e.expertProfileId}
+                            expertCountry={e.country}
+                            editingService={serviceModal.editing}
+                            onClose={() => setServiceModal({ open: false, editing: null })}
+                            onSaved={() => servicesQuery.refetch()}
+                        />
                     )}
                 </>
             )}
