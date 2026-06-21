@@ -19,6 +19,13 @@ import { getCurrencySymbol } from '../../utils/priceUtils';
 import ClusteredMarkers from './ClusteredMarkers';
 import { MapLoadingIndicator } from './MapLoadingIndicator';
 
+// 📐 Alto/ancho mínimo (px) del lienzo para considerar que el mapa está dimensionado. En
+//    móvil el contenedor flex (flex-1 / min-h-0) resuelve su altura DESPUÉS de montar, así que
+//    durante un instante el canvas mide ~0px. Un getBounds() sobre un canvas ~0px devuelve un
+//    box minúsculo (span ~0) que el backend resuelve como "0 expertos" → el bug intermitente de
+//    "no salen los servicios hasta que muevo el mapa". Por debajo de este umbral NO pedimos.
+const MIN_MAP_READY_PX = 120;
+
 interface MapContainerProps {
   categoryId: number | null;
   serviceTypeId: number | null;
@@ -231,6 +238,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     (map: maplibregl.Map) => {
       if (!map || isDraggingRef.current) return;
 
+      // 📐 No pedir si el lienzo aún no está dimensionado (móvil: el flex resuelve la altura
+      //    tras montar). getBounds() sobre un canvas ~0px da un box minúsculo → backend "0
+      //    expertos". Salimos SIN consumir isInitialFetchRef ni marcar fetchedAreaRef, para que
+      //    el PRIMER fetch real (sin debounce) se dispare cuando el contenedor tenga tamaño
+      //    (lo garantiza el ResizeObserver de abajo).
+      const containerEl = map.getContainer();
+      if (
+        containerEl.clientHeight < MIN_MAP_READY_PX ||
+        containerEl.clientWidth < MIN_MAP_READY_PX
+      ) {
+        return;
+      }
+
       const bounds = map.getBounds();
       const zoom = map.getZoom();
       if (!bounds || !Number.isFinite(zoom) || !validateBounds(bounds, zoom)) return;
@@ -406,11 +426,24 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const onIdle = () => {
       handleMapIdle(map);
     };
+    // 📐 Re-fetch al RE-DIMENSIONAR el lienzo. En MÓVIL el contenedor del mapa
+    //    (flex-1 / min-h-0) monta con altura ~0 mientras el layout no ha resuelto,
+    //    así que el primer fetch en 'load' ve unos bounds degenerados (ne.lat<=sw.lat)
+    //    → validateBounds los rechaza → no carga pins. Cuando el contenedor obtiene
+    //    su altura real, maplibre (trackResize) hace map.resize() PERO 'resize' NO
+    //    emite moveend/zoomend → sin este listener nada relanzaba el fetch y los pins
+    //    no aparecían hasta que el usuario movía el mapa. Tras el primer fetch válido,
+    //    el guard stillInside + debounce de scheduleViewportFetch deduplica los resize.
+    const onResize = () => {
+      if (isDraggingRef.current) return;
+      handleMapIdle(map);
+    };
 
     map.once('style.load', applyFlat);
     map.on('movestart', onMoveStart);
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
+    map.on('resize', onResize);
     map.on('load', () => {
       applyFlat();
       try {
@@ -435,12 +468,46 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       map.off('movestart', onMoveStart);
       map.off('moveend', onIdle);
       map.off('zoomend', onIdle);
+      map.off('resize', onResize);
       map.remove();
       mapInstanceRef.current = null;
       setMapInstance(null);
       setIsMapLoaded(false);
     };
   }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle, initialZoom]);
+
+  // 📐 Garantía DETERMINISTA del primer fetch (arregla el bug intermitente móvil "no salen los
+  //    servicios hasta que muevo el mapa"). El contenedor flex resuelve su altura DESPUÉS de
+  //    montar, así que el fetch que dispara `load` puede salir de un canvas ~0px → box minúsculo
+  //    → backend "0 expertos". El guard de MIN_MAP_READY_PX evita ese fetch basura; este
+  //    ResizeObserver vigila el contenedor y, cuando alcanza un tamaño real y ESTABLE (debounce),
+  //    fuerza resize() del lienzo y relanza el fetch — ahora con bounds correctos. No depende del
+  //    evento 'resize' de maplibre ni de su orden respecto a 'load', por eso es robusto.
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastReadyHeight = 0;
+    const ro = new ResizeObserver(() => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        const map = mapInstanceRef.current;
+        if (!map) return;
+        const h = el.clientHeight;
+        const w = el.clientWidth;
+        if (h < MIN_MAP_READY_PX || w < MIN_MAP_READY_PX) return; // aún sin dimensionar
+        if (Math.abs(h - lastReadyHeight) < 2) return; // sin cambio relevante → no re-pedir
+        lastReadyHeight = h;
+        map.resize();
+        if (!isDraggingRef.current) handleMapIdle(map);
+      }, 160);
+    });
+    ro.observe(el);
+    return () => {
+      if (settleTimer) clearTimeout(settleTimer);
+      ro.disconnect();
+    };
+  }, [handleMapIdle]);
 
   // Actualizar centro/zoom solo cuando cambie de verdad (geocoding / país)
   useEffect(() => {

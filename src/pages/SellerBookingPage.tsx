@@ -5,7 +5,7 @@ import { API_CONFIG } from '../config/api';
 import SlotPicker, { type ChosenSlot } from '../components/SlotPicker';
 import CheckoutLocationPicker, { type CheckoutLocationData } from '../components/CheckoutLocationPicker';
 import { cn } from '../lib/utils';
-import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
+import { SD_CHECKOUT_DESKTOP_CARD_CLASS, SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS } from '../constants/homepageTypography';
 import { SileoLoader } from '../components/ui/sileo-loader';
 import { SileoButton } from '../components/ui/sileo-button';
 
@@ -137,117 +137,127 @@ export default function SellerBookingPage() {
 
     return (
         <div className="flex min-h-[100dvh] items-start justify-center bg-[#f7f7f7] px-4 py-8 sm:py-12">
-            <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'w-full max-w-3xl')}>
-                <div className="px-5 py-6 sm:px-6">
-                    {status === 'loading' && (
-                        <SileoLoader message="Comprobando el enlace…" color="muted" />
-                    )}
+            <div className="w-full max-w-3xl">
+                {/* Estados sin formulario (cargando / error / éxito): una sola tarjeta sobria. */}
+                {!showForm && (
+                    <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'px-5 py-6 sm:px-6')}>
+                        {status === 'loading' && (
+                            <SileoLoader message="Comprobando el enlace…" color="muted" />
+                        )}
 
-                    {status === 'invalid' && (
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                            <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
-                        </div>
-                    )}
-
-                    {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
-                        <div className="flex items-start gap-3">
-                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
-                            <div>
-                                <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
-                                <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
+                        {status === 'invalid' && (
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                                <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {status === 'ok' && declined && (
-                        <div className="flex items-start gap-3">
-                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
-                            <div>
-                                <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
-                                <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                            <p className="text-sm">El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
-                        </div>
-                    )}
-
-                    {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
-                        && windowInfo && !windowInfo.hasAvailability && (
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                            <p className="text-sm">
-                                El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
-                            </p>
-                        </div>
-                    )}
-
-                    {showForm && (
-                        <div>
-                            <div className="mb-5 flex items-start gap-3">
-                                <CalendarClock size={20} className="shrink-0 text-brand" />
+                        {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
+                            <div className="flex items-start gap-3">
+                                <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
                                 <div>
-                                    <p className="mb-1 text-[15px] font-semibold">Elige cuándo y dónde ver el vehículo</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        Un comprador ha <strong>pagado</strong> una inspección profesional. Elige un hueco del técnico y dónde está el coche.
-                                    </p>
+                                    <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
+                                    <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
                                 </div>
                             </div>
+                        )}
 
-                            {windowInfo?.windowExtended && (
-                                <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                                    <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                                    <p className="text-[13px] text-amber-800">
-                                        El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
-                                    </p>
+                        {status === 'ok' && declined && (
+                            <div className="flex items-start gap-3">
+                                <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
+                                <div>
+                                    <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
+                                    <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
                                 </div>
-                            )}
-
-                            <SlotPicker
-                                serviceId={ctx.serviceId}
-                                selected={slot}
-                                onSelect={setSlot}
-                                slotsBaseUrl={base}
-                                windowDays={slotConstraints.windowDays}
-                                minLeadDays={slotConstraints.minLeadDays}
-                                sectionTitle="Fecha y hora"
-                                embedded
-                                embeddedSplitColumn
-                            />
-
-                            <div className="mt-5">
-                                {isWorkshop ? (
-                                    <div className="rounded-xl border border-[#ebebeb] bg-[#fafafa] px-4 py-3">
-                                        <p className="text-sm text-muted-foreground">
-                                            La inspección se hará en el taller del experto.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <CheckoutLocationPicker
-                                        variant="wizard"
-                                        expertLatitude={ctx.expertLatitude ?? undefined}
-                                        expertLongitude={ctx.expertLongitude ?? undefined}
-                                        expertCountry={ctx.expertCountry ?? undefined}
-                                        expertRange={ctx.workRadiusKm ?? undefined}
-                                        workRadiusKm={ctx.workRadiusKm ?? undefined}
-                                        onChange={setChosenLocation}
-                                    />
-                                )}
                             </div>
+                        )}
 
-                            {error && <p className="mt-3 text-[13px] text-red-600">{error}</p>}
+                        {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                                <p className="text-sm">El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
+                            </div>
+                        )}
 
+                        {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                            && windowInfo && !windowInfo.hasAvailability && (
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                                <p className="text-sm">
+                                    El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Formulario: misma estética que el flujo «yo la reservo». Cada componente (calendario
+                    y mapa) aporta su PROPIA tarjeta — sin tarjeta exterior que duplique el contorno. */}
+                {showForm && (
+                    <div className="space-y-5">
+                        <div className="flex items-start gap-3 px-1">
+                            <CalendarClock size={20} className="mt-0.5 shrink-0 text-brand" />
+                            <div>
+                                <p className="mb-1 text-[15px] font-semibold">Elige cuándo y dónde ver el vehículo</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Un comprador ha <strong>pagado</strong> una inspección profesional. Elige un hueco del técnico y dónde está el coche.
+                                </p>
+                            </div>
+                        </div>
+
+                        {windowInfo?.windowExtended && (
+                            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                                <p className="text-[13px] text-amber-800">
+                                    El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
+                                </p>
+                            </div>
+                        )}
+
+                        <SlotPicker
+                            serviceId={ctx.serviceId}
+                            selected={slot}
+                            onSelect={setSlot}
+                            slotsBaseUrl={base}
+                            windowDays={slotConstraints.windowDays}
+                            minLeadDays={slotConstraints.minLeadDays}
+                            sectionTitle="Fecha y hora"
+                            embedded
+                            embeddedSplitColumn
+                        />
+
+                        {isWorkshop ? (
+                            <div className="rounded-xl border border-[#ebebeb] bg-[#fafafa] px-4 py-3">
+                                <p className="text-sm text-muted-foreground">
+                                    La inspección se hará en el taller del experto.
+                                </p>
+                            </div>
+                        ) : (
+                            // El mapa wizard rellena su contenedor (h-full): le damos una altura fija para
+                            // que SE RENDERICE (en un div sin altura el mapa colapsa a 0px = invisible).
+                            // El shell embebido le da el MISMO contorno único que la tarjeta del calendario.
+                            <div className={cn(SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS, 'h-[min(62vh,520px)]')}>
+                                <CheckoutLocationPicker
+                                    variant="wizard"
+                                    expertLatitude={ctx.expertLatitude ?? undefined}
+                                    expertLongitude={ctx.expertLongitude ?? undefined}
+                                    expertCountry={ctx.expertCountry ?? undefined}
+                                    expertRange={ctx.workRadiusKm ?? undefined}
+                                    workRadiusKm={ctx.workRadiusKm ?? undefined}
+                                    onChange={setChosenLocation}
+                                />
+                            </div>
+                        )}
+
+                        {error && <p className="px-1 text-[13px] text-red-600">{error}</p>}
+
+                        <div>
                             <SileoButton
                                 onClick={confirm}
                                 disabled={submitting || !slot || (!isWorkshop && !chosenLocation)}
                                 loading={submitting}
                                 loadingText="Confirmando…"
-                                className="mt-5 h-11 w-full rounded-full text-[15px] font-semibold"
+                                className="h-11 w-full rounded-full text-[15px] font-semibold"
                             >
                                 Confirmar cita
                             </SileoButton>
@@ -288,8 +298,8 @@ export default function SellerBookingPage() {
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </div>
     );
