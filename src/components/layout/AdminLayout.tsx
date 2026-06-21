@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { ArrowLeft, Users, Settings, Bell, AlertTriangle, Activity, LayoutDashboard, FolderTree, Link2 } from 'lucide-react';
+import { ArrowLeft, Users, Settings, Bell, AlertTriangle, Activity, LayoutDashboard, FolderTree, Link2, Mail } from 'lucide-react';
 import Background from '../Background';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/admin-panel.css';
@@ -46,6 +46,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { path: '/admin/config', label: 'Configuración', icon: Settings },
     { path: '/admin/categories', label: 'Categorías', icon: FolderTree },
     { path: '/admin/mappings', label: 'Mapeos de Estado', icon: Link2 },
+    { path: '/admin/email-templates', label: 'Plantillas de email', icon: Mail },
     { path: '/admin/notifications', label: 'Notificaciones', icon: Bell },
     { path: '/admin/disputes', label: 'Disputas', icon: AlertTriangle },
     { path: '/admin/hangfire', label: 'Hangfire', icon: Activity },
@@ -64,6 +65,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     '/admin/config': { title: 'Configuración', subtitle: 'Reparto de pagos, Stripe y cancelaciones' },
     '/admin/categories': { title: 'Categorías', subtitle: 'Categorías del catálogo de servicios' },
     '/admin/mappings': { title: 'Mapeos de Estado', subtitle: 'Relación estado de cita → estado general' },
+    '/admin/email-templates': { title: 'Plantillas de email', subtitle: 'Previsualización del diseño de los emails' },
     '/admin/notifications': { title: 'Notificaciones', subtitle: 'Envío y historial de notificaciones' },
     '/admin/disputes': { title: 'Disputas', subtitle: 'Resolución de incidencias y reembolsos' },
     '/admin/hangfire': { title: 'Hangfire', subtitle: 'Trabajos en segundo plano' },

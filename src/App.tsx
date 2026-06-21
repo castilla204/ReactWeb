@@ -559,6 +559,7 @@ const AppContent: React.FC = () => {
                                 <Route path="config/*" element={<RouteSuspense><LazyPages.AdminConfigPage /></RouteSuspense>} />
                                 <Route path="categories" element={<RouteSuspense><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
                                 <Route path="mappings" element={<RouteSuspense><LazyPages.AdminMappingsPage /></RouteSuspense>} />
+                                <Route path="email-templates" element={<RouteSuspense><LazyPages.AdminEmailTemplatesPage /></RouteSuspense>} />
                                 <Route path="notifications" element={<RouteSuspense><LazyPages.NotificationManagement /></RouteSuspense>} />
                                 <Route path="disputes" element={<RouteSuspense><LazyPages.DisputePanel /></RouteSuspense>} />
                                 <Route path="hangfire" element={<RouteSuspense><LazyPages.HangfirePanel /></RouteSuspense>} />

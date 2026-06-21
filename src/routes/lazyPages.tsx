@@ -65,6 +65,7 @@ export const AdminDashboard = lazyDefault(() => import('../pages/admin/AdminDash
 export const AdminConfigPage = lazyDefault(() => import('../pages/admin/AdminConfigPage'));
 export const AdminCategoriesPage = lazyDefault(() => import('../pages/admin/AdminCategoriesPage'));
 export const AdminMappingsPage = lazyDefault(() => import('../pages/admin/AdminMappingsPage'));
+export const AdminEmailTemplatesPage = lazyDefault(() => import('../pages/admin/AdminEmailTemplatesPage'));
 export const AdminExpertEditPage = lazyDefault(() => import('../pages/admin/AdminExpertEditPage'));
 export const MFASetupPage = lazyNamed(() => import('../pages/MFASetupPage'), 'MFASetupPage');
 export const SearchDetails = lazyDefault(() => import('../components/SearchDetails'));
