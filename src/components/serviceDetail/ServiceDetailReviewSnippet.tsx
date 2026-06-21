@@ -10,6 +10,8 @@ interface ServiceDetailReviewSnippetProps {
   className?: string;
   onClick?: () => void;
   variant?: 'default' | 'mobile' | 'desktop';
+  /** Estrellas en carbón en lugar de amarillo. */
+  neutral?: boolean;
 }
 
 export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProps> = ({
@@ -17,6 +19,7 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
   className = '',
   onClick,
   variant = 'default',
+  neutral = false,
 }) => {
   const isMobile = variant === 'mobile';
   const isDesktop = variant === 'desktop';
@@ -70,8 +73,9 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
 
       <ServiceDetailReviewStars
         rating={rating}
-        size={isDesktop ? 'sm' : undefined}
-        className={isMobile ? 'mb-1.5' : 'mb-2'}
+        size={isDesktop ? 'sm' : 'sm'}
+        neutral={neutral}
+        className={isMobile ? 'mb-1' : 'mb-2'}
       />
 
       {reviewText ? (

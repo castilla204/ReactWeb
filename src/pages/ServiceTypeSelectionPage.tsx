@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { SileoLoader } from '../components/ui/sileo-loader';
 
 interface ServiceType {
     id: number;
@@ -19,25 +19,21 @@ export function ServiceTypeSelectionPage({ selectedCategory }: ServiceTypeSelect
     const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | null>(null);
 
     const handleSelect = (serviceTypeId: number) => {
-        console.log('Selected ServiceTypeId:', serviceTypeId);
         setSelectedServiceTypeId(serviceTypeId);
     };
 
     const handleContinue = () => {
         if (selectedServiceTypeId) {
-            console.log('Navigating to ServiceSelection with:', { selectedCategory, selectedServiceTypeId });
             navigate('/service-selection', {
                 state: { selectedCategory, selectedServiceTypeId }
             });
-        } else {
-            console.warn('No ServiceTypeId selected');
         }
     };
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                <SileoLoader size="lg" message="Cargando tipos de servicio…" color="brand" />
             </div>
         );
     }
@@ -68,8 +64,8 @@ export function ServiceTypeSelectionPage({ selectedCategory }: ServiceTypeSelect
                         key={serviceType.id}
                         onClick={() => handleSelect(serviceType.id)}
                         className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedServiceTypeId === serviceType.id
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-blue-200'
+                                ? 'border-brand bg-brand/5'
+                                : 'border-gray-200 hover:border-brand/30'
                             }`}
                     >
                         <span className="text-gray-900 font-medium">{serviceType.name}</span>
@@ -79,7 +75,7 @@ export function ServiceTypeSelectionPage({ selectedCategory }: ServiceTypeSelect
             <button
                 onClick={handleContinue}
                 disabled={!selectedServiceTypeId}
-                className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-all"
+                className="mt-6 px-6 py-3 bg-brand text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brand-hover transition-all"
             >
                 Continuar
             </button>

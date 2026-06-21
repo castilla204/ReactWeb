@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SileoLoader } from './ui/sileo-loader';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import {
@@ -223,8 +224,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                     <div className="nc-body-inner">
                         {isLoading && notifications.length === 0 ? (
                             <div className="nc-state">
-                                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" aria-hidden />
-                                <p className="nc-state-text mt-3">Cargando avisos…</p>
+                                <SileoLoader size="md" message="Cargando avisos…" color="muted" />
                             </div>
                         ) : error ? (
                             <div className="nc-error-wrap">
@@ -258,7 +258,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
                                 <li ref={scrollSentinelRef} className="nc-load-more" aria-hidden>
                                     {isFetchingNextPage && (
-                                        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                                        <SileoLoader size="sm" color="muted" />
                                     )}
                                 </li>
                             </ul>

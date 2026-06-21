@@ -238,8 +238,8 @@ export const SD_CHECKOUT_DESKTOP_COORD_SHELL_HEIGHT_CLASS = 'h-auto';
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
 
-/** Fondo checkout desktop — gris neutro muy suave (Airbnb/Stripe: tarjetas blancas flotan sin tinte azul) */
-export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-[#f7f7f7]';
+/** Fondo checkout desktop — gris suave con ligero tinte cálido */
+export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-[#f3f4f6]';
 
 /** Tarjeta checkout desktop — elevación neutra sobre fondo gris claro */
 export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
@@ -278,7 +278,7 @@ export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS =
 
 /** Bloque interactivo embebido (calendario, mapa, horas) — contorno unificado */
 export const SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS =
-  'overflow-hidden rounded-xl border-2 border-[#cbd5e1] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.09),0_1px_3px_rgba(15,23,42,0.06)]';
+  'overflow-hidden rounded-xl border border-[#e2e8f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
 
 /** Padding interior del bloque calendario embebido (compacto). */
 export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2.5 lg:p-3';
@@ -311,9 +311,20 @@ export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS =
 /** Gutter checkout móvil */
 export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
 
-/** Cabecera checkout móvil — sin barra divisoria */
+/**
+ * Superficie azul del header móvil de checkout — degradado sutil del tinte de
+ * marca hacia blanco + borde inferior azulado tenue. Compartida por las barras
+ * del stepper (fecha · ubicación · pago) para que las 3 se vean iguales.
+ */
+export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
+  'border-b border-brand/[0.14] bg-gradient-to-b from-brand/[0.10] via-brand/[0.045] to-white';
+
+/** Cabecera checkout móvil — superficie azul degradada */
 export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
-  'pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))] ' + SD_CHECKOUT_MOBILE_GUTTER_CLASS;
+  'pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))] ' +
+  SD_CHECKOUT_MOBILE_GUTTER_CLASS +
+  ' ' +
+  SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS;
 
 export const SD_CHECKOUT_MOBILE_HEADER_ROW_CLASS =
   'flex min-h-10 items-center gap-2.5 overflow-visible';

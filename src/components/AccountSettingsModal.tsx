@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, ChevronLeft, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin, MessageCircle } from 'lucide-react';
+import { SileoLoader } from './ui/sileo-loader';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useAccountDeletion } from '../hooks/useAccountDeletion';
@@ -419,7 +420,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     <>
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <div className="flex items-center gap-4 mb-4">
               {/* 🖼️ Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
@@ -427,19 +428,19 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <img
                   src={avatarUrl}
                   alt="Foto de perfil"
-                  className="w-16 h-16 rounded-full object-cover shrink-0"
+                  className="w-12 h-12 rounded-full object-cover shrink-0"
                 />
               ) : (
                 <span
                   aria-hidden
-                  className="inline-flex w-16 h-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-lg font-semibold"
+                  className="inline-flex w-12 h-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-lg font-semibold"
                 >
                   {avatarInitials || <User className="w-6 h-6" />}
                 </span>
               )}
               <div className="min-w-0">
                 <h4 className="text-base font-medium truncate">{user?.name || 'Usuario'}</h4>
-                <p className="text-sm text-muted-foreground truncate">{user?.email || 'usuario@email.com'}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{user?.email || 'usuario@email.com'}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <input
                     ref={avatarInputRef}
@@ -471,7 +472,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   )}
                 </div>
                 {isExpert && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                     Esta foto es también tu foto pública como experto.
                   </p>
                 )}
@@ -496,7 +497,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   maxLength={100}
                   disabled={isSavingName}
                   placeholder="Tu nombre"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-600 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <div className="flex justify-end">
                   <Button
@@ -514,7 +515,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <input
                   type="email"
                   value={user?.email || ''}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-600 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   readOnly
                 />
               </div>
@@ -525,7 +526,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       {/* Security Tab */}
       {activeTab === 'security' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {showMFASetup ? (
             <MFASetup 
               onComplete={handleMFASetupComplete} 
@@ -533,13 +534,13 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             />
           ) : (
             <>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between p-4 border border-border rounded-xl">
                   <div className="flex items-center gap-3">
-                    <Lock className="w-5 h-5 text-muted-foreground" />
+                    <Lock className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     <div>
                       <h4 className="text-sm font-medium">Cambiar Contraseña</h4>
-                      <p className="text-sm text-muted-foreground">Actualiza tu contraseña para mantener tu cuenta segura</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Actualiza tu contraseña para mantener tu cuenta segura</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm">
@@ -548,32 +549,32 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </div>
 
                 {/* MFA Section */}
-                <div className="p-4 border border-border rounded-lg space-y-4">
+                <div className="p-4 border border-border rounded-xl space-y-5">
                   <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-muted-foreground" />
+                    <Shield className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     <h4 className="text-sm font-medium">Autenticación de Dos Factores (MFA)</h4>
                   </div>
 
                   {loadingMFAStatus ? (
-                    <p className="text-sm text-muted-foreground">Cargando estado de MFA...</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Cargando estado de MFA...</p>
                   ) : mfaStatus?.isEnabled ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                         <CheckCircle className="w-4 h-4" />
                         <span className="text-sm font-medium">MFA Habilitado</span>
                       </div>
                       {mfaStatus.enabledAt && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Habilitado el: {new Date(mfaStatus.enabledAt).toLocaleDateString('es-ES')}
                         </p>
                       )}
                       {mfaStatus.lastVerifiedAt && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Última verificación: {new Date(mfaStatus.lastVerifiedAt).toLocaleDateString('es-ES')}
                         </p>
                       )}
                       {mfaStatus.remainingRecoveryCodes !== undefined && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Códigos de recuperación restantes: {mfaStatus.remainingRecoveryCodes}
                         </p>
                       )}
@@ -592,12 +593,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                         <X className="w-4 h-4" />
                         <span className="text-sm">MFA No habilitado</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
                         Recomendamos habilitar MFA para mayor seguridad.
                       </p>
                       <Button 
@@ -618,21 +619,18 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {isLoadingSettings ? (
-            <div className="flex items-center gap-3 p-4 text-sm text-muted-foreground">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-              Cargando preferencias…
-            </div>
+            <SileoLoader size="sm" message="Cargando preferencias…" color="muted" />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Email */}
-              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-lg cursor-pointer active:bg-muted/40 transition-colors">
+              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-xl cursor-pointer active:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <Mail className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
                   <div className="min-w-0">
                     <h4 className="text-sm font-medium">Notificaciones por Email</h4>
-                    <p className="text-sm text-muted-foreground">Recibe avisos por correo electrónico</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Recibe avisos por correo electrónico</p>
                   </div>
                 </div>
                 <span className="relative inline-flex items-center shrink-0">
@@ -643,17 +641,17 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     disabled={isUpdatingSettings}
                     onChange={() => toggleEmail()}
                   />
-                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
+                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-red-500 peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
                 </span>
               </label>
 
               {/* WhatsApp */}
-              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-lg cursor-pointer active:bg-muted/40 transition-colors">
+              <label className="flex items-center justify-between gap-3 p-4 border border-border rounded-xl cursor-pointer active:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-3 min-w-0">
-                  <MessageCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <MessageCircle className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
                   <div className="min-w-0">
                     <h4 className="text-sm font-medium">Notificaciones por WhatsApp</h4>
-                    <p className="text-sm text-muted-foreground">Recibe avisos importantes por WhatsApp</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Recibe avisos importantes por WhatsApp</p>
                   </div>
                 </div>
                 <span className="relative inline-flex items-center shrink-0">
@@ -664,7 +662,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     disabled={isUpdatingSettings}
                     onChange={() => toggleWhatsApp()}
                   />
-                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
+                  <span className="w-11 h-6 bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-red-500 peer-focus-visible:ring-offset-2 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-background after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:bg-primary peer-disabled:opacity-50"></span>
                 </span>
               </label>
             </div>
@@ -674,16 +672,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       {/* Privacy Tab */}
       {activeTab === 'privacy' && (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 p-4 border border-border rounded-lg sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-5">
+          <div className="flex flex-col gap-3 p-4 border border-border rounded-xl sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-muted-foreground shrink-0" />
+              <Globe className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
               <div>
                 <h4 className="text-sm font-medium">Visibilidad del Perfil</h4>
-                <p className="text-sm text-muted-foreground">Controla quién puede ver tu perfil</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Controla quién puede ver tu perfil</p>
               </div>
             </div>
-            <select className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-10 sm:w-[150px]">
+            <select className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 sm:h-10 sm:w-[150px]">
               <option>Público</option>
               <option>Privado</option>
               <option>Solo Amigos</option>
@@ -694,8 +692,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       {/* 🛡️ Round 28 MUD-F: Tab Mudarme (solo expertos) */}
       {activeTab === 'relocate' && isExpert && (
-        <div className="space-y-4">
-          <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg">
+        <div className="space-y-5">
+          <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
@@ -711,12 +709,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-muted/50 border border-border rounded-lg p-4">
+          <div className="bg-muted/50 border border-border rounded-xl p-4">
             <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               Qué pasa al ejecutar el asistente
             </h5>
-            <ul className="text-sm text-muted-foreground space-y-1.5 pl-5 list-disc">
+            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1.5 pl-5 list-disc">
               <li>Verificamos que no haya dinero en vuelo (disputas, refunds o servicios contratados activos).</li>
               <li>Cerramos tu cuenta Stripe Connect actual.</li>
               <li>Desactivamos tus servicios actuales (siguen visibles en historial, pero no aparecen en búsquedas).</li>
@@ -742,7 +740,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             Iniciar asistente de mudanza
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
             Esta acción cierra tu cuenta Stripe Connect actual. La acción es irreversible.
           </p>
         </div>
@@ -750,31 +748,30 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       {/* Delete Account Tab */}
       {activeTab === 'delete' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Step 1: Checking Status */}
           {deletionStep === 'check' && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-destructive mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Verificando estado de tu cuenta...</p>
+            <div className="py-10">
+              <SileoLoader size="lg" layout="center" message="Verificando estado de tu cuenta…" color="muted" />
             </div>
           )}
 
           {/* Step 2: Confirmation */}
           {deletionStep === 'confirm' && deletionStatus && (
-            <div className="space-y-6">
-              <div className="p-6 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="space-y-4">
+              <div className="p-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900 dark:border-red-900 rounded-xl">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     <div className="w-10 h-10 bg-destructive/20 rounded-full flex items-center justify-center">
-                      <Trash2 className="w-5 h-5 text-destructive" />
+                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <h4 className="text-base font-semibold mb-2">Eliminar Cuenta Permanentemente</h4>
-                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
                       Esta acción eliminará o anonimizará tu cuenta y tus datos personales de forma irreversible.
                     </p>
-                    <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                       Por obligación legal contable y fiscal, los registros de tus transacciones (facturas y pagos)
                       se conservarán de forma anonimizada durante el plazo que exija la ley (hasta 6 años) y no se
                       eliminan de inmediato.
@@ -785,14 +782,14 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {/* Warning about active contracts */}
               {deletionStatus.hasActiveContracts && (
-                <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-orange-800 rounded-xl">
                   <div className="flex items-start">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400 mr-3 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="w-5 h-5 text-blue-500 dark:text-blue-400 dark:text-orange-400 mr-3 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                      <h3 className="font-semibold text-blue-900 dark:text-orange-100 mb-2">
                         Contrataciones Activas Detectadas
                       </h3>
-                      <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
+                      <p className="text-sm text-blue-800 dark:text-orange-200 mb-3">
                         Tienes {deletionStatus.activeContractsCount} contratación(es) activa(s). 
                         Al eliminar tu cuenta, estas se cancelarán automáticamente a favor de la parte contraria 
                         y se crearán disputas automáticas para proteger a las partes afectadas.
@@ -800,7 +797,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                       
                       {/* Active Contracts List */}
                       {deletionStatus.activeContracts.length > 0 && (
-                        <div className="space-y-3 mt-3">
+                        <div className="space-y-2 mt-3">
                           {deletionStatus.activeContracts.map((contract) => (
                             <ActiveContractCard key={contract.searchHireId} contract={contract} />
                           ))}
@@ -813,9 +810,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {/* Error Display */}
               {deletionError && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 dark:border-red-800 rounded-xl">
                   <div className="flex items-center">
-                    <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
+                    <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 mr-2" />
                     <p className="text-red-700 dark:text-red-300 text-sm">{deletionError}</p>
                   </div>
                 </div>
@@ -828,7 +825,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   value={deletionReason}
                   onChange={(e) => setDeletionReason(e.target.value)}
                   placeholder="Ej: Ya no necesito el servicio, problemas técnicos, etc."
-                  className="mt-2 w-full p-3 border border-input rounded-md bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="w-full px-4 py-3 border border-input rounded-xl bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   rows={3}
                 />
               </div>
@@ -836,7 +833,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {/* 🛡️ SEC-1: reautenticación obligatoria */}
               {deletionUsesOtp === null && (
-                <p className="text-sm text-muted-foreground">Preparando verificación de seguridad…</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Preparando verificación de seguridad…</p>
               )}
 
               {deletionUsesOtp === false && (
@@ -848,7 +845,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     onChange={(e) => setDeletionPassword(e.target.value)}
                     placeholder="Tu contraseña"
                     autoComplete="current-password"
-                    className="mt-2 w-full p-3 border border-input rounded-md bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="w-full px-4 py-3 border border-input rounded-xl bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   />
                 </div>
               )}
@@ -856,7 +853,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               {deletionUsesOtp === true && (
                 <div>
                   <Label>Introduce el código de verificación</Label>
-                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 mb-2">
                     {otpSent
                       ? 'Te hemos enviado un código de 6 dígitos a tu correo electrónico. Caduca en 10 minutos.'
                       : 'No pudimos enviar el código. Pulsa "Reenviar código" para intentarlo de nuevo.'}
@@ -869,7 +866,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     onChange={(e) => setDeletionCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
                     autoComplete="one-time-code"
-                    className="w-full p-3 border border-input rounded-md bg-background text-sm tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="w-full p-3 border border-input rounded-xl bg-background text-sm tracking-widest text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   />
                   <button
                     type="button"
@@ -883,7 +880,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-border">
                 <Button
                   variant="outline"
                   onClick={resetDeletionState}
@@ -903,7 +900,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   }
                   className="flex-1"
                 >
-                  {deletionLoading ? 'Eliminando...' : 'Eliminar Cuenta'}
+                  {deletionLoading ? 'Eliminando…' : 'Eliminar Cuenta'}
                 </Button>
                       </div>
                     </div>
@@ -911,26 +908,25 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           {/* Step 3: Processing */}
           {deletionStep === 'processing' && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-destructive mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Eliminando tu cuenta y procesando contrataciones activas...</p>
-                        </div>
+            <div className="py-10">
+              <SileoLoader size="lg" layout="center" message="Eliminando tu cuenta y procesando contrataciones activas…" color="muted" />
+            </div>
           )}
 
           {/* Step 4: Result */}
           {deletionStep === 'result' && deletionResult && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="text-center">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">
                   Cuenta Eliminada Exitosamente
                 </h3>
-                <p className="text-muted-foreground">{deletionResult.message}</p>
+                <p className="text-gray-600 dark:text-gray-300">{deletionResult.message}</p>
                         </div>
 
               {/* Disputes created */}
               {deletionResult.disputesCreated && deletionResult.disputesCreated.length > 0 && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                   <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">
                     Disputas Creadas Automáticamente
                   </h4>
@@ -959,16 +955,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           {/* Initial state */}
           {deletionStep === 'initial' && (
-            <div className="p-6 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="p-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900 dark:border-red-900 rounded-xl">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 bg-destructive/20 rounded-full flex items-center justify-center">
-                    <Trash2 className="w-5 h-5 text-destructive" />
+                    <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400" />
                   </div>
                 </div>
                 <div className="flex-1">
                   <h4 className="text-base font-semibold mb-2">Eliminar Cuenta Permanentemente</h4>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                     Esta acción eliminará tu cuenta y todos los datos asociados de forma irreversible. 
                     Si tienes contrataciones activas, estas se cancelarán automáticamente a favor de la parte contraria.
                   </p>
@@ -1138,8 +1134,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               <main className="flex h-[480px] flex-1 flex-col overflow-hidden bg-background">
                 <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Configuración</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Configuración</span>
+                    <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     <span className="text-sm font-medium">
                       {tabs.find(t => t.id === activeTab)?.label}
                     </span>
@@ -1213,15 +1209,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
                     ) : (
-                      <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+                      <span aria-hidden className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-gray-600 dark:text-gray-300">
                         {avatarInitials || <User className="h-5 w-5" />}
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-medium leading-tight">{user?.name || 'Usuario'}</p>
-                      <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
+                      <p className="truncate text-xs text-gray-600 dark:text-gray-300">{user?.email || ''}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-300/50" />
                   </button>
 
                   {/* Lista de secciones: iconos desnudos + separadores hairline */}
@@ -1237,15 +1233,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                             type="button"
                             onClick={() => handleSelectTab(tab.id)}
                             className={`flex w-full items-center gap-3.5 py-3.5 text-left transition-colors active:bg-muted/40 ${
-                              tab.destructive ? 'text-destructive' : ''
+                              tab.destructive ? 'text-red-600 dark:text-red-400 dark:text-red-400' : ''
                             } ${showDivider ? 'border-b border-border/60' : ''}`}
                           >
                             <Icon
-                              className={`h-[18px] w-[18px] shrink-0 ${tab.destructive ? '' : 'text-muted-foreground'}`}
+                              className={`h-[18px] w-[18px] shrink-0 ${tab.destructive ? '' : 'text-gray-600 dark:text-gray-300'}`}
                               strokeWidth={1.75}
                             />
                             <span className="flex-1 text-[15px]">{tab.label}</span>
-                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                            <ChevronRight className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-300/40" />
                           </button>
                         </React.Fragment>
                       );
@@ -1266,7 +1262,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </Button>
-                  <span className={`flex-1 truncate text-base font-semibold ${activeTabMeta?.destructive ? 'text-destructive' : ''}`}>
+                  <span className={`flex-1 truncate text-base font-semibold ${activeTabMeta?.destructive ? 'text-red-600 dark:text-red-400 dark:text-red-400' : ''}`}>
                     {activeTabMeta?.label}
                   </span>
                   <Button
@@ -1356,3 +1352,36 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

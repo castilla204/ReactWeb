@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, CalendarClock, AlertTriangle, Loader2 } from 'lucide-react';
+import { CheckCircle2, CalendarClock, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
 import SlotPicker, { type ChosenSlot } from '../components/SlotPicker';
 import CheckoutLocationPicker, { type CheckoutLocationData } from '../components/CheckoutLocationPicker';
 import { cn } from '../lib/utils';
 import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
+import { SileoLoader } from '../components/ui/sileo-loader';
+import { SileoButton } from '../components/ui/sileo-button';
 
-// Página PÚBLICA del magic link del vendedor. Sin login: el token de la URL es la credencial.
-// El vendedor elige día/hora (calendario del experto, hasta el tope de días que fijó el cliente)
-// y el lugar (mapa dentro del rango, igual que el checkout), y confirma la cita.
-// 🎨 Estética unificada con el checkout del cliente: tarjeta shadcn (SD_CHECKOUT_*), calendario
-// SlotPicker embebido a 2 columnas y mapa guiado CheckoutLocationPicker (variant wizard).
+// Página PÚBLICA del magic link del vendedor.
 interface Context {
     serviceId: number;
     alreadyBooked: boolean;
@@ -57,7 +55,6 @@ export default function SellerBookingPage() {
                 if (cancelled) return;
                 setCtx(data);
                 setStatus('ok');
-                // Cargar la ventana efectiva (objetivo vs ampliada) del experto.
                 try {
                     const wr = await fetch(`${base}/window`);
                     if (wr.ok && !cancelled) setWindowInfo(await wr.json());
@@ -95,8 +92,6 @@ export default function SellerBookingPage() {
             setDone(true);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo confirmar la cita.');
-            // Recargar el contexto por si el enlace caducó o la cita ya estaba reservada,
-            // para que la UI transicione al estado correcto en vez de quedarse en el formulario.
             try {
                 const r = await fetch(base);
                 if (r.ok) setCtx(await r.json());
@@ -106,9 +101,6 @@ export default function SellerBookingPage() {
         }
     };
 
-    // "No puedo quedar": el vendedor declina coordinar. Cancela la autorización (0 € de coste,
-    // captura diferida) y devuelve el importe al comprador. Confirmación en 2 pasos para no
-    // disparar la cancelación por un clic accidental.
     const decline = async () => {
         setError(null);
         setDeclining(true);
@@ -121,7 +113,6 @@ export default function SellerBookingPage() {
             setDeclined(true);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo cancelar la coordinación.');
-            // Recargar el contexto por si el enlace caducó o la cita ya estaba reservada.
             try {
                 const r = await fetch(base);
                 if (r.ok) setCtx(await r.json());
@@ -149,9 +140,7 @@ export default function SellerBookingPage() {
             <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'w-full max-w-3xl')}>
                 <div className="px-5 py-6 sm:px-6">
                     {status === 'loading' && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 size={18} className="animate-spin" /> Comprobando el enlace…
-                        </div>
+                        <SileoLoader message="Comprobando el enlace…" color="muted" />
                     )}
 
                     {status === 'invalid' && (
@@ -253,17 +242,16 @@ export default function SellerBookingPage() {
 
                             {error && <p className="mt-3 text-[13px] text-red-600">{error}</p>}
 
-                            <button
-                                type="button"
+                            <SileoButton
                                 onClick={confirm}
                                 disabled={submitting || !slot || (!isWorkshop && !chosenLocation)}
-                                className="mt-5 h-11 w-full rounded-full bg-brand text-[15px] font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                loading={submitting}
+                                loadingText="Confirmando…"
+                                className="mt-5 h-11 w-full rounded-full text-[15px] font-semibold"
                             >
-                                {submitting ? 'Confirmando…' : 'Confirmar cita'}
-                            </button>
+                                Confirmar cita
+                            </SileoButton>
 
-                            {/* "No puedo quedar": acción secundaria sutil. Confirmación en 2 pasos
-                                porque dispara la cancelación + devolución al comprador. */}
                             {!declineConfirming ? (
                                 <button
                                     type="button"
@@ -279,14 +267,15 @@ export default function SellerBookingPage() {
                                         Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
                                     </p>
                                     <div className="flex gap-2">
-                                        <button
-                                            type="button"
+                                        <SileoButton
                                             onClick={decline}
                                             disabled={declining}
-                                            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                                            loading={declining}
+                                            loadingText="Cancelando…"
+                                            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
                                         >
-                                            {declining ? 'Cancelando…' : 'Sí, cancelar'}
-                                        </button>
+                                            Sí, cancelar
+                                        </SileoButton>
                                         <button
                                             type="button"
                                             onClick={() => setDeclineConfirming(false)}

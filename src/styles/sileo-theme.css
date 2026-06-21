@@ -12,8 +12,13 @@
   --sileo-state-action: hsl(var(--brand));
 
   /* Un pelín más anchos en desktop para que respiren las descripciones.
-     En móvil el viewport ya lo limita a 100vw - 1.5rem. */
-  --sileo-width: 380px;
+     OJO: el toast usa `width: var(--sileo-width)` SIN max-width y, en el
+     viewport flex en columna, la anchura no encoge (flex-shrink solo actúa
+     en vertical). Con un valor fijo, en pantallas estrechas (iPhone SE, 375px)
+     el toast (380px) anclado a la derecha desborda por la IZQUIERDA. El
+     max-width del viewport limita al contenedor, NO al toast. Por eso lo
+     clampamos aquí al ancho real disponible (igual que el clamp del viewport). */
+  --sileo-width: min(380px, calc(100vw - 1.5rem));
 }
 
 /* Título en frase normal (no "Capitaliza Cada Palabra") + tipografía de marca. */
@@ -39,6 +44,15 @@
      informe solo de la altura de su texto (excluyendo el botón de acción que
      cuelga dentro). Eso deja el "pill" demasiado bajo y el botón se sale por
      debajo. Forzamos la medición real. */
-  content-visibility: visible;
-  contain: none;
+  content-visibility: visible !important;
+  contain: none !important;
+}
+
+/* El botón de acción es un <a> dentro de la descripción; Sileo le aplica
+   `margin-top: 0.75rem` pero no lo incluye en el cálculo de altura del
+   contenedor expandido. Lo convertimos en elemento de bloque para que
+   ocupe su propia línea y force el scrollHeight real. */
+[data-sileo-button] {
+  display: inline-flex !important;
+  box-sizing: border-box;
 }

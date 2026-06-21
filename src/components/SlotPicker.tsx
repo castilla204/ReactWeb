@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { es } from 'date-fns/locale';
+import { SileoLoader } from './ui/sileo-loader';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { Calendar } from './ui/calendar';
@@ -61,6 +62,8 @@ interface Props {
     embeddedSplitColumn?: boolean;
     /** Muestra la cabecera numerada de sección (checkout desktop con header superior). */
     showSectionHeader?: boolean;
+    /** Renderizado plano: sin tarjeta/borde/fondo propios (usado dentro del shell del checkout desktop). */
+    bare?: boolean;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -203,10 +206,13 @@ const SlotPicker: React.FC<Props> = ({
     minLeadDays = 0,
     embeddedSplitColumn = false,
     showSectionHeader = true,
+    bare = false,
 }) => {
     const embeddedSplitLayout = embedded && embeddedSplitColumn;
+    const bareLayout = embedded && bare;
     const previewBrowseHours = embedded && previewMode && embeddedSplitColumn;
-    const blockDayPick = previewMode && !embeddedSplitColumn;
+    const mobilePreviewDrawer = embedded && previewMode && !embeddedSplitColumn;
+    const blockDayPick = previewMode && !embeddedSplitColumn && !mobilePreviewDrawer;
 
     const availBase = slotsBaseUrl ?? `${API_CONFIG.baseUrl}/api/Availability/service/${serviceId}`;
     const effWindow = windowDays && windowDays > 0 ? windowDays : BOOKING_WINDOW_DAYS;
@@ -217,10 +223,11 @@ const SlotPicker: React.FC<Props> = ({
     const defaultDate = useMemo(() => minDate, [minDate]);
     const initialSelectedDate = useMemo((): Date | null => {
         if (previewBrowseHours) return defaultDate;
+        if (mobilePreviewDrawer) return defaultDate;
         if (embedded && previewMode) return null;
-        if (embedded) return null;
+        if (embedded) return defaultDate;
         return defaultDate;
-    }, [embedded, previewMode, previewBrowseHours, defaultDate]);
+    }, [embedded, previewMode, previewBrowseHours, mobilePreviewDrawer, defaultDate]);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(initialSelectedDate);
     const [slots, setSlots] = useState<ChosenSlot[]>([]);
@@ -237,11 +244,6 @@ const SlotPicker: React.FC<Props> = ({
     const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
     const [hoursDrawerExpanded, setHoursDrawerExpanded] = useState(false);
     const browseAutoPickDone = useRef(false);
-
-    useEffect(() => {
-        if (previewMode || !selectedDate) return;
-        setHoursDrawerExpanded(true);
-    }, [previewMode, selectedDate]);
 
     const dayShort = (d: Date) =>
         d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -410,6 +412,7 @@ const SlotPicker: React.FC<Props> = ({
         if (!date || isDateDisabled(date)) return;
         setSelectedDate(startOfDay(date));
         if (!previewMode) onSelect(null);
+        setHoursDrawerExpanded(true);
     };
 
     const gridClass = embedded
@@ -493,7 +496,7 @@ const SlotPicker: React.FC<Props> = ({
         );
     }
 
-    const useMobileHoursDrawer = !previewMode;
+    const useMobileHoursDrawer = !previewMode || mobilePreviewDrawer;
 
     const inlineSlotsColumnClass = cn(
         slotsColClass,
@@ -509,9 +512,8 @@ const SlotPicker: React.FC<Props> = ({
         const browseOnly = opts?.browseOnly ?? previewBrowseHours;
         if (loading) {
             return (
-                <div className="flex min-h-[72px] items-center justify-center gap-2 text-xs text-[#9ca3af]">
-                    <Loader2 className="h-4 w-4 animate-spin text-brand" />
-                    <span>Cargando…</span>
+                <div className="flex min-h-[72px] items-center justify-center">
+                    <SileoLoader size="sm" message="Cargando…" color="muted" />
                 </div>
             );
         }
@@ -639,7 +641,8 @@ const SlotPicker: React.FC<Props> = ({
             className={cn(
                 !embedded && 'max-lg:shadow-sm',
                 !embedded && SD_CHECKOUT_DESKTOP_CARD_CLASS,
-                embedded && embeddedSplitColumn && 'flex h-full min-h-0 w-full flex-col',
+                embedded && embeddedSplitColumn && !bare && 'flex h-full min-h-0 w-full flex-col',
+                bareLayout && 'flex h-full min-h-0 w-full flex-col',
             )}
         >
             {sectionTitle && showSectionHeader ? (
@@ -680,10 +683,11 @@ const SlotPicker: React.FC<Props> = ({
                 ) : null
             ) : null}
 
-            {embedded && previewMode && !embeddedSplitColumn ? (
+            {embedded && previewMode && !mobilePreviewDrawer && !embeddedSplitColumn ? (
                 <CheckoutSellerChoicePreviewCalendar
                     splitColumn={embeddedSplitColumn}
                     showInnerHeader={!embeddedSplitColumn}
+                    bare={bare}
                 >
                     <div
                         className={cn(
@@ -711,10 +715,11 @@ const SlotPicker: React.FC<Props> = ({
                         <AvailabilityLegend align="between" fullLabel compact />
                     </div>
                 </CheckoutSellerChoicePreviewCalendar>
-            ) : embedded && previewMode && embeddedSplitColumn ? (
+            ) : embedded && previewMode && !mobilePreviewDrawer && embeddedSplitColumn ? (
                 <CheckoutSellerChoicePreviewCalendar
                     splitColumn={embeddedSplitColumn}
                     showInnerHeader={!embeddedSplitColumn}
+                    bare={bare}
                 >
                     {embeddedCalendarGrid}
                 </CheckoutSellerChoicePreviewCalendar>
@@ -722,7 +727,8 @@ const SlotPicker: React.FC<Props> = ({
                 <>
                 <CheckoutSelfChoicePreviewCalendar
                     splitColumn={embeddedSplitColumn}
-                    showInnerHeader={!embeddedSplitColumn}
+                    showInnerHeader={!embeddedSplitColumn && !bare}
+                    bare={bare}
                     className={cn(useMobileHoursDrawer && selectedDate && 'max-lg:pb-24')}
                 >
                     {embeddedCalendarGrid}

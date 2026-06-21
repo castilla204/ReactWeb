@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getSupabaseClient } from '../lib/supabase';
 import { API_CONFIG } from '../config/api';
 import { sendMessage, markMessageAsRead, notifyTyping } from '../services/chatService';
@@ -18,9 +19,12 @@ import {
   Wifi,
   WifiOff,
   X,
+  CreditCard,
+  ShoppingBag,
 } from 'lucide-react';
 import { PRE_HIRE_CHAT_COPY } from '../constants/chatCopy.es';
 import { TypingDots } from './chat/TypingDots';
+import { SileoLoader } from './ui/sileo-loader';
 import { isSameChatMessageGroup } from '../utils/chatMessageGroups';
 import { detectContactInfo } from '../utils/contactFilter';
 import { Button } from './ui/button';
@@ -45,6 +49,16 @@ interface PreHireChatProps {
   embedded?: boolean;
   /** Cuando la conversación se obtiene/crea en el servidor (p. ej. sincronizar bandeja). */
   onConversationLoaded?: (conversation: { id: number }) => void;
+  /** Servicio completo para mostrar precio en el botón de contratar */
+  service?: {
+    price: number;
+    imageUrls?: string[];
+    expert?: {
+      user?: {
+        name: string;
+      };
+    };
+  };
 }
 
 interface Message {
@@ -159,7 +173,9 @@ export const PreHireChat = ({
   peerName = 'El experto',
   embedded = false,
   onConversationLoaded,
+  service,
 }: PreHireChatProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const userId = userIdProp > 0 ? userIdProp : getUserId(user as { id?: number; Id?: number });
   const userIsAdmin = isAdmin(user?.email);
@@ -612,12 +628,22 @@ export const PreHireChat = ({
     sendMessageMutation.mutate(inputValue.trim());
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
+
+  const handleHireClick = () => {
+    navigate(`/checkout/${serviceId}`);
+  };
+
+  const servicePrice = service?.price ?? 0;
+  const serviceCurrencyCode = 'EUR';
+  const priceLabel = servicePrice > 0
+    ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: serviceCurrencyCode }).format(servicePrice)
+    : null;
 
   if (isLoading) {
     return (
@@ -672,7 +698,7 @@ export const PreHireChat = ({
               disabled={isFetching}
               className="gap-2"
             >
-              {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {isFetching ? <SileoLoader size="sm" color="current" /> : <RefreshCw className="h-4 w-4" />}
               Reintentar
             </Button>
           </AlertDescription>
@@ -706,6 +732,20 @@ export const PreHireChat = ({
                         <h3 className="text-lg font-semibold text-[#1c1c1c]">Chat antes de contratar</h3>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Botón de contratar */}
+                        <Button
+                            type="button"
+                            onClick={handleHireClick}
+                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand to-brand-hover text-white text-sm font-semibold shadow-lg transition-all hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <ShoppingBag className="h-4 w-4" />
+                            <span>Contratar servicio</span>
+                            {priceLabel && (
+                                <span className="hidden sm:inline-block rounded-lg bg-white/20 px-2 py-0.5 text-xs font-medium backdrop-blur-sm">
+                                    {priceLabel}
+                                </span>
+                            )}
+                        </Button>
                         {/* Indicador de conexión */}
                         <div className="flex items-center gap-1.5">
                             {isConnected ? (
@@ -720,8 +760,8 @@ export const PreHireChat = ({
                                 </span>
                             )}
                         </div>
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="p-1 hover:bg-[#fafafa] rounded-full transition-colors"
                             aria-label="Cerrar chat"
                         >
@@ -787,51 +827,14 @@ export const PreHireChat = ({
         aria-label="Mensajes del chat antes de contratar"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full min-h-[12rem] items-center justify-center px-4 py-8">
-            <div className="w-full max-w-sm">
-              <div className="flex flex-col items-center text-center">
-                <Avatar className="h-16 w-16 shadow-sm ring-4 ring-white">
-                  <AvatarImage
-                    src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
-                    alt={peerName}
-                  />
-                  <AvatarFallback className="bg-[#1c1c1c] text-lg font-medium text-white">
-                    {peerName.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="mt-3 text-[17px] font-semibold text-[#1c1c1c]">
-                  {PRE_HIRE_CHAT_COPY.emptyTitle}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#717171]">
-                  {PRE_HIRE_CHAT_COPY.emptyBody}
-                </p>
-              </div>
-
-              <div
-                className="mt-6 flex flex-col gap-2"
-                role="group"
-                aria-label="Preguntas sugeridas"
-              >
-                {PRE_HIRE_CHAT_COPY.suggestedQuestions.map((question) => (
-                  <button
-                    key={question}
-                    type="button"
-                    onClick={() => setInputValue(question)}
-                    className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-[#e6e6e6] bg-white px-4 py-3 text-left text-sm text-[#1c1c1c] shadow-sm transition-all hover:border-amber-300 hover:bg-amber-50/60 active:scale-[0.99]"
-                  >
-                    <span>{question}</span>
-                    <ArrowUpRight
-                      className="h-4 w-4 shrink-0 text-amber-400 transition-colors group-hover:text-amber-500"
-                      aria-hidden
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-6 flex items-center justify-center gap-1.5 text-[11px] leading-snug text-[#9a9a9a]">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span>{PRE_HIRE_CHAT_COPY.emptyTrust}</span>
-              </div>
+          <div className="flex h-full min-h-[12rem] items-center justify-center px-4 py-6">
+            <div className="flex flex-col items-center text-center">
+              <h3 className="text-[14px] font-semibold text-[#1c1c1c]">
+                {PRE_HIRE_CHAT_COPY.emptyTitle}
+              </h3>
+              <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-[#9a9a9a]">
+                {PRE_HIRE_CHAT_COPY.emptyBody}
+              </p>
             </div>
           </div>
         ) : (
@@ -905,7 +908,7 @@ export const PreHireChat = ({
                             <span aria-hidden>·</span>
                             <span>{message.isOptimistic ? 'Enviando…' : message.isRead ? 'Leído' : 'Enviado'}</span>
                             {message.isOptimistic ? (
-                              <Loader2 className="h-3 w-3 animate-spin text-[#9a9a9a]" aria-hidden />
+                              <SileoLoader size="xs" color="muted" />
                             ) : (
                               <CheckCheck
                                 className={`h-3 w-3 ${message.isRead ? 'text-brand' : 'text-[#9a9a9a]'}`}
@@ -986,7 +989,7 @@ export const PreHireChat = ({
             aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
           >
             {sendMessageMutation.isPending ? (
-              <Loader2 className="h-[18px] w-[18px] animate-spin" aria-hidden="true" />
+              <SileoLoader size="sm" color="white" />
             ) : (
               <Send className="h-[18px] w-[18px]" aria-hidden="true" />
             )}

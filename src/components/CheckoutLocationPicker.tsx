@@ -643,7 +643,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
 
     if (isSidebar) {
         return (
-            <div className="flex h-full min-h-0 w-full flex-1 flex-col bg-white">
+            <div className="flex h-full min-h-0 w-full flex-col bg-white">
                 {showEmbeddedHeader ? (
                     <CheckoutEmbeddedStepHeader
                         step={3}
@@ -655,19 +655,19 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         }
                     />
                 ) : null}
-                <div className="relative flex min-h-0 w-full flex-1 flex-col">
+                <div className="relative min-h-0 w-full flex-1">
                     {referenceMode ? (
                         <CheckoutSellerChoicePreviewMap className="h-full min-h-0 w-full flex-1">
                             <AppointmentMap
                                 {...mapProps}
-                                className="h-full w-full min-h-[inherit]"
+                                className="h-full w-full"
                             />
                         </CheckoutSellerChoicePreviewMap>
                     ) : (
                     <>
                     <AppointmentMap
                         {...mapProps}
-                        className="h-full w-full min-h-[inherit]"
+                        className="h-full w-full"
                     />
                     <button
                         type="button"

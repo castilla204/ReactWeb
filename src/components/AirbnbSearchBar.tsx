@@ -89,8 +89,7 @@ const getImageWithCache = (filename: string, cacheKey: number): string => {
 };
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import { SileoSkeleton } from './ui/sileo-skeleton';
 import { MapPageSkeleton } from './ui/map-page-skeleton';
 import {
   HOMEPAGE_PICK_CATEGORY,
@@ -1213,13 +1212,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     >
                       <div className={isMobile ? 'mx-auto max-w-md' : undefined}>
                         {categoriesLoading ? (
-                          <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                            <div className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}>
-                              {[...Array(isMobile ? 6 : 4)].map((_, index) => (
-                                <Skeleton key={index} height={isMobile ? 120 : 72} borderRadius={16} />
-                              ))}
-                            </div>
-                          </SkeletonTheme>
+                          <div className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}>
+                            {[...Array(isMobile ? 6 : 4)].map((_, index) => (
+                              <SileoSkeleton
+                                key={index}
+                                className={isMobile ? 'h-[120px] w-full rounded-2xl' : 'h-[72px] w-full rounded-2xl'}
+                              />
+                            ))}
+                          </div>
                         ) : isMobile ? (
                           // LISTA VERTICAL minimalista (igual que el drawer desktop):
                           // ilustración + nombre + entrega + "desde X€ · N expertos",
@@ -1425,13 +1425,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         <div className="flex-1 overflow-y-auto px-4 py-4">
                           <div>
                             {categoriesLoading ? (
-                              <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                                <div className="space-y-2">
-                                  {[...Array(4)].map((_, index) => (
-                                    <Skeleton key={index} height={80} width={80} borderRadius={12} />
-                                  ))}
-                                </div>
-                              </SkeletonTheme>
+                              <div className="space-y-2">
+                                {[...Array(4)].map((_, index) => (
+                                  <SileoSkeleton key={index} className="h-20 w-20 rounded-xl" />
+                                ))}
+                              </div>
                             ) : (
                               <div className="flex flex-col gap-2.5">
                                 {normalizedCategories
@@ -1543,13 +1541,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {expandedAccordion === 'type' && (
                   <div className="px-4 pb-6">
                       {serviceTypesLoading ? (
-                      <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                        <div className="space-y-2">
-                          {[...Array(4)].map((_, index) => (
-                            <Skeleton key={index} height={48} borderRadius={8} />
-                          ))}
-                        </div>
-                      </SkeletonTheme>
+                      <div className="space-y-2">
+                        {[...Array(4)].map((_, index) => (
+                          <SileoSkeleton key={index} className="h-12 w-full rounded-lg" />
+                        ))}
+                      </div>
                       ) : (
                       <div className="flex flex-col gap-2">
                         {normalizedServiceTypes.map((st) => (
@@ -1720,13 +1716,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             }}
           >
             {categoriesLoading ? (
-              <SkeletonTheme baseColor="#f3f4f6" highlightColor="#e5e7eb">
-                <div className="flex flex-col gap-2.5 py-2">
-                  {[...Array(4)].map((_, index) => (
-                    <Skeleton key={index} height={100} borderRadius={14} />
-                  ))}
-                </div>
-              </SkeletonTheme>
+              <div className="flex flex-col gap-2.5 py-2">
+                {[...Array(4)].map((_, index) => (
+                  <SileoSkeleton key={index} className="h-[100px] w-full rounded-[14px]" />
+                ))}
+              </div>
             ) : (
               (() => {
                 const list = (drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal).filter(

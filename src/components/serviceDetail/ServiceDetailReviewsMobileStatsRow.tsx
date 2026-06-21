@@ -29,8 +29,8 @@ export function ServiceDetailReviewsMobileStatsRow({
       <div className="sd-reviews-preview-summary-mobile__row">
         <div className="sd-reviews-preview-summary-mobile__score-col">
           <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-          <ServiceDetailReviewStars rating={averageRating} size="sm" neutral={neutral} className="mt-1" />
-          <p className="mt-0.5 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+          <ServiceDetailReviewStars rating={averageRating} size="md" neutral={neutral} className="mt-1.5" />
+          <p className="mt-1 text-[13px] leading-snug text-[#717171]">{opinionsLabel}</p>
         </div>
       </div>
     );
@@ -40,8 +40,7 @@ export function ServiceDetailReviewsMobileStatsRow({
     <div className="sd-reviews-preview-summary-mobile__row">
       <div className="sd-reviews-preview-summary-mobile__score-col">
         <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-        <ServiceDetailReviewStars rating={averageRating} size="sm" neutral={neutral} className="mt-1" />
-        <p className="mt-0.5 text-xs leading-snug text-[#717171]">{opinionsLabel}</p>
+        <p className="text-[13px] leading-snug text-[#717171]">{opinionsLabel}</p>
       </div>
       <div className="sd-reviews-preview-summary-mobile__bars-col">
         <ServiceDetailReviewHistogram
