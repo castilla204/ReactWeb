@@ -160,31 +160,21 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
             <div className="flex items-start space-x-2">
               <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
               <div className="text-xs text-orange-800">
-                <p className="font-medium mb-2">Política de cancelación:</p>
+                <p className="font-medium mb-2">Política de cancelación (según antelación):</p>
                 <div className="space-y-1">
                   <p>
-                    <span className="font-medium">1ª cancelación:</span> Dinero retenido (puedes reprogramar)
+                    <span className="font-medium">Más de 24 h antes:</span> reembolso completo*
                   </p>
                   <p>
-                    <span className="font-medium">2ª cancelación:</span> 90% reembolso, 8% experto, 2% plataforma
+                    <span className="font-medium">Entre 6 y 24 h antes:</span> se reembolsa el 50%
+                  </p>
+                  <p>
+                    <span className="font-medium">Menos de 6 h antes o no presentarte:</span> sin reembolso
+                  </p>
+                  <p className="text-orange-700 mt-1">
+                    *Si ya has agotado tus cancelaciones gratuitas, también se aplica el 50%.
                   </p>
                 </div>
-                {appointment.cancellationCount > 0 && (
-                  <div className="mt-2 p-2 bg-orange-100 rounded border border-orange-300">
-                    <p className="font-medium text-orange-900">
-                      Cancelaciones realizadas: {appointment.cancellationCount} de 2 máximo
-                    </p>
-                    {appointment.cancellationCount === 1 ? (
-                      <p className="text-orange-800">
-                        ⚠️ Próxima cancelación: Recibirás 90% de reembolso
-                      </p>
-                    ) : (
-                      <p className="text-orange-800">
-                        ✅ Has usado tu cancelación gratuita
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -463,68 +453,30 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
               </h4>
               <div className="text-sm text-blue-700 space-y-2">
                 <p>
-                  <strong>El cliente puede cancelar esta cita:</strong>
+                  <strong>El cliente puede cancelar según la antelación:</strong>
                 </p>
                 <div className="ml-4 space-y-1">
                   <p>
-                    • <strong>1ª cancelación:</strong> Dinero retenido (puede reprogramar en 24h) - Tú recibes 0%
+                    • <strong>Más de 24 h antes:</strong> reembolso completo al cliente (tú recibes 0%)
                   </p>
                   <p>
-                    • <strong>2ª cancelación:</strong> Cliente recibe 90%, tú recibes 8%, plataforma 2%
+                    • <strong>Entre 6 y 24 h antes:</strong> 50% al cliente, 50% para ti
+                  </p>
+                  <p>
+                    • <strong>Menos de 6 h o no presentarse:</strong> 100% para ti
                   </p>
                 </div>
-                <p className="text-xs text-blue-600 mt-2">
-                  ⚠️ <strong>Restricción:</strong> El cliente NO puede cancelar menos de 12 horas antes de la cita
-                </p>
-                {appointment.cancellationCount > 0 && (
-                  <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
-                    <p className="font-medium text-blue-900 text-xs">
-                      Cancelaciones del cliente: {appointment.cancellationCount} de 2 máximo
-                    </p>
-                    {appointment.cancellationCount === 1 ? (
-                      <div className="space-y-1">
-                        <p className="text-blue-800 text-xs">
-                          ⚠️ Si cancela otra vez: Recibirás 8% del dinero
-                        </p>
-                        <p className="text-blue-800 text-xs">
-                          ⏰ Cliente tiene 24h para reprogramar la cita
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-blue-800 text-xs">
-                        ✅ Cliente ha usado su cancelación gratuita
-                      </p>
-                    )}
-                  </div>
-                )}
                 <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-300">
                   <p className="font-medium text-blue-900 text-xs mb-2">
-                    <strong>Si tú cancelas la cita:</strong>
+                    <strong>Si cancelas tú la cita:</strong>
                   </p>
                   <p className="text-blue-800 text-xs">
-                    • Cliente recibe 90% de reembolso
+                    • El cliente recibe el reembolso completo
                   </p>
                   <p className="text-blue-800 text-xs">
-                    • Tú recibes 8% del dinero
-                  </p>
-                  <p className="text-blue-800 text-xs">
-                    • Plataforma recibe 2%
+                    • Se te registra un strike
                   </p>
                 </div>
-                <div className="mt-3 p-2 bg-blue-100 rounded border border-blue-300">
-                  <p className="font-medium text-blue-900 text-xs mb-1">
-                    <strong>Si el cliente no reprograma en 24h:</strong>
-                  </p>
-                  <p className="text-blue-800 text-xs">
-                    • Servicio cancelado automáticamente
-                  </p>
-                  <p className="text-blue-800 text-xs">
-                    • Cliente recibe 90%, tú recibes 8%, plataforma 2%
-                  </p>
-                </div>
-                <p className="text-xs text-blue-600 mt-2">
-                  💡 El cliente tiene 2 oportunidades de cancelación. Después de la segunda, el servicio se cancela definitivamente.
-                </p>
               </div>
             </div>
           </div>
