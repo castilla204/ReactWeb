@@ -29,6 +29,21 @@ const listingUrlFieldClass =
 
 export type SellerCoordinationFieldsVariant = 'full' | 'contact' | 'plazos';
 
+/**
+ * Avatar circular (foto real) para la cabecera de «Datos del vendedor». Decorativo:
+ * el título ya describe la sección. Misma foto en desktop y móvil para coherencia.
+ */
+export function SellerContactAvatar({ className }: { className?: string }) {
+    return (
+        <img
+            src="https://i.pravatar.cc/96?img=12"
+            alt=""
+            aria-hidden="true"
+            className={cn('h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-[#f0f0f0]', className)}
+        />
+    );
+}
+
 export interface CheckoutSellerCoordinationFieldsProps {
     sellerPhone: string;
     sellerEmail: string;
@@ -42,6 +57,11 @@ export interface CheckoutSellerCoordinationFieldsProps {
     minimal?: boolean;
     /** Resalta campos vacíos tras intentar continuar sin contacto. */
     showValidation?: boolean;
+    /**
+     * Modo «Yo la reservo»: el contacto del vendedor es OPCIONAL y el cliente coordina
+     * por su cuenta, así que se oculta el aviso del enlace de reserva (copy de seller).
+     */
+    selfMode?: boolean;
     className?: string;
 }
 
@@ -86,7 +106,7 @@ export function sellerCoordinationCanContinue(phone: string, email: string) {
 /** Copy tarjetas paso 1 — coordinación de la cita. */
 export const COORD_OPTION_SELF_TITLE = 'Yo la reservo';
 export const COORD_OPTION_SELF_DESC =
-    'Tú eliges día, hora y lugar en el calendario del experto al pagar. La cita queda confirmada en el acto.';
+    'Tú eliges día, hora y lugar en el calendario del experto al pagar. Queda reservada a falta de que el experto la confirme.';
 // COORD_OPTION_SELLER_TITLE + COORD_OPTION_SELLER_DESC — sellerBookingWindow.ts re-export arriba
 export const COORD_OPTION_SELLER_TITLE = 'Que lo coordine Inspecciono';
 export const COORD_OPTION_FREE_CANCEL = 'Cancelación sin coste';
@@ -203,6 +223,7 @@ export function CheckoutSellerCoordinationFields({
     variant = 'full',
     minimal = false,
     showValidation = false,
+    selfMode = false,
     className,
 }: CheckoutSellerCoordinationFieldsProps) {
     const showContact = variant === 'full' || variant === 'contact';
@@ -222,7 +243,7 @@ export function CheckoutSellerCoordinationFields({
         <div className={cn(showContact && showPlazos ? 'space-y-6' : 'space-y-0', className)}>
             {showContact ? (
                 <div className="space-y-3">
-                    {variant === 'contact' ? (
+                    {variant === 'contact' && !selfMode ? (
                         <CheckoutSellerEnlaceInfoNote detailed className="mb-1" />
                     ) : null}
                     {/* 🌍 Móvil del vendedor con selector de país (cualquier prefijo, no solo ES):
