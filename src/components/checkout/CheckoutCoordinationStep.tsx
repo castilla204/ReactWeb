@@ -4,6 +4,7 @@ import {
     CheckoutSellerCoordinationFields,
     CheckoutSelfCoordinationInfoNote,
     CheckoutSellerEnlaceInfoNote,
+    SellerContactAvatar,
     COORD_OPTION_FREE_CANCEL,
     COORD_OPTION_SELF_TITLE,
     COORD_OPTION_SELLER_DESC,
@@ -291,7 +292,7 @@ function CoordinationOptionCards({
         <>
             Podéis hablar por WhatsApp o teléfono y acordar la inspección entre vosotros. Al pagar,{' '}
             <span className="font-semibold text-inherit">tú</span> eliges el día, la hora y la dirección en el
-            calendario del experto. La cita queda cerrada en el acto.
+            calendario del experto. Queda reservada al instante, a falta de que el experto la confirme.
         </>
     );
 
@@ -332,7 +333,7 @@ function CoordinationOptionCards({
                     compact={compact}
                     infoLabel={`Cuándo elegir ${COORD_OPTION_SELF_TITLE}`}
                     infoContent={<CheckoutSelfCoordinationInfoNote />}
-                    cancelHint="si cambias de idea antes de la visita."
+                    cancelHint="mientras el experto no confirme; después se aplican tramos según la antelación."
                     selected={selection === 'self'}
                     dimmed={selection === 'seller'}
                     onSelect={() => onSelect('self')}
@@ -419,16 +420,32 @@ export function CheckoutCoordinationStep({
                 <CoordinationChooseHeader className={isSubStep ? 'hidden' : undefined} />
             ) : (
             <header className={cn('max-w-xl', isSubStep && 'mb-1')}>
-                <h2
-                    className={cn(
-                        'font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]',
-                        isSubStep ? 'text-[17px] sm:text-lg' : 'text-[20px] sm:text-[22px] lg:text-[24px]',
-                        headingClassName,
-                    )}
-                    style={{ fontFamily: HP_FONT }}
-                >
-                    {title}
-                </h2>
+                {view === 'seller-contact' ? (
+                    <div className="flex items-center gap-2.5">
+                        <SellerContactAvatar />
+                        <h2
+                            className={cn(
+                                'font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]',
+                                'text-[17px] sm:text-lg',
+                                headingClassName,
+                            )}
+                            style={{ fontFamily: HP_FONT }}
+                        >
+                            {title}
+                        </h2>
+                    </div>
+                ) : (
+                    <h2
+                        className={cn(
+                            'font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]',
+                            isSubStep ? 'text-[17px] sm:text-lg' : 'text-[20px] sm:text-[22px] lg:text-[24px]',
+                            headingClassName,
+                        )}
+                        style={{ fontFamily: HP_FONT }}
+                    >
+                        {title}
+                    </h2>
+                )}
                 {subtitle ? (
                     <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[#565d6b] sm:text-sm">
                         {subtitle}
