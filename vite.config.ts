@@ -46,7 +46,13 @@ export default defineConfig(({ command }) => ({
             workbox: {
                 cleanupOutdatedCaches: true,
                 clientsClaim: true,
-                skipWaiting: false, // el usuario decide cuándo refrescar
+                // ⚠️ skipWaiting:true (autoUpdate real). Antes era false SIN UI de
+                // "hay nueva versión" (injectRegister:null) → el SW nuevo se quedaba
+                // "waiting" para siempre y los usuarios seguían en una build vieja cuyos
+                // chunks ya se borraron → "Failed to load module script" → pantalla en
+                // blanco. Con skipWaiting+clientsClaim el SW nuevo toma el control y la
+                // siguiente navegación sirve el index.html y los chunks nuevos.
+                skipWaiting: true,
                 // El precache lo gestiona Vite con los chunks hasheados.
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
                 // Evita precachear assets enormes (mapas Natural Earth, etc.):
@@ -272,9 +278,13 @@ export default defineConfig(({ command }) => ({
                             ) {
                                 return 'mapbox';
                             }
-                            if (id.includes('framer-motion')) {
-                                return 'framer';
-                            }
+                            // ⚠️ NO separar framer-motion en su propio chunk: un módulo de
+                            // `vendor` también lo importa → se creaba un ciclo de chunks
+                            // vendor↔framer y, al inicializar, el namespace de React (en vendor)
+                            // quedaba `undefined` cuando framer ejecutaba `React.createContext`
+                            // en top-level → "can't access property createContext of undefined"
+                            // → pantalla en blanco en producción. Manteniéndolo en `vendor`
+                            // (junto a React) el bundler ordena la init y no hay ciclo entre chunks.
                             // ⚡ Librerías que solo usan páginas lazy: en chunks propios para
                             // que NO viajen en el vendor inicial que bloquea el arranque.
                             // Son hojas del grafo (dependen de react, nada depende de ellas),
