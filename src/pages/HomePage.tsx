@@ -136,7 +136,7 @@ const HomePage: React.FC = () => {
         ogDescription="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. No pagas al experto hasta dar el visto bueno."
         jsonLd={[faqPageSchema(homeFaq)]}
       />
-      <div className="min-h-screen md:min-h-0 bg-[#f5f5f5] md:bg-[#fafafa] pb-[65px] md:pb-0">
+      <div className="min-h-screen md:min-h-0 bg-white pb-[65px] md:pb-0">
         <Suspense fallback={searchBarFallback}>
           <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
         </Suspense>
