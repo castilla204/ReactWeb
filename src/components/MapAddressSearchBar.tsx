@@ -68,9 +68,11 @@ export function MapAddressSearchBar({
     useEffect(() => {
         if (value == null) return;
         committedRef.current = value.trim() || null;
-        setQuery(value);
+        // Idempotente: no cambiar estado si ya coincide (evita re-render y bucles cuando
+        // el padre nos pasa el mismo `value` en cada render).
+        setQuery((prev) => (prev === value ? prev : value));
         setShowList(false);
-        setResults([]);
+        setResults((prev) => (prev.length === 0 ? prev : []));
     }, [value]);
 
     useEffect(() => {
@@ -135,10 +137,10 @@ export function MapAddressSearchBar({
     const hasQuery = query.length > 0;
 
     const inputCls = embedded
-        ? 'w-full rounded-xl border border-[#e5e7eb] bg-[#fafafa] py-2.5 pl-4 pr-10 text-[15px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15'
+        ? 'w-full rounded-full border border-[#e5e7eb] bg-white py-2.5 pl-11 pr-10 text-[13px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15'
         : overlay
           ? 'w-full rounded-full border-0 bg-white/96 py-3 pl-4 pr-10 text-[15px] text-[#1c1c1c] shadow-[0_4px_20px_rgba(15,23,42,0.14),0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-md placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-brand/25'
-          : 'w-full rounded-full border-0 bg-white/95 py-2.5 pl-4 pr-10 font-display text-sm text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
+          : 'h-11 w-full rounded-full border-0 bg-white/95 pl-4 pr-10 font-display text-[15px] text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
 
     const handleClear = () => {
         committedRef.current = null;
@@ -151,6 +153,13 @@ export function MapAddressSearchBar({
 
     return (
         <div className={`relative ${className}`}>
+            {embedded ? (
+                <Search
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
+                    strokeWidth={2.1}
+                    aria-hidden
+                />
+            ) : null}
             <input
                 type="text"
                 value={query}
@@ -178,13 +187,13 @@ export function MapAddressSearchBar({
                 >
                     <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </button>
-            ) : (
+            ) : !embedded ? (
                 <Search
                     className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171]"
                     strokeWidth={2.2}
                     aria-hidden
                 />
-            )}
+            ) : null}
 
             {showList && results.length > 0 && (
                 <ul className="absolute left-0 right-0 top-full z-[10000] mt-2 max-h-60 overflow-y-auto rounded-2xl border border-black/[0.06] bg-white py-1 shadow-[0_12px_32px_rgba(14,20,36,0.18)]">
