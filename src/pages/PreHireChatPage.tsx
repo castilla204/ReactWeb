@@ -6,6 +6,7 @@ import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { PreHireChat } from '../components/PreHireChat';
+import { SileoSkeleton } from '../components/ui/sileo-skeleton';
 import { ArrowLeft, MoreVertical, MapPin, Star, Clock, Heart, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
@@ -285,10 +286,26 @@ export function PreHireChatPage() {
     }
     
     if (loading) {
+        // Skeleton con la forma del chat (cabecera del experto + lista de mensajes)
+        // en vez de texto centrado sobre pantalla en blanco.
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-[#6a6a6a] mb-4">Cargando información del servicio...</p>
+            <div className="min-h-screen flex flex-col" aria-busy="true">
+                {/* Cabecera: avatar + nombre/meta + acciones */}
+                <div className="flex items-center gap-3 border-b border-[#ededed] px-4 py-3">
+                    <SileoSkeleton className="h-10 w-10" rounded="full" />
+                    <div className="flex-1 space-y-2">
+                        <SileoSkeleton className="h-4 w-40 max-w-[55%] rounded" />
+                        <SileoSkeleton className="h-3 w-28 max-w-[40%] rounded" />
+                    </div>
+                    <SileoSkeleton className="h-9 w-24 rounded-full" />
+                </div>
+                {/* Lista de mensajes: burbujas alternas */}
+                <div className="flex-1 space-y-4 px-4 py-6">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <div key={i} className={i % 2 === 0 ? 'flex justify-start' : 'flex justify-end'}>
+                            <SileoSkeleton className={`h-12 rounded-2xl ${i % 2 === 0 ? 'w-2/3' : 'w-1/2'}`} />
+                        </div>
+                    ))}
                 </div>
             </div>
         );

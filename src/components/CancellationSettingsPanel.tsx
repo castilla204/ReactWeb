@@ -158,10 +158,10 @@ const CancellationSettingsPanel: React.FC = () => {
                                 'Cancelar con ≥ estas horas de antelación = tramo más favorable.')}
                             {field('Umbral tramo bajo (horas)', form.tierLowHours, (n) => setForm({ ...form, tierLowHours: n }),
                                 'Por debajo de estas horas = tramo más estricto (no-show).')}
-                            {field('Cancelaciones sin penalización (N)', form.freeCancellationsPerParty, (n) => setForm({ ...form, freeCancellationsPerParty: n }),
-                                'Cancelaciones con reembolso íntegro por parte. 0 = máxima dureza.')}
+                            {field('Repeticiones toleradas (N)', form.freeCancellationsPerParty, (n) => setForm({ ...form, freeCancellationsPerParty: n }),
+                                'La 1ª cancelación con antelación ≥ tramo alto SIEMPRE es reembolso íntegro. N = cancelaciones con antelación EXTRA toleradas antes de penalizar la reincidencia (las siguientes → 50/50). 0 = solo la 1ª es íntegra.')}
                             {field('Ventana de cómputo de N (días)', form.penaltyFreeWindowDays, (n) => setForm({ ...form, penaltyFreeWindowDays: n }),
-                                'Periodo móvil en el que se cuentan las N cancelaciones gratis del cliente.')}
+                                'Periodo móvil en el que se cuentan las cancelaciones con antelación del cliente para aplicar N.')}
                         </div>
 
                         <div className="mt-6 flex items-center justify-end">
@@ -192,9 +192,15 @@ const CancellationSettingsPanel: React.FC = () => {
                                 <tbody className="text-gray-800">
                                     <tr className="border-b">
                                         <td className="py-2 pr-4">Cliente</td>
-                                        <td className="py-2 pr-4">≥ {form.tierHighHours}h {form.freeCancellationsPerParty > 0 ? `(con cupo de ${form.freeCancellationsPerParty})` : ''}</td>
-                                        <td className="py-2 pr-4 text-green-700 font-medium">{form.freeCancellationsPerParty > 0 ? '100%' : '50%'}</td>
-                                        <td className="py-2 pr-4">{form.freeCancellationsPerParty > 0 ? '0%' : '50%'}</td>
+                                        <td className="py-2 pr-4">≥ {form.tierHighHours}h (1ª cancelación)</td>
+                                        <td className="py-2 pr-4 text-green-700 font-medium">100%</td>
+                                        <td className="py-2 pr-4">0%</td>
+                                    </tr>
+                                    <tr className="border-b">
+                                        <td className="py-2 pr-4">Cliente</td>
+                                        <td className="py-2 pr-4">≥ {form.tierHighHours}h (repetición n.º {form.freeCancellationsPerParty + 2}+ en {form.penaltyFreeWindowDays} días)</td>
+                                        <td className="py-2 pr-4">50%</td>
+                                        <td className="py-2 pr-4">50%</td>
                                     </tr>
                                     <tr className="border-b">
                                         <td className="py-2 pr-4">Cliente</td>
@@ -218,6 +224,7 @@ const CancellationSettingsPanel: React.FC = () => {
                             </table>
                         </div>
                         <p className="text-xs text-gray-500 mt-3">
+                            La 1ª cancelación del cliente con antelación ≥ {form.tierHighHours}h siempre es reembolso íntegro; N solo penaliza la reincidencia dentro de la ventana.{' '}
                             Los porcentajes exactos de cada tramo se ajustan en la pestaña «Configuración por Estado»
                             (estados <code className="bg-gray-100 px-1 rounded">appointment_cancelled_by_client_gt24h / _6to24h / _lt6h / _expert_strike</code>).
                             Esta vista refleja los valores por defecto.

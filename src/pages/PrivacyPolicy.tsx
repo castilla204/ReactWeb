@@ -1,61 +1,16 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
-import { SileoLoader } from '../components/ui/sileo-loader';
+import { LegalDocumentPage } from './LegalDocumentPage';
 
 export function PrivacyPolicy() {
-    const navigate = useNavigate();
-    const { fetchApi } = useApi();
-    const [content, setContent] = useState<string>('');
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchPrivacy = async () => {
-            try {
-                const response = await fetchApi<{ content: string; version: string }>(API_CONFIG.endpoints.legal.privacy);
-                setContent(response.content);
-            } catch (err) {
-                console.error('Error fetching privacy policy:', err);
-                setError('No se pudo cargar la política de privacidad. Por favor, inténtelo de nuevo más tarde.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPrivacy();
-    }, [fetchApi]);
-
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-6xl mx-auto px-4 py-6">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors text-sm"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="font-medium">Volver</span>
-                </button>
-
-                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                    {loading ? (
-                        <div className="flex justify-center py-12">
-                            <SileoLoader size="lg" color="brand" />
-                        </div>
-                    ) : error ? (
-                        <div className="text-center py-12 text-red-600">
-                            {error}
-                        </div>
-                    ) : (
-                        <div
-                            className="prose prose-blue max-w-none text-gray-700"
-                            dangerouslySetInnerHTML={{ __html: content }}
-                        />
-                    )}
-                </div>
-            </div>
-        </div>
+        <LegalDocumentPage
+            endpoint={API_CONFIG.endpoints.legal.privacy}
+            title="Política de privacidad"
+            subtitle="Cómo tratamos tus datos personales conforme al RGPD y la LOPD-GDD: qué recopilamos, con qué fin y tus derechos."
+            canonical="/privacy-policy.html"
+            seoTitle="Política de privacidad · Inspecciono"
+            seoDescription="Política de privacidad de Inspecciono conforme al RGPD y la LOPD-GDD: datos recopilados, finalidad, destinatarios, conservación y derechos del interesado."
+            errorMessage="No se pudo cargar la política de privacidad. Por favor, inténtelo de nuevo más tarde."
+        />
     );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Loader2, Plus, Trash2, Save, CalendarClock, Copy, Info, ChevronDown } from 'lucide-react';
 import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
@@ -54,9 +54,33 @@ const serializeWeek = (w: WeekState): string =>
  * "copiar a todos los días". Lee/escribe ExpertAvailabilityRule vía /api/ExpertAvailability/rules.
  * Si aún no hay reglas, precarga el horario clásico del perfil para que el experto solo confirme.
  */
-interface Props { collapsible?: boolean; defaultOpen?: boolean; adminUserId?: number; }
+/** Handle compartido para el guardado unificado coordinado por AvailabilityTab. */
+export interface AvailabilityHandle {
+    /** ¿Hay cambios sin guardar? */
+    isDirty: boolean;
+    /** Nº de unidades con cambios (días en el calendario; 0/1 en el horario semanal). */
+    pendingCount: number;
+    /** Persiste los cambios. Devuelve true si OK, false si hubo error/validación. */
+    save: () => Promise<boolean>;
+    /** Recarga desde el servidor (descarta lo no guardado). */
+    reload: () => void;
+    /** Descarta los cambios locales sin guardar. */
+    discard: () => void;
+}
 
-const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, defaultOpen = false, adminUserId }) => {
+interface Props {
+    collapsible?: boolean;
+    defaultOpen?: boolean;
+    adminUserId?: number;
+    /** Modo coordinado: oculta el botón propio de guardar; el padre orquesta el guardado unificado. */
+    embedded?: boolean;
+    onDirtyChange?: (dirty: boolean) => void;
+}
+
+const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function AvailabilityRulesEditor(
+    { collapsible = false, defaultOpen = false, adminUserId, embedded = false, onDirtyChange },
+    ref,
+) {
     // En modo admin las reglas se leen/escriben sobre el experto objetivo.
     const rulesUrl = adminUserId != null ? `/api/admin/expert/${adminUserId}/availability/rules` : URL;
     const [open, setOpen] = useState<boolean>(collapsible ? defaultOpen : true);
@@ -225,7 +249,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
     const presetClear = () => { clearMessages(); setWeek(emptyWeek()); };
 
     // ── Guardar ─────────────────────────────────────────────────────────
-    const save = async () => {
+    const save = async (): Promise<boolean> => {
         setSaving(true);
         setError(null);
         setSuccess(null);
@@ -258,8 +282,10 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                     ? 'Horario guardado: no atiendes ningún día (no aparecerás disponible para reservas).'
                     : 'Horario guardado. Tus clientes ya pueden reservar en estas horas.'
             );
+            return true;
         } catch (err: any) {
             setError(err.message || 'No se pudo guardar el horario.');
+            return false;
         } finally {
             setSaving(false);
         }
@@ -268,6 +294,17 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
     const anyEnabled = Object.values(week).some((d) => d.enabled);
     // ¿El horario actual difiere del último guardado? Controla el estado del botón.
     const isDirty = serializeWeek(week) !== baselineRef.current;
+
+    // Guardado unificado coordinado por el padre (AvailabilityTab): expone estado + acciones.
+    useImperativeHandle(ref, () => ({
+        isDirty,
+        pendingCount: isDirty ? 1 : 0,
+        save,
+        reload: load,
+        discard: load, // recargar del servidor = volver al último guardado
+    }), [isDirty, save, load]);
+
+    useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
     return (
         <section className="av-schedule">
@@ -306,11 +343,11 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
             {prefilledFromLegacy && (
                 <p className="mb-3 flex items-start gap-2 rounded-lg border border-[hsl(var(--ep-info-border))] bg-[hsl(var(--ep-info-bg))] px-3 py-2 text-[13px] text-[hsl(var(--ep-info))]">
                     <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>Hemos cargado tu horario actual. Revísalo y pulsa <strong>Guardar horario</strong> para activarlo en las reservas.</span>
+                    <span>Hemos cargado tu horario actual. Revísalo y <strong>guárdalo</strong> para activarlo en las reservas.</span>
                 </p>
             )}
             {error && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-error-border))] bg-[hsl(var(--ep-error-bg))] px-3 py-2 text-[13px] font-medium text-[hsl(var(--ep-error))]">{error}</p>}
-            {success && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-success-border))] bg-[hsl(var(--ep-success-bg))] px-3 py-2 text-[13px] font-medium text-[hsl(var(--ep-success))]">{success}</p>}
+            {!embedded && success && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-success-border))] bg-[hsl(var(--ep-success-bg))] px-3 py-2 text-[13px] font-medium text-[hsl(var(--ep-success))]">{success}</p>}
 
             {loading ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#7a7f88]">
@@ -340,60 +377,61 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                         {DAYS.map((d) => {
                             const day = week[d.id];
                             return (
-                                <div key={d.id} className={cn('av-schedule__day', day.enabled && 'av-schedule__day--on')}>
-                                    <div className="flex items-center justify-between gap-2">
+                                <div key={d.id} className={cn('av-schedule__day av-schedule__day--compact', day.enabled && 'av-schedule__day--on')}>
+                                    {/* Compacto: día + franjas en UNA sola línea (envuelve en móvil). */}
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                                         <button
                                             type="button"
                                             role="switch"
                                             aria-checked={day.enabled}
                                             aria-label={`${d.label}: ${day.enabled ? 'trabajas' : 'cerrado'}`}
                                             onClick={() => toggleDay(d.id)}
-                                            className="flex min-w-0 items-center gap-3"
+                                            className="flex shrink-0 items-center gap-2.5"
                                         >
                                             <span
                                                 className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${day.enabled ? 'bg-brand' : 'bg-[#cfd3da]'}`}
                                             >
                                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                             </span>
-                                            <span className={`w-[5.5rem] truncate text-left text-[14px] font-semibold ${day.enabled ? 'text-[#171a1f]' : 'text-[#9aa0a8]'}`}>{d.label}</span>
+                                            <span className={`w-[4.75rem] truncate text-left text-[14px] font-semibold ${day.enabled ? 'text-[#171a1f]' : 'text-[#9aa0a8]'}`}>{d.label}</span>
                                         </button>
 
                                         {day.enabled ? (
-                                            <div className="flex items-center gap-1.5">
-                                                <button type="button" onClick={() => copyToAll(d.id)}
-                                                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-[#777c85] transition-colors hover:bg-[#f1f3f7] hover:text-brand"
-                                                    title="Copiar este horario a todos los días">
-                                                    <Copy className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Copiar a todos</span>
-                                                </button>
-                                                <button type="button" onClick={() => addRange(d.id)}
-                                                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-brand transition-colors hover:bg-brand/[0.08]">
-                                                    <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Franja</span>
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <span className="text-[12.5px] font-medium text-[#b4b8bf]">Cerrado</span>
-                                        )}
-                                    </div>
-
-                                    {day.enabled && (
-                                        <div className="mt-2.5 space-y-2 pl-[48px]">
-                                            {day.ranges.map((r, i) => (
-                                                <div key={i} className="flex items-center gap-2">
-                                                    <input type="time" value={r.start}
-                                                        onChange={(e) => updateRange(d.id, i, 'start', e.target.value)}
-                                                        className="rounded-lg border border-[#e3e6ec] bg-white px-2.5 py-1.5 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
-                                                    <span className="text-[#b4b8bf]">—</span>
-                                                    <input type="time" value={r.end}
-                                                        onChange={(e) => updateRange(d.id, i, 'end', e.target.value)}
-                                                        className="rounded-lg border border-[#e3e6ec] bg-white px-2.5 py-1.5 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
-                                                    <button type="button" onClick={() => removeRange(d.id, i)}
-                                                        className="rounded-lg p-1.5 text-[#aeb3bb] transition-colors hover:bg-[hsl(var(--ep-error-bg))] hover:text-[hsl(var(--ep-error))]" aria-label="Quitar franja">
-                                                        <Trash2 className="h-4 w-4" />
+                                            <div className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-1.5">
+                                                {day.ranges.map((r, i) => (
+                                                    <div key={i} className="flex items-center gap-1.5">
+                                                        <input type="time" value={r.start}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRange(d.id, i, 'start', e.target.value)}
+                                                            className="rounded-lg border border-[#e3e6ec] bg-white px-2 py-1 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
+                                                        <span className="text-[#b4b8bf]">—</span>
+                                                        <input type="time" value={r.end}
+                                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRange(d.id, i, 'end', e.target.value)}
+                                                            className="rounded-lg border border-[#e3e6ec] bg-white px-2 py-1 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
+                                                        {day.ranges.length > 1 && (
+                                                            <button type="button" onClick={() => removeRange(d.id, i)}
+                                                                className="rounded-lg p-1 text-[#aeb3bb] transition-colors hover:bg-[hsl(var(--ep-error-bg))] hover:text-[hsl(var(--ep-error))]" aria-label="Quitar franja">
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                <div className="ml-auto flex items-center gap-0.5">
+                                                    <button type="button" onClick={() => addRange(d.id)}
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-brand transition-colors hover:bg-brand/[0.08]"
+                                                        title="Añadir turno partido">
+                                                        <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Franja</span>
+                                                    </button>
+                                                    <button type="button" onClick={() => copyToAll(d.id)}
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-[#777c85] transition-colors hover:bg-[#f1f3f7] hover:text-brand"
+                                                        title="Copiar este horario a todos los días">
+                                                        <Copy className="h-3.5 w-3.5" /> <span className="hidden md:inline">Copiar a todos</span>
                                                     </button>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            </div>
+                                        ) : (
+                                            <span className="ml-auto text-[12.5px] font-medium text-[#b4b8bf]">Cerrado</span>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
@@ -405,6 +443,7 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                         </p>
                     )}
 
+                    {!embedded && (
                     <div className="mt-4 flex items-center justify-end gap-3">
                         <span className="hidden text-[12px] text-[#9aa0a8] sm:inline">Recuerda guardar para que tenga efecto</span>
                         <button type="button" onClick={save} disabled={saving || !isDirty}
@@ -416,12 +455,13 @@ const AvailabilityRulesEditor: React.FC<Props> = ({ collapsible = false, default
                             {saving ? 'Guardando…' : 'Guardar horario'}
                         </button>
                     </div>
+                    )}
                 </>
             )}
             </div>
             )}
         </section>
     );
-};
+});
 
 export default AvailabilityRulesEditor;

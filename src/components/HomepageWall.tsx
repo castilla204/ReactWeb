@@ -12,8 +12,9 @@ import { readWorkRadiusKm, formatWorkRadius } from '../utils/workRadius';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
+import { FavoriteHeart } from './FavoriteHeart';
 import { homepageToast, toast } from '../lib/toast';
-import { SileoSkeleton } from './ui/sileo-skeleton';
+import { WallSkeletonContent } from './homepage/HomePageWallSkeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpCardText, hpType, HP_WALL_CARD_WIDTH_CLASS } from '../constants/homepageTypography';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -68,28 +69,26 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
     e.stopPropagation();
     e.preventDefault();
 
-    // Toast de promesa: "Actualizando…" → morphea a éxito/error según resuelva.
-    const request = onToggleFavorite(service.id);
-    toast.promise(request, {
-      loading: { title: 'Actualizando favorito…' },
-      success: (result) => {
-        if (!result) return { title: 'Favorito actualizado' };
-        return result.isFavorite
-          ? {
-              title: 'Añadido a favoritos',
-              description: 'Lo tienes guardado en tu lista de favoritos.',
-              button: { title: 'Ver favoritos', onClick: () => navigate('/favoritos') },
-            }
-          : { title: 'Quitado de favoritos' };
-      },
-      error: { title: 'No se pudo actualizar el favorito' },
-    });
-
+    // El flujo de la web es azul → usamos el estado `info` (azul de marca), no
+    // `success` (verde de Sileo). Sileo fuerza state:"success" en `toast.promise`,
+    // por eso disparamos un toast `info` al resolver en lugar del morphing.
     try {
-      const result = await request;
-      if (result) setIsFavorite(result.isFavorite);
+      const result = await onToggleFavorite(service.id);
+      if (result) {
+        setIsFavorite(result.isFavorite);
+        if (result.isFavorite) {
+          toast.info('Añadido a favoritos', {
+            description: 'Lo tienes guardado en tu lista de favoritos.',
+            action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+            duration: 3000,
+          });
+        } else {
+          toast.info('Quitado de favoritos', { duration: 2500 });
+        }
+      }
     } catch (error: unknown) {
       console.error('Error al actualizar favorito:', error);
+      toast.error('No se pudo actualizar el favorito', { duration: 3000 });
     }
   }, [onToggleFavorite, service.id, navigate]);
 
@@ -103,10 +102,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       setImageIndex((prev) => (prev - 1 + imageUrls.length) % imageUrls.length);
     }
   }, [imageUrls.length]);
-  const isGuestFavorite = useMemo(() => 
+  const isGuestFavorite = useMemo(() =>
     forceGuestFavorite || (service.completedSearches > 10 && service.averageRating >= 4.5),
     [forceGuestFavorite, service.completedSearches, service.averageRating]
   );
+
+  // Badge "Mejor valorado": nota > 4. AverageRating se calcula EXCLUSIVAMENTE de las
+  // reseñas (el backend lo deja en 0 si no hay ninguna), así que nota > 4 implica
+  // siempre reseñas reales → el badge es 100% real, sin falsos positivos.
+  const isTopRated = useMemo(() => service.averageRating > 4, [service.averageRating]);
 
   // ✅ Información real del servicio para la segunda línea: Precio · Horario
   // Precio del servicio. Round 24: usa CurrencyContext para conversión.
@@ -219,8 +223,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                 />
               </div>
               
-              {/* Badge "Mejor valorado" - Para servicios con rating > 4.5 */}
-              {service.averageRating && service.averageRating > 4.5 && (
+              {/* Badge "Mejor valorado" (nota > 4). Pill 100% redondeado y compacto:
+                  en tarjetas móviles de ~148px debe terminar antes del corazón de
+                  favorito (top-right) para no solaparse → fuente 9,5px + paddings
+                  ajustados mantienen el ancho ≲106px. */}
+              {isTopRated && (
                 <div
                   className="absolute top-3 left-3 z-10"
                   style={{
@@ -231,15 +238,14 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      gap: '3px',
                       paddingTop: '4px',
                       paddingBottom: '4px',
-                      paddingLeft: '8px',
-                      paddingRight: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      paddingLeft: '7px',
+                      paddingRight: '9px',
                       background: '#ffffff',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                      borderRadius: '9999px',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.14)',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -248,18 +254,18 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '16px',
-                        height: '16px',
+                        width: '12px',
+                        height: '12px',
                         flexShrink: 0,
                       }}
                       role="presentation"
                       aria-hidden="true"
                     >
-                      {/* ⚡ SVG inline (antes hotlink a a0.muscache.com — CDN de Airbnb:
-                          conexión third-party extra y riesgo de que bloqueen el hotlink). */}
+                      {/* Estrella de 5 puntas con uniones redondeadas, azul de marca
+                          (#0066CC), sin trazo de contraste → más limpia que la ámbar. */}
                       <svg
-                        width="16"
-                        height="16"
+                        width="12"
+                        height="12"
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
@@ -267,38 +273,22 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                         aria-hidden="true"
                       >
                         <path
-                          d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.2l-4.78 2.51.91-5.32-3.86-3.77 5.34-.78L12 2z"
-                          fill="#F59E0B"
-                          stroke="#D97706"
-                          strokeWidth="0.75"
-                          strokeLinejoin="round"
+                          d="M11.48 3.5a.6.6 0 0 1 1.04 0l2.28 4.13a.6.6 0 0 0 .43.31l4.64.83a.6.6 0 0 1 .32.99l-3.26 3.4a.6.6 0 0 0-.16.5l.63 4.66a.6.6 0 0 1-.85.62l-4.2-1.96a.6.6 0 0 0-.52 0l-4.2 1.96a.6.6 0 0 1-.85-.62l.63-4.66a.6.6 0 0 0-.16-.5l-3.26-3.4a.6.6 0 0 1 .32-.99l4.64-.83a.6.6 0 0 0 .43-.31z"
+                          fill="#0066CC"
                         />
                       </svg>
                     </div>
                     <span
-                      style={hpType.badge}
+                      style={{
+                        ...hpType.badge,
+                        fontSize: '9.5px',
+                        lineHeight: '11px',
+                        color: '#0C447C',
+                      }}
                       aria-label="Mejor valorado"
                     >
                       Mejor valorado
                     </span>
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          ...hpType.badge,
-                          position: 'absolute',
-                          visibility: 'hidden',
-                          pointerEvents: 'none',
-                        }}
-                      >
-                        Mejor valorado
-                      </span>
-                    </div>
                   </div>
                 </div>
               )}
@@ -321,26 +311,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   height: '24px',
                 }}
               >
-                <svg
-                  viewBox="0 0 32 32"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  role="presentation"
-                  focusable="false"
-                  style={{
-                    display: 'block',
-                    fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
-                    height: '24px',
-                    width: '24px',
-                    stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.8)',
-                    strokeWidth: '2',
-                    overflow: 'visible',
-                    margin: '0',
-                    padding: '0',
-                  }}
-                >
-                  <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                </svg>
+                <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />
               </button>
               ) : null}
 
@@ -773,34 +744,6 @@ interface HomepageWallProps {
   animateOnMount?: boolean;
 }
 
-/**
- * Skeleton estructural del wall. Se reutiliza en:
- *   1. Estado loading inicial (sin datos en caché).
- *   2. Estado error (junto al banner con retry) — para que el layout sobreviva el outage
- *      en vez de colapsarse a un párrafo de texto rojo (mata la conversión).
- */
-const WallSkeletonGrid: React.FC = () => (
-  <>
-    <div className="mb-2 md:mb-3 md:hidden">
-      <SileoSkeleton className="h-7 w-56 rounded-lg" />
-    </div>
-    <div className="hidden md:block mb-5">
-      <SileoSkeleton className="h-3 w-20 mb-2 rounded" />
-      <SileoSkeleton className="h-8 w-72 rounded-lg" />
-    </div>
-    <div className="space-y-6 md:space-y-12 lg:space-y-14">
-      <div className="flex overflow-x-auto gap-4 pb-0 md:pb-4">
-        {[...Array(6)].map((_, index) => (
-          <div key={index} className={`flex-shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-            <SileoSkeleton className="h-[138px] w-full mb-1.5 rounded-xl" />
-            <SileoSkeleton className="h-4 w-full rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  </>
-);
-
 export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   countryCode = 'ES',
   serviceTypeId,
@@ -979,7 +922,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (showFullSkeleton) {
     return (
       <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-        <WallSkeletonGrid />
+        <WallSkeletonContent />
       </div>
     );
   }
@@ -1012,7 +955,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
             {isFetching ? 'Reintentando' : 'Reintentar'}
           </button>
         </div>
-        <WallSkeletonGrid />
+        <WallSkeletonContent />
       </div>
     );
   }
@@ -1026,7 +969,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         <p className="mb-4 md:mb-5 text-sm text-[#6a6a6a]">
           Aún no hay servicios disponibles en esta categoría.
         </p>
-        <WallSkeletonGrid />
+        <WallSkeletonContent />
       </div>
     );
   }
@@ -1035,14 +978,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     if (fallbackLoading) {
       return (
         <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1">
-          <div className="flex overflow-x-auto gap-4 pb-0">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-                <SileoSkeleton className="h-[138px] w-full mb-1.5 rounded-xl" />
-                <SileoSkeleton className="h-3.5 w-[90%] rounded" />
-              </div>
-            ))}
-          </div>
+          <WallSkeletonContent />
         </div>
       );
     }

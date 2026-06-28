@@ -35,7 +35,7 @@ interface GoogleSignInButtonProps {
     active?: boolean;
 }
 
-const OAUTH_RADIUS = 'rounded-xl';
+const OAUTH_RADIUS = 'rounded-full';
 
 const compactClasses =
     'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
@@ -47,7 +47,7 @@ export const GoogleSignInButton = ({
     shellClassName = '',
     variant = 'default',
     onSuccess,
-    label = 'Iniciar Sesión',
+    label = 'Iniciar sesión',
     active = true,
 }: GoogleSignInButtonProps) => {
     const [isReady, setIsReady] = useState(false);

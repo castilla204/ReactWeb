@@ -176,7 +176,7 @@ export function FavoritesPage({ onBack }: FavoritesPageProps) {
                                     {favorite.goodThings?.map((thing, index) => (
                                         <span
                                             key={index}
-                                            className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full"
+                                            className="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs rounded-full"
                                         >
                                             {thing}
                                         </span>

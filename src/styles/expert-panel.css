@@ -5765,6 +5765,132 @@
   flex-shrink: 0;
 }
 
+/* Pasos (horario semanal · ajustes por día) + barra de guardado unificada */
+.av-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.av-step__tag {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: hsl(var(--ep-ink));
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.av-step__tag-opt {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: hsl(220 10% 55%);
+}
+
+.av-step__hint {
+  margin: -2px 0 2px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: hsl(220 10% 48%);
+  max-width: 62ch;
+}
+
+/* Barra de guardado única (pegajosa). Espejo del estilo de av-calendar__savebar. */
+.av-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-top: 4px;
+  font-size: 0.875rem;
+}
+
+.av-savebar--pending {
+  background: hsl(38 92% 96%);
+  border: 1px solid hsl(38 80% 80%);
+}
+
+.av-savebar--ok {
+  background: hsl(142 60% 96%);
+  border: 1px solid hsl(142 45% 80%);
+  color: hsl(142 50% 28%);
+  font-weight: 600;
+  gap: 8px;
+}
+
+.av-savebar--error {
+  background: hsl(var(--ep-error-bg));
+  border: 1px solid hsl(var(--ep-error-border));
+  color: hsl(var(--ep-error));
+  font-weight: 600;
+}
+
+.av-savebar__label {
+  font-weight: 600;
+  color: hsl(32 60% 28%);
+}
+
+.av-savebar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.av-savebar__discard {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--ep-border));
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(220 10% 40%);
+  transition: background-color 0.15s;
+}
+
+.av-savebar__discard:hover:not(:disabled) {
+  background: hsl(220 16% 97%);
+}
+
+.av-savebar__save {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: hsl(var(--brand));
+  padding: 8px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 3px 12px hsl(var(--brand) / 0.45);
+  transition: opacity 0.15s;
+}
+
+.av-savebar__save:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.av-savebar__discard:disabled,
+.av-savebar__save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Compacto: filas de día a una sola línea (no apilar las franjas debajo). */
+.av-schedule__day--compact {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 /* Calendario */
 .av-calendar {
   overflow: hidden;

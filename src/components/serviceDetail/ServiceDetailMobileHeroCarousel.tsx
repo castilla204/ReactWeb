@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image } from 'lucide-react';
 import { SD_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
+import { SileoSkeleton } from '../ui/sileo-skeleton';
 
 const MAX_PILL_INDICATORS = 7;
 
@@ -101,9 +102,7 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
             aria-current={idx === activeIndex ? 'true' : undefined}
           >
             {loadingImages.has(img) ? (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1c1c1c]">
-                <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
-              </div>
+              <SileoSkeleton className="absolute inset-0 z-10 h-full w-full" rounded="none" />
             ) : null}
             <img
               src={img}

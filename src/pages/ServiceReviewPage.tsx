@@ -5,18 +5,19 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
-    Heart,
     Image,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
-import FormacionDisplay from '../components/FormacionDisplay';
+import ServiceDetailAvailabilityCalendar from '../components/serviceDetail/ServiceDetailAvailabilityCalendar';
+import FormacionChips from '../components/serviceDetail/FormacionChips';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { persistServiceReturnPath, resolveServiceReturnPath } from '../utils/servicePageNavigation';
 import { readHireSearchLocation, persistHireSearchLocation, parseHireSearchLocationFromRouteState } from '../utils/hireSearchContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { showToast } from '../lib/toast';
+import { showToast, toast } from '../lib/toast';
+import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { authService } from '../services/authService';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
@@ -49,7 +50,11 @@ import { ServiceDetailDesktopPhotoMapHero } from '../components/serviceDetail/Se
 import {
     ServiceDetailDeliverablesGuide,
     normalizeDeliverableTypes,
+    type ServiceDeliverableType,
 } from '../components/serviceDetail/ServiceDetailDeliverablesGuide';
+import { useDeliverableTypes } from '../hooks/useDeliverableTypes';
+import { getDeliverableKind } from '../utils/deliverableIcons';
+import { normalizeDeliverableLabels } from '../utils/deliverableLabels';
 import { ServiceDetailReviewsModal } from '../components/serviceDetail/ServiceDetailReviewsModal';
 import { ServiceDetailReviewsPreview } from '../components/serviceDetail/ServiceDetailReviewsPreview';
 import { getCountryName } from '../utils/countries';
@@ -64,6 +69,7 @@ import { getInspectionCatalog } from '../lib/inspectionCatalog';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
+import { FavoriteHeart } from '../components/FavoriteHeart';
 import { LoginModal } from '../components/LoginModal';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
@@ -123,7 +129,46 @@ export function ServiceReviewPage({
     const [showLoginDialog, setShowLoginDialog] = useState(false);
     const [mobileTopBarCompact, setMobileTopBarCompact] = useState(false);
     const mobileHeroRef = useRef<HTMLDivElement>(null);
-    
+
+    // ❤️ Favoritos: antes solo era estado LOCAL (no persistía ni avisaba). Ahora
+    // usa el backend (igual que la homepage y el buscador del mapa) y muestra el
+    // mismo toast AZUL de marca.
+    const { toggleFavoriteAsync, checkFavorite } = useServiceFavorites();
+    const favoriteQuery = checkFavorite(serviceId);
+    useEffect(() => {
+        // El endpoint /check devuelve casing MIXTO: el envoltorio anónimo trae
+        // `data` (minúscula) pero el DTO interno serializa `IsFavorite` (PascalCase,
+        // PropertyNamingPolicy=null). Hay que leer ambos niveles en cualquier casing.
+        type FavInner = { isFavorite?: boolean; IsFavorite?: boolean };
+        const d = favoriteQuery.data as { data?: FavInner; Data?: FavInner } | undefined;
+        const inner = d?.data ?? d?.Data;
+        const fav = inner?.isFavorite ?? inner?.IsFavorite;
+        if (fav !== undefined) setIsFavorite(!!fav);
+    }, [favoriteQuery.data]);
+
+    const handleToggleFavorite = useCallback(async () => {
+        if (!isAuthenticated) {
+            toast.info('Inicia sesión para guardar favoritos', { duration: 3000 });
+            return;
+        }
+        try {
+            const result = await toggleFavoriteAsync(serviceId);
+            setIsFavorite(result.isFavorite);
+            if (result.isFavorite) {
+                toast.info('Añadido a favoritos', {
+                    description: 'Lo tienes guardado en tu lista de favoritos.',
+                    action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+                    duration: 3000,
+                });
+            } else {
+                toast.info('Quitado de favoritos', { duration: 2500 });
+            }
+        } catch (error) {
+            console.error('Error al actualizar favorito:', error);
+            toast.error('No se pudo actualizar el favorito', { duration: 3000 });
+        }
+    }, [isAuthenticated, serviceId, toggleFavoriteAsync, navigate]);
+
     // Obtener token y userId para el chat
     const token = authService.getAccessToken() || '';
     const user = useAuth().user;
@@ -405,6 +450,57 @@ export function ServiceReviewPage({
             && !(dt.displayName || '').toLowerCase().includes('informe pdf'),
     );
 
+    // Catálogo maestro de tipos de entregable: mostrar TODOS los que existen
+    // (incluidos y no incluidos), marcando cuáles entran en este servicio para
+    // que el cliente entienda qué recibe y qué no. Cae al comportamiento previo
+    // (solo seleccionados) mientras el catálogo aún no ha cargado.
+    const { deliverableTypes: allDeliverableTypes } = useDeliverableTypes();
+    const buildDeliverableCatalogCards = (excludePdf: boolean): ServiceDeliverableType[] => {
+        if (!allDeliverableTypes?.length) {
+            return excludePdf ? nonPdfDeliverableTypes : visibleDeliverableTypes;
+        }
+        const selectedIds = new Set(
+            visibleDeliverableTypes.map((d) => d.id).filter((x): x is number => typeof x === 'number'),
+        );
+        const selectedKinds = new Set(
+            visibleDeliverableTypes.map((d) => getDeliverableKind(d)).filter((k) => k !== 'default'),
+        );
+        // El backend serializa PascalCase: leer ambos casings (igual que ServiceForm).
+        return [...allDeliverableTypes]
+            .map((raw) => {
+                const dt = raw as Record<string, unknown>;
+                return {
+                    id: (dt.id ?? dt.Id) as number | undefined,
+                    name: String(dt.name ?? dt.Name ?? ''),
+                    displayName: String(dt.displayName ?? dt.DisplayName ?? dt.name ?? dt.Name ?? ''),
+                    description: String(dt.description ?? dt.Description ?? ''),
+                    isRequired: Boolean(dt.isRequired ?? dt.IsRequired),
+                    isActive: (dt.isActive ?? dt.IsActive) as boolean | undefined,
+                    sortOrder: Number(dt.sortOrder ?? dt.SortOrder ?? 0),
+                };
+            })
+            .filter((dt) => dt.isActive !== false && (dt.name || dt.displayName))
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((dt) => {
+                const kind = getDeliverableKind({ name: dt.name, displayName: dt.displayName });
+                const isSelected =
+                    (dt.id != null && selectedIds.has(dt.id)) || (kind !== 'default' && selectedKinds.has(kind));
+                return normalizeDeliverableLabels({
+                    id: dt.id,
+                    name: dt.name,
+                    displayName: dt.displayName,
+                    description: dt.description,
+                    isRequired: dt.isRequired,
+                    isSelected,
+                });
+            })
+            .filter((dt) => (excludePdf ? getDeliverableKind(dt) !== 'pdf' : true));
+    };
+    // En coche el PDF es la tarjeta de inspección; los extras (vídeo, fotos…) van aparte.
+    const inspectionExtraDeliverables = buildDeliverableCatalogCards(true);
+    // Categorías sin informe: lista completa con su estado de selección.
+    const allDeliverablesForList = buildDeliverableCatalogCards(false);
+
     // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
     // muestran el mismo precio del mismo servicio con el mismo formato (16,50 €).
@@ -527,7 +623,7 @@ export function ServiceReviewPage({
                     showCompact={mobileTopBarCompact}
                     showFavorite={isAuthenticated}
                     isFavorite={isFavorite}
-                    onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                    onFavoriteToggle={handleToggleFavorite}
                 />
 
                 <div className="relative w-full" ref={mobileHeroRef}>
@@ -538,7 +634,7 @@ export function ServiceReviewPage({
                         showCompact={mobileTopBarCompact}
                         showFavorite={isAuthenticated}
                         isFavorite={isFavorite}
-                        onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                        onFavoriteToggle={handleToggleFavorite}
                     />
                     <div className="relative w-full overflow-hidden">
                         <ServiceDetailMobilePhotoMapHero
@@ -650,16 +746,18 @@ export function ServiceReviewPage({
                                             {displayMainDescription}
                                         </p>
                                     ) : null}
+                                    <FormacionChips value={finalExpertFormacion} scrollable />
                                     {showInspectionReport ? (
                                         <>
                                             <h2 className="sd-section-label mb-3">Qué entregará</h2>
                                             <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
-                                            {nonPdfDeliverableTypes.length > 0 ? (
+                                            {inspectionExtraDeliverables.length > 0 ? (
                                                 <ServiceDetailDeliverablesGuide
-                                                    items={nonPdfDeliverableTypes}
+                                                    items={inspectionExtraDeliverables}
                                                     variant="inline"
                                                     presentation="card"
                                                     showHeading={false}
+                                                    showUnselected
                                                 />
                                             ) : null}
                                         </>
@@ -669,9 +767,15 @@ export function ServiceReviewPage({
                                             variant="inline"
                                         />
                                     ) : null}
-                                    {finalExpertFormacion && (
-                                        <FormacionDisplay value={finalExpertFormacion} />
-                                    )}
+                                    <ServiceDetailAvailabilityCalendar
+                                        serviceId={serviceId}
+                                        availability={finalAvailability}
+                                        timezone={finalService?.expert?.timezone}
+                                        isOnVacation={finalService?.expert?.isOnVacation}
+                                        showHeading={false}
+                                        compact
+                                        className="mt-5"
+                                    />
                                 </div>
                             )}
 
@@ -729,11 +833,24 @@ export function ServiceReviewPage({
                     header propio de la ficha. Decisión del usuario 2026-06-16. */}
                 <HomepageDesktopTopBar variant="plain" showLogo />
 
-                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-5 lg:pt-6`}>
-                    <div className="mb-5 overflow-hidden lg:mb-6">
+                <div className={`${SD_PAGE_INNER_MAX_CLASS} pb-12 pt-3 lg:pt-4`}>
+                    <div className="mb-4 overflow-hidden lg:mb-5">
                         <ServiceDetailDesktopPhotoMapHero
                             images={validImages}
                             onBack={onBack}
+                            secondPhotoTopRight={
+                                isAuthenticated ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleFavorite}
+                                        className="sd-mobile-topbar-btn"
+                                        aria-label={isFavorite ? 'Quitar de guardados' : 'Guardar'}
+                                        aria-pressed={isFavorite}
+                                    >
+                                        <FavoriteHeart filled={isFavorite} size={20} variant="plain" />
+                                    </button>
+                                ) : undefined
+                            }
                             onOpen={handleImageClick}
                             loadingImages={loadingImages}
                             failedImages={failedImages}
@@ -764,7 +881,7 @@ export function ServiceReviewPage({
 
                     <div className={`${SD_PAGE_GRID_CLASS} min-w-0`}>
                         <div className="min-w-0 lg:col-start-1 flex flex-col gap-5">
-                            <article className={SD_DESKTOP_PANEL_CLASS}>
+                            <article className={`${SD_DESKTOP_PANEL_CLASS} pt-2 lg:pt-2`}>
                                 <ServiceDetailExpertHostRow
                                     variant="desktop"
                                     expertName={finalExpertName}
@@ -782,62 +899,68 @@ export function ServiceReviewPage({
                                     onChatClick={handleChatClick}
                                 />
 
-                                {(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport || finalExpertFormacion) && (
-                                    <div className="mt-5 flex flex-col gap-5">
-                                        {displayMainDescription ? (
-                                            <section className="min-w-0 overflow-hidden">
-                                                <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
-                                                <div className="sd-body sd-user-text space-y-3">
-                                                    {displayMainDescription
-                                                        .split(/\n\s*\n/)
-                                                        .map((paragraph) => paragraph.trim())
-                                                        .filter(Boolean)
-                                                        .map((paragraph, index) => (
-                                                            <p key={index} className="m-0 whitespace-pre-line">
-                                                                {paragraph}
-                                                            </p>
-                                                        ))}
-                                                </div>
-                                            </section>
-                                        ) : null}
+                                <div className="mt-5 flex flex-col gap-5">
+                                    {displayMainDescription ? (
+                                        <section className="min-w-0 overflow-hidden">
+                                            <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
+                                            <div className="sd-body sd-user-text space-y-3">
+                                                {displayMainDescription
+                                                    .split(/\n\s*\n/)
+                                                    .map((paragraph) => paragraph.trim())
+                                                    .filter(Boolean)
+                                                    .map((paragraph, index) => (
+                                                        <p key={index} className="m-0 whitespace-pre-line">
+                                                            {paragraph}
+                                                        </p>
+                                                    ))}
+                                            </div>
+                                        </section>
+                                    ) : null}
+                                    <div
+                                        className={`grid grid-cols-1 gap-x-7 gap-y-5 lg:items-start ${
+                                            showInspectionReport || visibleDeliverableTypes.length > 0 ? 'lg:grid-cols-[1fr_16rem]' : ''
+                                        } ${displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : ''}`}
+                                    >
                                         {showInspectionReport ? (
-                                            <section className={displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : undefined}>
+                                            <section className="min-w-0">
                                                 <h2 className="hp-section-title mb-3">Qué entregará</h2>
                                                 <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
-                                                {nonPdfDeliverableTypes.length > 0 ? (
+                                                {inspectionExtraDeliverables.length > 0 ? (
                                                     <div className="mt-3">
                                                         <ServiceDetailDeliverablesGuide
-                                                            items={nonPdfDeliverableTypes}
+                                                            items={inspectionExtraDeliverables}
                                                             variant="inline"
                                                             presentation="card"
                                                             showHeading={false}
+                                                            showUnselected
                                                         />
                                                     </div>
                                                 ) : null}
                                             </section>
                                         ) : visibleDeliverableTypes.length > 0 ? (
-                                            <section
-                                                className={
-                                                    displayMainDescription
-                                                        ? 'border-t border-[#ebebeb] pt-5'
-                                                        : undefined
-                                                }
-                                            >
+                                            <section className="min-w-0">
                                                 <ServiceDetailDeliverablesGuide
-                                                    items={finalDeliverableTypes}
+                                                    items={allDeliverablesForList}
                                                     variant="inline"
                                                     presentation="list"
                                                     showHeading
+                                                    showUnselected
                                                 />
                                             </section>
                                         ) : null}
-                                        {finalExpertFormacion && (
-                                            <section className={(displayMainDescription || visibleDeliverableTypes.length > 0 || showInspectionReport) ? 'border-t border-[#ebebeb] pt-5' : undefined}>
-                                                <FormacionDisplay value={finalExpertFormacion} />
-                                            </section>
-                                        )}
+                                        <section className="min-w-0">
+                                            <h2 className="hp-section-title mb-3">Disponibilidad</h2>
+                                            <ServiceDetailAvailabilityCalendar
+                                                serviceId={serviceId}
+                                                availability={finalAvailability}
+                                                timezone={finalService?.expert?.timezone}
+                                                isOnVacation={finalService?.expert?.isOnVacation}
+                                                showHeading={false}
+                                                compact
+                                            />
+                                        </section>
                                     </div>
-                                )}
+                                </div>
 
                             </article>
                         </div>

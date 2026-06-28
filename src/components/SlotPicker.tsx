@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { es } from 'date-fns/locale';
-import { SileoLoader } from './ui/sileo-loader';
+import { SileoSkeleton } from './ui/sileo-skeleton';
 import { API_CONFIG } from '../config/api';
 import { getAuthToken } from '../lib/auth';
 import { Calendar } from './ui/calendar';
@@ -387,7 +387,7 @@ const SlotPicker: React.FC<Props> = ({
                         props.onClick?.(e);
                     }}
                     className={cn(
-                        'relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg font-semibold tabular-nums transition-[transform,box-shadow,background-color] duration-150',
+                        'relative flex aspect-square w-full select-none items-center justify-center overflow-hidden rounded-lg font-semibold tabular-nums transition-[transform,box-shadow,background-color] duration-150',
                         embedded ? 'text-[13px] lg:text-[14px]' : 'text-sm',
                         !disabled && !selected && !blockDayPick && 'cursor-pointer motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
                         selected && !blockDayPick && 'bg-brand text-white font-bold scale-[1.06] z-10 shadow-[0_4px_12px_hsl(var(--brand)/0.5)] ring-2 ring-inset ring-white/70',
@@ -419,7 +419,7 @@ const SlotPicker: React.FC<Props> = ({
         ? previewMode && !embeddedSplitColumn
             ? 'grid-cols-1'
             : embeddedSplitColumn
-              ? 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(10.5rem,12.5rem)] lg:h-full lg:items-center lg:gap-x-4 lg:gap-y-0'
+              ? 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,11.5rem)] lg:items-stretch lg:gap-x-4 lg:gap-y-0'
               : 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(14rem,15.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-3 lg:gap-y-0'
         : 'grid-cols-1 lg:grid-cols-2';
 
@@ -429,8 +429,8 @@ const SlotPicker: React.FC<Props> = ({
             ? cn(
                   'pt-0 pb-0 lg:items-start lg:border-r lg:border-[#eceef2]',
                   embeddedSplitColumn ? 'lg:px-3' : 'lg:pr-4',
-                  embeddedSplitColumn && embeddedSplitLayout && 'lg:flex lg:min-h-0 lg:flex-1 lg:items-center lg:justify-center lg:self-stretch',
-                  embeddedSplitColumn || !previewMode ? 'lg:self-stretch' : 'lg:self-stretch',
+                  embeddedSplitColumn && embeddedSplitLayout && 'lg:flex lg:flex-col lg:self-start',
+                  !embeddedSplitColumn && 'lg:self-stretch',
               )
             : 'max-lg:border-b max-lg:border-[#f0f0f0] max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-[#f0f0f0]/70 lg:p-3 lg:py-3',
     );
@@ -443,8 +443,7 @@ const SlotPicker: React.FC<Props> = ({
                   embeddedSplitColumn ? 'lg:min-w-[10.5rem] lg:max-w-[12.5rem] lg:shrink-0 lg:px-3' : 'lg:pl-4',
                   embeddedSplitColumn
                       ? cn(
-                            'lg:min-h-full lg:justify-center lg:py-3',
-                            previewBrowseHours ? 'lg:justify-center' : 'lg:justify-start',
+                            'lg:justify-center lg:py-1',
                         )
                       : cn(
                             'lg:min-h-full',
@@ -460,7 +459,7 @@ const SlotPicker: React.FC<Props> = ({
 
     function CalendarToolbar() {
         return (
-            <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex select-none items-start justify-between gap-3 mb-3">
                 <div>
                     <h3 className="text-[1.125rem] font-bold tracking-[-0.02em] text-[#1c1c1c] capitalize">{calMonthLabel}</h3>
                 </div>
@@ -509,11 +508,15 @@ const SlotPicker: React.FC<Props> = ({
         browseOnly?: boolean;
     }) => {
         const slotEmbedded = opts?.embeddedSlots ?? !!embedded;
-        const browseOnly = opts?.browseOnly ?? previewBrowseHours;
+        const browseOnly = opts?.browseOnly ?? previewMode;
         if (loading) {
+            // Skeleton con la MISMA rejilla que el panel real de horas (h-9, 4 col móvil /
+            // 3 col lg) en vez de un spinner centrado → no se colapsa la altura ni salta.
             return (
-                <div className="flex min-h-[72px] items-center justify-center">
-                    <SileoLoader size="sm" message="Cargando…" color="muted" />
+                <div className="grid grid-cols-4 gap-1.5 lg:grid-cols-3 lg:gap-2" aria-hidden="true">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <SileoSkeleton key={i} className="h-9 w-full rounded-md" />
+                    ))}
                 </div>
             );
         }
@@ -567,7 +570,7 @@ const SlotPicker: React.FC<Props> = ({
             className={cn(
                 'grid lg:min-h-0',
                 gridClass,
-                embeddedSplitColumn && 'mx-auto h-full w-full',
+                embeddedSplitColumn && 'mx-auto w-full',
             )}
         >
             <div className={calendarColClass}>

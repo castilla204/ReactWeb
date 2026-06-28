@@ -27,6 +27,10 @@ interface ServiceDetailDesktopPhotoMapHeroProps {
   titleOverlay?: React.ReactNode;
   /** Volver — disco flotante arriba-derecha de la galería (desktop) */
   onBack?: () => void;
+  /** Acción flotante arriba-derecha del hero (p. ej. guardar/favorito) */
+  topRight?: React.ReactNode;
+  /** Acción anclada arriba-derecha de la SEGUNDA foto de la galería (p. ej. favorito) */
+  secondPhotoTopRight?: React.ReactNode;
   className?: string;
 }
 
@@ -43,6 +47,8 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   rangeKm = 25,
   titleOverlay,
   onBack,
+  topRight,
+  secondPhotoTopRight,
   className = '',
 }) => {
   // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
@@ -52,14 +58,18 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
 
   return (
     <div
-      className={`grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2 lg:gap-4 ${className}`}
+      className={`relative grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2 lg:gap-4 ${className}`}
       style={{ minHeight: SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX }}
     >
+      {topRight ? (
+        <div className="absolute right-3 top-3 z-30">{topRight}</div>
+      ) : null}
       <div className={`relative min-h-0 min-w-0 ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}>
         <ServiceDetailDesktopGallery
           layout="split"
           className="h-full"
           images={images}
+          secondPhotoTopRight={secondPhotoTopRight}
           onOpen={onOpen}
           loadingImages={loadingImages}
           failedImages={failedImages}
@@ -91,7 +101,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
       </div>
 
       <div
-        className={`relative min-h-0 min-w-0 overflow-hidden rounded-none ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}
+        className={`relative min-h-0 min-w-0 overflow-hidden rounded-none ring-1 ring-inset ring-[#aeb8c4] ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}
       >
         {location ? (
           <>

@@ -181,6 +181,13 @@ export const useApi = () => {
                     error = { message: responseText || `Request failed with status ${response.status}` };
                 }
                 error.status = response.status;
+                // El backend (NewApi) serializa en PascalCase → el mensaje concreto del
+                // servidor llega en `Message`, no en `message`. Sin esto, los rechazos con
+                // motivo (ej. disputas/pagos pendientes al borrar cuenta) se perdían y el
+                // usuario veía el genérico "Request failed with status N".
+                if (!error.message && typeof error.Message === 'string' && error.Message) {
+                    error.message = error.Message;
+                }
                 if (!error.message) {
                     error.message = `Request failed with status ${response.status}`;
                 }

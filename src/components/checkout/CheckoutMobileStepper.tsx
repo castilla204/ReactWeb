@@ -4,7 +4,8 @@ import { cn } from '../../lib/utils';
 const STEPS = [
   { id: 1 as const, label: 'Fecha y hora' },
   { id: 2 as const, label: 'Ubicación' },
-  { id: 3 as const, label: 'Pago' },
+  { id: 3 as const, label: 'Datos del vendedor' },
+  { id: 4 as const, label: 'Pago' },
 ] as const;
 
 export type CheckoutMobileWizardStep = (typeof STEPS)[number]['id'];

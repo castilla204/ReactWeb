@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { showToast } from '../lib/toast';
 import { authService } from '../services/authService';
+import { PageRouteFallback } from './PageRouteFallback';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -28,7 +29,7 @@ export const ProtectedRoute = React.memo(({ children }: ProtectedRouteProps) => 
             setWaitingForAuth(true);
             const timeout = setTimeout(() => {
                 setWaitingForAuth(false);
-            }, 500); // Esperar 500ms para que AuthContext termine de restaurar
+            }, 150); // Margen breve para que AuthContext termine de restaurar (antes 500ms = spinner garantizado)
             return () => clearTimeout(timeout);
         } else {
             setWaitingForAuth(false);
@@ -52,11 +53,9 @@ export const ProtectedRoute = React.memo(({ children }: ProtectedRouteProps) => 
 
     // ✅ CRÍTICO: Esperar a que termine la carga antes de redirigir
     if (authLoading || waitingForAuth) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-gray-600">Cargando...</div>
-            </div>
-        );
+        // Mismo loader que RouteSuspense → la fase de auth y la de carga de ruta
+        // se ven como un único loader continuo (sin cascada texto→spinner).
+        return <PageRouteFallback />;
     }
 
     // ✅ Verificar autenticación: debe tener token Y usuario (o isAuthenticated debe ser true)

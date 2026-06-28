@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { DeliverableTypeIcon } from './DeliverableTypeIcon';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { getDeliverableDetail, type DeliverableDetail } from '../../utils/deliverableDetailContent';
@@ -57,6 +57,13 @@ interface ServiceDetailDeliverablesGuideProps {
   showHeading?: boolean;
   /** Oculta el icono/badge de tipo en las filas (lista limpia solo con texto). */
   hideIcon?: boolean;
+  /**
+   * Muestra TODOS los tipos de entregable recibidos (incluidos los no
+   * seleccionados, con `isSelected === false`), marcando cuáles entran en el
+   * servicio. Cuando es true los items llegan ya normalizados desde el llamante
+   * (no se filtran los no seleccionados).
+   */
+  showUnselected?: boolean;
   className?: string;
 }
 
@@ -113,9 +120,12 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   presentation = 'chips',
   showHeading = true,
   hideIcon = false,
+  showUnselected = false,
   className = '',
 }) => {
-  const visible = normalizeDeliverableTypes(items);
+  const visible = showUnselected
+    ? (items as ServiceDeliverableType[]).filter(Boolean)
+    : normalizeDeliverableTypes(items);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<ServiceDeliverableType | null>(null);
 
@@ -186,6 +196,20 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
     <ul className="sd-deliverable-list">
       {visible.map((dt, index) => {
         const label = getDeliverableLabel(dt);
+        const selected = dt.isSelected !== false;
+        if (!selected) {
+          return (
+            <li key={dt.id ?? `${label}-${index}`}>
+              <div className="sd-deliverable-list-item-btn cursor-default opacity-70" aria-disabled="true">
+                {!hideIcon ? <DeliverableTypeIcon deliverable={dt} variant="list" /> : null}
+                <span className="sd-deliverable-list-label text-[hsl(var(--ep-muted))]">{label}</span>
+                <span className="ml-auto shrink-0 text-[11px] font-semibold text-[hsl(var(--ep-muted))]">
+                  No incluido
+                </span>
+              </div>
+            </li>
+          );
+        }
         return (
           <li key={dt.id ?? `${label}-${index}`}>
             <button
@@ -212,18 +236,37 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
         const label = getDeliverableLabel(dt);
         const kind = getDeliverableKind(dt);
         const desc = (dt.description && dt.description.trim()) || DELIVERABLE_DESC_FALLBACK[kind] || '';
+        const selected = dt.isSelected !== false;
+        if (!selected) {
+          return (
+            <li key={dt.id ?? `${label}-${index}`}>
+              <div className="block w-full rounded-2xl border border-dashed border-[#e4e4e4] bg-[hsl(var(--ep-canvas))] p-3.5 opacity-80">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[13px] font-semibold text-[hsl(var(--ep-muted))]">{label}</span>
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-[hsl(var(--ep-border))] bg-white px-2 py-0.5 text-[11px] font-semibold text-[hsl(var(--ep-muted))]">
+                    No incluido
+                  </span>
+                </div>
+                {desc ? <p className="mt-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
+              </div>
+            </li>
+          );
+        }
         return (
           <li key={dt.id ?? `${label}-${index}`}>
             <button
               type="button"
-              className="group block w-full rounded-2xl border border-[hsl(var(--ep-border))] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
+              className="group block w-full rounded-2xl border border-[#ececec] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
               onClick={(e) => openDetail(dt, e)}
               aria-haspopup="dialog"
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[13px] font-semibold text-[hsl(var(--ep-ink))]">{label}</span>
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[hsl(var(--ep-ink))]">
+                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+                  {label}
+                </span>
                 <span className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[hsl(var(--brand))]">
                   Ver qué incluye
                   <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
