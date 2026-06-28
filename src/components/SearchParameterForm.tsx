@@ -5,6 +5,7 @@ import { getCurrencySymbol } from '../utils/priceUtils';
 import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, SlidersHorizontal } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
+import { FavoriteHeart } from './FavoriteHeart';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
 import { useServices } from '../hooks/useServices';
 import { useInfiniteServices } from '../hooks/useInfiniteServices';
@@ -18,7 +19,7 @@ import { MapAddressSearchBar, MapAddressSelection } from './MapAddressSearchBar'
 import { Service } from '../hooks/useServiceLoader';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
-import { showToast } from '../lib/toast';
+import { toast } from '../lib/toast';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
@@ -65,6 +66,8 @@ import {
     MAP_CARD_ROW_SHADOW_ACTIVE,
 } from '../constants/homepageTypography';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
+import { MapResultsSheet } from './MapResultsSheet';
+import { getStripPriceFrom, getStripThumbnails, buildStripSummary } from '../utils/mapStripSummary';
 
 // libraries ya no es necesario - MapContainer lo maneja internamente
 
@@ -202,17 +205,28 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
         e.preventDefault();
         
         if (!isAuthenticated) {
-            showToast('info', 'Inicia sesión para guardar favoritos', 3000);
+            // El flujo de la web es azul → estado `info` (azul de marca), y vía
+            // `toast` (shim) para que no lo filtre el surface por defecto.
+            toast.info('Inicia sesión para guardar favoritos', { duration: 3000 });
             return;
         }
 
         try {
             const result = await toggleFavoriteAsync(serviceId);
             setIsFavorite(result.isFavorite);
-            showToast('success', result.message, 2000);
+            // Mismo toast azul que en la homepage (no el verde de `success`).
+            if (result.isFavorite) {
+                toast.info('Añadido a favoritos', {
+                    description: 'Lo tienes guardado en tu lista de favoritos.',
+                    action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+                    duration: 3000,
+                });
+            } else {
+                toast.info('Quitado de favoritos', { duration: 2500 });
+            }
         } catch (error: any) {
             console.error('Error al actualizar favorito:', error);
-            showToast('error', error.message || 'Error al actualizar favorito', 3000);
+            toast.error('No se pudo actualizar el favorito', { duration: 3000 });
         }
     };
     
@@ -357,10 +371,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                                 className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110"
                             >
-                                <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"
-                                    style={{ display: 'block', height: '20px', width: '20px', fill: isFavorite ? '#FF385C' : 'rgba(0,0,0,0.45)', stroke: '#ffffff', strokeWidth: '2.5', overflow: 'visible' }}>
-                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                                </svg>
+                                <FavoriteHeart filled={isFavorite} size={20} variant="on-image" />
                             </button>
                         )}
                     </div>
@@ -462,26 +473,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     height: '44px',
                                 }}
                             >
-                                <svg
-                                    viewBox="0 0 32 32"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    aria-hidden="true"
-                                    role="presentation"
-                                    focusable="false"
-                                    style={{
-                                        display: 'block',
-                                        fill: isFavorite ? '#FF385C' : 'rgba(0, 0, 0, 0.5)',
-                                        height: '24px',
-                                        width: '24px',
-                                        stroke: isFavorite ? '#FF385C' : 'rgba(255, 255, 255, 0.85)',
-                                        strokeWidth: '2',
-                                        overflow: 'visible',
-                                        margin: '0',
-                                        padding: '0',
-                                    }}
-                                >
-                                    <path d="m15.9998 28.6668c7.1667-4.8847 14.3334-10.8844 14.3334-18.1088 0-1.84951-.6993-3.69794-2.0988-5.10877-1.3996-1.4098-3.2332-2.11573-5.0679-2.11573-1.8336 0-3.6683.70593-5.0668 2.11573l-2.0999 2.11677-2.0999-2.11677c-1.3985-1.4098-3.2332-2.11573-5.0668-2.11573-1.8347 0-3.6683.70593-5.0679 2.11573-1.3996 1.41083-2.0988 3.25926-2.0988 5.10877 0 7.2244 7.1667 13.2241 14.3334 18.1088z"></path>
-                                </svg>
+                                <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />
                             </button>
                             ) : null}
 
@@ -1682,6 +1674,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
     // Orden de la lista desktop (cliente). 'relevance' = orden del backend (selección primero).
     const [sortBy, setSortBy] = useState<MapSortKey>('relevance');
+    // Panel inferior móvil plegable: arranca plegado para dejar ver el mapa.
+    const [stripExpanded, setStripExpanded] = useState(false);
 
     // MapContainer maneja bounds internamente - ya no necesitamos estos estados
    
@@ -1910,6 +1904,17 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
         return arr;
     }, [services, sortBy, selectedService, selectedLocation]);
+
+    // Props para el asa de la franja plegable (móvil): recuento, miniaturas y línea resumen.
+    const stripBarProps = useMemo(() => {
+        const sortLabel = MAP_SORT_OPTIONS.find((o) => o.key === sortBy)?.label ?? 'Relevancia';
+        const priceFrom = getStripPriceFrom(displayedServices as any);
+        return {
+            count: displayedServices.length,
+            thumbnails: getStripThumbnails(displayedServices as any, 3),
+            summary: buildStripSummary({ sortLabel, isDefaultSort: sortBy === 'relevance', priceFrom }),
+        };
+    }, [displayedServices, sortBy]);
 
     // ✅ OPTIMIZADO: Verificar favoritos de servicios del mapa y del drawer de una vez
     const { isAuthenticated } = useAuth();
@@ -2354,6 +2359,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
             setIsDrawerVisible(true);
             setMobileDrawerSnap(MOBILE_MAP_SNAP_DEPLOYED);
             setWasManuallyClosed(false);
+            setStripExpanded(true); // auto-expandir la franja plegable al tocar un pin
         }
         
         // ✅ Centrar la card seleccionada en el carrusel horizontal (desktop y móvil)
@@ -2619,62 +2625,72 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 </div>
                                 )}
 
-                            {/* Barra inferior: cabecera + cards (móvil mantiene flechas laterales en el carrusel) */}
+                            {/* Barra inferior PLEGABLE (móvil): franja-asa + cuerpo con chrome + carrusel */}
                             {formData.latitude && formData.longitude && (
-                                <div className={`${MAP_STRIP_OVERLAY_GRADIENT_CLASS} z-[9998] pt-16`}>
-                                    <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]`}>
-                                        <MapStripOverlayChrome
-                                            resultCount={displayedServices.length}
-                                            sortBy={sortBy}
-                                            onSort={setSortBy}
-                                            minRating={filters.rating}
-                                            onMinRating={(r) => setFilters((prev) => ({ ...prev, rating: r }))}
-                                            priceRange={[filters.priceRange[0], Math.min(filters.priceRange[1], priceMax)]}
-                                            onPriceRange={(r) => setFilters((prev) => ({ ...prev, priceRange: r }))}
-                                            priceMax={priceMax}
-                                            canScrollLeft={mobileStripScroll.canScrollLeft}
-                                            canScrollRight={mobileStripScroll.canScrollRight}
-                                            onScroll={mobileStripScroll.scroll}
-                                            hideRating
-                                            isMobile
-                                            isLoading={mapLoading}
-                                            rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
-                                            onExpandRadius={handleExpandSearchRadius}
-                                        />
-                                        {(displayedServices.length > 0 || mapLoading) && (
-                                        <div
-                                            ref={mobileStripScroll.scrollRef}
-                                            // -mx-5 px-5: el carrusel sangra hasta los bordes de la pantalla (cancela el
-                                            // gutter px-5 del contenedor) y reañade el padding como scroll-padding interno,
-                                            // así las cards usan todo el ancho sin márgenes laterales muertos en el deslizable.
-                                            className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                                        >
-                                        {displayedServices.length > 0 ? (
-                                            displayedServices.map((service) => {
-                                                const serviceId = service.id || (service as any).Id;
-                                                const isSelected = selectedService === serviceId;
-                                                return (
-                                                    <div key={serviceId} data-strip-card={serviceId} className="shrink-0 snap-center">
-                                                        <MapServiceCard
-                                                            service={service}
-                                                            isSelected={isSelected}
-                                                            onSelect={handleServiceSelect}
-                                                            onNavigateToService={persistCurrentSearchLocation}
-                                                            mapCenter={selectedLocation}
-                                                            variant="strip"
-                                                            initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
-                                                        />
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            [1, 2, 3].map((i) => (
-                                                <div key={i} className="h-[150px] w-[176px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
-                                            ))
-                                        )}
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[9998] pb-[env(safe-area-inset-bottom,0px)]">
+                                    <MapResultsSheet
+                                        expanded={stripExpanded}
+                                        onExpandedChange={setStripExpanded}
+                                        count={stripBarProps.count}
+                                        summary={stripBarProps.summary}
+                                        thumbnails={stripBarProps.thumbnails}
+                                    >
+                                        <div className="bg-gradient-to-t from-black/55 via-black/28 to-transparent pt-10">
+                                            <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pb-3`}>
+                                                <MapStripOverlayChrome
+                                                    resultCount={displayedServices.length}
+                                                    sortBy={sortBy}
+                                                    onSort={setSortBy}
+                                                    minRating={filters.rating}
+                                                    onMinRating={(r) => setFilters((prev) => ({ ...prev, rating: r }))}
+                                                    priceRange={[filters.priceRange[0], Math.min(filters.priceRange[1], priceMax)]}
+                                                    onPriceRange={(r) => setFilters((prev) => ({ ...prev, priceRange: r }))}
+                                                    priceMax={priceMax}
+                                                    canScrollLeft={mobileStripScroll.canScrollLeft}
+                                                    canScrollRight={mobileStripScroll.canScrollRight}
+                                                    onScroll={mobileStripScroll.scroll}
+                                                    hideRating
+                                                    isMobile
+                                                    isLoading={mapLoading}
+                                                    rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
+                                                    onExpandRadius={handleExpandSearchRadius}
+                                                />
+                                                {(displayedServices.length > 0 || mapLoading) && (
+                                                <div
+                                                    ref={mobileStripScroll.scrollRef}
+                                                    // -mx-5 px-5: el carrusel sangra hasta los bordes de la pantalla (cancela el
+                                                    // gutter px-5 del contenedor) y reañade el padding como scroll-padding interno,
+                                                    // así las cards usan todo el ancho sin márgenes laterales muertos en el deslizable.
+                                                    className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                                                >
+                                                {displayedServices.length > 0 ? (
+                                                    displayedServices.map((service) => {
+                                                        const serviceId = service.id || (service as any).Id;
+                                                        const isSelected = selectedService === serviceId;
+                                                        return (
+                                                            <div key={serviceId} data-strip-card={serviceId} className="shrink-0 snap-center">
+                                                                <MapServiceCard
+                                                                    service={service}
+                                                                    isSelected={isSelected}
+                                                                    onSelect={handleServiceSelect}
+                                                                    onNavigateToService={persistCurrentSearchLocation}
+                                                                    mapCenter={selectedLocation}
+                                                                    variant="strip"
+                                                                    initialIsFavorite={isAuthenticated ? (favoritesMap[serviceId] || false) : false}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    [1, 2, 3].map((i) => (
+                                                        <div key={i} className="h-[150px] w-[176px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
+                                                    ))
+                                                )}
+                                                </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        )}
-                                    </div>
+                                    </MapResultsSheet>
                                 </div>
                             )}
                 </div>
