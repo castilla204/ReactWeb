@@ -897,6 +897,9 @@ const MAP_STRIP_FILTER_CLASS =
     'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-white/80 bg-white px-3 font-display text-[12px] font-semibold text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.28),0_1px_3px_rgba(0,0,0,0.14)] transition-[box-shadow,background] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-[13px]';
 const MAP_STRIP_FILTER_ACTIVE_CLASS =
     'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#1c1c1c] bg-[#1c1c1c] px-3 font-display text-[12px] font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.38),0_1px_4px_rgba(0,0,0,0.2)] transition-[box-shadow,background] hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-[13px]';
+// Variante para superficie clara (hoja blanca del panel plegable móvil): sin sombra oscura flotante.
+const MAP_STRIP_FILTER_CLASS_LIGHT =
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#dddddd] bg-[#f7f7f7] px-3 font-display text-[12px] font-semibold text-[#1c1c1c] transition-[background] hover:bg-[#efefef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 md:h-9 md:px-3.5 md:text-[13px]';
 
 const MAP_STRIP_OVERLAY_GRADIENT_CLASS =
     'pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 via-black/28 to-transparent pt-24';
@@ -915,6 +918,7 @@ function MapStripFilterControls({
     priceMax,
     hideRating = false,
     isMobile = false,
+    lightSurface = false,
 }: {
     sortBy: MapSortKey;
     onSort: (k: MapSortKey) => void;
@@ -925,11 +929,13 @@ function MapStripFilterControls({
     priceMax: number;
     hideRating?: boolean;
     isMobile?: boolean;
+    lightSurface?: boolean;
 }) {
     const sortLabel = MAP_SORT_OPTIONS.find((o) => o.key === sortBy)?.label ?? 'Relevancia';
     const ratingActive = minRating > 0;
     const priceActive = priceRange[0] > 0 || priceRange[1] < priceMax;
-    const trig = (active: boolean) => (active ? MAP_STRIP_FILTER_ACTIVE_CLASS : MAP_STRIP_FILTER_CLASS);
+    const idleClass = lightSurface ? MAP_STRIP_FILTER_CLASS_LIGHT : MAP_STRIP_FILTER_CLASS;
+    const trig = (active: boolean) => (active ? MAP_STRIP_FILTER_ACTIVE_CLASS : idleClass);
 
     // 📱 Móvil: los Popover anclados a las píldoras flotaban encima del mapa y
     //    quedaban mal (el slider de precio sobre todo). Usamos bottom sheets (Drawer)
@@ -1197,6 +1203,7 @@ function MapStripOverlayChrome({
     rangeKm = 25,
     onExpandRadius,
     isMobile = false,
+    lightSurface = false,
 }: {
     resultCount: number;
     sortBy: MapSortKey;
@@ -1214,6 +1221,7 @@ function MapStripOverlayChrome({
     rangeKm?: number;
     onExpandRadius?: () => void;
     isMobile?: boolean;
+    lightSurface?: boolean;
 }) {
     const isEmpty = resultCount === 0 && !isLoading;
     const nextRadiusKm = getNextSearchRadiusKm(rangeKm);
@@ -1221,20 +1229,24 @@ function MapStripOverlayChrome({
 
     return (
         <div className="mb-2 md:mb-3">
-            <div className="mb-2 flex items-center justify-between gap-3 md:gap-4">
-                <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-display text-[1.125rem] font-semibold leading-[1.25] tracking-[-0.01em] text-white md:text-[1.25rem] md:leading-[1.3]">
-                        {resultCount} {resultCount === 1 ? 'experto disponible' : 'expertos disponibles'}
-                    </h2>
+            {/* En superficie clara (panel plegable móvil) el recuento ya lo muestra el asa → ocultamos
+                esta fila de título+flechas para no duplicar y mantener la hoja limpia. */}
+            {!lightSurface && (
+                <div className="mb-2 flex items-center justify-between gap-3 md:gap-4">
+                    <div className="min-w-0 flex-1">
+                        <h2 className="truncate font-display text-[1.125rem] font-semibold leading-[1.25] tracking-[-0.01em] text-white md:text-[1.25rem] md:leading-[1.3]">
+                            {resultCount} {resultCount === 1 ? 'experto disponible' : 'expertos disponibles'}
+                        </h2>
+                    </div>
+                    {resultCount > 0 ? (
+                        <MapStripNavArrows
+                            canScrollLeft={canScrollLeft}
+                            canScrollRight={canScrollRight}
+                            onScroll={onScroll}
+                        />
+                    ) : null}
                 </div>
-                {resultCount > 0 ? (
-                    <MapStripNavArrows
-                        canScrollLeft={canScrollLeft}
-                        canScrollRight={canScrollRight}
-                        onScroll={onScroll}
-                    />
-                ) : null}
-            </div>
+            )}
             <MapStripFilterControls
                 sortBy={sortBy}
                 onSort={onSort}
@@ -1245,10 +1257,11 @@ function MapStripOverlayChrome({
                 priceMax={priceMax}
                 hideRating={hideRating}
                 isMobile={isMobile}
+                lightSurface={lightSurface}
             />
             {isEmpty && (
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <p className="text-[13px] font-medium leading-snug text-white/90">
+                    <p className={`text-[13px] font-medium leading-snug ${lightSurface ? 'text-[#444444]' : 'text-white/90'}`}>
                         Prueba ampliando el radio de búsqueda.
                     </p>
                     {canExpandRadius && onExpandRadius ? (
@@ -2627,7 +2640,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
                             {/* Barra inferior PLEGABLE (móvil): franja-asa + cuerpo con chrome + carrusel */}
                             {formData.latitude && formData.longitude && (
-                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[9998] pb-[env(safe-area-inset-bottom,0px)]">
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[9998]">
                                     <MapResultsSheet
                                         expanded={stripExpanded}
                                         onExpandedChange={setStripExpanded}
@@ -2635,8 +2648,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         summary={stripBarProps.summary}
                                         thumbnails={stripBarProps.thumbnails}
                                     >
-                                        <div className="bg-gradient-to-t from-black/55 via-black/28 to-transparent pt-10">
-                                            <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pb-3`}>
+                                        <div className="bg-white">
+                                            <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pt-1 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]`}>
                                                 <MapStripOverlayChrome
                                                     resultCount={displayedServices.length}
                                                     sortBy={sortBy}
@@ -2651,6 +2664,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     onScroll={mobileStripScroll.scroll}
                                                     hideRating
                                                     isMobile
+                                                    lightSurface
                                                     isLoading={mapLoading}
                                                     rangeKm={parseInt(formData.locationRange || '25', 10) || 25}
                                                     onExpandRadius={handleExpandSearchRadius}
