@@ -1687,8 +1687,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     });
     // Orden de la lista desktop (cliente). 'relevance' = orden del backend (selección primero).
     const [sortBy, setSortBy] = useState<MapSortKey>('relevance');
-    // Panel inferior móvil plegable: arranca plegado para dejar ver el mapa.
-    const [stripExpanded, setStripExpanded] = useState(false);
+    // Panel inferior móvil plegable: arranca DESPLEGADO (el usuario ve la lista al entrar).
+    const [stripExpanded, setStripExpanded] = useState(true);
 
     // MapContainer maneja bounds internamente - ya no necesitamos estos estados
    
