@@ -66,19 +66,35 @@ export function MapResultsSheet({
                     )}
                 </span>
                 <ChevronUp
-                    className={`h-5 w-5 shrink-0 text-[#717171] transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+                    className="h-5 w-5 shrink-0 text-[#717171]"
+                    style={{
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: reduceMotion ? 'none' : 'transform 0.3s ease',
+                    }}
                     aria-hidden
                 />
             </motion.button>
 
-            <motion.div
-                initial={false}
-                animate={{ height: expanded ? 'auto' : 0, opacity: expanded ? 1 : 0 }}
-                transition={reduceMotion ? { duration: 0 } : { type: 'spring', damping: 32, stiffness: 340 }}
-                style={{ overflow: 'hidden' }}
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateRows: expanded ? '1fr' : '0fr',
+                    transition: reduceMotion
+                        ? 'none'
+                        : 'grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
             >
-                {children}
-            </motion.div>
+                <div
+                    style={{
+                        overflow: 'hidden',
+                        minHeight: 0,
+                        opacity: expanded ? 1 : 0,
+                        transition: reduceMotion ? 'none' : 'opacity 0.2s ease',
+                    }}
+                >
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }
