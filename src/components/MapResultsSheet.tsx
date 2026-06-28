@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, type PanInfo } from 'framer-motion';
 import { ChevronUp } from 'lucide-react';
 
@@ -20,6 +21,20 @@ export function MapResultsSheet({
 }: MapResultsSheetProps) {
     const reduceMotion = useReducedMotion();
 
+    // Altura del cuerpo medida con ResizeObserver: animamos `height` a px exactos en lugar de
+    // `grid-template-rows: 1fr`, que en este layout (contenedor de altura indefinida) resolvía a 0.
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [contentHeight, setContentHeight] = useState(0);
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        const update = () => setContentHeight(el.scrollHeight);
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
     const handleDragEnd = (_: unknown, info: PanInfo) => {
         if (info.offset.y < -40 || info.velocity.y < -300) {
             onExpandedChange(true);
@@ -39,7 +54,12 @@ export function MapResultsSheet({
                 onClick={() => onExpandedChange(!expanded)}
                 aria-expanded={expanded}
                 aria-label={expanded ? 'Plegar lista de resultados' : 'Desplegar lista de resultados'}
-                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl border-t border-[#ebebeb] bg-white px-3.5 py-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
+                style={{
+                    paddingBottom: expanded
+                        ? undefined
+                        : 'calc(env(safe-area-inset-bottom, 0px) + 0.625rem)',
+                }}
+                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl bg-white px-3.5 pt-2.5 pb-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
             >
                 {thumbnails.length > 0 && (
                     <span className="flex shrink-0 items-center">
@@ -77,23 +97,15 @@ export function MapResultsSheet({
 
             <div
                 style={{
-                    display: 'grid',
-                    gridTemplateRows: expanded ? '1fr' : '0fr',
+                    height: expanded ? contentHeight : 0,
+                    overflow: 'hidden',
+                    opacity: expanded ? 1 : 0,
                     transition: reduceMotion
                         ? 'none'
-                        : 'grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+                        : 'height 0.34s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
                 }}
             >
-                <div
-                    style={{
-                        overflow: 'hidden',
-                        minHeight: 0,
-                        opacity: expanded ? 1 : 0,
-                        transition: reduceMotion ? 'none' : 'opacity 0.2s ease',
-                    }}
-                >
-                    {children}
-                </div>
+                <div ref={contentRef}>{children}</div>
             </div>
         </div>
     );
