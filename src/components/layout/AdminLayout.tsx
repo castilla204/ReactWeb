@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ArrowLeft, Users, Settings, Bell, AlertTriangle, Activity, LayoutDashboard, FolderTree, Link2, Mail } from 'lucide-react';
 import Background from '../Background';
 import { useAuth } from '../../contexts/AuthContext';
+import { PageRouteFallback } from '../PageRouteFallback';
 import '../../styles/admin-panel.css';
 
 interface AdminLayoutProps {
@@ -15,12 +16,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="relative min-h-screen flex items-center justify-center">
-        <Background />
-        <div className="relative z-10 text-gray-600">Cargando...</div>
-      </div>
-    );
+    return <PageRouteFallback />;
   }
 
   if (!isAuthenticated || !user) {

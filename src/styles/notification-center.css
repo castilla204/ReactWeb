@@ -186,9 +186,10 @@
   box-shadow: inset 3px 0 0 hsl(var(--ep-info));
 }
 
+/* El "éxito" (likes, guardados, aprobado…) sigue el flujo azul de la web, no verde */
 .nc-item--unread.nc-item--tone-success {
-  background: hsl(152 35% 96%);
-  box-shadow: inset 3px 0 0 hsl(var(--ep-success));
+  background: hsl(210 60% 97%);
+  box-shadow: inset 3px 0 0 hsl(var(--brand));
 }
 
 .nc-item--unread.nc-item--tone-warning {

@@ -8,7 +8,7 @@ import AvailabilityCalendar from '../../components/expertPanel/AvailabilityCalen
 import AvailabilityRulesEditor from '../../components/expertPanel/AvailabilityRulesEditor';
 import { AdminServiceFormModal } from '../../components/admin/AdminServiceFormModal';
 import { showToast } from '../../lib/toast';
-import { AdminCard, AdminCardHeader, AdminButton, AdminStatusPill } from '../../components/admin/ui';
+import { AdminCard, AdminCardHeader, AdminButton, AdminStatusPill, AdminTableSkeleton } from '../../components/admin/ui';
 // Estilos de maquetación del panel del experto (pf-*/av-*), necesarios para que el
 // ProfileEditForm y los componentes de disponibilidad embebidos se vean igual que en su panel.
 import '../../styles/expert-panel.css';
@@ -118,7 +118,7 @@ export default function AdminExpertEditPage() {
             </button>
 
             {expertQuery.isLoading ? (
-                <AdminCard><div className="py-8 text-center text-[hsl(var(--ap-muted))]">Cargando…</div></AdminCard>
+                <AdminCard><AdminTableSkeleton rows={5} cols={4} /></AdminCard>
             ) : !e ? (
                 <AdminCard><div className="py-8 text-center text-[hsl(var(--ap-muted))]">Experto no encontrado.</div></AdminCard>
             ) : (
@@ -207,7 +207,7 @@ export default function AdminExpertEditPage() {
                                 </AdminButton>
                             </div>
                             {servicesQuery.isLoading ? (
-                                <div className="py-8 text-center text-[hsl(var(--ap-muted))]">Cargando servicios…</div>
+                                <AdminTableSkeleton rows={4} cols={4} />
                             ) : services.length === 0 ? (
                                 <div className="py-8 text-center text-[hsl(var(--ap-muted))]">Este experto no tiene servicios.</div>
                             ) : (

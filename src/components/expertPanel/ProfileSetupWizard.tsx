@@ -28,6 +28,7 @@ interface ProfileLike {
 interface ProfileSetupWizardProps {
     profile: ProfileLike;
     onEditProfile: () => void;
+    onEditAvailability?: () => void;
     onOpenStripe: () => void;
     visibilityNote?: string | null;
     stripeNote?: string | null;
@@ -304,6 +305,7 @@ function StepCard({
 export function ProfileSetupWizard({
     profile,
     onEditProfile,
+    onEditAvailability,
     onOpenStripe,
     visibilityNote,
     stripeNote,
@@ -329,6 +331,7 @@ export function ProfileSetupWizard({
 
     const handlePrimary = (stepId: StepId) => {
         if (stepId === 'fiscal') onOpenStripe();
+        else if (stepId === 'availability') (onEditAvailability ?? onEditProfile)();
         else onEditProfile();
     };
 

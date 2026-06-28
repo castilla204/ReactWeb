@@ -102,10 +102,14 @@ export function handleHttpError(response: Response, url: string): void {
         case 502:
         case 503:
         case 504:
-            toast.error('Error del servidor', {
-                description: 'El servidor está experimentando problemas. Por favor, intenta más tarde.',
-                duration: 6000,
-            });
+            // El panel de disputas (admin) muestra su propio estado inline con botón
+            // "Reintentar". Evitamos el toast global bloqueante para esos endpoints.
+            if (!/\/api\/dispute(\/|\?|$)/i.test(url)) {
+                toast.error('Error del servidor', {
+                    description: 'El servidor está experimentando problemas. Por favor, intenta más tarde.',
+                    duration: 6000,
+                });
+            }
             break;
 
         default:

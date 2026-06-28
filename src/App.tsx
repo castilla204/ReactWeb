@@ -52,6 +52,7 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { CookieBanner } from './components/CookieBanner';
 import { ChatbotFab } from './components/ChatbotFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
+import { useIsMobile } from './hooks/useIsMobile';
 import erizoImg from './media/erizo.png';
 
 // ⚡ Componentes que NO se ven en el arranque, fuera del bundle inicial:
@@ -101,13 +102,23 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
 // La ruta /searchhire/:id pasa el id como searchHireId directamente
 const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const { id } = useParams<{ id: string }>();
     const searchHireId = parsePositiveIntegerParam(id);
 
     if (!searchHireId) {
         return <NotFoundPage />;
     }
-    
+
+    // En ESCRITORIO la ficha del hire vive SIEMPRE incrustada dentro de la bandeja
+    // unificada (/mis-mensajes), nunca como página suelta. Redirigir aquí captura
+    // todos los orígenes a la vez (notificaciones "Ver detalles", emails, URL directa)
+    // sin tocar el backend. En MÓVIL no caben las dos columnas, así que se mantiene la
+    // página completa del chat (que es la versión móvil de la vista fusionada).
+    if (!isMobile) {
+        return <Navigate to={`/mis-mensajes?searchHireId=${searchHireId}`} replace />;
+    }
+
     return (
         <RouteSuspense>
             <LazyPages.SearchDetails

@@ -18,8 +18,10 @@ const MAP_THEME = {
   sky: '#dce9f2',
   brand: '#0066CC',
   brandStroke: 'rgba(0, 102, 204, 0.5)',
-  brandFillPreview: 'rgba(0, 102, 204, 0.08)',
-  brandStrokePreview: 'rgba(0, 102, 204, 0.2)',
+  // Preview (miniatura del hero): el círculo se veía casi transparente y el mapa
+  // lavado. Subimos relleno y trazo de marca para que la cobertura "tenga color".
+  brandFillPreview: 'rgba(0, 102, 204, 0.16)',
+  brandStrokePreview: 'rgba(0, 102, 204, 0.6)',
 } as const;
 
 function buildCartoStyle(): maplibregl.StyleSpecification {
@@ -144,7 +146,7 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
               source: 'coverage',
               paint: {
                 'line-color': isPreview ? MAP_THEME.brandStrokePreview : MAP_THEME.brandStroke,
-                'line-width': isPreview ? 1.25 : 2.5,
+                'line-width': isPreview ? 2 : 2.5,
               },
             });
           } else {
@@ -231,13 +233,19 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
           : 'rounded-lg border border-[#e8e8e8]'
       } ${fillsParent ? 'min-h-0' : ''} ${className}`.trim()}
     >
-      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0 h-full w-full"
+        // Preview: las teselas Carto Voyager se ven lavadas → un punto de saturación
+        // y contraste devuelve algo de color (verdes/azules) sin pasarse.
+        style={isPreview ? { filter: 'saturate(1.14) contrast(1.03)' } : undefined}
+      />
       {isPreview && (
         <div
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
             background:
-              'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(238,242,245,0.15) 100%)',
+              'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 55%, rgba(238,242,245,0.1) 100%)',
           }}
           aria-hidden
         />

@@ -7,6 +7,7 @@ import { Drawer, DrawerContent } from './ui/drawer';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { useMobileDrawerKeyboard } from '../hooks/useMobileDrawerKeyboard';
 import { useWindowSize } from '../hooks/useWindowSize';
+import { useSupportChat } from '../hooks/useSupportChat';
 import {
   CHATBOT_FAB_BOTTOM_STANDALONE_CLASS,
   CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS,
@@ -58,8 +59,9 @@ export const ChatbotFab: React.FC = () => {
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
   const [expertServicesFooter, setExpertServicesFooter] = useState(false);
   const [mobileSearchOverlay, setMobileSearchOverlay] = useState(false);
-  const [panelKey, setPanelKey] = useState(0);
   const fabRef = useRef<HTMLButtonElement>(null);
+  /** Una sola instancia de chat: la conversación persiste aunque se cierre el drawer. */
+  const chat = useSupportChat();
   const location = useLocation();
   const { width } = useWindowSize();
   const isMobile = width === 0 || width < 768;
@@ -116,16 +118,11 @@ export const ChatbotFab: React.FC = () => {
   }, [isOpen]);
 
   const handleOpenChange = (open: boolean) => {
-    if (open) setPanelKey((k) => k + 1);
     setIsOpen(open);
   };
 
   const toggleOpen = () => {
-    setIsOpen((prev) => {
-      const next = !prev;
-      if (next) setPanelKey((k) => k + 1);
-      return next;
-    });
+    setIsOpen((prev) => !prev);
   };
 
   if (isHidden || !cookiesAccepted) return null;
@@ -148,9 +145,6 @@ export const ChatbotFab: React.FC = () => {
             noOverlay
             style={{
               backgroundColor: '#ffffff',
-              backgroundImage:
-                'linear-gradient(90deg, rgba(247,193,75,0.45) 0%, rgba(253,237,205,0.42) 36%, rgba(221,233,250,0.48) 62%, rgba(63,127,224,0.45) 100%)',
-              backgroundRepeat: 'no-repeat',
               ...(keyboardLayout
                 ? {
                     height: keyboardLayout.height,
@@ -165,7 +159,7 @@ export const ChatbotFab: React.FC = () => {
             description="Respuestas sobre la plataforma"
           >
             <ChatbotPanel
-              key={panelKey}
+              chat={chat}
               variant="drawer"
               onClose={() => setIsOpen(false)}
             />
@@ -175,14 +169,14 @@ export const ChatbotFab: React.FC = () => {
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
           <SheetContent
             side="right"
-            className="flex h-full w-full max-w-[24rem] flex-col gap-0 border-l border-[#e8e8e8] bg-white p-0 sm:max-w-[24rem] [&>button]:hidden"
+            className="flex h-full w-full max-w-[25rem] flex-col gap-0 border-l border-[#e8eaee] bg-white p-0 sm:max-w-[25rem] [&>button]:hidden"
           >
             <SheetTitle className="sr-only">Asistente de Inspecciono</SheetTitle>
             <SheetDescription className="sr-only">
               Respuestas sobre la plataforma
             </SheetDescription>
             <ChatbotPanel
-              key={panelKey}
+              chat={chat}
               variant="drawer"
               onClose={() => setIsOpen(false)}
             />

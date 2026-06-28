@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List } from 'lucide-react';
-import { SileoPageLoader } from './ui/sileo-loader';
+import { SileoSkeleton } from './ui/sileo-skeleton';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -882,6 +882,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             return {
                 showPropose: false,
                 showCancel: false,
+                showCancelPending: false,
                 showAccept: false,
                 showReject: false
             };
@@ -903,6 +904,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             return {
                 showPropose: false && isClient && canPropose && !!search?.searchHire, // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: false,
+                showCancelPending: false,
                 showAccept: false,
                 showReject: false
             };
@@ -951,6 +953,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             return {
                 showPropose: false && (canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled), // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: status === 'appointment_confirmed',
+                // Cancelar SIN COSTE mientras el experto no confirme (pago solo autorizado → devolución 100%).
+                showCancelPending: status === 'appointment_pending_expert_confirmation',
                 showAccept: false,
                 showReject: false
             };
@@ -976,6 +980,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             return {
                 showPropose: false,
                 showCancel: status === 'appointment_confirmed',
+                showCancelPending: false,
                 showAccept: false && canAcceptOrReject, // SISTEMA ANTIGUO: aceptar cita retirado (endpoint /confirm #if false)
                 showReject: false && canAcceptOrReject  // SISTEMA ANTIGUO: rechazar cita retirado (endpoint /reject #if false)
             };
@@ -984,6 +989,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         return {
             showPropose: false,
             showCancel: false,
+            showCancelPending: false,
             showAccept: false,
             showReject: false
         };
@@ -1159,6 +1165,25 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     setModalActionType('cancel');
                         setShowRejectModal(true);
                     break;
+
+                // Cancelación SIN COSTE mientras la cita está PENDIENTE de confirmación del experto.
+                // El dinero solo está autorizado (no cobrado) → devolución 100% a 0€ (rama N10 backend).
+                case 'cancelPending': {
+                    const hireId = appointment.searchHireId;
+                    if (!hireId) { showToast('error', 'No se pudo identificar la contratación.'); break; }
+                    if (!window.confirm('¿Cancelar la cita? Como el experto aún no la ha confirmado, no se te cobrará nada (devolución del 100%).')) break;
+                    const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-pending`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({} as any));
+                        throw new Error(err.message || 'No se pudo cancelar la cita.');
+                    }
+                    showToast('success', 'Cita cancelada. No se te ha cobrado nada.');
+                    invalidateAll();
+                    break;
+                }
             }
         } catch (error: any) {
             console.error('Error en acción de cita:', error);
@@ -1242,9 +1267,36 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     useErrorHandler(error, isError);
 
     if (isLoading) {
+        // Skeleton estructural (cabecera + 2 columnas) en vez de un spinner centrado
+        // sobre pantalla en blanco → mejor percepción y menos salto al llegar el contenido.
         return (
-            <div className={`flex items-center justify-center bg-gray-50 ${embedded ? 'h-full min-h-[20rem]' : 'h-screen'}`}>
-                <SileoPageLoader message="Cargando detalles…" className="bg-transparent" />
+            <div
+                className={`bg-gray-50 ${embedded ? 'h-full min-h-[20rem] p-4' : 'min-h-screen px-4 py-6 md:px-8'}`}
+                aria-busy="true"
+            >
+                <div className="mx-auto w-full max-w-5xl space-y-4">
+                    <div className="flex items-center gap-3">
+                        <SileoSkeleton className="h-10 w-10" rounded="full" />
+                        <div className="flex-1 space-y-2">
+                            <SileoSkeleton className="h-5 w-1/2 rounded" />
+                            <SileoSkeleton className="h-3.5 w-1/3 rounded" />
+                        </div>
+                        <SileoSkeleton className="h-8 w-24 rounded-full" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-[1fr_360px]">
+                        <div className="space-y-3">
+                            <SileoSkeleton className="h-44 w-full rounded-xl" />
+                            <SileoSkeleton className="h-4 w-full rounded" />
+                            <SileoSkeleton className="h-4 w-5/6 rounded" />
+                            <SileoSkeleton className="h-4 w-2/3 rounded" />
+                        </div>
+                        <div className="space-y-3">
+                            <SileoSkeleton className="h-28 w-full rounded-xl" />
+                            <SileoSkeleton className="h-20 w-full rounded-xl" />
+                            <SileoSkeleton className="h-10 w-full rounded-lg" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -2173,6 +2225,29 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             </>
                                                         )}
                                                     </Button>
+                                                )}
+
+                                                {/* ✅ BOTÓN: Cancelar SIN COSTE mientras el experto no confirme (cliente). Pago solo
+                                                    autorizado → devolución 100% a 0€. Estado appointment_pending_expert_confirmation. */}
+                                                {appointmentButtons.showCancelPending && (
+                                                    <div className="w-full flex flex-col gap-1.5">
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleAppointmentAction('cancelPending', appointment as Appointment);
+                                                            }}
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            size="sm"
+                                                        >
+                                                            <XCircle className="w-4 h-4 mr-2" />
+                                                            Cancelar cita
+                                                        </Button>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            El experto aún no ha confirmado. Si cancelas ahora no se te cobra nada (devolución del 100%).
+                                                        </p>
+                                                    </div>
                                                 )}
 
                                                 {/* 🧪 BOTÓN DE PRUEBAS (Solo Admin): saltar la espera de 3h → awaiting_report */}

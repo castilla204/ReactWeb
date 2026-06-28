@@ -481,6 +481,77 @@
         @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-brand;
     }
 
+    /* ───────────────────────────────────────────────────────────────
+       Documentos legales (Términos / Privacidad / Aviso legal).
+       El contenido llega como HTML desde el backend y se inyecta saneado
+       (sin su <style> propio, que antes se filtraba a TODA la app y la
+       dejaba estrecha y contorneada). Estilo minimalista, alineado con
+       el resto de la web: sin bordes duros, jerarquía por tipografía.
+       ─────────────────────────────────────────────────────────────── */
+    .legal-prose {
+        @apply font-display text-[13.5px] md:text-[14px] leading-[1.6] text-[#474d56];
+    }
+    .legal-prose > :first-child {
+        @apply mt-0;
+    }
+    /* El <h1> del documento se omite (ya está en el hero). */
+    .legal-prose h1 {
+        @apply hidden;
+    }
+    /* Texto corrido, sin divisiones ni adornos: todo seguido. */
+    .legal-prose h2 {
+        @apply font-display text-[1rem] md:text-[1.05rem] font-semibold tracking-[-0.01em] text-[#1c1c1c] mt-5 mb-2 normal-case;
+        scroll-margin-top: 5.5rem;
+    }
+    .legal-prose h2:first-of-type {
+        @apply mt-0;
+    }
+    .legal-prose h3 {
+        @apply text-[0.9rem] font-semibold text-[#1c1c1c] mt-4 mb-1;
+    }
+    .legal-prose p {
+        @apply my-2.5 text-left;
+    }
+    .legal-prose strong {
+        @apply font-semibold text-[#1c1c1c];
+    }
+    /* Enlaces neutros (subrayado gris), sin color de marca: más documental. */
+    .legal-prose a {
+        @apply font-medium text-[#1c1c1c] underline decoration-[#cbced3] underline-offset-2 hover:decoration-[#1c1c1c];
+    }
+    .legal-prose ul {
+        @apply my-2.5 pl-5 list-disc space-y-1 marker:text-[#c4c7cc];
+    }
+    .legal-prose li {
+        @apply pl-1;
+    }
+    .legal-prose em {
+        @apply text-[#787d85];
+    }
+    /* Ficha de cabecera (titular, contacto, fecha) → gris neutro, sin borde duro. */
+    .legal-prose .header-info {
+        @apply mt-0 mb-7 text-[12.5px] leading-relaxed text-[#5d626b];
+    }
+    .legal-prose .header-info p {
+        @apply my-0.5;
+    }
+    .legal-prose .header-info strong {
+        @apply text-[#1c1c1c];
+    }
+    /* Tablas → limpias, grises neutros, separadores finísimos, sin marco exterior. */
+    .legal-prose table {
+        @apply my-5 w-full border-collapse text-[12.5px] md:text-[13px];
+    }
+    .legal-prose thead th {
+        @apply bg-[#f7f7f8] px-3 py-2 text-left text-[11.5px] md:text-[12px] font-semibold text-[#1c1c1c] first:rounded-l-md last:rounded-r-md;
+    }
+    .legal-prose tbody td {
+        @apply px-3 py-2 align-top text-[#474d56] border-b border-[#efefef];
+    }
+    .legal-prose tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
     /* Ficha servicio — minimalista */
     .service-detail-page {
         @apply font-display text-[#1c1c1c] bg-[#fafafa];
@@ -661,9 +732,11 @@
         @apply inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white p-0 text-[#222222] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-opacity active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
     }
 
-    /* Top bar móvil ficha — píldoras glass (alineado con mapa/búsqueda) */
+    /* Top bar móvil ficha / overlays del hero — glass oscuro esmerilado.
+       (Antes: disco blanco abombado con sombra fuerte → efecto "juguete".)
+       Translúcido sobre las fotos, contorno e sombra sutiles = más premium. */
     .sd-mobile-topbar-btn {
-        @apply inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white/95 p-0 text-[#1c1c1c] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md transition-[transform,background-color,opacity] duration-150 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80;
+        @apply inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-black/40 p-0 text-white shadow-[0_2px_10px_rgba(0,0,0,0.28)] ring-1 ring-white/20 backdrop-blur-md transition-[transform,background-color] duration-150 hover:bg-black/55 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80;
     }
 
     .sd-mobile-hero-top-scrim {

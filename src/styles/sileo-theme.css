@@ -11,14 +11,16 @@
   --sileo-state-info: hsl(var(--brand));
   --sileo-state-action: hsl(var(--brand));
 
-  /* Un pelín más anchos en desktop para que respiren las descripciones.
-     OJO: el toast usa `width: var(--sileo-width)` SIN max-width y, en el
-     viewport flex en columna, la anchura no encoge (flex-shrink solo actúa
-     en vertical). Con un valor fijo, en pantallas estrechas (iPhone SE, 375px)
-     el toast (380px) anclado a la derecha desborda por la IZQUIERDA. El
-     max-width del viewport limita al contenedor, NO al toast. Por eso lo
-     clampamos aquí al ancho real disponible (igual que el clamp del viewport). */
-  --sileo-width: min(380px, calc(100vw - 1.5rem));
+  /* CRÍTICO — NO subir de 350px. El pill "físico" de Sileo se dibuja con un
+     <svg> cuyo ancho está HARDCODEADO en el runtime (`const WIDTH = 350`,
+     viewBox `0 0 350 H`): no escala con el CSS. Si la caja del toast (que sí
+     usa `width: var(--sileo-width)`) supera 350, la descripción ocupa el 100%
+     de esa caja más ancha y el texto SE SALE del pill por la derecha (con
+     380px se salía ~30px). Mantener el techo en 350 = ancho real del dibujo.
+     El `min(...)` clampa además al ancho disponible: el toast no tiene
+     max-width propio y, en el viewport flex en columna, no encoge solo, así
+     que en pantallas estrechas (iPhone SE, 375px) un valor fijo desbordaría. */
+  --sileo-width: min(350px, calc(100vw - 1.5rem));
 }
 
 /* Título en frase normal (no "Capitaliza Cada Palabra") + tipografía de marca. */

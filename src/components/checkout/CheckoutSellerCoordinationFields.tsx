@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link2, Mail } from 'lucide-react';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
+import { PhoneInputField } from './PhoneInputField';
 import { cn } from '../../lib/utils';
 import {
     CHECKOUT_SELLER_PLAZO_SUMMARY,
@@ -89,7 +88,7 @@ export function isValidSellerPhone(phone: string) {
     return /^[67]\d{8}$/.test(nat);
 }
 
-export { PhoneInput };
+export { PhoneInputField };
 
 /**
  * Se puede continuar si hay AL MENOS un canal que FUNCIONE: email válido o MÓVIL válido (un fijo no
@@ -253,20 +252,14 @@ export function CheckoutSellerCoordinationFields({
                         <label htmlFor="seller-phone" className="block text-[12px] font-semibold text-[#374151]">
                             Teléfono del vendedor
                         </label>
-                        <PhoneInput
-                            country={'es'}
+                        <PhoneInputField
+                            id="seller-phone"
+                            name="seller-phone"
                             value={sellerPhone}
-                            onChange={(value) => onSellerPhoneChange(value ? '+' + value.replace(/^\+/, '') : '')}
-                            enableSearch
-                            searchPlaceholder="Buscar país..."
-                            inputProps={{ id: 'seller-phone', name: 'seller-phone', autoComplete: 'tel', 'aria-invalid': phoneFieldError }}
-                            containerClass="!w-full"
-                            inputClass={cn(
-                                '!w-full !h-12 !rounded-xl !border !border-transparent !bg-[#f4f5f7] !text-sm !text-[#1c1c1c] focus:!bg-white focus:!ring-2 focus:!ring-brand/30',
-                                phoneFieldError && '!border-red-400/50 !ring-2 !ring-red-400/50',
-                            )}
-                            buttonClass="!rounded-l-xl !border !border-transparent !bg-[#f4f5f7]"
-                            dropdownClass="!text-sm"
+                            onChange={onSellerPhoneChange}
+                            error={phoneFieldError}
+                            aria-invalid={phoneFieldError}
+                            defaultCountry="ES"
                         />
                     </div>
                     <IconField id="seller-email" label="Email del vendedor" icon={Mail}>

@@ -93,8 +93,9 @@ export const showToast = (
 export const homepageToast = {
   loginRequired: () =>
     showToast('info', 'Inicia sesión para guardar favoritos', 3500, { surface: 'homepage' }),
+  // El flujo de la web es azul, no verde → usamos `info` (azul de marca) en vez de `success`.
   favoriteUpdated: (message: string, description?: string) =>
-    showToast('success', message, 3000, { surface: 'homepage', description }),
+    showToast('info', message, 3000, { surface: 'homepage', description }),
   error: (message: string, duration = 4000) =>
     showToast('error', message, duration, { surface: 'homepage' }),
 };

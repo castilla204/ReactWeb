@@ -11,6 +11,8 @@ interface AppleSignInButtonProps {
     className?: string;
     variant?: 'default' | 'compact';
     onSuccess?: () => void;
+    /** Texto del botón. Default "Continuar con Apple"; usar "Apple" en grids de 2 columnas. */
+    label?: string;
 }
 
 // Apple SVG Icon Component
@@ -20,7 +22,7 @@ const AppleIcon = ({ compact }: { compact?: boolean }) => (
     </svg>
 );
 
-export const AppleSignInButton = ({ className = '', variant = 'default', onSuccess }: AppleSignInButtonProps) => {
+export const AppleSignInButton = ({ className = '', variant = 'default', onSuccess, label = 'Continuar con Apple' }: AppleSignInButtonProps) => {
     const [isAuthenticating, setIsAuthenticating] = useState(false);
     const [authStep, setAuthStep] = useState<string>('');
     const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -131,9 +133,9 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
     const showAsDisabled = isWebOrUnavailable;
 
     const compactEnabledClasses =
-        'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#1c1c1c] bg-[#1c1c1c] font-display text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
+        'flex h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#1c1c1c] bg-[#1c1c1c] font-display text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const compactDisabledClasses =
-        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#9ca3af]';
+        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-full border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#9ca3af]';
     const defaultEnabledClasses =
         'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#1c1c1c] bg-[#1c1c1c] font-display text-sm font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const defaultDisabledClasses =
@@ -167,7 +169,7 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
             ) : (
                 <>
                     <AppleIcon compact={variant === 'compact'} />
-                    <span className="truncate">Continuar con Apple</span>
+                    <span className="truncate">{label}</span>
                 </>
             )}
             <style>{`

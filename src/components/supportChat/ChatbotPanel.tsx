@@ -1,30 +1,35 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Send, X } from 'lucide-react';
+import { ArrowUpRight, RotateCcw, Send, X } from 'lucide-react';
 import erizoImg from '../../media/erizo.png';
 import { cn } from '../../lib/utils';
 import { TypingDots } from '../chat/TypingDots';
+import { AssistantMessage } from './AssistantMessage';
 import {
   CHATBOT_SUGGESTED_QUESTIONS,
   CHATBOT_WELCOME_MESSAGE,
 } from '../../content/faqContent';
-import { useSupportChat } from '../../hooks/useSupportChat';
+import type { useSupportChat } from '../../hooks/useSupportChat';
 
 interface ChatbotPanelProps {
+  chat: ReturnType<typeof useSupportChat>;
   onClose: () => void;
   variant?: 'floating' | 'drawer';
 }
 
-export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = 'floating' }) => {
+export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
+  chat,
+  onClose,
+  variant = 'floating',
+}) => {
   const isDrawer = variant === 'drawer';
   const navigate = useNavigate();
-  const { messages, isLoading, error, sendMessage } = useSupportChat();
+  const { messages, isLoading, error, sendMessage, retry, reset } = chat;
   const [draft, setDraft] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const showWelcome = messages.length === 0 && !isLoading;
-  const showSuggestions = messages.length === 0 && !isLoading;
+  const isEmpty = messages.length === 0 && !isLoading;
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -76,14 +81,14 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
       aria-label={isDrawer ? undefined : 'Asistente de Inspecciono'}
       role={isDrawer ? undefined : 'dialog'}
     >
-      {/* Header */}
-      <div className="relative shrink-0 overflow-hidden border-b border-[#ececec] bg-white px-4 py-3.5">
+      {/* Header — tinte de marca limpio (oro → azul, baja opacidad, sin embarrar) */}
+      <div className="relative shrink-0 overflow-hidden border-b border-[#eceef2] bg-white px-4 py-3.5">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'linear-gradient(90deg, rgba(247,193,75,0.45) 0%, rgba(253,237,205,0.42) 36%, rgba(221,233,250,0.48) 62%, rgba(63,127,224,0.45) 100%)',
+              'linear-gradient(100deg, rgba(247,193,75,0.14) 0%, rgba(63,127,224,0.16) 100%)',
           }}
         />
         <div
@@ -91,7 +96,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
           className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
           style={{
             background:
-              'linear-gradient(90deg, rgba(247,193,75,0.55) 0%, rgba(63,127,224,0.55) 100%)',
+              'linear-gradient(90deg, rgba(247,193,75,0.6) 0%, rgba(63,127,224,0.6) 100%)',
           }}
         />
         <div className="relative flex items-center justify-between gap-3">
@@ -108,41 +113,62 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
               <p className="truncate text-[14px] font-semibold leading-tight tracking-[-0.01em] text-[#111111]">
                 Asistente Inspecciono
               </p>
-              <p className="mt-0.5 text-[11.5px] leading-4 text-[#737373]">
+              <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] leading-4 text-[#5f6b7a]">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3f7fe0]" aria-hidden />
                 Respuestas al instante
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-black/[0.05] hover:text-[#111111] touch-manipulation [-webkit-tap-highlight-color:transparent]"
-            aria-label="Cerrar asistente"
-          >
-            <X className="h-4 w-4" strokeWidth={2} />
-          </button>
+          <div className="flex shrink-0 items-center gap-0.5">
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={reset}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-black/[0.05] hover:text-[#111111] touch-manipulation [-webkit-tap-highlight-color:transparent]"
+                aria-label="Nueva conversación"
+                title="Nueva conversación"
+              >
+                <RotateCcw className="h-[15px] w-[15px]" strokeWidth={2} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-black/[0.05] hover:text-[#111111] touch-manipulation [-webkit-tap-highlight-color:transparent]"
+              aria-label="Cerrar asistente"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Messages */}
       <div
         ref={listRef}
-        className="chat-messages-area min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#fafafa] px-3 py-3.5"
+        className="chat-messages-area min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fa] px-3 py-3.5"
         role="log"
         aria-live="polite"
       >
-        <div className="space-y-2.5">
-          {showWelcome && (
-            <article className="chat-stagger flex justify-start">
-              <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#ececec] bg-white px-3.5 py-2.5 text-sm leading-relaxed text-[#1c1c1c]">
+        {isEmpty ? (
+          /* Estado vacío centrado verticalmente — sin el gran vacío gris */
+          <div className="flex min-h-full flex-col justify-center gap-4 px-1 py-4">
+            <article className="chat-stagger flex flex-col items-center text-center">
+              <span className="mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_4px_16px_rgba(63,127,224,0.16)] ring-1 ring-[#3f7fe0]/10">
+                <img
+                  src={erizoImg}
+                  alt=""
+                  className="h-10 w-10 -scale-x-100 object-contain"
+                  style={{ imageRendering: '-webkit-optimize-contrast' }}
+                />
+              </span>
+              <p className="max-w-[19rem] text-[13.5px] leading-relaxed text-[#3f3f46]">
                 {CHATBOT_WELCOME_MESSAGE}
-              </div>
+              </p>
             </article>
-          )}
 
-          {showSuggestions && (
-            <div className="pt-0.5">
-              <p className="mb-2 px-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-[#aeaeae]">
+            <div>
+              <p className="mb-2 px-0.5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#aeb4bd]">
                 Sugerencias
               </p>
               <div className="flex flex-col gap-1.5">
@@ -152,75 +178,89 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ onClose, variant = '
                     type="button"
                     onClick={() => handleSuggested(q)}
                     style={{ animationDelay: `${120 + i * 45}ms` }}
-                    className="chat-stagger group flex items-center justify-between gap-2 rounded-xl border border-[#ececec] bg-white px-3 py-2 text-left text-[12.5px] leading-snug text-[#3f3f3f] transition-colors duration-200 hover:border-[#d0d0d0] hover:bg-[#f7f7f7] active:scale-[0.99]"
+                    className="chat-stagger group flex items-center justify-between gap-2 rounded-xl border border-[#e8eaee] bg-white px-3 py-2.5 text-left text-[12.5px] leading-snug text-[#3f3f46] transition-colors duration-200 hover:border-[#3f7fe0]/40 hover:bg-[#f3f7fd] active:scale-[0.99]"
                   >
                     <span className="min-w-0">{q}</span>
                     <ArrowUpRight
-                      className="h-3.5 w-3.5 shrink-0 text-[#c8c8c8] transition-colors group-hover:text-[#111111]"
+                      className="h-3.5 w-3.5 shrink-0 text-[#c2c7cf] transition-colors group-hover:text-[#3f7fe0]"
                       strokeWidth={2}
                     />
                   </button>
                 ))}
               </div>
             </div>
-          )}
-
-          {messages.map((msg) => {
-            const isUser = msg.role === 'user';
-            return (
-              <article
-                key={msg.id}
-                className={cn(
-                  'chat-message-enter flex',
-                  isUser ? 'justify-end' : 'justify-start',
-                )}
-              >
-                <div
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {messages.map((msg) => {
+              const isUser = msg.role === 'user';
+              return (
+                <article
+                  key={msg.id}
                   className={cn(
-                    'max-w-[88%] px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
-                    isUser
-                      ? 'rounded-2xl rounded-br-md bg-[#161616] text-white'
-                      : 'rounded-2xl rounded-bl-md border border-[#ececec] bg-white text-[#1c1c1c]',
+                    'chat-message-enter flex',
+                    isUser ? 'justify-end' : 'justify-start',
                   )}
                 >
-                  {msg.content}
+                  <div
+                    className={cn(
+                      'max-w-[88%] px-3.5 py-2.5 text-sm break-words',
+                      isUser
+                        ? 'rounded-2xl rounded-br-md bg-[#3f7fe0] text-white leading-relaxed whitespace-pre-wrap'
+                        : 'rounded-2xl rounded-bl-md border border-[#e8eaee] bg-white text-[#1c1c1c]',
+                    )}
+                  >
+                    {isUser ? (
+                      msg.content
+                    ) : (
+                      <AssistantMessage content={msg.content} onClose={onClose} />
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+
+            {isLoading && (
+              <div className="chat-message-enter flex justify-start">
+                <div className="inline-flex rounded-2xl rounded-bl-md border border-[#e8eaee] bg-white px-3.5 py-3">
+                  <TypingDots className="text-[#9b9b9b]" />
                 </div>
-              </article>
-            );
-          })}
-
-          {isLoading && (
-            <div className="chat-message-enter flex justify-start">
-              <div className="inline-flex rounded-2xl rounded-bl-md border border-[#ececec] bg-white px-3.5 py-3">
-                <TypingDots className="text-[#9b9b9b]" />
               </div>
-            </div>
-          )}
+            )}
 
-          {error && (
-            <div
-              className="chat-message-enter rounded-xl border border-[#ececec] bg-white px-3 py-2 text-center text-xs leading-snug text-[#b42318]"
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
-        </div>
+            {error && (
+              <div
+                className="chat-message-enter flex flex-col items-center gap-2 rounded-xl border border-[#f1d4d0] bg-[#fdf6f5] px-3 py-2.5 text-center"
+                role="alert"
+              >
+                <span className="text-xs leading-snug text-[#b42318]">{error}</span>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#e8d3cf] bg-white px-3 py-1 text-[11.5px] font-medium text-[#b42318] transition-colors hover:bg-[#fbeeec]"
+                >
+                  <RotateCcw className="h-3 w-3" strokeWidth={2.25} />
+                  Reintentar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Input */}
       <form
         onSubmit={handleSubmit}
         className={cn(
-          'shrink-0 border-t border-[#ededed] bg-white px-3 py-3',
+          'shrink-0 border-t border-[#eceef2] bg-white px-3 py-3',
           isDrawer && 'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]',
         )}
       >
         <div
-          className="rounded-[1.15rem] p-[1.5px] transition-shadow duration-200 focus-within:shadow-[0_4px_20px_rgba(63,127,224,0.14)]"
+          className="rounded-[1.15rem] p-[1.5px] transition-shadow duration-200 focus-within:shadow-[0_4px_20px_rgba(63,127,224,0.16)]"
           style={{
             background:
-              'linear-gradient(118deg, rgba(247,193,75,0.55) 0%, rgba(63,127,224,0.55) 100%)',
+              'linear-gradient(118deg, rgba(247,193,75,0.5) 0%, rgba(63,127,224,0.6) 100%)',
           }}
         >
           <div className="flex items-end gap-2 rounded-[1.05rem] bg-white py-1.5 pl-3.5 pr-1.5">

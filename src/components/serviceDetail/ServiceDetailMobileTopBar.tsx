@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowLeft, Heart } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { FavoriteHeart } from '../FavoriteHeart';
 import {
   SD_MOBILE_TOPBAR_COMPACT_INNER_CLASS,
   SD_MOBILE_TOPBAR_COMPACT_SHELL_CLASS,
@@ -58,13 +59,7 @@ export const ServiceDetailMobileTopBar: React.FC<ServiceDetailMobileTopBarProps>
                 aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                 aria-pressed={isFavorite}
               >
-                <Heart
-                  className={`h-[18px] w-[18px] ${
-                    isFavorite ? 'fill-brand text-brand' : 'text-[#1c1c1c]'
-                  }`}
-                  strokeWidth={2}
-                  aria-hidden
-                />
+                <FavoriteHeart filled={isFavorite} size={18} variant="plain" />
               </button>
             ) : (
               <span className="h-11 w-11 shrink-0" aria-hidden />
@@ -104,13 +99,7 @@ export const ServiceDetailMobileTopBar: React.FC<ServiceDetailMobileTopBarProps>
                 aria-pressed={isFavorite}
                 tabIndex={showCompact ? 0 : -1}
               >
-                <Heart
-                  className={`h-[18px] w-[18px] ${
-                    isFavorite ? 'fill-brand text-brand' : 'text-[#222222]'
-                  }`}
-                  strokeWidth={2}
-                  aria-hidden
-                />
+                <FavoriteHeart filled={isFavorite} size={18} variant="plain" />
               </button>
             ) : (
               <span className="h-8 w-8 shrink-0" aria-hidden />

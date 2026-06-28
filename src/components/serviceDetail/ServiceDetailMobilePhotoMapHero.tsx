@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Image, MapPin } from 'lucide-react';
+import { SileoSkeleton } from '../ui/sileo-skeleton';
 
 const ServiceDetailCoverageMap = lazy(() =>
   import('./ServiceDetailCoverageMap').then((m) => ({
@@ -18,6 +19,8 @@ interface ServiceDetailMobilePhotoMapHeroProps {
   location: { latitude: number; longitude: number } | null;
   locationLabel?: string;
   rangeKm?: number;
+  /** Superpuesto sobre la mitad de la foto (p. ej. formación animada). */
+  overlay?: React.ReactNode;
 }
 
 function PhotoCell({
@@ -53,9 +56,7 @@ function PhotoCell({
       aria-label={alt}
     >
       {loadingImages.has(src) ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1c1c1c]">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
-        </div>
+        <SileoSkeleton className="absolute inset-0 z-10 h-full w-full" rounded="none" />
       ) : null}
       <img
         src={src}
@@ -176,6 +177,7 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
   location,
   locationLabel,
   rangeKm = 25,
+  overlay,
 }) => {
   const isWorkshopOnly = rangeKm === 0;
   const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
@@ -193,6 +195,7 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
           onImageLoadStart={onImageLoadStart}
           onOpenImage={onOpenImage}
         />
+        {overlay}
       </div>
 
       <div className="relative min-h-0 min-w-0 overflow-hidden border-l border-black/10">

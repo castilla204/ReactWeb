@@ -1,4 +1,5 @@
-﻿import { Heart, Users, Gauge, Car, Check, Plus, ArrowRight } from 'lucide-react';
+﻿import { Users, Gauge, Car, Check, Plus, ArrowRight } from 'lucide-react';
+import { FavoriteHeart } from './FavoriteHeart';
 import { useLikes } from '../hooks/useLikes.hooks';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
@@ -102,7 +103,7 @@ export function ResultCard({ result, searchId, setNotifications }: ResultCardPro
                         className={`p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
                             } transition-colors`}
                     >
-                        <Heart className="w-4 h-4" fill={isLiked ? 'currentColor' : 'none'} />
+                        <FavoriteHeart filled={isLiked} size={16} variant="plain" />
                     </button>
                 </div>
             </div>

@@ -42,7 +42,7 @@ export function PaymentSuccessPage() {
                     sessionStorage.removeItem('pendingHire');
                     showToast(
                         'success',
-                        '✨ ¡Reserva confirmada! No se ha cobrado nada todavía: el cargo se hace cuando el experto confirma la cita.',
+                        '✨ ¡Reserva recibida! Aún no se ha cobrado nada: el experto tiene que confirmar la cita y el cargo se hará en ese momento.',
                         5000,
                         { surface: 'homepage' },
                     );
@@ -59,6 +59,6 @@ export function PaymentSuccessPage() {
     }, [searchParams, navigate]);
 
     return (
-        <SileoPageLoader message="Confirmando tu reserva…" className="bg-white" />
+        <SileoPageLoader message="Procesando tu reserva…" className="bg-white" />
     );
 }

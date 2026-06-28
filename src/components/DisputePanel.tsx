@@ -120,6 +120,22 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const loading = disputesQuery.isLoading;
   const error = disputesQuery.error;
 
+  // fetchApi (useApi) lanza un OBJETO plano { message, status, ... }, NO un Error.
+  // Sin esto, String(error) renderizaba el literal "[object Object]".
+  const getDisputeErrorText = (err: unknown): string => {
+    const anyErr = err as any;
+    const status = anyErr?.status ?? anyErr?.response?.status;
+    if (status && status >= 500) {
+      return 'El servidor tuvo un problema al cargar las disputas. Vuelve a intentarlo en unos momentos.';
+    }
+    const msg =
+      anyErr?.message ||
+      anyErr?.response?.data?.message ||
+      anyErr?.data?.message ||
+      (typeof err === 'string' ? err : '');
+    return msg || 'No se pudieron cargar las disputas. Vuelve a intentarlo.';
+  };
+
   // Si no es admin, mostrar mensaje de acceso denegado
   if (!userIsAdmin) {
     return (
@@ -314,11 +330,19 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
             <AdminCardBody>
               <div className="admin-alert admin-alert--error">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold">Error al cargar las disputas</p>
-                  <p className="mt-1 opacity-80">
-                    {error instanceof Error ? error.message : String(error)}
-                  </p>
+                  <p className="mt-1 opacity-80">{getDisputeErrorText(error)}</p>
+                  <div className="mt-3">
+                    <AdminButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => disputesQuery.refetch()}
+                      loading={disputesQuery.isFetching}
+                    >
+                      Reintentar
+                    </AdminButton>
+                  </div>
                 </div>
               </div>
             </AdminCardBody>

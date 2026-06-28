@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { type Catalog } from '../../lib/inspectionCatalog';
 import { resolveTemplate, countActivePoints, type InspectionConfig } from '../../lib/inspectionTemplateConfig';
@@ -37,10 +37,11 @@ export default function InspectionReportPreview({
                 type="button"
                 onClick={() => setOpen(true)}
                 aria-label="Ver los puntos de la inspección"
-                className="group block w-full rounded-2xl border border-[hsl(var(--ep-border))] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
+                className="group block w-full rounded-2xl border border-[#ececec] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
             >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
                         <span className="truncate text-[13px] font-semibold text-[hsl(var(--ep-ink))]">Informe PDF</span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end text-right">

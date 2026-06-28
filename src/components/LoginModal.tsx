@@ -4,6 +4,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { toast } from '../lib/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { getAuthToken } from '../lib/auth';
@@ -15,7 +16,6 @@ import { GoogleSignInButton } from './GoogleSignInButton';
 import { AppleSignInButton } from './AppleSignInButton';
 import { ResponsiveModal } from './ui/responsive-modal';
 import { DrawerHandle } from './ui/drawer';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
@@ -58,14 +58,15 @@ interface OtpContext {
     isLinking?: boolean;
 }
 
-const AUTH_HEADER_GRADIENT =
-    'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), #ffffff';
+// Cabecera limpia: tinte azul de marca plano (sin el degradado azul→ámbar).
+const AUTH_HEADER_BG = '#f4f8fd';
 
-const AUTH_TAB_LIST_CLASS =
-    'mb-0 grid h-9 w-full grid-cols-2 rounded-xl bg-[#f5f5f5] p-0.5 ring-1 ring-[#ebebeb]';
-
-const AUTH_TAB_TRIGGER_CLASS =
-    'rounded-[10px] font-display text-[13px] font-semibold text-[#717171] transition-all data-[state=active]:bg-white data-[state=active]:text-brand data-[state=active]:shadow-[0_1px_2px_rgba(0,0,0,0.06)]';
+// Copys de la cabecera "título + enlace" (patrón Stripe/Linear/Supabase): el título
+// y el subtítulo conmutan según el modo; no hay conmutador en caja.
+const AUTH_COPY: Record<'login' | 'register', { subtitle: string }> = {
+    login: { subtitle: 'Inicia sesión para gestionar tus inspecciones' },
+    register: { subtitle: 'Crea tu cuenta' },
+};
 
 export const LoginModal: React.FC<LoginModalProps> = ({
     open,
@@ -171,40 +172,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                             exit={{ opacity: 0, x: 20 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')} className="flex w-full flex-col">
-                                <AuthSocialHeader onClose={() => onOpenChange(false)} />
+                            <div className="flex w-full flex-col">
+                                <AuthHeader tab={tab} onClose={() => onOpenChange(false)} />
 
-                                <div className="px-4 pt-3 md:px-7 md:pt-4">
-                                <TabsContent value="login" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                                    <div className="flex w-full flex-col gap-2">
+                                <div className="px-5 pt-5 md:px-7 md:pt-5">
+                                    <div className="flex w-full flex-col gap-4">
                                         <SocialButtonsRow onSuccess={handleSuccess} active={open} />
                                         <Separator />
-                                        <LoginForm
-                                            onSuccess={handleSuccess}
-                                            onGoToForgot={() => setStep('forgot-email')}
-                                            onEmailUnverified={(ctx) => {
-                                                setOtpCtx({ ...ctx, origin: 'login-unverified' });
-                                                setStep('verify-email');
-                                            }}
-                                        />
+                                        {tab === 'login' ? (
+                                            <LoginForm
+                                                onSuccess={handleSuccess}
+                                                onGoToForgot={() => setStep('forgot-email')}
+                                                onEmailUnverified={(ctx) => {
+                                                    setOtpCtx({ ...ctx, origin: 'login-unverified' });
+                                                    setStep('verify-email');
+                                                }}
+                                            />
+                                        ) : (
+                                            <RegisterForm
+                                                onCodeSent={(ctx) => {
+                                                    setOtpCtx({ ...ctx, origin: 'register' });
+                                                    setStep('verify-email');
+                                                }}
+                                            />
+                                        )}
+                                        <AuthFooterLine tab={tab} isExpert={isExpert} onSwitch={setTab} onExpertAction={handleExpertSignupClick} />
                                     </div>
-                                </TabsContent>
-
-                                <TabsContent value="register" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                                    <div className="flex w-full flex-col gap-2">
-                                        <SocialButtonsRow onSuccess={handleSuccess} active={open} />
-                                        <Separator />
-                                        <RegisterForm
-                                            onCodeSent={(ctx) => {
-                                                setOtpCtx({ ...ctx, origin: 'register' });
-                                                setStep('verify-email');
-                                            }}
-                                        />
-                                    </div>
-                                </TabsContent>
-                                <AuthModalFooter tab={tab} isExpert={isExpert} onExpertAction={handleExpertSignupClick} />
                                 </div>
-                            </Tabs>
+                            </div>
                         </motion.div>
                     )}
 
@@ -218,7 +213,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#717171] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -240,7 +235,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#717171] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -263,7 +258,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('forgot-email')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#717171] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -281,46 +276,98 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     );
 };
 
-/** Cabecera del paso social: tabs + cierre (sin subtítulo). */
-const AuthSocialHeader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+/**
+ * Cabecera "título + enlace" (patrón Stripe/Linear/Supabase): marca constante arriba
+ * + título/subtítulo que conmutan según el modo con un cross-fade sutil. Sin conmutador
+ * en caja — el cambio de modo se hace desde AuthSwitchLink (enlace al pie).
+ */
+const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> = ({ tab, onClose }) => {
     const { t } = useTranslation();
+    const { subtitle } = AUTH_COPY[tab];
 
     return (
         <div
-            className="relative sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#ebebeb] md:rounded-t-2xl"
-            style={{ background: AUTH_HEADER_GRADIENT }}
+            className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#e6eef7] md:rounded-t-2xl"
+            style={{ background: AUTH_HEADER_BG }}
         >
-            <div className="flex justify-center pb-0 pt-2 md:hidden">
+            {/* Asa del drawer (solo móvil) — la fila ocupa solo ~10px. */}
+            <div className="flex justify-center pt-1.5 md:hidden">
                 <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-[#c4c4c4]" />
             </div>
+            {/* Botón cerrar: absoluto esquina sup-der. Wordmark es siempre izquierdo → no chocan. */}
             <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-2 top-2 z-10 rounded-full p-1.5 text-[#717171] transition-colors hover:bg-black/[0.04] hover:text-[#222222] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 md:right-3 md:top-3.5"
+                className="absolute right-2 top-2 rounded-full p-1.5 text-[#5b6370] transition-colors hover:bg-black/[0.05] hover:text-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1"
                 aria-label={t('common.actions.close')}
             >
-                <X className="h-4 w-4" />
+                <X className="h-[18px] w-[18px]" />
             </button>
-            <div className="px-4 pb-3 pt-0.5 md:px-7 md:pb-4 md:pt-4">
-                <div className="pr-8 md:pr-0">
-                <TabsList className={AUTH_TAB_LIST_CLASS}>
-                    <TabsTrigger value="login" className={AUTH_TAB_TRIGGER_CLASS}>
-                        <TabLabel kind="login" />
-                    </TabsTrigger>
-                    <TabsTrigger value="register" className={AUTH_TAB_TRIGGER_CLASS}>
-                        <TabLabel kind="register" />
-                    </TabsTrigger>
-                </TabsList>
+            <div className="px-5 pb-4 pt-2 md:px-7 md:pb-5 md:pt-4">
+                <div className="relative min-h-[52px]">
+                    <motion.div
+                        key={tab}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                        <h2 className="font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em]">
+                            <span className="text-[#2563EB]">Inspecciono</span>
+                            <span className="text-[#F59E0B]">.</span>
+                        </h2>
+                        <p className="mt-1 font-display text-[13px] leading-snug text-[#5b6370]">
+                            {subtitle}
+                        </p>
+                    </motion.div>
                 </div>
             </div>
         </div>
     );
 };
 
-// 🛡️ Round 28 — Sprint 4: pequeño helper i18n para tabs.
-const TabLabel: React.FC<{ kind: 'login' | 'register' }> = ({ kind }) => {
-    const { t } = useTranslation();
-    return <>{kind === 'login' ? t('auth.login.title') : t('auth.register.title')}</>;
+/** Pie unificado: switch de modo + CTA de experto en una sola línea (patrón Stripe). */
+const AuthFooterLine: React.FC<{
+    tab: 'login' | 'register';
+    isExpert: boolean;
+    onSwitch: (next: 'login' | 'register') => void;
+    onExpertAction: () => void;
+}> = ({ tab, isExpert, onSwitch, onExpertAction }) => {
+    const isLogin = tab === 'login';
+    const linkCls =
+        'font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30';
+    return (
+        <div className="pb-1 flex flex-col items-center gap-1.5">
+            <p className="text-center font-display text-[13px] leading-relaxed text-[#5b6370]">
+                {isLogin ? (
+                    <>
+                        ¿Aún no tienes cuenta?{' '}
+                        <button type="button" onClick={() => onSwitch('register')} className={linkCls}>
+                            Regístrate
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        ¿Ya tienes cuenta?{' '}
+                        <button type="button" onClick={() => onSwitch('login')} className={linkCls}>
+                            Inicia sesión
+                        </button>
+                    </>
+                )}
+            </p>
+            {!isLogin && (
+                <p className="text-center font-display text-[12px] leading-relaxed text-[#9ca3af]">
+                    ¿Eres profesional?{' '}
+                    <button
+                        type="button"
+                        onClick={onExpertAction}
+                        className="font-semibold text-[#6b7280] underline-offset-2 transition-colors hover:text-[#374151] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                    >
+                        {isExpert ? 'Panel de experto' : 'Hazte experto'}
+                    </button>
+                </p>
+            )}
+        </div>
+    );
 };
 
 // 🛡️ Round 28 — Sprint 4: checkbox T&C reutilizable con i18n. Trans permite que los
@@ -337,7 +384,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                 required
                 aria-label={t('auth.register.termsRequired')}
             />
-            <span className="text-[11px] leading-relaxed text-[#717171]">
+            <span className="text-[11px] leading-relaxed text-[#5b6370]">
                 <Trans
                     i18nKey="auth.register.acceptTerms"
                     components={{
@@ -366,82 +413,31 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
 
 // ─── Subcomponentes ──────────────────────────────────────────────────────────────
 
-/** Pie legal + experto: botón en registro, enlace compacto en login. */
-const AuthModalFooter: React.FC<{
-    tab: 'login' | 'register';
-    isExpert: boolean;
-    onExpertAction: () => void;
-}> = ({ tab, isExpert, onExpertAction }) => {
-    const expertLabel = isExpert ? 'Panel experto' : 'Alta como experto';
-
-    const legalLinks = (
-        <>
-            <a href="/terms.html" className="hover:text-[#717171] underline-offset-2 hover:underline">
-                Términos
-            </a>
-            <span aria-hidden> · </span>
-            <a href="/privacy-policy.html" className="hover:text-[#717171] underline-offset-2 hover:underline">
-                Privacidad
-            </a>
-        </>
-    );
-
-    if (tab === 'register') {
-        return (
-            <div className="mt-3.5 border-t border-[#ebebeb] pt-3">
-                <button
-                    type="button"
-                    onClick={onExpertAction}
-                    className="mb-2.5 flex w-full items-center justify-center rounded-xl border border-[#e0e0e0] bg-[#fafafa] px-4 py-2.5 font-display text-[13px] font-semibold text-brand transition-colors hover:border-brand/30 hover:bg-brand/[0.04]"
-                >
-                    {expertLabel}
-                </button>
-                <p className="text-center font-display text-[11px] leading-relaxed text-[#9ca3af]">
-                    {legalLinks}
-                </p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="mt-3.5 border-t border-[#ebebeb] pt-3">
-            <p className="text-center font-display text-[11px] leading-relaxed text-[#9ca3af]">
-                <button
-                    type="button"
-                    onClick={onExpertAction}
-                    className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline"
-                >
-                    {expertLabel}
-                </button>
-                <span aria-hidden className="mx-1.5 text-[#d1d5db]">·</span>
-                {legalLinks}
-            </p>
-        </div>
-    );
-};
-
 const Separator: React.FC = () => (
-    <div className="relative flex items-center py-0.5">
-        <span className="h-px flex-1 bg-[#ebebeb]" />
-        <span className="mx-2.5 shrink-0 font-display text-[10px] font-medium uppercase tracking-wider text-[#b0b0b0]">
-            o
+    <div className="relative flex items-center py-3">
+        <span className="h-px flex-1 bg-[#e4e7ec]" />
+        <span className="mx-3 shrink-0 font-display text-xs font-medium tracking-[0.01em] text-[#9ca3af]">
+            o usa tu correo
         </span>
-        <span className="h-px flex-1 bg-[#ebebeb]" />
+        <span className="h-px flex-1 bg-[#e4e7ec]" />
     </div>
 );
 
 const SocialButtonsRow: React.FC<{ onSuccess: () => void; active: boolean }> = ({ onSuccess, active }) => {
-    const { t } = useTranslation();
+    // Apple Sign In solo funciona en iOS/macOS nativo. En web/Android se mostraba un botón
+    // gris "Próximamente" que parecía roto → mostramos Google a ancho completo (limpio).
+    // En iOS, los dos botones en una sola fila (2 columnas) con etiquetas cortas.
+    const showApple = Capacitor.getPlatform() === 'ios';
 
     return (
-        <div className="flex w-full flex-col gap-2">
+        <div className={showApple ? 'grid w-full grid-cols-2 gap-2.5' : 'w-full'}>
             <GoogleSignInButton
                 variant="compact"
                 onSuccess={onSuccess}
-                label={t('auth.social.google')}
+                label={showApple ? 'Google' : 'Continuar con Google'}
                 active={active}
             />
-            <AppleSignInButton variant="compact" onSuccess={onSuccess} />
+            {showApple && <AppleSignInButton variant="compact" onSuccess={onSuccess} label="Apple" />}
         </div>
     );
 };
@@ -476,7 +472,7 @@ const LoginForm: React.FC<{
 
             if (!res.ok) {
                 // Lockout / unverified / blocked / invalid → toast.
-                toast.error(data?.message ?? 'No se pudo iniciar sesión.');
+                toast.error(data?.message ?? 'No hemos podido iniciar sesión. Revisa tu correo y contraseña.');
                 return;
             }
 
@@ -505,7 +501,7 @@ const LoginForm: React.FC<{
                 authService.setTokens(accessToken, refreshToken);
                 authService.scheduleTokenRefresh();
                 updateUser(data.user, accessToken);
-                toast.success('¡Bienvenido!');
+                toast.success('¡Hola de nuevo!');
                 onSuccess();
             }
         } catch (err: any) {
@@ -517,7 +513,7 @@ const LoginForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-2">
+        <form onSubmit={onSubmit} className="space-y-3.5">
             <Field icon={<Mail className="w-4 h-4" />}>
                 <Input
                     type="email"
@@ -542,7 +538,7 @@ const LoginForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#717171]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -553,13 +549,13 @@ const LoginForm: React.FC<{
                 <button
                     type="button"
                     onClick={onGoToForgot}
-                    className="font-display text-[12px] font-medium text-[#717171] underline-offset-2 transition-colors hover:text-brand hover:underline"
+                    className="font-display text-[13px] font-medium text-[#5b6370] underline-offset-2 transition-colors hover:text-brand hover:underline"
                 >
                     ¿Olvidaste tu contraseña?
                 </button>
             </div>
             <Button type="submit" disabled={busy || !email || !password} className={PRIMARY_BTN}>
-                {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Entrando…</> : 'Continuar'}
+                {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Iniciando sesión…</> : 'Iniciar sesión'}
             </Button>
         </form>
     );
@@ -584,9 +580,9 @@ const RegisterForm: React.FC<{
 
     const strengthHint = (() => {
         if (password.length === 0) return null;
-        if (password.length < 8) return { label: 'Demasiado corta', cls: 'text-red-600' };
+        if (password.length < 8) return { label: 'Muy corta', cls: 'text-red-600' };
         if (password.length < 12) return { label: 'Aceptable', cls: 'text-amber-600' };
-        return { label: 'Fuerte', cls: 'text-emerald-600' };
+        return { label: 'Segura', cls: 'text-emerald-600' };
     })();
 
     const onSubmit = async (e: React.FormEvent) => {
@@ -615,7 +611,7 @@ const RegisterForm: React.FC<{
             });
             const data = await res.json();
             if (!res.ok) {
-                toast.error(data?.message ?? 'No se pudo crear la cuenta.');
+                toast.error(data?.message ?? 'No hemos podido crear tu cuenta. Inténtalo de nuevo.');
                 return;
             }
             // Account-linking flow: el backend detectó que el email ya existe con cuenta OAuth.
@@ -641,7 +637,7 @@ const RegisterForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-2">
+        <form onSubmit={onSubmit} className="space-y-3.5">
             <Field icon={<UserIcon className="w-4 h-4" />}>
                 <Input
                     type="text"
@@ -673,7 +669,7 @@ const RegisterForm: React.FC<{
                     required
                     minLength={8}
                     maxLength={128}
-                    placeholder="Contraseña (mín. 8 caracteres)"
+                    placeholder="Contraseña (mínimo 8 caracteres)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={`${INPUT_REBRAND} pr-10`}
@@ -681,7 +677,7 @@ const RegisterForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#717171]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -815,8 +811,8 @@ const OtpForm: React.FC<{
                     <ShieldCheck className="h-6 w-6 text-brand" />
                 </div>
             </div>
-            <p className="font-display text-sm leading-snug text-[#717171]">
-                Introduce el código de 6 dígitos que enviamos a <strong className="font-semibold text-[#222222]">{ctx.email}</strong>.
+            <p className="font-display text-sm leading-snug text-[#5b6370]">
+                Introduce el código de 6 dígitos que enviamos a <strong className="font-semibold text-[#1a1a1a]">{ctx.email}</strong>.
             </p>
             {showLinkingSubtitle && (
                 <p className="-mt-2 font-display text-sm text-brand">
@@ -850,7 +846,7 @@ const OtpForm: React.FC<{
             <Button onClick={() => submit()} disabled={busy || code.length !== 6} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando…</> : 'Verificar'}
             </Button>
-            <div className="font-display text-sm text-[#717171]">
+            <div className="font-display text-sm text-[#5b6370]">
                 ¿No te llegó?{' '}
                 <button
                     onClick={resend}
@@ -905,7 +901,7 @@ const ForgotPasswordForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col">
-            <p className="mb-3 font-display text-sm leading-snug text-[#717171]">
+            <p className="mb-3 font-display text-sm leading-snug text-[#5b6370]">
                 Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
             <Field icon={<Mail className="w-4 h-4" />}>
@@ -1015,8 +1011,8 @@ const ResetPasswordForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="space-y-4">
-            <p className="text-center font-display text-sm leading-snug text-[#717171]">
-                Introduce el código que enviamos a <strong className="font-semibold text-[#222222]">{ctx.email}</strong> y tu nueva contraseña.
+            <p className="text-center font-display text-sm leading-snug text-[#5b6370]">
+                Introduce el código que enviamos a <strong className="font-semibold text-[#1a1a1a]">{ctx.email}</strong> y tu nueva contraseña.
             </p>
             <div className="flex justify-center">
                 <InputOTP maxLength={6} value={code} onChange={(v) => setCode(v.replace(/\D/g, ''))} autoFocus>
@@ -1038,7 +1034,7 @@ const ResetPasswordForm: React.FC<{
                     required
                     minLength={8}
                     maxLength={128}
-                    placeholder="Nueva contraseña (mín. 8)"
+                    placeholder="Nueva contraseña (mínimo 8 caracteres)"
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
                     className={`${INPUT_REBRAND} pr-10`}
@@ -1046,7 +1042,7 @@ const ResetPasswordForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#717171]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -1056,7 +1052,7 @@ const ResetPasswordForm: React.FC<{
             <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Restableciendo…</> : 'Restablecer contraseña'}
             </Button>
-            <div className="text-center font-display text-sm text-[#717171]">
+            <div className="text-center font-display text-sm text-[#5b6370]">
                 ¿No te llegó?{' '}
                 <button
                     type="button"
@@ -1079,13 +1075,13 @@ const Field: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({
     </div>
 );
 
-/** Clases compartidas para todos los Input del modal. */
+/** Clases compartidas para todos los Input del modal. Pastilla (rounded-full), 44px. */
 const INPUT_REBRAND =
-    'h-10 rounded-xl border-[#dadce0] bg-white pl-10 font-display text-[13px] text-[#222222] placeholder:text-[#9ca3af] transition-all focus:border-brand focus:ring-2 focus:ring-brand/15';
+    'h-11 rounded-full border-[#d4d4d8] bg-white pl-11 font-display text-base md:text-[14px] text-[#1a1a1a] placeholder:text-[#767676] transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
 
-/** Clases compartidas para los botones primarios (submit). */
+/** Clases compartidas para los botones primarios (submit). Pastilla (rounded-full), 44px. */
 const PRIMARY_BTN =
-    'mt-0.5 h-10 w-full rounded-xl bg-brand font-display text-[13px] font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover disabled:opacity-50';
+    'mt-3 h-11 w-full rounded-full bg-brand font-display text-[14px] font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover disabled:opacity-50';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =
