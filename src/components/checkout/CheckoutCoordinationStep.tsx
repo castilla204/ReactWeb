@@ -1,3 +1,4 @@
+// v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
 import { Info } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
@@ -44,10 +45,20 @@ interface OptionCardProps {
     infoLabel?: string;
     infoContent?: ReactNode;
     cancelHint?: string;
+    /** Número de orden (1, 2…) mostrado como dígito grande contorneado. */
+    number?: number;
     onSelect: () => void;
 }
 
-function OptionCardInfoTrigger({ label, children }: { label: string; children: ReactNode }) {
+function OptionCardInfoTrigger({
+    label,
+    children,
+    onBlue,
+}: {
+    label: string;
+    children: ReactNode;
+    onBlue?: boolean;
+}) {
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -56,7 +67,12 @@ function OptionCardInfoTrigger({ label, children }: { label: string; children: R
                     aria-label={label}
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f4f5f7] text-[#6a6a6a] ring-1 ring-[#e8eaed] transition-colors hover:bg-brand/10 hover:text-brand hover:ring-brand/20"
+                    className={cn(
+                        'grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors',
+                        onBlue
+                            ? 'bg-white/15 text-white/90 hover:bg-white/25'
+                            : 'bg-[#f4f5f7] text-[#6a6a6a] ring-1 ring-[#e8eaed] hover:bg-brand/10 hover:text-brand hover:ring-brand/20',
+                    )}
                 >
                     <Info className="h-3.5 w-3.5" aria-hidden />
                 </button>
@@ -73,47 +89,30 @@ function OptionCardInfoTrigger({ label, children }: { label: string; children: R
     );
 }
 
-function OptionCardCancelNote({ hint }: { hint: string }) {
+function OptionCardCancelNote({ hint, onBlue }: { hint: string; onBlue?: boolean }) {
     return (
-        <p className="text-[11px] leading-[1.55] text-[#7a7a7a]">
+        <p
+            className={cn(
+                'text-[11px] leading-[1.55] lg:text-[12px]',
+                onBlue ? 'text-[#bcd9f7]' : 'text-[#7a7a7a]',
+            )}
+        >
             {COORD_OPTION_FREE_CANCEL} {hint}
         </p>
     );
 }
 
-function OptionCardSelectionIndicator({ selected }: { selected: boolean }) {
-    return (
-        <span
-            aria-hidden
-                className={cn(
-                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-[border-color,background-color,box-shadow] duration-200',
-                    selected
-                        ? 'border-brand bg-brand shadow-[0_0_0_3px_hsl(var(--brand)/0.15)]'
-                        : 'border-[#d1d5db] bg-white group-hover:border-[#9ca3af]',
-                )}
-        >
-            <span
-                className={cn(
-                    'h-2 w-2 rounded-full bg-white transition-transform duration-200',
-                    selected ? 'scale-100' : 'scale-0',
-                )}
-            />
-        </span>
-    );
-}
-
 function OptionCard({
-    theme,
     title,
     tagline,
     description,
     recommended,
     selected,
-    dimmed,
     disabled,
     infoLabel,
     infoContent,
     cancelHint,
+    number,
     compact = false,
     onSelect,
 }: OptionCardProps) {
@@ -132,75 +131,94 @@ function OptionCard({
                 }
             }}
             className={cn(
-                'group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-b-2xl rounded-t-sm border bg-white text-left',
-                'shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_14px_rgba(15,23,42,0.04)]',
+                'group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border text-left',
                 'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out',
-                'hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(15,23,42,0.07),0_8px_20px_rgba(15,23,42,0.06)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                 selected
-                    ? theme === 'blue'
-                        ? 'border-brand/40 bg-brand/[0.03] shadow-[0_0_0_1px_hsl(var(--brand)/0.15),0_6px_20px_rgba(0,102,204,0.08)] hover:translate-y-0'
-                        : 'border-[#1c1c1c] bg-white shadow-[0_0_0_1px_rgba(28,28,28,0.12),0_6px_20px_rgba(0,0,0,0.06)] hover:translate-y-0'
-                    : cn(
-                          theme === 'blue'
-                              ? 'border-[#d2d2d2] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_3px_8px_rgba(0,0,0,0.03)] hover:border-[#b8b8b8] hover:shadow-[0_2px_6px_rgba(0,0,0,0.05),0_6px_16px_rgba(0,0,0,0.04)]'
-                              : 'border-[#e0e0e0] bg-[#f8f8f8] shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:border-[#c0c0c0] hover:shadow-[0_2px_6px_rgba(0,0,0,0.04)]',
-                          dimmed && 'border-[#dedede] bg-[#f3f3f3]/80 opacity-85 hover:opacity-100',
-                      ),
+                    ? 'border-brand bg-brand shadow-[0_8px_24px_rgba(0,102,204,0.18)]'
+                    : 'border-[#e6e9ef] bg-white hover:-translate-y-px hover:border-[#cfd4dc] hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)]',
                 disabled && 'pointer-events-none cursor-not-allowed opacity-40 grayscale hover:translate-y-0',
             )}
         >
             {recommended ? (
-                <span className="absolute right-0 top-0 z-10 rounded-bl-lg bg-brand px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                <span
+                    className={cn(
+                        'absolute right-3 top-3 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        selected ? 'bg-white text-brand' : 'bg-brand/10 text-brand',
+                    )}
+                >
                     Recomendado
                 </span>
             ) : null}
             <div
-                className={cn('w-full shrink-0', compact ? 'h-1.5' : 'h-2')}
-                style={{ background: PANEL_BG[theme] }}
-                aria-hidden
-            />
-            <div
                 className={cn(
-                    'flex flex-1 flex-col px-3.5 pb-3.5 pt-3',
-                    compact ? 'lg:px-3.5 lg:pb-2.5 lg:pt-2.5' : 'lg:px-4.5 lg:pb-4.5 lg:pt-3.5',
+                    'flex flex-1 flex-col px-3.5 pb-3.5 pt-3.5',
+                    compact ? 'lg:px-4 lg:pb-3.5 lg:pt-3' : 'lg:px-4.5 lg:pb-4.5 lg:pt-4',
                 )}
             >
+                {typeof number === 'number' ? (
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'select-none font-bold leading-none',
+                            compact ? 'mb-1.5 text-[26px]' : 'mb-2 text-[36px] lg:text-[40px]',
+                        )}
+                        style={{
+                            color: 'transparent',
+                            WebkitTextStroke: selected
+                                ? '1px rgba(255,255,255,0.9)'
+                                : '1px #d3d8e0',
+                        }}
+                    >
+                        {number}
+                    </span>
+                ) : null}
                 <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                        <h3
-                            className={cn(
-                                'text-[15px] font-semibold leading-snug tracking-[-0.01em]',
-                                compact ? 'lg:text-[14px]' : 'lg:text-[16px]',
-                                selected ? 'text-[#1c1c1c]' : 'text-[#1c1c1c]',
-                            )}
-                        >
-                            {title}
-                        </h3>
-                    </div>
-                    <div className="flex shrink-0 items-start gap-2">
-                        {infoContent && infoLabel ? (
-                            <OptionCardInfoTrigger label={infoLabel}>{infoContent}</OptionCardInfoTrigger>
-                        ) : null}
-                        <OptionCardSelectionIndicator selected={selected} />
-                    </div>
+                    <h3
+                        className={cn(
+                            'min-w-0 flex-1 text-[15px] font-semibold leading-snug tracking-[-0.01em]',
+                            compact ? 'lg:text-[15px]' : 'lg:text-[16px]',
+                            selected ? 'text-white' : 'text-[#1c1c1c]',
+                        )}
+                    >
+                        {title}
+                    </h3>
+                    {infoContent && infoLabel ? (
+                        <OptionCardInfoTrigger label={infoLabel} onBlue={selected}>
+                            {infoContent}
+                        </OptionCardInfoTrigger>
+                    ) : null}
                 </div>
                 {tagline ? (
-                    <p className="mt-2 text-[12px] font-medium leading-snug text-[#64748b]">{tagline}</p>
+                    <p
+                        className={cn(
+                            'mt-2 text-[12px] font-medium leading-snug',
+                            selected ? 'text-[#d3e6fb]' : 'text-[#64748b]',
+                        )}
+                    >
+                        {tagline}
+                    </p>
                 ) : null}
                 <p
                     className={cn(
-                        'flex-1 text-[13px] text-[#565d6b]',
+                        'flex-1 text-[13px]',
+                        selected ? 'text-[#d3e6fb]' : 'text-[#565d6b]',
                         compact
-                            ? 'mt-2 leading-[1.55] lg:text-[12px] lg:leading-[1.52]'
+                            ? 'mt-2 leading-[1.55] lg:mt-2.5 lg:text-[13px] lg:leading-[1.6]'
                             : 'mt-2.5 leading-[1.6] lg:text-[13px] lg:leading-[1.6]',
                     )}
                 >
                     {description}
                 </p>
                 {cancelHint ? (
-                    <div className={cn('border-t border-[#eef0f3]', compact ? 'mt-3 pt-3' : 'mt-3.5 pt-3.5')}>
-                        <OptionCardCancelNote hint={cancelHint} />
+                    <div
+                        className={cn(
+                            'border-t',
+                            selected ? 'border-white/20' : 'border-[#eef0f3]',
+                            compact ? 'mt-3 pt-3 lg:mt-4 lg:pt-4' : 'mt-3.5 pt-3.5',
+                        )}
+                    >
+                        <OptionCardCancelNote hint={cancelHint} onBlue={selected} />
                     </div>
                 ) : null}
             </div>
@@ -209,12 +227,12 @@ function OptionCard({
 }
 
 export const COORD_CHOOSE_TITLE = 'Coordinación de la cita';
-const COORD_CHOOSE_LEAD = 'Elige quién fijará día y hora con el vendedor.';
+const COORD_CHOOSE_LEAD = '¿Cómo quieres reservar?';
 export const COORD_DESKTOP_STEP1_LEAD =
-    'Elige quién fijará día y hora con el vendedor.';
-const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién coordina la cita?';
+    '¿Cómo quieres reservar? Tras el pago hay que acordar el día, la hora y el lugar de la inspección con el vendedor. Puedes dejar que lo coordinemos nosotros por ti o encargarte tú directamente; en ambos casos tu pago queda protegido hasta que termine la revisión.';
+const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Cómo quieres reservar?';
 const COORD_DESKTOP_CARDS_INTRO_LEAD =
-    'Inspecciono puede gestionarlo por ti, o puedes reservar tú mismo.';
+    'Nosotros nos encargamos de coordinarlo todo, o tú coordinas directamente con el vendedor.';
 
 function CoordinationOptionCardsIntro({
     className,
@@ -224,11 +242,11 @@ function CoordinationOptionCardsIntro({
     compact?: boolean;
 }) {
     return (
-        <div className={cn(compact ? 'mb-3' : 'mb-5', className)}>
+        <div className={cn(compact ? 'mb-3 lg:mb-4' : 'mb-5', className)}>
             <p
                 className={cn(
                     'font-semibold tracking-[-0.01em] text-[#1c1c1c]',
-                    compact ? 'text-[13px]' : 'text-[14px]',
+                    compact ? 'text-[13px] lg:text-[15px]' : 'text-[14px]',
                 )}
             >
                 {COORD_DESKTOP_CARDS_INTRO_TITLE}
@@ -236,7 +254,7 @@ function CoordinationOptionCardsIntro({
             <p
                 className={cn(
                     'text-[#64748b]',
-                    compact ? 'mt-1.5 text-[12px] leading-[1.5]' : 'mt-2 text-[13px] leading-[1.55]',
+                    compact ? 'mt-1.5 text-[12px] leading-[1.5] lg:mt-2 lg:text-[13px] lg:leading-[1.55]' : 'mt-2 text-[13px] leading-[1.55]',
                 )}
             >
                 {COORD_DESKTOP_CARDS_INTRO_LEAD}
@@ -306,7 +324,7 @@ function CoordinationOptionCards({
                     compact
                         ? duo
                             ? 'grid-cols-2 gap-3 lg:gap-4'
-                            : 'grid-cols-1 gap-3.5'
+                            : 'grid-cols-1 gap-3.5 lg:gap-4'
                         : duo
                           ? 'grid-cols-2 gap-4 lg:gap-5'
                           : 'grid-cols-1 gap-4',
@@ -314,6 +332,7 @@ function CoordinationOptionCards({
             >
                 <OptionCard
                     theme="amber"
+                    number={1}
                     title={COORD_OPTION_SELLER_TITLE}
                     description={COORD_OPTION_SELLER_DESC}
                     compact={compact}
@@ -328,6 +347,7 @@ function CoordinationOptionCards({
                 />
                 <OptionCard
                     theme="blue"
+                    number={2}
                     title={COORD_OPTION_SELF_TITLE}
                     description={selfDescription}
                     compact={compact}
@@ -386,7 +406,6 @@ export function CheckoutCoordinationStep({
                         showStepHeader ? 'pb-3 pt-2' : 'flex min-h-0 flex-col pb-3',
                     )}
                 >
-                    {!showStepHeader ? <CoordinationOptionCardsIntro compact /> : null}
                     <CoordinationOptionCards
                         selection={effectiveSelection}
                         compact

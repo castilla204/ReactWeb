@@ -8,6 +8,8 @@ import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
     BecomeExpertFastPathShell,
+    FastPathButtonNote,
+    FastPathValueModules,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
     BE_DAY_ACTIVE,
@@ -1143,7 +1145,7 @@ function BecomeExpertPage() {
                         <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
                     )}
 
-                    <div className="flex flex-col gap-3 pt-1">
+                    <div className="flex flex-col pt-1">
                         <button
                             type="button"
                             onClick={submitMinimal}
@@ -1163,7 +1165,10 @@ function BecomeExpertPage() {
                                 </>
                             )}
                         </button>
+                        <FastPathButtonNote />
                     </div>
+
+                    <FastPathValueModules />
                 </div>
             </BecomeExpertFastPathShell>
             </>

@@ -347,23 +347,30 @@ export function CheckoutSellerChoiceLockedPanel({
 export function CheckoutSellerChoicePreviewHeader({
     variant,
     className,
+    compact = false,
 }: {
     variant: keyof typeof LOCKED_COPY;
     className?: string;
+    /** Cabecera única más discreta (sin franja inferior duplicada). */
+    compact?: boolean;
 }) {
     const { headerLead, headerDetail } = LOCKED_COPY[variant];
 
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#f0f0f0] bg-white px-4 py-3.5 lg:block lg:px-5',
+                'relative hidden border-b border-[#f0f0f0] bg-white lg:block',
+                compact ? 'px-4 py-2.5' : 'px-4 py-3.5 lg:px-5',
                 className,
             )}
             role="status"
         >
-            <div className="flex min-w-0 items-start gap-2.5">
+            <div className={cn('flex min-w-0 items-start', compact ? 'gap-2' : 'gap-2.5')}>
                 <svg
-                    className="mt-0.5 h-4 w-4 shrink-0 text-[#94a3b8]"
+                    className={cn(
+                        'mt-0.5 shrink-0 text-[#94a3b8]',
+                        compact ? 'h-3.5 w-3.5' : 'h-4 w-4',
+                    )}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                     aria-hidden
@@ -375,10 +382,22 @@ export function CheckoutSellerChoicePreviewHeader({
                     />
                 </svg>
                 <div className="min-w-0">
-                    <h3 className="text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                    <h3
+                        className={cn(
+                            'font-semibold tracking-[-0.01em] text-[#1c1c1c]',
+                            compact ? 'text-[13px]' : 'text-[14px]',
+                        )}
+                    >
                         {headerLead}
                     </h3>
-                    <p className="mt-0.5 text-[12px] leading-[1.5] text-[#64748b]">{headerDetail}</p>
+                    <p
+                        className={cn(
+                            'mt-0.5 leading-[1.45] text-[#64748b]',
+                            compact ? 'text-[11px]' : 'text-[12px] leading-[1.5]',
+                        )}
+                    >
+                        {headerDetail}
+                    </p>
                 </div>
             </div>
         </div>
@@ -395,20 +414,29 @@ export function CheckoutSellerChoiceMobileWarning({
 }) {
     const { stripeMessage } = LOCKED_COPY[variant];
 
+    // Mapa: aviso limpio sin caja, el mapa es el protagonista.
+    // Calendario: aviso contorneado para separarlo del calendario que va debajo.
+    const boxed = variant === 'calendar';
+
     return (
         <div
             className={cn(
-                'flex items-start gap-2.5 rounded-xl border border-[#e6e9ef] bg-white px-3.5 py-2.5 shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
+                'flex items-start gap-2',
+                boxed
+                    ? 'rounded-xl border border-[#e6e9ef] bg-white px-3.5 py-2.5'
+                    : 'px-0.5 py-0.5',
                 className,
             )}
             role="status"
         >
-            <span
-                className="mt-px inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#eef1f6] text-[#64748b]"
+            <Lock
+                className={cn(
+                    'shrink-0 text-brand',
+                    boxed ? 'mt-px h-[15px] w-[15px]' : 'mt-[2px] h-[15px] w-[15px]',
+                )}
+                strokeWidth={2.25}
                 aria-hidden
-            >
-                <Lock className="h-3 w-3" strokeWidth={2.25} />
-            </span>
+            />
             <p className="min-w-0 text-[12.5px] leading-[1.45] text-[#5b6472]">
                 <span className="font-semibold text-brand">Solo consulta.</span>{' '}
                 {stripeMessage}
@@ -502,8 +530,7 @@ export function CheckoutSellerChoicePreviewMap({
 }) {
     return (
         <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
-            <CheckoutSellerChoicePreviewHeader variant="location" className="w-full shrink-0" />
-            <CheckoutSellerChoiceLockedStripe variant="location" className="hidden w-full shrink-0 lg:flex" />
+            <CheckoutSellerChoicePreviewHeader variant="location" compact className="w-full shrink-0" />
             <div className="relative min-h-0 w-full flex-1">{children}</div>
             {showFooter ? <CheckoutSellerChoicePreviewFooter variant="location" /> : null}
         </div>

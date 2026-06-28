@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GraduationCap, BadgeCheck, Expand, X } from 'lucide-react';
+import { Award, BadgeCheck, Expand, X } from 'lucide-react';
 import { parseFormacion, type FormacionItem } from './expertPanel/formacion';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 
@@ -9,11 +9,15 @@ interface FormacionDisplayProps {
     className?: string;
 }
 
-/** Badge "Oficial" — mismo lenguaje visual que FormacionPhotoOverlay. */
+/**
+ * Badge "Oficial" — mismo pill que los títulos junto al nombre del experto y los
+ * chips de "Qué entregará" (tinte azul sutil + ring), para no introducir un color
+ * nuevo. Ver ServiceDetailExpertHostRow / InspectionReportPreview.
+ */
 function OficialBadge() {
     return (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e8f5ee] px-2 py-[3px] text-[11px] font-semibold leading-none text-[#0d7a4d]">
-            <BadgeCheck size={12} strokeWidth={2.4} />
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#f4f7fb] px-2.5 py-1 text-[12px] font-medium leading-none text-[#1C63B4] ring-1 ring-[#1C63B4]/10">
+            <BadgeCheck size={12} strokeWidth={2.2} />
             Oficial
         </span>
     );
@@ -44,8 +48,6 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
 
     if (items.length === 0) return null;
 
-    const hasAnyImage = items.some((it) => it.imagen);
-
     return (
         <section className={className} aria-labelledby="sd-formacion-heading">
             <p id="sd-formacion-heading" className="sd-section-label mb-3">
@@ -56,34 +58,35 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                 {items.map((it, i) => (
                     <li
                         key={i}
-                        className={`flex gap-3.5 first:pt-0 last:pb-0 ${hasAnyImage ? 'items-start py-4' : 'flex-col py-3.5'}`}
+                        className="flex items-start gap-3.5 py-4 first:pt-0 last:pb-0"
                     >
-                        {hasAnyImage &&
-                            (it.imagen ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setZoom(it)}
-                                    aria-label={`Ver título: ${it.titulo}`}
-                                    className="group relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[10px] border border-[#e6e6e6] bg-[#f2f2f2] outline-none transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-2 focus-visible:ring-[#1C63B4]/40"
-                                >
-                                    <img
-                                        src={it.imagen}
-                                        alt=""
-                                        loading="lazy"
-                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-                                    />
-                                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-[background-color,opacity] duration-200 group-hover:bg-black/35 group-hover:opacity-100 motion-reduce:transition-none">
-                                        <Expand size={16} strokeWidth={2} />
-                                    </span>
-                                </button>
-                            ) : (
-                                <span
-                                    aria-hidden
-                                    className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[10px] bg-[#eef3fb] text-[#1C63B4]"
-                                >
-                                    <GraduationCap size={22} strokeWidth={1.75} />
+                        {it.imagen ? (
+                            <button
+                                type="button"
+                                onClick={() => setZoom(it)}
+                                aria-label={`Ver título: ${it.titulo}`}
+                                className="group relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[10px] border border-[#e6e6e6] bg-[#f2f2f2] outline-none transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-2 focus-visible:ring-[#1C63B4]/40"
+                            >
+                                <img
+                                    src={it.imagen}
+                                    alt=""
+                                    loading="lazy"
+                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+                                />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-[background-color,opacity] duration-200 group-hover:bg-black/35 group-hover:opacity-100 motion-reduce:transition-none">
+                                    <Expand size={16} strokeWidth={2} />
                                 </span>
-                            ))}
+                            </button>
+                        ) : (
+                            <span
+                                aria-hidden
+                                className="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-[10px] border border-[#e6e6e6] bg-[#eef2f7]"
+                            >
+                                <span className="h-1 w-[30px] rounded-full bg-[#c2cfdd]" />
+                                <span className="h-[3px] w-[22px] rounded-full bg-[#d3dce6]" />
+                                <Award size={15} strokeWidth={2} className="mt-0.5 text-[#b08a3e]" />
+                            </span>
+                        )}
 
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

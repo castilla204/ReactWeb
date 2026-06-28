@@ -169,9 +169,16 @@ export const SD_DESKTOP_PAGE_TITLE_BLOCK_CLASS = 'mb-0';
 /** Cabecera ficha desktop: título + host */
 export const SD_DESKTOP_HEADER_STACK_CLASS = 'flex flex-col';
 
-/** Fila experto dentro de tarjeta — solo separador inferior */
+/**
+ * Fila experto dentro de tarjeta — separador inferior.
+ * min-h-[84px] alinea su separador con el borde inferior del bloque de precio
+ * del aside de reserva (ambas tarjetas arrancan a la misma altura), de modo que
+ * las dos líneas divisorias quedan a la misma cota aunque la bio sea corta.
+ * py-2 (simétrico) centra verticalmente avatar+identidad+Chat dentro de la fila
+ * en vez de dejarlos pegados arriba; protege la bio larga de tocar el separador.
+ */
 export const SD_DESKTOP_HOST_ROW_CLASS =
-  'border-b border-[#ebebeb] pb-5';
+  'min-h-[84px] border-b border-[#ebebeb] py-2';
 
 /** Nombre del experto en desktop — 15px */
 export const SD_DESKTOP_HOST_NAME_CLASS =
@@ -188,8 +195,8 @@ export const SD_DESKTOP_HOST_META_CLASS =
 /** Columna nombre + bio */
 export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 overflow-hidden pr-5';
 
-/** Layout interno fila host desktop */
-export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-start gap-3';
+/** Layout interno fila host desktop — centrado vertical dentro de min-h-[84px] */
+export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-center gap-3';
 
 /** Separación extra del botón Chat en desktop */
 export const SD_DESKTOP_HOST_CHAT_CLASS = 'ml-2 shrink-0';

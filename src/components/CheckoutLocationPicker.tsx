@@ -426,6 +426,14 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     } | null>(null);
     const emittedStatic = useRef(false);
     const doorInputRef = useRef<HTMLInputElement>(null);
+    // 🔁 Rompe el eco mapa↔padre: cuando el Efecto B sincroniza `picked` DESDE el padre
+    // (controlledLocation), marca este flag y el Efecto A NO reemite onChange (que volvería a
+    // cambiar controlledLocation → bucle infinito "Maximum update depth"). Robusto aunque la
+    // dirección sufra «drift» (reverse-geocode ≠ texto buscado).
+    const syncingFromParent = useRef(false);
+    // Contador determinista para forzar la recolocación del marcador (sustituye a Date.now(),
+    // que generaba un valor distinto en cada pasada / doble invocación de StrictMode).
+    const externalPickNonce = useRef(0);
 
     const expandDrawerForEdit = () => {
         if (isSidebar) {
@@ -452,8 +460,14 @@ const CheckoutLocationPicker: React.FC<Props> = ({
 
     useEffect(() => {
         if (isWorkshopOnly || referenceMode) return;
+        // Este cambio de `picked` lo provocó el Efecto B sincronizando desde el padre:
+        // consumimos el flag y NO reemitimos (evita el bucle de eco).
+        if (syncingFromParent.current) {
+            syncingFromParent.current = false;
+            return;
+        }
         if (picked) {
-            onChange({
+            const payload = {
                 location: picked.address,
                 latitude: String(picked.latitude),
                 longitude: String(picked.longitude),
@@ -461,7 +475,21 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                 // tomamos de `controlledLocation` para no machacarlas al recolocar el punto.
                 doorNumber: externalForm ? (controlledLocation?.doorNumber ?? null) : (doorNumber.trim() || null),
                 siteDetails: externalForm ? (controlledLocation?.siteDetails ?? null) : (siteDetails.trim() || null),
-            });
+            };
+            // 🔁 En externalForm el Efecto B ya sincroniza `picked` DESDE `controlledLocation`.
+            // Si lo que íbamos a emitir coincide con lo que ya hay arriba, NO re-emitimos: si no,
+            // creamos un objeto nuevo en cada render → el padre re-renderiza → bucle infinito
+            // (Maximum update depth) al volver a esta pantalla.
+            const alreadySynced =
+                externalForm &&
+                !!controlledLocation &&
+                controlledLocation.location === payload.location &&
+                Math.abs(Number(controlledLocation.latitude) - picked.latitude) < 1e-7 &&
+                Math.abs(Number(controlledLocation.longitude) - picked.longitude) < 1e-7 &&
+                (controlledLocation.doorNumber ?? null) === payload.doorNumber &&
+                (controlledLocation.siteDetails ?? null) === payload.siteDetails;
+            if (alreadySynced) return;
+            onChange(payload);
         } else {
             onChange(null);
             setDrawerExpanded(false);
@@ -486,10 +514,13 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                 Math.abs(picked.latitude - lat) < 1e-7 &&
                 Math.abs(picked.longitude - lng) < 1e-7;
             if (!samePoint) {
+                syncingFromParent.current = true;
+                externalPickNonce.current += 1;
                 setPicked({ address: cl.location, latitude: lat, longitude: lng });
-                setExternalAddressPick({ address: cl.location, latitude: lat, longitude: lng, nonce: Date.now() });
+                setExternalAddressPick({ address: cl.location, latitude: lat, longitude: lng, nonce: externalPickNonce.current });
             }
         } else if (!cl && picked) {
+            syncingFromParent.current = true;
             setPicked(null);
             setExternalAddressPick(null);
         }

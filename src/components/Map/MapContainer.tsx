@@ -426,17 +426,47 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const onIdle = () => {
       handleMapIdle(map);
     };
-    // 📐 Re-fetch al RE-DIMENSIONAR el lienzo. En MÓVIL el contenedor del mapa
-    //    (flex-1 / min-h-0) monta con altura ~0 mientras el layout no ha resuelto,
-    //    así que el primer fetch en 'load' ve unos bounds degenerados (ne.lat<=sw.lat)
-    //    → validateBounds los rechaza → no carga pins. Cuando el contenedor obtiene
-    //    su altura real, maplibre (trackResize) hace map.resize() PERO 'resize' NO
-    //    emite moveend/zoomend → sin este listener nada relanzaba el fetch y los pins
-    //    no aparecían hasta que el usuario movía el mapa. Tras el primer fetch válido,
-    //    el guard stillInside + debounce de scheduleViewportFetch deduplica los resize.
+    // Re-fetch al redimensionar el lienzo (orientación, barra de URL, drawer…).
     const onResize = () => {
       if (isDraggingRef.current) return;
       handleMapIdle(map);
+    };
+
+    // 🚀 INICIALIZACIÓN DESACOPLADA DEL EVENTO 'load'. CAUSA RAÍZ del bug "0 expertos hasta que
+    //    muevo el mapa": TODO (setIsMapLoaded + primer fetch del viewport) colgaba del evento
+    //    'load' de maplibre, que en móvil/StrictMode puede tardar mucho o no llegar (estilo/tiles
+    //    lentos). Sin 'load' no había fetch ni se montaban los markers; mover el mapa disparaba
+    //    'moveend' (independiente de 'load') y POR ESO aparecían al moverse. getBounds()/project()
+    //    funcionan en cuanto el mapa está construido y el lienzo tiene tamaño, así que
+    //    inicializamos en cuanto eso ocurre vía rAF, SIN esperar a 'load'. `initOnce` es
+    //    idempotente: lo llaman el poller y el propio 'load' (lo que ocurra primero); el resto no-op.
+    let inited = false;
+    let initRaf = 0;
+    let initTries = 0;
+    const initOnce = () => {
+      if (inited) return true;
+      const c = map.getContainer();
+      if (c.clientHeight < MIN_MAP_READY_PX || c.clientWidth < MIN_MAP_READY_PX) return false;
+      inited = true;
+      try {
+        applyFlat();
+        ensureInspeccionoLandFill(map);
+        map.triggerRepaint();
+      } catch {
+        // Proyección plana / capa de tierra son cosméticas; el mapa es usable sin ellas.
+      }
+      mapInstanceRef.current = map;
+      setIsMapLoaded(true);
+      setMapInstance(map);
+      onMapLoadRef.current?.();
+      map.resize();
+      handleMapIdle(map);
+      return true;
+    };
+    const pumpInit = () => {
+      if (inited) return;
+      if (initOnce()) return;
+      if (initTries++ < 600) initRaf = requestAnimationFrame(pumpInit);
     };
 
     map.once('style.load', applyFlat);
@@ -444,24 +474,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('moveend', onIdle);
     map.on('zoomend', onIdle);
     map.on('resize', onResize);
-    map.on('load', () => {
-      applyFlat();
-      try {
-        ensureInspeccionoLandFill(map);
-        map.triggerRepaint();
-      } catch {
-        // La capa de tierra es cosmética; el mapa sigue usable sin ella.
-      }
-      // ✅ El padding ya se aplicó en el constructor (initialPadding) → no hay
-      //    re-encaje aquí y los marcadores no brincan al primer fetch.
-      mapInstanceRef.current = map;
-      setIsMapLoaded(true);
-      setMapInstance(map);
-      onMapLoadRef.current?.();
-      handleMapIdle(map);
-    });
+    map.on('load', initOnce);
 
     if (map.isStyleLoaded()) applyFlat();
+    pumpInit(); // arranca el primer fetch SIN esperar a 'load'
 
     return () => {
       map.off('style.load', applyFlat);
@@ -469,45 +485,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       map.off('moveend', onIdle);
       map.off('zoomend', onIdle);
       map.off('resize', onResize);
+      map.off('load', initOnce);
+      if (initRaf) cancelAnimationFrame(initRaf);
       map.remove();
       mapInstanceRef.current = null;
       setMapInstance(null);
       setIsMapLoaded(false);
     };
   }, [mapOptions.minZoom, mapOptions.maxZoom, isMobile, handleMapIdle, initialZoom]);
-
-  // 📐 Garantía DETERMINISTA del primer fetch (arregla el bug intermitente móvil "no salen los
-  //    servicios hasta que muevo el mapa"). El contenedor flex resuelve su altura DESPUÉS de
-  //    montar, así que el fetch que dispara `load` puede salir de un canvas ~0px → box minúsculo
-  //    → backend "0 expertos". El guard de MIN_MAP_READY_PX evita ese fetch basura; este
-  //    ResizeObserver vigila el contenedor y, cuando alcanza un tamaño real y ESTABLE (debounce),
-  //    fuerza resize() del lienzo y relanza el fetch — ahora con bounds correctos. No depende del
-  //    evento 'resize' de maplibre ni de su orden respecto a 'load', por eso es robusto.
-  useEffect(() => {
-    const el = mapContainerRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    let settleTimer: ReturnType<typeof setTimeout> | null = null;
-    let lastReadyHeight = 0;
-    const ro = new ResizeObserver(() => {
-      if (settleTimer) clearTimeout(settleTimer);
-      settleTimer = setTimeout(() => {
-        const map = mapInstanceRef.current;
-        if (!map) return;
-        const h = el.clientHeight;
-        const w = el.clientWidth;
-        if (h < MIN_MAP_READY_PX || w < MIN_MAP_READY_PX) return; // aún sin dimensionar
-        if (Math.abs(h - lastReadyHeight) < 2) return; // sin cambio relevante → no re-pedir
-        lastReadyHeight = h;
-        map.resize();
-        if (!isDraggingRef.current) handleMapIdle(map);
-      }, 160);
-    });
-    ro.observe(el);
-    return () => {
-      if (settleTimer) clearTimeout(settleTimer);
-      ro.disconnect();
-    };
-  }, [handleMapIdle]);
 
   // Actualizar centro/zoom solo cuando cambie de verdad (geocoding / país)
   useEffect(() => {

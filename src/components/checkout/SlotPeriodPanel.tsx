@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { toast } from '../../lib/toast';
 import type { ChosenSlot } from '../SlotPicker';
 import {
     SLOT_PERIOD_HINTS,
@@ -28,7 +29,7 @@ interface SlotPeriodPanelProps {
 
 const slotButtonClass = (active: boolean, embedded?: boolean) =>
     cn(
-        'inline-flex w-full items-center justify-center rounded-md border font-semibold tabular-nums transition-colors',
+        'inline-flex w-full select-none items-center justify-center rounded-md border font-semibold tabular-nums transition-colors',
         embedded ? 'h-9 text-[12px]' : 'h-9 min-w-[3.75rem] px-2.5 text-[13px] sm:min-w-[4.25rem]',
         active
             ? 'border-brand bg-brand text-white shadow-sm'
@@ -69,7 +70,7 @@ function PeriodFilterChips({
                         aria-selected={active}
                         onClick={() => onChange(item.id)}
                         className={cn(
-                            'flex-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors',
+                            'flex-1 select-none rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors',
                             active
                                 ? 'bg-white text-[#1c1c1c] shadow-sm'
                                 : 'text-[#6a6a6a] hover:text-[#1c1c1c]',
@@ -104,14 +105,32 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
     const { morning, afternoon } = splitSlotsByPeriod(slots);
     const sorted = sortSlotsByTime(slots);
 
-    const flatText = (
-        <p className="text-[12px] font-medium leading-relaxed tabular-nums text-[#1c1c1c]">
-            {sorted.map((s) => s.label).join(' · ')}
-        </p>
-    );
+    // Al pulsar un hueco en este modo: aviso de que la cita la coordina Inspecciono
+    // (id fijo → los clics repetidos refrescan el mismo toast en vez de apilarse).
+    const notifyCoordinated = () =>
+        toast.info('Es solo una previsualización', {
+            id: 'coord-seller-slot-info',
+            description:
+                'No tienes que elegir hora ni lugar. Inspecciono enviará un enlace al vendedor para que coordine la cita con el experto. Tú no te mueves del sofá.',
+            duration: 6500,
+        });
 
+    // Chip de solo consulta: aspecto atenuado a trazas (el cliente no elige la hora aquí),
+    // pero pulsable para explicar el modo «lo coordina Inspecciono».
     const browseChipClass =
-        'inline-flex items-center justify-center rounded-lg border border-[#e5e7eb] bg-[#f8f9fb] px-2.5 py-1.5 text-[13px] font-semibold tabular-nums text-[#1c1c1c]';
+        'inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-[#9ca7b4] bg-[#f8f9fb] px-2.5 py-1.5 text-[13px] font-semibold tabular-nums text-[#64748b] transition-colors hover:border-[#7d8896] hover:bg-[#f1f3f6]';
+
+    const renderBrowseChip = (s: ChosenSlot) => (
+        <button
+            key={s.startUtc}
+            type="button"
+            className={browseChipClass}
+            title="La cita la coordina Inspecciono"
+            onClick={notifyCoordinated}
+        >
+            {s.label}
+        </button>
+    );
 
     const renderChipRow = (period: SlotDayPeriod, periodSlots: ChosenSlot[]) => {
         if (periodSlots.length === 0) return null;
@@ -121,11 +140,7 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
                     {SLOT_PERIOD_LABELS[period]}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                    {periodSlots.map((s) => (
-                        <span key={s.startUtc} className={browseChipClass}>
-                            {s.label}
-                        </span>
-                    ))}
+                    {periodSlots.map(renderBrowseChip)}
                 </div>
             </div>
         );
@@ -133,33 +148,23 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
 
     const hasBoth = morning.length > 0 && afternoon.length > 0;
 
-    return (
-        <>
-            <div className="lg:hidden">{flatText}</div>
-            <div className="hidden lg:block">
-                {!hasBoth ? (
-                    <div className="flex flex-wrap gap-1.5">
-                        {sorted.map((s) => (
-                            <span key={s.startUtc} className={browseChipClass}>
-                                {s.label}
-                            </span>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="space-y-3.5">
-                        {renderChipRow('morning', morning)}
-                        {renderChipRow('afternoon', afternoon)}
-                    </div>
-                )}
-            </div>
-        </>
+    // Mismo aspecto en móvil y desktop: chips a trazas atenuados (no texto plano).
+    return !hasBoth ? (
+        <div className="flex flex-wrap gap-1.5">
+            {sorted.map(renderBrowseChip)}
+        </div>
+    ) : (
+        <div className="space-y-3.5">
+            {renderChipRow('morning', morning)}
+            {renderChipRow('afternoon', afternoon)}
+        </div>
     );
 }
 
 /** Yo me encargo: mini chips horarios, claros y fáciles de pulsar. */
 const embeddedMiniSlotChipClass = (active: boolean) =>
     cn(
-        'inline-flex min-w-[3.25rem] items-center justify-center rounded-lg px-2 py-1.5',
+        'inline-flex min-w-[3.25rem] select-none items-center justify-center rounded-lg px-2 py-1.5',
         'text-[13px] font-semibold tabular-nums transition-all duration-150',
         'max-lg:min-w-[2.75rem] max-lg:px-2 max-lg:py-1 max-lg:text-[12px]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
@@ -190,7 +195,7 @@ function FlatEmbeddedSlotGrid({
                 onClick={() => onSelectSlot(active ? null : s)}
                 className={cn(
                     embeddedMiniSlotChipClass(active),
-                    wrap && 'min-w-[3.25rem] shrink-0 px-2 py-1 text-[12px]',
+                    wrap && 'h-10 min-w-[3.25rem] shrink-0 px-2 py-0 text-[13px]',
                 )}
             >
                 {s.label}
@@ -241,7 +246,7 @@ function SelectableEmbeddedSlotHours({
                 onClick={() => onSelectSlot(active ? null : s)}
                 className={cn(
                     embeddedMiniSlotChipClass(active),
-                    splitPeriodsOnMobile && 'min-w-[3.25rem] shrink-0 px-2 py-1 text-[12px]',
+                    splitPeriodsOnMobile && 'h-10 min-w-[3.25rem] shrink-0 px-2 py-0 text-[13px]',
                 )}
             >
                 {s.label}

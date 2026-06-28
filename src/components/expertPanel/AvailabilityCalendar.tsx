@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { Loader2, ChevronLeft, ChevronRight, X, Save, Undo2 } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { API_CONFIG } from '../../config/api';
@@ -6,6 +6,7 @@ import { getAuthToken } from '../../lib/auth';
 import { Calendar } from '../ui/calendar';
 import { cn } from '../../lib/utils';
 import RangeList, { Range } from './RangeList';
+import type { AvailabilityHandle } from './AvailabilityRulesEditor';
 
 interface ExceptionDto { date: string; isWorking: boolean; ranges: { start: string; end: string }[]; }
 interface RuleDto { dayOfWeek: number; startLocal: string; endLocal: string; }
@@ -65,7 +66,17 @@ const sameState = (a: DayState, b: DayState) =>
  * y guardarlos TODOS con un único PUT batch a /api/ExpertAvailability/exceptions/batch.
  * El COLOR de cada día refleja sus franjas (jornada completa / reducida / turnos partidos / cerrado).
  */
-const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId }) => {
+interface AvailabilityCalendarProps {
+    adminUserId?: number;
+    /** Modo coordinado: oculta la barra propia de guardar; el padre orquesta el guardado unificado. */
+    embedded?: boolean;
+    onDirtyChange?: (pendingCount: number) => void;
+}
+
+const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendarProps>(function AvailabilityCalendar(
+    { adminUserId, embedded = false, onDirtyChange },
+    ref,
+) {
     // Base de la API: en modo admin apunta al experto objetivo; si no, al experto autenticado.
     const avBase = adminUserId != null
         ? `/api/admin/expert/${adminUserId}/availability`
@@ -288,8 +299,8 @@ const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId 
 
     const discardAll = () => { setPending({}); clearSelection(); setError(null); setSuccess(null); };
 
-    const saveAll = async () => {
-        if (pendingCount === 0) return;
+    const saveAll = async (): Promise<boolean> => {
+        if (pendingCount === 0) return true;
         setSaving(true); setError(null); setSuccess(null);
         try {
             const items = Object.entries(pending).map(([date, p]) =>
@@ -307,12 +318,25 @@ const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId 
             setPending({});
             await load(month);
             setSuccess(`${n} día${n !== 1 ? 's' : ''} guardado${n !== 1 ? 's' : ''} correctamente.`);
+            return true;
         } catch (err: any) {
             setError(err.message || 'No se pudieron guardar los cambios.');
+            return false;
         } finally {
             setSaving(false);
         }
     };
+
+    // Guardado unificado coordinado por el padre (AvailabilityTab): expone estado + acciones.
+    useImperativeHandle(ref, () => ({
+        isDirty: pendingCount > 0,
+        pendingCount,
+        save: saveAll,
+        reload: () => load(month),
+        discard: discardAll,
+    }), [pendingCount, saveAll, load, month]);
+
+    useEffect(() => { onDirtyChange?.(pendingCount); }, [pendingCount, onDirtyChange]);
 
     const goMonth = (delta: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
     const atCurrentMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
@@ -619,7 +643,7 @@ const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId 
                 </div>
             )}
 
-            {pendingCount > 0 && (
+            {!embedded && pendingCount > 0 && (
                 <div className="av-calendar__savebar" role="region" aria-label="Cambios sin guardar"
                     style={{
                         position: 'sticky', bottom: 0, marginTop: 16, display: 'flex', alignItems: 'center',
@@ -644,6 +668,6 @@ const AvailabilityCalendar: React.FC<{ adminUserId?: number }> = ({ adminUserId 
             )}
         </section>
     );
-};
+});
 
 export default AvailabilityCalendar;

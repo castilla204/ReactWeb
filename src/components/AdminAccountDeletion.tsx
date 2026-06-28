@@ -156,7 +156,7 @@ export const AdminAccountDeletion: React.FC<AdminAccountDeletionProps> = ({
                   </h3>
                   <p className="text-sm opacity-80">
                     El usuario tiene {deletionStatus.activeContractsCount} contratación(es) activa(s).
-                    Al eliminar la cuenta, se crearán disputas automáticas.
+                    Al eliminar la cuenta, el dinero se liquida automáticamente (al experto o reembolso al cliente, según el caso). No se abren disputas.
                   </p>
                 </div>
               </div>
@@ -238,13 +238,13 @@ export const AdminAccountDeletion: React.FC<AdminAccountDeletionProps> = ({
               <div className="admin-alert admin-alert--info">
                 <div className="w-full">
                   <h4 className="font-semibold mb-3">
-                    Disputas Creadas Automáticamente
+                    Contrataciones cerradas
                   </h4>
                   <div className="space-y-2">
                     {result.disputesCreated.map((dispute: any) => (
-                      <div key={dispute.disputeId} className="text-sm opacity-90">
-                        <p><strong>Disputa #{dispute.disputeId}:</strong> {dispute.reason}</p>
-                        <p>Usuario afectado: {dispute.affectedPartyName} ({dispute.affectedPartyEmail})</p>
+                      <div key={dispute.searchHireId} className="text-sm opacity-90">
+                        <p>{dispute.reason}</p>
+                        <p>Parte afectada: {dispute.affectedPartyName} ({dispute.affectedPartyEmail})</p>
                       </div>
                     ))}
                   </div>

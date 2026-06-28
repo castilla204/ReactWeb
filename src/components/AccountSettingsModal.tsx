@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, ChevronLeft, CheckCircle, Mail, Calendar, DollarSign, Plane, MapPin, MessageCircle } from 'lucide-react';
+import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, ChevronLeft, CheckCircle, Mail, Plane, MapPin, MessageCircle } from 'lucide-react';
 import { SileoLoader } from './ui/sileo-loader';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -188,21 +188,29 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     if (status) {
       setDeletionStatus(status);
       setDeletionStep('confirm');
-      // 🛡️ SEC-1: determinar método de reautenticación. Para cuentas OAuth esto
-      // además envía el OTP step-up por email; para cuentas con contraseña, requiresOtp=false.
-      const otp = await requestDeletionOtp();
-      if (otp) {
-        setDeletionUsesOtp(otp.requiresOtp);
-        if (otp.requiresOtp && otp.verificationToken) {
-          setDeletionToken(otp.verificationToken);
-          setOtpSent(otp.success !== false);
-        }
-      } else {
-        // Fallback conservador: si no se pudo determinar, asumimos OTP (cuenta OAuth).
-        setDeletionUsesOtp(true);
-      }
+      // 🛡️ SEC-1: NO determinamos el método ni enviamos el OTP automáticamente. El correo de
+      // verificación se envía SOLO cuando el usuario pulsa "Verificar identidad"
+      // (requestDeletionReauth), para no mandar emails sin que los pida.
+      setDeletionUsesOtp(null);
     } else {
       setDeletionStep('initial');
+    }
+  };
+
+  // 🛡️ SEC-1: dispara la reautenticación BAJO DEMANDA (al pulsar el botón). Para cuentas OAuth
+  // esto envía el código OTP por email; para cuentas con contraseña solo revela el campo de
+  // contraseña (en ese caso el backend no envía ningún correo).
+  const requestDeletionReauth = async () => {
+    const otp = await requestDeletionOtp();
+    if (otp) {
+      setDeletionUsesOtp(otp.requiresOtp);
+      if (otp.requiresOtp && otp.verificationToken) {
+        setDeletionToken(otp.verificationToken);
+        setOtpSent(otp.success !== false);
+      }
+    } else {
+      // Fallback conservador: si no se pudo determinar, asumimos OTP (cuenta OAuth).
+      setDeletionUsesOtp(true);
     }
   };
 
@@ -420,106 +428,109 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     <>
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div className="space-y-5">
-          <div>
-            <div className="flex items-center gap-4 mb-4">
-              {/* 🖼️ Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Foto de perfil"
-                  className="w-12 h-12 rounded-full object-cover shrink-0"
+        <div className="space-y-6">
+          {/* ── Foto de perfil ── */}
+          <div className="flex items-center gap-4">
+            {/* 🖼️ Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Foto de perfil"
+                className="h-16 w-16 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xl font-semibold"
+              >
+                {avatarInitials || <User className="h-7 w-7" />}
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="hidden"
+                  onChange={handleAvatarFileSelected}
                 />
-              ) : (
-                <span
-                  aria-hidden
-                  className="inline-flex w-12 h-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-lg font-semibold"
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUploadingAvatar}
+                  onClick={() => avatarInputRef.current?.click()}
                 >
-                  {avatarInitials || <User className="w-6 h-6" />}
-                </span>
-              )}
-              <div className="min-w-0">
-                <h4 className="text-base font-medium truncate">{user?.name || 'Usuario'}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{user?.email || 'usuario@email.com'}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    className="hidden"
-                    onChange={handleAvatarFileSelected}
-                  />
+                  {isUploadingAvatar ? 'Guardando…' : (avatarUrl ? 'Cambiar foto' : 'Añadir foto')}
+                </Button>
+                {/* El experto no puede quitar su foto (es pública y obligatoria) */}
+                {avatarUrl && !isExpert && (
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     disabled={isUploadingAvatar}
-                    onClick={() => avatarInputRef.current?.click()}
+                    onClick={handleRemoveAvatar}
                   >
-                    {isUploadingAvatar ? 'Guardando…' : (avatarUrl ? 'Cambiar foto' : 'Añadir foto')}
+                    Quitar
                   </Button>
-                  {/* El experto no puede quitar su foto (es pública y obligatoria) */}
-                  {avatarUrl && !isExpert && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isUploadingAvatar}
-                      onClick={handleRemoveAvatar}
-                    >
-                      Quitar
-                    </Button>
-                  )}
-                </div>
-                {isExpert && (
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                    Esta foto es también tu foto pública como experto.
-                  </p>
                 )}
               </div>
+              <p className="mt-1.5 text-xs text-gray-600 dark:text-gray-300">
+                JPG o PNG, máximo 5 MB.{isExpert ? ' Es también tu foto pública como experto.' : ''}
+              </p>
             </div>
+          </div>
 
-            {/* 🖼️ Recorte de la foto antes de subir (reutiliza el flujo del experto) */}
-            <ProfilePhotoCropModal
-              open={cropOpen}
-              onOpenChange={setCropOpen}
-              file={cropFile}
-              onConfirm={handleAvatarCropped}
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nombre</Label>
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  maxLength={100}
-                  disabled={isSavingName}
-                  placeholder="Tu nombre"
-                  className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-600 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={isSavingName || !nameChanged || !trimmedName}
-                    onClick={handleSaveName}
-                  >
-                    {isSavingName ? 'Guardando…' : 'Guardar nombre'}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-600 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  readOnly
-                />
-              </div>
+          {/* 🖼️ Recorte de la foto antes de subir (reutiliza el flujo del experto) */}
+          <ProfilePhotoCropModal
+            open={cropOpen}
+            onOpenChange={setCropOpen}
+            file={cropFile}
+            onConfirm={handleAvatarCropped}
+          />
+
+          <Separator />
+
+          {/* ── Datos de la cuenta ── */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="account-name">Nombre</Label>
+              <input
+                id="account-name"
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                maxLength={100}
+                disabled={isSavingName}
+                placeholder="Tu nombre"
+                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-gray-600 dark:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="account-email">Email</Label>
+              <input
+                id="account-email"
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                className="flex h-10 w-full cursor-not-allowed rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground ring-offset-background focus-visible:outline-none"
+              />
+              <p className="text-xs text-gray-600 dark:text-gray-300">El email no se puede cambiar.</p>
+            </div>
+          </div>
+
+          {/* Botón único de guardado al pie del formulario */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              size="sm"
+              disabled={isSavingName || !nameChanged || !trimmedName}
+              onClick={handleSaveName}
+            >
+              {isSavingName ? 'Guardando…' : 'Guardar cambios'}
+            </Button>
           </div>
         </div>
       )}
@@ -758,62 +769,48 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           {/* Step 2: Confirmation */}
           {deletionStep === 'confirm' && deletionStatus && (
-            <div className="space-y-4">
-              <div className="p-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900 dark:border-red-900 rounded-xl">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-destructive/20 rounded-full flex items-center justify-center">
-                      <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-base font-semibold mb-2">Eliminar Cuenta Permanentemente</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">
-                      Esta acción eliminará o anonimizará tu cuenta y tus datos personales de forma irreversible.
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                      Por obligación legal contable y fiscal, los registros de tus transacciones (facturas y pagos)
-                      se conservarán de forma anonimizada durante el plazo que exija la ley (hasta 6 años) y no se
-                      eliminan de inmediato.
-                    </p>
-                  </div>
+            <div className="space-y-6">
+              {/* Intro: sin caja, tono sobrio */}
+              <div className="flex flex-col items-center gap-3 pt-1 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                  <Trash2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Eliminar cuenta permanentemente</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    Esta acción elimina o anonimiza tu cuenta y tus datos personales de forma irreversible.
+                  </p>
                 </div>
               </div>
 
-              {/* Warning about active contracts */}
+              {/* Contrataciones activas: aviso sobrio + lista compacta (sin caja de color) */}
               {deletionStatus.hasActiveContracts && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-orange-800 rounded-xl">
-                  <div className="flex items-start">
-                    <AlertTriangle className="w-5 h-5 text-blue-500 dark:text-blue-400 dark:text-orange-400 mr-3 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-blue-900 dark:text-orange-100 mb-2">
-                        Contrataciones Activas Detectadas
-                      </h3>
-                      <p className="text-sm text-blue-800 dark:text-orange-200 mb-3">
-                        Tienes {deletionStatus.activeContractsCount} contratación(es) activa(s). 
-                        Al eliminar tu cuenta, estas se cancelarán automáticamente a favor de la parte contraria 
-                        y se crearán disputas automáticas para proteger a las partes afectadas.
-                      </p>
-                      
-                      {/* Active Contracts List */}
-                      {deletionStatus.activeContracts.length > 0 && (
-                        <div className="space-y-2 mt-3">
-                          {deletionStatus.activeContracts.map((contract) => (
-                            <ActiveContractCard key={contract.searchHireId} contract={contract} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-500" />
+                    Tienes {deletionStatus.activeContractsCount} contratación(es) activa(s)
                   </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Si alguna tiene un pago en curso, no podrás eliminar la cuenta hasta que se complete o se cancele.
+                    El dinero se liquida automáticamente (al experto, reembolso al cliente o anulación); no se abren
+                    disputas.
+                  </p>
+                  {deletionStatus.activeContracts.length > 0 && (
+                    <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                      {deletionStatus.activeContracts.map((contract) => (
+                        <ActiveContractCard key={contract.searchHireId} contract={contract} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Error Display */}
               {deletionError && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 dark:border-red-800 rounded-xl">
-                  <div className="flex items-center">
-                    <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 mr-2" />
-                    <p className="text-red-700 dark:text-red-300 text-sm">{deletionError}</p>
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+                    <p className="text-sm text-destructive">{deletionError}</p>
                   </div>
                 </div>
               )}
@@ -833,7 +830,22 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {/* 🛡️ SEC-1: reautenticación obligatoria */}
               {deletionUsesOtp === null && (
-                <p className="text-sm text-gray-600 dark:text-gray-300">Preparando verificación de seguridad…</p>
+                <div className="space-y-2">
+                  <Label>Verificación de seguridad</Label>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Para confirmar debes verificar tu identidad. Si accedes con Google, te enviaremos un código de un
+                    solo uso a tu correo al pulsar el botón.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={requestDeletionReauth}
+                    disabled={deletionLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    {deletionLoading ? 'Comprobando…' : 'Verificar identidad'}
+                  </Button>
+                </div>
               )}
 
               {deletionUsesOtp === false && (
@@ -879,8 +891,14 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </div>
               )}
 
+              {/* Nota legal de retención (letra pequeña, secundaria) */}
+              <p className="text-xs leading-relaxed text-muted-foreground/80">
+                Por obligación legal, las facturas y pagos se conservan anonimizados hasta 6 años; no se eliminan de
+                inmediato.
+              </p>
+
               {/* Action buttons */}
-              <div className="flex gap-3 pt-4 border-t border-border">
+              <div className="flex gap-3 border-t border-border pt-4">
                 <Button
                   variant="outline"
                   onClick={resetDeletionState}
@@ -909,45 +927,45 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           {/* Step 3: Processing */}
           {deletionStep === 'processing' && (
             <div className="py-10">
-              <SileoLoader size="lg" layout="center" message="Eliminando tu cuenta y procesando contrataciones activas…" color="muted" />
+              <SileoLoader size="lg" layout="center" message="Eliminando tu cuenta…" color="muted" />
             </div>
           )}
 
           {/* Step 4: Result */}
           {deletionStep === 'result' && deletionResult && (
             <div className="space-y-4">
-              <div className="text-center">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  Cuenta Eliminada Exitosamente
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">{deletionResult.message}</p>
-                        </div>
+              <div className="py-2 text-center">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">
+                  <CheckCircle className="h-7 w-7 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Cuenta eliminada</h3>
+                {deletionResult.message && (
+                  <p className="mt-1 text-sm text-muted-foreground">{deletionResult.message}</p>
+                )}
+              </div>
 
-              {/* Disputes created */}
+              {/* Contrataciones cerradas: reparto directo de dinero, NO disputas. */}
               {deletionResult.disputesCreated && deletionResult.disputesCreated.length > 0 && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                  <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">
-                    Disputas Creadas Automáticamente
+                <div className="rounded-xl border border-border bg-muted/40 p-4">
+                  <h4 className="mb-2 text-sm font-semibold text-foreground">
+                    Contrataciones cerradas ({deletionResult.disputesCreated.length})
                   </h4>
-                  <div className="space-y-2">
-                    {deletionResult.disputesCreated.map((dispute: any) => (
-                      <div key={dispute.disputeId} className="text-sm text-blue-700 dark:text-blue-300">
-                        <p><strong>Disputa #{dispute.disputeId}:</strong> {dispute.reason}</p>
-                        <p>Usuario afectado: {dispute.affectedPartyName} ({dispute.affectedPartyEmail})</p>
-                      </div>
+                  <ul className="space-y-1.5">
+                    {deletionResult.disputesCreated.map((item: any) => (
+                      <li key={item.searchHireId} className="text-sm text-muted-foreground">
+                        {item.reason}
+                        {item.affectedPartyName ? ` · ${item.affectedPartyName}` : ''}
+                      </li>
                     ))}
-                  </div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-3">
-                    Los usuarios afectados han sido notificados y tienen 48 horas para responder.
+                  </ul>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    El dinero se liquidó automáticamente (transferencia al experto o reembolso al cliente, según el
+                    caso). No se abrieron disputas.
                   </p>
                 </div>
               )}
 
-              <Button
-                onClick={handleDeleteSuccess}
-                className="w-full"
-              >
+              <Button onClick={handleDeleteSuccess} className="w-full">
                 Continuar
               </Button>
             </div>
@@ -955,33 +973,29 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           {/* Initial state */}
           {deletionStep === 'initial' && (
-            <div className="p-6 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border border-red-200 dark:border-red-900 dark:border-red-900 rounded-xl">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-destructive/20 rounded-full flex items-center justify-center">
-                    <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400 dark:text-red-400" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-base font-semibold mb-2">Eliminar Cuenta Permanentemente</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                    Esta acción eliminará tu cuenta y todos los datos asociados de forma irreversible. 
-                    Si tienes contrataciones activas, estas se cancelarán automáticamente a favor de la parte contraria.
-                  </p>
-                  
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setDeletionStep('check');
-                      checkStatus();
-                    }}
-                    className="w-full sm:w-auto"
-                  >
-                    Iniciar Eliminación
-                  </Button>
-                </div>
+            <div className="flex flex-col items-center gap-4 py-2 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Eliminar cuenta permanentemente</h3>
+                <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  Elimina o anonimiza tu cuenta y todos tus datos de forma irreversible. Si tienes contrataciones con
+                  pagos en curso, tendrás que esperar a que se completen o se cancelen antes de poder eliminarla.
+                </p>
+              </div>
+
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setDeletionStep('check');
+                  checkStatus();
+                }}
+                className="w-full sm:w-auto"
+              >
+                Iniciar eliminación
+              </Button>
             </div>
-          </div>
           )}
         </div>
       )}
@@ -1301,53 +1315,38 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 };
 
 // Componente para mostrar información de contratación activa
+// Los StatusValue del backend son identificadores de máquina; aquí los mostramos legibles.
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Reserva pendiente',
+  awaiting_client_decision: 'Esperando tu decisión',
+};
+
 const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }) => {
+  const statusLabel = CONTRACT_STATUS_LABELS[contract.status] ?? 'En curso';
+  const amount = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    // 🛡️ Round 28 — Sprint 3: el backend emite Currency en ActiveContractInfo.
+    currency: ((contract.currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
+  }).format(contract.amount);
+
+  const appointmentDate =
+    contract.hasAppointment && contract.appointmentDate
+      ? new Date(contract.appointmentDate).toLocaleDateString('es-ES')
+      : null;
+
+  // Fila compacta: el contenedor padre aporta el borde y los divisores.
   return (
-    <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center mb-2">
-            <User className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
-            <span className="font-medium text-gray-900 dark:text-gray-100">{contract.serviceName}</span>
-            <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-              contract.status === 'pending' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' :
-              contract.status === 'awaiting_client_decision' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
-              'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-            }`}>
-              {contract.status}
-            </span>
-          </div>
-          
-          <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-            <div className="flex items-center">
-              <DollarSign className="w-4 h-4 mr-2" />
-              {/* 🛡️ Round 28 — Sprint 3: el backend ahora emite Currency en ActiveContractInfo. */}
-              <span>
-                {new Intl.NumberFormat('es-ES', {
-                  style: 'currency',
-                  currency: ((contract.currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
-                }).format(contract.amount)}
-              </span>
-            </div>
-            
-            <div className="flex items-center">
-              <User className="w-4 h-4 mr-2" />
-              <span>{contract.otherPartyName}</span>
-            </div>
-            
-            <div className="flex items-center">
-              <Mail className="w-4 h-4 mr-2" />
-              <span>{contract.otherPartyEmail}</span>
-            </div>
-            
-            {contract.hasAppointment && contract.appointmentDate && (
-              <div className="flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                <span>Cita: {new Date(contract.appointmentDate).toLocaleDateString()}</span>
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="flex items-start justify-between gap-3 p-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-foreground">{contract.serviceName}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {contract.otherPartyName}
+          {appointmentDate ? ` · ${appointmentDate}` : ''}
+        </p>
+      </div>
+      <div className="flex flex-shrink-0 flex-col items-end">
+        <span className="text-sm font-semibold text-foreground">{amount}</span>
+        <span className="mt-0.5 text-[11px] text-muted-foreground">{statusLabel}</span>
       </div>
     </div>
   );

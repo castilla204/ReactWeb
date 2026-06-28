@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Heart, User } from 'lucide-react';
+import { ArrowLeft, Bell, User } from 'lucide-react';
+import { FavoriteHeart } from '../FavoriteHeart';
 import { useAuth } from '../../contexts/AuthContext';
 import { isAdmin } from '../../utils/admin';
 import { LoginModal } from '../LoginModal';
 import { CurrencySelector } from '../CurrencySelector';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { SD_PAGE_INNER_MAX_CLASS } from '../../constants/homepageTypography';
-import { cn } from '../../lib/utils';
 import erizoImg from '../../media/erizo.png';
 
 interface ServiceDetailDesktopHeaderProps {
@@ -108,7 +108,7 @@ export const ServiceDetailDesktopHeader: React.FC<ServiceDetailDesktopHeaderProp
                     aria-pressed={isFavorite}
                     onClick={onToggleFavorite}
                   >
-                    <Heart className={cn('h-4 w-4', isFavorite && 'fill-brand text-brand')} />
+                    <FavoriteHeart filled={isFavorite} size={16} variant="plain" />
                   </button>
 
                   <span className="mx-0.5 hidden h-5 w-px bg-[#e5e7eb] sm:block" aria-hidden />

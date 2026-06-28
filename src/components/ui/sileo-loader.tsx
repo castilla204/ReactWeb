@@ -171,9 +171,13 @@ export function SileoFullscreenLoader({
 export function SileoPageLoader({
   message = "Cargando…",
   className,
+  contained = false,
 }: {
   message?: string;
   className?: string;
+  /** Si el loader vive dentro de un contenedor que ya lo centra/limita,
+   *  evita ocupar el alto completo de la ventana. */
+  contained?: boolean;
 }) {
   return (
     <SileoLoader
@@ -181,7 +185,9 @@ export function SileoPageLoader({
       size="lg"
       layout="page"
       message={message}
-      className={className}
+      // Por defecto centra en el alto completo de la ventana; "contained"
+      // mantiene el bloque acotado (40vh) para usos embebidos.
+      className={cn(!contained && "min-h-[100dvh]", className)}
     />
   );
 }

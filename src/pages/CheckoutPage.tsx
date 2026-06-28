@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SileoPageLoader, SileoFullscreenLoader } from '../components/ui/sileo-loader';
+import { SileoFullscreenLoader } from '../components/ui/sileo-loader';
+import { SileoSkeleton } from '../components/ui/sileo-skeleton';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,8 +20,11 @@ import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobil
 import { CheckoutMobileStepper, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepper';
 import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, COORD_DESKTOP_STEP1_LEAD } from '../components/checkout/CheckoutCoordinationStep';
 import { CheckoutDesktopAppointmentHeader } from '../components/checkout/CheckoutDesktopAppointmentHeader';
+import { CheckoutCalendarSideInfo } from '../components/checkout/CheckoutCalendarSideInfo';
 import {
     sellerCoordinationCanContinue,
+    CheckoutSellerCoordinationFields,
+    SellerContactAvatar,
     COORD_SELF_PICK_LOCATION_HEADER_DETAIL,
     COORD_SELF_PICK_LOCATION_HEADER_LEAD,
 } from '../components/checkout/CheckoutSellerCoordinationFields';
@@ -71,6 +75,10 @@ const MOBILE_SELLER_PREVIEW_STEPS = [
     { id: 1, label: 'Disponibilidad' },
     { id: 2, label: 'Ubicación' },
     { id: 3, label: 'Contacto' },
+    // El pago es el cierre del flujo "Coordínalo Inspecciono": tras dejar el contacto
+    // del vendedor se paga (reserva). Se muestra como paso futuro en el roadmap (el
+    // currentStep nunca llega a 4 porque al confirmar contacto se redirige a Stripe).
+    { id: 4, label: 'Pago' },
 ] as const;
 
 interface CheckoutPageProps {}
@@ -611,8 +619,38 @@ export function CheckoutPage({}: CheckoutPageProps) {
     }, [service, coordinationMode]);
 
     if (loading) {
+        // Skeleton con la forma del checkout (columna del wizard + resumen lateral)
+        // en vez de un spinner a pantalla completa.
         return (
-            <SileoPageLoader message="Preparando tu reserva…" className="bg-[#fafafa]" />
+            <div className="min-h-screen bg-[#fafafa] px-4 py-6 md:px-8" aria-busy="true">
+                <div className="mx-auto w-full max-w-5xl">
+                    <SileoSkeleton className="mb-6 h-7 w-56 max-w-[70%] rounded-lg" />
+                    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+                        <div className="space-y-4">
+                            <SileoSkeleton className="h-10 w-full rounded-lg" />
+                            <SileoSkeleton className="h-64 w-full rounded-xl" />
+                            <div className="grid grid-cols-4 gap-2">
+                                {Array.from({ length: 8 }).map((_, i) => (
+                                    <SileoSkeleton key={i} className="h-9 w-full rounded-md" />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-4 rounded-2xl border border-[#ededed] bg-white p-4">
+                            <div className="flex items-center gap-3">
+                                <SileoSkeleton className="h-12 w-12" rounded="full" />
+                                <div className="flex-1 space-y-2">
+                                    <SileoSkeleton className="h-4 w-3/4 rounded" />
+                                    <SileoSkeleton className="h-3 w-1/2 rounded" />
+                                </div>
+                            </div>
+                            <SileoSkeleton className="h-16 w-full rounded-lg" />
+                            <SileoSkeleton className="h-4 w-full rounded" />
+                            <SileoSkeleton className="h-4 w-5/6 rounded" />
+                            <SileoSkeleton className="h-11 w-full rounded-lg" />
+                        </div>
+                    </div>
+                </div>
+            </div>
         );
     }
 
@@ -923,7 +961,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // wizard (mismo chrome: stepper arriba + footer Atrás/Continuar), no un modal.
     const inCoordinationChoice = requiresAppointment && coordinationMode === null;
     const mobileOnPaymentSummary =
-        !inCoordinationChoice && (!mobileThreeStep || mobileStep === 3);
+        !inCoordinationChoice && (!mobileThreeStep || mobileStep === 4);
     const mobileInSellerPreview =
         coordView === 'seller-plazos' || coordView === 'seller-map';
     const isCoordOptionPickView =
@@ -1003,6 +1041,39 @@ export function CheckoutPage({}: CheckoutPageProps) {
         />
     );
 
+    // 📱 Paso «Datos del vendedor» del wizard móvil en modo «Yo la reservo». Es OPCIONAL:
+    // el cliente ya coordina con el vendedor, así que se puede continuar sin rellenar nada.
+    const sellerDataSelfMobileNode = (
+        <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'pb-4')}>
+            <header className="mb-4 max-w-xl">
+                <div className="flex items-center gap-2.5">
+                    <SellerContactAvatar />
+                    <h2
+                        className="text-[20px] font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]"
+                        style={{ fontFamily: HP_FONT }}
+                    >
+                        Datos del vendedor
+                        <span className="ml-1.5 text-[15px] font-normal text-[#9ca3af]">(opcional)</span>
+                    </h2>
+                </div>
+                <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[#565d6b]">
+                    Si quieres, deja un contacto del vendedor para que el experto pueda coordinar el acceso al
+                    vehículo. Puedes continuar sin rellenarlo.
+                </p>
+            </header>
+            <CheckoutSellerCoordinationFields
+                variant="contact"
+                selfMode
+                sellerPhone={sellerPhone}
+                sellerEmail={sellerEmail}
+                sellerListingUrl={sellerListingUrl}
+                onSellerPhoneChange={setSellerPhone}
+                onSellerEmailChange={setSellerEmail}
+                onSellerListingUrlChange={setSellerListingUrl}
+            />
+        </div>
+    );
+
     const desktopCoordColumnNode =
         requiresAppointment && isDesktop && desktopStep === 1 ? coordinationStepDesktopNode : null;
     const desktopCalendarColumnNode = desktopShowCalendar ? slotPickerDesktopNode : null;
@@ -1014,11 +1085,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
     );
     const desktopSplitRightClass = cn(
         'relative min-w-0 flex-1 flex flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
-        desktopOnCoordCalendarStep && 'min-h-0 items-stretch self-stretch',
+        // 📅 El panel del calendario abraza su contenido (la leyenda queda justo bajo el mes,
+        // sin hueco) y se alinea arriba con la columna de opciones de la izquierda.
+        desktopOnCoordCalendarStep && 'min-h-0 items-stretch self-start',
         desktopOnMapDetailsStep && 'h-full min-h-0',
     );
     const desktopSplitPanelScrollClass = cn(
-        'px-5 pb-4 pt-4',
+        'px-6 pb-5 pt-5 xl:px-7',
         desktopOnCoordCalendarStep && 'flex min-h-0 flex-col justify-start',
         desktopOnMapDetailsStep && 'flex min-h-0 flex-1 flex-col overflow-y-auto',
     );
@@ -1049,35 +1122,31 @@ export function CheckoutPage({}: CheckoutPageProps) {
                   title: 'Datos del vendedor y cobertura',
                   description: (
                       <>
-                          Indica cómo contactar al vendedor y consulta la zona de actuación del experto en el
-                          mapa.
+                          Déjanos el teléfono o el email del vendedor para enviarle el enlace con el que
+                          reservará la cita. En el mapa puedes consultar la zona de actuación del experto; la
+                          dirección exacta se confirma al reservar.
                       </>
                   ),
               }
             : {
                   title: COORD_SELF_PICK_LOCATION_HEADER_LEAD,
-                  description: COORD_SELF_PICK_LOCATION_HEADER_DETAIL,
+                  description: (
+                      <>
+                          Busca la dirección o marca un punto dentro del área azul del mapa: es la zona donde
+                          trabaja el experto. Puedes moverlo y ajustarlo con calma; la ubicación queda fijada al
+                          pagar.
+                      </>
+                  ),
               };
 
     const desktopAppointmentFooter = (
-        <div className="relative z-10 flex shrink-0 items-center justify-between gap-4 rounded-xl border border-[#e5e7eb] bg-white px-5 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-            {desktopOnCoordCalendarStep && desktopInSellerFlow ? (
-                <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-3.5 py-2.5 text-[13px] leading-snug text-[#1e40af]">
-                    <svg className="mt-0.5 h-4 w-4 shrink-0 text-[#3b82f6]" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
-                    </svg>
-                    <span className="min-w-0">
-                        No tienes que tocar nada. Nosotros nos pondremos en contacto con el vendedor y el experto para coordinar día y hora.
-                    </span>
-                </div>
-            ) : (
-                <span />
-            )}
+        <div className="relative z-10 flex shrink-0 items-center justify-between gap-4 px-0.5 py-1">
+            <span />
             <button
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-6 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continuar
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -1160,13 +1229,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         </div>
                     </div>
                 ) : (
-                    <div className="mx-auto w-full max-w-[72rem] px-4 pb-3 pt-8 sm:px-5 lg:px-6">
+                    <div className="mx-auto w-full max-w-[75rem] px-4 pb-4 pt-8 sm:px-5 lg:px-8">
                         {desktopOnCoordCalendarStep ? (
                             <CheckoutDesktopAppointmentHeader
                                 title={COORD_CHOOSE_TITLE}
                                 description={COORD_DESKTOP_STEP1_LEAD}
                                 onBack={handleDesktopBack}
-                                className="mb-2.5 rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                                className="mb-4"
                             />
                         ) : null}
                         {desktopOnMapDetailsStep ? (
@@ -1174,7 +1243,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 title={desktopStep2Header.title}
                                 description={desktopStep2Header.description}
                                 onBack={handleDesktopBack}
-                                className="mb-2.5 rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                                className="mb-4"
                             />
                         ) : null}
                         <div
@@ -1192,7 +1261,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         >
                             <div
                                 className={cn(
-                                    'flex flex-1 gap-4 overflow-hidden',
+                                    'flex flex-1 gap-5 overflow-hidden xl:gap-6',
                                     desktopOnCoordCalendarStep && 'items-stretch',
                                     desktopOnMapDetailsStep && 'min-h-0 items-stretch',
                                 )}
@@ -1204,8 +1273,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className={cn(desktopSplitRightClass, 'p-5')}>
-                                                {desktopCalendarColumnNode}
+                                            <aside className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 self-stretch">
+                                                <div className="flex shrink-0 flex-col rounded-xl border border-[#e5e7eb] bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:p-6">
+                                                    {desktopCalendarColumnNode}
+                                                </div>
+                                                <CheckoutCalendarSideInfo className="flex-1" />
                                             </aside>
                                         </>
                                     ) : null}
@@ -1236,7 +1308,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     </>
                                 ) : null}
                             </div>
-                            <div className="mt-4">{desktopAppointmentFooter}</div>
+                            <div className="mt-5">{desktopAppointmentFooter}</div>
                         </div>
                     </div>
                 )}
@@ -1352,7 +1424,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             : SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
                     )}
                 >
-                    {mobileThreeStep && mobileStep < 3 ? (
+                    {mobileThreeStep && mobileStep < 4 ? (
                         <>
                             <header
                                 className={cn(
@@ -1371,6 +1443,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 {slotPickerMobileNode}
                             </div>
                         ) : mobileStep === 3 ? (
+                            sellerDataSelfMobileNode
+                        ) : mobileStep === 4 ? (
                             <CheckoutMobileSheet
                                 {...summaryTableProps}
                                 includePrice
@@ -1410,14 +1484,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     : 'Continuar'}
                                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                             </button>
-                        ) : mobileThreeStep && mobileStep < 3 ? (
+                        ) : mobileThreeStep && mobileStep < 4 ? (
                             <button
                                 type="button"
                                 onClick={() => {
                                     if (mobileStep === 1 && slotSatisfied) setMobileStep(2);
                                     else if (mobileStep === 2 && locationSatisfied) setMobileStep(3);
+                                    // Paso 3 (datos del vendedor) es opcional: siempre se puede avanzar.
+                                    else if (mobileStep === 3) setMobileStep(4);
                                 }}
-                                disabled={mobileStep === 1 ? !slotSatisfied : !locationSatisfied}
+                                disabled={
+                                    mobileStep === 1
+                                        ? !slotSatisfied
+                                        : mobileStep === 2
+                                          ? !locationSatisfied
+                                          : false
+                                }
                                 className={`${SD_CHECKOUT_MOBILE_CTA_CLASS} gap-2`}
                             >
                                 Continuar

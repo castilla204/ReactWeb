@@ -33,6 +33,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useExpert } from '../hooks/useExpert';
 import { RoleChecker, UserRole } from '../utils/roleChecker';
+import { getCurrencyForCountry } from '../utils/priceUtils';
 import { getAuthToken } from '../lib/auth';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { useExpertStripeStatus, validateBeforeCreatingService, handleStripeServiceError } from '../hooks/useExpertStripeStatus';
@@ -935,6 +936,9 @@ export function ExpertPanelPage() {
                 selectedDeliverableTypes: formData.selectedDeliverableTypes || [],
                 inspectionTemplateConfig: inspectionConfigJson,
                 inspectionTemplatePdf: inspectionTemplatePdfFile,
+                // BUG #12: divisa de cobro del experto (derivada de su país = la de su cuenta Stripe salvo
+                // reubicación). Sin esto el backend caía a EUR y un experto no-eurozona quedaba no contratable.
+                currency: getCurrencyForCountry(profile?.country ?? null),
             });
 
             // Cerrar el Drawer primero y esperar a que se cierre completamente antes de resetear
@@ -1493,6 +1497,7 @@ export function ExpertPanelPage() {
                         <ProfileSetupWizard
                             profile={profile}
                             onEditProfile={() => handleTabChange('profile')}
+                            onEditAvailability={() => handleTabChange('disponibilidad')}
                             onOpenStripe={openStripeDashboard}
                             visibilityNote={visibilityNote}
                             stripeNote={stripeNote}

@@ -1,6 +1,7 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart } from 'lucide-react';
+import { FavoriteHeart } from '../components/FavoriteHeart';
 import { persistServiceReturnPath } from '../utils/servicePageNavigation';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +21,11 @@ import {
 } from '../constants/homepageTypography';
 
 const FAVORITES_PATH = '/favoritos';
+
+// Barra inferior móvil — lazy para no cargarla en escritorio (mismo patrón que HomePage).
+const MobileBottomBar = lazy(() =>
+  import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
+);
 
 /**
  * Grid responsive de favoritos. Las cards de la homepage tienen ancho FIJO
@@ -95,6 +101,7 @@ interface FavoritesShellProps {
 /** Marco común: cabecera editorial + contenido + footer pegado abajo. */
 const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true, children }) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const subtitle =
     count === undefined
@@ -104,7 +111,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
       : `${count} ${count === 1 ? 'servicio guardado' : 'servicios guardados'}`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-white pb-[65px] md:pb-0">
       {/* Cabecera editorial — sin barra sticky; respira y deja la marca clara. */}
       <header className="border-b border-[#ececec]">
         <div className={SD_PAGE_INNER_MAX_CLASS}>
@@ -120,7 +127,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
               </button>
             )}
             <div className="flex items-center gap-2.5">
-              <Heart className="h-6 w-6 flex-shrink-0" style={{ fill: '#FF385C', color: '#FF385C' }} />
+              <FavoriteHeart filled size={24} variant="plain" className="flex-shrink-0" />
               <h1
                 className="relative inline-block font-display text-[26px] font-bold leading-tight tracking-[-0.02em] md:text-[32px]"
                 style={{ fontFamily: HP_FONT, color: HP_COLOR.primary }}
@@ -149,6 +156,12 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
       </main>
 
       <Footer />
+
+      {isMobile && (
+        <Suspense fallback={null}>
+          <MobileBottomBar />
+        </Suspense>
+      )}
     </div>
   );
 };

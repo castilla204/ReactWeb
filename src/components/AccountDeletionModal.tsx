@@ -177,7 +177,8 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                         Tienes {deletionStatus.activeContractsCount} contratación(es) activa(s)
                       </p>
                       <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
-                        Estas contrataciones se cancelarán automáticamente y se crearán disputas para proteger a las partes.
+                        Si alguna tiene un pago en curso, no podrás eliminar la cuenta hasta que se complete o se cancele.
+                        Cuando el borrado sea posible, el dinero se liquida solo (al experto o reembolso al cliente, según el caso). No se abren disputas.
                       </p>
                       
                       {/* Active Contracts List */}
@@ -347,7 +348,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                     <AlertTriangle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                        Disputas Creadas Automáticamente
+                        Contrataciones cerradas
                       </h4>
                     </div>
                   </div>
@@ -355,7 +356,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                     {result.disputesCreated.map((dispute: any) => (
                       <div key={dispute.disputeId} className="p-3 bg-white dark:bg-zinc-900 rounded-lg border border-blue-200 dark:border-blue-900">
                         <div className="text-xs text-blue-700 dark:text-blue-300">
-                          <p><strong>#{dispute.disputeId}:</strong> {dispute.reason}</p>
+                          <p>{dispute.reason}</p>
                           <p className="mt-1">
                             <User className="w-3 h-3 inline-block mr-1" />
                             {dispute.affectedPartyName} &lt;{dispute.affectedPartyEmail}&gt;
@@ -365,7 +366,7 @@ export const AccountDeletionModal: React.FC<AccountDeletionModalProps> = ({
                     ))}
                   </div>
                   <p className="text-sm text-blue-600 dark:text-blue-400">
-                    Los usuarios afectados han sido notificados y tienen 48 horas para responder.
+                    El dinero se liquidó automáticamente (al experto o reembolso al cliente, según el caso). No se abrieron disputas.
                   </p>
                 </div>
               )}

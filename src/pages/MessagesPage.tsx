@@ -34,6 +34,32 @@ function buildPendingPreHireConversation(
     };
 }
 
+/**
+ * Conversación sintética para una contratación que aún no tiene fila en la bandeja
+ * (caso raro: hire sin conversación cargada). Permite incrustar la ficha completa
+ * del hire en el panel derecho por su id, evitando caer a la página suelta
+ * /searchhire/:id (que en desktop crearía un bucle de redirección con App.tsx).
+ * SearchDetails recarga todos los datos reales a partir de searchHireId.
+ */
+function buildPendingHireConversation(hireId: number): ClientConversationSummaryDto {
+    return {
+        conversationId: 0,
+        conversationType: 'post-hire',
+        createdAt: '',
+        updatedAt: '',
+        unreadCount: 0,
+        lastMessage: null,
+        expertId: null,
+        expertName: 'Experto',
+        expertProfilePictureUrl: null,
+        searchServiceId: null,
+        serviceName: 'Contratación',
+        servicePrice: null,
+        serviceImageUrl: null,
+        searchHireId: hireId,
+    };
+}
+
 const MobileBottomBar = lazy(() =>
     import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
 );
@@ -153,6 +179,8 @@ export function MessagesPage() {
     // Conversación abierta en el panel derecho (solo desktop). En móvil se navega.
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [pendingPreHire, setPendingPreHire] = useState<PendingPreHireOpen | null>(null);
+    // Hire sin fila de conversación en la bandeja (deep-link a un hire huérfano).
+    const [pendingHireId, setPendingHireId] = useState<number | null>(null);
     const deepLinkHandledRef = useRef(false);
 
     const { data: conversations, isLoading, error, refetch } = useQuery<
@@ -281,6 +309,7 @@ export function MessagesPage() {
     );
 
     const handleOpenChat = (conversation: ClientConversationSummaryDto) => {
+        setPendingHireId(null);
         if (conversation.conversationType === 'pre-hire' && conversation.searchServiceId) {
             setPendingPreHire(null);
             if (isMobile) {
@@ -327,6 +356,23 @@ export function MessagesPage() {
         return null;
     }, [selectedConversation, pendingPreHire]);
 
+    /**
+     * Contratación activa en el panel derecho: la conversación seleccionada si es
+     * post-hire, o una sintética para un hire huérfano abierto por deep-link.
+     */
+    const activeHireConversation = useMemo<ClientConversationSummaryDto | null>(() => {
+        if (
+            selectedConversation?.conversationType === 'post-hire' &&
+            selectedConversation.searchHireId
+        ) {
+            return selectedConversation;
+        }
+        if (pendingHireId) {
+            return buildPendingHireConversation(pendingHireId);
+        }
+        return null;
+    }, [selectedConversation, pendingHireId]);
+
     useEffect(() => {
         if (isLoading || deepLinkHandledRef.current) return;
 
@@ -352,9 +398,14 @@ export function MessagesPage() {
             if (byHire) {
                 setSelectedId(byHire.conversationId);
                 setPendingPreHire(null);
+                setPendingHireId(null);
             } else {
-                // Sin fila de conversación para este hire → página completa del hire.
-                navigate(`/searchhire/${hireId}`, { replace: true });
+                // Sin fila de conversación para este hire → incrustar la ficha completa
+                // por su id en el panel derecho. NO navegar a /searchhire/:id: en desktop
+                // esa ruta redirige de vuelta aquí (App.tsx) y crearía un bucle.
+                setSelectedId(null);
+                setPendingPreHire(null);
+                setPendingHireId(hireId);
             }
             return;
         }
@@ -592,16 +643,18 @@ export function MessagesPage() {
                 </section>
 
                 {/* ----- Panel conversación — solo desktop ----- */}
-                {selectedConversation?.conversationType === 'post-hire' &&
-                selectedConversation.searchHireId ? (
+                {activeHireConversation?.searchHireId ? (
                     <HireConversationPanel
-                        key={`hire-${selectedConversation.searchHireId}`}
-                        conversation={selectedConversation}
+                        key={`hire-${activeHireConversation.searchHireId}`}
+                        conversation={activeHireConversation}
                         amountLabel={formatAmount(
-                            selectedConversation.hireAmount,
-                            selectedConversation.hireCurrency,
+                            activeHireConversation.hireAmount,
+                            activeHireConversation.hireCurrency,
                         )}
-                        onClose={() => setSelectedId(null)}
+                        onClose={() => {
+                            setSelectedId(null);
+                            setPendingHireId(null);
+                        }}
                     />
                 ) : activePreHireConversation?.searchServiceId ? (
                     <ConversationPanel

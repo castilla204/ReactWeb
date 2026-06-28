@@ -418,6 +418,7 @@ export function useServices({
             selectedDeliverableTypes?: number[];
             inspectionTemplateConfig?: string | null;
             inspectionTemplatePdf?: File | null;
+            currency?: string;
         }) => {
             setIsCreatingService(true);
             const token = getAuthToken();
@@ -433,6 +434,13 @@ export function useServices({
             formData.append('CategoryId', serviceData.categoryId != null ? String(serviceData.categoryId) : '0');
             formData.append('ServiceTypeId', serviceData.serviceTypeId != null ? String(serviceData.serviceTypeId) : '0');
             formData.append('Price', serviceData.price != null ? String(serviceData.price) : '0');
+            // BUG #12: enviar la divisa de cobro del experto. Sin esto el backend caía a EUR por defecto y,
+            // tras quitar el relabel de MUD-1, un experto no-eurozona (US/GB/CH) creaba el servicio en EUR →
+            // la red B lo rechazaba en checkout (no contratable). Enviamos la divisa derivada de su país
+            // (== divisa de su cuenta salvo reubicación, que es el caso de borde conocido).
+            if (serviceData.currency) {
+                formData.append('Currency', serviceData.currency);
+            }
             formData.append('Conditions', serviceData.conditions != null ? String(serviceData.conditions) : '');
             if (serviceData.durationInHours !== null && serviceData.durationInHours !== undefined) {
                 formData.append('DurationInHours', String(serviceData.durationInHours));
