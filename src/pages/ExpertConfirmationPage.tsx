@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, CalendarClock, MapPin, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
 import { SileoLoader } from '../components/ui/sileo-loader';
 import { SileoButton } from '../components/ui/sileo-button';
+import { AppointmentWizardShell } from '../components/checkout/AppointmentWizardShell';
+import { ReadOnlyAppointmentCalendar } from '../components/checkout/ReadOnlyAppointmentCalendar';
+import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
+import AppointmentMap from '../components/AppointmentMap';
+import { CheckoutSelfChoicePreviewMap } from '../components/checkout/CheckoutSellerChoiceLocked';
 
 // Página PÚBLICA de confirmación del experto.
 interface Context {
@@ -30,6 +35,7 @@ export default function ExpertConfirmationPage() {
     const [rejectConfirming, setRejectConfirming] = useState(false);
     const [rejecting, setRejecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [wizardStep, setWizardStep] = useState<1 | 2>(1);
 
     const base = useMemo(
         () => (token ? `${API_CONFIG.baseUrl}/api/expert-confirmation/${encodeURIComponent(token)}` : ''),
@@ -120,11 +126,157 @@ export default function ExpertConfirmationPage() {
         }
     };
 
+    // Determinar si hay coordenadas de ubicación del vehículo
+    const hasMapPoint = useMemo(
+        () =>
+            ctx?.latitude != null &&
+            ctx?.longitude != null &&
+            Number.isFinite(Number(ctx.latitude)) &&
+            Number.isFinite(Number(ctx.longitude)),
+        [ctx?.latitude, ctx?.longitude],
+    );
+
+    const expertSteps = useMemo(
+        () =>
+            hasMapPoint
+                ? [{ id: 1, label: 'Fecha y hora' }, { id: 2, label: 'Ubicación' }]
+                : [{ id: 1, label: 'Fecha y hora' }],
+        [hasMapPoint],
+    );
+
+    const isLastStep = !hasMapPoint || wizardStep === 2;
+
     const card: React.CSSProperties = {
         background: '#fff', border: '0.5px solid #DCE3EC', borderRadius: 16,
         maxWidth: 560, width: '100%', padding: 24,
     };
 
+    const pending = status === 'ok' && ctx && !done && !ctx.expired;
+
+    // Nodos de solo lectura (se construyen solo cuando hay ctx)
+    const lockedCards = ctx ? (
+        <CheckoutCoordinationStep
+            view="choose"
+            selection="seller"
+            embedded
+            showStepHeader={false}
+            readOnly
+            onSelect={() => {}}
+            sellerPhone="" sellerEmail="" sellerListingUrl=""
+            onSellerPhoneChange={() => {}} onSellerEmailChange={() => {}} onSellerListingUrlChange={() => {}}
+        />
+    ) : null;
+
+    const calendarNode = ctx ? (
+        <ReadOnlyAppointmentCalendar startUtc={ctx.startsAtUtc} />
+    ) : null;
+
+    // Mapa de solo lectura: usamos AppointmentMap directamente con initialLocation
+    // para que se pinte el pin del vehículo. referencePreview=true impide clicks de selección
+    // y abre el zoom amplio. disabled=false es necesario para que initialLocation pinte el marcador
+    // (AppointmentMap solo pinta initialLocation cuando !disabled).
+    // Usamos el mismo punto como expertLocation para centrar el mapa (sin radio de cobertura).
+    const mapNode = ctx && hasMapPoint ? (
+        <CheckoutSelfChoicePreviewMap className="h-full min-h-0" showInnerHeader={false}>
+            <AppointmentMap
+                initialLocation={{ latitude: Number(ctx.latitude), longitude: Number(ctx.longitude) }}
+                expertLocation={{ latitude: Number(ctx.latitude), longitude: Number(ctx.longitude) }}
+                expertRange={0}
+                disabled={false}
+                showSearch={false}
+                showCountrySelector={false}
+                frameless
+                coverageStyle="minimal"
+                referencePreview
+                className="h-full w-full"
+            />
+        </CheckoutSelfChoicePreviewMap>
+    ) : null;
+
+    // Estado pendiente: wizard a ancho completo
+    if (pending && ctx) {
+        return (
+            <div className="min-h-[100dvh] bg-[#f3f4f6]">
+                <AppointmentWizardShell
+                    steps={expertSteps}
+                    currentStep={wizardStep}
+                    title={wizardStep === 1 ? 'Confirma tu cita de inspección' : 'Lugar de la inspección'}
+                    description={
+                        wizardStep === 1
+                            ? 'Un comprador ha reservado una inspección contigo. Revisa el día y la hora y confirma si podrás atenderla.'
+                            : 'Esta es la ubicación donde está el vehículo.'
+                    }
+                    onBack={wizardStep === 2 ? () => setWizardStep(1) : () => { /* no-op en paso 1 */ }}
+                    desktopTallRight={hasMapPoint && wizardStep === 2}
+                    desktopLeft={wizardStep === 1 ? lockedCards : (
+                        <div className="space-y-2">
+                            <p className="text-[15px] font-semibold text-[#1c1c1c]">Dirección</p>
+                            <p className="text-[13px] leading-[1.5] text-[#1c1c1c]">{prettyPlace || 'Por determinar'}</p>
+                            <p className="text-[12px] text-[#64748b]">{prettyDate}</p>
+                        </div>
+                    )}
+                    desktopRight={wizardStep === 1 ? calendarNode : mapNode}
+                    mobileFullBleed={hasMapPoint && wizardStep === 2}
+                    mobileBody={wizardStep === 1 ? (
+                        <div className="space-y-4">
+                            {lockedCards}
+                            {calendarNode}
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0">{mapNode}</div>
+                    )}
+                    primaryLabel={isLastStep ? 'Confirmar cita' : 'Continuar'}
+                    primaryDisabled={submitting || rejecting}
+                    onPrimary={() => {
+                        if (!isLastStep) { setWizardStep(2); return; }
+                        void approve();
+                    }}
+                    onSecondary={wizardStep === 2 ? () => setWizardStep(1) : undefined}
+                />
+                {/* Rechazo: enlace discreto inferior */}
+                <div className="mx-auto w-full max-w-md px-5 pb-6 lg:max-w-[75rem] lg:px-8">
+                    {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
+                    {!rejectConfirming ? (
+                        <button
+                            type="button"
+                            onClick={() => { setError(null); setRejectConfirming(true); }}
+                            disabled={submitting || rejecting}
+                            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+                        >
+                            No podré atender la cita
+                        </button>
+                    ) : (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
+                            <p className="mb-2.5 text-[13px] text-red-800">
+                                Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
+                            </p>
+                            <div className="flex gap-2">
+                                <SileoButton
+                                    onClick={reject}
+                                    disabled={rejecting}
+                                    loading={rejecting}
+                                    loadingText="Rechazando…"
+                                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                                >
+                                    Sí, rechazar
+                                </SileoButton>
+                                <button
+                                    type="button"
+                                    onClick={() => setRejectConfirming(false)}
+                                    disabled={rejecting}
+                                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                                >
+                                    Volver
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Estados resueltos / cargando / inválido / caducado: tarjeta centrada actual sin cambios.
     return (
         <div style={{ minHeight: '100dvh', background: '#F3F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
             <div style={card}>
@@ -169,94 +321,6 @@ export default function ExpertConfirmationPage() {
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
                         <p style={{ margin: 0, fontSize: 14 }}>El plazo para confirmar ha caducado.</p>
-                    </div>
-                )}
-
-                {status === 'ok' && ctx && !done && !ctx.expired && (
-                    <div>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
-                            <CalendarClock size={20} style={{ color: '#1C63B4', flexShrink: 0 }} />
-                            <div>
-                                <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Confirma tu cita de inspección</p>
-                                <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>
-                                    Un comprador ha reservado una inspección contigo. Revisa los datos y confirma si podrás atenderla.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div style={{ background: '#F7FAFD', border: '0.5px solid #DCE3EC', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
-                            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                                <CalendarClock size={18} style={{ color: '#1C63B4', flexShrink: 0, marginTop: 1 }} />
-                                <div>
-                                    <p style={{ margin: '0 0 2px', fontSize: 12, color: '#6B7280' }}>Fecha y hora</p>
-                                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, textTransform: 'capitalize' }}>{prettyDate || 'Por determinar'}</p>
-                                </div>
-                            </div>
-                            {prettyPlace && (
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 12 }}>
-                                    <MapPin size={18} style={{ color: '#1C63B4', flexShrink: 0, marginTop: 1 }} />
-                                    <div>
-                                        <p style={{ margin: '0 0 2px', fontSize: 12, color: '#6B7280' }}>Lugar</p>
-                                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{prettyPlace}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {error && <p style={{ color: '#D32F2F', fontSize: 13, margin: '0 0 10px' }}>{error}</p>}
-
-                        <SileoButton
-                            onClick={approve}
-                            disabled={submitting || rejecting}
-                            loading={submitting}
-                            loadingText="Confirmando…"
-                            className="w-full rounded-xl py-3 text-[15px] font-semibold"
-                        >
-                            Confirmar cita
-                        </SileoButton>
-
-                        {!rejectConfirming ? (
-                            <button
-                                type="button"
-                                onClick={() => { setError(null); setRejectConfirming(true); }}
-                                disabled={submitting || rejecting}
-                                style={{
-                                    marginTop: 10, width: '100%', background: 'transparent', color: '#6B7280',
-                                    border: 'none', padding: 8, fontSize: 13,
-                                    cursor: submitting ? 'default' : 'pointer', textDecoration: 'underline',
-                                }}
-                            >
-                                No podré atender la cita
-                            </button>
-                        ) : (
-                            <div style={{ marginTop: 12, background: '#FBF1F1', border: '0.5px solid #F0C9C9', borderRadius: 10, padding: '12px 14px' }}>
-                                <p style={{ margin: '0 0 10px', fontSize: 13, color: '#7A2E2E' }}>
-                                    Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
-                                </p>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <SileoButton
-                                        onClick={reject}
-                                        disabled={rejecting}
-                                        loading={rejecting}
-                                        loadingText="Rechazando…"
-                                        className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-                                    >
-                                        Sí, rechazar
-                                    </SileoButton>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRejectConfirming(false)}
-                                        disabled={rejecting}
-                                        style={{
-                                            flex: 1, background: '#fff', color: '#374151', border: '0.5px solid #DCE3EC',
-                                            borderRadius: 8, padding: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                                        }}
-                                    >
-                                        Volver
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
