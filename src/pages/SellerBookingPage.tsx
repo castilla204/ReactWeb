@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, CalendarClock, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
 import SlotPicker, { type ChosenSlot } from '../components/SlotPicker';
 import CheckoutLocationPicker, { type CheckoutLocationData } from '../components/CheckoutLocationPicker';
+import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
+import { AppointmentWizardShell } from '../components/checkout/AppointmentWizardShell';
 import { cn } from '../lib/utils';
-import { SD_CHECKOUT_DESKTOP_CARD_CLASS, SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS } from '../constants/homepageTypography';
+import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
 import { SileoLoader } from '../components/ui/sileo-loader';
 import { SileoButton } from '../components/ui/sileo-button';
 
@@ -37,12 +39,26 @@ export default function SellerBookingPage() {
     const [windowInfo, setWindowInfo] = useState<{
         fromYmd: string; days: number; windowExtended: boolean; hasAvailability: boolean;
     } | null>(null);
+    const [wizardStep, setWizardStep] = useState<1 | 2>(1);
 
     const base = useMemo(
         () => (token ? `${API_CONFIG.baseUrl}/api/seller-booking/${encodeURIComponent(token)}` : ''),
         [token],
     );
     const isWorkshop = (ctx?.workRadiusKm ?? 0) === 0;
+
+    const wizardSteps = useMemo(
+        () => (isWorkshop
+            ? [{ id: 1, label: 'Fecha y hora' }]
+            : [{ id: 1, label: 'Fecha y hora' }, { id: 2, label: 'Ubicación' }]),
+        [isWorkshop],
+    );
+    const isLastStep = isWorkshop || wizardStep === 2;
+    const canPrimary = isWorkshop
+        ? !!slot
+        : wizardStep === 1
+          ? !!slot
+          : !!chosenLocation;
 
     useEffect(() => {
         if (!token) { setStatus('invalid'); return; }
@@ -135,171 +151,206 @@ export default function SellerBookingPage() {
     const showForm = status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && !declined
         && windowInfo?.hasAvailability !== false;
 
+    // Nodos reutilizados (solo se calculan cuando hay ctx)
+    const lockedCards = ctx ? (
+        <CheckoutCoordinationStep
+            view="choose"
+            selection="seller"
+            embedded
+            showStepHeader={false}
+            readOnly
+            onSelect={() => {}}
+            sellerPhone="" sellerEmail="" sellerListingUrl=""
+            onSellerPhoneChange={() => {}} onSellerEmailChange={() => {}} onSellerListingUrlChange={() => {}}
+        />
+    ) : null;
+
+    const calendarNode = ctx ? (
+        <SlotPicker
+            serviceId={ctx.serviceId}
+            selected={slot}
+            onSelect={setSlot}
+            slotsBaseUrl={base}
+            windowDays={slotConstraints.windowDays}
+            minLeadDays={slotConstraints.minLeadDays}
+            sectionTitle="Fecha y hora"
+            embedded
+            embeddedSplitColumn
+            bare
+            showSectionHeader={false}
+        />
+    ) : null;
+
+    const mapNode = ctx ? (
+        <CheckoutLocationPicker
+            variant="sidebar"
+            showEmbeddedHeader={false}
+            expertLatitude={ctx.expertLatitude ?? undefined}
+            expertLongitude={ctx.expertLongitude ?? undefined}
+            expertCountry={ctx.expertCountry ?? undefined}
+            expertRange={ctx.workRadiusKm ?? undefined}
+            workRadiusKm={ctx.workRadiusKm ?? undefined}
+            onChange={setChosenLocation}
+        />
+    ) : null;
+
+    const mapNodeMobile = ctx ? (
+        <CheckoutLocationPicker
+            variant="wizard"
+            expertLatitude={ctx.expertLatitude ?? undefined}
+            expertLongitude={ctx.expertLongitude ?? undefined}
+            expertCountry={ctx.expertCountry ?? undefined}
+            expertRange={ctx.workRadiusKm ?? undefined}
+            workRadiusKm={ctx.workRadiusKm ?? undefined}
+            onChange={setChosenLocation}
+        />
+    ) : null;
+
+    // Formulario activo: shell del wizard a ancho completo
+    if (showForm && ctx) {
+        return (
+            <div className="min-h-[100dvh] bg-[#f3f4f6]">
+                <AppointmentWizardShell
+                    steps={wizardSteps}
+                    currentStep={wizardStep}
+                    title={wizardStep === 1 ? 'Elige cuándo ver el vehículo' : '¿Dónde está el vehículo?'}
+                    description={
+                        wizardStep === 1
+                            ? 'Un comprador ha pagado una inspección profesional. Elige un hueco del técnico.'
+                            : 'Marca el punto donde está el coche, dentro del área del experto.'
+                    }
+                    onBack={wizardStep === 2 ? () => setWizardStep(1) : () => { /* primer paso: no hay atrás */ }}
+                    desktopTallRight={!isWorkshop && wizardStep === 2}
+                    desktopLeft={wizardStep === 1 ? lockedCards : (
+                        <div className="space-y-2">
+                            <p className="text-[15px] font-semibold text-[#1c1c1c]">Ubicación del vehículo</p>
+                            <p className="text-[13px] leading-[1.5] text-[#64748b]">
+                                Busca la dirección o marca el punto en el mapa. Solo el experto verá la dirección exacta.
+                            </p>
+                        </div>
+                    )}
+                    desktopRight={wizardStep === 1 ? calendarNode : mapNode}
+                    mobileFullBleed={!isWorkshop && wizardStep === 2}
+                    mobileBody={wizardStep === 1 ? (
+                        <div className="space-y-4">
+                            {windowInfo?.windowExtended && (
+                                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                                    <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                                    <p className="text-[13px] text-amber-800">
+                                        El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
+                                    </p>
+                                </div>
+                            )}
+                            {lockedCards}
+                            {calendarNode}
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0">{mapNodeMobile}</div>
+                    )}
+                    primaryLabel={isLastStep ? 'Confirmar cita' : 'Continuar'}
+                    primaryDisabled={submitting || !canPrimary}
+                    onPrimary={() => {
+                        if (!isLastStep) { setWizardStep(2); return; }
+                        void confirm();
+                    }}
+                    onSecondary={wizardStep === 2 ? () => setWizardStep(1) : undefined}
+                />
+                {/* Decline: discreto, siempre accesible */}
+                <div className="mx-auto w-full max-w-md px-5 pb-6 lg:max-w-[75rem] lg:px-8">
+                    {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
+                    {!declineConfirming ? (
+                        <button
+                            type="button"
+                            onClick={() => { setError(null); setDeclineConfirming(true); }}
+                            disabled={submitting || declining}
+                            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+                        >
+                            No voy a poder coordinar la cita
+                        </button>
+                    ) : (
+                        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
+                            <p className="mb-2.5 text-[13px] text-red-800">
+                                Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
+                            </p>
+                            <div className="flex gap-2">
+                                <SileoButton
+                                    onClick={decline}
+                                    disabled={declining}
+                                    loading={declining}
+                                    loadingText="Cancelando…"
+                                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                                >
+                                    Sí, cancelar
+                                </SileoButton>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeclineConfirming(false)}
+                                    disabled={declining}
+                                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                                >
+                                    Volver
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Estados sin formulario (cargando / error / éxito): tarjeta centrada, sin cambios.
     return (
         <div className="flex min-h-[100dvh] items-start justify-center bg-[#f7f7f7] px-4 py-8 sm:py-12">
             <div className="w-full max-w-3xl">
-                {/* Estados sin formulario (cargando / error / éxito): una sola tarjeta sobria. */}
-                {!showForm && (
-                    <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'px-5 py-6 sm:px-6')}>
-                        {status === 'loading' && (
-                            <SileoLoader message="Comprobando el enlace…" color="muted" />
-                        )}
+                <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'px-5 py-6 sm:px-6')}>
+                    {status === 'loading' && (
+                        <SileoLoader message="Comprobando el enlace…" color="muted" />
+                    )}
 
-                        {status === 'invalid' && (
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                                <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
-                            </div>
-                        )}
+                    {status === 'invalid' && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
+                        </div>
+                    )}
 
-                        {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
-                            <div className="flex items-start gap-3">
-                                <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
-                                <div>
-                                    <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
-                                    <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {status === 'ok' && declined && (
-                            <div className="flex items-start gap-3">
-                                <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
-                                <div>
-                                    <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
-                                    <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                                <p className="text-sm">El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
-                            </div>
-                        )}
-
-                        {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
-                            && windowInfo && !windowInfo.hasAvailability && (
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                                <p className="text-sm">
-                                    El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Formulario: misma estética que el flujo «yo la reservo». Cada componente (calendario
-                    y mapa) aporta su PROPIA tarjeta — sin tarjeta exterior que duplique el contorno. */}
-                {showForm && (
-                    <div className="space-y-5">
-                        <div className="flex items-start gap-3 px-1">
-                            <CalendarClock size={20} className="mt-0.5 shrink-0 text-brand" />
+                    {status === 'ok' && (ctx?.alreadyBooked || done) && !declined && (
+                        <div className="flex items-start gap-3">
+                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
                             <div>
-                                <p className="mb-1 text-[15px] font-semibold">Elige cuándo y dónde ver el vehículo</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Un comprador ha <strong>pagado</strong> una inspección profesional. Elige un hueco del técnico y dónde está el coche.
-                                </p>
+                                <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
+                                <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
                             </div>
                         </div>
+                    )}
 
-                        {windowInfo?.windowExtended && (
-                            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                                <p className="text-[13px] text-amber-800">
-                                    El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
-                                </p>
+                    {status === 'ok' && declined && (
+                        <div className="flex items-start gap-3">
+                            <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
+                            <div>
+                                <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
+                                <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
                             </div>
-                        )}
-
-                        <SlotPicker
-                            serviceId={ctx.serviceId}
-                            selected={slot}
-                            onSelect={setSlot}
-                            slotsBaseUrl={base}
-                            windowDays={slotConstraints.windowDays}
-                            minLeadDays={slotConstraints.minLeadDays}
-                            sectionTitle="Fecha y hora"
-                            embedded
-                            embeddedSplitColumn
-                        />
-
-                        {isWorkshop ? (
-                            <div className="rounded-xl border border-[#ebebeb] bg-[#fafafa] px-4 py-3">
-                                <p className="text-sm text-muted-foreground">
-                                    La inspección se hará en el taller del experto.
-                                </p>
-                            </div>
-                        ) : (
-                            // El mapa wizard rellena su contenedor (h-full): le damos una altura fija para
-                            // que SE RENDERICE (en un div sin altura el mapa colapsa a 0px = invisible).
-                            // El shell embebido le da el MISMO contorno único que la tarjeta del calendario.
-                            <div className={cn(SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS, 'h-[min(62vh,520px)]')}>
-                                <CheckoutLocationPicker
-                                    variant="wizard"
-                                    expertLatitude={ctx.expertLatitude ?? undefined}
-                                    expertLongitude={ctx.expertLongitude ?? undefined}
-                                    expertCountry={ctx.expertCountry ?? undefined}
-                                    expertRange={ctx.workRadiusKm ?? undefined}
-                                    workRadiusKm={ctx.workRadiusKm ?? undefined}
-                                    onChange={setChosenLocation}
-                                />
-                            </div>
-                        )}
-
-                        {error && <p className="px-1 text-[13px] text-red-600">{error}</p>}
-
-                        <div>
-                            <SileoButton
-                                onClick={confirm}
-                                disabled={submitting || !slot || (!isWorkshop && !chosenLocation)}
-                                loading={submitting}
-                                loadingText="Confirmando…"
-                                className="h-11 w-full rounded-full text-[15px] font-semibold"
-                            >
-                                Confirmar cita
-                            </SileoButton>
-
-                            {!declineConfirming ? (
-                                <button
-                                    type="button"
-                                    onClick={() => { setError(null); setDeclineConfirming(true); }}
-                                    disabled={submitting || declining}
-                                    className="mt-3 w-full py-2 text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
-                                >
-                                    No voy a poder coordinar la cita
-                                </button>
-                            ) : (
-                                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
-                                    <p className="mb-2.5 text-[13px] text-red-800">
-                                        Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <SileoButton
-                                            onClick={decline}
-                                            disabled={declining}
-                                            loading={declining}
-                                            loadingText="Cancelando…"
-                                            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-                                        >
-                                            Sí, cancelar
-                                        </SileoButton>
-                                        <button
-                                            type="button"
-                                            onClick={() => setDeclineConfirming(false)}
-                                            disabled={declining}
-                                            className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
-                                        >
-                                            Volver
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {status === 'ok' && ctx?.expired && !ctx.alreadyBooked && !done && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">El plazo para reservar la cita ha caducado. Se ha devuelto el importe al comprador.</p>
+                        </div>
+                    )}
+
+                    {status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done
+                        && windowInfo && !windowInfo.hasAvailability && (
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle size={20} className="shrink-0 text-red-600" />
+                            <p className="text-sm">
+                                El técnico no tiene disponibilidad en el plazo. Se devolverá el importe al comprador.
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
