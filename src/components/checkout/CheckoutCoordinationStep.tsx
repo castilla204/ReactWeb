@@ -1,5 +1,5 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { Info } from 'lucide-react';
+import { Info, Lock } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -47,6 +47,10 @@ interface OptionCardProps {
     cancelHint?: string;
     /** Número de orden (1, 2…) mostrado como dígito grande contorneado. */
     number?: number;
+    /** Solo lectura: la tarjeta no responde a click/teclado; conserva el estilo selected/atenuado. */
+    locked?: boolean;
+    /** Texto de badge a mostrar cuando locked y selected (p.ej. "Lo ha elegido el comprador"). */
+    lockedBadge?: string;
     onSelect: () => void;
 }
 
@@ -114,17 +118,19 @@ function OptionCard({
     cancelHint,
     number,
     compact = false,
+    locked,
+    lockedBadge,
     onSelect,
 }: OptionCardProps) {
     return (
         <div
-            role="radio"
-            aria-checked={selected}
-            aria-disabled={disabled}
-            tabIndex={disabled ? -1 : 0}
-            onClick={disabled ? undefined : onSelect}
+            role={locked ? 'group' : 'radio'}
+            aria-checked={locked ? undefined : selected}
+            aria-disabled={disabled || locked || undefined}
+            tabIndex={disabled || locked ? -1 : 0}
+            onClick={disabled || locked ? undefined : onSelect}
             onKeyDown={(e) => {
-                if (disabled) return;
+                if (disabled || locked) return;
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onSelect();
@@ -138,9 +144,11 @@ function OptionCard({
                     ? 'border-brand bg-brand shadow-[0_8px_24px_rgba(0,102,204,0.18)]'
                     : 'border-[#e6e9ef] bg-white hover:-translate-y-px hover:border-[#cfd4dc] hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)]',
                 disabled && 'pointer-events-none cursor-not-allowed opacity-40 grayscale hover:translate-y-0',
+                locked && 'cursor-default hover:translate-y-0 hover:border-[#e6e9ef] hover:shadow-none',
+                locked && !selected && 'opacity-55',
             )}
         >
-            {recommended ? (
+            {recommended && !(locked && selected) ? (
                 <span
                     className={cn(
                         'absolute right-3 top-3 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold',
@@ -148,6 +156,12 @@ function OptionCard({
                     )}
                 >
                     Recomendado
+                </span>
+            ) : null}
+            {locked && selected && lockedBadge ? (
+                <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-brand shadow-sm">
+                    <Lock className="h-2.5 w-2.5" aria-hidden />
+                    {lockedBadge}
                 </span>
             ) : null}
             <div
@@ -281,6 +295,8 @@ export interface CheckoutCoordinationStepProps {
     /** Oculta la cabecera numerada embebida (checkout desktop con header superior). */
     showStepHeader?: boolean;
     coordinationMode?: CoordinationSelection | null;
+    /** Tarjetas no interactivas (apagadas). La elegida mantiene estilo selected + badge. */
+    readOnly?: boolean;
     onSelect: (value: CoordinationSelection) => void;
     sellerPhone: string;
     sellerEmail: string;
@@ -298,12 +314,14 @@ function CoordinationOptionCards({
     duo,
     compact,
     sellerOptionDisabled,
+    readOnly,
     onSelect,
 }: {
     selection: CoordinationSelection | null;
     duo?: boolean;
     compact?: boolean;
     sellerOptionDisabled?: boolean;
+    readOnly?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
     const selfDescription = (
@@ -317,7 +335,7 @@ function CoordinationOptionCards({
     return (
         <>
             <div
-                role="radiogroup"
+                role={readOnly ? 'group' : 'radiogroup'}
                 aria-label="Coordinación de la visita"
                 className={cn(
                     'coordination-step-from-left grid items-stretch',
@@ -328,6 +346,7 @@ function CoordinationOptionCards({
                         : duo
                           ? 'grid-cols-2 gap-4 lg:gap-5'
                           : 'grid-cols-1 gap-4',
+                    readOnly && 'pointer-events-none',
                 )}
             >
                 <OptionCard
@@ -343,6 +362,8 @@ function CoordinationOptionCards({
                     disabled={sellerOptionDisabled}
                     selected={selection === 'seller'}
                     dimmed={selection === 'self'}
+                    locked={readOnly}
+                    lockedBadge="Lo ha elegido el comprador"
                     onSelect={() => onSelect('seller')}
                 />
                 <OptionCard
@@ -356,6 +377,8 @@ function CoordinationOptionCards({
                     cancelHint="mientras el experto no confirme; después se aplican tramos según la antelación."
                     selected={selection === 'self'}
                     dimmed={selection === 'seller'}
+                    locked={readOnly}
+                    lockedBadge="Lo ha elegido el comprador"
                     onSelect={() => onSelect('self')}
                 />
             </div>
@@ -375,6 +398,7 @@ export function CheckoutCoordinationStep({
     embedded = false,
     showStepHeader = true,
     coordinationMode = null,
+    readOnly,
     onSelect,
     sellerPhone,
     sellerEmail,
@@ -410,6 +434,7 @@ export function CheckoutCoordinationStep({
                         selection={effectiveSelection}
                         compact
                         sellerOptionDisabled={sellerOptionDisabled}
+                        readOnly={readOnly}
                         onSelect={onSelect}
                     />
                 </div>
@@ -478,6 +503,7 @@ export function CheckoutCoordinationStep({
                     <CoordinationOptionCards
                         selection={effectiveSelection}
                         sellerOptionDisabled={sellerOptionDisabled}
+                        readOnly={readOnly}
                         onSelect={onSelect}
                     />
                 ) : (
