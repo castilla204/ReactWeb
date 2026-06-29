@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, mem
 import { useWindowSize } from '../hooks/useWindowSize';
 // 🛡️ Round 28: helper unificado de símbolos de divisa (cubre EUR/USD/GBP/CHF/CAD/SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
 import { getCurrencySymbol } from '../utils/priceUtils';
-import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, SlidersHorizontal, Flame } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { FavoriteHeart } from './FavoriteHeart';
@@ -936,6 +936,137 @@ function MapStripFilterControls({
     const priceActive = priceRange[0] > 0 || priceRange[1] < priceMax;
     const idleClass = lightSurface ? MAP_STRIP_FILTER_CLASS_LIGHT : MAP_STRIP_FILTER_CLASS;
     const trig = (active: boolean) => (active ? MAP_STRIP_FILTER_ACTIVE_CLASS : idleClass);
+
+    // 📱 Hoja blanca del panel plegable: orden segmentado (atajo Relevancia/Cercanía, activo azul de
+    //    marca, llama en Relevancia) + botón "Filtros (N)" que abre orden completo + valoración + precio.
+    if (isMobile && lightSurface) {
+        const activeFilterCount = (priceActive ? 1 : 0) + (ratingActive ? 1 : 0);
+        // Colores del segmentado por estilo inline (determinista): `bg-brand` dinámico no se generaba fiable.
+        const BRAND = '#0066cc';
+        const segBase =
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-[12.5px] font-semibold transition-colors';
+        const segStyle = (active: boolean) => ({
+            backgroundColor: active ? BRAND : 'transparent',
+            color: active ? '#ffffff' : '#5f5e5a',
+        });
+        const filtrosCls =
+            activeFilterCount > 0
+                ? 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-brand/40 bg-brand/5 px-3 font-display text-[12px] font-semibold text-brand md:h-9 md:px-3.5 md:text-[13px]'
+                : idleClass;
+        return (
+            <div className="flex items-center justify-between gap-2">
+                <div className="inline-flex shrink-0 items-center rounded-full bg-[#eef0f2] p-0.5">
+                    <button
+                        type="button"
+                        onClick={() => onSort('relevance')}
+                        style={segStyle(sortBy === 'relevance')}
+                        className={segBase}
+                    >
+                        <Flame className="h-3.5 w-3.5" aria-hidden /> Relevancia
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onSort('distance')}
+                        style={segStyle(sortBy === 'distance')}
+                        className={segBase}
+                    >
+                        Cercanía
+                    </button>
+                </div>
+
+                <Drawer shouldScaleBackground={false}>
+                    <DrawerTrigger asChild>
+                        <button type="button" className={filtrosCls}>
+                            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+                            Filtros
+                            {activeFilterCount > 0 && (
+                                <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[11px] font-semibold text-white">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
+                    </DrawerTrigger>
+                    <DrawerContent
+                        className="px-0 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
+                        style={{ zIndex: 10001 }}
+                    >
+                        <div className="max-h-[68vh] overflow-y-auto px-5">
+                            <h3 className="pb-1 pt-1 font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                                Ordenar por
+                            </h3>
+                            <div className="-mx-1 pb-2">
+                                {MAP_SORT_OPTIONS.map((o) => (
+                                    <button
+                                        key={o.key}
+                                        type="button"
+                                        onClick={() => onSort(o.key)}
+                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                    >
+                                        {o.label}
+                                        {sortBy === o.key && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <h3 className="border-t border-[#eee] pb-1 pt-3 font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                                Valoración mínima
+                            </h3>
+                            <div className="-mx-1 pb-2">
+                                {MAP_RATING_OPTIONS.map((o) => (
+                                    <button
+                                        key={o.value}
+                                        type="button"
+                                        onClick={() => onMinRating(o.value)}
+                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                    >
+                                        {o.label}
+                                        {minRating === o.value && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-[#eee] pb-1 pt-3">
+                                <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                                    Precio por servicio
+                                </h3>
+                                {priceActive && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onPriceRange([0, priceMax])}
+                                        className="font-display text-[13px] font-semibold text-brand"
+                                    >
+                                        Quitar
+                                    </button>
+                                )}
+                            </div>
+                            <Slider
+                                value={[priceRange[0], priceRange[1]]}
+                                min={0}
+                                max={priceMax}
+                                step={5}
+                                onValueChange={(v: number[]) => onPriceRange([v[0], v[1]] as [number, number])}
+                                className="my-4"
+                            />
+                            <div className="flex items-center justify-between font-display text-[14px] font-medium tabular-nums text-[#525252]">
+                                <span>{priceRange[0]} €</span>
+                                <span>{priceRange[1] >= priceMax ? `${priceMax}+ €` : `${priceRange[1]} €`}</span>
+                            </div>
+                        </div>
+                        <div className="px-5 pt-3">
+                            <DrawerClose asChild>
+                                <button
+                                    type="button"
+                                    className="w-full rounded-full bg-brand py-3 font-display text-[15px] font-semibold text-white active:bg-brand-hover"
+                                >
+                                    Ver resultados
+                                </button>
+                            </DrawerClose>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
+            </div>
+        );
+    }
 
     // 📱 Móvil: los Popover anclados a las píldoras flotaban encima del mapa y
     //    quedaban mal (el slider de precio sobre todo). Usamos bottom sheets (Drawer)
