@@ -580,9 +580,10 @@ export function BecomeExpertFastPathShell({
         : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]';
 
     return (
-        <div className="become-expert-wizard be-fast-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(500px,600px)] xl:grid-cols-[minmax(0,1fr)_680px]">
-            {/* Izquierda — hero claro de marca: foto velada + titular con acento azul/ámbar (estilo home) */}
-            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] bg-[#fafafa] lg:flex lg:flex-col">
+        <div className="become-expert-wizard be-fast-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:grid lg:h-auto lg:max-h-none lg:min-h-screen lg:items-start lg:overflow-visible lg:grid-cols-[minmax(0,0.9fr)_minmax(500px,600px)] xl:grid-cols-[minmax(0,1fr)_680px]">
+            {/* Izquierda — hero claro de marca: foto velada + titular con acento azul/ámbar (estilo home).
+                Desktop: fijo a la altura del viewport y pegajoso mientras la derecha scrollea con la página. */}
+            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] bg-[#fafafa] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:self-start">
                 <div className="absolute inset-0">
                     <FastPathHeroPhoto objectClass="object-[68%_center]" />
                 </div>
@@ -622,13 +623,13 @@ export function BecomeExpertFastPathShell({
                 ahora va anclado arriba y la columna se llena con "qué pasa después",
                 "cómo cobras", "qué necesitas" y FAQ para que el alta de 1 campo no
                 parezca de juguete en desktop. */}
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:h-full">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:h-auto lg:min-h-screen lg:overflow-visible">
                 <main
                     id="become-expert-main"
-                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:flex lg:items-start lg:justify-center`}
+                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:overflow-visible lg:overscroll-auto`}
                 >
                     <div
-                        className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:mx-0 lg:max-w-[30rem] lg:px-12 lg:py-12 xl:py-14`}
+                        className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:max-w-[40rem] lg:px-10 lg:py-12 xl:px-12 xl:py-14`}
                     >
                         <BecomeExpertFastPathIntro onBack={onBack} />
                         <div className="hidden lg:block">{children}</div>
