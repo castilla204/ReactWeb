@@ -223,6 +223,10 @@ const AppContent: React.FC = () => {
         || location.pathname === '/crear-busqueda'
         || location.pathname.startsWith('/service/')
         || location.pathname.startsWith('/checkout/')
+        // 🤝 Enlaces de coordinación (vendedor/experto): replican el wizard del checkout
+        //    y traen su propio topbar mínimo (variant="checkout") → ocultamos el global.
+        || location.pathname.startsWith('/coordinar-cita/')
+        || location.pathname.startsWith('/confirmar-cita/')
         || location.pathname === '/expert-panel'
         || location.pathname === '/become-expert'
         || location.pathname.startsWith('/complete-onboarding')
