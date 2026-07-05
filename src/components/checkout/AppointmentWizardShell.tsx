@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils';
 import { CheckoutDesktopAppointmentHeader } from './CheckoutDesktopAppointmentHeader';
 import { CheckoutMobileStepper } from './CheckoutMobileStepper';
 import { CheckoutMobileStickyFooter } from './CheckoutMobileStickyFooter';
+import { HomepageDesktopTopBar } from '../HomepageDesktopTopBar';
 import {
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
@@ -44,8 +45,6 @@ export interface AppointmentWizardShellProps {
     /** Texto del botón "Atrás" móvil; oculto si no hay onSecondary. */
     onSecondary?: () => void;
     secondaryLabel?: string;
-    /** Marca de cabecera (logo). */
-    brand?: ReactNode;
 }
 
 const DESKTOP_PRIMARY_BTN =
@@ -67,23 +66,12 @@ export function AppointmentWizardShell({
     primaryDisabled = false,
     onSecondary,
     secondaryLabel = 'Atrás',
-    brand,
 }: AppointmentWizardShellProps) {
-    const brandBar = (
-        <div className="flex h-14 items-center px-5 lg:h-16 lg:px-8">
-            {brand ?? (
-                <span className="text-[18px] font-bold tracking-[-0.01em] text-brand">
-                    Inspecciono<span className="text-[#1c1c1c]">.</span>
-                </span>
-            )}
-        </div>
-    );
-
     return (
         <>
             {/* DESKTOP (≥lg) */}
             <div className={cn('hidden min-h-screen lg:block', SD_CHECKOUT_DESKTOP_PAGE_CLASS)}>
-                <div className="border-b border-[#ececec] bg-white">{brandBar}</div>
+                <HomepageDesktopTopBar variant="checkout" />
                 <div className="mx-auto w-full max-w-[75rem] px-4 pb-4 pt-8 sm:px-5 lg:px-8">
                     <CheckoutDesktopAppointmentHeader
                         title={title}
