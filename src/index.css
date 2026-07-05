@@ -1909,7 +1909,7 @@ img[alt*="country"],
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-width: 28rem;
+    max-width: 40rem;
 }
 
 .be-fast-form-kicker {
