@@ -241,10 +241,10 @@ function OptionCard({
 }
 
 export const COORD_CHOOSE_TITLE = 'La cita de la inspección';
-const COORD_CHOOSE_LEAD = '¿Quién elige el día y la hora?';
+const COORD_CHOOSE_LEAD = '¿Quién elige la fecha de la inspección?';
 export const COORD_DESKTOP_STEP1_LEAD =
-    'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con él. Puedes dejar que sea el vendedor quien elija el hueco — le enviamos un enlace tras el pago — o elegirlo tú ahora mismo. En ambos casos tu pago queda protegido hasta que termine la revisión.';
-const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién elige el día y la hora?';
+    'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con él. ¿La fecha la elige él o la eliges tú? En ambos casos tu pago queda protegido hasta que termine la revisión.';
+const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién elige la fecha?';
 const COORD_DESKTOP_CARDS_INTRO_LEAD =
     'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con él.';
 
