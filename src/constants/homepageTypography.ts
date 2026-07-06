@@ -407,6 +407,14 @@ export const SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR =
 export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
   'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
+/**
+ * Margen superior del contenido del checkout móvil (no hay top bar como en desktop).
+ * Suma aire visible POR ENCIMA del safe-area en lugar de `max()` —que sobre un notch
+ * dejaba el contenido pegado al borde sin margen real—. Respeta el notch + 1.5rem.
+ */
+export const SD_CHECKOUT_MOBILE_TOP_PAD_CLASS =
+  'pt-[calc(env(safe-area-inset-top,0px)+1.5rem)]';
+
 /** Degradado marca — asistente / chat (ámbar → crema → azul) */
 export const SD_BRAND_CHAT_GRADIENT_WASH =
   'linear-gradient(90deg, rgba(247,193,75,0.45) 0%, rgba(253,237,205,0.42) 36%, rgba(221,233,250,0.48) 62%, rgba(63,127,224,0.45) 100%)';
@@ -657,38 +665,6 @@ export const MAP_DESKTOP_PANEL_HEADER_META_STRONG_CLASS =
   'font-semibold text-[#1c1c1c] tabular-nums';
 
 export const MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS = 'text-[#c8c8c8]';
-
-/** Topbar variant="mapStep" — fusiona la topbar antigua con stepper + chips meta del flow.
- *  Mata el aire muerto del centro de la topbar y ahorra ~50px verticales en el sidebar.  */
-export const MAP_STEP_TOPBAR_SHELL_CLASS =
-  'sticky top-0 z-50 hidden md:block border-b border-[#ececec] bg-white/95 backdrop-blur-sm';
-
-export const MAP_STEP_TOPBAR_INNER_CLASS =
-  'flex min-h-[52px] w-full items-center gap-3 px-4 md:px-5 lg:px-6';
-
-export const MAP_STEP_TOPBAR_PILL_ACTIVE =
-  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white text-[11px] font-semibold tabular-nums leading-none shadow-[0_1px_4px_hsl(var(--brand)/0.35)]';
-
-export const MAP_STEP_TOPBAR_PILL_DONE =
-  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand/15 text-brand text-[11px] font-semibold tabular-nums leading-none';
-
-export const MAP_STEP_TOPBAR_PILL_IDLE =
-  'inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f3f3f3] text-[#9aa0a6] text-[11px] font-semibold tabular-nums leading-none';
-
-export const MAP_STEP_TOPBAR_LABEL_ACTIVE =
-  'text-[12.5px] font-semibold tracking-tight text-[#1c1c1c]';
-
-export const MAP_STEP_TOPBAR_LABEL_IDLE =
-  'text-[12.5px] font-medium tracking-tight text-[#6a6a6a]';
-
-export const MAP_STEP_TOPBAR_DIVIDER =
-  'mx-2 hidden h-5 w-px bg-[#ececec] xl:block';
-
-export const MAP_STEP_TOPBAR_META_CHIP =
-  'inline-flex items-center gap-1 rounded-full bg-[#f6f6f6] ring-1 ring-[#ececec] px-2.5 py-1 text-[11.5px] font-medium text-[#5a5a5a] whitespace-nowrap';
-
-export const MAP_STEP_TOPBAR_META_CHIP_BRAND =
-  'inline-flex items-center gap-1 rounded-full bg-brand/[0.08] ring-1 ring-brand/15 px-2.5 py-1 text-[11.5px] font-semibold text-brand whitespace-nowrap';
 
 export const MAP_META_CHIP_CLASS =
   'inline-flex items-center rounded-full bg-brand/[0.08] ring-1 ring-brand/15 px-2.5 py-1 text-[11px] font-semibold text-brand';

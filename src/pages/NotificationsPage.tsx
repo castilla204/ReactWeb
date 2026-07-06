@@ -36,7 +36,10 @@ const NotificationsPage: React.FC = () => {
 
     return (
         <div className="min-h-screen" style={{ background: 'hsl(var(--nc-canvas))' }}>
-            <HomepageDesktopTopBar variant="plain" pageTitle="Notificaciones" />
+            {/* showLogo: mismo topbar unificado que el resto de páginas internas
+                (antes caía al layout legado sin logo y con la cuenta a la izquierda).
+                Sin pageTitle: el h1 visible de la página ya lo aporta el main. */}
+            <HomepageDesktopTopBar variant="plain" showLogo />
             <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
                 <div className="mb-5 flex items-center gap-3">
                     <Button

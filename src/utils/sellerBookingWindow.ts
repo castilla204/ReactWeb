@@ -18,9 +18,9 @@ export const CHECKOUT_SELLER_PLAZO_SUMMARY =
 export const SELLER_COORD_ENLACE_DETAILED =
     `Tras pagar, le enviamos un enlace al vendedor para que reserve día y hora entre los huecos libres del experto. Suele ser entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días después del pago.`;
 
-/** Tarjeta paso 1 — modo Inspecciono lo coordina (texto visible en la card). */
+/** Tarjeta paso 1 — modo el vendedor elige la fecha (texto visible en la card). */
 export const COORD_OPTION_SELLER_DESC =
-    `Tras pagar enviamos un enlace al vendedor para que reserve día y hora. Suele ser entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago.`;
+    `El vendedor reserva un hueco libre del experto, normalmente en ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días. Tú no tienes que hablar con nadie.`;
 
 /** Popover «más info» en la tarjeta Inspecciono lo coordina. */
 export const SELLER_COORD_CARD_NOTE =

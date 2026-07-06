@@ -102,12 +102,14 @@ export function sellerCoordinationCanContinue(phone: string, email: string) {
 /** Texto reutilizable del plazo del vendedor (checkout Coordínalo Inspecciono). */
 // CHECKOUT_SELLER_PLAZO_SUMMARY — ver sellerBookingWindow.ts
 
-/** Copy tarjetas paso 1 — coordinación de la cita. */
-export const COORD_OPTION_SELF_TITLE = 'Yo la reservo';
+/** Copy tarjetas paso 1 — quién elige el día y la hora de la inspección. */
+export const COORD_OPTION_SELF_TITLE = 'Tú eliges la fecha ahora';
+export const COORD_OPTION_SELF_TAGLINE = 'En el calendario del experto';
 export const COORD_OPTION_SELF_DESC =
-    'Tú eliges día, hora y lugar en el calendario del experto al pagar. Queda reservada a falta de que el experto la confirme.';
+    'Ideal si ya has hablado con el vendedor. Eliges día, hora y dirección en el siguiente paso; el experto solo tiene que confirmar la cita.';
 // COORD_OPTION_SELLER_TITLE + COORD_OPTION_SELLER_DESC — sellerBookingWindow.ts re-export arriba
-export const COORD_OPTION_SELLER_TITLE = 'Que lo coordine Inspecciono';
+export const COORD_OPTION_SELLER_TITLE = 'El vendedor elige la fecha';
+export const COORD_OPTION_SELLER_TAGLINE = 'Le enviamos un enlace tras el pago';
 export const COORD_OPTION_FREE_CANCEL = 'Cancelación sin coste';
 /** @deprecated Usar COORD_OPTION_FREE_CANCEL */
 export const COORD_OPTION_SELLER_OFFER = COORD_OPTION_FREE_CANCEL;
@@ -160,11 +162,12 @@ export function CheckoutSellerEnlaceInfoNote({
     );
 }
 
-/** Aviso modo Yo reservo la cita (tarjeta de coordinación). */
+/** Aviso modo tú eliges la fecha (tarjeta de coordinación). */
 export function CheckoutSelfCoordinationInfoNote({ className }: { className?: string }) {
     return (
         <p className={cn('text-[12px] leading-relaxed text-[#475569]', className)}>
-            Ideal si ya tienes contacto con el vendedor. Al pagar, eliges tú el día, la hora y la dirección.
+            Al pagar, la cita queda reservada al instante con el día y la hora que elijas. El experto la
+            confirma después.
         </p>
     );
 }

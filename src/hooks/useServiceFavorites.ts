@@ -93,7 +93,19 @@ export const useServiceFavorites = () => {
         return useQuery({
             queryKey: ['favorite', searchServiceId],
             queryFn: async (): Promise<CheckFavoriteResponse> => {
-                return get<CheckFavoriteResponse>(API_CONFIG.endpoints.favorites.check(searchServiceId));
+                // CASING-FIX: el endpoint check responde con wrapper minúscula (`data`) pero interior
+                // PascalCase (`IsFavorite`/`FavoriteId`, por PropertyNamingPolicy=null). Leer `.data.isFavorite`
+                // daba siempre undefined → el corazón nunca aparecía marcado al cargar. Normalizamos ambos
+                // casings en un único punto (igual que ya hacía ServiceReviewPage).
+                const raw = await get<any>(API_CONFIG.endpoints.favorites.check(searchServiceId));
+                const inner = raw?.data ?? raw?.Data ?? {};
+                return {
+                    success: raw?.success ?? raw?.Success ?? true,
+                    data: {
+                        isFavorite: inner.isFavorite ?? inner.IsFavorite ?? false,
+                        favoriteId: inner.favoriteId ?? inner.FavoriteId ?? null,
+                    },
+                } as CheckFavoriteResponse;
             },
             enabled: (options?.enabled !== false) && isAuthenticated && !!searchServiceId,
             staleTime: 30000, // 30 segundos

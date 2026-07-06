@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Wallet, ArrowRight, Shield, Check, Lock, BadgeCheck, FileText, Image, Video, ShieldCheck, Info } from 'lucide-react';
 import { useSearch } from '../hooks/useSearch.hooks';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -76,6 +76,9 @@ export default function SearchForm({
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // 🛡️ Guard atómico anti doble-submit (patrón T8 de CheckoutPage): el ref es SÍNCRONO, así que
+    // bloquea un 2º submit ultra-rápido ANTES de que React aplique setIsSubmitting (asíncrono).
+    const isSubmittingRef = useRef(false);
 
     // Scroll to top when component loads
     useEffect(() => {
@@ -104,18 +107,21 @@ export default function SearchForm({
             return;
         }
         
+        // 🛡️ Guard atómico anti doble-submit: el ref bloquea el 2º handler de inmediato; el state
+        // mantiene el UI (botón/overlay) deshabilitado. Sustituye al antiguo check por state, que leía
+        // el valor del closure (siempre stale=false en la 1ª entrada) y no frenaba el doble click.
+        if (isSubmittingRef.current || createSearchWithHire.isPending) {
+            showToast('error', 'Error: Procesando solicitud. Por favor, espera.');
+            return;
+        }
+        isSubmittingRef.current = true;
         setIsSubmitting(true);
 
         console.log('SearchForm - Submitting with:', { serviceId, servicePrice });
 
         if (!isDataComplete) {
             showToast('error', 'Error: Los datos del servicio están incompletos. Por favor, selecciona un servicio válido.');
-            setIsSubmitting(false);
-            return;
-        }
-
-        if (createSearchWithHire.isPending || isSubmitting) {
-            showToast('error', 'Error: Procesando solicitud. Por favor, espera.');
+            isSubmittingRef.current = false;
             setIsSubmitting(false);
             return;
         }
@@ -198,6 +204,7 @@ export default function SearchForm({
                 showToast('error', errorMessage, 5000);
             }
         } finally {
+            isSubmittingRef.current = false; // 🛡️ liberar el guard atómico junto al state
             setIsSubmitting(false);
         }
     };

@@ -54,6 +54,7 @@ import {
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
+    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
@@ -1188,6 +1189,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 <CheckoutPaymentAside
                                     embedded
                                     priceDisplay={priceDisplayNode}
+                                    priceSubline={priceSublineNode}
                                     canPay={expertCanReceivePayments && desktopPaymentReady}
                                     isProcessing={isProcessing}
                                     onPay={handlePayment}
@@ -1361,7 +1363,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     ) : (
                     <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
                         <div
-                            className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pt-[max(0.75rem,env(safe-area-inset-top,0px))]`}
+                            className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} ${SD_CHECKOUT_MOBILE_TOP_PAD_CLASS}`}
                         >
                             {coordView === 'seller-contact' && !isWorkshopOnly ? (
                                 <CheckoutMobileStepper
@@ -1429,7 +1431,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             <header
                                 className={cn(
                                     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    'pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
                                 )}
                             >
                                 <CheckoutMobileStepper currentStep={mobileStep} className="mb-5" />

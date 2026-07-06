@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, AlertCircle, AlertTriangle, FileWarning, Clock, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, AlertTriangle, FileWarning, Clock, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import type { ExpertStripeStatusResult } from '../hooks/useExpertStripeStatus';
 import { STRIPE_STATUS } from '../constants/stripeStatus';
 import { ErrorDisplay } from './ErrorDisplay';
 import { buildStripeStatusDisplay } from '../utils/stripeStatusDisplay';
-import { getButtonClass } from '../utils/stripeStatusStyles';
+import { getButtonClass, STRIPE_ERROR_STATES, STRIPE_WARNING_STATES } from '../utils/stripeStatusStyles';
 
 interface StripeStatusCardProps {
     stripe: ExpertStripeStatusResult;
@@ -135,6 +135,20 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
         status.stripeStatus !== STRIPE_STATUS.REJECTED || status.canRetryOnboarding !== false;
     const isBusy = loading || isLoadingOnboarding;
 
+    // Severidad global del estado → medallón + kicker coloreados. Mismo vocabulario
+    // del panel (fondo blanco siempre; el color vive solo en icono y texto — MUD).
+    // PENDING cuenta como warning: onboarding a medias = acción del experto pendiente.
+    const cardSeverity: Severity | 'success' =
+        STRIPE_ERROR_STATES.includes(status.stripeStatus) ? 'danger'
+        : STRIPE_WARNING_STATES.includes(status.stripeStatus) || status.stripeStatus === STRIPE_STATUS.PENDING ? 'warning'
+        : status.stripeStatus === STRIPE_STATUS.APPROVED ? 'success'
+        : 'info';
+    const SeverityIcon =
+        cardSeverity === 'danger' ? XCircle
+        : cardSeverity === 'warning' ? AlertTriangle
+        : cardSeverity === 'success' ? CheckCircle2
+        : Clock;
+
     // 🖥️ Desktop: el panel pasa a 2 columnas cuando hay requisitos que listar —
     // narrativa (resumen/plazo/motivo/qué hacer) a la izquierda y checklist a la
     // derecha— para que no se vea como una tira estrecha y muy vertical. En móvil
@@ -144,8 +158,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
     return (
         <div className={`stripe-status-panel ${isSplit ? 'stripe-status-panel--split' : ''} ${className}`}>
             <header className="stripe-status-header">
-                <p className="stripe-status-kicker">{display.kicker}</p>
-                <h2 className="stripe-status-title">{display.title}</h2>
+                <span className={`stripe-status-medallion stripe-status-medallion--${cardSeverity}`} aria-hidden>
+                    <SeverityIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                </span>
+                <div className="stripe-status-heading">
+                    <p className={`stripe-status-kicker stripe-status-kicker--${cardSeverity}`}>{display.kicker}</p>
+                    <h2 className="stripe-status-title">{display.title}</h2>
+                </div>
             </header>
 
             <div className="stripe-status-body">
@@ -214,6 +233,13 @@ export const StripeStatusCard: React.FC<StripeStatusCardProps> = ({
                             statusInfo.buttonText
                         )}
                     </button>
+                    {/* Doc Stripe (hosted onboarding): el formulario auto-detecta lo pendiente y
+                        pre-rellena lo ya enviado. Decírselo reduce el abandono en reintentos —
+                        solo si ya existe una cuenta (en el primer alta no hay nada guardado). */}
+                    {(statusInfo.action === 'setup' || statusInfo.action === 'retry' || statusInfo.action === 'complete_requirements') &&
+                        (status.hasStripeAccount || status.hasPendingOnboarding) && (
+                            <p className="stripe-resume-hint">{t('stripe.common.resumeHint')}</p>
+                        )}
                 </div>
             )}
 
