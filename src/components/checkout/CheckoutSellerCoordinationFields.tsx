@@ -102,13 +102,14 @@ export function sellerCoordinationCanContinue(phone: string, email: string) {
 /** Texto reutilizable del plazo del vendedor (checkout Coordínalo Inspecciono). */
 // CHECKOUT_SELLER_PLAZO_SUMMARY — ver sellerBookingWindow.ts
 
-/** Copy tarjetas paso 1 — quién elige el día y la hora de la inspección. */
-export const COORD_OPTION_SELF_TITLE = 'Tú eliges la fecha ahora';
+/** Copy tarjetas paso 1 — quién elige la fecha. Los títulos RESPONDEN a la pregunta
+ * de la cabecera («¿Quién elige la fecha?») en primera persona, como lo diría el usuario. */
+export const COORD_OPTION_SELF_TITLE = 'La elijo yo ahora';
 export const COORD_OPTION_SELF_TAGLINE = 'En el calendario del experto';
 export const COORD_OPTION_SELF_DESC =
     'Ideal si ya has hablado con el vendedor. Eliges día, hora y dirección en el siguiente paso; el experto solo tiene que confirmar la cita.';
 // COORD_OPTION_SELLER_TITLE + COORD_OPTION_SELLER_DESC — sellerBookingWindow.ts re-export arriba
-export const COORD_OPTION_SELLER_TITLE = 'El vendedor elige la fecha';
+export const COORD_OPTION_SELLER_TITLE = 'Que la elija el vendedor';
 export const COORD_OPTION_SELLER_TAGLINE = 'Le enviamos un enlace tras el pago';
 export const COORD_OPTION_FREE_CANCEL = 'Cancelación sin coste';
 /** @deprecated Usar COORD_OPTION_FREE_CANCEL */

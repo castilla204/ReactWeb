@@ -7,17 +7,15 @@ export const CheckoutReserveHint: React.FC<{ className?: string }> = ({ classNam
     aria-label="Cómo funciona el cobro"
   >
     <p>
-      <span className="font-semibold text-[#1c1c1c]">Al reservar</span> autorizamos el importe en tu
-      tarjeta, pero <span className="font-semibold text-[#1c1c1c]">no se cobra nada todavía</span>. El
-      cargo solo se hace efectivo cuando el experto confirma la cita.
+      <span className="font-semibold text-[#1c1c1c]">Hoy no se te cobra nada</span>: solo reservamos el
+      importe en tu tarjeta.
     </p>
     <p>
-      Si el experto rechaza la cita o no responde a tiempo, la autorización se libera y no se te cobra
-      nada.
+      El cargo se hace cuando el experto confirme la cita. Si no la confirma, se libera solo y listo.
     </p>
     <p>
-      El experto no recibe su pago hasta que revises el informe y des el visto bueno. Cancelación
-      gratuita antes de que empiece la revisión.
+      El experto no cobra hasta que tú des el visto bueno al informe. Cancelación gratuita antes de que
+      empiece la revisión.
     </p>
   </div>
 );
