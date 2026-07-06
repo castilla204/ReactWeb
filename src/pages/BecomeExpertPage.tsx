@@ -45,6 +45,7 @@ import { AvailabilityFormData } from '../hooks/useExpertProfile';
 import { showToast } from '../lib/toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useExpert } from '../hooks/useExpert';
+import { ErrorDisplay } from '../components/ErrorDisplay';
 // 🛡️ Round 28: autocomplete y reverse geocoding vía Mapbox REST (token VITE_MAPBOX_ACCESS_TOKEN)
 import { searchMapboxAutocomplete, MapboxAutocompleteItem, reverseCountryMapbox } from '../utils/mapboxGeocoding';
 
@@ -78,7 +79,7 @@ function BecomeExpertPage() {
     const navigate = useNavigate();
     const searchInputRef = useRef<HTMLInputElement>(null);
     const { user } = useAuth();
-    const { profile, fetchProfile, startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
+    const { profile, fetchProfile, profileError, startOnboarding, isStartingOnboarding, checkOnboardingStatus } = useExpert();
     // 🛡️ MUD-AG: si está mudándose, pasar la URL preservada como foto existente.
     // useBecomeExpert ya NO exige nuevo upload si existingProfilePictureUrl está.
     const isAlreadyExpertInner =
@@ -990,6 +991,24 @@ function BecomeExpertPage() {
     // después en el panel de experto — y NO eres visible hasta completarlo.
     // El wizard completo se conserva para el flujo de mudanza (isRelocating).
     // ─────────────────────────────────────────────────────────────────────────
+    // 🛡️ Escape del loader infinito: el shell muestra initialLoading mientras
+    // isAlreadyExpert && !profile, pero si fetchProfile FALLA (red caída, 500) el
+    // profile se queda null para siempre y el efecto de carga no re-dispara (sus
+    // deps no cambian) → el experto que volvía con el onboarding a medias quedaba
+    // atrapado en un spinner sin salida. fetchProfile(true) limpia profileError al
+    // empezar, así el retry vuelve al loader y de ahí al wizard o de nuevo aquí.
+    if (isAlreadyExpert && !profile && profileError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6 bg-white">
+                <ErrorDisplay
+                    message="No se pudo cargar tu perfil de experto. Revisa tu conexión e inténtalo de nuevo."
+                    onRetry={() => { void fetchProfile(true); }}
+                    fullScreen={false}
+                />
+            </div>
+        );
+    }
+
     if (!isAlreadyExpert && !isRelocating) {
         const sortedCountries = Array.from(SUPPORTED_PAYOUT_COUNTRIES)
             .sort((a, b) => formatPayoutCountryLabel(a).localeCompare(formatPayoutCountryLabel(b), 'es'));

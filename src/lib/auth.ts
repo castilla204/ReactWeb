@@ -62,6 +62,14 @@ export function removeAuthToken() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('userData');
+    // SESSION-FIX: antes NO se borraban las claves que el authService moderno usa de verdad
+    // (accessToken/refreshToken/accessTokenExpiresAt). Sin esto, el interceptor seguía mandando el
+    // Bearer y restoreSession dejaba la sesión VARADA (hasToken=true, hasUser=false → ProtectedRoute
+    // en redirección perpetua, el accessToken nunca se limpiaba). Limpiamos también esas claves.
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('accessTokenExpiresAt');
+    localStorage.removeItem('token'); // legacy (PaymentSuccessPage)
 }
 
 export function getUserData(): any | null {

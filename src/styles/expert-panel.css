@@ -1325,22 +1325,41 @@
   color: hsl(var(--ep-ink, 222 24% 12%));
 }
 
+/* Píldora de visibilidad: el dato que más le importa al experto (¿me ven o no?).
+   Fondo blanco + texto/punto coloreados — vocabulario MUD del panel. */
 .expert-setup-header-visibility {
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--ep-border, 220 13% 90%));
+  background: hsl(var(--ep-surface, 0 0% 100%));
+  font-weight: 600;
 }
 
+.expert-setup-visibility-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.expert-setup-header-visibility--hidden  { color: hsl(30 82% 32%); }
+.expert-setup-header-visibility--visible { color: hsl(142 64% 26%); }
+
 .expert-setup-progress-track {
-  height: 2px;
-  border-radius: 1px;
+  height: 4px;
+  border-radius: 2px;
   background: hsl(var(--ep-border, 220 13% 90%));
   overflow: hidden;
 }
 
 .expert-setup-progress-fill {
   height: 100%;
-  border-radius: 1px;
+  border-radius: 2px;
   background: hsl(var(--brand));
-  transition: width 0.35s ease;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .expert-setup-header-title {
@@ -1416,7 +1435,13 @@
 }
 
 .expert-setup-card-head:hover {
-  opacity: 0.85;
+  background: hsl(var(--ep-canvas, 220 14% 96%) / 0.45);
+}
+
+.expert-setup-card-head:focus-visible {
+  outline: 2px solid hsl(var(--brand));
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 
 .expert-setup-card-num {
@@ -1441,9 +1466,9 @@
 }
 
 .expert-setup-card-num--done {
-  border-color: hsl(var(--ep-border, 220 13% 90%));
+  border-color: hsl(142 40% 78%);
   background: hsl(var(--ep-surface, 0 0% 100%));
-  color: hsl(var(--ep-ink, 222 24% 12%));
+  color: hsl(142 64% 32%);
 }
 
 .expert-setup-card-head-text {
@@ -1468,19 +1493,25 @@
   text-overflow: ellipsis;
 }
 
+/* Chips de estado por paso: mismo vocabulario blanco+texto coloreado que la
+   píldora de visibilidad. "Pendiente" en ámbar es lo único que pide atención. */
 .expert-setup-card-status {
   flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--ep-border, 220 13% 90%));
+  background: hsl(var(--ep-surface, 0 0% 100%));
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   color: hsl(var(--ep-muted, 215 12% 44%));
 }
 
 .expert-setup-card-status--pending {
-  color: hsl(var(--ep-ink, 222 24% 12%));
+  color: hsl(30 82% 32%);
 }
 
 .expert-setup-card-status--done {
-  color: hsl(var(--ep-muted, 215 12% 44%));
+  color: hsl(142 64% 26%);
 }
 
 .expert-setup-card-chevron {
@@ -1497,6 +1528,28 @@
 
 .expert-setup-card-body {
   padding: 0 14px 10px 46px;
+  animation: expert-setup-body-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes expert-setup-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expert-setup-card-body {
+    animation: none;
+  }
+
+  .expert-setup-progress-fill {
+    transition: none;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -3332,8 +3385,34 @@
 
 .stripe-status-header {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Medallón de estado: ancla visual de severidad. Fondo blanco + borde (vocabulario
+   MUD: el color vive SOLO en el icono), tamaño fijo para que el título alinee. */
+.stripe-status-medallion {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--ep-surface, 0 0% 100%));
+  border: 1px solid hsl(var(--ep-border, 220 13% 90%));
+}
+
+.stripe-status-medallion--danger  { color: hsl(0 72% 44%); }
+.stripe-status-medallion--warning { color: hsl(32 84% 40%); }
+.stripe-status-medallion--info    { color: hsl(217 78% 48%); }
+.stripe-status-medallion--success { color: hsl(142 64% 34%); }
+
+.stripe-status-heading {
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .stripe-status-kicker {
@@ -3345,13 +3424,20 @@
   color: hsl(var(--ep-muted, 215 12% 44%));
 }
 
+/* Tonos oscurecidos para 11px sobre blanco (AA en texto pequeño). */
+.stripe-status-kicker--danger  { color: hsl(0 70% 38%); }
+.stripe-status-kicker--warning { color: hsl(30 82% 32%); }
+.stripe-status-kicker--info    { color: hsl(217 78% 42%); }
+.stripe-status-kicker--success { color: hsl(142 64% 26%); }
+
 .stripe-status-title {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.3;
   color: hsl(var(--ep-ink, 222 24% 12%));
+  text-wrap: balance;
 }
 
 .stripe-status-summary {
@@ -3403,6 +3489,13 @@
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid hsl(var(--ep-border, 220 13% 90%));
+}
+
+.stripe-resume-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: hsl(var(--ep-muted, 215 12% 44%));
 }
 
 .stripe-status-btn {

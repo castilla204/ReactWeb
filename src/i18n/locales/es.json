@@ -161,8 +161,8 @@
         "buttonWait": "Verificar Estado",
         "kicker": "Pendiente",
         "title": "Completa la verificación",
-        "message": "Tu solicitud está siendo revisada por nuestro equipo. Este proceso suele tomar entre 1-3 días hábiles. Te notificaremos cuando esté lista.",
-        "messageContinue": "Tu proceso de verificación está en curso. Completa la configuración de tu cuenta de pagos para continuar.",
+        "message": "Stripe está revisando tu información. Suele tardar poco; te avisaremos en cuanto termine.",
+        "messageContinue": "Dejaste la configuración de pagos a medias. Retómala cuando quieras: Stripe guarda lo que ya rellenaste y te pedirá solo lo que falta.",
         "messageRequirements": "Stripe requiere información adicional para activar tu cuenta. Completa los requisitos pendientes.",
         "notificationTitle": "Verificación en Proceso",
         "notificationMessage": "Tu cuenta está siendo verificada. Te notificaremos cuando esté lista."
@@ -171,12 +171,12 @@
         "button": "⚠️ Resolver en Stripe",
         "kicker": "Acción requerida",
         "title": "Faltan datos en Stripe",
-        "message": "Stripe necesita documentación o datos adicionales de inmediato. Abre tu panel de Stripe y completa los campos marcados como \"currently_due\".",
+        "message": "Stripe necesita documentación o datos adicionales para poder seguir. Pulsa el botón: el formulario te pedirá exactamente lo que falta.",
         "notificationTitle": "Acción requerida en Stripe",
         "notificationMessage": "Stripe necesita información adicional para continuar. Completa los requisitos marcados."
       },
       "pendingVerification": {
-        "button": "Ver panel Stripe",
+        "button": "Comprobar estado",
         "kicker": "En revisión",
         "title": "Stripe está revisando tu cuenta",
         "message": "Stripe está verificando la documentación enviada. Mientras tanto, los pagos seguirán bloqueados.",
@@ -302,6 +302,7 @@
       "noData": "No hay datos de estado disponibles.",
       "checking": "Comprobando estado de pagos…",
       "autoUpdate": "Se actualiza automáticamente cuando Stripe verifica tus datos.",
+      "resumeHint": "El formulario de Stripe te pedirá solo lo que falta: lo que ya enviaste queda guardado.",
       "paymentsBlocked": "Los cobros están bloqueados hasta resolver esto.",
       "support": "Soporte:",
       "stripeId": "ID Stripe:",
