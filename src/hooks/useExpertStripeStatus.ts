@@ -437,9 +437,8 @@ export const getExpertStatus = async (): Promise<ExpertStatusResponse> => {
     }
 };
 
-// NOTE: This function is currently not being used due to 400 Bad Request errors from the backend
-// The sync-stripe-status endpoint appears to have issues or may have changed its requirements
-// We're using the expert-status endpoint instead for status updates
+// El flujo activo de sincronización es useExpert.syncStripeStatus (lo llama
+// StripeOnboardingReturnPage al volver de Stripe); esta variante queda como utilidad.
 export const syncStripeStatus = async (): Promise<StripeSyncStatusResponse> => {
     const token = getAuthToken();
     if (!token) {

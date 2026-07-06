@@ -1273,9 +1273,10 @@ export function ExpertPanelPage() {
                         <button
                             type="button"
                             onClick={() => navigate('/')}
-                            className="mb-5 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+                            className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
                         >
-                            Volver
+                            <ArrowLeft className="h-4 w-4" aria-hidden />
+                            Volver al inicio
                         </button>
 
                         <StripeStatusCard

@@ -17,6 +17,13 @@ interface CheckoutPaymentAsideProps {
   expertName?: string;
   expertPicture?: string;
   serviceName?: string;
+  /**
+   * Aviso opcional bajo el Total cuando el importe mostrado está convertido a la divisa preferida
+   * del usuario (p.ej. "≈ 115 $ · cargo en EUR"). El cobro real lo hace Stripe en la divisa del
+   * servicio; sin este aviso, el usuario ve un número/divisa distintos al de su extracto bancario.
+   * El móvil ya lo muestra vía CheckoutSummaryTable; esto cierra el hueco del panel desktop.
+   */
+  priceSubline?: React.ReactNode;
 }
 
 /** Panel de pago desktop — más informativo. */
@@ -29,6 +36,7 @@ export function CheckoutPaymentAside({
   expertName = 'Experto',
   expertPicture,
   serviceName = 'Servicio',
+  priceSubline,
 }: CheckoutPaymentAsideProps) {
   const content = (
     <>
@@ -59,6 +67,9 @@ export function CheckoutPaymentAside({
           </p>
         </div>
         <p className="mt-1 text-[11px] text-[#94a3b8]">Impuestos incluidos</p>
+        {priceSubline ? (
+          <p className="mt-0.5 text-[11px] text-[#94a3b8]">{priceSubline}</p>
+        ) : null}
       </section>
 
       <footer className={embedded ? 'space-y-4 border-t border-[#ebebeb] px-5 py-5' : 'space-y-3 border-t border-[#f5f5f5] px-3.5 py-3'}>

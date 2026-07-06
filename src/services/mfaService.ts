@@ -311,8 +311,17 @@ class MFAService {
                     throw new Error('Failed to get MFA status');
                 }
 
-                const data = await response.json();
-                console.log('[MFAService] MFA status received:', data);
+                const raw = await response.json();
+                console.log('[MFAService] MFA status received:', raw);
+                // CASING-FIX: la API serializa PascalCase (Program.cs PropertyNamingPolicy=null), así que
+                // leer `raw.isEnabled` daba siempre undefined → un usuario con 2FA activado veía "desactivado".
+                // Normalizamos leyendo ambos casings en un único punto (beneficia a todos los consumidores).
+                const data: MFAStatusResponse = {
+                    isEnabled: raw.isEnabled ?? raw.IsEnabled ?? false,
+                    enabledAt: raw.enabledAt ?? raw.EnabledAt,
+                    lastVerifiedAt: raw.lastVerifiedAt ?? raw.LastVerifiedAt,
+                    remainingRecoveryCodes: raw.remainingRecoveryCodes ?? raw.RemainingRecoveryCodes ?? 0,
+                };
                 // Actualizar caché
                 this.statusCache = { data, timestamp: now };
                 return data;

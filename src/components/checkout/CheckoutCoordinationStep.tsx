@@ -1,5 +1,5 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { Info, Lock } from 'lucide-react';
+import { CalendarDays, Info, Lock, Send } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -7,8 +7,11 @@ import {
     CheckoutSellerEnlaceInfoNote,
     SellerContactAvatar,
     COORD_OPTION_FREE_CANCEL,
+    COORD_OPTION_SELF_DESC,
+    COORD_OPTION_SELF_TAGLINE,
     COORD_OPTION_SELF_TITLE,
     COORD_OPTION_SELLER_DESC,
+    COORD_OPTION_SELLER_TAGLINE,
     COORD_OPTION_SELLER_TITLE,
 } from './CheckoutSellerCoordinationFields';
 import { CheckoutEmbeddedStepHeader } from './CheckoutEmbeddedStepHeader';
@@ -45,8 +48,8 @@ interface OptionCardProps {
     infoLabel?: string;
     infoContent?: ReactNode;
     cancelHint?: string;
-    /** Número de orden (1, 2…) mostrado como dígito grande contorneado. */
-    number?: number;
+    /** Icono grande sutil que identifica la opción (sustituye al antiguo dígito 1/2). */
+    icon?: ReactNode;
     /** Solo lectura: la tarjeta no responde a click/teclado; conserva el estilo selected/atenuado. */
     locked?: boolean;
     /** Texto de badge a mostrar cuando locked y selected (p.ej. "Lo ha elegido el comprador"). */
@@ -116,7 +119,7 @@ function OptionCard({
     infoLabel,
     infoContent,
     cancelHint,
-    number,
+    icon,
     compact = false,
     locked,
     lockedBadge,
@@ -170,21 +173,18 @@ function OptionCard({
                     compact ? 'lg:px-4 lg:pb-3.5 lg:pt-3' : 'lg:px-4.5 lg:pb-4.5 lg:pt-4',
                 )}
             >
-                {typeof number === 'number' ? (
+                {icon ? (
                     <span
                         aria-hidden
                         className={cn(
-                            'select-none font-bold leading-none',
-                            compact ? 'mb-1.5 text-[26px]' : 'mb-2 text-[36px] lg:text-[40px]',
+                            'select-none [&>svg]:stroke-[1.5]',
+                            compact
+                                ? 'mb-1.5 [&>svg]:h-[22px] [&>svg]:w-[22px]'
+                                : 'mb-2 [&>svg]:h-7 [&>svg]:w-7 lg:[&>svg]:h-8 lg:[&>svg]:w-8',
+                            selected ? 'text-white/90' : 'text-[#c8cfda]',
                         )}
-                        style={{
-                            color: 'transparent',
-                            WebkitTextStroke: selected
-                                ? '1px rgba(255,255,255,0.9)'
-                                : '1px #d3d8e0',
-                        }}
                     >
-                        {number}
+                        {icon}
                     </span>
                 ) : null}
                 <div className="flex items-start justify-between gap-3">
@@ -240,13 +240,13 @@ function OptionCard({
     );
 }
 
-export const COORD_CHOOSE_TITLE = 'Coordinación de la cita';
-const COORD_CHOOSE_LEAD = '¿Cómo quieres reservar?';
+export const COORD_CHOOSE_TITLE = 'La cita de la inspección';
+const COORD_CHOOSE_LEAD = '¿Quién elige el día y la hora?';
 export const COORD_DESKTOP_STEP1_LEAD =
-    '¿Cómo quieres reservar? Tras el pago hay que acordar el día, la hora y el lugar de la inspección con el vendedor. Puedes dejar que lo coordinemos nosotros por ti o encargarte tú directamente; en ambos casos tu pago queda protegido hasta que termine la revisión.';
-const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Cómo quieres reservar?';
+    'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con él. Puedes dejar que sea el vendedor quien elija el hueco — le enviamos un enlace tras el pago — o elegirlo tú ahora mismo. En ambos casos tu pago queda protegido hasta que termine la revisión.';
+const COORD_DESKTOP_CARDS_INTRO_TITLE = '¿Quién elige el día y la hora?';
 const COORD_DESKTOP_CARDS_INTRO_LEAD =
-    'Nosotros nos encargamos de coordinarlo todo, o tú coordinas directamente con el vendedor.';
+    'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con él.';
 
 function CoordinationOptionCardsIntro({
     className,
@@ -324,14 +324,6 @@ function CoordinationOptionCards({
     readOnly?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
-    const selfDescription = (
-        <>
-            Podéis hablar por WhatsApp o teléfono y acordar la inspección entre vosotros. Al pagar,{' '}
-            <span className="font-semibold text-inherit">tú</span> eliges el día, la hora y la dirección en el
-            calendario del experto. Queda reservada al instante, a falta de que el experto la confirme.
-        </>
-    );
-
     return (
         <>
             <div
@@ -351,8 +343,9 @@ function CoordinationOptionCards({
             >
                 <OptionCard
                     theme="amber"
-                    number={1}
+                    icon={<Send />}
                     title={COORD_OPTION_SELLER_TITLE}
+                    tagline={COORD_OPTION_SELLER_TAGLINE}
                     description={COORD_OPTION_SELLER_DESC}
                     compact={compact}
                     infoLabel="Cómo funciona el enlace al vendedor"
@@ -368,13 +361,14 @@ function CoordinationOptionCards({
                 />
                 <OptionCard
                     theme="blue"
-                    number={2}
+                    icon={<CalendarDays />}
                     title={COORD_OPTION_SELF_TITLE}
-                    description={selfDescription}
+                    tagline={COORD_OPTION_SELF_TAGLINE}
+                    description={COORD_OPTION_SELF_DESC}
                     compact={compact}
-                    infoLabel={`Cuándo elegir ${COORD_OPTION_SELF_TITLE}`}
+                    infoLabel="Cuándo elegir esta opción"
                     infoContent={<CheckoutSelfCoordinationInfoNote />}
-                    cancelHint="mientras el experto no confirme; después se aplican tramos según la antelación."
+                    cancelHint="mientras el experto no confirme; después depende de la antelación."
                     selected={selection === 'self'}
                     dimmed={selection === 'seller'}
                     locked={readOnly}
@@ -384,8 +378,8 @@ function CoordinationOptionCards({
             </div>
             {sellerOptionDisabled ? (
                 <p role="note" className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]">
-                    Este técnico no tiene disponibilidad en plazo. Elige «{COORD_OPTION_SELF_TITLE}» o prueba más
-                    tarde.
+                    Este técnico no tiene disponibilidad en plazo. Elige la opción «{COORD_OPTION_SELF_TITLE}» o
+                    prueba más tarde.
                 </p>
             ) : null}
         </>

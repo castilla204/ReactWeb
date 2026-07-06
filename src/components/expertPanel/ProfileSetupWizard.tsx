@@ -343,7 +343,14 @@ export function ProfileSetupWizard({
                         <span className="expert-setup-header-count">
                             {doneCount} de {steps.length}
                         </span>
-                        <span className="expert-setup-header-visibility">
+                        <span
+                            className={`expert-setup-header-visibility ${
+                                requiredLeft > 0
+                                    ? 'expert-setup-header-visibility--hidden'
+                                    : 'expert-setup-header-visibility--visible'
+                            }`}
+                        >
+                            <span className="expert-setup-visibility-dot" aria-hidden />
                             {requiredLeft > 0 ? 'Perfil oculto' : 'Perfil visible'}
                         </span>
                     </div>

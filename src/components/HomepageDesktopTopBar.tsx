@@ -1,6 +1,6 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, HelpCircle, MapPin, Settings, User } from 'lucide-react';
+import { ArrowLeft, Bell, HelpCircle, Settings, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 // ⚡ Lazy: LoginModal arrastra framer-motion (~16 kB gzip). Importado estático aquí cargaba
@@ -11,58 +11,34 @@ import { AccountMenu } from './AccountMenu';
 import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import erizoImg from '../media/erizo.png';
-import {
-  HP_FONT,
-  SD_PAGE_INNER_MAX_CLASS,
-  SD_CHECKOUT_INNER_MAX_CLASS,
-  MAP_STEP_TOPBAR_SHELL_CLASS,
-  MAP_STEP_TOPBAR_INNER_CLASS,
-  MAP_STEP_TOPBAR_PILL_ACTIVE,
-  MAP_STEP_TOPBAR_PILL_DONE,
-  MAP_STEP_TOPBAR_PILL_IDLE,
-  MAP_STEP_TOPBAR_LABEL_ACTIVE,
-  MAP_STEP_TOPBAR_LABEL_IDLE,
-  MAP_STEP_TOPBAR_DIVIDER,
-  MAP_STEP_TOPBAR_META_CHIP,
-  MAP_STEP_TOPBAR_META_CHIP_BRAND,
-} from '../constants/homepageTypography';
+import { HP_FONT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 
 /**
- * Barra superior desktop de la homepage (cuenta, moneda, favoritos).
- * Reutilizable en ficha de servicio sin el hero Kayak.
+ * Barra superior desktop unificada de TODA la app.
+ *
+ * Chrome único en todas las páginas: 48px de alto (min-h-12), fondo #fafafa sin
+ * borde, contenedor SD_PAGE_INNER_MAX_CLASS y el mismo logo (erizo + wordmark
+ * Manrope 19px). Lo único que cambia entre variantes es QUÉ acciones se muestran,
+ * nunca las proporciones ni la piel.
  *
  * Variants:
- *   - default: blanco con borde (legado; en home usar plain + showLogo).
- *   - checkout: barra mínima (back + admin), sin distracciones de exploración.
- *   - map: pantalla completa mapa+búsqueda, blanco, botones en extremos.
- *   - plain: blanco con borde sutil, pensada para páginas internas (busquedas, admin,
- *     transacciones, faq, etc.) que no quieren chocar con el gradiente del default.
- *     Combinable con showLogo para que el chip "INSPECCIONO" actúe como home-link.
+ *   - plain: páginas de navegación (home, búsquedas, mapa, ficha, admin, faq,
+ *     notificaciones…). Combinable con showLogo para que el logo actúe como
+ *     home-link (patrón header marketplace estándar).
+ *   - checkout: barra mínima (back + logo), sin distracciones de exploración.
  */
-export type HomepageDesktopTopBarVariant = 'default' | 'checkout' | 'map' | 'mapStep' | 'plain';
+export type HomepageDesktopTopBarVariant = 'plain' | 'checkout';
 
 export interface HomepageDesktopTopBarProps {
-  /** En ficha de servicio: sustituye "Mi cuenta" por volver */
+  /** Botón volver a la izquierda (checkout y páginas con retorno explícito) */
   onBack?: () => void;
-  /** checkout: barra mínima (volver + admin), sin distracciones de exploración */
-  /** map: pantalla completa mapa+búsqueda — blanco, botones en extremos, iconos compactos */
-  /** mapStep: igual que map, pero embebe stepper + chips meta del flow en el centro
-   *  para matar el aire muerto. Requiere prop `mapStep`. */
   variant?: HomepageDesktopTopBarVariant;
-  /** Título en línea junto al back (solo checkout desktop) */
+  /** Título accesible de la página (h1 sr-only) */
   pageTitle?: string;
-  /** Renderiza el chip "INSPECCIONO" a la izquierda como link a `/`. Cuando es true,
+  /** Renderiza el logo "Inspecciono." a la izquierda como link a `/`. Cuando es true,
    *  el botón "Mi cuenta"/"Iniciar sesión" se mueve a la derecha junto al resto de
    *  acciones — patrón header marketplace estándar. */
   showLogo?: boolean;
-  /** Solo `variant="mapStep"`: contexto del paso del flow embebido en la topbar. */
-  mapStep?: {
-    currentStep: 1 | 2 | 3;
-    expertCount?: number;
-    locationLabel?: string;
-    rangeKm?: number;
-    loading?: boolean;
-  };
 }
 
 /**
@@ -71,22 +47,19 @@ export interface HomepageDesktopTopBarProps {
  * Click → dispara el evento global `openNotificationCenter` que `App.tsx`
  * escucha para abrir el drawer compartido.
  */
-const TopBarNotificationsBell: React.FC<{ isMap: boolean }> = ({ isMap }) => {
+const TopBarNotificationsBell: React.FC = () => {
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const handleClick = () => {
     if (typeof window !== 'undefined' && typeof (window as any).openNotificationCenter === 'function') {
       (window as any).openNotificationCenter();
     }
   };
-  const baseClass = isMap
-    ? 'sd-icon-btn relative'
-    : 'relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]';
   return (
     <button
       type="button"
       aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} nuevas)` : 'Notificaciones'}
       onClick={handleClick}
-      className={baseClass}
+      className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
     >
       <Bell className="h-4 w-4" />
       {unreadCount > 0 && (
@@ -103,16 +76,11 @@ const TopBarNotificationsBell: React.FC<{ isMap: boolean }> = ({ isMap }) => {
 
 export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   onBack,
-  variant = 'default',
+  variant = 'plain',
   pageTitle,
   showLogo = false,
-  mapStep,
 }) => {
   const isCheckout = variant === 'checkout';
-  const isMapStep = variant === 'mapStep';
-  // mapStep hereda el chrome de map (back compacto, iconos sin label, etc.)
-  const isMap = variant === 'map' || isMapStep;
-  const isPlain = variant === 'plain';
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -131,20 +99,16 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   // izquierda en el modo legado (sin logo) o a la derecha cuando showLogo está activo
   // (patrón header marketplace).
   const accountBtn = isAuthenticated ? (
-    <AccountMenu isMap={isMap} />
+    <AccountMenu />
   ) : (
     <button
       type="button"
       onClick={() => setIsLoginModalOpen(true)}
-      className={
-        isMap
-          ? 'sd-icon-btn shrink-0'
-          : 'inline-flex items-center gap-2 rounded-full border border-[#9ca3af] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]'
-      }
+      className="inline-flex items-center gap-2 rounded-full border border-[#9ca3af] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
       aria-label="Iniciar sesión"
     >
-      <User className={isMap ? 'h-4 w-4' : 'h-4 w-4 shrink-0'} strokeWidth={2.1} />
-      {!isMap && 'Iniciar sesión'}
+      <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
+      Iniciar sesión
     </button>
   );
 
@@ -154,11 +118,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         <button
           type="button"
           onClick={() => navigate('/ayuda')}
-          className={
-            isMap
-              ? 'sd-icon-btn'
-              : 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
-          }
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
           aria-label="Cómo funciona Inspecciono"
         >
           <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
@@ -173,11 +133,11 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
           Admin
         </button>
       ) : null}
-      {!isCheckout ? <CurrencySelector variant="icon" isMap={isMap} /> : null}
+      {!isCheckout ? <CurrencySelector variant="icon" /> : null}
       {/* 🛡️ MUD-DG — Bell global. Antes solo existía dentro del expert-panel
           → cliente normal NO podía ver su inbox de notificaciones. Auditoría
           de 5 agentes lo marcó como gap CRÍTICO P0. */}
-      {!isCheckout && user ? <TopBarNotificationsBell isMap={isMap} /> : null}
+      {!isCheckout && user ? <TopBarNotificationsBell /> : null}
       {!isCheckout && isAuthenticated ? (
         <button
           type="button"
@@ -190,11 +150,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
               (window as { openAccountSettings?: () => void }).openAccountSettings!();
             }
           }}
-          className={
-            isMap
-              ? 'sd-icon-btn'
-              : 'inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
-          }
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
         >
           <Settings className="h-4 w-4" />
         </button>
@@ -204,6 +160,9 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     </div>
   );
 
+  // Logo ÚNICO para todas las variantes: mismo erizo 36px + wordmark Manrope 19px.
+  // (Antes checkout tenía su propia versión a 15px y la ficha de servicio otra gris
+  // a 13px → tres wordmarks distintos según la página.)
   const logoLink = (
     <a
       href="/"
@@ -211,7 +170,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         e.preventDefault();
         navigate('/');
       }}
-      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-1"
+      className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-1"
       aria-label="Inspecciono — inicio"
     >
       {/* Icono de marca (erizo) — el mismo que la ficha de servicio / wall.
@@ -227,7 +186,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
           que sí usa Manrope. Pinnamos Manrope aquí para que el wordmark se vea igual de
           fino en TODAS las páginas. Decisión usuario 2026-06-16. */}
       <span
-        className="text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
+        className="truncate text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
         style={{ fontFamily: HP_FONT }}
       >
         Inspecciono<span className="text-[#F59E0B]">.</span>
@@ -235,68 +194,30 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     </a>
   );
 
-  const checkoutLogoLink = (
-    <a
-      href="/"
-      onClick={(e) => {
-        e.preventDefault();
-        navigate('/');
-      }}
-      className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-0.5"
-      aria-label="Inspecciono — inicio"
+  const backIconBtn = (
+    <button
+      type="button"
+      onClick={onBack}
+      className="sd-icon-btn shrink-0"
+      aria-label="Volver"
     >
-      <img
-        src={erizoImg}
-        alt=""
-        className="h-8 w-8 -scale-x-100 shrink-0 object-contain sm:h-9 sm:w-9"
-        style={{ imageRendering: '-webkit-optimize-contrast' }}
-      />
-      <span
-        className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
-        style={{ fontFamily: HP_FONT }}
-      >
-        Inspecciono<span className="text-[#F59E0B]">.</span>
-      </span>
-    </a>
+      <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+    </button>
   );
 
   const leftControl = isCheckout ? (
     onBack ? (
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="sd-icon-btn shrink-0"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
-        </button>
-        {checkoutLogoLink}
-        {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
+        {backIconBtn}
+        {logoLink}
       </div>
     ) : (
-      checkoutLogoLink
+      logoLink
     )
   ) : onBack ? (
-    isMap ? (
-      <button
-        type="button"
-        onClick={onBack}
-        className="sd-icon-btn shrink-0"
-        aria-label="Volver"
-      >
-        <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
-      </button>
-    ) : showLogo ? (
+    showLogo ? (
       <div className="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="sd-icon-btn shrink-0"
-          aria-label="Volver"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2.1} aria-hidden />
-        </button>
+        {backIconBtn}
         {logoLink}
       </div>
     ) : (
@@ -315,107 +236,14 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     accountBtn
   );
 
-  // Centro de la topbar SOLO en variant="mapStep" — stepper + chips meta del flow.
-  // Mata el aire muerto entre back y acciones (~1500px en 1920w) y elimina la
-  // duplicación de stepper/chips con la microcabecera del panel de cards.
-  const mapStepCenter = isMapStep && mapStep ? (
-    <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
-      <ol className="flex shrink-0 items-center gap-2 font-display" aria-label="Pasos del proceso">
-        {[
-          { n: 1 as const, label: 'Elige experto' },
-          { n: 2 as const, label: 'Revisa servicio' },
-          { n: 3 as const, label: 'Reserva' },
-        ].map((s, idx, arr) => {
-          const isActive = s.n === mapStep.currentStep;
-          const isDone = s.n < mapStep.currentStep;
-          return (
-            <li key={s.n} className="flex items-center gap-2">
-              <span
-                className={
-                  isActive
-                    ? MAP_STEP_TOPBAR_PILL_ACTIVE
-                    : isDone
-                      ? MAP_STEP_TOPBAR_PILL_DONE
-                      : MAP_STEP_TOPBAR_PILL_IDLE
-                }
-                aria-current={isActive ? 'step' : undefined}
-              >
-                {s.n}
-              </span>
-              <span
-                className={`hidden xl:inline ${isActive ? MAP_STEP_TOPBAR_LABEL_ACTIVE : MAP_STEP_TOPBAR_LABEL_IDLE}`}
-              >
-                {s.label}
-              </span>
-              {idx < arr.length - 1 && (
-                <span className="h-px w-4 bg-[#e0e0e0] xl:w-5" aria-hidden />
-              )}
-            </li>
-          );
-        })}
-      </ol>
-
-      <span className={MAP_STEP_TOPBAR_DIVIDER} aria-hidden />
-
-      <div className="hidden min-w-0 shrink items-center gap-1.5 lg:flex">
-        {mapStep.loading ? (
-          <span className={MAP_STEP_TOPBAR_META_CHIP}>
-            <span className="mr-0.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#9aa0a6]" />
-            Actualizando…
-          </span>
-        ) : typeof mapStep.expertCount === 'number' ? (
-          <span className={MAP_STEP_TOPBAR_META_CHIP_BRAND}>
-            <span className="tabular-nums">{mapStep.expertCount}</span>
-            <span className="font-medium opacity-80">
-              {mapStep.expertCount === 1 ? 'experto' : 'expertos'}
-            </span>
-          </span>
-        ) : null}
-        {mapStep.locationLabel ? (
-          <span className={`${MAP_STEP_TOPBAR_META_CHIP} hidden xl:inline-flex max-w-[220px]`}>
-            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-            <span className="truncate">{mapStep.locationLabel}</span>
-          </span>
-        ) : null}
-        {mapStep.rangeKm ? (
-          <span className={`${MAP_STEP_TOPBAR_META_CHIP} hidden 2xl:inline-flex`}>
-            ~{mapStep.rangeKm} km
-          </span>
-        ) : null}
-      </div>
-    </div>
-  ) : null;
-
   return (
     <>
-      <header
-        className={
-          isMapStep
-            ? MAP_STEP_TOPBAR_SHELL_CLASS
-            : `sticky top-0 z-50 hidden md:block ${
-          isCheckout
-            ? 'border-b border-[#e8e8e8] bg-white'
-            : isMap
-              ? 'bg-white'
-              : isPlain && showLogo
-                ? 'border-b-0 bg-[#fafafa]'
-                : isPlain
-                  ? 'border-b border-[#e8e8e8] bg-white'
-                  : 'border-b border-[#e8e8e8] bg-white'
-        }`
-        }
-      >
-        <div
-          className={
-            isMapStep
-              ? MAP_STEP_TOPBAR_INNER_CLASS
-              : isMap
-                ? 'flex min-h-12 w-full items-center justify-between gap-3 px-4 md:px-5 lg:px-6'
-                : `${isCheckout ? `${SD_CHECKOUT_INNER_MAX_CLASS} mx-auto` : SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`
-          }
-        >
+      {/* Piel única (48px, #fafafa, sin borde) y contenedor único para TODAS las
+          variantes — que el chrome no salte al navegar entre páginas. */}
+      <header className="sticky top-0 z-50 hidden border-b-0 bg-[#fafafa] md:block">
+        <div className={`${SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`}>
+          {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
           {leftControl}
-          {mapStepCenter}
           {rightActions}
         </div>
       </header>
