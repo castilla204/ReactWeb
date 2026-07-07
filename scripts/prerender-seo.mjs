@@ -20,7 +20,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const DIST = join(process.cwd(), 'dist');
 const SITE = 'https://inspecciono.com';
 
 /** Escapa un valor para incrustarlo en atributo/texto HTML. */
@@ -83,8 +82,12 @@ function render(baseHtml, r) {
   return html;
 }
 
-async function main() {
-  const baseHtml = readFileSync(join(DIST, 'index.html'), 'utf8');
+/**
+ * Genera los index.html por ruta dentro de `distDir`. Reutilizable desde el plugin
+ * de Vite (closeBundle) y desde CLI. Devuelve el nº de rutas escritas.
+ */
+export async function prerenderSeo(distDir) {
+  const baseHtml = readFileSync(join(distDir, 'index.html'), 'utf8');
 
   const { CATEGORY_LANDINGS } = await import('../src/content/categoryLandingContent.ts');
   const { serviceSchema, breadcrumbSchema, faqPageSchema, organizationSchema } = await import(
@@ -136,15 +139,20 @@ async function main() {
   let n = 0;
   for (const r of routes) {
     const html = render(baseHtml, r);
-    const dir = join(DIST, r.path);
+    const dir = join(distDir, r.path);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'index.html'), html);
     n++;
   }
   console.log(`[prerender] ${n} rutas prerenderizadas: ${routes.map((r) => r.path).join(', ')}`);
+  return n;
 }
 
-main().catch((e) => {
-  console.warn('[prerender] omitido (no bloquea el build):', e?.message ?? e);
-  process.exit(0);
-});
+// CLI: `node scripts/prerender-seo.mjs [distDir]` — útil para pruebas manuales.
+// El build lo invoca vía plugin de Vite (vite.config.ts, closeBundle), no por aquí.
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('prerender-seo.mjs')) {
+  prerenderSeo(join(process.cwd(), 'dist')).catch((e) => {
+    console.warn('[prerender] omitido (no bloquea el build):', e?.message ?? e);
+    process.exit(0);
+  });
+}
