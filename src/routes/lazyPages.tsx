@@ -58,6 +58,9 @@ export const CheckoutPage = lazyNamed(() => import('../pages/CheckoutPage'), 'Ch
 export const PreHireChatPage = lazyNamed(() => import('../pages/PreHireChatPage'), 'PreHireChatPage');
 export const MessagesPage = lazyNamed(() => import('../pages/MessagesPage'), 'MessagesPage');
 export const CentroAyudaPage = lazyDefault(() => import('../pages/CentroAyudaPage'));
+// lazy() directo (no lazyDefault): la página recibe la prop `slug` y lazyDefault
+// borra el tipado de props (ComponentType<unknown> → TS2322 en App.tsx).
+export const CategoryLandingPage = lazy(() => import('../pages/CategoryLandingPage'));
 export const FavoritesPage = lazyNamed(() => import('../pages/FavoritesPage'), 'FavoritesPage');
 // 🛡️ MUD-DI — página full-page para emails que apuntan a /notifications.
 export const NotificationsPage = lazyDefault(() => import('../pages/NotificationsPage'));
