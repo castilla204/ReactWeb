@@ -9,6 +9,7 @@ import { ReadOnlyAppointmentCalendar } from '../components/checkout/ReadOnlyAppo
 import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
 import AppointmentMap from '../components/AppointmentMap';
 import { CheckoutSelfChoicePreviewMap } from '../components/checkout/CheckoutSellerChoiceLocked';
+import SEO from '../components/SEO';
 
 // Página PÚBLICA de confirmación del experto.
 interface Context {
@@ -209,6 +210,7 @@ export default function ExpertConfirmationPage() {
     if (pending && ctx) {
         return (
             <div className="min-h-[100dvh] bg-[#f3f4f6]">
+                <SEO title="Confirma la cita | Inspecciono" description="Revisa y confirma la cita de inspección." noindex />
                 <AppointmentWizardShell
                     steps={expertSteps}
                     currentStep={wizardStep}
@@ -291,6 +293,7 @@ export default function ExpertConfirmationPage() {
     // Estados resueltos / cargando / inválido / caducado: tarjeta centrada actual sin cambios.
     return (
         <div style={{ minHeight: '100dvh', background: '#F3F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <SEO title="Confirma la cita | Inspecciono" description="Revisa y confirma la cita de inspección." noindex />
             <div style={card}>
                 <strong style={{ fontSize: 18, color: '#1C63B4', display: 'block', marginBottom: 12 }}>Inspecciono</strong>
 

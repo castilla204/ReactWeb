@@ -35,27 +35,37 @@ verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow.
 
 ---
 
-## 🔴 PENDIENTE INMEDIATO — Crear las imágenes OG
+## ✅ Imágenes OG — CREADAS (2026-07-07)
 
-Antes del próximo deploy hay que crear estos dos archivos en `public/`:
-
-- `public/og-image.jpg` — **1200x630 JPG, calidad 85, <200 KB**
-  - Composición recomendada (zona segura central 1000x500):
-    - Mitad izquierda: claim grande (`Antes de comprar / inspecciona.`)
-    - Mitad derecha: foto/ilustración de perito con tablet revisando coche/llave
-    - Esquina inf. izda: logo Inspecciono + `inspecciono.com`
-    - Pastilla sup. dcha: `Peritos verificados` o `Pago seguro en escrow`
-  - Texto safe: ≤6 palabras visibles. Más texto = ilegible en preview de WhatsApp.
-  - Evitar: caras stock genérico, gradientes morados/azules de IA, texto en los bordes.
-
-- `public/twitter-image.jpg` — opcional, puede ser la misma OG. La referencio igual desde `index.html`.
-
-Sin estas imágenes, **las previews en WhatsApp/Twitter/LinkedIn salen rotas** (el `index.html`
-las referencia pero hoy devuelven HTML 200). Es el bloqueador #1 de viralidad social.
+- `public/og-image.jpg` — 1200x630 JPG q85 mozjpeg, **94 KB**. Composición: banner real
+  del sitio (`src/media/imagenbanner.png`, peritos + coche) cover-crop a la derecha,
+  scrim blanco por la izquierda, wordmark erizo + "Inspecciono.", claim
+  "Antes de comprar, / inspecciona.", pills "Peritos verificados" / "Pago en escrow",
+  dominio. Twitter reutiliza la misma imagen desde `index.html` (no hay twitter-image.jpg).
+- Regenerable: script sharp (composición SVG + composite) — si hay que retocarla, pedir
+  que se regenere con sharp en vez de editar el JPG.
+- `public/icon-512.png` — erizo reescalado a 512 (lanczos) para el manifest PWA;
+  `site.webmanifest` corregido (declaraba 512/1024 sobre ficheros de 192/180).
 
 ---
 
-## 🟡 Fase 1 — Per-route meta tags (4-6h, ROI 1-4 semanas)
+## ✅ Fase 1 — COMPLETADA (2026-07-07)
+
+- `<SEO>` en todas las páginas públicas: HomePage, CentroAyudaPage (/ayuda absorbe
+  quienes-somos/como-funciona/faq), ServiceDetailPage, BecomeExpertPage, LegalDocumentPage,
+  SearchCreationPage (/crear-busqueda) y NotFoundPage.
+- `noindex` en: LoginPage, PaymentSuccess/CancelPage, SellerBookingPage y
+  ExpertConfirmationPage (enlaces con token), FavoritesPage, StatusPage.
+- **SEO.tsx reescrito a upsert imperativo** (estilo helmet): React 19 hoisting NO deduplica
+  contra los tags estáticos de index.html → había DOS title/description/canonical por ruta
+  (canonicals contradictorios = Google los ignora). Ahora muta los tags estáticos; verificado
+  en DOM: 1 solo juego de tags por ruta, actualización correcta en navegación SPA, JSON-LD
+  se monta/desmonta por ruta.
+- `sitemap.xml`: quitados /explorar (canonical=/) y /quienes-somos, /como-funciona, /faq
+  (redirigen a /ayuda); añadido /ayuda.
+- `robots.txt`: añadidos /coordinar-cita/, /confirmar-cita/, /status.
+
+## 🗑️ Fase 1 original (referencia histórica)
 
 Hoy `index.html` es estático: TODAS las rutas (`/quienes-somos`, `/como-funciona`, `/faq`,
 `/service/:id`, etc.) heredan el mismo title y description. Google indexa solo la home.

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../lib/toast';
 import { SileoPageLoader } from '../components/ui/sileo-loader';
+import SEO from '../components/SEO';
 
 // UX: en vez de una página dedicada de "pago cancelado", redirigimos de vuelta a la ficha del
 // servicio (de donde venía la contratación) con un toast tranquilizador. El serviceId lo
@@ -41,6 +42,9 @@ export function PaymentCancelPage() {
     }, [navigate]);
 
     return (
-        <SileoPageLoader message="Volviendo…" className="bg-white" />
+        <>
+            <SEO title="Pago cancelado | Inspecciono" description="Has cancelado el proceso de pago." noindex />
+            <SileoPageLoader message="Volviendo…" className="bg-white" />
+        </>
     );
 }

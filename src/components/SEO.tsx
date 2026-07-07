@@ -1,17 +1,22 @@
 /**
- * SEO Component — Per-route meta tags + JSON-LD via React 19 native hoisting.
+ * SEO Component — Per-route meta tags + JSON-LD.
  *
- * React 19 hoistea automáticamente al <head> real cualquier <title>, <meta name>,
- * <meta property> y <link> renderizado en JSX. Para JSON-LD usamos <script> en
- * el body — los crawlers leen TODO el HTML (no solo el head), así que funciona
- * igual para SEO sin necesidad de portal a document.head.
+ * ⚠️ Implementación imperativa (estilo react-helmet), NO React 19 hoisting.
+ * Motivo: React 19 hoistea <title>/<meta>/<link> renderizados en JSX al <head>,
+ * pero NO deduplica contra los tags ESTÁTICOS de index.html → cada ruta acababa
+ * con DOS title, DOS description y DOS canonical contradictorios (verificado en
+ * el DOM 2026-07-07). Dos canonicals distintos hacen que Google ignore ambos.
  *
- * Reemplaza al meta estático de index.html: cada page importa <SEO ... /> con
- * sus props. React 19 dedupe por property/name → el último renderizado gana
- * (orden: index.html estático → SEO de la ruta activa).
+ * Estrategia: mutamos los tags estáticos de index.html vía upsert en useEffect.
+ * - Scrapers sin JS (WhatsApp/LinkedIn/Bing): ven el estático de index.html (fallback home).
+ * - Google (renderiza JS): ve UN único juego de tags, el de la ruta activa.
+ * - Páginas sin <SEO> (admin, etc.): conservan el último valor aplicado — sin regresión.
  *
- * Capacitor: en app móvil omitimos canonical (no tiene sentido — no hay URL
- * indexable) pero mantenemos title/meta para PWA installability.
+ * El JSON-LD sí se renderiza como JSX (<script> en body): React lo monta/desmonta
+ * por ruta y los crawlers leen todo el HTML, no solo el head.
+ *
+ * Capacitor: en app móvil omitimos canonical (no hay URL indexable) pero
+ * mantenemos title/meta para PWA installability.
  */
 
 import { useEffect, useState } from 'react';
@@ -39,6 +44,7 @@ export interface SeoProps {
 
 const SITE_URL = 'https://inspecciono.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+const DEFAULT_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1';
 
 /** Detección Capacitor — perezosa, sólo al montar. */
 function useIsNative(): boolean {
@@ -61,6 +67,43 @@ function useIsNative(): boolean {
   return isNative;
 }
 
+/** Muta el meta existente (o lo crea) y elimina duplicados sobrantes de la misma clave. */
+function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
+  const all = document.head.querySelectorAll<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+  if (all.length === 0) {
+    const el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    el.content = content;
+    document.head.appendChild(el);
+    return;
+  }
+  all[0].content = content;
+  for (let i = 1; i < all.length; i++) all[i].remove();
+}
+
+function removeMeta(attr: 'name' | 'property', key: string) {
+  document.head.querySelectorAll(`meta[${attr}="${key}"]`).forEach((el) => el.remove());
+}
+
+function upsertCanonical(href: string | undefined) {
+  const all = document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]');
+  if (!href) {
+    // Sin canonical deseado (rutas noindex): fuera el estático de la home —
+    // "canonical=/" + "noindex" en /login sería contradictorio para Google.
+    all.forEach((el) => el.remove());
+    return;
+  }
+  if (all.length === 0) {
+    const el = document.createElement('link');
+    el.rel = 'canonical';
+    el.href = href;
+    document.head.appendChild(el);
+    return;
+  }
+  all[0].href = href;
+  for (let i = 1; i < all.length; i++) all[i].remove();
+}
+
 export const SEO: React.FC<SeoProps> = ({
   title,
   description,
@@ -77,37 +120,56 @@ export const SEO: React.FC<SeoProps> = ({
   const finalOgTitle = ogTitle ?? title;
   const finalOgDescription = ogDescription ?? description;
 
+  useEffect(() => {
+    document.title = title;
+    upsertMeta('name', 'description', description);
+    upsertMeta('name', 'robots', noindex ? 'noindex, nofollow' : DEFAULT_ROBOTS);
+
+    // Canonical solo en web (Capacitor no tiene URL indexable)
+    upsertCanonical(isNative ? undefined : absoluteCanonical);
+
+    // Open Graph
+    upsertMeta('property', 'og:type', ogType);
+    upsertMeta('property', 'og:title', finalOgTitle);
+    upsertMeta('property', 'og:description', finalOgDescription);
+    upsertMeta('property', 'og:image', ogImage);
+    if (absoluteCanonical) {
+      upsertMeta('property', 'og:url', absoluteCanonical);
+    }
+    // Los width/height/alt estáticos de index.html describen la OG por defecto;
+    // si la ruta usa otra imagen (ficha de servicio), quedarían mintiendo → fuera.
+    if (ogImage !== DEFAULT_OG_IMAGE) {
+      removeMeta('property', 'og:image:width');
+      removeMeta('property', 'og:image:height');
+      removeMeta('property', 'og:image:type');
+      removeMeta('property', 'og:image:alt');
+      removeMeta('name', 'twitter:image:alt');
+    }
+
+    // Twitter
+    upsertMeta('name', 'twitter:card', 'summary_large_image');
+    upsertMeta('name', 'twitter:title', finalOgTitle);
+    upsertMeta('name', 'twitter:description', finalOgDescription);
+    upsertMeta('name', 'twitter:image', ogImage);
+    if (absoluteCanonical) {
+      upsertMeta('name', 'twitter:url', absoluteCanonical);
+    }
+  }, [
+    title,
+    description,
+    noindex,
+    isNative,
+    absoluteCanonical,
+    ogType,
+    finalOgTitle,
+    finalOgDescription,
+    ogImage,
+  ]);
+
   return (
     <>
-      {/* React 19 hoistea estos tags al <head> y dedupe por name/property */}
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      {noindex ? (
-        <meta name="robots" content="noindex, nofollow" />
-      ) : (
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-      )}
-
-      {/* Canonical solo en web (Capacitor no tiene URL indexable) */}
-      {absoluteCanonical && !isNative && (
-        <link rel="canonical" href={absoluteCanonical} />
-      )}
-
-      {/* Open Graph */}
-      <meta property="og:type" content={ogType} />
-      <meta property="og:title" content={finalOgTitle} />
-      <meta property="og:description" content={finalOgDescription} />
-      <meta property="og:image" content={ogImage} />
-      {absoluteCanonical && <meta property="og:url" content={absoluteCanonical} />}
-
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={finalOgTitle} />
-      <meta name="twitter:description" content={finalOgDescription} />
-      <meta name="twitter:image" content={ogImage} />
-
-      {/* JSON-LD — render en body (crawlers leen todo el HTML). React 19 NO
-          hoistea <script type="application/ld+json"> sin async; no pasa nada. */}
+      {/* JSON-LD — render en body (crawlers leen todo el HTML). React lo
+          desmonta al salir de la ruta, así no se acumulan schemas. */}
       {jsonLd?.map((schema, i) => (
         <script
           key={i}

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { API_CONFIG } from '../config/api';
 import { showToast } from '../lib/toast';
 import { SileoPageLoader } from '../components/ui/sileo-loader';
+import SEO from '../components/SEO';
 
 // 🛡️ N12: verificamos la session contra el backend ANTES de dar el pago por bueno.
 // Sin esta verificación, alguien podría navegar a /success sin haber pagado y ver una
@@ -59,6 +60,9 @@ export function PaymentSuccessPage() {
     }, [searchParams, navigate]);
 
     return (
-        <SileoPageLoader message="Procesando tu reserva…" className="bg-white" />
+        <>
+            <SEO title="Procesando tu reserva | Inspecciono" description="Confirmando el resultado de tu pago." noindex />
+            <SileoPageLoader message="Procesando tu reserva…" className="bg-white" />
+        </>
     );
 }
