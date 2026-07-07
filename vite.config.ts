@@ -6,8 +6,20 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { compression } from 'vite-plugin-compression2';
 import { constants as zlibConstants } from 'node:zlib';
 
-export default defineConfig(({ command }) => ({
-    base: './', // ✅ Rutas relativas para Capacitor Android
+export default defineConfig(({ command, mode }) => ({
+    // ⚠️ base: WEB usa '/' (absoluto), Capacitor usa './' (relativo).
+    // Por qué: con base './' el index.html referencia './index.<hash>.js'. En una
+    // carga en frío de una ruta de 2+ segmentos (/service/:id, /coordinar-cita/:token,
+    // /ad/:id …) el navegador resuelve ese relativo contra el directorio del documento
+    // (/service/) → pide /service/index.<hash>.js → el SPA-fallback de `serve`/CF
+    // devuelve index.html (text/html) → el navegador rechaza el módulo por MIME →
+    // PANTALLA EN BLANCO. Con base '/' el asset es siempre /index.<hash>.js sin importar
+    // la profundidad de la ruta. Rutas de 1 segmento (/, /login, /peritaje-piso) no lo
+    // sufrían porque './' resuelve a '/' en la raíz.
+    // Capacitor (webDir servido desde https://localhost/ o capacitor://localhost/) conserva
+    // './' vía `vite build --mode capacitor` (scripts cap:* en package.json) — build móvil
+    // sin cambios de comportamiento.
+    base: mode === 'capacitor' ? './' : '/',
     // ✅ Opciones de esbuild a nivel raíz (dentro de `build.esbuild` Vite las IGNORA:
     // antes los console.log nunca se eliminaban del bundle de producción).
     esbuild: {
