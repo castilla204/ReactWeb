@@ -9,15 +9,16 @@
     "test": "vitest run",
     "i18n:check": "node scripts/check-i18n-keys.mjs",
     "build": "node scripts/check-i18n-keys.mjs && vite build",
+    "build:cap": "node scripts/check-i18n-keys.mjs && vite build --mode capacitor",
     "lint": "eslint .",
     "preview": "vite preview",
-    "cap:sync": "npm run build && npx cap sync",
+    "cap:sync": "npm run build:cap && npx cap sync",
     "cap:copy": "npx cap copy",
     "cap:update": "npx cap update",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
-    "cap:run:ios": "npm run build && npx cap sync && npx cap run ios",
-    "cap:run:android": "npm run build && npx cap sync && npx cap run android"
+    "cap:run:ios": "npm run build:cap && npx cap sync && npx cap run ios",
+    "cap:run:android": "npm run build:cap && npx cap sync && npx cap run android"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
