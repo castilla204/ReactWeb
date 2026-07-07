@@ -33,6 +33,15 @@ class AuthService {
             this.initFromStorage();
             this.setupAxiosInterceptor();
 
+            // 🛡️ H1 FIX (auditoría 2026-07-06): si el usuario CANCELA el modal MFA (o vence el
+            // cierre forzado a 30s), las peticiones encoladas en pendingMfaRequests quedaban sin
+            // resolver NI rechazar → su `await fetch` colgaba para siempre (spinner infinito para
+            // experto/admin con MFA). El MfaVerificationContext dispara este evento al cancelar;
+            // aquí rechazamos toda la cola para que los llamadores entren en su catch.
+            window.addEventListener('mfaVerificationCancelled', () => {
+                this.rejectPendingMfaRequests();
+            });
+
             // 🛡️ Sincronización entre pestañas: con rotación de refresh tokens, si otra
             // pestaña renueva, la copia en memoria de ESTA pestaña queda obsoleta y su
             // próximo refresh usaría un token ya rotado (→ reuse-detection en el backend).
@@ -483,6 +492,19 @@ class AuthService {
     // ============================================
     // 5. REINTENTAR REQUESTS PENDIENTES DESPUÉS DE MFA
     // ============================================
+    // 🛡️ H1 FIX (auditoría 2026-07-06): rechazar (no dejar colgadas) las peticiones encoladas
+    // cuando se abandona la verificación MFA. El error va marcado para que los llamadores puedan
+    // distinguir "MFA cancelado" de un fallo de red y silenciar el toast si quieren.
+    private rejectPendingMfaRequests() {
+        const requests = [...this.pendingMfaRequests];
+        this.pendingMfaRequests = [];
+        for (const request of requests) {
+            const err: any = new Error('MFA verification cancelled');
+            err.mfaCancelled = true;
+            request.reject(err);
+        }
+    }
+
     private async retryPendingMfaRequests() {
         const requests = [...this.pendingMfaRequests];
         this.pendingMfaRequests = [];

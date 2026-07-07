@@ -3116,16 +3116,16 @@
   }
 
   .pf-page .pf-profile-editor__section--photo {
-    padding: 12px 0 14px;
+    padding: 14px 0 16px;
     border-bottom: none;
   }
 
   .pf-page .pf-profile-editor__section--desc {
-    padding-top: 14px;
+    padding-top: 16px;
   }
 
   .pf-page .pf-profile-editor__photo-block {
-    align-items: center;
+    align-items: flex-start;
     gap: 14px;
   }
 
@@ -3137,5 +3137,6 @@
   .pf-page .pf-profile-editor__photo-meta .pf-profile-editor__hint {
     margin-bottom: 8px;
     max-width: none;
+    font-size: 0.75rem;
   }
 }

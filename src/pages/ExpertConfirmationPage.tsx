@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
@@ -83,7 +83,15 @@ export default function ExpertConfirmationPage() {
         return parts.join(' · ');
     }, [ctx]);
 
+    // 🛡️ H2 FIX (auditoría 2026-07-06): lock SÍNCRONO compartido approve/reject contra doble
+    // submit. El `disabled` del botón depende de un useState (asíncrono), así que un doble tap
+    // rápido podía lanzar dos POST → el 2º devolvía "la cita ya no está pendiente" justo tras una
+    // acción exitosa. Mismo patrón que isSubmittingRef del checkout del comprador.
+    const submitLockRef = useRef(false);
+
     const approve = async () => {
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setError(null);
         setSubmitting(true);
         try {
@@ -101,10 +109,13 @@ export default function ExpertConfirmationPage() {
             setError(e instanceof Error ? e.message : 'No se pudo confirmar la cita.');
         } finally {
             setSubmitting(false);
+            submitLockRef.current = false;
         }
     };
 
     const reject = async () => {
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setError(null);
         setRejecting(true);
         try {
@@ -123,6 +134,7 @@ export default function ExpertConfirmationPage() {
         } finally {
             setRejecting(false);
             setRejectConfirming(false);
+            submitLockRef.current = false;
         }
     };
 

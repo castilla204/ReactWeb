@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List, FastForward, Loader2 } from 'lucide-react';
 import { SileoSkeleton } from './ui/sileo-skeleton';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -63,6 +63,7 @@ import { getPriceDisplay } from '../utils/priceUtils';
 // ? NUEVOS HOOKS OPTIMIZADOS
 import { useSearchDetailsOptimized } from '../hooks/useSearchDetailsOptimized';
 import { getAuthToken } from '../lib/auth';
+import { isAdmin as checkIsAdmin } from '../utils/admin';
 import { API_CONFIG } from '../config/api';
 import {
     SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS,
@@ -794,6 +795,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             : 'Estamos coordinando tu cita. Te avisaremos en cuanto esté confirmada.';
 
     const userId = getUserId(user);
+    const effectiveIsAdmin =
+        isAdmin ||
+        checkIsAdmin(user?.email ?? (user as { Email?: string })?.Email) ||
+        user?.role === 'Admin' ||
+        user?.role === 'admin';
     const clientId = Number(
         search?.user?.id ??
         search?.userId ??
@@ -817,7 +823,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         ? userId === clientId
         : isExpert
             ? false
-            : !isAdmin && !!user;
+            : !effectiveIsAdmin && !!user;
     const userRole = isClient ? 'client' : 'expert';
     
     // ✅ CORRECTO: Usar datos del experto del nivel superior, NO de user.profilePictureUrl (que siempre es null)
@@ -865,7 +871,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const hasValidSearchHire = !!search?.searchHire?.id || !!searchHireId;
     // ✅ Si tenemos searchHireId y usuario autenticado, mostrar el chat (el backend validará permisos)
     const canViewChat =
-        hasValidSearchHire && !!user && (isAdmin || isClient || isExpert);
+        hasValidSearchHire && !!user && (effectiveIsAdmin || isClient || isExpert);
 
     // ✅ Usar categoría del endpoint details-complete
     const categoryName = category?.name || 'Unknown Category';
@@ -996,6 +1002,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     };
 
     const appointmentButtons = getAppointmentButtons();
+
+    const showAdminSkipReport = effectiveIsAdmin && appointment?.status === 'appointment_confirmed';
     
     // ✅ Debug: Log de los botones que se mostrarán
     console.log('[SearchDetails] Appointment buttons:', {
@@ -1094,33 +1102,26 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
     // Botón de pruebas (solo admin) que aparece en la contratación cuando la cita está confirmada.
     const renderAdminSkipReportButton = () => {
-        if (!isAdmin || appointment?.status !== 'appointment_confirmed') return null;
+        if (!showAdminSkipReport) return null;
         return (
             <Button
+                type="button"
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleAdminSkipReport();
                 }}
-                variant="outline"
-                className="w-full border-amber-500 text-amber-700 hover:bg-amber-50"
-                size="sm"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800"
                 disabled={isSkippingReport}
-                title="Solo admin · pruebas: salta la espera de 3h y pasa la cita a 'esperando reporte'"
+                aria-label="Admin: saltar a esperando reporte"
+                title="Admin (pruebas): salta la espera de 3h post-cita"
             >
                 {isSkippingReport ? (
-                    <>
-                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Saltando...
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                 ) : (
-                    <>
-                        <Clock className="w-4 h-4 mr-2" />
-                        🧪 Admin: saltar a "esperando reporte"
-                    </>
+                    <FastForward className="h-4 w-4" aria-hidden />
                 )}
             </Button>
         );
@@ -1662,7 +1663,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <div className="mt-6 pt-6 border-t border-gray-200 lg:hidden">
                                         <div className="space-y-2">
                                             <h3 
-                                                className="text-base font-semibold text-gray-900 mb-3"
+                                                className="text-base font-semibold text-gray-900 mb-3 flex items-center justify-between gap-2"
                                                 style={{
                                                     fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
                                                     fontSize: '16px',
@@ -1670,13 +1671,16 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     fontWeight: 600,
                                                 }}
                                             >
+                                                <span>
                                                     {appointment ? (
                                                         appointmentStatusInfo?.displayName || 
                                                         (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
                                                          appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
                                                          'Cita')
                                                     ) : 'Cita Pendiente'}
-                                                </h3>
+                                                </span>
+                                                {renderAdminSkipReportButton()}
+                                            </h3>
                                             <div className="space-y-3">
                                                     {appointment ? (
                                                         <>
@@ -2250,8 +2254,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     </div>
                                                 )}
 
-                                                {/* 🧪 BOTÓN DE PRUEBAS (Solo Admin): saltar la espera de 3h → awaiting_report */}
-                                                {renderAdminSkipReportButton()}
                                             </div>
                                             
                                             {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
@@ -2499,14 +2501,17 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <div className="pt-1">
                                         <div className="mb-2.5 flex items-center justify-between gap-2">
                                             <SdSectionTitle>Cita</SdSectionTitle>
-                                            <span className="text-[11px] font-medium text-[#737373]">
-                                                {appointment
-                                                    ? (appointmentStatusInfo?.displayName ||
-                                                        (appointment.status === 'appointment_proposed' ? 'Propuesta' :
-                                                         appointment.status === 'appointment_confirmed' ? 'Confirmada' :
-                                                         'Cita'))
-                                                    : 'Pendiente'}
-                                            </span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[11px] font-medium text-[#737373]">
+                                                    {appointment
+                                                        ? (appointmentStatusInfo?.displayName ||
+                                                            (appointment.status === 'appointment_proposed' ? 'Propuesta' :
+                                                             appointment.status === 'appointment_confirmed' ? 'Confirmada' :
+                                                             'Cita'))
+                                                        : 'Pendiente'}
+                                                </span>
+                                                {renderAdminSkipReportButton()}
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             {appointment ? (
@@ -2734,9 +2739,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         )}
                                                     </Button>
                                                 )}
-
-                                                {/* 🧪 BOTÓN DE PRUEBAS (Solo Admin): saltar la espera de 3h → awaiting_report */}
-                                                {renderAdminSkipReportButton()}
 
                                                 {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
                                                 {appointmentButtons.showPropose && (

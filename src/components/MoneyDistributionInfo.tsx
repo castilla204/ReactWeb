@@ -1,7 +1,7 @@
 import React from 'react';
 import { Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useAppointmentStatuses, getAppointmentStatusText } from '../hooks/useAppointmentStatuses';
-import { MoneyDistributionConfig, shouldShowMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
+import { MoneyDistributionConfig, shouldShowMoneyDistribution, parsePercentValue } from '../hooks/useMoneyDistributionConfig';
 
 interface MoneyDistributionInfoProps {
   config: MoneyDistributionConfig | null;
@@ -140,7 +140,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
             </p>
           )}
           <div className="space-y-2">
-            {parseFloat(effectiveClientPct) > 0 && (
+            {parsePercentValue(effectiveClientPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -152,7 +152,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
               </div>
             )}
 
-            {parseFloat(effectiveExpertPct) > 0 && (
+            {parsePercentValue(effectiveExpertPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -164,7 +164,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
               </div>
             )}
 
-            {parseFloat(effectivePlatformPct) > 0 && (
+            {parsePercentValue(effectivePlatformPct) > 0 && (
               <div className="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
@@ -179,7 +179,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
 
           <div className="mt-3 p-2 bg-white rounded border border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              <strong>Total:</strong> {(parseFloat(effectiveClientPct) + parseFloat(effectiveExpertPct) + parseFloat(effectivePlatformPct)).toFixed(1)}%
+              <strong>Total:</strong> {(parsePercentValue(effectiveClientPct) + parsePercentValue(effectiveExpertPct) + parsePercentValue(effectivePlatformPct)).toFixed(1)}%
             </p>
           </div>
         </div>

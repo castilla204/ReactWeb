@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ClipboardList, MessageCircle, Search as SearchIcon, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { API_CONFIG } from '../../config/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { isAdmin as isAdminUser } from '../../utils/admin';
 import { useApi } from '../../hooks/useApi';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { isActiveSearchHireStatus } from '../../constants/hireStatuses';
@@ -38,6 +40,9 @@ interface ExpertMessagesInboxProps {
  * Vive dentro de la pestaña "Mensajes" del panel del experto (sin chrome propio).
  */
 export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps) {
+    const { user } = useAuth();
+    const isUserAdmin =
+        isAdminUser(user?.email) || user?.role === 'Admin' || user?.role === 'admin';
     const { fetchApi } = useApi();
     const isMobile = useIsMobile();
 
@@ -585,7 +590,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                         />
                     ) : (
                         <SearchDetails
-                            isAdmin={false}
+                            isAdmin={isUserAdmin}
                             searchHireId={conversation.searchHireId ?? undefined}
                             embedded
                             onBack={onClose}
