@@ -591,8 +591,26 @@ export function ProfileEditForm({
         || profile.profilePictureUrl
         || null;
 
-    const descLength = formData.description.length;
+    const descriptionValue = aiSuggestion ?? formData.description;
+    const descLength = descriptionValue.length;
     const descMetaTone = descLength < 30 ? 'low' : descLength >= 55 ? 'high' : 'ok';
+
+    const handleDescriptionChange = (value: string) => {
+        if (aiSuggestion !== null) {
+            setAiSuggestion(value);
+        } else {
+            setFormData({ ...formData, description: value });
+        }
+    };
+
+    const acceptAiSuggestion = () => {
+        if (aiSuggestion) {
+            setFormData({ ...formData, description: aiSuggestion });
+            setAiSuggestion(null);
+        }
+    };
+
+    const discardAiSuggestion = () => setAiSuggestion(null);
     const isFixedWorkLocation = workRadiusKm === 0;
 
     const selectFixedWorkMode = useCallback(() => {
@@ -685,13 +703,24 @@ export function ProfileEditForm({
         </div>
     );
 
+    const descriptionAiBar = aiSuggestion ? (
+        <div className="pf-textarea-ai-bar">
+            <button type="button" className="pf-textarea-ai-bar__use" onClick={acceptAiSuggestion}>
+                Usar
+            </button>
+            <button type="button" className="pf-textarea-ai-bar__discard" onClick={discardAiSuggestion}>
+                Descartar
+            </button>
+        </div>
+    ) : null;
+
     const aiRewriteUi = (
         <div className="pf-ai-rewrite">
             <button
                 type="button"
                 className="pf-ai-rewrite__btn ai-magic-btn"
                 onClick={handleRewriteDescription}
-                disabled={aiLoading}
+                disabled={aiLoading || aiSuggestion !== null}
             >
                 {aiLoading ? (
                     <>
@@ -706,34 +735,6 @@ export function ProfileEditForm({
                 )}
             </button>
             {aiError && <p className="pf-error pf-error--inline">{aiError}</p>}
-            {aiSuggestion && (
-                <div className="pf-ai-rewrite__preview ai-magic-preview">
-                    <p className="ai-magic-preview__label">
-                        <Sparkles size={12} aria-hidden />
-                        Sugerencia de IA
-                    </p>
-                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
-                    <div className="ai-magic-preview__actions">
-                        <button
-                            type="button"
-                            className="ai-magic-preview__use"
-                            onClick={() => {
-                                setFormData({ ...formData, description: aiSuggestion });
-                                setAiSuggestion(null);
-                            }}
-                        >
-                            Usar este texto
-                        </button>
-                        <button
-                            type="button"
-                            className="ai-magic-preview__discard"
-                            onClick={() => setAiSuggestion(null)}
-                        >
-                            Descartar
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 
@@ -1011,18 +1012,21 @@ export function ProfileEditForm({
                                         Quién eres y en qué te especializas (30–60 car.)
                                     </span>
                                 </label>
-                                <textarea
-                                    id="description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={2}
-                                    minLength={30}
-                                    maxLength={60}
-                                    placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
-                                    className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}`}
-                                    required
-                                    aria-describedby="description-hint"
-                                />
+                                <div className={`pf-textarea-wrap${aiSuggestion ? ' pf-textarea-wrap--ai' : ''}`}>
+                                    <textarea
+                                        id="description"
+                                        value={descriptionValue}
+                                        onChange={(e) => handleDescriptionChange(e.target.value)}
+                                        rows={2}
+                                        minLength={30}
+                                        maxLength={60}
+                                        placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
+                                        className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}${aiSuggestion ? ' pf-textarea--ai-preview' : ''}`}
+                                        required
+                                        aria-describedby="description-hint"
+                                    />
+                                    {descriptionAiBar}
+                                </div>
                                 <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
                                 {aiRewriteUi}
                             </div>
@@ -1227,19 +1231,20 @@ export function ProfileEditForm({
                                                 {descLength}/60
                                             </span>
                                         </div>
-                                        <div className="pf-profile-editor__input">
+                                        <div className={`pf-profile-editor__input pf-textarea-wrap${aiSuggestion ? ' pf-textarea-wrap--ai' : ''}`}>
                                             <textarea
                                                 id="description"
-                                                value={formData.description}
-                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                rows={3}
+                                                value={descriptionValue}
+                                                onChange={(e) => handleDescriptionChange(e.target.value)}
+                                                rows={2}
                                                 minLength={30}
                                                 maxLength={60}
                                                 placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
-                                                className={`pf-textarea pf-textarea--field${formErrors.description ? ' pf-textarea--error' : ''}`}
+                                                className={`pf-textarea pf-textarea--field${formErrors.description ? ' pf-textarea--error' : ''}${aiSuggestion ? ' pf-textarea--ai-preview' : ''}`}
                                                 required
                                                 aria-describedby="description-hint"
                                             />
+                                            {descriptionAiBar}
                                         </div>
                                         <div className="pf-profile-editor__tools">
                                             {aiRewriteUi}

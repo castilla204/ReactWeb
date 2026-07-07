@@ -34,6 +34,9 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
         // Timeout de seguridad: forzar cierre después de 30 segundos
         forceCloseTimeoutRef.current = setTimeout(() => {
             console.warn('[MfaVerificationContext] Force closing after 30s timeout');
+            // 🛡️ H1 FIX: liberar las peticiones encoladas en authService antes de cerrar,
+            // si no su `await fetch` cuelga para siempre.
+            window.dispatchEvent(new CustomEvent('mfaVerificationCancelled'));
             hideVerification(true);
         }, 30000);
     }, []);
@@ -86,6 +89,10 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
     
     const handleCancel = useCallback(() => {
         // ✅ Permitir cancelar explícitamente
+        // 🛡️ H1 FIX (auditoría 2026-07-06): liberar las peticiones encoladas en authService, si
+        // no su `await fetch` queda colgado para siempre (spinner infinito). El listener de
+        // authService las rechaza con un error marcado `mfaCancelled`.
+        window.dispatchEvent(new CustomEvent('mfaVerificationCancelled'));
         setIsOpen(false);
         setOnSuccessCallback(undefined);
         setIsVerified(false);

@@ -1503,6 +1503,7 @@ export function ExpertPanelPage() {
                             visibilityNote={visibilityNote}
                             stripeNote={stripeNote}
                             stripeContext={stripeContext}
+                            servicesCount={services.length}
                         />
                     ) : activeTab === 'profile' && profile ? (
                         <>

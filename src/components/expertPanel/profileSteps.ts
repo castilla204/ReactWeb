@@ -121,7 +121,10 @@ export function isProfileSetupComplete(
 ) {
     if (!profile) return true;
     const steps = buildProfileSteps(profile, smsCapable, stripeCtx);
-    return steps.filter((s) => s.required).every((s) => s.done) && steps.every((s) => s.done);
+    // Solo los pasos required cuentan: exigir también los opcionales dejaba la
+    // pestaña "Configuración" colgada para siempre (sin badge, porque
+    // pendingRequired=0) a todo experto que no configurara la disponibilidad.
+    return steps.filter((s) => s.required).every((s) => s.done);
 }
 
 export function getPendingRequiredCount(steps: ProfileStep[]) {

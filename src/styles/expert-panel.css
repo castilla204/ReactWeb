@@ -4908,20 +4908,41 @@
   flex-shrink: 0;
 }
 
-.pf-page-intro .pf-profile-pending-banner {
-  margin-top: 12px;
+.pf-page-intro .pf-profile-pending-banner,
+.av-page-intro .pf-profile-pending-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 14px;
   margin-bottom: 0;
+  padding-top: 14px;
+  border-top: 1px solid hsl(var(--ep-border) / 0.65);
+}
+
+.pf-page-intro .pf-profile-pending-banner__text,
+.av-page-intro .pf-profile-pending-banner__text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: hsl(215 14% 34%);
+}
+
+.pf-page-intro .pf-profile-pending-banner__cta,
+.av-page-intro .pf-profile-pending-banner__cta {
+  align-self: flex-start;
+  margin: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .pf-page-intro__steps--visible {
   display: flex;
   flex-wrap: wrap;
   margin-top: 12px;
-}
-
-.av-page-intro .pf-profile-pending-banner {
-  margin-top: 12px;
-  margin-bottom: 0;
 }
 
 /* Editor de perfil — una tarjeta, dos columnas (como calendario de disponibilidad) */
@@ -5116,6 +5137,103 @@
   .pf-profile-editor__action-bar .pf-btn-save {
     min-width: 112px;
     width: auto;
+  }
+
+  /* Mi perfil embebido — móvil */
+  .pf-page.pf-editor--embedded {
+    gap: 12px;
+    padding: 12px 14px 16px;
+  }
+
+  .pf-editor--embedded .av-page-intro {
+    padding: 14px 14px 16px;
+    border-radius: 10px;
+  }
+
+  .pf-editor--embedded .av-page-intro__lead {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .pf-editor--embedded .av-page-intro .pf-profile-pending-banner {
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  .pf-editor--embedded .av-calendar.pf-profile-editor {
+    border-radius: 10px;
+  }
+
+  .pf-profile-editor__status {
+    gap: 4px 8px;
+  }
+
+  .pf-profile-editor__status .pf-status-led__label {
+    font-size: 0.75rem;
+  }
+
+  .pf-profile-editor__status .pf-status-led__hint {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .pf-profile-editor__section--photo {
+    padding: 14px 0 16px;
+  }
+
+  .pf-profile-editor__section--desc {
+    padding: 16px 0 0;
+  }
+
+  .pf-profile-editor__photo-block {
+    gap: 14px;
+  }
+
+  .pf-profile-editor__photo-meta .pf-profile-editor__label {
+    font-size: 0.8125rem;
+    margin-bottom: 4px;
+  }
+
+  .pf-profile-editor__photo-meta .pf-profile-editor__hint {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    max-width: none;
+  }
+
+  .pf-profile-editor__field-head {
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+
+  .pf-profile-editor__field-head .pf-profile-editor__label {
+    font-size: 0.8125rem;
+  }
+
+  .pf-profile-editor__field-head .pf-profile-editor__hint {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .pf-profile-editor__field-head .pf-profile-editor__count {
+    font-size: 0.75rem;
+    padding: 3px 7px;
+  }
+
+  .pf-profile-editor__input .pf-textarea--field {
+    min-height: 0;
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    border-radius: 8px;
+  }
+
+  .pf-profile-editor__tools {
+    margin-top: 8px;
+  }
+
+  .pf-profile-editor__tools .pf-ai-rewrite {
+    margin-top: 0;
   }
 }
 

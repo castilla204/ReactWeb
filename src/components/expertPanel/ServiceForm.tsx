@@ -132,6 +132,25 @@ export function ServiceForm({
         }
     };
 
+    const conditionsValue = aiSuggestion ?? formData.conditions;
+
+    const handleConditionsChange = (value: string) => {
+        if (aiSuggestion !== null) {
+            setAiSuggestion(value);
+        } else {
+            setFormData({ ...formData, conditions: value });
+        }
+    };
+
+    const acceptAiSuggestion = () => {
+        if (aiSuggestion) {
+            setFormData({ ...formData, conditions: aiSuggestion });
+            setAiSuggestion(null);
+        }
+    };
+
+    const discardAiSuggestion = () => setAiSuggestion(null);
+
     useEffect(() => {
         const catId = formData.categoryId;
         setSelectedCategoryIds(catId ? [String(catId)] : []);
@@ -891,14 +910,14 @@ export function ServiceForm({
                                                     Qué incluye el servicio (400–1000 caracteres).
                                                 </p>
                                             </div>
-                                            <span className="pf-profile-editor__count">{formData.conditions.trim().length}/1000</span>
+                                            <span className="pf-profile-editor__count">{conditionsValue.trim().length}/1000</span>
                                         </div>
-                                        <div className="pf-profile-editor__input">
+                                        <div className={`pf-profile-editor__input pf-textarea-wrap${aiSuggestion ? ' pf-textarea-wrap--ai' : ''}`}>
                                             <textarea
                                                 id="conditions"
-                                                value={formData.conditions}
-                                                onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                                                className={`sf-textarea sf-textarea--field pf-textarea pf-textarea--field${formErrors.conditions ? ' sf-textarea--error' : ''}`}
+                                                value={conditionsValue}
+                                                onChange={(e) => handleConditionsChange(e.target.value)}
+                                                className={`sf-textarea sf-textarea--field pf-textarea pf-textarea--field${formErrors.conditions ? ' sf-textarea--error' : ''}${aiSuggestion ? ' pf-textarea--ai-preview' : ''}`}
                                                 rows={2}
                                                 placeholder="Ej.: Revisión presencial con informe PDF. Compruebo instalaciones, humedades y estado general."
                                                 required
@@ -906,6 +925,16 @@ export function ServiceForm({
                                                 maxLength={1000}
                                                 aria-describedby="conditions-hint"
                                             />
+                                            {aiSuggestion && (
+                                                <div className="pf-textarea-ai-bar">
+                                                    <button type="button" className="pf-textarea-ai-bar__use" onClick={acceptAiSuggestion}>
+                                                        Usar
+                                                    </button>
+                                                    <button type="button" className="pf-textarea-ai-bar__discard" onClick={discardAiSuggestion}>
+                                                        Descartar
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                         {formErrors.conditions && <p className="sf-error">{formErrors.conditions}</p>}
                                         <div className="sf-ai-rewrite">
@@ -913,7 +942,7 @@ export function ServiceForm({
                                                 type="button"
                                                 className="sf-ai-rewrite__btn ai-magic-btn"
                                                 onClick={handleRewriteConditions}
-                                                disabled={aiLoading}
+                                                disabled={aiLoading || aiSuggestion !== null}
                                             >
                                                 {aiLoading ? (
                                                     <>
@@ -928,34 +957,6 @@ export function ServiceForm({
                                                 )}
                                             </button>
                                             {aiError && <p className="sf-error">{aiError}</p>}
-                                            {aiSuggestion && (
-                                                <div className="sf-ai-rewrite__preview ai-magic-preview">
-                                                    <p className="ai-magic-preview__label">
-                                                        <Sparkles size={12} aria-hidden />
-                                                        Sugerencia de IA
-                                                    </p>
-                                                    <p className="ai-magic-preview__text">{aiSuggestion}</p>
-                                                    <div className="ai-magic-preview__actions">
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__use"
-                                                            onClick={() => {
-                                                                setFormData({ ...formData, conditions: aiSuggestion });
-                                                                setAiSuggestion(null);
-                                                            }}
-                                                        >
-                                                            Usar este texto
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            className="ai-magic-preview__discard"
-                                                            onClick={() => setAiSuggestion(null)}
-                                                        >
-                                                            Descartar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 </div>

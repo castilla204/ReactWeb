@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
@@ -82,9 +82,18 @@ export default function SellerBookingPage() {
         return () => { cancelled = true; };
     }, [token, base]);
 
+    // 🛡️ H2 FIX (auditoría 2026-07-06): lock SÍNCRONO contra doble submit. El `disabled` del
+    // botón depende de un useState (asíncrono: solo surte efecto tras el re-render), así que un
+    // doble click/tap rápido podía lanzar dos POST. El backend es idempotente por estado, pero el
+    // segundo POST devolvía un error confuso justo tras una acción exitosa. Mismo patrón que
+    // isSubmittingRef del checkout del comprador.
+    const submitLockRef = useRef(false);
+
     const confirm = async () => {
         if (!slot) { setError('Elige un día y una hora.'); return; }
         if (!isWorkshop && !chosenLocation) { setError('Indica en el mapa dónde está el vehículo.'); return; }
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setError(null);
         setSubmitting(true);
         try {
@@ -114,10 +123,13 @@ export default function SellerBookingPage() {
             } catch { /* ignore */ }
         } finally {
             setSubmitting(false);
+            submitLockRef.current = false;
         }
     };
 
     const decline = async () => {
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setError(null);
         setDeclining(true);
         try {
@@ -136,6 +148,7 @@ export default function SellerBookingPage() {
         } finally {
             setDeclining(false);
             setDeclineConfirming(false);
+            submitLockRef.current = false;
         }
     };
 

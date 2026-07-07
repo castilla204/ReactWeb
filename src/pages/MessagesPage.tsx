@@ -11,6 +11,7 @@ import { useApi } from '../hooks/useApi';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { HP_FONT } from '../constants/homepageTypography';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
+import { isAdmin as isAdminUser } from '../utils/admin';
 
 type PendingPreHireOpen = { serviceId: number; conversationId?: number };
 
@@ -170,6 +171,8 @@ export function MessagesPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
+    const isUserAdmin =
+        isAdminUser(user?.email) || user?.role === 'Admin' || user?.role === 'admin';
     const { fetchApi } = useApi();
     const isMobile = useIsMobile();
     const token = authService.getAccessToken() || '';
@@ -873,7 +876,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                     }
                 >
                     <SearchDetails
-                        isAdmin={false}
+                        isAdmin={isUserAdmin}
                         searchHireId={conversation.searchHireId ?? undefined}
                         embedded
                         onBack={onClose}
