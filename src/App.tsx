@@ -366,9 +366,10 @@ const AppContent: React.FC = () => {
                             <div className="p-4 border-b border-border/20">
                                 <div className="flex items-center gap-2">
                                     <img src={erizoImg} alt="" className="h-6 w-6 -scale-x-100 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
-                                    <h1 className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
+                                    {/* p, no h1: es el logo del drawer; un h1 global rompía la jerarquía de headings de TODAS las páginas (SEO) */}
+                                    <p className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
                                     inspecciono.com
-                                </h1>
+                                </p>
                                 </div>
                             </div>
                             <nav className="flex-1 overflow-y-auto p-4">
@@ -591,6 +592,12 @@ const AppContent: React.FC = () => {
                             <Route path="/mis-mensajes" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/crear-busqueda" element={<RouteSuspense><LazyPages.SearchCreationPage /></RouteSuspense>} />
                             <Route path="/ayuda" element={<RouteSuspense><LazyPages.CentroAyudaPage /></RouteSuspense>} />
+                            {/* Landings de categoría (SEO long-tail): rutas estáticas con la keyword en la URL */}
+                            <Route path="/inspeccion-coche-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-coche-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/peritaje-piso" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-piso" /></RouteSuspense>} />
+                            <Route path="/inspeccion-moto-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-moto-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/peritaje-maquinaria-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-maquinaria-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/inspeccion-bici-electrica-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-bici-electrica-segunda-mano" /></RouteSuspense>} />
                             <Route path="/quienes-somos" element={<Navigate to="/ayuda" replace />} />
                             <Route path="/como-funciona" element={<Navigate to="/ayuda" replace />} />
                             <Route path="/faq" element={<Navigate to="/ayuda" replace />} />

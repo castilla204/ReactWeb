@@ -144,9 +144,18 @@ vite.config.web.ts    → para web (base: '/', output: dist-web/, prerender acti
 - Categorías nuevas (ver siguiente sección)
 - **NO** prerenderizar: `/login`, `/admin/*`, `/busquedas/*`, `/checkout/*`, etc.
 
-### Landings de categoría (oro SEO long-tail)
+### Landings de categoría (oro SEO long-tail) — ✅ HECHAS (2026-07-07)
 
-Crear rutas estáticas con keyword exacta:
+Implementadas las 5 rutas de la tabla siguiente:
+- `src/content/categoryLandingContent.ts` (contenido: intro, checklist, FAQ por categoría)
+- `src/pages/CategoryLandingPage.tsx` (página genérica, prop `slug`)
+- JSON-LD por landing: Service + BreadcrumbList + FAQPage (FAQ visibles con `<details>`)
+- Enlazado interno: fila propia en el Footer + sección "Otras inspecciones" entre landings
+- Añadidas al sitemap (priority 0.8)
+- De propina: el sidebar móvil global tenía un `<h1>inspecciono.com</h1>` que rompía la
+  jerarquía de headings de TODAS las páginas → ahora es `<p>`.
+
+Tabla original (referencia de keywords):
 
 | Ruta | Title | Description |
 |---|---|---|
