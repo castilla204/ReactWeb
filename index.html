@@ -22,8 +22,9 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <meta name="theme-color" content="#0066cc" />
 
-    <!-- Canonical: SOLO la home queda hardcoded a /. Para subrutas, App.tsx inyecta
-         el canonical correcto en runtime (React 19 hoistea <link> al <head>).
+    <!-- Canonical: SOLO la home queda hardcoded a /. Para subrutas, el componente
+         <SEO> (src/components/SEO.tsx) MUTA este mismo tag en runtime (upsert imperativo;
+         React 19 hoisting NO deduplica contra tags estáticos y creaba canonicals dobles).
          OJO: no añadir "<link rel='canonical' href='/foo'>" estático aquí — perjudica indexación. -->
     <link rel="canonical" href="https://inspecciono.com/" />
 

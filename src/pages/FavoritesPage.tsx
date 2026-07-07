@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { homepageToast } from '../lib/toast';
 import { Footer } from '../components/Footer';
+import SEO from '../components/SEO';
 // Reutilizamos la MISMA tarjeta de la homepage → favoritos y home se ven idénticos
 // y cualquier mejora futura de la card se hereda sin duplicar estilos.
 import { ServiceCard } from '../components/HomepageWall';
@@ -112,6 +113,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
 
   return (
     <div className="flex min-h-screen flex-col bg-white pb-[65px] md:pb-0">
+      <SEO title="Tus favoritos | Inspecciono" description="Servicios de inspección que has guardado." noindex />
       {/* Cabecera editorial — sin barra sticky; respira y deja la marca clara. */}
       <header className="border-b border-[#ececec]">
         <div className={SD_PAGE_INNER_MAX_CLASS}>

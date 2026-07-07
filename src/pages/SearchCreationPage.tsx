@@ -23,6 +23,7 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import { persistHireSearchLocation } from '../utils/hireSearchContext';
 import { Footer } from '../components/Footer';
+import SEO from '../components/SEO';
 import { MapPageSkeleton } from '../components/ui/map-page-skeleton';
 
 // Libraries ya no son necesarias - el nuevo MapContainer las maneja internamente
@@ -576,6 +577,11 @@ const SearchCreationPage: React.FC = () => {
 
     return (
         <div className="relative w-full bg-background" style={{ transition: 'none', minHeight: '100vh' }}>
+            <SEO
+                title="Busca expertos cerca de ti en el mapa | Inspecciono"
+                description="Elige qué quieres inspeccionar (coche, piso, moto…) y encuentra peritos verificados cerca de la ubicación del producto. Compara precios y valoraciones."
+                canonical="/crear-busqueda"
+            />
             {currentStep === 0 && (
                 <>
                     {/* Ya no mostramos HomePresentation aquí - se movió a /quienes-somos */}
