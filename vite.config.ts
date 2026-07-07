@@ -5,6 +5,32 @@ import circularDependencyPlugin from 'vite-plugin-circular-dependency';
 import { VitePWA } from 'vite-plugin-pwa';
 import { compression } from 'vite-plugin-compression2';
 import { constants as zlibConstants } from 'node:zlib';
+import { prerenderSeo } from './scripts/prerender-seo.mjs';
+
+/**
+ * Plugin: tras el build WEB, genera dist/<ruta>/index.html con el <head> por ruta
+ * para scrapers sin JS (ver scripts/prerender-seo.mjs). Va como plugin (no como
+ * paso npm) para que corra sea cual sea el comando de CI (`vite build` o `npm run
+ * build`). NO se ejecuta en Capacitor (base './') ni en dev. Fail-safe: cualquier
+ * error se registra pero no rompe el build.
+ */
+function prerenderSeoPlugin(mode: string) {
+    return {
+        name: 'inspecciono-prerender-seo',
+        apply: 'build' as const,
+        async closeBundle() {
+            if (mode === 'capacitor') return;
+            try {
+                const { fileURLToPath } = await import('node:url');
+                const { dirname, join } = await import('node:path');
+                const distDir = join(dirname(fileURLToPath(import.meta.url)), 'dist');
+                await prerenderSeo(distDir);
+            } catch (e) {
+                console.warn('[prerender] omitido (no bloquea el build):', (e as Error)?.message ?? e);
+            }
+        },
+    };
+}
 
 export default defineConfig(({ command, mode }) => ({
     // ⚠️ base: WEB usa '/' (absoluto), Capacitor usa './' (relativo).
@@ -172,6 +198,7 @@ export default defineConfig(({ command, mode }) => ({
             deleteOriginalAssets: false,
             exclude: [/\.(br|gz|png|jpg|jpeg|webp|avif|woff2)$/],
         }),
+        prerenderSeoPlugin(mode),
     ],
     // ✅ Asegurar que React sea tratado como externo y no se duplique
     resolve: {
