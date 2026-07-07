@@ -8,7 +8,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "i18n:check": "node scripts/check-i18n-keys.mjs",
-    "build": "node scripts/check-i18n-keys.mjs && vite build",
+    "build": "node scripts/check-i18n-keys.mjs && vite build && node scripts/prerender-seo.mjs",
     "build:cap": "node scripts/check-i18n-keys.mjs && vite build --mode capacitor",
     "lint": "eslint .",
     "preview": "vite preview",
