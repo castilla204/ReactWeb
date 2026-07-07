@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import erizoImg from '../media/erizo.png';
 import { useAuth } from '../contexts/AuthContext';
+import { CATEGORY_LANDINGS } from '../content/categoryLandingContent';
 
 const FONT =
   '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif';
@@ -20,6 +21,18 @@ export const Footer = () => {
       className="hidden md:block border-t border-[#e8e8e8]/80 bg-[#fafafa]"
       style={{ fontFamily: FONT }}
     >
+      {/* Enlazado interno a las landings de categoría (SEO): fila discreta propia. */}
+      <div className="max-w-[1280px] mx-auto px-6 lg:px-10 pt-3.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+        {CATEGORY_LANDINGS.map((c, i) => (
+          <React.Fragment key={c.slug}>
+            {i > 0 && <Sep />}
+            <Link to={`/${c.slug}`} className={linkClass}>
+              {c.footerLabel}
+            </Link>
+          </React.Fragment>
+        ))}
+      </div>
+
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
         <Link to="/" className="inline-flex items-center gap-1.5 shrink-0 mr-1">
           <img src={erizoImg} alt="" className="h-5 w-5 -scale-x-100 object-contain" />
