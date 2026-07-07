@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginModal } from '../components/LoginModal';
+import SEO from '../components/SEO';
 
 /**
  * 🛡️ Round 15 — R5 FIX: LoginPage real (era 404).
@@ -35,6 +36,11 @@ export const LoginPage: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50 px-4">
+            <SEO
+                title="Inicia sesión | Inspecciono"
+                description="Accede a tu cuenta de Inspecciono para gestionar tus inspecciones."
+                noindex
+            />
             {/* Card de fondo decorativa (visible si el usuario cierra el modal en mobile). */}
             <div className="text-center max-w-md">
                 <h1 className="text-2xl font-semibold text-gray-900 mb-2">Bienvenido</h1>

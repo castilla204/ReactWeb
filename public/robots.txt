@@ -32,6 +32,13 @@ Disallow: /checkout/
 Disallow: /success
 Disallow: /cancel
 
+# Enlaces de coordinación con token (privados, un solo uso)
+Disallow: /coordinar-cita/
+Disallow: /confirmar-cita/
+
+# Página de estado del sistema (sin valor SEO)
+Disallow: /status
+
 # Panel del experto y onboarding de experto
 Disallow: /expert-panel
 

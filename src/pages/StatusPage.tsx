@@ -4,6 +4,7 @@ import { CheckCircle2, AlertCircle, XCircle, Clock, RefreshCw, Bell, Activity, T
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { API_CONFIG } from '../config/api';
+import SEO from '../components/SEO';
 
 /**
  * ✅ MEJOR PRÁCTICA: Interfaces bien definidas para el estado del sistema
@@ -258,6 +259,7 @@ export const StatusPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <SEO title="Estado del sistema | Inspecciono" description="Estado en tiempo real de los servicios de Inspecciono." noindex />
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* ✅ MEJOR PRÁCTICA: Header con información clara */}
                 <div className="mb-8">

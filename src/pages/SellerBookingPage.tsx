@@ -10,6 +10,7 @@ import { cn } from '../lib/utils';
 import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
 import { SileoLoader } from '../components/ui/sileo-loader';
 import { SileoButton } from '../components/ui/sileo-button';
+import SEO from '../components/SEO';
 
 // Página PÚBLICA del magic link del vendedor.
 interface Context {
@@ -223,6 +224,7 @@ export default function SellerBookingPage() {
     if (showForm && ctx) {
         return (
             <div className="min-h-[100dvh] bg-[#f3f4f6]">
+                <SEO title="Coordina la cita | Inspecciono" description="Elige fecha y lugar para la inspección." noindex />
                 <AppointmentWizardShell
                     steps={wizardSteps}
                     currentStep={wizardStep}
@@ -314,6 +316,7 @@ export default function SellerBookingPage() {
     // Estados sin formulario (cargando / error / éxito): tarjeta centrada, sin cambios.
     return (
         <div className="flex min-h-[100dvh] items-start justify-center bg-[#f7f7f7] px-4 py-8 sm:py-12">
+            <SEO title="Coordina la cita | Inspecciono" description="Elige fecha y lugar para la inspección." noindex />
             <div className="w-full max-w-3xl">
                 <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'px-5 py-6 sm:px-6')}>
                     {status === 'loading' && (
