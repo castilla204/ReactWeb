@@ -17,7 +17,7 @@
  *   importa TS de forma nativa) → sin duplicación ni drift.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SITE = 'https://inspecciono.com';
@@ -139,12 +139,15 @@ export async function prerenderSeo(distDir) {
   let n = 0;
   for (const r of routes) {
     const html = render(baseHtml, r);
-    const dir = join(distDir, r.path);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, 'index.html'), html);
+    // Fichero PLANO `<ruta>.html` (no `<ruta>/index.html`): Cloudflare Pages sirve
+    // `foo.html` en `/foo` con 200 (clean URLs), mientras que `foo/index.html`
+    // fuerza un 308 de `/foo` → `/foo/` (barra final) que descuadra con el canonical
+    // y el sitemap (ambos sin barra). Con el plano, URL servida = canonical = sitemap.
+    // r.path empieza por '/', así que slice(1). Todas las rutas son de 1 segmento.
+    writeFileSync(join(distDir, `${r.path.slice(1)}.html`), html);
     n++;
   }
-  console.log(`[prerender] ${n} rutas prerenderizadas: ${routes.map((r) => r.path).join(', ')}`);
+  console.log(`[prerender] ${n} rutas prerenderizadas (planas): ${routes.map((r) => r.path).join(', ')}`);
   return n;
 }
 
