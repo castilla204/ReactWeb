@@ -13,6 +13,7 @@ import {
 } from './profileSteps';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useExpertVisibility } from '../../hooks/useExpertVisibility';
 
 interface ProfileLike {
     profilePictureUrl?: string | null;
@@ -33,6 +34,8 @@ interface ProfileSetupWizardProps {
     visibilityNote?: string | null;
     stripeNote?: string | null;
     stripeContext?: StripeStepContext;
+    /** Nº de servicios publicados: sin servicios no hay nada que mostrar en búsquedas. */
+    servicesCount?: number;
 }
 
 const STEP_META: Record<
@@ -310,6 +313,7 @@ export function ProfileSetupWizard({
     visibilityNote,
     stripeNote,
     stripeContext,
+    servicesCount,
 }: ProfileSetupWizardProps) {
     const phoneStatus = usePhoneStatus(true);
     const smsCapable = Boolean(phoneStatus.data?.smsCapable);
@@ -324,6 +328,34 @@ export function ProfileSetupWizard({
     const [activeIndex, setActiveIndex] = useState(() => firstIncompleteStepIndex(steps));
 
     const isComplete = requiredLeft === 0;
+
+    // 🛡️ Veredicto de visibilidad del BACKEND, no del checklist. Los pasos solo
+    // saben 5 condiciones; el gate real añade vacaciones y excluye UnderReview
+    // (el paso fiscal se marca "hecho" porque no hay nada que hacer, pero el
+    // perfil sigue oculto). Antes el header decía "Perfil visible" en esos casos
+    // — y en esta pestaña no hay banner que lo corrija. Mientras carga, caemos
+    // al cálculo local (requiredLeft) para no parpadear.
+    const visibilityQuery = useExpertVisibility();
+    const backendVisibility = visibilityQuery.data ?? null;
+    const showAsVisible = backendVisibility ? backendVisibility.isVisible : isComplete;
+    // Con los pasos hechos pero oculto por una razón externa al checklist,
+    // decir POR QUÉ (si no, "Requisitos completados" + "Perfil oculto" confunde).
+    const hiddenBeyondSteps = isComplete && backendVisibility !== null && !backendVisibility.isVisible;
+    const hiddenBeyondStepsNote = !hiddenBeyondSteps || !backendVisibility
+        ? null
+        : !backendVisibility.notOnVacation
+            ? 'Estás en modo vacaciones: desactívalo para volver a aparecer en búsquedas.'
+            : !backendVisibility.stripeOk
+                ? 'Stripe aún está revisando tu cuenta de pagos. Volverás a aparecer automáticamente cuando termine.'
+                : 'Hay un dato pendiente de sincronizar. Se actualizará automáticamente en unos minutos.';
+
+    // Re-consultar el veredicto cuando el experto completa un paso (verificar
+    // móvil, subir foto…): el dato cacheado quedaría obsoleto justo cuando más
+    // importa enseñar el cambio.
+    useEffect(() => {
+        void visibilityQuery.refetch();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [doneCount]);
 
     useEffect(() => {
         setActiveIndex(firstIncompleteStepIndex(steps));
@@ -345,13 +377,13 @@ export function ProfileSetupWizard({
                         </span>
                         <span
                             className={`expert-setup-header-visibility ${
-                                requiredLeft > 0
-                                    ? 'expert-setup-header-visibility--hidden'
-                                    : 'expert-setup-header-visibility--visible'
+                                showAsVisible
+                                    ? 'expert-setup-header-visibility--visible'
+                                    : 'expert-setup-header-visibility--hidden'
                             }`}
                         >
                             <span className="expert-setup-visibility-dot" aria-hidden />
-                            {requiredLeft > 0 ? 'Perfil oculto' : 'Perfil visible'}
+                            {showAsVisible ? 'Perfil visible' : 'Perfil oculto'}
                         </span>
                     </div>
                     <div
@@ -368,16 +400,24 @@ export function ProfileSetupWizard({
                 <h2 className="expert-setup-header-title">
                     {requiredLeft > 0
                         ? `Faltan ${requiredLeft} requisito${requiredLeft === 1 ? '' : 's'} obligatorio${requiredLeft === 1 ? '' : 's'}`
-                        : 'Perfil activo en búsquedas'}
+                        : hiddenBeyondSteps
+                            ? 'Requisitos completados'
+                            : 'Perfil activo en búsquedas'}
                 </h2>
 
                 {visibilityNote && requiredLeft > 0 && (
                     <p className="expert-setup-header-note">{visibilityNote}</p>
                 )}
 
-                {isComplete && (
+                {hiddenBeyondStepsNote && (
+                    <p className="expert-setup-header-note">{hiddenBeyondStepsNote}</p>
+                )}
+
+                {isComplete && !hiddenBeyondSteps && (
                     <p className="expert-setup-header-complete">
-                        Tus servicios ya aparecen en las búsquedas de clientes.
+                        {servicesCount === 0
+                            ? 'Último paso: crea tu primer servicio para que los clientes puedan encontrarte.'
+                            : 'Tus servicios ya aparecen en las búsquedas de clientes.'}
                     </p>
                 )}
             </header>
@@ -415,7 +455,11 @@ export function useProfileSetupState(
         () => (profile ? buildProfileSteps(profile, smsCapable, stripeContext) : []),
         [profile, smsCapable, stripeContext?.stripeStatus, stripeContext?.onboardingCompleted, stripeContext?.stripeAccountId],
     );
-    const complete = steps.length > 0 && steps.every((s) => s.done);
+    // Solo los required: exigir también los opcionales dejaba la pestaña
+    // "Configuración" visible para siempre (y sin badge) a quien no
+    // configurara la disponibilidad — estado normal tras el alta fast-path,
+    // que no crea disponibilidad.
+    const complete = steps.length > 0 && steps.filter((s) => s.required).every((s) => s.done);
     const pendingRequired = steps.filter((s) => s.required && !s.done).length;
     const progress = getSetupProgress(steps);
     return { steps, complete, pendingRequired, progress };

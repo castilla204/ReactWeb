@@ -36,6 +36,17 @@ export const useMoneyDistributionConfig = (
   });
 };
 
+// 🛡️ B-2 FIX (auditoría 2026-07-06): normalizar coma decimal antes de parseFloat.
+// Los porcentajes llegan como STRING del backend; si algún día se serializaran con
+// cultura es-ES ("12,5"), parseFloat pararía en la coma y mostraría 12 en vez de 12.5.
+// Mismo patrón que toFiniteNumber de priceUtils. Display-only (el reparto real lo
+// calcula el backend), pero barato de blindar.
+export const parsePercentValue = (value: string | number | null | undefined): number => {
+  if (typeof value === 'number') return value;
+  if (value == null) return NaN;
+  return parseFloat(String(value).replace(',', '.'));
+};
+
 // Utilidad para calcular la distribución de dinero
 //
 // 🛡️ Round 10 — P-D FIX: aritmética en céntimos enteros para alinear con backend.
@@ -58,9 +69,9 @@ export const calculateMoneyDistribution = (
 
   // Coerción defensiva (parseFloat puede devolver NaN si llegan datos corruptos)
   const safeAmount = Number.isFinite(amount) ? amount : 0;
-  const clientPercentage = parseFloat(config.clientPercentage);
-  const expertPercentage = parseFloat(config.expertPercentage);
-  const platformPercentage = parseFloat(config.platformPercentage);
+  const clientPercentage = parsePercentValue(config.clientPercentage);
+  const expertPercentage = parsePercentValue(config.expertPercentage);
+  const platformPercentage = parsePercentValue(config.platformPercentage);
 
   const clientPct = Number.isFinite(clientPercentage) ? clientPercentage : 0;
   const expertPct = Number.isFinite(expertPercentage) ? expertPercentage : 0;
@@ -88,9 +99,9 @@ export const validateMoneyDistribution = (config: MoneyDistributionConfig): bool
     return true;
   }
   
-  const clientPercentage = parseFloat(config.clientPercentage) || 0;
-  const expertPercentage = parseFloat(config.expertPercentage) || 0;
-  const platformPercentage = parseFloat(config.platformPercentage) || 0;
+  const clientPercentage = parsePercentValue(config.clientPercentage) || 0;
+  const expertPercentage = parsePercentValue(config.expertPercentage) || 0;
+  const platformPercentage = parsePercentValue(config.platformPercentage) || 0;
   const total = clientPercentage + expertPercentage + platformPercentage;
   
   return Math.abs(total - 100) < 0.01; // Tolerancia de 0.01%
@@ -142,8 +153,8 @@ export const shouldShowMoneyDistribution = (
   }
   
   // Solo mostrar si es un estado final con distribución real
-  return config.source === 'dynamic' && 
-         (parseFloat(config.clientPercentage) > 0 || 
-          parseFloat(config.expertPercentage) > 0 || 
-          parseFloat(config.platformPercentage) > 0);
+  return config.source === 'dynamic' &&
+         (parsePercentValue(config.clientPercentage) > 0 ||
+          parsePercentValue(config.expertPercentage) > 0 ||
+          parsePercentValue(config.platformPercentage) > 0);
 };

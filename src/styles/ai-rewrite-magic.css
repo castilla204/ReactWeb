@@ -124,6 +124,78 @@
   to { transform: rotate(360deg); }
 }
 
+/* Sugerencia IA dentro del textarea existente */
+.pf-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.pf-textarea-wrap--ai .pf-textarea--field,
+.pf-textarea-wrap--ai .pf-textarea--composer {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: none;
+}
+
+.pf-textarea--ai-preview {
+  background: hsl(214 60% 98%) !important;
+}
+
+.pf-textarea-ai-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid hsl(214 38% 84%);
+  border-top: 1px dashed hsl(214 38% 84%);
+  border-radius: 0 0 10px 10px;
+  background: hsl(214 55% 97%);
+}
+
+.pf-about-composer .pf-textarea-wrap--ai .pf-textarea-ai-bar {
+  margin: 0 0 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+}
+
+.pf-textarea-ai-bar__use,
+.pf-textarea-ai-bar__discard {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pf-textarea-ai-bar__use {
+  border: none;
+  color: hsl(0 0% 100%);
+  background: hsl(218 88% 46%);
+}
+
+.pf-textarea-ai-bar__use:hover {
+  background: hsl(218 88% 40%);
+}
+
+.pf-textarea-ai-bar__discard {
+  border: none;
+  color: hsl(215 12% 44%);
+  background: transparent;
+}
+
+.pf-textarea-ai-bar__discard:hover {
+  color: hsl(222 24% 16%);
+  background: hsl(0 0% 100% / 0.6);
+}
+
 .ai-magic-preview {
   position: relative;
   overflow: hidden;

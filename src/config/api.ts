@@ -249,9 +249,6 @@ export const API_CONFIG = {
         review: {
             expert: (expertId: number) => `${API_PATH}/Review/expert/${expertId}`,
         },
-        log: {
-            critical: `${API_PATH}/Log/critical`,
-        },
         accountDeletion: {
             status: `${API_PATH}/AccountDeletion/status`,
             delete: `${API_PATH}/AccountDeletion/delete`,
