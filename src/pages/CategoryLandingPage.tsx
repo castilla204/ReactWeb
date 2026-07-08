@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Footer } from '../components/Footer';
 import { SEO } from '../components/SEO';
 import { HP_PANEL_GRADIENT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
-import { breadcrumbSchema, faqPageSchema, serviceSchema } from '../utils/jsonLd';
+import { breadcrumbSchema, faqPageSchema, serviceSchema, howToSchema } from '../utils/jsonLd';
 import {
   CATEGORY_LANDINGS,
   CATEGORY_LANDING_BY_SLUG,
@@ -49,6 +49,11 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
       { name: config.shortName, url: path },
     ]),
     faqPageSchema(config.faqs),
+    howToSchema(
+      `Cómo funciona ${config.h1.toLowerCase()}`,
+      config.answerFirst,
+      LANDING_STEPS.map((s) => ({ name: s.title, text: s.body })),
+    ),
   ];
 
   return (
@@ -109,6 +114,20 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
       </section>
 
       <main className={`${SD_PAGE_INNER_MAX_CLASS} px-4 py-8 pb-24 md:px-6 md:py-10 md:pb-16`}>
+        {/* Respuesta directa (AEO/GEO): bloque autocontenido de 40-60 palabras que los
+            motores de respuesta (AI Overviews, ChatGPT, Perplexity) extraen y citan.
+            Coincide LITERALMENTE con el HowTo.description del JSON-LD. */}
+        <section aria-label="En resumen" className="mb-10">
+          <div className="rounded-xl border border-[#e3ecf6] bg-[#f5f9fe] p-4 md:p-5">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.1em] text-brand">
+              En resumen
+            </p>
+            <p className="text-sm leading-relaxed text-[#1c1c1c] md:text-base">
+              {config.answerFirst}
+            </p>
+          </div>
+        </section>
+
         {/* Qué revisa el experto */}
         <section aria-labelledby="checks-heading">
           <h2 id="checks-heading" className="hp-section-title mb-2">

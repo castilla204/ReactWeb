@@ -34,6 +34,13 @@ export interface CategoryLandingConfig {
   h1: string;
   /** Párrafo de introducción bajo el H1. */
   intro: string;
+  /**
+   * Respuesta directa de 40-60 palabras a la pregunta implícita del H1.
+   * AEO/GEO 2026: los motores de respuesta (AI Overviews, ChatGPT, Perplexity)
+   * extraen y citan el primer bloque que responde de forma directa y autocontenida.
+   * Se renderiza destacado justo bajo el H1, antes de la intro narrativa.
+   */
+  answerFirst: string;
   /** Nombre del servicio para el schema Service. */
   serviceName: string;
   /** Título de la sección de puntos de revisión. */
@@ -77,6 +84,8 @@ export const CATEGORY_LANDINGS: CategoryLandingConfig[] = [
     h1: 'Inspección de coche de segunda mano antes de comprar',
     intro:
       'Comprar un coche usado sin revisarlo es jugar a la lotería: kilómetros trucados, siniestros ocultos, averías caras a la vuelta de la esquina. Un mecánico verificado de Inspecciono va donde está el coche, lo revisa a fondo y te entrega un informe para que decidas con datos, no con la palabra del vendedor.',
+    answerFirst:
+      'Una inspección de coche de segunda mano es una revisión presencial que hace un mecánico verificado antes de que compres: comprueba kilómetros reales, siniestros ocultos, mecánica y documentación, y te entrega un informe con fotos. En Inspecciono reservas al experto por el mapa, pagas en escrow y no cobra hasta tu visto bueno.',
     serviceName: 'Inspección pre-compra de coche de segunda mano',
     checksTitle: 'Qué revisa el mecánico',
     checks: [
@@ -122,6 +131,8 @@ export const CATEGORY_LANDINGS: CategoryLandingConfig[] = [
     h1: 'Peritaje de piso antes de firmar la compra',
     intro:
       'Es la compra más grande de tu vida y las visitas de 20 minutos no enseñan lo que importa: humedades tapadas, instalaciones caducadas, grietas que no son "de pintura". Un perito verificado inspecciona la vivienda a fondo y te entrega un informe técnico antes de que firmes nada.',
+    answerFirst:
+      'Un peritaje de piso antes de comprar es una inspección técnica de la vivienda —humedades, instalación eléctrica, fontanería y estructura— hecha por un perito verificado que trabaja para ti, no para el vendedor. Recibes un informe con fotos para decidir o negociar el precio antes de firmar las arras. El pago queda retenido en escrow.',
     serviceName: 'Peritaje pre-compra de vivienda',
     checksTitle: 'Qué revisa el perito',
     checks: [
@@ -167,6 +178,8 @@ export const CATEGORY_LANDINGS: CategoryLandingConfig[] = [
     h1: 'Inspección de moto de segunda mano por un experto',
     intro:
       'En una moto usada, una caída mal reparada o un chasis tocado no se ven en fotos — y te juegas algo más que dinero. Un mecánico verificado la inspecciona donde esté y te dice la verdad sobre su estado antes de que pagues.',
+    answerFirst:
+      'Una inspección de moto de segunda mano es una revisión presencial en la que un mecánico verificado comprueba chasis, motor, kilómetros reales, caídas ocultas y documentación antes de que pagues, y te entrega un informe con fotos en pocos días. En Inspecciono buscas al experto por el mapa y el pago queda retenido hasta tu visto bueno.',
     serviceName: 'Inspección pre-compra de moto de segunda mano',
     checksTitle: 'Qué revisa el mecánico',
     checks: [
@@ -212,6 +225,8 @@ export const CATEGORY_LANDINGS: CategoryLandingConfig[] = [
     h1: 'Peritaje de maquinaria de segunda mano',
     intro:
       'Un tractor, una carretilla o una máquina industrial de ocasión puede costar decenas de miles de euros — y venir con horas trucadas, hidráulica cansada o un mantenimiento inexistente. Un técnico verificado la inspecciona in situ y te entrega un informe antes de que cierres la compra.',
+    answerFirst:
+      'Un peritaje de maquinaria de segunda mano es una inspección in situ —tractor, carretilla o máquina industrial— donde un técnico verificado comprueba horas reales, motor, hidráulica y estructura antes de que cierres la compra, y te entrega un informe con fotos y valoración. En Inspecciono lo reservas por ubicación y el pago queda en escrow.',
     serviceName: 'Peritaje pre-compra de maquinaria de segunda mano',
     checksTitle: 'Qué revisa el técnico',
     checks: [
@@ -257,6 +272,8 @@ export const CATEGORY_LANDINGS: CategoryLandingConfig[] = [
     h1: 'Inspección de bici eléctrica de segunda mano',
     intro:
       'En una e-bike usada, el dinero está en lo que no se ve: una batería degradada o un motor cansado convierten una ganga en un pisapapeles de 2.000 €. Un técnico verificado comprueba la salud real de batería, motor y electrónica antes de que pagues.',
+    answerFirst:
+      'Una inspección de bici eléctrica de segunda mano comprueba lo que no se ve: la salud real de la batería (ciclos y capacidad restante), el motor, la electrónica y el cuadro. La hace un técnico verificado y te entrega un informe antes de que pagues. En Inspecciono buscas al experto por el mapa y pagas en escrow.',
     serviceName: 'Inspección pre-compra de bicicleta eléctrica',
     checksTitle: 'Qué revisa el técnico',
     checks: [
