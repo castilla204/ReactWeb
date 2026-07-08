@@ -22,8 +22,8 @@ const ICON_STROKE = 2;
  * Tab individual de la barra inferior. Cada tab reparte el ancho por igual
  * (`flex: 1`) — sin anchos fijos ni márgenes negativos — así la barra nunca
  * desborda con 3 tabs (invitado) ni con 6 (experto autenticado) en pantallas
- * de 360 px. El estado activo se comunica con un "pill" teñido de marca detrás
- * del icono (patrón Material-3), color de marca y etiqueta semibold.
+ * de 360 px. El estado activo se comunica sin fondos ni contornos (patrón
+ * iOS/Airbnb): color de marca, trazo del icono más grueso y etiqueta semibold.
  */
 type TabButtonProps = {
   label: string;
@@ -63,10 +63,10 @@ const TabButton: React.FC<TabButtonProps> = ({
   >
     <span
       className={[
-        'relative flex h-7 items-center justify-center rounded-full px-3 transform-gpu',
-        'transition-[background-color,transform] duration-200 ease-out',
+        'relative flex h-7 items-center justify-center px-3 transform-gpu',
+        'transition-[color,transform] duration-200 ease-out',
         'group-active:scale-90 motion-reduce:transition-none motion-reduce:group-active:scale-100',
-        active ? 'bg-brand/10' : 'bg-transparent',
+        active ? '[&_svg]:[stroke-width:2.5]' : '',
       ].join(' ')}
       style={{ color: active ? 'hsl(var(--brand))' : HP_COLOR.muted }}
     >

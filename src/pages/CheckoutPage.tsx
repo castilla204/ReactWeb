@@ -18,7 +18,9 @@ import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAsid
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
 import { CheckoutMobileStepHeader, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepHeader';
-import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, COORD_DESKTOP_STEP1_LEAD } from '../components/checkout/CheckoutCoordinationStep';
+import { CheckoutMobileStepper } from '../components/checkout/CheckoutMobileStepper';
+import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, getCoordDesktopStep1Lead } from '../components/checkout/CheckoutCoordinationStep';
+import { getInspectionSubject, getInspectionSubjectOf } from '../utils/inspectionSubject';
 import { CheckoutDesktopAppointmentHeader } from '../components/checkout/CheckoutDesktopAppointmentHeader';
 import { CheckoutCalendarSideInfo } from '../components/checkout/CheckoutCalendarSideInfo';
 import {
@@ -73,8 +75,21 @@ import {
 } from '../constants/homepageTypography';
 
 // El flujo "Que la elija el vendedor" tiene 4 paradas en móvil (agenda · zona ·
-// contacto · pago); el pago cierra en Stripe, así que la cabecera nunca marca 4/4.
-const MOBILE_SELLER_PREVIEW_TOTAL = 4;
+// contacto · pago); el pago cierra en Stripe, así que el stepper nunca marca el 4 activo.
+const MOBILE_SELLER_PREVIEW_STEPS = [
+    { id: 1, label: 'Disponibilidad' },
+    { id: 2, label: 'Ubicación' },
+    { id: 3, label: 'Contacto' },
+    { id: 4, label: 'Pago' },
+] as const;
+
+// Flujo "La elijo yo ahora": el wizard móvil de 4 pasos.
+const MOBILE_SELF_STEPS = [
+    { id: 1, label: 'Fecha y hora' },
+    { id: 2, label: 'Ubicación' },
+    { id: 3, label: 'Vendedor' },
+    { id: 4, label: 'Pago' },
+] as const;
 
 interface CheckoutPageProps {}
 
@@ -875,6 +890,29 @@ export function CheckoutPage({}: CheckoutPageProps) {
         showFooterNotes: false,
     };
 
+    // Resumen final "Revisa y reserva": mismo bloque en el flujo self (paso 4) y
+    // en el flujo coordinado/seller, que va directo al pago. El scroll contenedor
+    // ya aporta el aire superior; aquí solo un respiro antes de la tarjeta (pb-5).
+    const mobilePaymentSummaryNode = (
+        <>
+            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'pb-5 pt-1')}>
+                <CheckoutMobileStepHeader
+                    step={4}
+                    steps={MOBILE_SELF_STEPS}
+                    hideStepper
+                    title="Revisa y reserva"
+                    description="Comprueba que todo está bien antes de pagar."
+                />
+            </div>
+            <CheckoutMobileSheet
+                {...summaryTableProps}
+                includePrice
+                showFooterNotes
+                paymentStep
+            />
+        </>
+    );
+
     const exitCheckout = () => {
         if (serviceId) {
             const returnTo = readServiceReturnPath();
@@ -1026,6 +1064,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
             embedded
             showStepHeader={false}
             coordinationMode={coordinationMode}
+            categoryName={service?.categoryName}
             view={coordinationMode === 'seller' ? 'seller' : coordView}
             selection={coordSelection}
             onSelect={handleCoordinationSelect}
@@ -1042,6 +1081,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const coordinationStepMobileNode = (
         <CheckoutCoordinationStep
             coordinationMode={coordinationMode}
+            categoryName={service?.categoryName}
             // En el paso de contacto móvil, el título/explicación los pone la cabecera
             // del wizard (CheckoutMobileStepHeader); se oculta el header propio para no duplicar.
             hideHeader={coordView === 'seller-contact' && !isWorkshopOnly}
@@ -1240,7 +1280,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         {desktopOnCoordCalendarStep ? (
                             <CheckoutDesktopAppointmentHeader
                                 title={COORD_CHOOSE_TITLE}
-                                description={COORD_DESKTOP_STEP1_LEAD}
+                                description={getCoordDesktopStep1Lead(service?.categoryName)}
                                 onBack={handleDesktopBack}
                                 className="mb-4"
                             />
@@ -1349,9 +1389,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             >
                                 <CheckoutMobileStepHeader
                                     step={2}
-                                    total={MOBILE_SELLER_PREVIEW_TOTAL}
+                                    steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Zona del experto"
-                                    description="Aquí solo ves su área de trabajo, para comprobar que cubre tu zona. El vendedor indicará la dirección exacta del coche al reservar."
+                                    description={`Aquí solo ves su área de trabajo, para comprobar que cubre tu zona. El vendedor indicará la dirección exacta ${getInspectionSubjectOf(service?.categoryName)} al reservar.`}
                                 />
                             </header>
                             <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -1380,6 +1420,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 // así que el área centrada se metía por detrás del footer.
                                 style={{ paddingBottom: mobileFooterHeight || undefined }}
                             >
+                                {/* Primer paso del flujo: la barra arranca con el tramo 1 en azul. */}
+                                <CheckoutMobileStepper
+                                    currentStep={1}
+                                    steps={MOBILE_SELF_STEPS}
+                                    className="mb-6 shrink-0"
+                                />
                                 {coordinationStepMobileNode}
                             </div>
                         </div>
@@ -1391,7 +1437,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             {coordView === 'seller-contact' && !isWorkshopOnly ? (
                                 <CheckoutMobileStepHeader
                                     step={3}
-                                    total={MOBILE_SELLER_PREVIEW_TOTAL}
+                                    steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Datos del vendedor"
                                     description="Le enviaremos un enlace para elegir la cita. Móvil o email; el anuncio es opcional."
                                     className="mb-4"
@@ -1403,7 +1449,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     {!isWorkshopOnly ? (
                                         <CheckoutMobileStepHeader
                                             step={1}
-                                            total={MOBILE_SELLER_PREVIEW_TOTAL}
+                                            steps={MOBILE_SELLER_PREVIEW_STEPS}
                                             title="Agenda del experto"
                                             description="Aquí solo consultas su agenda, para ver que tiene huecos libres. Tras el pago, el vendedor elegirá el día y la hora con el enlace que le enviamos."
                                             className="mb-4"
@@ -1438,8 +1484,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         >
                             <CheckoutMobileStepHeader
                                 step={2}
-                                total={4}
-                                title="¿Dónde está el coche?"
+                                steps={MOBILE_SELF_STEPS}
+                                title={`¿Dónde está ${getInspectionSubject(service?.categoryName)}?`}
                                 description="Marca la dirección donde el experto hará la revisión."
                             />
                         </header>
@@ -1470,7 +1516,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             >
                                 <CheckoutMobileStepHeader
                                     step={mobileStep}
-                                    total={4}
+                                    steps={MOBILE_SELF_STEPS}
                                     title={mobileStep === 1 ? 'Elige día y hora' : 'Datos del vendedor'}
                                     description={
                                         mobileStep === 1
@@ -1491,30 +1537,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         ) : mobileStep === 3 ? (
                             sellerDataSelfMobileNode
                         ) : mobileStep === 4 ? (
-                            <>
-                                <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, SD_CHECKOUT_MOBILE_TOP_PAD_CLASS, 'pb-1')}>
-                                    <CheckoutMobileStepHeader
-                                        step={4}
-                                        total={4}
-                                        title="Revisa y reserva"
-                                        description="Comprueba que todo está bien antes de pagar."
-                                    />
-                                </div>
-                                <CheckoutMobileSheet
-                                    {...summaryTableProps}
-                                    includePrice
-                                    showFooterNotes
-                                    paymentStep
-                                />
-                            </>
+                            mobilePaymentSummaryNode
                         ) : null
                     ) : (
-                        <CheckoutMobileSheet
-                            {...summaryTableProps}
-                            includePrice
-                            showFooterNotes
-                            paymentStep
-                        />
+                        mobilePaymentSummaryNode
                     )}
                 </div>
                 )}

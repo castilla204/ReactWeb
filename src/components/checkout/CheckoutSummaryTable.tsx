@@ -8,6 +8,7 @@ import {
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
+import { CheckoutExpertHero } from './CheckoutExpertHero';
 import type { ServiceDeliverableType } from '../serviceDetail/ServiceDetailDeliverablesGuide';
 
 export interface CheckoutSummaryTableProps {
@@ -123,23 +124,13 @@ export function CheckoutSummaryTable({
         )}
 
         {!compact && !hideExpertHeader && expertName ? (
-          <div className="flex items-center gap-3.5 bg-gradient-to-br from-[hsl(210_86%_53%)] via-[hsl(210_84%_45%)] to-[hsl(210_82%_38%)] px-5 py-4">
-            {expertPicture ? (
-              <img
-                src={expertPicture}
-                alt={expertName}
-                className="h-11 w-11 shrink-0 rounded-full bg-[#e2e8f0] object-cover ring-2 ring-white/45 shadow-[0_2px_8px_rgba(0,0,0,0.18)]"
-              />
-            ) : (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/35">
-                <span className="text-sm font-bold text-white">{expertName.charAt(0) || 'E'}</span>
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-white">{expertName}</p>
-              <span className="mt-0.5 inline-block text-[11px] font-medium text-white/85">Experto verificado</span>
-            </div>
-          </div>
+          <CheckoutExpertHero
+            expertName={expertName}
+            expertPicture={expertPicture}
+            rating={expertRating}
+            reviewCount={expertReviewCount}
+            className="px-6 py-4"
+          />
         ) : null}
 
         {!compact && hideExpertHeader ? (
@@ -151,8 +142,14 @@ export function CheckoutSummaryTable({
         ) : null}
 
         <dl aria-label="Detalles del servicio">
+          {!compact && !hideExpertHeader && serviceName ? (
+            <CheckoutSummaryTableRow label="Servicio" compact={compact}>
+              {serviceName}
+            </CheckoutSummaryTableRow>
+          ) : null}
+
           {categoryName ? (
-            <CheckoutSummaryTableRow label="Categoría" compact={compact} className="py-2">
+            <CheckoutSummaryTableRow label="Categoría" compact={compact}>
               {categoryName}
             </CheckoutSummaryTableRow>
           ) : null}
@@ -194,7 +191,7 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className={cn('border-t border-[#f5f5f5] px-3.5', compact ? 'py-2.5' : 'py-3')}>
+            <div className={cn('border-t border-[#f5f5f5]', compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-xs text-[#6a6a6a] font-medium">Total a pagar</p>
                 <p
@@ -216,7 +213,7 @@ export function CheckoutSummaryTable({
         </dl>
 
         {showFooterNotes ? (
-          <footer className="space-y-2.5 border-t border-[#f5f5f5] px-3.5 py-2.5">
+          <footer className="space-y-2.5 border-t border-[#f5f5f5] px-6 py-3.5">
             <CheckoutReserveHint coordinationMode={coordinationMode} />
             <a
               href="/terms.html"

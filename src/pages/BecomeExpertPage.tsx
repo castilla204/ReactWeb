@@ -3,7 +3,7 @@
 // (renderizado) con tiles Carto + la API REST de Mapbox para geocoding (igual que el
 // resto de pantallas migradas — ver `ServiceDetailCoverageMap.tsx`).
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, ChevronDown, ArrowRight } from 'lucide-react';
+import { Loader2, AlertTriangle, MapPin, Check, Search, CreditCard, ChevronDown } from 'lucide-react';
 import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
@@ -1067,12 +1067,12 @@ function BecomeExpertPage() {
                     <div className="space-y-2.5">
                         <div className="be-fast-form-field">
                             <label htmlFor="fast-country-m" className="be-fast-form-label">
-                                ¿Dónde trabajarás?
+                                País de trabajo
                             </label>
                             <div className="relative">
-                                <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/10">
+                                <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[14px] w-[21px] -translate-y-1/2 overflow-hidden rounded-[2px] ring-1 ring-black/10">
                                     <span
-                                        className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
+                                        className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full !bg-cover`}
                                         aria-hidden
                                     />
                                 </span>
@@ -1080,7 +1080,7 @@ function BecomeExpertPage() {
                                     id="fast-country-m"
                                     value={fastPathCountry}
                                     onChange={(e) => setFastPathCountry(e.target.value)}
-                                    className={`${BE_FAST_SELECT_CLASS} pl-12 pr-10`}
+                                    className={`${BE_FAST_SELECT_CLASS} pl-11 pr-10`}
                                 >
                                     {sortedCountries.map((code) => (
                                         <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
@@ -1105,17 +1105,7 @@ function BecomeExpertPage() {
                             aria-busy={fastPathSubmitting}
                             className={BE_FAST_PRIMARY_BTN_CLASS}
                         >
-                            {fastPathSubmitting ? (
-                                'Creando tu alta…'
-                            ) : (
-                                <>
-                                    Continuar con Stripe
-                                    <ArrowRight
-                                        className="h-4 w-4 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5"
-                                        strokeWidth={2.4}
-                                    />
-                                </>
-                            )}
+                            {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
                         </button>
                     </div>
                 }
@@ -1141,12 +1131,12 @@ function BecomeExpertPage() {
 
                     <div className="be-fast-form-field">
                         <label htmlFor="fast-country" className="be-fast-form-label">
-                            ¿En qué país trabajas?
+                            País de trabajo
                         </label>
                         <div className="relative">
-                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/10">
+                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[14px] w-[21px] -translate-y-1/2 overflow-hidden rounded-[2px] ring-1 ring-black/10">
                                 <span
-                                    className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
+                                    className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full !bg-cover`}
                                     aria-hidden
                                 />
                             </span>
@@ -1154,7 +1144,7 @@ function BecomeExpertPage() {
                                 id="fast-country"
                                 value={fastPathCountry}
                                 onChange={(e) => setFastPathCountry(e.target.value)}
-                                className={`${BE_FAST_SELECT_CLASS} pl-12 pr-10`}
+                                className={`${BE_FAST_SELECT_CLASS} pl-11 pr-10`}
                             >
                                 {sortedCountries.map((code) => (
                                     <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
@@ -1182,17 +1172,7 @@ function BecomeExpertPage() {
                             aria-busy={fastPathSubmitting}
                             className={BE_FAST_PRIMARY_BTN_CLASS}
                         >
-                            {fastPathSubmitting ? (
-                                'Creando tu alta…'
-                            ) : (
-                                <>
-                                    Continuar con Stripe
-                                    <ArrowRight
-                                        className="h-4 w-4 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5"
-                                        strokeWidth={2.4}
-                                    />
-                                </>
-                            )}
+                            {fastPathSubmitting ? 'Creando tu alta…' : 'Continuar con Stripe'}
                         </button>
                         <FastPathButtonNote />
                     </div>

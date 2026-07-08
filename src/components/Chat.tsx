@@ -3,6 +3,7 @@ import { useChat } from '../hooks/useChat';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId';
+import { getStatusTone, type StatusTone } from '../utils/statusUtils';
 import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -86,120 +87,41 @@ const extractStatusValue = (content: string): string | null => {
 
 interface StatusDisplay {
     message: string;
-    description?: string;
     icon: React.ReactNode;
-    color: string;
-    bgColor: string;
-    borderColor: string;
 }
 
 const statusDisplayMap: Record<string, StatusDisplay> = {
-    "appointment_proposed": {
-        message: "Cita propuesta",
-        description: "El cliente ha propuesto una fecha y hora para la cita. El experto puede aceptarla o rechazarla.",
-        icon: <Calendar className="w-4 h-4" />,
-        color: "text-blue-700 dark:text-blue-300",
-        bgColor: "bg-blue-50 dark:bg-blue-950/30",
-        borderColor: "border-blue-200 dark:border-blue-800"
-    },
-    "appointment_confirmed": {
-        message: "✅ Cita aceptada",
-        description: "La cita ha sido confirmada por ambas partes. El servicio puede proceder según lo acordado.",
-        icon: <CheckCircle className="w-4 h-4" />,
-        color: "text-green-700 dark:text-green-300",
-        bgColor: "bg-green-50 dark:bg-green-950/30",
-        borderColor: "border-green-200 dark:border-green-800"
-    },
-    "appointment_rejected": {
-        message: "❌ Cita rechazada",
-        description: "El experto ha rechazado la propuesta de cita. El cliente puede proponer una nueva fecha y hora.",
-        icon: <XCircle className="w-4 h-4" />,
-        color: "text-red-700 dark:text-red-300",
-        bgColor: "bg-red-50 dark:bg-red-950/30",
-        borderColor: "border-red-200 dark:border-red-800"
-    },
-    "appointment_cancelled_by_client": {
-        message: "Cita cancelada por el cliente",
-        description: "El cliente ha cancelado la cita. Puede proponer una nueva fecha si lo desea.",
-        icon: <AlertCircle className="w-4 h-4" />,
-        color: "text-orange-700 dark:text-orange-300",
-        bgColor: "bg-orange-50 dark:bg-orange-950/30",
-        borderColor: "border-orange-200 dark:border-orange-800"
-    },
-    "appointment_cancelled_by_expert": {
-        message: "Cita cancelada por el experto",
-        description: "El experto ha cancelado la cita. El cliente puede proponer una nueva fecha.",
-        icon: <AlertCircle className="w-4 h-4" />,
-        color: "text-orange-700 dark:text-orange-300",
-        bgColor: "bg-orange-50 dark:bg-orange-950/30",
-        borderColor: "border-orange-200 dark:border-orange-800"
-    },
-    "appointment_cancelled_by_client_second": {
-        message: "Cita cancelada por el cliente (segunda cancelación)",
-        description: "Segunda cancelación del cliente. Se aplicarán políticas de reembolso según los términos del servicio.",
-        icon: <AlertCircle className="w-4 h-4" />,
-        color: "text-orange-700 dark:text-orange-300",
-        bgColor: "bg-orange-50 dark:bg-orange-950/30",
-        borderColor: "border-orange-200 dark:border-orange-800"
-    },
-    "appointment_cancelled_by_expert_second": {
-        message: "Cita cancelada por el experto (segunda cancelación)",
-        description: "Segunda cancelación del experto. El cliente puede proponer una nueva fecha.",
-        icon: <AlertCircle className="w-4 h-4" />,
-        color: "text-orange-700 dark:text-orange-300",
-        bgColor: "bg-orange-50 dark:bg-orange-950/30",
-        borderColor: "border-orange-200 dark:border-orange-800"
-    },
-    "appointment_cancelled_by_no_response": {
-        message: "Cita cancelada - sin respuesta",
-        description: "La cita fue cancelada automáticamente porque no se recibió respuesta en el tiempo establecido.",
-        icon: <Clock className="w-4 h-4" />,
-        color: "text-[#1c1c1c] dark:text-gray-300",
-        bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-[#e8e8e8] dark:border-gray-800"
-    },
-    "appointment_cancelled_by_no_report": {
-        message: "Cita cancelada - sin reporte",
-        description: "La cita fue cancelada automáticamente porque el experto no envió el reporte en el tiempo establecido.",
-        icon: <FileText className="w-4 h-4" />,
-        color: "text-[#1c1c1c] dark:text-gray-300",
-        bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-[#e8e8e8] dark:border-gray-800"
-    },
-    "appointment_report_sent": {
-        message: "📄 Reporte enviado",
-        description: "El experto ha enviado el reporte de la cita. El cliente puede revisarlo y aprobar el servicio.",
-        icon: <FileCheck className="w-4 h-4" />,
-        color: "text-green-700 dark:text-green-300",
-        bgColor: "bg-green-50 dark:bg-green-950/30",
-        borderColor: "border-green-200 dark:border-green-800"
-    },
-    "appointment_awaiting_report": {
-        message: "Esperando reporte del experto",
-        description: "La cita ha finalizado. El experto debe enviar el reporte con los detalles del servicio realizado.",
-        icon: <Clock className="w-4 h-4" />,
-        color: "text-yellow-700 dark:text-yellow-300",
-        bgColor: "bg-yellow-50 dark:bg-yellow-950/30",
-        borderColor: "border-yellow-200 dark:border-yellow-800"
-    },
-    "appointment_cancelled_by_expert_rejection": {
-        message: "Cita cancelada por rechazo del experto",
-        description: "El experto rechazó la cita. El cliente puede proponer una nueva fecha y hora.",
-        icon: <XCircle className="w-4 h-4" />,
-        color: "text-red-700 dark:text-red-300",
-        bgColor: "bg-red-50 dark:bg-red-950/30",
-        borderColor: "border-red-200 dark:border-red-800"
-    }
+    appointment_proposed: { message: 'Cita propuesta', icon: <Calendar className="h-3.5 w-3.5" /> },
+    appointment_confirmed: { message: 'Cita confirmada', icon: <CheckCircle className="h-3.5 w-3.5" /> },
+    appointment_rejected: { message: 'Cita rechazada', icon: <XCircle className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_client: { message: 'Cita cancelada por el cliente', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_expert: { message: 'Cita cancelada por el experto', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_client_second: { message: 'Cita cancelada por el cliente (segunda cancelación)', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_expert_second: { message: 'Cita cancelada por el experto (segunda cancelación)', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_no_response: { message: 'Cita cancelada por falta de respuesta', icon: <Clock className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_no_report: { message: 'Cita cancelada: no se envió el informe', icon: <FileText className="h-3.5 w-3.5" /> },
+    appointment_report_sent: { message: 'Informe enviado', icon: <FileCheck className="h-3.5 w-3.5" /> },
+    appointment_awaiting_report: { message: 'Esperando el informe del experto', icon: <Clock className="h-3.5 w-3.5" /> },
+    appointment_cancelled_by_expert_rejection: { message: 'Cita rechazada por el experto', icon: <XCircle className="h-3.5 w-3.5" /> },
 };
 
 const getStatusDisplay = (statusValue: string): StatusDisplay => {
     return statusDisplayMap[statusValue] ?? {
-        message: `Estado: ${statusValue}`,
-        icon: <HelpCircle className="w-4 h-4" />,
-        color: "text-[#1c1c1c] dark:text-gray-300",
-        bgColor: "bg-gray-50 dark:bg-gray-950/30",
-        borderColor: "border-[#e8e8e8] dark:border-gray-800"
+        message: 'Estado de la cita actualizado',
+        icon: <HelpCircle className="h-3.5 w-3.5" />,
     };
+};
+
+// Pill de sistema en el hilo: color solo para desenlaces (éxito verde,
+// cancelación/rechazo rojo); los hitos intermedios van en gris tranquilo
+// para no encender el historial. Tono decidido por getStatusTone (fuente
+// única de la semántica de estados, la misma que StatusBadge).
+const CHAT_STATUS_PILL_CLASSES: Record<StatusTone, string> = {
+    success: 'border-[#d8ebdf] bg-[#ecf6f0] text-[#0F6A3E]',
+    danger: 'border-[#f5dada] bg-[#fdf2f2] text-[#b42318]',
+    warning: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
+    info: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
+    neutral: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
 };
 
 const Chat: React.FC<ChatProps> = ({
@@ -702,10 +624,11 @@ const Chat: React.FC<ChatProps> = ({
                                     if (isStatusMessage) {
                                         const statusValue = extractStatusValue(message.content);
                                         const display = statusValue ? getStatusDisplay(statusValue) : null;
-                                        if (!display) return null;
+                                        if (!display || !statusValue) return null;
+                                        const pillTone = CHAT_STATUS_PILL_CLASSES[getStatusTone({ statusValue })];
                                         return (
                                             <div key={message.id} className="flex justify-center my-3">
-                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${display.bgColor} ${display.color} border ${display.borderColor}`}>
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${pillTone}`}>
                                                     {display.icon}
                                                     {display.message}
                                                 </span>

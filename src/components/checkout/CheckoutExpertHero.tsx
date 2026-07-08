@@ -49,7 +49,7 @@ export function CheckoutExpertHero({
           {expertName}
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-4 text-[#6a6a6a]">
-          <span>Revisor verificado</span>
+          <span>Experto verificado</span>
           {completedSearches > 0 ? (
             <>
               <span className="text-[#d4d4d4]" aria-hidden>

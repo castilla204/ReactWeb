@@ -635,7 +635,10 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
 
   return (
     <div
-      className={isLastSection ? "" : ""} // ✅ Sin margen inferior adicional
+      // Full-bleed móvil: -mx-4 compensa el px-4 del contenedor y el px-4 propio
+      // realinea la cabecera; así el carril puede sangrar hasta el borde de la
+      // pantalla sin que contain/content-visibility (paint) lo recorte.
+      className="-mx-4 px-4 md:mx-0 md:px-0"
       style={{
         contain: 'layout style paint',
         // ⚡ La primera sección se ve nada más cargar: content-visibility:auto ahí
@@ -682,15 +685,13 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       <div className="relative w-full">
         <div
           ref={scrollRef}
-          className={`flex overflow-x-auto scrollbar-hide md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
+          className={`flex overflow-x-auto scrollbar-hide -mx-4 px-4 scroll-pl-4 md:mx-0 md:scroll-pl-0 md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
             isLastSection ? 'pb-0 md:pb-3' : 'pb-1.5 md:pb-3'
           }`}
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollBehavior: 'auto',
             scrollSnapType: 'x mandatory',
-            scrollPaddingLeft: '0px',
-            scrollPaddingRight: '0px',
             overscrollBehaviorX: 'contain',
             contain: 'layout style paint',
             scrollbarWidth: 'none',
