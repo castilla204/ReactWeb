@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useWindowSize } from '../hooks/useWindowSize';
+import { useIsMobile } from '../hooks/useIsMobile';
 // 🛡️ Round 28: helper unificado de símbolos de divisa (cubre EUR/USD/GBP/CHF/CAD/SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
 import { getCurrencySymbol } from '../utils/priceUtils';
 import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap, Shield, TrendingUp, FileText, Image, Video, Heart, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Check, SlidersHorizontal, Flame } from 'lucide-react';
@@ -152,17 +153,13 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
     const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
     const navigate = useNavigate();
     const location = useLocation();
-    const [isMobile, setIsMobile] = useState(false);
-    
+    // ⚡ INP: antes cada card montaba su PROPIO listener de `resize` + setState. Con hasta 500
+    // cards en la tira, un resize disparaba 500 callbacks y 500 setState en el hilo principal.
+    // useIsMobile usa matchMedia: solo notifica al CRUZAR el breakpoint (mismo umbral, <768px).
+    const isMobile = useIsMobile();
+
     const serviceId = service.id || service.Id;
-    
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-    
+
     // ✅ OPTIMIZADO: Solo verificar favorito individual si no viene en initialIsFavorite
     // Esto evita llamadas duplicadas ya que checkMultipleFavorites se ejecuta en el padre
     const { data: favoriteCheck } = checkFavorite(serviceId, {
@@ -1820,6 +1817,9 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [sortBy, setSortBy] = useState<MapSortKey>('relevance');
     // Panel inferior móvil plegable: arranca DESPLEGADO (el usuario ve la lista al entrar).
     const [stripExpanded, setStripExpanded] = useState(true);
+    // Búsqueda de dirección (móvil): la barra de la cabecera es un BOTÓN que abre un
+    // overlay a pantalla completa con el input autofocus + sugerencias grandes.
+    const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
     // MapContainer maneja bounds internamente - ya no necesitamos estos estados
    
@@ -2008,18 +2008,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         }
     }, [allServicesCombined, selectedService]);
    
-    // Aplicar filtros a servicios (después de reordenar)
-    const services = reorderedServices.filter(service => {
+    // Aplicar filtros a servicios (después de reordenar).
+    // ⚡ INP: DEBE ir memoizado. Sin useMemo este .filter() corría en CADA render y devolvía
+    // un array con identidad nueva, invalidando aguas abajo `displayedServices` (que hace un
+    // sort completo de hasta 500 elementos), `stripBarProps` y `allServiceIds`. Resultado:
+    // cada hover sobre una card pagaba filter+sort de toda la lista en el hilo principal.
+    // Deps primitivas (no `filters.priceRange`, que es un array con identidad cambiante).
+    const priceMinFilter = filters.priceRange[0];
+    const priceMaxFilter = filters.priceRange[1];
+    const ratingFilter = filters.rating;
+    const services = useMemo(() => reorderedServices.filter(service => {
         const price = service.price || 0;
-        const priceInRange = price >= filters.priceRange[0] && price <= filters.priceRange[1];
+        const priceInRange = price >= priceMinFilter && price <= priceMaxFilter;
         if (!priceInRange) return false;
-        
+
         const rating = service.averageRating || 0;
-        const ratingPassed = rating >= filters.rating;
+        const ratingPassed = rating >= ratingFilter;
         if (!ratingPassed) return false;
 
         return true;
-    });
+    }), [reorderedServices, priceMinFilter, priceMaxFilter, ratingFilter]);
 
     // Tope de precio para el slider del filtro: el más caro cargado, redondeado a la decena.
     const priceMax = useMemo(() => {
@@ -2729,14 +2737,61 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                 >
                                     <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
                                 </button>
-                                <MapAddressSearchBar
-                                    className="min-w-0 flex-1"
-                                    onSelect={handleAddressSearchSelect}
-                                    country={selectedCountry}
-                                    proximity={selectedLocation}
-                                />
+                                {/* Barra = BOTÓN que abre la búsqueda a pantalla completa.
+                                    Muestra la dirección elegida o el placeholder. */}
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchOverlayOpen(true)}
+                                    aria-label="Buscar dirección"
+                                    className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/95 px-4 text-left shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md transition-transform duration-150 active:scale-[0.99]"
+                                >
+                                    <Search className="h-[18px] w-[18px] shrink-0 text-[#0066cc]" strokeWidth={2.2} aria-hidden />
+                                    <span
+                                        className={`min-w-0 flex-1 truncate font-display text-[14px] ${
+                                            searchAddress ? 'font-medium text-[#222222]' : 'font-medium text-[#5f5e5a]'
+                                        }`}
+                                    >
+                                        {searchAddress || 'Buscar dirección'}
+                                    </span>
+                                </button>
                             </div>
                         </div>
+
+                        {/* Overlay de búsqueda a pantalla completa (móvil) */}
+                        {searchOverlayOpen && (
+                            <div
+                                className="fixed inset-0 z-[10050] flex flex-col bg-white"
+                                style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+                            >
+                                <div className={`flex items-center gap-1.5 ${SD_MOBILE_GUTTER_CLASS} pt-3 pb-2`}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchOverlayOpen(false)}
+                                        aria-label="Cerrar búsqueda"
+                                        className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors active:bg-black/[0.06]"
+                                    >
+                                        <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
+                                    </button>
+                                    <MapAddressSearchBar
+                                        embedded
+                                        autoFocus
+                                        className="min-w-0 flex-1"
+                                        placeholder="Buscar dirección o ciudad"
+                                        value={searchAddress || null}
+                                        onSelect={(sel) => {
+                                            handleAddressSearchSelect(sel);
+                                            setSearchOverlayOpen(false);
+                                        }}
+                                        onClear={() => setSearchAddress('')}
+                                        country={selectedCountry}
+                                        proximity={selectedLocation}
+                                    />
+                                </div>
+                                <p className={`${SD_MOBILE_GUTTER_CLASS} pt-1 text-[12.5px] text-[#8a8a8a]`}>
+                                    Escribe una dirección, ciudad o código postal.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Map - ocupa todo el espacio restante */}
                                 {isMobileDevice && (
@@ -2779,7 +2834,12 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         summary={stripBarProps.summary}
                                         thumbnails={stripBarProps.thumbnails}
                                     >
-                                        <div className="bg-white">
+                                        {/* Fondo tintado #f6f7f8 (igual que el panel de resultados desktop y el
+                                            contenedor del mapa): las cards blancas resaltan con profundidad. Antes
+                                            era bg-white → cards blancas sobre panel blanco = sin separación, y la
+                                            sombra (16%) la recortaba el overflow del carrusel → se veía una "barra
+                                            blanca" plana bajo las tarjetas. El gris lo resuelve; el padding no podía. */}
+                                        <div className="bg-[#f6f7f8]">
                                             <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pt-1 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]`}>
                                                 <MapStripOverlayChrome
                                                     resultCount={displayedServices.length}
@@ -2806,7 +2866,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     // -mx-5 px-5: el carrusel sangra hasta los bordes de la pantalla (cancela el
                                                     // gutter px-5 del contenedor) y reañade el padding como scroll-padding interno,
                                                     // así las cards usan todo el ancho sin márgenes laterales muertos en el deslizable.
-                                                    className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                                                    // pt-1 pb-2: el carrusel usa overflow-x-auto, que fuerza overflow-y a recortar;
+                                                    // sin este padding vertical la sombra inferior de las cards se corta y la tarjeta
+                                                    // (blanca) se funde con el panel (blanco). El padding deja respirar la sombra → flotan.
+                                                    className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                                                 >
                                                 {displayedServices.length > 0 ? (
                                                     displayedServices.map((service) => {
