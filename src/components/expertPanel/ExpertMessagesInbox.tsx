@@ -506,6 +506,9 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
     onReload,
 }) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isUserAdmin =
+        isAdminUser(user?.email) || user?.role === 'Admin' || user?.role === 'admin';
     const isPreHire = conversation.conversationType === 'pre-hire';
     const client = conversation.clientName || 'Cliente';
     // 📋 "Rellenar inspección" — única acción que tenía la antigua pestaña Contrataciones y
