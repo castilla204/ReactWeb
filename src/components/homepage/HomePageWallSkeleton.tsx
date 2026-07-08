@@ -23,14 +23,19 @@ const WallSkeletonRow: React.FC = () => (
     {/* Carril horizontal — overflow oculto: la última tarjeta "asoma" igual que
         en el muro real. 6 tarjetas cubren tanto móvil (asoman ~2,5) como desktop. */}
     <div className="flex gap-4 min-[428px]:gap-[18px] md:gap-3 overflow-hidden">
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-          <SileoSkeleton className="aspect-square md:aspect-[4/3] w-full rounded-[20px] md:rounded-xl mb-1.5 md:mb-1" />
-          <SileoSkeleton className="h-3.5 w-full rounded mb-1" />
-          <SileoSkeleton className="h-3 w-[85%] rounded mb-1" />
-          <SileoSkeleton className="h-3 w-3/5 rounded" />
-        </div>
-      ))}
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        // Onda diagonal: cada tarjeta arranca el barrido 90ms después que la
+        // anterior → el ojo lee un avance izq→dcha en lugar de un destello único.
+        const delay = i * 90;
+        return (
+          <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
+            <SileoSkeleton shimmerDelayMs={delay} className="aspect-square md:aspect-[4/3] w-full rounded-[20px] md:rounded-xl mb-1.5 md:mb-1" />
+            <SileoSkeleton shimmerDelayMs={delay} className="h-3.5 w-full rounded mb-1" />
+            <SileoSkeleton shimmerDelayMs={delay} className="h-3 w-[85%] rounded mb-1" />
+            <SileoSkeleton shimmerDelayMs={delay} className="h-3 w-3/5 rounded" />
+          </div>
+        );
+      })}
     </div>
   </div>
 );
@@ -59,7 +64,14 @@ export const WallSkeletonContent: React.FC = () => (
  * otro es imperceptible (sin parpadeo ni reflow).
  */
 export const HomePageWallSkeleton: React.FC = () => (
-  <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-3">
+  <div
+    className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-3"
+    role="status"
+    aria-busy="true"
+  >
+    {/* Los bloques del skeleton son aria-hidden → sin este anuncio el lector de
+        pantalla se quedaba mudo (regresión vs. el spinner que sí decía "Cargando"). */}
+    <span className="sr-only">Cargando servicios…</span>
     <WallSkeletonContent />
   </div>
 );

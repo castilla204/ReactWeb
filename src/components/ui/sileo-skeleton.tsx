@@ -3,8 +3,14 @@ import { cn } from "../../lib/utils";
 /**
  * Skeleton unificado de Sileo.
  *
- * Usa un shimmer sutil en lugar de pulse plano para dar sensación de
- * movimiento y reducir la percepción de espera. Respeta prefers-reduced-motion.
+ * Usa un shimmer sutil (barrido horizontal por transform, GPU) en lugar de pulse
+ * plano para dar sensación de movimiento y reducir la percepción de espera. El
+ * barrido está gated en `prefers-reduced-motion: no-preference` (ver `.sk-shimmer`
+ * en index.css), así que se detiene de verdad para quien pide menos movimiento.
+ *
+ * `shimmerDelayMs` retrasa el inicio del barrido de este bloque → pasando índices
+ * crecientes a una rejilla de tarjetas se obtiene una onda diagonal en vez de que
+ * todo destelle a la vez (se percibe como progreso, no como "cargando genérico").
  */
 
 interface SileoSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,6 +19,8 @@ interface SileoSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   plain?: boolean;
   /** Radio de borde. */
   rounded?: "none" | "sm" | "md" | "lg" | "xl" | "full";
+  /** Retardo del barrido (ms) para escalonar la onda entre varios bloques. */
+  shimmerDelayMs?: number;
 }
 
 const roundedClasses = {
@@ -28,6 +36,8 @@ export function SileoSkeleton({
   className,
   plain = false,
   rounded = "md",
+  shimmerDelayMs,
+  style,
   ...props
 }: SileoSkeletonProps) {
   return (
@@ -35,10 +45,15 @@ export function SileoSkeleton({
       className={cn(
         "bg-[#f0f0f0]",
         !plain &&
-          "relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/55 before:to-transparent",
+          "sk-shimmer relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/55 before:to-transparent",
         roundedClasses[rounded],
         className
       )}
+      style={
+        shimmerDelayMs
+          ? ({ ...style, "--sk-delay": `${shimmerDelayMs}ms` } as React.CSSProperties)
+          : style
+      }
       aria-hidden="true"
       {...props}
     />

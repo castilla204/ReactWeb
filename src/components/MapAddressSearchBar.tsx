@@ -28,6 +28,11 @@ interface MapAddressSearchBarProps {
     embedded?: boolean;
     /** Pill flotante sobre el mapa (checkout wizard). */
     overlay?: boolean;
+    /** Sin marco propio (transparente, sin sombra ni borde): para incrustar el input
+     *  dentro de una barra contenedora que ya aporta fondo/redondeo/sombra. */
+    bare?: boolean;
+    /** Enfoca el input al montar (para el overlay de búsqueda a pantalla completa). */
+    autoFocus?: boolean;
     /** Sincroniza el texto cuando la dirección viene del mapa u otra fuente. */
     value?: string | null;
     /** Al borrar el campo de búsqueda. */
@@ -52,6 +57,8 @@ export function MapAddressSearchBar({
     className = '',
     embedded = false,
     overlay = false,
+    bare = false,
+    autoFocus = false,
     value,
     onClear,
 }: MapAddressSearchBarProps) {
@@ -60,6 +67,7 @@ export function MapAddressSearchBar({
     const [showList, setShowList] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     // Query ya confirmada (al elegir un resultado) → evita re-buscar lo ya elegido.
     const committedRef = useRef<string | null>(null);
 
@@ -74,6 +82,14 @@ export function MapAddressSearchBar({
         setShowList(false);
         setResults((prev) => (prev.length === 0 ? prev : []));
     }, [value]);
+
+    // Enfoque al montar (overlay de búsqueda a pantalla completa). El pequeño retardo
+    // asegura que el teclado móvil se abra tras la transición de apertura del overlay.
+    useEffect(() => {
+        if (!autoFocus) return;
+        const t = setTimeout(() => inputRef.current?.focus(), 60);
+        return () => clearTimeout(t);
+    }, [autoFocus]);
 
     useEffect(() => {
         if (!tokenOk) return;
@@ -140,7 +156,9 @@ export function MapAddressSearchBar({
         ? 'w-full rounded-full border border-[#e5e7eb] bg-white py-2.5 pl-11 pr-10 text-[13px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15'
         : overlay
           ? 'w-full rounded-full border-0 bg-white/96 py-3 pl-4 pr-10 text-[15px] text-[#1c1c1c] shadow-[0_4px_20px_rgba(15,23,42,0.14),0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-md placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-brand/25'
-          : 'h-11 w-full rounded-full border-0 bg-white/95 pl-4 pr-10 font-display text-[15px] text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
+          : bare
+            ? 'h-11 w-full rounded-none border-0 bg-transparent pl-9 pr-9 font-display text-[14px] text-[#222222] placeholder:text-[#9aa0a6] focus:outline-none focus:ring-0'
+            : 'h-11 w-full rounded-full border-0 bg-white/95 pl-4 pr-10 font-display text-[15px] text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
 
     const handleClear = () => {
         committedRef.current = null;
@@ -153,7 +171,7 @@ export function MapAddressSearchBar({
 
     return (
         <div className={`relative ${className}`}>
-            {embedded ? (
+            {embedded || bare ? (
                 <Search
                     className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
                     strokeWidth={2.1}
@@ -161,6 +179,7 @@ export function MapAddressSearchBar({
                 />
             ) : null}
             <input
+                ref={inputRef}
                 type="text"
                 value={query}
                 placeholder={placeholder}
@@ -187,7 +206,7 @@ export function MapAddressSearchBar({
                 >
                     <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </button>
-            ) : !embedded ? (
+            ) : !embedded && !bare ? (
                 <Search
                     className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171]"
                     strokeWidth={2.2}

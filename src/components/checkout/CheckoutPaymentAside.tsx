@@ -24,6 +24,8 @@ interface CheckoutPaymentAsideProps {
    * El móvil ya lo muestra vía CheckoutSummaryTable; esto cierra el hueco del panel desktop.
    */
   priceSubline?: React.ReactNode;
+  /** Modo de coordinación — adapta la nota de cobro (self vs vendedor). */
+  coordinationMode?: 'self' | 'seller';
 }
 
 /** Panel de pago desktop — más informativo. */
@@ -37,6 +39,7 @@ export function CheckoutPaymentAside({
   expertPicture,
   serviceName = 'Servicio',
   priceSubline,
+  coordinationMode = 'self',
 }: CheckoutPaymentAsideProps) {
   const content = (
     <>
@@ -84,7 +87,7 @@ export function CheckoutPaymentAside({
           disabled={!canPay || isProcessing}
           type="button"
           aria-busy={isProcessing}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#171717] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
         >
           {isProcessing ? (
             <>
@@ -105,7 +108,7 @@ export function CheckoutPaymentAside({
           )}
         </button>
 
-        <CheckoutReserveHint />
+        <CheckoutReserveHint coordinationMode={coordinationMode} />
 
         <p className="text-center text-[11px] text-[#94a3b8]">
           Al reservar, aceptas los{' '}

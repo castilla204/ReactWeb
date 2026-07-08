@@ -9,6 +9,7 @@ import {
   HomePageSearchBarDesktopSkeleton,
 } from '../components/homepage/HomePageSearchBarSkeleton';
 import { HomePageWallSkeleton } from '../components/homepage/HomePageWallSkeleton';
+import { Delayed } from '../components/ui/Delayed';
 import { SEO } from '../components/SEO';
 import { FAQ_ITEMS } from '../content/faqContent';
 import { faqPageSchema } from '../utils/jsonLd';
@@ -137,7 +138,7 @@ const HomePage: React.FC = () => {
         jsonLd={[faqPageSchema(homeFaq)]}
       />
       <div className="min-h-screen md:min-h-0 bg-white pb-[65px] md:pb-0">
-        <Suspense fallback={searchBarFallback}>
+        <Suspense fallback={<Delayed>{searchBarFallback}</Delayed>}>
           <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
         </Suspense>
 
@@ -149,7 +150,7 @@ const HomePage: React.FC = () => {
             id="servicios-grid"
             className="relative z-20 bg-white -mt-1.5 md:mt-0 md:rounded-t-2xl md:overflow-hidden pt-3 md:pt-8 pb-1 md:pb-10 md:shadow-[0_-2px_16px_rgba(15,23,42,0.05)]"
           >
-            <Suspense fallback={<HomePageWallSkeleton />}>
+            <Suspense fallback={<Delayed><HomePageWallSkeleton /></Delayed>}>
               <HomepageWall
                 countryCode={countryCode}
                 serviceTypeId={searchFilters.serviceTypeId}

@@ -154,32 +154,34 @@ const buildMarkerElement = (svg: string, size: number): HTMLDivElement => {
 };
 
 /**
- * Punto base del experto (centro del área de cobertura): dot de marca con halo
- * translúcido. Discreto, sirve de referencia sin competir con el pin elegido.
+ * Punto base del experto (centro del área de cobertura): dot NEGRO con halo neutro
+ * translúcido, estética app de movilidad. Discreto, sirve de referencia sin competir
+ * con el pin elegido, y cohesiona con el mapa a color (el marcador destaca en negro).
  */
 const buildExpertDotElement = (size: number): HTMLDivElement => {
   const el = document.createElement('div');
   el.style.cursor = 'pointer';
   const halo = size + 12;
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;width:${halo}px;height:${halo}px;border-radius:50%;background:rgba(0,102,204,0.16)">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#0066CC;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.28)"></div>
+    <div style="display:flex;align-items:center;justify-content:center;width:${halo}px;height:${halo}px;border-radius:50%;background:rgba(23,23,23,0.14)">
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#171717;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.32)"></div>
     </div>`;
   return el;
 };
 
 /**
- * Ubicación elegida (checkout minimal): anillo suave + punto de marca preciso.
- * Ancla en el centro — señala el pixel exacto sin lágrima genérica.
+ * Ubicación elegida (checkout minimal): anillo suave + punto NEGRO preciso, estilo
+ * chincheta de app de movilidad sobre el mapa a color. Ancla en el centro — señala el
+ * pixel exacto sin lágrima genérica.
  */
 const buildSelectedPinElement = (): HTMLDivElement => {
   const el = document.createElement('div');
   el.style.cursor = 'pointer';
   el.innerHTML = `
     <div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px">
-      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,102,204,0.14)"></div>
-      <div style="position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,102,204,0.35);background:rgba(255,255,255,0.92)"></div>
-      <div style="position:relative;width:12px;height:12px;border-radius:50%;background:#0066CC;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,40,100,0.35)"></div>
+      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(23,23,23,0.12)"></div>
+      <div style="position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid rgba(23,23,23,0.30);background:rgba(255,255,255,0.94)"></div>
+      <div style="position:relative;width:12px;height:12px;border-radius:50%;background:#171717;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.42)"></div>
     </div>`;
   return el;
 };
@@ -404,8 +406,8 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
             type: 'fill',
             source: SRC_CIRCLE,
             paint: {
-              'fill-color': '#0066CC',
-              'fill-opacity': 0.07,
+              'fill-color': '#171717',
+              'fill-opacity': 0.05,
             },
           });
         }
@@ -414,7 +416,9 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
           type: 'line',
           source: SRC_CIRCLE,
           paint: {
-            'line-color': referencePreview ? 'rgba(0, 102, 204, 0.85)' : 'rgba(0, 102, 204, 0.62)',
+            // Anillo neutro (negro translúcido) — cohesiona con el pin negro sobre el
+            // mapa a color, sin el azul que competía con la base Voyager.
+            'line-color': referencePreview ? 'rgba(23, 23, 23, 0.55)' : 'rgba(23, 23, 23, 0.42)',
             'line-width': referencePreview ? 2.5 : 2,
             'line-dasharray': [3, 3],
           },
@@ -477,9 +481,10 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       } // fin if (radius > 0)
 
       if (isMinimalCoverage && memoizedCoordinates.radius > 0) {
-        const fitRadiusKm = referencePreview
-          ? Math.max(memoizedCoordinates.radius * 2.8, 22)
-          : memoizedCoordinates.radius;
+        // Encuadre AJUSTADO al rango del experto (círculo de cobertura), no a toda
+        // España. Un +12% de margen deja que el círculo respire sin tocar los bordes.
+        // Antes referencePreview usaba radius×2.8 + maxZoom 9.5 → se veía medio país.
+        const fitRadiusKm = memoizedCoordinates.radius * 1.12;
         const [[minLng, minLat], [maxLng, maxLat]] = boundsFromCircle(
           memoizedCoordinates.lng,
           memoizedCoordinates.lat,
@@ -491,11 +496,9 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
             [maxLng, maxLat],
           ],
           {
-            padding:
-              boundsPadding ??
-              (referencePreview ? 72 : 48),
+            padding: boundsPadding ?? (referencePreview ? 44 : 48),
             duration: 0,
-            maxZoom: referencePreview ? 9.5 : 13,
+            maxZoom: 13,
           },
         );
       } else if (referencePreview && memoizedCoordinates.radius <= 0) {
