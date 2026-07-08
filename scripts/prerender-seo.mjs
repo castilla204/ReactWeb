@@ -89,10 +89,11 @@ function render(baseHtml, r) {
 export async function prerenderSeo(distDir) {
   const baseHtml = readFileSync(join(distDir, 'index.html'), 'utf8');
 
-  const { CATEGORY_LANDINGS } = await import('../src/content/categoryLandingContent.ts');
-  const { serviceSchema, breadcrumbSchema, faqPageSchema, organizationSchema } = await import(
-    '../src/utils/jsonLd.ts'
+  const { CATEGORY_LANDINGS, LANDING_STEPS } = await import(
+    '../src/content/categoryLandingContent.ts'
   );
+  const { serviceSchema, breadcrumbSchema, faqPageSchema, organizationSchema, howToSchema } =
+    await import('../src/utils/jsonLd.ts');
 
   const routes = [];
 
@@ -132,6 +133,11 @@ export async function prerenderSeo(distDir) {
           { name: c.shortName, url: path },
         ]),
         faqPageSchema(c.faqs),
+        howToSchema(
+          `Cómo funciona ${c.h1.toLowerCase()}`,
+          c.answerFirst,
+          LANDING_STEPS.map((s) => ({ name: s.title, text: s.body })),
+        ),
       ],
     });
   }
