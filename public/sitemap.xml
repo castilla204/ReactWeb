@@ -48,11 +48,9 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
-  <url>
-    <loc>https://inspecciono.com/become-expert</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
+  <!-- /become-expert NO se lista: está tras ProtectedRoute (redirige a login sin sesión),
+       así que Google —que rastrea sin sesión— vería el login, no una página indexable.
+       Si en el futuro hay una landing pública de captación de expertos, listar ESA. -->
   <url>
     <loc>https://inspecciono.com/privacy-policy.html</loc>
     <changefreq>yearly</changefreq>
