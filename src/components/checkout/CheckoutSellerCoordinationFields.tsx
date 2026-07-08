@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link2, Mail } from 'lucide-react';
+import { Send, UserRound } from 'lucide-react';
 import { PhoneInputField } from './PhoneInputField';
 import { cn } from '../../lib/utils';
 import {
@@ -18,28 +18,38 @@ export {
     SELLER_COORD_CALENDAR_PREVIEW_NOTE,
 } from '../../utils/sellerBookingWindow';
 
+// Estética de formulario profesional (Stripe / Linear): campo BLANCO con borde de 1px y una
+// sombra muy sutil, esquinas de 8px, SIN icono decorativo dentro. La etiqueta identifica el
+// campo; el interior queda limpio. Nada de píldoras ni rellenos grises (leen «de juguete»).
+// Al enfocar: el borde pasa a la marca y aparece un halo suave de 3px.
 const fieldBaseClass =
-    'w-full rounded-xl bg-[#f4f5f7] py-3 pl-10 pr-3.5 text-sm text-[#1c1c1c] outline-none transition-[background-color,box-shadow] placeholder:text-[#6b7280] focus:bg-white focus:ring-2 focus:ring-brand/30';
+    'h-11 w-full rounded-lg border border-[#dcdfe4] bg-white px-3.5 text-[14px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.05)] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[#9aa0aa] focus:border-[#3d5afe] focus:shadow-[0_0_0_3px_rgba(61,90,254,0.14)]';
 
-const fieldErrorClass = 'ring-2 ring-red-400/50 focus:ring-red-400/60';
+const fieldErrorClass =
+    'border-[#f04438] focus:border-[#f04438] focus:shadow-[0_0_0_3px_rgba(240,68,56,0.14)]';
 
-const listingUrlFieldClass =
-    'w-full rounded-xl bg-[#f4f5f7] py-3 pl-10 pr-3.5 text-sm font-semibold text-[#1c1c1c] outline-none transition-[background-color,box-shadow] placeholder:font-normal placeholder:text-[#6b7280] focus:bg-white focus:ring-2 focus:ring-brand/30';
+const fieldLabelClass = 'block text-[13px] font-semibold text-[#374151]';
+
+const listingUrlFieldClass = fieldBaseClass;
 
 export type SellerCoordinationFieldsVariant = 'full' | 'contact' | 'plazos';
 
 /**
- * Avatar circular (foto real) para la cabecera de «Datos del vendedor». Decorativo:
- * el título ya describe la sección. Misma foto en desktop y móvil para coherencia.
+ * Icono circular para la cabecera de «Datos del vendedor». Decorativo (el título ya
+ * describe la sección). Antes era una foto de stock (pravatar) que parecía un vendedor
+ * falso; un icono de persona en un círculo de marca es honesto y más profesional.
  */
 export function SellerContactAvatar({ className }: { className?: string }) {
     return (
-        <img
-            src="https://i.pravatar.cc/96?img=12"
-            alt=""
+        <span
             aria-hidden="true"
-            className={cn('h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-[#f0f0f0]', className)}
-        />
+            className={cn(
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand',
+                className,
+            )}
+        >
+            <UserRound className="h-[18px] w-[18px]" strokeWidth={2} />
+        </span>
     );
 }
 
@@ -144,12 +154,13 @@ export function CheckoutSellerEnlaceInfoNote({
         return (
             <div
                 className={cn(
-                    'rounded-xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5',
+                    'flex items-start gap-2.5 rounded-lg border border-[#e7e9ee] bg-[#fafbfc] px-3.5 py-3',
                     className,
                 )}
                 role="note"
             >
-                <p className="text-[12px] leading-relaxed text-[#565d6b]">
+                <Send className="mt-[2px] h-[15px] w-[15px] shrink-0 text-[#6b7280]" strokeWidth={2} aria-hidden />
+                <p className="min-w-0 text-[12.5px] leading-relaxed text-[#5b6472]">
                     {SELLER_COORD_ENLACE_DETAILED}
                 </p>
             </div>
@@ -188,30 +199,23 @@ export function CheckoutSellerPlazoNotice({ className }: { className?: string })
     );
 }
 
-interface IconFieldProps {
+interface LabeledFieldProps {
     id: string;
     label: string;
-    icon: React.ComponentType<{ className?: string }>;
     optional?: boolean;
     children: React.ReactNode;
 }
 
-function IconField({ id, label, icon: Icon, optional, children }: IconFieldProps) {
+function LabeledField({ id, label, optional, children }: LabeledFieldProps) {
     return (
         <div className="space-y-1.5">
-            <label htmlFor={id} className="block text-[12px] font-semibold text-[#374151]">
+            <label htmlFor={id} className={fieldLabelClass}>
                 {label}
                 {optional ? (
-                    <span className="ml-1 font-medium text-[#9ca3af]">(opcional)</span>
+                    <span className="ml-1.5 font-normal text-[#9ca3af]">(opcional)</span>
                 ) : null}
             </label>
-            <div className="relative">
-                <Icon
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
-                    aria-hidden
-                />
-                {children}
-            </div>
+            {children}
         </div>
     );
 }
@@ -245,45 +249,56 @@ export function CheckoutSellerCoordinationFields({
     return (
         <div className={cn(showContact && showPlazos ? 'space-y-6' : 'space-y-0', className)}>
             {showContact ? (
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                     {variant === 'contact' && !selfMode ? (
-                        <CheckoutSellerEnlaceInfoNote detailed className="mb-1" />
+                        <CheckoutSellerEnlaceInfoNote detailed />
                     ) : null}
-                    {/* 🌍 Móvil del vendedor con selector de país (cualquier prefijo, no solo ES):
-                        el Messaging Service de Twilio es global. Emite E.164 (+xx...) que el backend
-                        ya entiende. Mismo componente que la verificación del experto. */}
-                    <div className="space-y-1.5">
-                        <label htmlFor="seller-phone" className="block text-[12px] font-semibold text-[#374151]">
-                            Teléfono del vendedor
-                        </label>
-                        <PhoneInputField
-                            id="seller-phone"
-                            name="seller-phone"
-                            value={sellerPhone}
-                            onChange={onSellerPhoneChange}
-                            error={phoneFieldError}
-                            aria-invalid={phoneFieldError}
-                            defaultCountry="ES"
-                        />
+                    {/* Canal de contacto (móvil o email): uno de los dos basta. Se agrupan juntos
+                        con separación menor entre sí que con el enlace opcional de debajo. */}
+                    <div className="space-y-2.5">
+                        {/* 🌍 Móvil del vendedor con selector de país (cualquier prefijo, no solo ES):
+                            el Messaging Service de Twilio es global. Emite E.164 (+xx...) que el backend
+                            ya entiende. Mismo componente que la verificación del experto. */}
+                        <div className="space-y-1.5">
+                            <label htmlFor="seller-phone" className={fieldLabelClass}>
+                                Teléfono del vendedor
+                            </label>
+                            <PhoneInputField
+                                id="seller-phone"
+                                name="seller-phone"
+                                value={sellerPhone}
+                                onChange={onSellerPhoneChange}
+                                error={phoneFieldError}
+                                aria-invalid={phoneFieldError}
+                                defaultCountry="ES"
+                            />
+                        </div>
+                        <LabeledField id="seller-email" label="Email del vendedor">
+                            <input
+                                id="seller-email"
+                                value={sellerEmail}
+                                onChange={(e) => onSellerEmailChange(e.target.value)}
+                                placeholder="vendedor@email.com"
+                                type="email"
+                                className={cn(fieldBaseClass, emailFieldError && fieldErrorClass)}
+                                autoComplete="email"
+                                aria-invalid={emailFieldError}
+                            />
+                        </LabeledField>
+                        {variant !== 'contact' ? (
+                            <p className="text-[12px] leading-relaxed text-[#6b7280]">
+                                Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
+                            </p>
+                        ) : null}
+                        {showContactError ? (
+                            <p role="alert" className="text-[12px] font-medium text-red-600">
+                                {bothEmpty
+                                    ? 'Añade un teléfono o un email para continuar.'
+                                    : 'Revisa el contacto: un móvil o un email válido.'}
+                            </p>
+                        ) : null}
                     </div>
-                    <IconField id="seller-email" label="Email del vendedor" icon={Mail}>
-                        <input
-                            id="seller-email"
-                            value={sellerEmail}
-                            onChange={(e) => onSellerEmailChange(e.target.value)}
-                            placeholder="Ej. vendedor@email.com"
-                            type="email"
-                            className={cn(fieldBaseClass, emailFieldError && fieldErrorClass)}
-                            autoComplete="email"
-                            aria-invalid={emailFieldError}
-                        />
-                    </IconField>
-                    {variant !== 'contact' ? (
-                        <p className="text-[12px] leading-relaxed text-[#6b7280]">
-                            Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
-                        </p>
-                    ) : null}
-                    <IconField id="seller-listing" label="Enlace del anuncio" icon={Link2} optional>
+                    <LabeledField id="seller-listing" label="Enlace del anuncio" optional>
                         <input
                             id="seller-listing"
                             value={sellerListingUrl}
@@ -293,14 +308,7 @@ export function CheckoutSellerCoordinationFields({
                             className={listingUrlFieldClass}
                             inputMode="url"
                         />
-                    </IconField>
-                    {showContactError ? (
-                        <p role="alert" className="text-[12px] font-medium text-red-600">
-                            {bothEmpty
-                                ? 'Añade un teléfono o un email para continuar.'
-                                : 'Revisa el contacto: un móvil o un email válido.'}
-                        </p>
-                    ) : null}
+                    </LabeledField>
                 </div>
             ) : null}
 

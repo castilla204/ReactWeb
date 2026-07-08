@@ -1,9 +1,8 @@
 import React from 'react';
-import { ArrowLeft, ChevronRight, Check, BadgeCheck, ShieldCheck, Clock, Lock } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Check, Lock, ShieldCheck } from 'lucide-react';
 import { SileoLoader } from '../ui/sileo-loader';
 import revisionCocheImg from '../../media/revisioncoche.jpg';
 import erizoImg from '../../media/erizo.png';
-import { HomepageHeroTrustLines } from '../HomepageHeroTrustLines';
 import {
     HP_PANEL_GRADIENT,
     SD_MOBILE_FOOTER_SHELL_CLASS,
@@ -306,16 +305,6 @@ const FAST_PATH_SUBLINE_NODE = (
     </>
 );
 
-/**
- * Velo de marca direccional sobre la foto. Antes era un wash blanco plano que
- * lavaba la imagen (look "stock") y dejaba el texto sobre zonas heterogéneas de
- * bajo contraste. Ahora es un degradado con tinte azul de marca: sólido a la
- * izquierda (legibilidad del titular oscuro), y se abre antes para revelar la
- * foto nítida a la derecha, donde flotan las píldoras de prueba social.
- */
-const BE_FAST_DESKTOP_WASH =
-    'linear-gradient(100deg, #e7f0fb 0%, #e7f0fb 27%, rgba(231,240,251,0.92) 41%, rgba(231,240,251,0.45) 57%, rgba(231,240,251,0.10) 71%, rgba(231,240,251,0) 84%)';
-
 /** Foto real del oficio, brillante (sin oscurecer). */
 function FastPathHeroPhoto({ objectClass = 'object-center' }: { objectClass?: string }) {
     return (
@@ -329,12 +318,22 @@ function FastPathHeroPhoto({ objectClass = 'object-center' }: { objectClass?: st
     );
 }
 
-/** Marca Inspecciono (mismo lockup que el header): erizo + wordmark azul con punto ámbar. */
-function FastPathWordmark({ className = '' }: { className?: string }) {
+/** Logotipo Inspecciono (erizo + wordmark). `variant="light"` para fondo oscuro. */
+export function FastPathWordmark({ className = '', variant = 'dark' }: { className?: string; variant?: 'dark' | 'light' }) {
+    const light = variant === 'light';
     return (
         <div className={`flex items-center gap-2 ${className}`} aria-label="Inspecciono">
-            <img src={erizoImg} alt="" aria-hidden className="h-8 w-8 -scale-x-100 object-contain" />
-            <span className="font-display text-[18px] font-extrabold tracking-[-0.02em] text-[#2563EB]">
+            <img
+                src={erizoImg}
+                alt=""
+                aria-hidden
+                className={`h-7 w-7 -scale-x-100 object-contain ${light ? 'brightness-0 invert' : ''}`}
+            />
+            <span
+                className={`font-display text-[17px] font-extrabold tracking-[-0.02em] ${
+                    light ? 'text-white' : 'text-[#2563EB]'
+                }`}
+            >
                 Inspecciono<span className="text-[#F59E0B]">.</span>
             </span>
         </div>
@@ -405,16 +404,6 @@ export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
     );
 }
 
-/** Píldora de prueba social flotante sobre la foto (chip claro con sombra, da profundidad). */
-function FastPathProofPill({ icon, label }: { icon: React.ReactNode; label: string }) {
-    return (
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-2 text-[13px] font-semibold text-[#1c1c1c] shadow-[0_8px_24px_rgba(15,23,42,0.14)] ring-1 ring-black/[0.04] backdrop-blur-sm">
-            {icon}
-            {label}
-        </span>
-    );
-}
-
 /**
  * Microcopy bajo el botón "Continuar con Stripe": fija la expectativa del salto
  * y desactiva el miedo al KYC. Visible solo en desktop (en móvil el botón vive
@@ -422,150 +411,19 @@ function FastPathProofPill({ icon, label }: { icon: React.ReactNode; label: stri
  */
 export function FastPathButtonNote() {
     return (
-        <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-[#6a6a6a]">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9ca3af]" strokeWidth={2.2} />
-            <span>
-                Te llevamos a <span className="font-semibold text-[#444]">Stripe</span> para verificar tu cuenta
-                (~5 min). No se te cobra nada y tus datos bancarios los gestiona Stripe.
-            </span>
+        <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" strokeWidth={2.2} />
+            <span>Verificación con Stripe (~5 min). Sin coste; tus datos los gestiona Stripe.</span>
         </p>
     );
 }
 
-const FAST_PATH_STEPS = [
-    {
-        title: 'Elige tu país',
-        body: 'El país donde cobras. Debe coincidir con tu cuenta bancaria.',
-    },
-    {
-        title: 'Verifícate con Stripe',
-        body: 'Identidad y cuenta de cobro. Unos 5 minutos, una sola vez.',
-    },
-    {
-        title: 'Completa tu perfil',
-        body: 'Foto, zona y servicios. Entonces empiezas a recibir encargos.',
-    },
-] as const;
-
-/** "Qué pasa después" — timeline vertical (no rejilla de tarjetas). */
-function FastPathSteps() {
-    return (
-        <section>
-            <h3 className="text-sm font-semibold text-[#1c1c1c]">Qué pasa después</h3>
-            <ol className="mt-4 space-y-0">
-                {FAST_PATH_STEPS.map((step, i) => {
-                    const last = i === FAST_PATH_STEPS.length - 1;
-                    return (
-                        <li key={step.title} className="relative flex gap-3.5 pb-5 last:pb-0">
-                            {!last && (
-                                <span
-                                    aria-hidden
-                                    className="absolute left-[13px] top-7 bottom-1 w-px bg-[#e3e3e3]"
-                                />
-                            )}
-                            <span className="relative z-10 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-brand/[0.1] text-[13px] font-semibold tabular-nums text-brand">
-                                {i + 1}
-                            </span>
-                            <div className="min-w-0 pt-0.5">
-                                <p className="text-sm font-semibold text-[#1c1c1c]">{step.title}</p>
-                                <p className="mt-0.5 text-[13px] leading-relaxed text-[#6a6a6a]">{step.body}</p>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ol>
-        </section>
-    );
-}
-
-/** "Cómo cobras" — propuesta económica honesta, sin porcentaje inventado. */
-function FastPathPayout() {
-    return (
-        <section className="rounded-xl bg-[#f7f9fc] px-4 py-4">
-            <h3 className="text-sm font-semibold text-[#1c1c1c]">Cómo cobras</h3>
-            <ul className="mt-2.5 space-y-2">
-                {[
-                    'Tú pones el precio de cada inspección.',
-                    'Cobras tras cada trabajo completado, directo a tu cuenta.',
-                    'Sin cuota mensual ni coste de alta: solo hay comisión cuando tú cobras.',
-                ].map((line) => (
-                    <li key={line} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#444]">
-                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2.6} />
-                        {line}
-                    </li>
-                ))}
-            </ul>
-        </section>
-    );
-}
-
-/** "Qué necesitas a mano" — reduce el abandono dentro de Stripe. */
-function FastPathChecklist() {
-    return (
-        <section>
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[#1c1c1c]">
-                <Clock className="h-4 w-4 text-[#9ca3af]" strokeWidth={2.2} />
-                Ten a mano para Stripe
-            </h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-[#6a6a6a]">
-                Documento de identidad y el <span className="font-semibold text-[#444]">IBAN</span> de tu cuenta de
-                cobro. Nada más.
-            </p>
-        </section>
-    );
-}
-
-const FAST_PATH_FAQ = [
-    {
-        q: '¿Por qué Stripe?',
-        a: 'Stripe procesa los pagos de millones de empresas. Verifica tu identidad y envía el dinero a tu cuenta. Inspecciono nunca ve ni guarda tus datos bancarios.',
-    },
-    {
-        q: '¿Cuándo cobro?',
-        a: 'Tras cada inspección completada, el importe llega a tu cuenta a través de Stripe.',
-    },
-    {
-        q: '¿Puedo cambiar el país después?',
-        a: 'No. El país de cobro queda fijado al crear tu cuenta de Stripe. Si te mudas a otro país, tendrás que crear una cuenta nueva.',
-    },
-] as const;
-
-/** FAQ corta colapsable — mata objeciones sin saturar. */
-function FastPathFaq() {
-    return (
-        <section>
-            <h3 className="text-sm font-semibold text-[#1c1c1c]">Preguntas frecuentes</h3>
-            <div className="mt-2 divide-y divide-[#ececec]">
-                {FAST_PATH_FAQ.map((item) => (
-                    <details key={item.q} className="group py-2.5">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-semibold text-[#1c1c1c] [&::-webkit-details-marker]:hidden">
-                            {item.q}
-                            <ChevronRight className="h-4 w-4 shrink-0 text-[#9ca3af] transition-transform group-open:rotate-90" />
-                        </summary>
-                        <p className="mt-1.5 pr-7 text-[13px] leading-relaxed text-[#6a6a6a]">{item.a}</p>
-                    </details>
-                ))}
-            </div>
-        </section>
-    );
-}
-
 /**
- * Bloque de valor del fast-path desktop: se monta DEBAJO del formulario para
- * llenar la columna y dar confianza. Solo desktop (el formulario móvil es compacto).
+ * Shell del alta rápida. Desktop: split a pantalla completa — panel de imagen a
+ * la izquierda (marca visual + titular) y formulario a la derecha, centrado
+ * vertical. Sin tarjeta flotante ni vacío gris: llena la pantalla y pesa.
+ * Móvil: banner intro + formulario en el footer (sin cambios).
  */
-export function FastPathValueModules() {
-    return (
-        <div className="space-y-7 border-t border-[#ececec] pt-7">
-            <FastPathSteps />
-            <FastPathPayout />
-            <FastPathChecklist />
-            <FastPathFaq />
-        </div>
-    );
-}
-
-/** Shell — mismo lenguaje que la home: hero claro de marca a la izquierda, formulario a la derecha. */
 export function BecomeExpertFastPathShell({
     onBack,
     children,
@@ -580,60 +438,54 @@ export function BecomeExpertFastPathShell({
         : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]';
 
     return (
-        <div className="become-expert-wizard be-fast-shell flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:grid lg:h-auto lg:max-h-none lg:min-h-screen lg:items-start lg:overflow-visible lg:grid-cols-[minmax(0,0.9fr)_minmax(500px,600px)] xl:grid-cols-[minmax(0,1fr)_680px]">
-            {/* Izquierda — hero claro de marca: foto velada + titular con acento azul/ámbar (estilo home).
-                Desktop: fijo a la altura del viewport y pegajoso mientras la derecha scrollea con la página. */}
-            <aside className="relative hidden min-h-0 overflow-hidden border-r border-[#e8e8e8] bg-[#fafafa] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:self-start">
-                <div className="absolute inset-0">
-                    <FastPathHeroPhoto objectClass="object-[68%_center]" />
-                </div>
+        <div className="become-expert-wizard be-fast-shell relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:grid lg:h-auto lg:max-h-none lg:min-h-screen lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:overflow-visible">
+            {/* Botón volver — desktop, sobre la imagen */}
+            <div className="absolute left-6 top-6 z-20 hidden lg:block">
+                <FastPathBack onBack={onBack} label="Volver" />
+            </div>
+
+            {/* IZQUIERDA — panel de imagen a pantalla completa (solo desktop) */}
+            <aside className="relative hidden overflow-hidden bg-slate-900 lg:block">
+                <img
+                    src={revisionCocheImg}
+                    alt="Un experto revisa un coche antes de la compra"
+                    decoding="async"
+                    fetchPriority="high"
+                    className="absolute inset-0 h-full w-full object-cover object-[56%_38%]"
+                />
                 <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-0"
-                    style={{ background: BE_FAST_DESKTOP_WASH }}
+                    className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-slate-950/10"
                 />
-
-                {/* Píldoras de prueba social flotando sobre la zona nítida de la foto (profundidad) */}
-                <div className="pointer-events-none absolute bottom-10 right-9 z-10 hidden flex-col items-end gap-2.5 xl:flex">
-                    <FastPathProofPill
-                        icon={<BadgeCheck className="h-4 w-4 text-brand" strokeWidth={2.4} />}
-                        label="500+ expertos verificados"
-                    />
-                    <FastPathProofPill
-                        icon={<ShieldCheck className="h-4 w-4 text-brand" strokeWidth={2.4} />}
-                        label="Pagos seguros con Stripe"
-                    />
-                </div>
-
-                <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto p-12 xl:p-14">
-                    <div className="flex items-center justify-between gap-4">
-                        <FastPathWordmark />
-                        <FastPathBack onBack={onBack} label="Volver" />
-                    </div>
-                    <div className="my-auto max-w-md">
-                        <FastPathEyebrow />
-                        <FastPathHeadline className="hp-hero-title-lg mt-3" />
-                        <p className="hp-hero-body mt-4 max-w-[26rem] lg:text-base">{FAST_PATH_SUBLINE_NODE}</p>
-                        <HomepageHeroTrustLines className="mt-6" />
+                <div className="absolute inset-x-0 bottom-0 p-10 xl:p-12">
+                    <h2 className="font-display text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white xl:text-[2.15rem]">
+                        Tus inspecciones,
+                        <br />
+                        tus ingresos
+                    </h2>
+                    <p className="mt-3 max-w-[26rem] text-[15px] leading-relaxed text-white/80">
+                        Recibe encargos de inspección en tu zona y cobra con cada trabajo. Tú pones el precio.
+                    </p>
+                    <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-white/70">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-white/60" strokeWidth={2.2} />
+                        Pagos seguros con Stripe · 500+ expertos verificados
                     </div>
                 </div>
             </aside>
 
-            {/* Derecha — formulario + narrativa de valor. Antes flotaba centrado y vacío;
-                ahora va anclado arriba y la columna se llena con "qué pasa después",
-                "cómo cobras", "qué necesitas" y FAQ para que el alta de 1 campo no
-                parezca de juguete en desktop. */}
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:h-auto lg:min-h-screen lg:overflow-visible">
+            {/* DERECHA — formulario (desktop, centrado vertical) + intro/footer (móvil) */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:min-h-screen lg:overflow-visible">
                 <main
                     id="become-expert-main"
-                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:overflow-visible lg:overscroll-auto`}
+                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:flex lg:items-center lg:overflow-visible lg:overscroll-auto lg:px-12 xl:px-16`}
                 >
-                    <div
-                        className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:max-w-[40rem] lg:px-10 lg:py-12 xl:px-12 xl:py-14`}
-                    >
+                    {/* Móvil — banner intro; el formulario va en el footer */}
+                    <div className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:hidden`}>
                         <BecomeExpertFastPathIntro onBack={onBack} />
-                        <div className="hidden lg:block">{children}</div>
                     </div>
+
+                    {/* Desktop — formulario alineado a la izquierda */}
+                    <div className="hidden w-full max-w-[25rem] lg:block">{children}</div>
                 </main>
 
                 {footer && (

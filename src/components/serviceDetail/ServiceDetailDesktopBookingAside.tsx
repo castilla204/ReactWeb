@@ -130,11 +130,11 @@ export function ServiceDetailDesktopBookingAside({
 
       <footer className="mt-auto border-t border-[#ebebeb] px-5 py-5">
         {isAuthenticated ? (
-          <button type="button" onClick={onReserve} className="sd-aside-cta">
+          <button type="button" onClick={onReserve} className="sd-aside-cta sd-cta-dark">
             Reservar
           </button>
         ) : (
-          <button type="button" onClick={onLogin} className="sd-aside-cta">
+          <button type="button" onClick={onLogin} className="sd-aside-cta sd-cta-dark">
             Inicia sesión para continuar
           </button>
         )}

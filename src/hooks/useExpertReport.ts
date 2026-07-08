@@ -91,8 +91,9 @@ export const useExpertReport = () => {
         `${API_CONFIG.endpoints.chat.deliverable}/${searchHireId}`
       );
       
-      // El endpoint devuelve un objeto con deliverableUrls, no un array directo
-      const deliverables = deliverablesResponse?.deliverableUrls || [];
+      // El endpoint devuelve un objeto con DeliverableUrls, no un array directo.
+      // La API serializa PascalCase; se lee también camelCase por robustez.
+      const deliverables = deliverablesResponse?.DeliverableUrls ?? deliverablesResponse?.deliverableUrls ?? [];
       console.log('📁 Deliverables recibidos:', deliverables);
       
       // 2. Si no tenemos datos del servicio, intentar obtenerlos
@@ -120,10 +121,20 @@ export const useExpertReport = () => {
         }
       }
       
-      // 3. Verificar tipos requeridos
-      const requiredTypes = service?.selectedDeliverableTypes
-        ?.filter((dt: any) => dt.isSelected)
-        ?.map((dt: any) => dt.deliverableType.name.toLowerCase()) || [];
+      // 3. Verificar tipos requeridos.
+      // Solo PDF y Video son entregables con FICHERO — misma whitelist que
+      // ValidateRequiredDeliverablesAsync en el backend. "Llamada" (y cualquier
+      // entregable sin fichero) NUNCA debe bloquear el envío del informe.
+      // La API serializa PascalCase; se leen ambos casings.
+      const FILE_DELIVERABLES = ['pdf', 'video'];
+      const selectedTypes: any[] = service?.SelectedDeliverableTypes ?? service?.selectedDeliverableTypes ?? [];
+      const requiredTypes = selectedTypes
+        .filter((dt: any) => dt.IsSelected ?? dt.isSelected)
+        .map((dt: any) => {
+          const type = dt.DeliverableType ?? dt.deliverableType;
+          return String(type?.Name ?? type?.name ?? '').toLowerCase();
+        })
+        .filter((name: string) => FILE_DELIVERABLES.includes(name));
         
       // Extraer tipos de archivo de las URLs
       const uploadedTypes = deliverables.map((url: string) => {
@@ -205,9 +216,8 @@ export const useExpertReport = () => {
           canSubmit: fileValidation.canSubmit,
           missingFiles: fileValidation.missingFiles,
           message: 'Timer expirado',
-          subMessage: fileValidation.canSubmit 
-            ? 'Se enviará automáticamente' 
-            : 'La cita se cancelará por falta de archivos'
+          // El backend NO auto-envía al expirar: cancela la cita (appointment_cancelled_by_no_report)
+          subMessage: 'El plazo ha vencido sin enviar el informe: la cita se cancelará automáticamente'
         };
       }
 
@@ -227,8 +237,8 @@ export const useExpertReport = () => {
           ? '⏰ 24h restantes - Todos los archivos están listos'
           : '⏰ 24h restantes - Faltan archivos requeridos',
         subMessage: fileValidation.canSubmit
-          ? 'Si no envías manualmente, se enviará automáticamente'
-          : `Faltan: ${fileValidation.missingFiles.join(', ')}. Si no los subes, la cita se cancelará.`
+          ? 'Recuerda enviar el informe antes del plazo: si no, la cita se cancelará automáticamente'
+          : `Faltan: ${fileValidation.missingFiles.join(', ')}. Si no los subes y envías el informe, la cita se cancelará.`
       };
       
     } catch (error) {

@@ -72,9 +72,10 @@ export function buildInspeccionoMapStyle(
 }
 
 /**
- * Mapa de checkout: base limpia pero LEGIBLE (con etiquetas, para que el cliente
- * reconozca su calle/barrio al marcar el punto) sobre un cielo azul-gris muy suave
- * acorde a la marca. Un realce sutil de saturación/contraste evita el aspecto lavado.
+ * Mapa de checkout: base Voyager CON color (crema/verde parques, como la app de
+ * referencia) y LEGIBLE (con etiquetas, para que el cliente reconozca su calle/barrio
+ * al marcar el punto). El protagonismo lo da el marcador negro (ver AppointmentMap),
+ * no un lavado del mapa. Un realce sutil de saturación/contraste evita el aspecto lavado.
  */
 export function buildNeutralCheckoutMapStyle(): maplibregl.StyleSpecification {
   return {

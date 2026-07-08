@@ -8,8 +8,8 @@ import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
     BecomeExpertFastPathShell,
+    FastPathWordmark,
     FastPathButtonNote,
-    FastPathValueModules,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
     BE_DAY_ACTIVE,
@@ -1120,23 +1120,25 @@ function BecomeExpertPage() {
                 }
             >
                 <div className="be-fast-form">
-                    <header className="hidden space-y-2 lg:block">
-                        <h2 className="be-fast-form-title">Crea tu cuenta de cobros</h2>
-                        <p className="be-fast-form-lead">
-                            Solo necesitas tu país para empezar. El perfil, tu zona y tus servicios los completas
-                            después en el panel.
+                    {/* Formulario alineado a la izquierda del panel derecho del split.
+                        Sin tarjeta ni emblema: marca discreta → título → un campo → Stripe. */}
+                    <FastPathWordmark />
+
+                    <div>
+                        <h1 className="font-display text-[1.6rem] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
+                            Crea tu cuenta de cobros
+                        </h1>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                            Empieza con tu país. El perfil y tus servicios los configuras después.
                         </p>
-                    </header>
+                    </div>
 
                     <div className="be-fast-form-field">
                         <label htmlFor="fast-country" className="be-fast-form-label">
-                            ¿Dónde trabajarás?
+                            ¿En qué país trabajas?
                         </label>
-                        <p className="be-fast-form-hint">
-                            Inspecciono opera en todo el mundo. Tu país de cobro debe ser el mismo en el que trabajas.
-                        </p>
                         <div className="relative">
-                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden ring-1 ring-black/[0.08]">
+                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/[0.08]">
                                 <span
                                     className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
                                     aria-hidden
@@ -1157,14 +1159,16 @@ function BecomeExpertPage() {
                                 aria-hidden
                             />
                         </div>
-                        <p className="be-fast-form-hint">No se puede cambiar después.</p>
+                        <p className="be-fast-form-hint">
+                            Es también tu país de cobro y no se puede cambiar después.
+                        </p>
                     </div>
 
                     {fastPathError && (
                         <p className="text-sm text-red-600" role="alert">{fastPathError}</p>
                     )}
 
-                    <div className="flex flex-col pt-1">
+                    <div>
                         <button
                             type="button"
                             onClick={submitMinimal}
@@ -1186,8 +1190,6 @@ function BecomeExpertPage() {
                         </button>
                         <FastPathButtonNote />
                     </div>
-
-                    <FastPathValueModules />
                 </div>
             </BecomeExpertFastPathShell>
             </>

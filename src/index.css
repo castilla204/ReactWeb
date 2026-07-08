@@ -1099,6 +1099,15 @@
         @apply inline-flex h-10 w-full items-center justify-center rounded-full bg-brand text-sm font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.99] disabled:cursor-wait disabled:opacity-60;
     }
 
+    /* CTA principal del embudo (ficha → checkout) en negro. El azul de marca baja
+       a acento: enlaces, chips, estado seleccionado, badges. #171717 es el negro
+       del wizard (AppointmentWizardShell, CheckoutPage) — no introducir otro.
+       Debe declararse DESPUÉS de .sd-aside-cta y de .sd-mobile-footer-cta: misma
+       especificidad en :hover, gana el último. */
+    .sd-cta-dark {
+        @apply bg-[#171717] text-white shadow-none hover:bg-[#2a2d33] hover:shadow-none focus-visible:outline-[#171717];
+    }
+
     .service-detail-desktop .sd-deliverable-list-item-btn {
         @apply py-3;
     }
@@ -1453,8 +1462,32 @@ input, textarea {
     z-index: 0;
 }
 
-.animate-shimmer {
-    animation: shimmer 2s infinite;
+/* Shimmer del skeleton (Sileo).
+ *
+ * ⚠️ Antes esto se aplicaba vía `before:animate-shimmer` en Tailwind, pero
+ * `shimmer` NO está registrada como animación de Tailwind → la variante `before:`
+ * nunca se generaba y el barrido no corría (skeletons grises estáticos). Ahora
+ * usamos una clase real `sk-shimmer` que controlamos aquí:
+ *   · barrido horizontal por `transform` (GPU, sin repaint de layout),
+ *   · timing `linear` (un shimmer con ease se percibe "rebotón"),
+ *   · `animation-delay` por-item vía `--sk-delay` → onda diagonal en rejillas,
+ *   · gated en `no-preference` → respeta de verdad prefers-reduced-motion.
+ * El gradiente y el `translateX(-100%)` inicial los sigue poniendo Tailwind
+ * (`before:bg-gradient-to-r`, `before:-translate-x-full`).
+ */
+/* Keyframe PROPIO (no `shimmer` a secas): HomePresentation.tsx inyecta otro
+ * `@keyframes shimmer` global basado en background-position que, si gana la
+ * cascada, dejaría el barrido del skeleton quieto. Un nombre único lo aísla. */
+@keyframes sk-shimmer-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .sk-shimmer::before {
+        animation: sk-shimmer-sweep 1.8s linear infinite;
+        animation-delay: var(--sk-delay, 0ms);
+    }
 }
 
 /* ✅ Scroll táctil mejorado - Momentum y elastic */
@@ -1909,7 +1942,9 @@ img[alt*="country"],
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-width: 40rem;
+    /* El ancho lo controla el contenedor del shell (centrado). Antes 40rem
+       limitaba la tarjeta partida (foto + formulario) a 640px. */
+    max-width: 100%;
 }
 
 .be-fast-form-kicker {
