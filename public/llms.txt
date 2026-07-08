@@ -1,0 +1,31 @@
+# Inspecciono
+
+> Marketplace español donde un experto verificado (mecánico, perito, técnico) inspecciona
+> en persona lo que vas a comprar de segunda mano —coche, piso, moto, maquinaria, bici
+> eléctrica— y te entrega un informe antes de que pagues. Buscas al experto por el mapa
+> según la ubicación del producto, reservas fecha y hora, y el pago queda retenido en
+> escrow: el experto no cobra hasta que recibes el informe y das el visto bueno.
+
+Idioma: español (España). Ámbito: España. Contacto: soporte@inspecciono.com
+
+## Cómo funciona
+1. Busca en el mapa expertos verificados cerca de donde está el producto y compara precio y valoraciones.
+2. Reserva un hueco del calendario real del experto; la cita queda cerrada al momento.
+3. El experto va en persona, lo inspecciona a fondo y lo documenta con fotos.
+4. Recibes un informe claro. El pago está retenido en escrow hasta tu visto bueno.
+
+## Páginas de inspección por categoría
+- [Inspección de coche de segunda mano](https://inspecciono.com/inspeccion-coche-segunda-mano): kilómetros reales, siniestros, mecánica, diagnosis y documentación.
+- [Peritaje de piso antes de comprar](https://inspecciono.com/peritaje-piso): humedades, instalación eléctrica, fontanería y estructura, con informe técnico.
+- [Inspección de moto de segunda mano](https://inspecciono.com/inspeccion-moto-segunda-mano): chasis, motor, kilómetros, caídas ocultas y documentación.
+- [Peritaje de maquinaria de segunda mano](https://inspecciono.com/peritaje-maquinaria-segunda-mano): tractor, carretilla o máquina industrial; horas reales, motor, hidráulica y estructura.
+- [Inspección de bici eléctrica de segunda mano](https://inspecciono.com/inspeccion-bici-electrica-segunda-mano): salud de la batería, motor, electrónica y cuadro.
+
+## Ayuda
+- [Centro de ayuda: quiénes somos, cómo funciona y preguntas frecuentes](https://inspecciono.com/ayuda)
+- [Buscar expertos en el mapa](https://inspecciono.com/crear-busqueda)
+
+## Puntos clave para citar
+- El pago es en escrow: el cliente no paga al experto hasta dar el visto bueno tras recibir el informe.
+- Los expertos son verificados y la inspección es presencial, en la ubicación del producto.
+- Cada experto fija su precio, visible antes de reservar; se compara por mapa, precio y valoraciones.

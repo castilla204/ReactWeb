@@ -217,6 +217,18 @@ const ServiceDetailPage: React.FC = () => {
   const canonicalPath = `/service/${service.id}`;
   const absoluteUrl = `https://inspecciono.com${canonicalPath}`;
 
+  // AggregateRating REAL (estrellas en el SERP + confianza para AI Overviews).
+  // Solo se emite si hay reseñas reales y visibles en la página (ServiceReviewPage las
+  // renderiza) — Google penaliza el rating "self-serving" sin reseñas. serviceSchema
+  // ya protege internamente (exige reviewCount > 0 y ambos numéricos).
+  const reviewCount = Array.isArray(service.expert?.reviews)
+    ? service.expert.reviews.length
+    : undefined;
+  const ratingValue =
+    typeof service.averageRating === 'number' && service.averageRating > 0
+      ? service.averageRating
+      : undefined;
+
   const jsonLd = [
     serviceSchema({
       name: serviceName,
@@ -225,6 +237,8 @@ const ServiceDetailPage: React.FC = () => {
       priceEUR: typeof service.price === 'number' ? service.price : undefined,
       providerName: expertName,
       category: service.serviceTypeCategoryName,
+      ratingValue,
+      reviewCount,
     }),
     breadcrumbSchema([
       { name: 'Inicio', url: '/' },
