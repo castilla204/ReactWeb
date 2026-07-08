@@ -256,8 +256,10 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
 ];
 
+export const CHATBOT_EMPTY_TITLE = '¿En qué te ayudo?';
+
 export const CHATBOT_WELCOME_MESSAGE =
-  'Hola, soy el asistente de Inspecciono. Puedo ayudarte con inspecciones, pagos en custodia, cancelaciones, disputas, cómo contratar un experto o cómo registrarte como revisor. ¿En qué te ayudo?';
+  'Respondo sobre inspecciones, pagos retenidos, cancelaciones, disputas, cómo contratar un experto y cómo registrarte como revisor.';
 
 export const CHATBOT_SUGGESTED_QUESTIONS = [
   '¿Cómo funciona el pago retenido?',

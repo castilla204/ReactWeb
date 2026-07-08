@@ -115,12 +115,10 @@ export function AppointmentWizardShell({
             {/* MÓVIL (<lg) */}
             <div className={cn('lg:hidden', mobileFullBleed ? 'relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white' : 'min-h-[100dvh] bg-white')}>
                 <header className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS, 'shrink-0 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]')}>
-                    {/* Cabecera explicativa por paso (título + qué se pide); el índice se
-                        deriva de la posición en `steps` porque los ids no son 1-based en
-                        todos los flujos. */}
+                    {/* Mapa de pasos + cabecera explicativa (título + qué se pide). */}
                     <CheckoutMobileStepHeader
-                        step={Math.max(1, steps.findIndex((s) => s.id === currentStep) + 1)}
-                        total={steps.length}
+                        step={currentStep}
+                        steps={steps}
                         title={title}
                         description={description}
                     />

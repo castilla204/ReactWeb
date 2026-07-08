@@ -22,7 +22,7 @@ const WallSkeletonRow: React.FC = () => (
 
     {/* Carril horizontal — overflow oculto: la última tarjeta "asoma" igual que
         en el muro real. 6 tarjetas cubren tanto móvil (asoman ~2,5) como desktop. */}
-    <div className="flex gap-4 min-[428px]:gap-[18px] md:gap-3 overflow-hidden">
+    <div className="flex gap-4 min-[428px]:gap-[18px] md:gap-3 overflow-hidden -mx-4 px-4 md:mx-0 md:px-0">
       {[0, 1, 2, 3, 4, 5].map((i) => {
         // Onda diagonal: cada tarjeta arranca el barrido 90ms después que la
         // anterior → el ojo lee un avance izq→dcha en lugar de un destello único.

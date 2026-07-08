@@ -691,7 +691,7 @@ export function ServiceReviewPage({
                                         isOnVacation={finalService?.expert?.isOnVacation}
                                         rangeKm={expertRange ?? 25}
                                         mapVariant="preview"
-                                        showAvailabilityHint={false}
+                                        showAvailabilityHint
                                     />
                                 </section>
                             ) : null}

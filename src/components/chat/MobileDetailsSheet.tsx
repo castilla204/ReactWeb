@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { motion, AnimatePresence, useDragControls, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls, useReducedMotion, PanInfo } from 'framer-motion';
 import { ChevronDown, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -25,6 +25,7 @@ export function MobileDetailsSheet({
 }: MobileDetailsSheetProps) {
   const dragControls = useDragControls();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -67,10 +68,10 @@ export function MobileDetailsSheet({
               className
             )}
             style={{ maxHeight: `${SHEET_MAX_VH}vh` }}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 32, stiffness: 340 }}
+            initial={prefersReducedMotion ? { opacity: 0 } : { y: '100%' }}
+            animate={prefersReducedMotion ? { opacity: 1 } : { y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { y: '100%' }}
+            transition={prefersReducedMotion ? { duration: 0.15 } : { type: 'spring', damping: 32, stiffness: 340 }}
             drag="y"
             dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
@@ -78,32 +79,32 @@ export function MobileDetailsSheet({
             onDragEnd={handleDragEnd}
           >
             <div
-              className="flex shrink-0 cursor-grab flex-col items-center border-b border-gray-100 px-4 pb-3 pt-2 active:cursor-grabbing"
+              className="flex shrink-0 cursor-grab flex-col items-center border-b border-[#f0f0f0] px-4 pb-3 pt-2 active:cursor-grabbing"
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="mb-2 h-1 w-10 rounded-full bg-gray-300" aria-hidden />
+              <div className="mb-2 h-1 w-10 rounded-full bg-[#e0e0e0]" aria-hidden />
               <div className="flex w-full items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 text-left">
                   <h2
                     id="mobile-details-sheet-title"
-                    className="text-base font-semibold text-gray-900"
+                    className="text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]"
                   >
                     {title}
                   </h2>
                   {subtitle && (
-                    <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
+                    <p className="mt-0.5 text-[12px] text-[#737373]">{subtitle}</p>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] text-[#737373] transition-colors hover:bg-[#e8e8e8] hover:text-[#1c1c1c]"
                   aria-label="Cerrar"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <p className="mt-2 flex items-center gap-1 text-[11px] text-gray-400">
+              <p className="mt-2 flex items-center gap-1 text-[11px] text-[#9a9a9a]">
                 <ChevronDown className="h-3.5 w-3.5 rotate-180" aria-hidden />
                 Desliza hacia abajo para volver al chat
               </p>
@@ -119,45 +120,3 @@ export function MobileDetailsSheet({
   );
 }
 
-type DetailsPeekBarProps = {
-  onOpen: () => void;
-  title: string;
-  statusLabel?: string;
-  className?: string;
-};
-
-/** Barra superior: invita a deslizar / pulsar para ver detalles */
-export function DetailsPeekBar({ onOpen, title, statusLabel, className }: DetailsPeekBarProps) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        'lg:hidden flex w-full shrink-0 items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-4 py-2.5 text-left transition-colors hover:from-gray-100/80',
-        className
-      )}
-      whileTap={{ scale: 0.99 }}
-      aria-label="Ver detalles del servicio"
-    >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-        <motion.span
-          animate={{ y: [0, -3, 0] }}
-          transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          className="text-primary"
-          aria-hidden
-        >
-          <ChevronDown className="h-5 w-5 rotate-180" />
-        </motion.span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">{title}</p>
-        <p className="text-xs text-gray-500">Desliza o pulsa para ver detalles</p>
-      </div>
-      {statusLabel && (
-        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-medium text-gray-600">
-          {statusLabel}
-        </span>
-      )}
-    </motion.button>
-  );
-}

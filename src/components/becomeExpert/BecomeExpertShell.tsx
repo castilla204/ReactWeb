@@ -300,17 +300,23 @@ export const BE_DAY_IDLE = 'bg-[#f5f5f5] text-[#444] hover:bg-[#ebebeb]';
 /**
  * Controles del alta rápida (país + CTA). Deliberadamente NO usan el CTA global
  * (`HP_SERVICE_CTA_CLASS`, una píldora con glow azul): en un formulario de cobros
- * la píldora + sombra de color se lee como app de consumo. Aquí ambos controles
- * comparten altura (48px) y el MISMO radio (10px), borde con definición y foco
- * nítido — vocabulario de formulario, no de landing.
+ * la píldora + sombra de color se lee como app de consumo.
+ *
+ * El CTA es casi negro, no azul de marca: una losa azul saturada a todo el ancho
+ * es lo más ruidoso de la pantalla y desequilibra el campo, que queda tímido al
+ * lado. El azul de marca se reserva para el acento y el anillo de foco.
+ * Ambos controles comparten altura (48px) y radio (10px).
  */
 const BE_FAST_CONTROL_RADIUS = 'rounded-[10px]';
 
+// El foco vive en CSS (`.be-fast-control:focus` / `.be-fast-cta:focus-visible`,
+// en index.css) en vez de en variantes `focus:` de Tailwind: es un requisito de
+// accesibilidad y así no depende de la generación de variantes.
 export const BE_FAST_SELECT_CLASS =
-    `h-12 w-full cursor-pointer appearance-none border border-slate-300 bg-white ${BE_FAST_CONTROL_RADIUS} text-[15px] font-medium text-slate-900 transition-[border-color,box-shadow] hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15`;
+    `be-fast-control h-12 w-full cursor-pointer appearance-none border border-slate-300 bg-white ${BE_FAST_CONTROL_RADIUS} text-[15px] font-medium text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)] transition-[border-color,box-shadow] hover:border-slate-400`;
 
 export const BE_FAST_PRIMARY_BTN_CLASS =
-    `group inline-flex h-12 w-full items-center justify-center gap-2 ${BE_FAST_CONTROL_RADIUS} bg-brand text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-brand-hover active:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70`;
+    `be-fast-cta inline-flex h-12 w-full items-center justify-center ${BE_FAST_CONTROL_RADIUS} bg-slate-900 text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors duration-150 hover:bg-slate-800 active:bg-slate-950 disabled:cursor-wait disabled:opacity-60`;
 
 const FAST_PATH_SUBLINE_NODE = (
     <>

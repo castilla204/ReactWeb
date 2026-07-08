@@ -263,8 +263,9 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
 export interface ServiceDetailCoverageMapProps extends CoverageMapCanvasProps {
   /** Miniatura clicable + modal pantalla completa */
   expandable?: boolean;
-  /** Evita solaparse con controles flotantes del hero móvil */
-  expandButtonPosition?: 'top' | 'bottom';
+  /** Evita solaparse con controles flotantes del hero móvil; 'bottom-raised'
+   *  queda por encima del solape de la card blanca (SD_MOBILE_SHEET_OVERLAP_CLASS = -mt-10). */
+  expandButtonPosition?: 'top' | 'bottom' | 'bottom-raised';
 }
 
 export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> = ({
@@ -337,7 +338,11 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             openFullscreen();
           }}
           className={`absolute right-2 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#e5e7eb] bg-white/95 text-[#334155] shadow-sm transition-colors hover:bg-white active:scale-95 ${
-            expandButtonPosition === 'bottom' ? 'bottom-2' : 'top-2'
+            expandButtonPosition === 'bottom'
+              ? 'bottom-2'
+              : expandButtonPosition === 'bottom-raised'
+                ? 'bottom-12'
+                : 'top-2'
           }`}
           aria-label="Ampliar mapa a pantalla completa"
         >

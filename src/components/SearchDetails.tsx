@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Phone, Info, Euro, Tag, Clock, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List, FastForward, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Info, Euro, Tag, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List, FastForward, Loader2 } from 'lucide-react';
 import { SileoSkeleton } from './ui/sileo-skeleton';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
@@ -25,7 +23,7 @@ import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 
 // Imports para el sistema de citas
 import { useAppointments } from '../hooks/useAppointments';
-import { useAppointmentStatuses, getAppointmentStatusIcon } from '../hooks/useAppointmentStatuses';
+import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import { useSearchHireStatuses } from '../hooks/useSearchHireStatuses';
 import StatusTimeline from './StatusTimeline';
 import ExpertAvailability from './ExpertAvailability';
@@ -739,28 +737,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const { data: appointmentStatuses } = useAppointmentStatuses();
     const { data: searchHireStatuses } = useSearchHireStatuses();
     
-    // ✅ FUNCIÓN PARA OBTENER EL ICONO DEL ESTADO (mantenida para compatibilidad)
-    const getStatusIcon = (status: string) => {
-        if (!appointmentStatuses) return <AlertTriangle className="w-5 h-5 text-gray-600" />;
-        
-        const iconName = getAppointmentStatusIcon(status, appointmentStatuses);
-        
-        switch (iconName) {
-            case 'check-circle':
-                return <CheckCircle className="w-5 h-5 text-green-600" />;
-            case 'x-circle':
-                return <XCircle className="w-5 h-5 text-red-600" />;
-            case 'clock':
-                return <Calendar className="w-5 h-5 text-blue-600" />;
-            case 'timer':
-                return <Calendar className="w-5 h-5 text-orange-600" />;
-            case 'alert-triangle':
-                return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
-            default:
-                return <AlertTriangle className="w-5 h-5 text-gray-600" />;
-        }
-    };
-    
     // ? USAR HOOK ESPECÍFICO PARA DISTRIBUCIÓN DE DINERO
     const { 
         data: moneyDistributionConfig, 
@@ -1310,12 +1286,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         return (
             <div className={`flex items-center justify-center bg-gray-50 p-4 ${embedded ? 'h-full min-h-[20rem]' : 'min-h-screen'}`}>
                 <div className="text-center space-y-4 max-w-md">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                        <AlertCircle className="w-8 h-8 text-gray-400" />
-                            </div>
+                    <div className="w-16 h-16 bg-[#f0f0f0] rounded-full flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-8 h-8 text-[#9a9a9a]" />
+                    </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-900">Error al cargar</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-[#1c1c1c]">Error al cargar</p>
+                        <p className="text-xs text-[#737373]">
                             {error?.message || 'Ha ocurrido un error inesperado'}
                         </p>
                     </div>
@@ -1403,12 +1379,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             )}
 
             {searchHireStatus === SEARCH_HIRE_STATUS.TRANSFER_FAILED && (
-                <div className="mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <div className="mx-4 mt-3 rounded-xl border border-[#f5dada] bg-[#fdf2f2] px-4 py-3 text-sm text-[#b42318]">
                     <div className="flex items-center gap-2 font-medium">
                         <AlertCircle className="h-4 w-4" />
                         Error en la transferencia de pago
                     </div>
-                    <p className="mt-1 text-red-700">
+                    <p className="mt-1">
                         El servicio se marcó como completado pero la transferencia al experto falló. Contacta con soporte si persiste.
                     </p>
                 </div>
@@ -1418,14 +1394,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             {isNetworkErr && (
                 <div className="flex flex-col items-center justify-center py-16 px-4 flex-1 bg-gray-50 overflow-y-auto">
                     <div className="flex flex-col items-center gap-4 max-w-sm text-center">
-                        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                            <WifiOff className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                            <WifiOff className="w-8 h-8 text-[#9a9a9a]" />
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-[#1c1c1c]">
                                 No se pudo conectar con el servidor
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[#737373]">
                                 Intenta nuevamente en unos minutos
                             </p>
                         </div>
@@ -1472,7 +1448,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 open={mobileDetailsOpen}
                                 onOpenChange={setMobileDetailsOpen}
                                 title="Detalles del servicio"
-                                subtitle={searchHireStatusInfo?.displayName}
                             >
                                 <div className="space-y-6 pb-24">
                                 {/* Service Info */}
@@ -1489,114 +1464,58 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </div>
                                     )}
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-gray-900">
-                                            <Tag className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                            <span 
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                {serviceInfo?.categoryName || category?.name || 'N/A'}
-                                            </span>
-                                                </div>
+                                        <div className="flex items-center gap-2 text-[13px] text-[#1c1c1c]">
+                                            <Tag className="h-4 w-4 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                            <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
+                                        </div>
                                         {serviceInfo?.serviceTypeName && (
-                                            <div 
-                                                className="text-sm"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                <span className="text-gray-500">Tipo: </span>
-                                                <span className="text-gray-900 font-medium">{serviceInfo.serviceTypeName}</span>
+                                            <div className="text-[13px]">
+                                                <span className="text-[#737373]">Tipo: </span>
+                                                <span className="font-medium text-[#1c1c1c]">{serviceInfo.serviceTypeName}</span>
                                             </div>
                                         )}
                                         {search?.description && (
-                                            <div className="text-sm leading-relaxed">
-                                                <span className="text-gray-500">Descripción: </span>
-                                                <span 
-                                                    className="text-gray-700"
-                                                    style={{
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        lineHeight: '1.5',
-                                                    }}
-                                                >
-                                                    {search.description}
-                                                </span>
-                                            </div>
+                                            <p className="sd-user-text break-words text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                {search.description}
+                                            </p>
                                         )}
                                         {serviceInfo?.locationRange && (
-                                            <div 
-                                                className="text-xs text-gray-500"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                }}
-                                            >
-                                                Radio de servicio: <span className="font-medium text-gray-900">{serviceInfo.locationRange} km</span>
-                                            </div>
+                                            <p className="text-[12px] text-[#737373]">
+                                                Radio de servicio <span className="font-medium text-[#1c1c1c]">{serviceInfo.locationRange} km</span>
+                                            </p>
                                         )}
-                                        {/* Precio con desglose mejorado */}
+                                        {/* Precio con desglose */}
                                         {(() => {
                                             const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
                                             if (!priceSource) return null;
                                             const priceDisplay = getPriceDisplay(priceSource);
-                                            
+
                                             return (
-                                                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <span 
-                                                            className="text-sm font-medium text-gray-600"
-                                                            style={{
-                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            }}
-                                                        >
-                                                            Precio total
-                                                        </span>
-                                                        <div className="text-right">
-                                                            <div className="flex items-center justify-end gap-1.5">
-                                                                <span 
-                                                                    className="text-lg font-bold text-gray-900"
-                                                                    style={{
-                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                    }}
-                                                                >
-                                                                    {priceDisplay.formattedTotal}
-                                                                </span>
-                                            </div>
+                                                <div className="border-t border-[#f4f4f4] pt-3">
+                                                    <div className="flex items-baseline justify-between gap-3">
+                                                        <span className="text-[13px] font-medium text-[#737373]">Precio total</span>
+                                                        <div className="flex items-baseline gap-1.5">
+                                                            <span className="text-[20px] font-bold tracking-[-0.01em] text-[#1c1c1c]">{priceDisplay.formattedTotal}</span>
                                                             {priceDisplay.hasTaxInfo && (
-                                                                <p className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded-full inline-block mt-0.5">IVA incluido</p>
+                                                                <span className="text-[12px] font-medium text-[#737373]">IVA incl.</span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    
+
                                                     {priceDisplay.hasTaxInfo && (
-                                                        <Accordion type="single" collapsible className="w-full mt-2 border-t border-gray-200/50">
+                                                        <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-[#ededed]">
                                                             <AccordionItem value="price-breakdown" className="border-none">
-                                                                <AccordionTrigger 
-                                                                    className="text-xs py-1.5 text-gray-500 hover:text-gray-700 hover:no-underline font-normal justify-start gap-2 h-auto min-h-0"
-                                                                    style={{
-                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                    }}
-                                                                >
+                                                                <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
                                                                     <span>Ver desglose de impuestos</span>
                                                                 </AccordionTrigger>
-                                                                <AccordionContent className="pb-0 pt-1 space-y-1">
-                                                                    <div 
-                                                                        className="flex justify-between text-xs"
-                                                                        style={{
-                                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                        }}
-                                                                    >
-                                                                        <span className="text-gray-500">Base imponible</span>
-                                                                        <span className="text-gray-700 font-medium">{priceDisplay.formattedBase}</span>
+                                                                <AccordionContent className="space-y-1 pb-0 pt-1">
+                                                                    <div className="flex justify-between text-[12px]">
+                                                                        <span className="text-[#737373]">Base imponible</span>
+                                                                        <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedBase}</span>
                                                                     </div>
-                                                                    <div 
-                                                                        className="flex justify-between text-xs"
-                                                                        style={{
-                                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                        }}
-                                                                    >
-                                                                        <span className="text-gray-500">IVA</span>
-                                                                        <span className="text-gray-700 font-medium">{priceDisplay.formattedTax}</span>
+                                                                    <div className="flex justify-between text-[12px]">
+                                                                        <span className="text-[#737373]">IVA</span>
+                                                                        <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedTax}</span>
                                                                     </div>
                                                                 </AccordionContent>
                                                             </AccordionItem>
@@ -1611,25 +1530,15 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     {searchHireStatusInfo && (
                                         <Accordion type="multiple" className="w-full">
                                             <AccordionItem value="status-info" className="border-none">
-                                                <AccordionTrigger 
-                                                    className="text-xs py-2 hover:no-underline"
-                                                    style={{
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
+                                                <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
                                                     ¿Qué significa este estado?
                                                 </AccordionTrigger>
-                                                <AccordionContent 
-                                                    className="text-xs text-muted-foreground pt-2 pb-0"
-                                                    style={{
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
+                                                <AccordionContent className="pt-2 pb-0 text-[12px] text-[#737373]">
                                                     <p className="leading-relaxed">
                                                         {searchHireStatusInfo.description || 'Estado del servicio contratado.'}
                                                     </p>
                                                     {searchHireStatusInfo.statusValue === 'pending' && (
-                                                        <p className="mt-2 pt-2 border-t border-border/50">
+                                                        <p className="mt-2 border-t border-[#f0f0f0] pt-2">
                                                             El experto aún no ha aceptado la contratación. Puedes comunicarte con él a través del chat.
                                                         </p>
                                                     )}
@@ -1637,12 +1546,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             </AccordionItem>
                                             {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
                                                 <AccordionItem value="status-timeline" className="border-none">
-                                                    <AccordionTrigger 
-                                                        className="text-xs py-2 hover:no-underline"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
+                                                    <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
                                                         Timeline del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
@@ -1660,480 +1564,343 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-6 pt-6 border-t border-gray-200 lg:hidden">
-                                        <div className="space-y-2">
-                                            <h3 
-                                                className="text-base font-semibold text-gray-900 mb-3 flex items-center justify-between gap-2"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                <span>
-                                                    {appointment ? (
-                                                        appointmentStatusInfo?.displayName || 
-                                                        (appointment.status === 'appointment_proposed' ? 'Cita Propuesta' : 
-                                                         appointment.status === 'appointment_confirmed' ? 'Cita Confirmada' : 
-                                                         'Cita')
-                                                    ) : 'Cita Pendiente'}
+                                    <div className="mt-6 border-t border-[#f0f0f0] pt-5 lg:hidden">
+                                        <div className="mb-2.5 flex items-center justify-between gap-2">
+                                            <SdSectionTitle>Cita</SdSectionTitle>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[11px] font-medium text-[#737373]">
+                                                    {appointment
+                                                        ? (appointmentStatusInfo?.displayName ||
+                                                            (appointment.status === 'appointment_proposed' ? 'Propuesta' :
+                                                             appointment.status === 'appointment_confirmed' ? 'Confirmada' :
+                                                             'Cita'))
+                                                        : 'Pendiente'}
                                                 </span>
                                                 {renderAdminSkipReportButton()}
-                                            </h3>
-                                            <div className="space-y-3">
-                                                    {appointment ? (
-                                                        <>
-                                                            {appointment.proposedDate && appointment.proposedTime && (() => {
-                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
-                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
-                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
-                                                                return (
-                                                                <div 
-                                                                    className="flex items-center gap-2 text-sm text-gray-900"
-                                                                    style={{
-                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                    }}
-                                                                >
-                                                                    <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                                        <span className="font-medium">
-                                                                            {new Date(dateToUse).toLocaleDateString('es-ES', {
-                                                                                day: 'numeric',
-                                                                                month: 'short',
-                                                                                year: 'numeric'
-                                                                            })} {timeToUse.substring(0, 5)}
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            {appointment.location && (
-                                                            <div 
-                                                                className="flex items-start gap-2 text-sm text-gray-900"
-                                                                style={{
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                                                                    <span className="leading-relaxed">{appointment.location}</span>
-                                                                </div>
-                                                            )}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {appointment ? (
+                                                <>
+                                                    {appointment.proposedDate && appointment.proposedTime && (() => {
+                                                        // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                        // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                        const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                        const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
+                                                        return (
+                                                            <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                                {new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric'
+                                                                })} · {timeToUse.substring(0, 5)}
+                                                            </p>
+                                                        );
+                                                    })()}
+                                                    {appointment.location && (
+                                                        <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                            {appointment.location}
                                                             {appointment.doorNumber && (
-                                                            <div 
-                                                                className="text-sm text-gray-900 ml-6"
-                                                                style={{
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                <span className="text-gray-500">Puerta: </span>
-                                                                    <span className="font-medium">{appointment.doorNumber}</span>
-                                                                </div>
+                                                                <span className="mt-0.5 block text-[#737373]">
+                                                                    Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                                </span>
                                                             )}
-                                                            {/* Reportes del Experto - Dentro del cuadro de cita */}
-                                                            {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                            <div className="mt-3 pt-3 border-t border-gray-200">
-                                                                <div 
-                                                                    className="flex items-center gap-2 text-sm text-gray-900 mb-2"
-                                                                    style={{
-                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                    }}
-                                                                >
-                                                                        <FileCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                                                        <span className="font-medium">Informe Enviado</span>
-                                                                    </div>
-                                                                    <div className="space-y-1.5 ml-6">
-                                                                        {deliverables.map((deliverable) => {
-                                                                            const fileName = deliverable.url.split('/').pop() || 'archivo';
-                                                                            return (
-                                                                                <button
-                                                                                    key={deliverable.id}
-                                                                                    onClick={() => window.open(deliverable.url, '_blank')}
-                                                                                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors w-full text-left"
-                                                                                    style={{
-                                                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                                    }}
-                                                                                >
-                                                                                    <FileText className="w-3 h-3 flex-shrink-0" />
-                                                                                    <span className="truncate">{fileName}</span>
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <div
-                                                            className="flex items-start gap-2 text-sm text-gray-700"
-                                                            style={{
-                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            }}
-                                                        >
-                                                            <Clock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                                                            <span className="leading-relaxed">{noAppointmentMessage}</span>
+                                                        </p>
+                                                    )}
+                                                    {appointment.doorNumber && !appointment.location && (
+                                                        <p className="text-[13px] text-[#6a6a6a]">
+                                                            Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                        </p>
+                                                    )}
+                                                    {/* Reportes del Experto - Dentro del cuadro de cita */}
+                                                    {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
+                                                        <div className="space-y-1.5 pt-1">
+                                                            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#0F6A3E]">
+                                                                <FileCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                                                                <span>Informe enviado</span>
+                                                            </div>
+                                                            {deliverables.map((deliverable) => {
+                                                                const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                return (
+                                                                    <button
+                                                                        key={deliverable.id}
+                                                                        onClick={() => window.open(deliverable.url, '_blank')}
+                                                                        className="flex w-full items-center gap-1.5 text-left text-[12px] text-[#737373] transition-colors hover:text-[#1c1c1c]"
+                                                                    >
+                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                                                        <span className="truncate underline-offset-2 hover:underline">{fileName}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
-                                                </div>
-                                                {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
-                                                    <Accordion type="single" collapsible className="w-full mt-3">
-                                                        <AccordionItem value="appointment-timeline" className="border-none">
-                                                            <AccordionTrigger 
-                                                                className="text-xs py-2 hover:no-underline"
-                                                                style={{
-                                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                                }}
-                                                            >
-                                                                Timeline del estado
-                                                            </AccordionTrigger>
-                                                            <AccordionContent className="pt-2 pb-0">
-                                                                <StatusTimeline
-                                                                    currentStatus={appointmentStatusInfo}
-                                                                    allStatuses={appointmentStatuses}
-                                                                    statusType="AppointmentStatus"
-                                                                />
-                                                            </AccordionContent>
-                                                        </AccordionItem>
-                                                    </Accordion>
-                                                )}
+                                                </>
+                                            ) : (
+                                                <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                            )}
                                         </div>
+                                        {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
+                                            <Accordion type="single" collapsible className="mt-3 w-full">
+                                                <AccordionItem value="appointment-timeline" className="border-none">
+                                                    <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
+                                                        Timeline del estado
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="pt-2 pb-0">
+                                                        <StatusTimeline
+                                                            currentStatus={appointmentStatusInfo}
+                                                            allStatuses={appointmentStatuses}
+                                                            statusType="AppointmentStatus"
+                                                        />
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
+                                        )}
                                     </div>
                                 )}
 
-                                <div className="border-t border-gray-200 pt-6"></div>
-
-                                {/* Cliente - Minimalista */}
+                                {/* Cliente */}
                                 {search?.user && (
-                                    <div className="space-y-3">
-                                        <h3 
-                                            className="text-base font-semibold text-gray-900"
-                                            style={{
-                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                fontSize: '16px',
-                                                lineHeight: '20px',
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Cliente
-                                        </h3>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage 
-                                                    src={search.user.profilePictureUrl || undefined} 
+                                    <div className="border-t border-[#f0f0f0] pt-5">
+                                        <SdSectionTitle>Cliente</SdSectionTitle>
+                                        <div className="mt-2.5 flex items-center gap-3">
+                                            <Avatar className="h-9 w-9 shrink-0">
+                                                <AvatarImage
+                                                    src={search.user.profilePictureUrl || undefined}
                                                     alt={search.user.name}
                                                 />
-                                                <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
+                                                <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
                                                     {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <p 
-                                                    className="text-sm font-medium text-gray-900 truncate"
-                                                    style={{
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    {search.user.name}
-                                                </p>
-                                                <p 
-                                                    className="text-xs text-gray-500 truncate mt-0.5"
-                                                    style={{
-                                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    }}
-                                                >
-                                                    {search.user.email}
-                                                </p>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{search.user.name}</p>
+                                                <p className="mt-0.5 truncate text-[12px] text-[#737373]">{search.user.email}</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Experto - Minimalista */}
+                                {/* Experto */}
                                 {expertData && (
-                                    <>
-                                        <div className="border-t border-gray-200 pt-6"></div>
-                                        <div className="space-y-3">
-                                            <h3 
-                                                className="text-base font-semibold text-gray-900"
-                                                style={{
-                                                    fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                    fontSize: '16px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                Experto
-                                            </h3>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-9 w-9">
-                                                    <AvatarImage 
-                                                        src={expertData.profilePictureUrl || undefined} 
-                                                        alt={expertData.name}
-                                                    />
-                                                    <AvatarFallback className="bg-gray-100 text-gray-700 text-sm font-medium">
-                                                        {expertData.name?.charAt(0).toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p 
-                                                            className="text-sm font-medium text-gray-900 truncate"
-                                                            style={{
-                                                                fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                            }}
-                                                        >
-                                                            {expertData.name}
-                                                        </p>
-                                                        {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
-                                                        {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
-                                                            <CountryFlag 
-                                                                countryCode={
-                                                                    search?.searchHire?.expertCountry || 
-                                                                    serviceInfo?.expertCountry || 
-                                                                    expertProfile?.country || 
-                                                                    null
-                                                                } 
-                                                                size="sm" 
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                                        <span className="text-xs text-gray-500">Verificado</span>
-                                                    </div>
+                                    <div className="border-t border-[#f0f0f0] pt-5">
+                                        <SdSectionTitle>Experto</SdSectionTitle>
+                                        <div className="mt-2.5 flex items-center gap-3">
+                                            <Avatar className="h-9 w-9 shrink-0">
+                                                <AvatarImage
+                                                    src={expertData.profilePictureUrl || undefined}
+                                                    alt={expertData.name}
+                                                />
+                                                <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
+                                                    {expertData.name?.charAt(0).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{expertData.name}</p>
+                                                    {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
+                                                    {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
+                                                        <CountryFlag
+                                                            countryCode={
+                                                                search?.searchHire?.expertCountry ||
+                                                                serviceInfo?.expertCountry ||
+                                                                expertProfile?.country ||
+                                                                null
+                                                            }
+                                                            size="sm"
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="mt-0.5 flex items-center gap-1.5">
+                                                    <CheckCircle className="h-3.5 w-3.5 text-[#0F6A3E]" strokeWidth={2} />
+                                                    <span className="text-[12px] text-[#737373]">Verificado</span>
                                                 </div>
                                             </div>
-                                            {/* ✅ Disponibilidad del experto en móvil */}
-                                            {expertProfile?.currentAvailability && (
-                                                <div className="pl-10">
-                                                    <ExpertAvailability 
-                                                        availability={expertProfile.currentAvailability}
-                                                        compact={true}
-                                                    />
-                                                </div>
-                                            )}
                                         </div>
-                                    </>
+                                        {/* ✅ Disponibilidad del experto en móvil */}
+                                        {expertProfile?.currentAvailability && (
+                                            <div className="mt-2.5 pl-[48px]">
+                                                <ExpertAvailability
+                                                    availability={expertProfile.currentAvailability}
+                                                    compact={true}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
-                                
-
-                                {/* Subir Informe - Solo en desktop (en móvil está en botones fijos) */}
+                                {/* Subir informe (móvil) — selección de archivos; el envío está en la barra fija */}
                                 {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                    <>
-                                        <Separator className="hidden lg:block" />
-                                        <div className="space-y-3 hidden lg:block">
-                                            <h3 className="text-sm font-semibold text-foreground">Subir Informe</h3>
+                                    <div className="space-y-3 border-t border-[#f0f0f0] pt-5">
+                                        <SdSectionTitle>Subir informe</SdSectionTitle>
                                         {fileValidation && (
-                                                <div className={`p-2.5 rounded-md text-xs ${
-                                                fileValidation.canSubmit 
-                                                        ? 'bg-green-50 border border-green-200 text-green-800' 
-                                                        : 'bg-blue-50 border border-blue-200 text-blue-800'
-                                                }`}>
-                                                    {fileValidation.message}
+                                            <div className={`rounded-xl px-3 py-2.5 text-[12.5px] font-medium ${
+                                                fileValidation.canSubmit
+                                                    ? 'bg-[#ecf6f0] text-[#0F6A3E]'
+                                                    : 'bg-[#eef4fb] text-brand'
+                                            }`} role="status">
+                                                {fileValidation.message}
                                             </div>
                                         )}
                                         {uploadedFiles.length > 0 && (
-                                                <div className="space-y-1.5">
-                                                    {uploadedFiles.map((file) => (
-                                                        <div key={file.id} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
-                                                            <div className="flex items-center gap-2">
-                                                                <FileText className="w-3.5 h-3.5" />
-                                                                <span className="truncate">{file.fileName}</span>
-                                                            </div>
-                                                            <Button
-                                                                onClick={() => handleDeleteFile(file.id)}
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-6 w-6 p-0"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </Button>
+                                            <div className="space-y-1.5">
+                                                {uploadedFiles.map((file) => (
+                                                    <div key={file.id} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
+                                                        <div className="flex min-w-0 items-center gap-2">
+                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                                            <span className="truncate text-[#1c1c1c]">{file.fileName}</span>
                                                         </div>
-                                                    ))}
+                                                        <Button
+                                                            onClick={() => handleDeleteFile(file.id)}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            aria-label={`Eliminar ${file.fileName}`}
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
-                                            <label className="block">
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept={(() => {
-                                                        // ✅ Generar accept dinámicamente basado en requiredDeliverableTypes
+                                        <label className="block">
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept={(() => {
+                                                    // ✅ Generar accept dinámicamente basado en requiredDeliverableTypes
+                                                    if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
+                                                        const extensions = requiredDeliverableTypes.map(type => {
+                                                            const typeName = type.name.toUpperCase();
+                                                            if (typeName === 'PDF') return '.pdf';
+                                                            if (typeName === 'VIDEO' || typeName === 'MP4') return '.mp4';
+                                                            return '';
+                                                        }).filter(ext => ext !== '').join(',');
+                                                        return extensions || '.pdf,.mp4';
+                                                    }
+                                                    return '.pdf,.mp4';
+                                                })()}
+                                                onChange={handleDeliverableFileChange}
+                                                className="hidden"
+                                            />
+                                            <div className="group w-full cursor-pointer rounded-xl border-2 border-dashed border-[#e0e0e0] p-5 text-center transition-colors hover:border-brand/40 hover:bg-[#fafafa]">
+                                                <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[#f0f0f0] transition-colors group-hover:bg-brand/10">
+                                                    <Upload className="h-5 w-5 text-[#737373] transition-colors group-hover:text-brand" strokeWidth={1.75} />
+                                                </div>
+                                                <p className="mb-0.5 text-[13px] font-semibold text-[#1c1c1c]">Seleccionar archivos</p>
+                                                <p className="text-[12px] text-[#737373]">
+                                                    {(() => {
+                                                        // ✅ Mostrar tipos requeridos dinámicamente
                                                         if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
-                                                            const extensions = requiredDeliverableTypes.map(type => {
-                                                                const typeName = type.name.toUpperCase();
-                                                                if (typeName === 'PDF') return '.pdf';
-                                                                if (typeName === 'VIDEO' || typeName === 'MP4') return '.mp4';
-                                                                return '';
-                                                            }).filter(ext => ext !== '').join(',');
-                                                            return extensions || '.pdf,.mp4';
+                                                            const typesText = requiredDeliverableTypes
+                                                                .map(type => type.displayName || type.name)
+                                                                .join(' y ');
+                                                            return `${typesText} (máx. 10MB)`;
                                                         }
-                                                        return '.pdf,.mp4';
+                                                        return 'PDF o MP4 (máx. 10MB)';
                                                     })()}
-                                                    onChange={handleDeliverableFileChange}
-                                                    className="hidden"
-                                                />
-                                                <div className="w-full p-4 border-2 border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-center">
-                                                    <Upload className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-                                                    <p className="text-sm font-medium text-foreground mb-1">Seleccionar archivos</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {(() => {
-                                                            // ✅ Mostrar tipos requeridos dinámicamente
-                                                            if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
-                                                                const typesText = requiredDeliverableTypes
-                                                                    .map(type => type.displayName || type.name)
-                                                                    .join(' y ');
-                                                                return `${typesText} (máx. 10MB)`;
-                                                            }
-                                                            return 'PDF o MP4 (máx. 10MB)';
-                                                        })()}
-                                                    </p>
-                                                </div>
-                                            </label>
-                                            {selectedDeliverableFiles.length > 0 && (
-                                                <div className="space-y-1.5">
-                                            {selectedDeliverableFiles.map((file, index) => (
-                                                        <div key={index} className="flex items-center justify-between p-2 bg-background rounded-md border text-xs">
-                                                            <span className="truncate">{file.name}</span>
-                                                            <Button
-                                                        onClick={() => removeSelectedFile(index)}
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-6 w-6 p-0"
-                                                    >
-                                                                <X className="w-3 h-3" />
-                                                            </Button>
-                                                </div>
-                                            ))}
-                                                </div>
+                                                </p>
+                                            </div>
+                                        </label>
+                                        {selectedDeliverableFiles.length > 0 && (
+                                            <div className="space-y-1.5">
+                                                {selectedDeliverableFiles.map((file, index) => (
+                                                    <div key={index} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
+                                                        <span className="truncate text-[#1c1c1c]">{file.name}</span>
+                                                        <Button
+                                                            onClick={() => removeSelectedFile(index)}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 w-8 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            aria-label={`Eliminar ${file.name}`}
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <Button
+                                            onClick={handleSubmitReport}
+                                            className={`h-11 w-full font-semibold transition-colors ${
+                                                fileValidation && !fileValidation.canSubmit
+                                                    ? 'cursor-not-allowed bg-[#ededed] text-[#9a9a9a] hover:bg-[#ededed]'
+                                                    : 'bg-[#0F6A3E] text-white hover:bg-[#0c5733]'
+                                            }`}
+                                            disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
+                                            size="sm"
+                                        >
+                                            {isSubmittingReport ? (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                                    </svg>
+                                                    Enviando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Enviar reporte
+                                                </>
                                             )}
-                                            <Button
-                                                    onClick={handleSubmitReport}
-                                                className={`w-full ${
-                                                        fileValidation && !fileValidation.canSubmit
-                                                        ? 'bg-muted cursor-not-allowed'
-                                                        : 'bg-green-600 hover:bg-green-700'
-                                                    }`}
-                                                    disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
-                                                size="sm"
-                                                >
-                                                {isSubmittingReport ? (
-                                                    <>
-                                                        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                        </svg>
-                                                        Enviando...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-4 h-4 mr-2" />
-                                                        Enviar Reporte
-                                                    </>
-                                                )}
-                                            </Button>
-                                            </div>
-                                    </>
-                                )}
-
-                                {/* Reseña */}
-                                {canReview && (
-                                    <>
-                                        <Separator />
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <Star className="w-4 h-4" />
-                                                <h3 className="text-sm font-semibold text-foreground">Reseña</h3>
-                                            </div>
+                                        </Button>
                                     </div>
-                                    </>
                                 )}
 
                                 {review && (
-                                    <>
-                                        <Separator />
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Star className="w-4 h-4" />
-                                                    <span className="text-sm font-semibold text-foreground">Reseña</span>
-                                    </div>
-                                                <Badge variant="secondary">{review.score}/5</Badge>
-                                            </div>
-                                            {review.description && (
-                                                <p className="text-sm text-foreground leading-relaxed bg-background p-3 rounded-md border">
-                                                    {review.description}
-                                                </p>
+                                    <div className="space-y-2.5 border-t border-[#f0f0f0] pt-5">
+                                        <div className="flex items-center justify-between">
+                                            <SdSectionTitle>Reseña</SdSectionTitle>
+                                            <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1c1c1c]">
+                                                <Star className="h-3.5 w-3.5" />
+                                                {review.score}/5
+                                            </span>
+                                        </div>
+                                        {review.description && (
+                                            <p className="rounded-xl bg-[#f7f7f7] p-3 text-[13px] leading-relaxed text-[#4a4a4a]">
+                                                {review.description}
+                                            </p>
                                         )}
                                     </div>
-                                    </>
                                 )}
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-gray-200 bg-white px-5 py-4 space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-[#ededed] bg-white px-5 py-4 space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
-                                                <div className="space-y-2 pb-2 border-b border-gray-200">
-                                                    <div 
-                                                        className="flex items-center gap-2 text-sm text-gray-900"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                        <span className="font-medium">
-                                                            {(() => {
-                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
-                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
-                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
-                                                                return `${new Date(dateToUse).toLocaleDateString('es-ES', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
-                                                                    year: 'numeric'
-                                                                })} ${timeToUse.substring(0, 5)}`;
-                                                            })()}
+                                                <div className="space-y-1.5 border-b border-[#f0f0f0] pb-3">
+                                                    <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                        {(() => {
+                                                            // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                            // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                            const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                            const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
+                                                            return `${new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })} · ${timeToUse.substring(0, 5)}`;
+                                                        })()}
+                                                    </p>
+                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                        {appointment.location && appointment.location.trim()
+                                                            ? appointment.location
+                                                            : 'Ubicación no aportada'}
+                                                        <span className="mt-0.5 block text-[#737373]">
+                                                            Puerta <span className="font-medium text-[#1c1c1c]">
+                                                                {appointment.doorNumber && appointment.doorNumber.trim()
+                                                                    ? appointment.doorNumber
+                                                                    : 'no aportada'}
+                                                            </span>
+                                                            <span className="px-1.5 text-[#d4d4d4]">·</span>
+                                                            Tel. <span className="font-medium text-[#1c1c1c]">
+                                                                {appointment.phoneNumber && appointment.phoneNumber.trim()
+                                                                    ? appointment.phoneNumber
+                                                                    : 'no aportado'}
+                                                            </span>
                                                         </span>
-                                                    </div>
-                                                    <div 
-                                                        className="flex items-start gap-2 text-sm text-gray-700"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                                                        <span className="leading-relaxed">
-                                                            {appointment.location && appointment.location.trim() 
-                                                                ? appointment.location 
-                                                                : 'Ubicación no aportada'}
-                                                        </span>
-                                                    </div>
-                                                    <div 
-                                                        className="text-sm text-gray-700 ml-6"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <span className="text-gray-500">Puerta: </span>
-                                                        <span className="font-medium">
-                                                            {appointment.doorNumber && appointment.doorNumber.trim() 
-                                                                ? appointment.doorNumber 
-                                                                : 'No aportada'}
-                                                        </span>
-                                                    </div>
-                                                    <div 
-                                                        className="flex items-center gap-2 text-sm text-gray-700"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                        <span>
-                                                            {appointment.phoneNumber && appointment.phoneNumber.trim() 
-                                                                ? appointment.phoneNumber 
-                                                                : 'No aportado'}
-                                                        </span>
-                                                    </div>
+                                                    </p>
                                                 </div>
                                             )}
                                             <div className="flex gap-2">
@@ -2146,7 +1913,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             setAppointmentToConfirm(appointment as Appointment);
                                                             setShowConfirmAppointmentDialog(true);
                                                         }}
-                                                        className="flex-1"
+                                                        className="h-11 flex-1"
                                                         size="sm"
                                                         disabled={isConfirming || isRejecting}
                                                     >
@@ -2166,7 +1933,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         )}
                                                     </Button>
                                                 )}
-                                                
+
                                                 {/* ✅ BOTÓN: Rechazar (Solo Experto, solo cuando appointment_proposed) */}
                                                 {appointmentButtons.showReject && (
                                                     <Button
@@ -2178,7 +1945,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             setShowRejectModal(true);
                                                         }}
                                                         variant="destructive"
-                                                        className="flex-1"
+                                                        className="h-11 flex-1"
                                                         size="sm"
                                                         disabled={isConfirming || isRejecting}
                                                     >
@@ -2198,7 +1965,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         )}
                                                     </Button>
                                                 )}
-                                                
+
                                                 {/* ✅ BOTÓN: Cancelar (Cliente o Experto, solo cuando appointment_confirmed) */}
                                                 {appointmentButtons.showCancel && (
                                                     <Button
@@ -2210,7 +1977,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             setShowRejectModal(true);
                                                         }}
                                                         variant="outline"
-                                                        className="w-full"
+                                                        className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
                                                         size="sm"
                                                         disabled={isCancelling}
                                                     >
@@ -2225,7 +1992,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         ) : (
                                                             <>
                                                                 <XCircle className="w-4 h-4 mr-2" />
-                                                                Cancelar Cita
+                                                                Cancelar cita
                                                             </>
                                                         )}
                                                     </Button>
@@ -2242,13 +2009,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                 handleAppointmentAction('cancelPending', appointment as Appointment);
                                                             }}
                                                             variant="outline"
-                                                            className="w-full"
+                                                            className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
                                                             size="sm"
                                                         >
                                                             <XCircle className="w-4 h-4 mr-2" />
                                                             Cancelar cita
                                                         </Button>
-                                                        <p className="text-xs text-muted-foreground">
+                                                        <p className="text-[12px] leading-relaxed text-[#737373]">
                                                             El experto aún no ha confirmado. Si cancelas ahora no se te cobra nada (devolución del 100%).
                                                         </p>
                                                     </div>
@@ -2269,7 +2036,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             amount: serviceInfo?.price || 0
                                                         } as Appointment);
                                                     }}
-                                                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                                                    className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                                                     size="sm"
                                                     disabled={isProposing}
                                                 >
@@ -2284,7 +2051,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     ) : (
                                                         <>
                                                             <Calendar className="w-4 h-4 mr-2" />
-                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert' 
+                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert'
                                                                 ? 'Proponer Nueva Cita'
                                                                 : 'Programar Cita'
                                                             }
@@ -2292,23 +2059,23 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     )}
                                                 </Button>
                                             )}
-                                            
+
                                             {/* ✅ Acciones Principales - Aprobar/Disputar/Responder */}
                                             {canApprove && (
                                                 <Button
                                                     onClick={handleApproveService}
-                                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                                    className="h-11 w-full bg-[#0F6A3E] text-white hover:bg-[#0c5733]"
                                                     size="sm"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Aprobar Servicio
+                                                    Aprobar servicio
                                                 </Button>
                                             )}
                                             {canDispute && (
                                                 <Button
                                                     onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                     variant="outline"
-                                                    className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                                                    className="h-11 w-full border-[#f0d4d1] text-[#b42318] hover:bg-[#fdf2f2] hover:text-[#8f1d13]"
                                                     size="sm"
                                                 >
                                                     <AlertTriangle className="w-4 h-4 mr-2" />
@@ -2319,88 +2086,27 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <Button
                                                     onClick={() => setShowExpertResponseModal(true)}
                                                     variant="outline"
-                                                    className="w-full"
+                                                    className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
                                                     size="sm"
                                                 >
                                                     <MessageCircle className="w-4 h-4 mr-2" />
-                                                    Responder Disputa
+                                                    Responder disputa
                                                 </Button>
                                             )}
                                         </div>
                                     )}
-                                    
-                                    {/* Enviar Reporte */}
-                                    {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                        <Button
-                                            onClick={handleSubmitReport}
-                                            className={`w-full ${
-                                                fileValidation && !fileValidation.canSubmit
-                                                    ? 'bg-muted cursor-not-allowed'
-                                                    : 'bg-green-600 hover:bg-green-700'
-                                            }`}
-                                            disabled={fileValidation ? !fileValidation.canSubmit : false || isSubmittingReport}
-                                            size="sm"
-                                        >
-                                            {isSubmittingReport ? (
-                                                <>
-                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                    </svg>
-                                                    Enviando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Enviar Reporte
-                                                </>
-                                            )}
-                                        </Button>
-                                    )}
-                                    
+
                                     {/* Escribir Reseña */}
                                     {canReview && (
-                                        <Button
-                                            onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                                            size="sm"
-                                        >
-                                            <Star className="w-4 h-4 mr-2" />
-                                            Escribir Reseña
-                                        </Button>
-                                    )}
-                                    
-                                    {/* Programar Cita - Solo en desktop (en móvil está en el botón fijo) */}
-                                    {appointmentButtons.showPropose && (
-                                        <div className="hidden lg:block">
+                                        <div className="space-y-2.5 border-t border-[#f0f0f0] pt-5">
+                                            <SdSectionTitle>Reseña</SdSectionTitle>
                                             <Button
-                                                onClick={() => handleAppointmentAction('propose', { 
-                                                    id: 0, 
-                                                    searchHireId: search?.searchHire?.id || 0,
-                                                    status: 'awaiting_appointment',
-                                                    amount: serviceInfo?.price || 0
-                                                } as Appointment)}
-                                                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] rounded-lg"
-                                                size="lg"
-                                                disabled={isProposing}
+                                                onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
+                                                className="h-11 w-full bg-[#1c1c1c] text-white hover:bg-black"
+                                                size="sm"
                                             >
-                                                {isProposing ? (
-                                                    <>
-                                                        <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                        </svg>
-                                                        Proponiendo...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Calendar className="w-5 h-5 mr-2" />
-                                                        {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                            ? 'Proponer Nueva Cita'
-                                                            : 'Programar Cita'
-                                                        }
-                                                    </>
-                                                )}
+                                                <Star className="w-4 h-4 mr-2" />
+                                                Escribir reseña
                                             </Button>
                                         </div>
                                     )}
@@ -2582,67 +2288,38 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="space-y-3">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
-                                                <div className="space-y-2 pb-3 border-b border-gray-200">
-                                                    <div 
-                                                        className="flex items-center gap-2 text-sm text-gray-900"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                        <span className="font-medium">
-                                                            {(() => {
-                                                                // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
-                                                                // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
-                                                                const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
-                                                                const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
-                                                                return `${new Date(dateToUse).toLocaleDateString('es-ES', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
-                                                                    year: 'numeric'
-                                                                })} ${timeToUse.substring(0, 5)}`;
-                                                            })()}
+                                                <div className="space-y-1.5 border-b border-[#f0f0f0] pb-3">
+                                                    <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                        {(() => {
+                                                            // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
+                                                            // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
+                                                            const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
+                                                            const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
+                                                            return `${new Date(dateToUse).toLocaleDateString('es-ES', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })} · ${timeToUse.substring(0, 5)}`;
+                                                        })()}
+                                                    </p>
+                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                        {appointment.location && appointment.location.trim()
+                                                            ? appointment.location
+                                                            : 'Ubicación no aportada'}
+                                                        <span className="mt-0.5 block text-[#737373]">
+                                                            Puerta <span className="font-medium text-[#1c1c1c]">
+                                                                {appointment.doorNumber && appointment.doorNumber.trim()
+                                                                    ? appointment.doorNumber
+                                                                    : 'no aportada'}
+                                                            </span>
+                                                            <span className="px-1.5 text-[#d4d4d4]">·</span>
+                                                            Tel. <span className="font-medium text-[#1c1c1c]">
+                                                                {appointment.phoneNumber && appointment.phoneNumber.trim()
+                                                                    ? appointment.phoneNumber
+                                                                    : 'no aportado'}
+                                                            </span>
                                                         </span>
-                                                    </div>
-                                                    <div 
-                                                        className="flex items-start gap-2 text-sm text-gray-700"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                                                        <span className="leading-relaxed">
-                                                            {appointment.location && appointment.location.trim() 
-                                                                ? appointment.location 
-                                                                : 'Ubicación no aportada'}
-                                                        </span>
-                                                    </div>
-                                                    <div 
-                                                        className="text-sm text-gray-700 ml-6"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <span className="text-gray-500">Puerta: </span>
-                                                        <span className="font-medium">
-                                                            {appointment.doorNumber && appointment.doorNumber.trim() 
-                                                                ? appointment.doorNumber 
-                                                                : 'No aportada'}
-                                                        </span>
-                                                    </div>
-                                                    <div 
-                                                        className="flex items-center gap-2 text-sm text-gray-700"
-                                                        style={{
-                                                            fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
-                                                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                                                        <span>
-                                                            {appointment.phoneNumber && appointment.phoneNumber.trim() 
-                                                                ? appointment.phoneNumber 
-                                                                : 'No aportado'}
-                                                        </span>
-                                                    </div>
+                                                    </p>
                                                 </div>
                                             )}
                                             <div className="flex gap-2">
@@ -2872,7 +2549,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                 variant="outline"
-                                                className="h-10 w-full border-[#e3c4c4] text-[#c2410c] hover:bg-[#fdf4f3] hover:text-[#9a2f08]"
+                                                className="h-10 w-full border-[#f0d4d1] text-[#b42318] hover:bg-[#fdf2f2] hover:text-[#8f1d13]"
                                                 size="sm"
                                             >
                                                 <AlertTriangle className="mr-2 h-4 w-4" />
@@ -3122,17 +2799,17 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
             {/* Alert Dialog para confirmar cita */}
             <AlertDialog open={showConfirmAppointmentDialog} onOpenChange={setShowConfirmAppointmentDialog}>
-                <AlertDialogContent className="border-t-4 border-destructive">
+                <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirmar cita</AlertDialogTitle>
                         <AlertDialogDescription>
-                            ¿Estás seguro de que quieres aceptar esta cita? Una vez confirmada, no podrás cancelarla.
+                            ¿Quieres aceptar esta cita? El cliente recibirá la confirmación y la cita quedará programada.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     {appointmentToConfirm && (
                         <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="w-4 h-4" />
+                            <div className="flex items-center gap-2 text-[#737373]">
+                                <Calendar className="w-4 h-4 text-[#9a9a9a]" />
                                 <span>
                                     {(() => {
                                         // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
@@ -3153,15 +2830,15 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 </span>
                             </div>
                             {appointmentToConfirm.location && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <MapPin className="w-4 h-4" />
+                                <div className="flex items-center gap-2 text-[#737373]">
+                                    <MapPin className="w-4 h-4 text-[#9a9a9a]" />
                                     <span>{appointmentToConfirm.location}</span>
                                 </div>
                             )}
                         </div>
                     )}
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isConfirming}>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isConfirming}>Volver</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 if (appointmentToConfirm) {
@@ -3169,6 +2846,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 }
                             }}
                             disabled={isConfirming}
+                            className="bg-[#0F6A3E] text-white hover:bg-[#0c5733]"
                         >
                             {isConfirming ? (
                                 <>
@@ -3179,7 +2857,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     Confirmando...
                                 </>
                             ) : (
-                                'Confirmar'
+                                'Confirmar cita'
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

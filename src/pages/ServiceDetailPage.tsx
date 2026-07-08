@@ -90,6 +90,8 @@ const ServiceDetailPage: React.FC = () => {
               ),
               expert: service.Expert || service.expert ? {
                 id: (service.Expert || service.expert).Id || (service.Expert || service.expert).id,
+                // Sin esto, el chip "Vacaciones" del widget de horario nunca aparecía en la ficha pública
+                isOnVacation: (service.Expert || service.expert).IsOnVacation ?? (service.Expert || service.expert).isOnVacation ?? false,
                 profilePictureUrl: (service.Expert || service.expert).ProfilePictureUrl || (service.Expert || service.expert).profilePictureUrl,
                 description: (service.Expert || service.expert).Description || (service.Expert || service.expert).description,
                 formacion: (service.Expert || service.expert).Formacion ?? (service.Expert || service.expert).formacion ?? null,
