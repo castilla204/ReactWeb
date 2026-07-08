@@ -810,7 +810,7 @@ export function ServiceReviewPage({
                                 <button
                                     onClick={handleReserveClick}
                                     type="button"
-                            className={SD_MOBILE_FOOTER_CTA_CLASS}
+                            className={`${SD_MOBILE_FOOTER_CTA_CLASS} sd-cta-dark`}
                                 >
                             Reservar
                                 </button>
@@ -818,7 +818,7 @@ export function ServiceReviewPage({
                                     <button
                                         type="button"
                             onClick={openLoginForCheckout}
-                            className={SD_MOBILE_FOOTER_CTA_CLASS}
+                            className={`${SD_MOBILE_FOOTER_CTA_CLASS} sd-cta-dark`}
                         >
                             Inicia sesión
                                     </button>

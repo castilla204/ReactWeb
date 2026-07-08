@@ -1211,7 +1211,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
 
 const EmptyState: React.FC<{ onCreate: () => void }> = ({ onCreate }) => (
     <div className="mx-auto flex w-full max-w-3xl flex-1 items-center justify-center p-6 md:max-w-4xl">
-        <div className="w-full rounded-2xl border border-[#e8e8e8] bg-white px-6 py-12 text-center md:py-16">
+        <div className="w-full px-6 py-12 text-center md:py-16">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f5]">
                 <MessageCircle className="h-6 w-6 text-[#737373]" strokeWidth={1.5} aria-hidden />
             </div>

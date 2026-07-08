@@ -319,14 +319,14 @@ export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS =
 export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
 
 /**
- * Superficie azul del header móvil de checkout — degradado sutil del tinte de
- * marca hacia blanco + borde inferior azulado tenue. Compartida por las barras
- * del stepper (fecha · ubicación · pago) para que las 3 se vean iguales.
+ * Superficie del header móvil de checkout — blanca y plana con una línea fina de
+ * separación. Sin el degradado azul del diseño antiguo (competía con la cabecera
+ * limpia y el mapa). Compartida por las barras del stepper para que se vean iguales.
  */
 export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
-  'border-b border-brand/[0.14] bg-gradient-to-b from-brand/[0.10] via-brand/[0.045] to-white';
+  'border-b border-[#eef0f3] bg-white';
 
-/** Cabecera checkout móvil — superficie azul degradada */
+/** Cabecera checkout móvil — superficie blanca plana */
 export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
   'pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))] ' +
   SD_CHECKOUT_MOBILE_GUTTER_CLASS +
@@ -470,8 +470,17 @@ export const SD_CHECKOUT_PICKER_FRAME_CLASS =
 /** @deprecated Usar SD_CHECKOUT_PICKER_FRAME_CLASS */
 export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
 
+/**
+ * CTA de PAGO del wizard móvil ("Reservar y pagar"). Negro, igual que el resto
+ * del embudo (ficha → checkout): el azul de marca es acento, no acción. Nunca
+ * coexiste en pantalla con el CTA de avance (son ramas del mismo ternario por
+ * `mobileStep`), así que compartir color no crea ambigüedad.
+ */
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-[#171717] text-[15px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
+
+/** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo negro que el de pago. */
+export const SD_CHECKOUT_MOBILE_CTA_DARK_CLASS = SD_CHECKOUT_MOBILE_CTA_CLASS;
 
 /** Separador entre mapa y resumen en checkout móvil paso 2 */
 export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =

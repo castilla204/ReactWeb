@@ -1,4 +1,4 @@
-import { MapPin, Mail, Link2 } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { MapAddressSearchBar, type MapAddressSelection } from '../MapAddressSearchBar';
 import {
@@ -44,7 +44,7 @@ export interface CheckoutDesktopLocationStepBodyProps {
 }
 
 const inputBaseClass =
-    'w-full rounded-full border border-[#e5e7eb] bg-white px-4 py-2.5 text-[13px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15';
+    'h-11 w-full rounded-lg border border-[#dcdfe4] bg-white px-3.5 text-[14px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.05)] placeholder:text-[#9aa0aa] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#3d5afe] focus:shadow-[0_0_0_3px_rgba(61,90,254,0.14)]';
 
 const labelBaseClass = 'mb-1 block text-[12px] font-semibold text-[#374151]';
 
@@ -216,22 +216,16 @@ export function CheckoutDesktopLocationStepBody({
                                     <span className="ml-1 font-normal text-[#9ca3af]">(opc.)</span>
                                 ) : null}
                             </label>
-                            <div className="relative">
-                                <Mail
-                                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
-                                    aria-hidden
-                                />
-                                <input
-                                    id="location-seller-email"
-                                    type="email"
-                                    value={sellerEmail}
-                                    onChange={(e) => onSellerEmailChange(e.target.value)}
-                                    placeholder="vendedor@email.com"
-                                    className={cn(inputBaseClass, 'pl-10', emailFieldError && 'border-red-400/50 ring-2 ring-red-400/50')}
-                                    autoComplete="email"
-                                    aria-invalid={emailFieldError}
-                                />
-                            </div>
+                            <input
+                                id="location-seller-email"
+                                type="email"
+                                value={sellerEmail}
+                                onChange={(e) => onSellerEmailChange(e.target.value)}
+                                placeholder="vendedor@email.com"
+                                className={cn(inputBaseClass, emailFieldError && 'border-[#f04438] focus:border-[#f04438] focus:shadow-[0_0_0_3px_rgba(240,68,56,0.14)]')}
+                                autoComplete="email"
+                                aria-invalid={emailFieldError}
+                            />
                         </div>
                     </div>
 
@@ -239,21 +233,15 @@ export function CheckoutDesktopLocationStepBody({
                         <label htmlFor="location-seller-listing" className={labelBaseClass}>
                             Enlace del anuncio <span className="font-normal text-[#9ca3af]">(opc.)</span>
                         </label>
-                        <div className="relative">
-                            <Link2
-                                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
-                                aria-hidden
-                            />
-                            <input
-                                id="location-seller-listing"
-                                type="url"
-                                value={sellerListingUrl}
-                                onChange={(e) => onSellerListingUrlChange(e.target.value)}
-                                placeholder="Wallapop, Milanuncios, etc."
-                                className={cn(inputBaseClass, 'pl-10')}
-                                inputMode="url"
-                            />
-                        </div>
+                        <input
+                            id="location-seller-listing"
+                            type="url"
+                            value={sellerListingUrl}
+                            onChange={(e) => onSellerListingUrlChange(e.target.value)}
+                            placeholder="Wallapop, Milanuncios, etc."
+                            className={inputBaseClass}
+                            inputMode="url"
+                        />
                     </div>
 
                     {showContactError ? (

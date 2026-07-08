@@ -33,6 +33,8 @@ export interface CheckoutSummaryTableProps {
   onTogglePriceDetails?: () => void;
   includePrice?: boolean;
   showFooterNotes?: boolean;
+  /** Modo de coordinación — adapta la nota de cobro del pie (self vs vendedor). */
+  coordinationMode?: 'self' | 'seller';
   /** Resumen reducido durante el wizard (fecha/ubicación). */
   compact?: boolean;
   /** Línea y lavado ámbar→azul (paso pago) */
@@ -95,6 +97,7 @@ export function CheckoutSummaryTable({
   priceSubline,
   includePrice = true,
   showFooterNotes = false,
+  coordinationMode = 'self',
   compact = false,
   brandAccent = false,
   brandAccentEmbedded = false,
@@ -214,7 +217,7 @@ export function CheckoutSummaryTable({
 
         {showFooterNotes ? (
           <footer className="space-y-2.5 border-t border-[#f5f5f5] px-3.5 py-2.5">
-            <CheckoutReserveHint />
+            <CheckoutReserveHint coordinationMode={coordinationMode} />
             <a
               href="/terms.html"
               target="_blank"

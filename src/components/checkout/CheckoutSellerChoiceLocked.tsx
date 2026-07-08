@@ -190,18 +190,12 @@ export function CheckoutSelfChoicePickLocationShell({
 }) {
     return (
         <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white', className)}>
+            {/* En móvil el título/explicación del paso los pone la cabecera del wizard
+                (CheckoutMobileStepHeader); aquí solo se muestra la cabecera embebida de
+                desktop (oculta en móvil vía lg:block) para no duplicar. */}
             {showInnerHeader ? (
                 <CheckoutSelfChoicePickLocationHeader className="w-full shrink-0 py-2.5" />
-            ) : (
-                <div className="shrink-0 px-5 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] lg:hidden">
-                    <p className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
-                        ¿Dónde es la inspección?
-                    </p>
-                    <p className="mt-0.5 text-[13px] leading-snug text-[#64748b]">
-                        Marca el punto dentro del área del experto.
-                    </p>
-                </div>
-            )}
+            ) : null}
             <div className="relative min-h-0 w-full flex-1">
                 {searchBar ? (
                     <div

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { CheckoutDesktopAppointmentHeader } from './CheckoutDesktopAppointmentHeader';
-import { CheckoutMobileStepper } from './CheckoutMobileStepper';
+import { CheckoutMobileStepHeader } from './CheckoutMobileStepHeader';
 import { CheckoutMobileStickyFooter } from './CheckoutMobileStickyFooter';
 import { HomepageDesktopTopBar } from '../HomepageDesktopTopBar';
 import {
@@ -47,8 +47,11 @@ export interface AppointmentWizardShellProps {
     secondaryLabel?: string;
 }
 
+// Botón de AVANCE del wizard (Continuar/Confirmar) en negro neutro: en estas páginas
+// (coordinación del vendedor / confirmación del experto) no hay pago, así que el primario
+// va oscuro, coherente con la jerarquía negro-avanza del checkout.
 const DESKTOP_PRIMARY_BTN =
-    'inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 text-[14px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] disabled:cursor-not-allowed disabled:opacity-50';
 
 export function AppointmentWizardShell({
     steps,
@@ -112,7 +115,15 @@ export function AppointmentWizardShell({
             {/* MÓVIL (<lg) */}
             <div className={cn('lg:hidden', mobileFullBleed ? 'relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white' : 'min-h-[100dvh] bg-white')}>
                 <header className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS, 'shrink-0 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]')}>
-                    <CheckoutMobileStepper currentStep={currentStep} steps={steps} className="mb-0" />
+                    {/* Cabecera explicativa por paso (título + qué se pide); el índice se
+                        deriva de la posición en `steps` porque los ids no son 1-based en
+                        todos los flujos. */}
+                    <CheckoutMobileStepHeader
+                        step={Math.max(1, steps.findIndex((s) => s.id === currentStep) + 1)}
+                        total={steps.length}
+                        title={title}
+                        description={description}
+                    />
                 </header>
                 <div className={cn(mobileFullBleed ? 'relative min-h-0 flex-1 overflow-hidden' : 'px-5 pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px))+1rem)] pt-4')}>
                     {mobileBody}
@@ -128,7 +139,7 @@ export function AppointmentWizardShell({
                             type="button"
                             onClick={onPrimary}
                             disabled={primaryDisabled}
-                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#171717] text-[15px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
                         >
                             {primaryLabel}
                             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />

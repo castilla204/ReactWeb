@@ -432,12 +432,12 @@ export function PhoneInputField({
       <div ref={wrapRef} className={cn('relative w-full', className)}>
         <div
           className={cn(
-            'flex h-12 w-full items-stretch overflow-hidden rounded-full bg-[#f4f5f7] ring-1 transition-[box-shadow] duration-150',
+            'flex h-11 w-full items-stretch overflow-hidden rounded-lg border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition-[border-color,box-shadow] duration-150',
             hasErr
-              ? 'ring-red-400/70'
+              ? 'border-[#f04438]'
               : open
-              ? 'ring-[#3d5afe]/40'
-              : 'ring-[#e9eaed] focus-within:ring-[#3d5afe]/30',
+              ? 'border-[#3d5afe] shadow-[0_0_0_3px_rgba(61,90,254,0.14)]'
+              : 'border-[#dcdfe4] focus-within:border-[#3d5afe] focus-within:shadow-[0_0_0_3px_rgba(61,90,254,0.14)]',
           )}
         >
           {/* Botón país */}
@@ -449,20 +449,24 @@ export function PhoneInputField({
             aria-label={`País ${cur.name}, prefijo ${cur.dial}`}
             onClick={() => (open ? setOpen(false) : openDrop())}
             className={cn(
-              'flex shrink-0 items-center gap-1.5 pl-4 pr-2.5',
-              'border-r border-[#e4e6ea] bg-white',
+              'flex shrink-0 items-center gap-1 pl-3 pr-2',
+              // Trigger MONOCROMO: solo el prefijo + flecha. Sin bandera (un PNG a color sería el
+              // único elemento saturado del formulario y se ve escalado) y sin caja propia: se
+              // integra en el campo, separado del número por un divisor de 1px. Las banderas SÍ
+              // van en la lista desplegable, que es donde ayudan a localizar el país.
+              'relative bg-transparent',
+              "after:absolute after:right-0 after:top-1/2 after:h-5 after:w-px after:-translate-y-1/2 after:bg-[#e2e5ea] after:content-['']",
               'transition-colors duration-100',
-              'hover:bg-[#f7f8fa] active:bg-[#eef0f3]',
-              'focus-visible:outline-none focus-visible:bg-[#f0f3ff]',
+              'hover:bg-black/[0.03] active:bg-black/[0.05]',
+              'focus-visible:outline-none focus-visible:bg-[#3d5afe]/[0.06]',
             )}
           >
-            <FlagImg code={cur.code} size="sm" />
-            <span className="font-mono text-[12.5px] font-semibold tracking-tight text-[#374151]">
+            <span className="text-[14px] font-medium tabular-nums tracking-tight text-[#4b5563]">
               {cur.dial}
             </span>
             <ChevronDown
               aria-hidden
-              className={cn('-ml-0.5 h-3.5 w-3.5 text-[#adb5bd] transition-transform duration-200', open && 'rotate-180')}
+              className={cn('h-3 w-3 text-[#adb5bd] transition-transform duration-200', open && 'rotate-180')}
             />
           </button>
 
@@ -478,7 +482,7 @@ export function PhoneInputField({
             value={local}
             onChange={handleNum}
             placeholder="600 000 000"
-            className="flex-1 bg-transparent px-3.5 text-[14px] text-[#1c1c1c] outline-none placeholder:text-[#c0c4cc]"
+            className="flex-1 bg-transparent px-3 text-[14px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa]"
           />
         </div>
       </div>

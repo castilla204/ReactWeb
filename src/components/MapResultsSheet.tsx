@@ -59,7 +59,7 @@ export function MapResultsSheet({
                         ? undefined
                         : 'calc(env(safe-area-inset-bottom, 0px) + 0.625rem)',
                 }}
-                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl bg-white px-3.5 pt-2.5 pb-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
+                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl bg-[#f6f7f8] px-3.5 pt-2.5 pb-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
             >
                 {thumbnails.length > 0 && (
                     <span className="flex shrink-0 items-center">

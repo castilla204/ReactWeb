@@ -33,6 +33,7 @@ import Background from './components/Background';
 import { HomepageDesktopTopBar } from './components/HomepageDesktopTopBar';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { RouteSuspense } from './components/RouteSuspense';
+import { HomePageSkeleton } from './components/homepage/HomePageSkeleton';
 import * as LazyPages from './routes/lazyPages';
 import { GoogleAuth } from './components/GoogleAuth';
 import { GoogleSignInButton } from './components/GoogleSignInButton';
@@ -605,8 +606,8 @@ const AppContent: React.FC = () => {
                             {/* 🛡️ MUD-DI — `/notifications` antes daba 404 a pesar de que
                                 LoggingService.cs:1053 enviaba este link en TODOS los emails. */}
                             <Route path="/notifications" element={<ProtectedRoute><RouteSuspense><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/explorar" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
-                            <Route path="/" element={<RouteSuspense><LazyPages.HomePage /></RouteSuspense>} />
+                            <Route path="/explorar" element={<RouteSuspense fallback={<HomePageSkeleton />}><LazyPages.HomePage /></RouteSuspense>} />
+                            <Route path="/" element={<RouteSuspense fallback={<HomePageSkeleton />}><LazyPages.HomePage /></RouteSuspense>} />
                             
                             {/* Ruta 404 - debe ir al final */}
                             <Route path="*" element={<NotFoundPage />} />
