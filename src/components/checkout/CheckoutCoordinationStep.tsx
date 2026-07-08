@@ -259,11 +259,38 @@ export const COORD_DESKTOP_STEP1_LEAD =
  *  «Yo, ahora» suelto, sin la pregunta delante, no se entiende. */
 const COORD_ANSWER_SELLER = 'El vendedor';
 const COORD_ANSWER_SELF = 'Yo, ahora';
-const COORD_ANSWER_SELLER_DESC = `Le enviamos un enlace tras el pago. Reserva un hueco del experto en ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días.`;
-const COORD_ANSWER_SELF_DESC =
-    'Eliges día, hora y dirección en el siguiente paso. El experto solo confirma.';
-const COORD_ANSWER_SELLER_EXTRA = 'Cancelación sin coste antes de que reserve.';
-const COORD_ANSWER_SELF_EXTRA = 'Cancelación sin coste mientras el experto no confirme.';
+
+/** Los hechos que de verdad cambian entre las dos opciones. Sustituyen a la prosa:
+ *  la primera fila explica el MECANISMO (el enlace al vendedor / tú reservas el hueco);
+ *  las demás dan las consecuencias. Así la recomendación se justifica sola («Tú haces:
+ *  nada») sin apoyarse en un badge. Las opciones van apiladas a todo el ancho, así que
+ *  los valores pueden ser frases cortas; aun así, cuanto más cortos, mejor se comparan. */
+const COORD_COMPARE_FACTS: ReadonlyArray<{
+    label: string;
+    seller: string;
+    self: string;
+}> = [
+    {
+        label: 'Cómo se fija la cita',
+        seller: 'Le enviamos un enlace y él reserva un hueco libre del experto',
+        self: 'Tú reservas el hueco en el siguiente paso',
+    },
+    {
+        label: 'Cuándo será',
+        seller: `En ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago`,
+        self: 'El día que tú elijas',
+    },
+    {
+        label: 'Tú haces',
+        seller: 'Nada: te avisamos cuando reserve',
+        self: 'Eliges día, hora y lugar',
+    },
+    {
+        label: 'Cancelas gratis',
+        seller: 'Hasta que él reserve',
+        self: 'Hasta que el experto confirme',
+    },
+];
 
 function CoordinationChooseHeader({ className }: { className?: string }) {
     return (
@@ -384,123 +411,120 @@ function CoordinationOptionCards({
 }
 
 /**
- * Respuestas a «¿Quién elige la fecha?» como RADIO GROUP. Mismo componente en móvil y
- * desktop: una elección binaria no necesita dos tarjetas héroe (antes móvil eran botones
- * negros y desktop tarjetas azules, dos vocabularios para el mismo paso).
+ * Comparativa de las dos opciones, estilo tabla. Mismo componente, MISMOS datos y MISMA
+ * disposición (apiladas, una encima de otra) en móvil y desktop. Antes había dos
+ * vocabularios para el mismo paso: botones negros en móvil, tarjetas azules en desktop.
+ *
+ * Cada opción es una columna seleccionable: cabecera (radio + respuesta + chip
+ * «Recomendado») y las tres filas de COORD_COMPARE_FACTS. Se decide comparando hechos,
+ * no leyendo prosa ni fiándose de un badge de color: «Tú haces: nada» justifica la
+ * recomendación por sí solo.
  *
  * La selección se marca con BORDE + punto de marca, nunca con relleno de color: así el
  * texto no se invierte y el contraste se mantiene ≥4,5:1 (el tagline blanco al 80% sobre
- * `bg-brand` daba ~4,1:1). El azul pasa a significar una sola cosa: «esto es lo elegido».
- * «Recomendado» va en chip neutro para no competir con el acento de selección.
+ * `bg-brand` daba ~4,1:1). El azul significa una sola cosa: «esto es lo elegido».
  *
- * `showExtra` añade la línea de cancelación (desktop, donde hay sitio).
  * Las vistas de solo-lectura (coordinar/confirmar cita) siguen con CoordinationOptionCards.
  */
-function CoordinationOptionList({
+function CoordinationOptionCompare({
     selection,
     sellerOptionDisabled,
-    showExtra = false,
     onSelect,
 }: {
     selection: CoordinationSelection | null;
     sellerOptionDisabled?: boolean;
-    showExtra?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
     const sel: CoordinationSelection = selection ?? (sellerOptionDisabled ? 'self' : 'seller');
 
-    const rows: Array<{
+    const columns: Array<{
         value: CoordinationSelection;
         label: string;
-        desc: string;
-        extra: string;
         recommended?: boolean;
         disabled?: boolean;
     }> = [
         {
             value: 'seller',
             label: COORD_ANSWER_SELLER,
-            desc: COORD_ANSWER_SELLER_DESC,
-            extra: COORD_ANSWER_SELLER_EXTRA,
             recommended: true,
             disabled: sellerOptionDisabled,
         },
-        {
-            value: 'self',
-            label: COORD_ANSWER_SELF,
-            desc: COORD_ANSWER_SELF_DESC,
-            extra: COORD_ANSWER_SELF_EXTRA,
-        },
+        { value: 'self', label: COORD_ANSWER_SELF },
     ];
 
     return (
-        <div
-            className="mt-4 flex flex-col gap-2.5"
-            role="radiogroup"
-            aria-label="Quién elige la fecha de la cita"
-        >
-            {rows.map((row) => {
-                const active = sel === row.value;
-                return (
-                    <div
-                        key={row.value}
-                        role="radio"
-                        aria-checked={active}
-                        aria-disabled={row.disabled || undefined}
-                        tabIndex={row.disabled ? -1 : 0}
-                        onClick={row.disabled ? undefined : () => onSelect(row.value)}
-                        onKeyDown={(e) => {
-                            if (row.disabled) return;
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                onSelect(row.value);
-                            }
-                        }}
-                        className={cn(
-                            'flex cursor-pointer items-start gap-3 rounded-2xl border bg-white px-3.5 py-3 text-left',
-                            'transition-[border-color,box-shadow] duration-200 ease-out',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
-                            active
-                                ? 'border-brand ring-1 ring-inset ring-brand'
-                                : 'border-[#e6e9ef] hover:border-[#cfd4dc]',
-                            row.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
-                        )}
-                    >
-                        <span
-                            aria-hidden
+        <div className="mt-4">
+            <div
+                role="radiogroup"
+                aria-label="Quién elige la fecha de la cita"
+                className="flex flex-col gap-2.5"
+            >
+                {columns.map((col) => {
+                    const active = sel === col.value;
+                    return (
+                        <div
+                            key={col.value}
+                            role="radio"
+                            aria-checked={active}
+                            aria-disabled={col.disabled || undefined}
+                            tabIndex={col.disabled ? -1 : 0}
+                            onClick={col.disabled ? undefined : () => onSelect(col.value)}
+                            onKeyDown={(e) => {
+                                if (col.disabled) return;
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    onSelect(col.value);
+                                }
+                            }}
                             className={cn(
-                                'mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2',
-                                active ? 'border-brand' : 'border-[#c3cad4]',
+                                'cursor-pointer overflow-hidden rounded-2xl border bg-white text-left',
+                                'transition-[border-color,box-shadow] duration-200 ease-out',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
+                                active
+                                    ? 'border-brand ring-1 ring-inset ring-brand'
+                                    : 'border-[#e6e9ef] hover:border-[#cfd4dc]',
+                                col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
                             )}
                         >
-                            {active ? <span className="h-2 w-2 rounded-full bg-brand" /> : null}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="text-[15px] font-bold tracking-[-0.01em] text-[#14161a]">
-                                    {row.label}
+                            <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3">
+                                <span
+                                    aria-hidden
+                                    className={cn(
+                                        'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2',
+                                        active ? 'border-brand' : 'border-[#c3cad4]',
+                                    )}
+                                >
+                                    {active ? <span className="h-2 w-2 rounded-full bg-brand" /> : null}
                                 </span>
-                                {row.recommended ? (
-                                    <span className="rounded-md bg-[#eef1f5] px-1.5 py-0.5 text-[10px] font-semibold text-[#3f4652]">
+                                <span className="text-[15px] font-bold tracking-[-0.01em] text-[#14161a]">
+                                    {col.label}
+                                </span>
+                                {col.recommended ? (
+                                    <span className="ml-auto shrink-0 rounded-md bg-[#eef1f5] px-1.5 py-0.5 text-[10px] font-semibold text-[#3f4652]">
                                         Recomendado
                                     </span>
                                 ) : null}
-                            </span>
-                            <span className="mt-1 block text-[12.5px] leading-[1.5] text-[#565d6b]">
-                                {row.desc}
-                            </span>
-                            {showExtra ? (
-                                <span className="mt-1.5 block text-[12px] leading-[1.45] text-[#8a93a0]">
-                                    {row.extra}
-                                </span>
-                            ) : null}
-                        </span>
-                    </div>
-                );
-            })}
+                            </div>
+                            <dl className="px-3.5 pb-3">
+                                {COORD_COMPARE_FACTS.map((fact) => (
+                                    <div
+                                        key={fact.label}
+                                        className="flex items-baseline justify-between gap-3 border-t border-[#f0f2f5] py-2"
+                                    >
+                                        <dt className="shrink-0 text-[11.5px] text-[#8a93a0]">{fact.label}</dt>
+                                        <dd className="max-w-[36ch] text-right text-[12px] font-medium leading-[1.4] text-[#14161a]">
+                                            {col.value === 'seller' ? fact.seller : fact.self}
+                                        </dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </div>
+                    );
+                })}
+            </div>
 
             {sellerOptionDisabled ? (
-                <p role="note" className="mt-0.5 text-[12px] leading-relaxed text-[#b45309]">
+                <p role="note" className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]">
                     Este técnico no tiene disponibilidad en plazo. Elige «{COORD_ANSWER_SELF}» o prueba
                     más tarde.
                 </p>
@@ -558,12 +582,11 @@ export function CheckoutCoordinationStep({
                             onSelect={onSelect}
                         />
                     ) : (
-                        // Desktop interactivo: misma lista que móvil + la línea de cancelación
-                        // (aquí hay sitio; es el «un poco más» respecto a móvil).
-                        <CoordinationOptionList
+                        // Desktop interactivo: exactamente la misma comparativa que móvil
+                        // (mismos datos y mismas opciones apiladas).
+                        <CoordinationOptionCompare
                             selection={effectiveSelection}
                             sellerOptionDisabled={sellerOptionDisabled}
-                            showExtra
                             onSelect={onSelect}
                         />
                     )}
@@ -642,7 +665,7 @@ export function CheckoutCoordinationStep({
                             onSelect={onSelect}
                         />
                     ) : (
-                        <CoordinationOptionList
+                        <CoordinationOptionCompare
                             selection={effectiveSelection}
                             sellerOptionDisabled={sellerOptionDisabled}
                             onSelect={onSelect}

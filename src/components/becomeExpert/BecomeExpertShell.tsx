@@ -2,7 +2,6 @@ import React from 'react';
 import { ArrowLeft, ChevronRight, Check, Lock, ShieldCheck } from 'lucide-react';
 import { SileoLoader } from '../ui/sileo-loader';
 import revisionCocheImg from '../../media/revisioncoche.jpg';
-import erizoImg from '../../media/erizo.png';
 import {
     HP_PANEL_GRADIENT,
     SD_MOBILE_FOOTER_SHELL_CLASS,
@@ -298,6 +297,21 @@ export const BE_INPUT_CLASS =
 export const BE_DAY_ACTIVE = 'bg-brand/[0.1] text-brand font-semibold';
 export const BE_DAY_IDLE = 'bg-[#f5f5f5] text-[#444] hover:bg-[#ebebeb]';
 
+/**
+ * Controles del alta rápida (país + CTA). Deliberadamente NO usan el CTA global
+ * (`HP_SERVICE_CTA_CLASS`, una píldora con glow azul): en un formulario de cobros
+ * la píldora + sombra de color se lee como app de consumo. Aquí ambos controles
+ * comparten altura (48px) y el MISMO radio (10px), borde con definición y foco
+ * nítido — vocabulario de formulario, no de landing.
+ */
+const BE_FAST_CONTROL_RADIUS = 'rounded-[10px]';
+
+export const BE_FAST_SELECT_CLASS =
+    `h-12 w-full cursor-pointer appearance-none border border-slate-300 bg-white ${BE_FAST_CONTROL_RADIUS} text-[15px] font-medium text-slate-900 transition-[border-color,box-shadow] hover:border-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15`;
+
+export const BE_FAST_PRIMARY_BTN_CLASS =
+    `group inline-flex h-12 w-full items-center justify-center gap-2 ${BE_FAST_CONTROL_RADIUS} bg-brand text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-brand-hover active:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70`;
+
 const FAST_PATH_SUBLINE_NODE = (
     <>
         Recibe encargos de inspección en tu zona: coches, motos y viviendas.{' '}
@@ -315,28 +329,6 @@ function FastPathHeroPhoto({ objectClass = 'object-center' }: { objectClass?: st
             fetchPriority="high"
             className={`h-full w-full object-cover ${objectClass}`}
         />
-    );
-}
-
-/** Logotipo Inspecciono (erizo + wordmark). `variant="light"` para fondo oscuro. */
-export function FastPathWordmark({ className = '', variant = 'dark' }: { className?: string; variant?: 'dark' | 'light' }) {
-    const light = variant === 'light';
-    return (
-        <div className={`flex items-center gap-2 ${className}`} aria-label="Inspecciono">
-            <img
-                src={erizoImg}
-                alt=""
-                aria-hidden
-                className={`h-7 w-7 -scale-x-100 object-contain ${light ? 'brightness-0 invert' : ''}`}
-            />
-            <span
-                className={`font-display text-[17px] font-extrabold tracking-[-0.02em] ${
-                    light ? 'text-white' : 'text-[#2563EB]'
-                }`}
-            >
-                Inspecciono<span className="text-[#F59E0B]">.</span>
-            </span>
-        </div>
     );
 }
 
@@ -433,69 +425,76 @@ export function BecomeExpertFastPathShell({
     children: React.ReactNode;
     footer?: React.ReactNode;
 }) {
+    // En desktop el padding vertical debe ser simétrico (pt-12 / pb-12) para que la
+    // tarjeta quede centrada de verdad; antes `lg:pb-0` ganaba a `lg:py-12` y la subía.
     const scrollPad = footer
-        ? 'pb-[13rem] lg:pb-0'
-        : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]';
+        ? 'pb-[13rem] lg:pb-12'
+        : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:pb-12';
 
     return (
-        <div className="become-expert-wizard be-fast-shell relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:grid lg:h-auto lg:max-h-none lg:min-h-screen lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:overflow-visible">
-            {/* Botón volver — desktop, sobre la imagen */}
+        <div className="become-expert-wizard be-fast-shell relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:h-auto lg:max-h-none lg:min-h-screen lg:overflow-visible lg:bg-[#f2f5f9]">
+            {/* Botón volver — desktop, arriba a la izquierda de la página */}
             <div className="absolute left-6 top-6 z-20 hidden lg:block">
                 <FastPathBack onBack={onBack} label="Volver" />
             </div>
 
-            {/* IZQUIERDA — panel de imagen a pantalla completa (solo desktop) */}
-            <aside className="relative hidden overflow-hidden bg-slate-900 lg:block">
-                <img
-                    src={revisionCocheImg}
-                    alt="Un experto revisa un coche antes de la compra"
-                    decoding="async"
-                    fetchPriority="high"
-                    className="absolute inset-0 h-full w-full object-cover object-[56%_38%]"
-                />
-                <div
-                    aria-hidden
-                    className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-slate-950/10"
-                />
-                <div className="absolute inset-x-0 bottom-0 p-10 xl:p-12">
-                    <h2 className="font-display text-[1.9rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white xl:text-[2.15rem]">
-                        Tus inspecciones,
-                        <br />
-                        tus ingresos
-                    </h2>
-                    <p className="mt-3 max-w-[26rem] text-[15px] leading-relaxed text-white/80">
-                        Recibe encargos de inspección en tu zona y cobra con cada trabajo. Tú pones el precio.
-                    </p>
-                    <div className="mt-6 flex items-center gap-2 text-[13px] font-medium text-white/70">
-                        <ShieldCheck className="h-4 w-4 shrink-0 text-white/60" strokeWidth={2.2} />
-                        Pagos seguros con Stripe · 500+ expertos verificados
+            <main
+                id="become-expert-main"
+                className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:flex lg:items-center lg:justify-center lg:overflow-visible lg:overscroll-auto lg:px-6 lg:pt-12`}
+            >
+                {/* Móvil — banner intro; el formulario va en el footer */}
+                <div className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:hidden`}>
+                    <BecomeExpertFastPathIntro onBack={onBack} />
+                </div>
+
+                {/* Desktop — tarjeta contenida y centrada: imagen a la izquierda,
+                    formulario a la derecha. Grande y con peso (no un recuadro flotando):
+                    960px de ancho, 560px de alto mínimo, redondeo contenido y sombra
+                    en capas. */}
+                <div className="hidden w-full max-w-[60rem] overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_24px_64px_-28px_rgba(15,23,42,0.30)] lg:grid lg:min-h-[560px] lg:grid-cols-[minmax(0,44%)_minmax(0,56%)]">
+                    {/* Izquierda — imagen del oficio, a sangre dentro de la tarjeta */}
+                    <div className="relative overflow-hidden bg-slate-900">
+                        <img
+                            src={revisionCocheImg}
+                            alt="Un experto revisa un coche antes de la compra"
+                            decoding="async"
+                            fetchPriority="high"
+                            className="absolute inset-0 h-full w-full object-cover object-[56%_38%]"
+                        />
+                        <div
+                            aria-hidden
+                            className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-slate-950/10"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 p-8 xl:p-9">
+                            <h2 className="font-display text-[1.6rem] font-semibold leading-[1.1] tracking-[-0.03em] text-white xl:text-[1.75rem]">
+                                Tus inspecciones,
+                                <br />
+                                tus ingresos
+                            </h2>
+                            <p className="mt-2.5 max-w-[22rem] text-[14px] leading-relaxed text-white/80">
+                                Recibe encargos de inspección en tu zona y cobra con cada trabajo. Tú pones el precio.
+                            </p>
+                            <div className="mt-5 flex items-center gap-2 text-[12.5px] font-medium text-white/70">
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-white/60" strokeWidth={2.2} />
+                                Pagos seguros con Stripe · 500+ expertos
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Derecha — formulario, centrado vertical y alineado a la izquierda */}
+                    <div className="flex items-center px-9 py-10 xl:px-11">
+                        <div className="w-full max-w-[24rem]">{children}</div>
                     </div>
                 </div>
-            </aside>
+            </main>
 
-            {/* DERECHA — formulario (desktop, centrado vertical) + intro/footer (móvil) */}
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:min-h-screen lg:overflow-visible">
-                <main
-                    id="become-expert-main"
-                    className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${scrollPad} lg:flex lg:items-center lg:overflow-visible lg:overscroll-auto lg:px-12 xl:px-16`}
-                >
-                    {/* Móvil — banner intro; el formulario va en el footer */}
-                    <div className={`${SD_MOBILE_GUTTER_CLASS} mx-auto w-full pb-4 lg:hidden`}>
-                        <BecomeExpertFastPathIntro onBack={onBack} />
+            {footer && (
+                <footer className={`${SD_MOBILE_FOOTER_SHELL_CLASS} shrink-0 lg:hidden`}>
+                    <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
+                        {footer}
                     </div>
-
-                    {/* Desktop — formulario alineado a la izquierda */}
-                    <div className="hidden w-full max-w-[25rem] lg:block">{children}</div>
-                </main>
-
-                {footer && (
-                    <footer className={`${SD_MOBILE_FOOTER_SHELL_CLASS} shrink-0 lg:hidden`}>
-                        <div className={`${SD_MOBILE_GUTTER_CLASS} sd-mobile-footer-inner`}>
-                            {footer}
-                        </div>
-                    </footer>
-                )}
-            </div>
+                </footer>
+            )}
         </div>
     );
 }

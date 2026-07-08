@@ -1998,17 +1998,6 @@ img[alt*="country"],
     color: #6a6a6a;
 }
 
-.be-fast-select {
-    padding-top: 0.625rem;
-    padding-bottom: 0.625rem;
-}
-
-@media (min-width: 1024px) {
-    .be-fast-select {
-        padding-top: 0.75rem;
-        padding-bottom: 0.75rem;
-    }
-}
 
 /* Become-expert recruitment hero — entrada escalonada del copy.
    Realza un contenido ya visible por defecto (no oculta nada que dependa
