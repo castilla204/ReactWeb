@@ -1,57 +1,114 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, RotateCcw, Send, X } from 'lucide-react';
-import erizoImg from '../../media/erizo.png';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { TypingDots } from '../chat/TypingDots';
 import { AssistantMessage } from './AssistantMessage';
 import {
+  CHATBOT_EMPTY_TITLE,
   CHATBOT_SUGGESTED_QUESTIONS,
   CHATBOT_WELCOME_MESSAGE,
 } from '../../content/faqContent';
-import type { useSupportChat } from '../../hooks/useSupportChat';
+import type { SupportChatMessage, useSupportChat } from '../../hooks/useSupportChat';
 
 interface ChatbotPanelProps {
   chat: ReturnType<typeof useSupportChat>;
   onClose: () => void;
-  variant?: 'floating' | 'drawer';
+  /** `fullscreen` ocupa todo el viewport (móvil); `panel` es la hoja lateral (desktop). */
+  layout: 'fullscreen' | 'panel';
 }
 
-export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
-  chat,
-  onClose,
-  variant = 'floating',
-}) => {
-  const isDrawer = variant === 'drawer';
-  const navigate = useNavigate();
+const VISIBLE_SUGGESTIONS = 4;
+/** Margen (px) por debajo del cual consideramos que el usuario está mirando el final. */
+const AT_BOTTOM_THRESHOLD = 64;
+/** Alto máximo del textarea antes de scrollear dentro (≈5 líneas). */
+const TEXTAREA_MAX_PX = 116;
+/** Ancho de lectura cómodo (~70ch) cuando el panel es ancho; sin efecto en la hoja de 400px. */
+const READING_WIDTH = 'mx-auto w-full max-w-[36rem]';
+
+interface Turn {
+  id: string;
+  question: string;
+  answer?: string;
+}
+
+/**
+ * El backend alterna user → assistant. Agrupamos en turnos para poder renderizar
+ * «pregunta discreta + respuesta a ancho completo» en vez de burbujas enfrentadas.
+ */
+function toTurns(messages: SupportChatMessage[]): Turn[] {
+  const turns: Turn[] = [];
+  for (const message of messages) {
+    if (message.role === 'user') {
+      turns.push({ id: message.id, question: message.content });
+      continue;
+    }
+    const open = turns[turns.length - 1];
+    if (open && open.answer === undefined) open.answer = message.content;
+    else turns.push({ id: message.id, question: '', answer: message.content });
+  }
+  return turns;
+}
+
+export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layout }) => {
   const { messages, isLoading, error, sendMessage, retry, reset } = chat;
+  const isFullscreen = layout === 'fullscreen';
+
   const [draft, setDraft] = useState('');
+  const [atBottom, setAtBottom] = useState(true);
+  /** Rota la ventana de sugerencias en cada conversación nueva: las 6 acaban viéndose. */
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const isEmpty = messages.length === 0 && !isLoading;
+  const turns = useMemo(() => toTurns(messages), [messages]);
+  const isEmpty = turns.length === 0 && !isLoading;
+  const canSend = draft.trim().length > 0 && !isLoading;
 
-  useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, isLoading, error]);
+  const suggestions = Array.from(
+    { length: VISIBLE_SUGGESTIONS },
+    (_, i) =>
+      CHATBOT_SUGGESTED_QUESTIONS[(suggestionOffset + i) % CHATBOT_SUGGESTED_QUESTIONS.length],
+  );
 
-  useEffect(() => {
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-    if (isDesktop) inputRef.current?.focus();
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
 
-  const handleInputFocus = () => {
-    requestAnimationFrame(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-    });
-  };
+  const handleScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < AT_BOTTOM_THRESHOLD);
+  }, []);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  /** Solo bajamos si el usuario ya estaba abajo, o si acaba de preguntar él. */
+  const lastRole = messages[messages.length - 1]?.role;
+  useEffect(() => {
+    if (atBottom || lastRole === 'user') scrollToBottom();
+    // `atBottom` es el estado al llegar el mensaje, no un disparador del efecto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, isLoading, error, lastRole, scrollToBottom]);
+
+  /** El teclado de iOS no debe abrirse solo al montar el panel a pantalla completa. */
+  useEffect(() => {
+    if (!isFullscreen) inputRef.current?.focus();
+  }, [isFullscreen]);
+
+  /** Auto-grow: `rows={1}` + `max-height` no crece solo. */
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, TEXTAREA_MAX_PX)}px`;
+  }, [draft]);
+
+  const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const text = draft.trim();
     if (!text || isLoading) return;
     setDraft('');
-    await sendMessage(text);
+    void sendMessage(text);
   };
 
   const handleSuggested = (question: string) => {
@@ -59,255 +116,190 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
     void sendMessage(question);
   };
 
-  const goToFaq = () => {
-    onClose();
-    navigate('/faq');
+  const handleReset = () => {
+    reset();
+    setSuggestionOffset(
+      (prev) => (prev + VISIBLE_SUGGESTIONS) % CHATBOT_SUGGESTED_QUESTIONS.length,
+    );
+    setDraft('');
+    setAtBottom(true);
   };
 
-  return (
-    <div
-      className={cn(
-        'support-chat-panel flex flex-col overflow-hidden',
-        isDrawer
-          ? 'flex min-h-0 flex-1 flex-col overflow-hidden w-full bg-white'
-          : cn(
-              'w-[min(calc(100vw-1.25rem),21rem)] md:w-[min(calc(100vw-3rem),24rem)]',
-              'max-h-[min(78vh,36rem)] min-h-[20rem]',
-              'rounded-[1.25rem] border border-[#e5e7eb]/90 bg-white',
-              'shadow-[0_8px_40px_rgba(15,23,42,0.12),0_2px_8px_rgba(15,23,42,0.04)]',
-              'animate-in fade-in-0 slide-in-from-bottom-3 duration-300',
-            ),
-      )}
-      aria-label={isDrawer ? undefined : 'Asistente de Inspecciono'}
-      role={isDrawer ? undefined : 'dialog'}
-    >
-      {/* Header — tinte de marca limpio (oro → azul, baja opacidad, sin embarrar) */}
-      <div className="relative shrink-0 overflow-hidden border-b border-[#eceef2] bg-white px-4 py-3.5">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(100deg, rgba(247,193,75,0.14) 0%, rgba(63,127,224,0.16) 100%)',
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(247,193,75,0.6) 0%, rgba(63,127,224,0.6) 100%)',
-          }}
-        />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)] ring-1 ring-white">
-              <img
-                src={erizoImg}
-                alt=""
-                className="h-7 w-7 -scale-x-100 object-contain"
-                style={{ imageRendering: '-webkit-optimize-contrast' }}
-              />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[14px] font-semibold leading-tight tracking-[-0.01em] text-[#111111]">
-                Asistente Inspecciono
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] leading-4 text-[#5f6b7a]">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#3f7fe0]" aria-hidden />
-                Respuestas al instante
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-0.5">
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={reset}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-black/[0.05] hover:text-[#111111] touch-manipulation [-webkit-tap-highlight-color:transparent]"
-                aria-label="Nueva conversación"
-                title="Nueva conversación"
-              >
-                <RotateCcw className="h-[15px] w-[15px]" strokeWidth={2} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-black/[0.05] hover:text-[#111111] touch-manipulation [-webkit-tap-highlight-color:transparent]"
-              aria-label="Cerrar asistente"
-            >
-              <X className="h-4 w-4" strokeWidth={2} />
-            </button>
-          </div>
-        </div>
-      </div>
+  const iconButton =
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#f2f3f5] hover:text-[#1c1c1c] touch-manipulation [-webkit-tap-highlight-color:transparent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
-      {/* Messages */}
-      <div
-        ref={listRef}
-        className="chat-messages-area min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fa] px-3 py-3.5"
-        role="log"
-        aria-live="polite"
-      >
-        {isEmpty ? (
-          /* Estado vacío centrado verticalmente — sin el gran vacío gris */
-          <div className="flex min-h-full flex-col justify-center gap-4 px-1 py-4">
-            <article className="chat-stagger flex flex-col items-center text-center">
-              <span className="mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_4px_16px_rgba(63,127,224,0.16)] ring-1 ring-[#3f7fe0]/10">
-                <img
-                  src={erizoImg}
-                  alt=""
-                  className="h-10 w-10 -scale-x-100 object-contain"
-                  style={{ imageRendering: '-webkit-optimize-contrast' }}
-                />
-              </span>
-              <p className="max-w-[19rem] text-[13.5px] leading-relaxed text-[#3f3f46]">
+  const lastTurnIndex = turns.length - 1;
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white font-display">
+      <header className="flex shrink-0 items-center gap-1 border-b border-[#ececec] bg-white px-2 py-2 md:px-3">
+        {isFullscreen && (
+          <button type="button" onClick={onClose} className={iconButton} aria-label="Cerrar asistente">
+            <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.1} aria-hidden />
+          </button>
+        )}
+        <h2 className="min-w-0 flex-1 truncate px-1.5 text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]">
+          Asistente
+        </h2>
+        {turns.length > 0 && (
+          <button
+            type="button"
+            onClick={handleReset}
+            className={iconButton}
+            aria-label="Nueva conversación"
+            title="Nueva conversación"
+          >
+            <RotateCcw className="h-4 w-4" strokeWidth={2.1} aria-hidden />
+          </button>
+        )}
+        {!isFullscreen && (
+          <button type="button" onClick={onClose} className={iconButton} aria-label="Cerrar asistente">
+            <X className="h-[18px] w-[18px]" strokeWidth={2.1} aria-hidden />
+          </button>
+        )}
+      </header>
+
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div
+          ref={listRef}
+          onScroll={handleScroll}
+          className="chat-messages-area min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-5 md:px-5"
+        >
+          {isEmpty ? (
+            <div className={READING_WIDTH}>
+              <h3 className="text-[17px] font-semibold leading-[1.3] tracking-[-0.015em] text-[#1c1c1c]">
+                {CHATBOT_EMPTY_TITLE}
+              </h3>
+              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#6a6a6a]">
                 {CHATBOT_WELCOME_MESSAGE}
               </p>
-            </article>
-
-            <div>
-              <p className="mb-2 px-0.5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#aeb4bd]">
-                Sugerencias
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {CHATBOT_SUGGESTED_QUESTIONS.slice(0, 3).map((q, i) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => handleSuggested(q)}
-                    style={{ animationDelay: `${120 + i * 45}ms` }}
-                    className="chat-stagger group flex items-center justify-between gap-2 rounded-xl border border-[#e8eaee] bg-white px-3 py-2.5 text-left text-[12.5px] leading-snug text-[#3f3f46] transition-colors duration-200 hover:border-[#3f7fe0]/40 hover:bg-[#f3f7fd] active:scale-[0.99]"
-                  >
-                    <span className="min-w-0">{q}</span>
-                    <ArrowUpRight
-                      className="h-3.5 w-3.5 shrink-0 text-[#c2c7cf] transition-colors group-hover:text-[#3f7fe0]"
-                      strokeWidth={2}
-                    />
-                  </button>
+              <ul className="-mx-2 mt-5">
+                {suggestions.map((q) => (
+                  <li key={q}>
+                    <button
+                      type="button"
+                      onClick={() => handleSuggested(q)}
+                      className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[#f5f6f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    >
+                      <span className="min-w-0 text-[14px] leading-snug text-[#1c1c1c]">{q}</span>
+                      <ArrowRight
+                        className="h-3.5 w-3.5 shrink-0 text-[#8a8a8a] transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:text-brand"
+                        strokeWidth={2.1}
+                        aria-hidden
+                      />
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {messages.map((msg) => {
-              const isUser = msg.role === 'user';
-              return (
-                <article
-                  key={msg.id}
-                  className={cn(
-                    'chat-message-enter flex',
-                    isUser ? 'justify-end' : 'justify-start',
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'max-w-[88%] px-3.5 py-2.5 text-sm break-words',
-                      isUser
-                        ? 'rounded-2xl rounded-br-md bg-[#3f7fe0] text-white leading-relaxed whitespace-pre-wrap'
-                        : 'rounded-2xl rounded-bl-md border border-[#e8eaee] bg-white text-[#1c1c1c]',
-                    )}
+          ) : (
+            <div className={READING_WIDTH} role="log" aria-live="polite" aria-busy={isLoading}>
+              {turns.map((turn, i) => {
+                const isLast = i === lastTurnIndex;
+                const awaiting = isLast && isLoading && turn.answer === undefined;
+                const failed = isLast && !!error && turn.answer === undefined;
+                return (
+                  <article
+                    key={turn.id}
+                    className={cn('chat-message-enter', i > 0 && 'mt-6 border-t border-[#ececec] pt-6')}
                   >
-                    {isUser ? (
-                      msg.content
-                    ) : (
-                      <AssistantMessage content={msg.content} onClose={onClose} />
+                    {turn.question && (
+                      <p className="text-[13px] font-medium leading-5 text-[#6a6a6a]">
+                        {turn.question}
+                      </p>
                     )}
-                  </div>
-                </article>
-              );
-            })}
+                    <div
+                      className={cn(
+                        'text-[14.5px] leading-[1.65] text-[#1c1c1c]',
+                        turn.question && 'mt-2.5',
+                      )}
+                    >
+                      {turn.answer !== undefined && (
+                        <AssistantMessage content={turn.answer} onClose={onClose} />
+                      )}
+                      {awaiting && (
+                        <>
+                          <TypingDots className="text-[#a3a3a3]" />
+                          <span className="sr-only">El asistente está escribiendo…</span>
+                        </>
+                      )}
+                      {failed && (
+                        <div role="alert" className="rounded-lg bg-[#fdf6f5] px-3 py-2.5">
+                          <p className="text-[13px] leading-snug text-[#b42318]">{error}</p>
+                          <button
+                            type="button"
+                            onClick={retry}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#b42318] transition-colors hover:bg-[#fbeeec] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b42318] focus-visible:ring-offset-2"
+                          >
+                            <RotateCcw className="h-3 w-3" strokeWidth={2.25} aria-hidden />
+                            Reintentar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-            {isLoading && (
-              <div className="chat-message-enter flex justify-start">
-                <div className="inline-flex rounded-2xl rounded-bl-md border border-[#e8eaee] bg-white px-3.5 py-3">
-                  <TypingDots className="text-[#9b9b9b]" />
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div
-                className="chat-message-enter flex flex-col items-center gap-2 rounded-xl border border-[#f1d4d0] bg-[#fdf6f5] px-3 py-2.5 text-center"
-                role="alert"
-              >
-                <span className="text-xs leading-snug text-[#b42318]">{error}</span>
-                <button
-                  type="button"
-                  onClick={retry}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#e8d3cf] bg-white px-3 py-1 text-[11.5px] font-medium text-[#b42318] transition-colors hover:bg-[#fbeeec]"
-                >
-                  <RotateCcw className="h-3 w-3" strokeWidth={2.25} />
-                  Reintentar
-                </button>
-              </div>
-            )}
-          </div>
+        {!isEmpty && !atBottom && (
+          <button
+            type="button"
+            onClick={() => scrollToBottom()}
+            /* Sin `chat-message-enter`: su keyframe fija `transform`, que pisaría el `-translate-x-1/2` del centrado. */
+            className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-medium text-[#1c1c1c] shadow-[0_4px_16px_rgba(16,24,40,0.14)] transition-colors hover:bg-[#fafafa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            <ArrowDown className="h-3.5 w-3.5" strokeWidth={2.1} aria-hidden />
+            Ir al final
+          </button>
         )}
       </div>
 
-      {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className={cn(
-          'shrink-0 border-t border-[#eceef2] bg-white px-3 py-3',
-          isDrawer && 'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]',
-        )}
+        className="shrink-0 border-t border-[#ececec] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5"
       >
-        <div
-          className="rounded-[1.15rem] p-[1.5px] transition-shadow duration-200 focus-within:shadow-[0_4px_20px_rgba(63,127,224,0.16)]"
-          style={{
-            background:
-              'linear-gradient(118deg, rgba(247,193,75,0.5) 0%, rgba(63,127,224,0.6) 100%)',
-          }}
-        >
-          <div className="flex items-end gap-2 rounded-[1.05rem] bg-white py-1.5 pl-3.5 pr-1.5">
+        <div className={READING_WIDTH}>
+          <div className="flex items-end gap-2 rounded-2xl border border-[#e2e4e8] bg-white py-1.5 pl-3.5 pr-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand focus-within:shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]">
             <textarea
               ref={inputRef}
               rows={1}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onFocus={handleInputFocus}
+              onFocus={() => scrollToBottom()}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  void handleSubmit();
+                  handleSubmit();
                 }
               }}
-              placeholder="Escribe tu pregunta…"
+              placeholder="Pregunta algo…"
               disabled={isLoading}
               enterKeyHint="send"
-              className="min-h-[36px] max-h-24 flex-1 resize-none bg-transparent py-2 text-base leading-5 text-[#1c1c1c] placeholder:text-[#a8a8a8] focus:outline-none disabled:opacity-60 md:text-sm"
+              /* text-base en móvil evita el auto-zoom de iOS al enfocar. */
+              className="min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base leading-5 text-[#1c1c1c] placeholder:text-[#767676] focus:outline-none disabled:opacity-60 md:text-sm"
+              style={{ maxHeight: TEXTAREA_MAX_PX }}
               aria-label="Tu pregunta"
             />
             <button
               type="submit"
-              disabled={isLoading || !draft.trim()}
-              className={cn(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white',
-                'transition-all duration-200 active:scale-95 disabled:cursor-not-allowed',
-                draft.trim() && !isLoading ? 'scale-100' : 'scale-95',
-              )}
-              style={
-                draft.trim() && !isLoading
-                  ? { background: 'linear-gradient(135deg, #f7c14b 0%, #3f7fe0 100%)' }
-                  : { background: '#dcdcdc' }
-              }
-              aria-label="Enviar mensaje"
+              disabled={!canSend}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors duration-150 hover:bg-brand-hover active:scale-95 disabled:cursor-not-allowed disabled:bg-[#e4e6ea] disabled:text-[#9b9b9b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              aria-label="Enviar pregunta"
             >
-              <Send className="h-4 w-4" strokeWidth={2.25} />
+              <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
             </button>
           </div>
+          <Link
+            to="/faq"
+            onClick={onClose}
+            className="mt-2.5 block rounded text-center text-xs font-medium text-[#6a6a6a] underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            Ver preguntas frecuentes
+          </Link>
         </div>
-        <button
-          type="button"
-          onClick={goToFaq}
-          className="mt-2.5 w-full text-center text-[11px] font-medium text-[#9b9b9b] transition-colors hover:text-[#111111]"
-        >
-          Ver preguntas frecuentes
-        </button>
       </form>
     </div>
   );

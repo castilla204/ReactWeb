@@ -45,6 +45,66 @@ export const getStatusInfoWithFallback = (
   };
 };
 
+// ───────────────────────────────────────────────────────────────────────────
+// Tono semántico de un estado. Fuente de verdad del COLOR de los badges de
+// estado en el front: el hex que manda el backend (statusInfo.color) es un
+// dato de seed y NO decide la UI. Un solo hue por severidad:
+//   success #0F6A3E · danger rojo · warning ámbar · info azul marca · neutral gris
+// ───────────────────────────────────────────────────────────────────────────
+
+export type StatusTone = 'success' | 'danger' | 'warning' | 'info' | 'neutral';
+
+export const getStatusTone = (statusInfo: Pick<SystemStatusDto, 'statusValue'>): StatusTone => {
+  const v = statusInfo.statusValue || '';
+
+  if (
+    v === 'cancelled' ||
+    v === 'rejected' ||
+    v === 'disputed' ||
+    v === 'transfer_failed' ||
+    v === 'appointment_rejected' ||
+    v.startsWith('cancelled_by_') ||
+    v.startsWith('appointment_cancelled')
+  ) {
+    return 'danger';
+  }
+
+  if (
+    v === 'completed' ||
+    v === 'appointment_confirmed' ||
+    v === 'appointment_report_sent' ||
+    v.startsWith('dispute_resolved') ||
+    v.startsWith('appointment_completed')
+  ) {
+    return 'success';
+  }
+
+  // Estados con reloj corriendo: alguien debe actuar o algo puede expirar.
+  if (
+    v === 'awaiting_client_decision' ||
+    v === 'awaiting_report' ||
+    v === 'appointment_awaiting_report' ||
+    v === 'appointment_pending_expert_confirmation'
+  ) {
+    return 'warning';
+  }
+
+  if (v === 'pending' || v === 'awaiting_appointment' || v === 'appointment_proposed') {
+    return 'info';
+  }
+
+  return 'neutral';
+};
+
+/** Tinte + texto + hairline por tono (AA ≥4.5:1 verificado sobre su fondo). */
+export const STATUS_TONE_BADGE_CLASSES: Record<StatusTone, string> = {
+  success: 'bg-[#ecf6f0] text-[#0F6A3E] border-[#d8ebdf]',
+  danger: 'bg-[#fdf2f2] text-[#b42318] border-[#f5dada]',
+  warning: 'bg-[#fdf6e7] text-[#8a5a10] border-[#f3e6c8]',
+  info: 'bg-[#eef4fb] text-[#0059b3] border-[#dbe7f7]',
+  neutral: 'bg-[#f4f4f4] text-[#4a4a4a] border-[#e8e8e8]',
+};
+
 // Función para determinar si un estado es "positivo" (verde)
 export const isPositiveStatus = (statusInfo: SystemStatusDto): boolean => {
   const positiveStatuses = [

@@ -1,5 +1,5 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { CalendarDays, Info, Lock, Send } from 'lucide-react';
+import { CalendarDays, Check, Info, Lock, Send, Sparkles } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -19,6 +19,7 @@ import {
     SELLER_BOOKING_MIN_LEAD_DAYS,
     SELLER_BOOKING_TARGET_WINDOW_DAYS,
 } from '../../utils/sellerBookingWindow';
+import { getInspectionSubjectCapitalized } from '../../utils/inspectionSubject';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS } from '../../constants/homepageTypography';
 import { HP_FONT } from '../../constants/homepageTypography';
@@ -250,8 +251,10 @@ const COORD_CHOOSE_LEAD = '¿Quién elige la fecha de la inspección?';
 // Desktop: mismo arranque que móvil. Se quita la pregunta redundante («¿La fecha la elige
 // él o la eliges tú?»): las propias opciones la responden. La frase del escrow SÍ se queda:
 // en desktop este lead es el único sitio donde aparece (en móvil vive en el sticky footer).
-export const COORD_DESKTOP_STEP1_LEAD =
-    'El coche lo tiene el vendedor, así que la cita tiene que cuadrar con su disponibilidad. Elijas lo que elijas, tu pago queda protegido hasta que termine la revisión.';
+// El sujeto sale de la categoría: antes decía «coche» aunque inspeccionaras una casa.
+export function getCoordDesktopStep1Lead(categoryName?: string | null): string {
+    return `${getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita tiene que cuadrar con su disponibilidad. Elijas lo que elijas, tu pago queda protegido hasta que termine la revisión.`;
+}
 
 /** Respuestas a «¿Quién elige la fecha?». Cortas y en primera persona.
  *  NO reutilizan COORD_OPTION_*_TITLE a propósito: esos títulos explícitos los necesitan
@@ -280,9 +283,16 @@ const COORD_COMPARE_FACTS: ReadonlyArray<{
         seller: `En ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago`,
         self: 'El día que tú elijas',
     },
+    // Fila idéntica en ambas columnas A PROPÓSITO: comunica que, elijas lo que elijas,
+    // el comprador no tiene que asistir (la vean el vendedor y el experto).
+    {
+        label: 'Quién va a la cita',
+        seller: 'El vendedor y el experto; tú, solo si quieres',
+        self: 'El vendedor y el experto; tú, solo si quieres',
+    },
     {
         label: 'Tú haces',
-        seller: 'Nada: te avisamos cuando reserve',
+        seller: 'Nada: te avisamos con el día, la hora y el lugar',
         self: 'Eliges día, hora y lugar',
     },
     {
@@ -292,7 +302,13 @@ const COORD_COMPARE_FACTS: ReadonlyArray<{
     },
 ];
 
-function CoordinationChooseHeader({ className }: { className?: string }) {
+function CoordinationChooseHeader({
+    className,
+    categoryName,
+}: {
+    className?: string;
+    categoryName?: string | null;
+}) {
     return (
         <header className={cn('mx-auto max-w-xl text-center', className)}>
             {/* Centrado y con la fuente del sistema (como las maquetas). Copy corto:
@@ -300,9 +316,12 @@ function CoordinationChooseHeader({ className }: { className?: string }) {
             <h2 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]">
                 ¿Quién elige la fecha?
             </h2>
-            <p className="mx-auto mt-2 max-w-[34ch] text-[13.5px] leading-[1.5] text-[#565d6b]">
-                El coche lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su
-                disponibilidad. Elige quién pone el día y la hora:
+            {/* 48ch ≈ ancho del gutter móvil (375-40px): 2 líneas anchas, no una columnita
+                de 4. Sin «Elige quién pone…»: el título ya hace esa pregunta.
+                El sujeto lo pone la categoría: «El coche» / «El inmueble» / «La moto». */}
+            <p className="mx-auto mt-2 max-w-[48ch] text-[13.5px] leading-[1.5] text-[#565d6b]">
+                {getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita
+                de la inspección tiene que cuadrar con su disponibilidad.
             </p>
         </header>
     );
@@ -319,6 +338,8 @@ export interface CheckoutCoordinationStepProps {
     /** Móvil paso de elección: ocupa el alto disponible y centra los botones verticalmente. */
     fillHeight?: boolean;
     coordinationMode?: CoordinationSelection | null;
+    /** Nombre de la categoría del servicio: decide el sujeto de la copy (coche/inmueble/moto). */
+    categoryName?: string | null;
     /** Tarjetas no interactivas (apagadas). La elegida mantiene estilo selected + badge. */
     readOnly?: boolean;
     onSelect: (value: CoordinationSelection) => void;
@@ -420,9 +441,10 @@ function CoordinationOptionCards({
  * no leyendo prosa ni fiándose de un badge de color: «Tú haces: nada» justifica la
  * recomendación por sí solo.
  *
- * La selección se marca con BORDE + punto de marca, nunca con relleno de color: así el
- * texto no se invierte y el contraste se mantiene ≥4,5:1 (el tagline blanco al 80% sobre
- * `bg-brand` daba ~4,1:1). El azul significa una sola cosa: «esto es lo elegido».
+ * La selección se marca tiñendo la cabecera de un gris azulado MUY claro + check sólido,
+ * nunca con relleno de color de marca ni banda oscura: poca superficie de color, el acento
+ * vive en el check. Los hechos siguen sobre blanco, así que el contraste del cuerpo se
+ * mantiene ≥4,5:1.
  *
  * Las vistas de solo-lectura (coordinar/confirmar cita) siguen con CoordinationOptionCards.
  */
@@ -481,27 +503,48 @@ function CoordinationOptionCompare({
                                 'transition-[border-color,box-shadow] duration-200 ease-out',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                                 active
-                                    ? 'border-brand ring-1 ring-inset ring-brand'
+                                    ? 'border-[#c2cee0]'
                                     : 'border-[#e6e9ef] hover:border-[#cfd4dc]',
                                 col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
                             )}
                         >
-                            <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3">
+                            {/* Cabecera: LAS DOS opciones llevan fondo OSCURO para que ambas se
+                                lean como opción (si la no elegida quedaba clara, parecía apagada).
+                                Grises oscuros, NO negro puro (que pesaba demasiado): la elegida en
+                                gris azulado (#33445c) + check sólido blanco; la no elegida en gris
+                                neutro (#3b414b) + aro vacío. Texto en blanco en ambas. El azulado
+                                enlaza con el azul del pago sin SER azul-de-selección. El antiguo
+                                badge «Recomendado» (genérico) se sustituye por el beneficio real:
+                                «Lo más cómodo», que se apoya en la fila «Tú haces: nada». */}
+                            <div
+                                className={cn(
+                                    'flex items-center gap-2.5 px-3.5 py-2.5',
+                                    active ? 'bg-[#33445c]' : 'bg-[#3b414b]',
+                                )}
+                            >
                                 <span
                                     aria-hidden
                                     className={cn(
-                                        'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2',
-                                        active ? 'border-brand' : 'border-[#c3cad4]',
+                                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
+                                        active
+                                            ? 'bg-white text-[#33445c]'
+                                            : 'border-2 border-white/35 bg-transparent',
                                     )}
                                 >
-                                    {active ? <span className="h-2 w-2 rounded-full bg-brand" /> : null}
+                                    {active ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                                 </span>
-                                <span className="text-[15px] font-bold tracking-[-0.01em] text-[#14161a]">
+                                <span className="text-[15px] font-bold tracking-[-0.01em] text-white">
                                     {col.label}
                                 </span>
                                 {col.recommended ? (
-                                    <span className="ml-auto shrink-0 rounded-md bg-[#eef1f5] px-1.5 py-0.5 text-[10px] font-semibold text-[#3f4652]">
-                                        Recomendado
+                                    <span
+                                        className={cn(
+                                            'ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-semibold text-white',
+                                            active ? 'bg-white/[0.16]' : 'bg-white/[0.12]',
+                                        )}
+                                    >
+                                        <Sparkles className="h-3 w-3" aria-hidden />
+                                        Lo más cómodo
                                     </span>
                                 ) : null}
                             </div>
@@ -541,6 +584,7 @@ export function CheckoutCoordinationStep({
     hideHeader = false,
     fillHeight = false,
     coordinationMode = null,
+    categoryName = null,
     readOnly,
     onSelect,
     sellerPhone,
@@ -612,9 +656,12 @@ export function CheckoutCoordinationStep({
               : null;
 
     return (
-        <div className={cn(fillHeight && 'flex min-h-0 flex-1 flex-col')}>
+        <div className={cn(fillHeight && 'flex min-h-0 flex-1 flex-col overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden')}>
             {hideHeader ? null : view === 'choose' || view === 'seller' ? (
-                <CoordinationChooseHeader className={cn(isSubStep && 'hidden', fillHeight && 'shrink-0')} />
+                <CoordinationChooseHeader
+                    className={cn(isSubStep && 'hidden', fillHeight && 'shrink-0')}
+                    categoryName={categoryName}
+                />
             ) : (
             <header className={cn('max-w-xl', isSubStep && 'mb-1')}>
                 {view === 'seller-contact' ? (
@@ -651,9 +698,16 @@ export function CheckoutCoordinationStep({
             </header>
             )}
 
-            {/* En fillHeight NO se aplica mt-3: cualquier margen dentro del área con
-                justify-center desplaza el centro óptico hacia abajo. */}
-            <div className={cn(fillHeight ? 'flex min-h-0 flex-1 flex-col justify-center' : 'mt-3')}>
+            {/* fillHeight (móvil, paso de elección): el ROOT es el único scroll container y
+                este div es un flex item con `my-auto`. Los márgenes automáticos centran cuando
+                sobra alto y COLAPSAN A 0 cuando falta, así nada queda inalcanzable.
+                Antes llevaba `flex-1`, que lo fijaba al alto sobrante: la tabla desbordaba ESTE
+                div (no el root), el scroll no llegaba al final y el `pb-4` del root quedaba por
+                detrás del desbordamiento → «Yo, ahora» pegado a la franja del pago protegido.
+                El `pb-4` va AQUÍ, como padding del propio item: así siempre forma parte del área
+                scrollable, sin depender de que el navegador honre el padding-bottom de un
+                contenedor de scroll. Sin mt-3: desplazaría el centro óptico. */}
+            <div className={cn(fillHeight ? 'my-auto w-full shrink-0 pb-4' : 'mt-3')}>
                 {view === 'choose' || view === 'seller' ? (
                     readOnly ? (
                         // Solo-lectura (coordinar/confirmar cita): la tarjeta muestra la opción

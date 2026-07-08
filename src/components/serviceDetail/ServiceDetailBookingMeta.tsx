@@ -186,10 +186,22 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           renderCoverage && coverageFirst ? SD_MOBILE_BOOKING_DIVIDER_CLASS : ''
         }`}
       >
+        {/* Etiqueta: es la plantilla semanal del experto, no la agenda de esta semana */}
+        <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+          <span className={SD_MOBILE_SECTION_TITLE_CLASS}>Horario habitual</span>
+          {isOnVacation ? (
+            <span
+              className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+              title="El experto está de vacaciones"
+            >
+              De vacaciones
+            </span>
+          ) : null}
+        </div>
         <div
           className="flex items-center gap-3"
           aria-label={[
-            'Disponibilidad',
+            'Horario habitual',
             availabilityTimeRange,
             isOnVacation ? 'vacaciones' : null,
           ]
@@ -211,27 +223,24 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
                 {availabilityTimeRange}
               </span>
             ) : null}
-            {isOnVacation ? (
-              <span
-                className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
-                title="El experto está de vacaciones"
-              >
-                Vac.
-              </span>
-            ) : null}
           </div>
         </div>
+        {showAvailabilityHint ? (
+          <p className="mt-2 text-[11px] leading-relaxed text-[#737373]">
+            Al reservar eliges día y hora dentro de este horario.
+          </p>
+        ) : null}
       </div>
     ) : (
       <section className="w-full">
         <p className="mb-2.5 text-xs font-medium text-[#6a6a6a]">
-          Disponibilidad
+          Horario habitual
           {isOnVacation ? (
             <span
               className="ml-2 font-normal text-[#b45309]"
               title="El experto está de vacaciones"
             >
-              · No disponible
+              · De vacaciones
             </span>
           ) : null}
         </p>
@@ -252,8 +261,8 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           hideScheduleRow
         />
         {showAvailabilityHint ? (
-          <p className="mt-2 text-[11px] leading-relaxed text-[#9ca3af]">
-            Tras solicitar el encargo eliges día y hora dentro de este horario.
+          <p className="mt-2 text-[11px] leading-relaxed text-[#737373]">
+            Al reservar eliges día y hora dentro de este horario.
           </p>
         ) : null}
       </section>

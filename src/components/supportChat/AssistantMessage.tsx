@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 /**
  * Renderer ligero (sin dependencias) para las respuestas del asistente.
@@ -33,11 +33,11 @@ const INLINE_PATTERN = new RegExp(
 );
 
 const linkClass =
-  'font-medium text-[#2f6fd6] underline decoration-[#2f6fd6]/30 underline-offset-2 transition-colors hover:decoration-[#2f6fd6]';
+  'font-medium text-brand underline decoration-brand/30 underline-offset-2 transition-colors hover:decoration-brand';
 
 function renderInline(
   text: string,
-  onNavigate: (to: string) => void,
+  onNavigate: () => void,
   keyBase: string,
 ): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
@@ -55,20 +55,16 @@ function renderInline(
 
     if (bold) {
       nodes.push(
-        <strong key={k} className="font-semibold text-[#111111]">
+        <strong key={k} className="font-semibold text-[#1c1c1c]">
           {bold.slice(2, -2)}
         </strong>,
       );
     } else if (route) {
+      // <Link>, no <button>: es navegación real (abrible en pestaña nueva, anunciada como enlace).
       nodes.push(
-        <button
-          key={k}
-          type="button"
-          onClick={() => onNavigate(route)}
-          className={linkClass}
-        >
+        <Link key={k} to={route} onClick={onNavigate} className={linkClass}>
           {route}
-        </button>,
+        </Link>,
       );
     } else if (email || url) {
       // No tragar la puntuación final de la frase (".", ",", ")"…).
@@ -166,12 +162,6 @@ interface AssistantMessageProps {
 }
 
 export const AssistantMessage: React.FC<AssistantMessageProps> = ({ content, onClose }) => {
-  const navigate = useNavigate();
-  const handleNavigate = (to: string) => {
-    onClose();
-    navigate(to);
-  };
-
   const blocks = toBlocks(content);
 
   return (
@@ -183,7 +173,7 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({ content, onC
               {block.lines.map((line, li) => (
                 <React.Fragment key={li}>
                   {li > 0 && <br />}
-                  {renderInline(line, handleNavigate, `${bi}-${li}`)}
+                  {renderInline(line, onClose, `${bi}-${li}`)}
                 </React.Fragment>
               ))}
             </p>
@@ -201,7 +191,7 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({ content, onC
           >
             {block.lines.map((line, li) => (
               <li key={li} className="leading-relaxed">
-                {renderInline(line, handleNavigate, `${bi}-${li}`)}
+                {renderInline(line, onClose, `${bi}-${li}`)}
               </li>
             ))}
           </ListTag>

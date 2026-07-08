@@ -108,61 +108,37 @@ function MobileHeroPhotoStack({
     );
   }
 
-  if (images.length === 1) {
-    return (
-      <PhotoCell
-        src={images[0]}
-        index={0}
-        alt="Imagen del servicio"
-        loadingImages={loadingImages}
-        failedImages={failedImages}
-        onImageError={onImageError}
-        onImageLoad={onImageLoad}
-        onImageLoadStart={onImageLoadStart}
-        onOpen={onOpenImage}
-        eager
-      />
-    );
-  }
+  const total = images.length;
 
-  const extras = images.length - 2;
-
+  // Una sola foto protagonista a toda altura. Apilar 2 celdas aquí las dejaba en
+  // 188×140 y el solape de la card blanca (-mt-10) tapaba 40px de la segunda:
+  // siempre se veía cortada. El resto de fotos vive en la galería (chip "N fotos").
   return (
-    <div className="grid h-full min-h-0 grid-rows-2 gap-px bg-[#1c1c1c]">
-      <PhotoCell
-        src={images[0]}
-        index={0}
-        alt="Imagen 1 del servicio"
-        loadingImages={loadingImages}
-        failedImages={failedImages}
-        onImageError={onImageError}
-        onImageLoad={onImageLoad}
-        onImageLoadStart={onImageLoadStart}
-        onOpen={onOpenImage}
-        eager
-      />
-      <PhotoCell
-        src={images[1]}
-        index={1}
-        alt={extras > 0 ? `Imagen 2 del servicio, ${extras} más` : 'Imagen 2 del servicio'}
-        loadingImages={loadingImages}
-        failedImages={failedImages}
-        onImageError={onImageError}
-        onImageLoad={onImageLoad}
-        onImageLoadStart={onImageLoadStart}
-        onOpen={onOpenImage}
-        overlay={
-          extras > 0 ? (
-            <span
-              className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center bg-black/40 text-sm font-semibold text-white"
-              aria-hidden
-            >
-              +{extras}
-            </span>
-          ) : undefined
-        }
-      />
-    </div>
+    <PhotoCell
+      src={images[0]}
+      index={0}
+      alt={total > 1 ? `Imagen del servicio, abrir galería de ${total} fotos` : 'Imagen del servicio'}
+      loadingImages={loadingImages}
+      failedImages={failedImages}
+      onImageError={onImageError}
+      onImageLoad={onImageLoad}
+      onImageLoadStart={onImageLoadStart}
+      onOpen={onOpenImage}
+      eager
+      overlay={
+        total > 1 ? (
+          // bottom-12 = por encima del solape de la card (2.5rem) + aire; misma
+          // línea base que el botón de ampliar mapa (bottom-raised) en la otra columna.
+          <span
+            className="pointer-events-none absolute bottom-12 left-2 z-[2] inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white/95 px-2.5 text-[11px] font-medium text-[#334155] shadow-sm"
+            aria-hidden
+          >
+            <Image className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+            {total} fotos
+          </span>
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -213,7 +189,7 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
               rangeKm={radius}
               variant="preview"
               expandable
-              expandButtonPosition="bottom"
+              expandButtonPosition="bottom-raised"
               className="h-full min-h-0 w-full rounded-none border-0"
             />
           </Suspense>
