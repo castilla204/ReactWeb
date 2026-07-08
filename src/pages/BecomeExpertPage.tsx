@@ -8,10 +8,11 @@ import {
     BecomeExpertWizardShell,
     BecomeExpertStepHeader,
     BecomeExpertFastPathShell,
-    FastPathWordmark,
     FastPathButtonNote,
     BE_CARD_CLASS,
     BE_INPUT_CLASS,
+    BE_FAST_SELECT_CLASS,
+    BE_FAST_PRIMARY_BTN_CLASS,
     BE_DAY_ACTIVE,
     BE_DAY_IDLE,
 } from '../components/becomeExpert/BecomeExpertShell';
@@ -35,7 +36,7 @@ import {
 } from '../constants/stripeConnectCountries';
 import { API_CONFIG } from '../config/api';
 import { authService } from '../services/authService';
-import { HP_LINK_UNDERLINE_CLASS, HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
+import { HP_LINK_UNDERLINE_CLASS } from '../constants/homepageTypography';
 import { useNavigate } from 'react-router-dom';
 import { useBecomeExpert } from '../hooks/useBecomeExpert';
 import { SEO } from '../components/SEO';
@@ -1069,7 +1070,7 @@ function BecomeExpertPage() {
                                 ¿Dónde trabajarás?
                             </label>
                             <div className="relative">
-                                <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden ring-1 ring-black/[0.08]">
+                                <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/10">
                                     <span
                                         className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
                                         aria-hidden
@@ -1079,14 +1080,14 @@ function BecomeExpertPage() {
                                     id="fast-country-m"
                                     value={fastPathCountry}
                                     onChange={(e) => setFastPathCountry(e.target.value)}
-                                    className={`${BE_INPUT_CLASS} be-fast-select h-12 appearance-none pl-12 pr-10 text-[15px]`}
+                                    className={`${BE_FAST_SELECT_CLASS} pl-12 pr-10`}
                                 >
                                     {sortedCountries.map((code) => (
                                         <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
                                     ))}
                                 </select>
                                 <ChevronDown
-                                    className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
+                                    className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                                     aria-hidden
                                 />
                             </div>
@@ -1102,7 +1103,7 @@ function BecomeExpertPage() {
                             onClick={submitMinimal}
                             disabled={fastPathSubmitting}
                             aria-busy={fastPathSubmitting}
-                            className={`${HP_SERVICE_CTA_CLASS} group w-full gap-2`}
+                            className={BE_FAST_PRIMARY_BTN_CLASS}
                         >
                             {fastPathSubmitting ? (
                                 'Creando tu alta…'
@@ -1110,8 +1111,8 @@ function BecomeExpertPage() {
                                 <>
                                     Continuar con Stripe
                                     <ArrowRight
-                                        className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
-                                        strokeWidth={2.5}
+                                        className="h-4 w-4 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5"
+                                        strokeWidth={2.4}
                                     />
                                 </>
                             )}
@@ -1120,16 +1121,21 @@ function BecomeExpertPage() {
                 }
             >
                 <div className="be-fast-form">
-                    {/* Formulario alineado a la izquierda del panel derecho del split.
-                        Sin tarjeta ni emblema: marca discreta → título → un campo → Stripe. */}
-                    <FastPathWordmark />
-
+                    {/* Formulario alineado a la izquierda del panel derecho de la tarjeta:
+                        título → explicación del alta → un campo → Stripe. */}
                     <div>
                         <h1 className="font-display text-[1.6rem] font-semibold leading-tight tracking-[-0.025em] text-slate-900">
                             Crea tu cuenta de cobros
                         </h1>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                            Empieza con tu país. El perfil y tus servicios los configuras después.
+                        <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                            Vas a darte de alta como experto en Inspecciono. Con tu país creamos tu cuenta de
+                            cobros en Stripe, que verifica tu identidad y se encarga de que el dinero de cada
+                            inspección llegue a tu banco.
+                        </p>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                            Después completas tu perfil desde el panel: foto, descripción, zona de cobertura,
+                            horarios y los servicios que ofreces. Sin coste de alta ni cuota mensual: solo hay
+                            comisión cuando cobras.
                         </p>
                     </div>
 
@@ -1138,7 +1144,7 @@ function BecomeExpertPage() {
                             ¿En qué país trabajas?
                         </label>
                         <div className="relative">
-                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/[0.08]">
+                            <span className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-[18px] w-6 -translate-y-1/2 overflow-hidden rounded-[3px] ring-1 ring-black/10">
                                 <span
                                     className={`fi fi-${fastPathCountry.toLowerCase()} !block !h-full !w-full`}
                                     aria-hidden
@@ -1148,14 +1154,14 @@ function BecomeExpertPage() {
                                 id="fast-country"
                                 value={fastPathCountry}
                                 onChange={(e) => setFastPathCountry(e.target.value)}
-                                className={`${BE_INPUT_CLASS} be-fast-select h-12 appearance-none pl-12 pr-10 text-[15px]`}
+                                className={`${BE_FAST_SELECT_CLASS} pl-12 pr-10`}
                             >
                                 {sortedCountries.map((code) => (
                                     <option key={code} value={code}>{formatPayoutCountryLabel(code)}</option>
                                 ))}
                             </select>
                             <ChevronDown
-                                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6a6a6a]"
+                                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                                 aria-hidden
                             />
                         </div>
@@ -1174,7 +1180,7 @@ function BecomeExpertPage() {
                             onClick={submitMinimal}
                             disabled={fastPathSubmitting}
                             aria-busy={fastPathSubmitting}
-                            className={`${HP_SERVICE_CTA_CLASS} group w-full gap-2`}
+                            className={BE_FAST_PRIMARY_BTN_CLASS}
                         >
                             {fastPathSubmitting ? (
                                 'Creando tu alta…'
@@ -1182,8 +1188,8 @@ function BecomeExpertPage() {
                                 <>
                                     Continuar con Stripe
                                     <ArrowRight
-                                        className="h-4 w-4 shrink-0 text-[#F59E0B] transition-transform group-hover:translate-x-0.5"
-                                        strokeWidth={2.5}
+                                        className="h-4 w-4 shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5"
+                                        strokeWidth={2.4}
                                     />
                                 </>
                             )}
