@@ -137,12 +137,12 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
 // Mismo hue que el resto de la app (STATUS_TONE_BADGE_CLASSES en statusUtils.ts:
 // success #0F6A3E, warning #8a5a10) en vez de los verdes/ámbares de stock de Tailwind
 // (hue distinto, más teal/naranja) y gris neutro real en vez de slate azulado (que
-// remite al azul de marca del día seleccionado). Luminosidad ajustada para AA ≥4.5:1
-// con y sin el brightness(0.96) del hover.
+// remite al azul de marca del día seleccionado). Misma viveza que los -200 originales
+// (no la versión pálida): AA ≥4.5:1 con y sin el brightness(0.96) del hover.
 const AVAILABILITY_LEGEND_ITEMS = [
-    { label: 'Libre', swatch: 'bg-[#d2f4e4]' },
-    { label: 'Pocos', swatch: 'bg-[#f8e9ce]' },
-    { label: 'Lleno', swatch: 'bg-[#e6e6e6]' },
+    { label: 'Libre', swatch: 'bg-[#a5f3cd]' },
+    { label: 'Pocos', swatch: 'bg-[#fdd48b]' },
+    { label: 'Lleno', swatch: 'bg-[#dedede]' },
 ] as const;
 
 /** Leyenda de disponibilidad bajo el calendario (colores = celdas del mes). */
@@ -371,10 +371,10 @@ const SlotPicker: React.FC<Props> = ({
                 if (hasSummary && free !== undefined) {
                     tint =
                         free === 0
-                            ? 'bg-[#e6e6e6] text-[#4a4a4a]'
+                            ? 'bg-[#dedede] text-[#4a4a4a]'
                             : free <= 2
-                              ? 'bg-[#f8e9ce] text-[#8a5a10]'
-                              : 'bg-[#d2f4e4] text-[#0F6A3E]';
+                              ? 'bg-[#fdd48b] text-[#7a4e0d]'
+                              : 'bg-[#a5f3cd] text-[#0F6A3E]';
                 }
             }
 
