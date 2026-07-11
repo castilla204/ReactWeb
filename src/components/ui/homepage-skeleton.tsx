@@ -8,7 +8,7 @@ export function HomepageSkeleton() {
       style={{
         position: 'relative',
         overflow: 'hidden',
-        paddingBottom: '65px',
+        paddingBottom: 'calc(65px + env(safe-area-inset-bottom, 0px))',
       }}
       aria-busy="true"
       aria-label="Cargando inicio"
@@ -17,7 +17,7 @@ export function HomepageSkeleton() {
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
         style={{
-          height: '65px',
+          height: 'calc(65px + env(safe-area-inset-bottom, 0px))',
           paddingTop: '11px',
           paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
           position: 'fixed',
@@ -69,7 +69,7 @@ export function HomepageSkeleton() {
         style={{
           paddingTop: '12px',
           paddingBottom: '0px',
-          minHeight: 'calc(100vh - 65px)',
+          minHeight: 'calc(100vh - 65px - env(safe-area-inset-bottom, 0px))',
         }}
       >
         <div className="md:pt-4" style={{ paddingTop: '8px' }}>

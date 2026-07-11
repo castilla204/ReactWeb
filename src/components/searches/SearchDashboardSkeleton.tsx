@@ -2,7 +2,7 @@ import React from 'react';
 import { SD_PAGE_INNER_MAX_CLASS } from '../../constants/homepageTypography';
 
 export const SearchDashboardSkeleton: React.FC = () => (
-    <div className="min-h-screen bg-white pb-[65px]">
+    <div className="min-h-screen bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))]">
         <div className="border-b border-slate-200 px-4 py-4">
             <div className="mx-auto max-w-3xl space-y-3">
                 <div className="flex gap-3">
