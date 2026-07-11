@@ -47,9 +47,20 @@ const MAP_THEME = {
   border: '#d1c4c6',
 } as const;
 
+/** Paint VIVO específico para ExpertsAreaMap (homepage/hero/globe): saturación más
+ *  alta que el canon porque el globo necesita color premium y la vista aérea
+ *  lejana requiere boost visual (z ~ 0-4). */
+const HERO_GLOBE_PAINT = {
+  'raster-opacity': 1,
+  'raster-saturation': 0.55,      // Más vivo que canon (0.35)
+  'raster-contrast': 0.20,         // Definición extra para premium
+  'raster-brightness-min': 0.08,   // Menos oscuro, base clara
+  'raster-brightness-max': 1,
+} as const;
+
 /** Estilo Carto ESPECÍFICO para ExpertsAreaMap (homepage/hero): único mapa
  *  descentralizado porque la vista globe + vuelo regional justifican un look propio.
- *  Raster sin etiquetas (voyager_nolabels) + paint canónico compartido. */
+ *  Raster sin etiquetas (voyager_nolabels) + paint vivo propio. */
 function buildCartoStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
@@ -72,8 +83,8 @@ function buildCartoStyle(): maplibregl.StyleSpecification {
         id: 'carto',
         type: 'raster',
         source: 'carto',
-        // Tratamiento canónico compartido — mismo colorido que el resto de mapas.
-        paint: { ...INSPECCIONO_RASTER_PAINT },
+        // Paint vivo premium: colores más saturados, contraste más alto.
+        paint: { ...HERO_GLOBE_PAINT },
       },
     ],
   };
