@@ -12,6 +12,22 @@ interface CheckoutSlotHoursDrawerProps {
     children: React.ReactNode;
 }
 
+/**
+ * Alto máximo capado a un % del viewport, recalculado en resize/rotación.
+ * Deliberadamente en JS y no `max-h-[min(36vh,260px)]`: Chromium no anima una
+ * transición de max-height cuyo destino es una función min() — el valor computado
+ * se queda clavado en el arranque (0) para siempre. Un número en px sí interpola bien.
+ */
+function useViewportCappedHeight(vhFraction: number, capPx: number) {
+    const [px, setPx] = useState(() => Math.round(Math.min(window.innerHeight * vhFraction, capPx)));
+    useEffect(() => {
+        const onResize = () => setPx(Math.round(Math.min(window.innerHeight * vhFraction, capPx)));
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [vhFraction, capPx]);
+    return px;
+}
+
 /** Drawer inferior de horas al elegir día en el calendario (móvil checkout). */
 export function CheckoutSlotHoursDrawer({
     open,
@@ -22,6 +38,8 @@ export function CheckoutSlotHoursDrawer({
     children,
 }: CheckoutSlotHoursDrawerProps) {
     const [entered, setEntered] = useState(false);
+    const expandedMaxHeightPx = useViewportCappedHeight(0.5, 340);
+    const bodyMaxHeightPx = useViewportCappedHeight(0.36, 260);
 
     useEffect(() => {
         if (!open) {
@@ -33,9 +51,6 @@ export function CheckoutSlotHoursDrawer({
     }, [open]);
 
     if (!open) return null;
-
-    const expandedMaxHeight = 'max-h-[min(50vh,340px)]';
-    const bodyMaxHeight = 'max-h-[min(36vh,260px)]';
 
     return (
         <>
@@ -59,8 +74,9 @@ export function CheckoutSlotHoursDrawer({
                     className={cn(
                         'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#eceef2] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                         entered ? 'translate-y-0' : 'translate-y-full',
-                        expanded ? expandedMaxHeight : 'max-h-none',
+                        !expanded && 'max-h-none',
                     )}
+                    style={expanded ? { maxHeight: expandedMaxHeightPx } : undefined}
                 >
                     <div
                         className={cn(
@@ -114,11 +130,17 @@ export function CheckoutSlotHoursDrawer({
 
                     <div
                         className={cn(
-                            'min-h-0 overflow-y-auto overscroll-contain border-t border-[#eceef2] bg-white px-4 transition-[opacity,max-height] duration-300',
+                            // Solo opacity se anima: una transición de max-height en este elemento
+                            // se queda clavada en el valor inicial en vez de interpolar (comprobado
+                            // en el propio motor, independiente del valor de destino). El alto pasa
+                            // a ser 100% inline e instantáneo; el crecimiento visual ya lo aporta la
+                            // lámina exterior, que sí anima su max-height sin problemas.
+                            'min-h-0 overflow-y-auto overscroll-contain border-t border-[#eceef2] bg-white px-4 transition-opacity duration-300',
                             expanded
-                                ? cn(bodyMaxHeight, 'visible pb-4 pt-2.5 opacity-100')
-                                : 'invisible max-h-0 border-t-0 pb-0 pt-0 opacity-0',
+                                ? 'visible pb-4 pt-2.5 opacity-100'
+                                : 'invisible border-t-0 pb-0 pt-0 opacity-0',
                         )}
+                        style={{ maxHeight: expanded ? bodyMaxHeightPx : 0 }}
                     >
                         {children}
                     </div>

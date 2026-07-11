@@ -17,9 +17,8 @@ import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAsid
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
 import { CheckoutMobileStepHeader, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepHeader';
-import { CheckoutMobileStepper } from '../components/checkout/CheckoutMobileStepper';
 import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, getCoordDesktopStep1Lead } from '../components/checkout/CheckoutCoordinationStep';
-import { getInspectionSubject, getInspectionSubjectOf } from '../utils/inspectionSubject';
+import { getInspectionSubject, getInspectionSubjectOf, getInspectionSubjectCapitalized } from '../utils/inspectionSubject';
 import { CheckoutDesktopAppointmentHeader, type DesktopCrumbStep } from '../components/checkout/CheckoutDesktopAppointmentHeader';
 import { CheckoutCalendarSideInfo } from '../components/checkout/CheckoutCalendarSideInfo';
 import {
@@ -60,6 +59,7 @@ import {
     SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
     SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS,
     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
     SD_DESKTOP_STICKY_TOP_CLASS,
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
@@ -68,19 +68,24 @@ import {
 
 // El flujo "Que la elija el vendedor" tiene 4 paradas en móvil (agenda · zona ·
 // contacto · pago); el pago cierra en Stripe, así que el stepper nunca marca el 4 activo.
+// El paso 1 de AMBOS flujos es siempre "¿Quién elige la fecha?" (la elección): sin
+// contarlo, la barra no avanzaba de la elección al primer paso del flujo (los dos
+// marcaban el segmento 1). Ahora la elección es el tramo 1 y el flujo empieza en el 2.
 const MOBILE_SELLER_PREVIEW_STEPS = [
-    { id: 1, label: 'Disponibilidad' },
-    { id: 2, label: 'Ubicación' },
-    { id: 3, label: 'Contacto' },
-    { id: 4, label: 'Pago' },
+    { id: 1, label: 'La cita' },
+    { id: 2, label: 'Disponibilidad' },
+    { id: 3, label: 'Ubicación' },
+    { id: 4, label: 'Contacto' },
+    { id: 5, label: 'Pago' },
 ] as const;
 
-// Flujo "La elijo yo ahora": el wizard móvil de 4 pasos.
+// Flujo "La elijo yo ahora": elección + 4 pasos = 5 tramos.
 const MOBILE_SELF_STEPS = [
-    { id: 1, label: 'Fecha y hora' },
-    { id: 2, label: 'Ubicación' },
-    { id: 3, label: 'Vendedor' },
-    { id: 4, label: 'Pago' },
+    { id: 1, label: 'La cita' },
+    { id: 2, label: 'Fecha y hora' },
+    { id: 3, label: 'Ubicación' },
+    { id: 4, label: 'Vendedor' },
+    { id: 5, label: 'Pago' },
 ] as const;
 
 // Paso 2 desktop, flujo vendedor: tarjeta de confianza gemela de «Pago protegido» (paso
@@ -902,7 +907,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         <>
             <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'pb-5 pt-1')}>
                 <CheckoutMobileStepHeader
-                    step={4}
+                    step={5}
                     steps={MOBILE_SELF_STEPS}
                     hideStepper
                     title="Revisa y reserva"
@@ -1088,9 +1093,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
         <CheckoutCoordinationStep
             coordinationMode={coordinationMode}
             categoryName={service?.categoryName}
-            // En el paso de contacto móvil, el título/explicación los pone la cabecera
-            // del wizard (CheckoutMobileStepHeader); se oculta el header propio para no duplicar.
-            hideHeader={coordView === 'seller-contact' && !isWorkshopOnly}
+            // El título/explicación los pone la cabecera del wizard (CheckoutMobileStepHeader):
+            // en contacto móvil y en el paso de elección (ahora banda fija fuera del scroll),
+            // se oculta el header propio para no duplicar.
+            hideHeader={(coordView === 'seller-contact' && !isWorkshopOnly) || coordView === 'choose'}
             // Paso de elección: llena la pantalla y centra los botones verticalmente.
             fillHeight={coordView === 'choose'}
             view={coordinationMode === 'seller' ? 'seller' : coordView}
@@ -1267,53 +1273,55 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     includePrice={false}
                                     hideExpertHeader
                                     showDeliverables
+                                    deliverablesColumns={2}
                                     className="[&_article]:rounded-2xl [&_article]:border [&_article]:border-[#ebebeb] [&_article]:shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
                                 />
                             </section>
-                            <aside className={cn('lg:sticky lg:self-start', SD_DESKTOP_STICKY_TOP_CLASS)}>
-                                <CheckoutPaymentAside
-                                    embedded
-                                    coordinationMode={effectiveCoordinationMode}
-                                    priceDisplay={priceDisplayNode}
-                                    priceSubline={priceSublineNode}
-                                    canPay={expertCanReceivePayments && desktopPaymentReady}
-                                    isProcessing={isProcessing}
-                                    onPay={handlePayment}
-                                    expertName={finalExpertName}
-                                    expertPicture={expertPicture}
-                                    serviceName={finalServiceTypeName}
-                                    expertRating={expertRating}
-                                    expertReviewCount={expertReviewCount}
-                                />
-                            </aside>
-                        </div>
-
-                        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
-                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <div>
-                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Pago seguro</p>
-                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Los datos de tu tarjeta se procesan con cifrado SSL a través de Stripe.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
-                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                                <div>
-                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Garantía Inspecciono</p>
-                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Si el experto no realiza la revisión, te devolvemos el importe al instante.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-xl border border-[#ebebeb] bg-white px-4 py-3.5">
-                                <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <div>
-                                    <p className="text-[13px] font-semibold text-[#1c1c1c]">Cancelación gratuita</p>
-                                    <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Puedes cancelar sin coste antes de que empiece la revisión.</p>
+                            {/* La columna derecha era solo el panel de pago (mucho más corta que la
+                                izquierda). La tarjeta de confianza vive aquí debajo, fuera del sticky,
+                                para que la columna crezca con contenido real en vez de quedar un hueco
+                                en blanco junto al detalle del servicio. */}
+                            <div className="flex flex-col gap-4">
+                                <aside className={cn('lg:sticky lg:self-start', SD_DESKTOP_STICKY_TOP_CLASS)}>
+                                    <CheckoutPaymentAside
+                                        embedded
+                                        coordinationMode={effectiveCoordinationMode}
+                                        priceDisplay={priceDisplayNode}
+                                        priceSubline={priceSublineNode}
+                                        canPay={expertCanReceivePayments && desktopPaymentReady}
+                                        isProcessing={isProcessing}
+                                        onPay={handlePayment}
+                                        expertName={finalExpertName}
+                                        expertPicture={expertPicture}
+                                        serviceName={finalServiceTypeName}
+                                        expertRating={expertRating}
+                                        expertReviewCount={expertReviewCount}
+                                    />
+                                </aside>
+                                <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-4">
+                                    <ul className="space-y-3.5">
+                                        <li className="flex items-start gap-3">
+                                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-[13px] font-semibold text-[#1c1c1c]">Pago seguro</p>
+                                                <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Los datos de tu tarjeta se procesan con cifrado SSL a través de Stripe.</p>
+                                            </div>
+                                        </li>
+                                        <li className="flex items-start gap-3 border-t border-[#f5f5f5] pt-3.5">
+                                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-[13px] font-semibold text-[#1c1c1c]">Garantía Inspecciono</p>
+                                                <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Si el experto no realiza la revisión, te devolvemos el importe al instante.</p>
+                                            </div>
+                                        </li>
+                                        {/* "Cancelación gratuita" ya vive en la letra pequeña del panel de pago
+                                            (CheckoutReserveHint) — repetirla aquí era el mismo mensaje dos veces
+                                            en la misma columna. */}
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -1452,7 +1460,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 )}
                             >
                                 <CheckoutMobileStepHeader
-                                    step={2}
+                                    step={3}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Zona del experto"
                                     description={`Aquí solo ves su área de trabajo, para comprobar que cubre tu zona. El vendedor indicará la dirección exacta ${getInspectionSubjectOf(service?.categoryName)} al reservar.`}
@@ -1469,30 +1477,37 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             </div>
                         </div>
                     ) : coordView === 'choose' ? (
-                        // Paso de elección: pantalla completa con el contenido alineado
-                        // arriba, como el resto de pasos (el centrado con my-auto abría un
-                        // vacío en mitad de la pantalla en viewports altos, 2026-07-10).
+                        // Paso de elección: cabecera FIJA como banda topbar (igual que los
+                        // pasos de mapa) + tarjetas scrollables debajo. Antes era el único
+                        // paso sin banda: su contenedor scroll (fillHeight) no admitía el
+                        // `-mx-5` full-bleed sin disparar scroll horizontal; al sacar la
+                        // cabecera FUERA del scroll se resuelve y queda coherente con el resto.
                         <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
+                            <header
+                                className={cn(
+                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+                                    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
+                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
+                                    'shrink-0 pb-3',
+                                )}
+                            >
+                                <CheckoutMobileStepHeader
+                                    step={1}
+                                    steps={MOBILE_SELF_STEPS}
+                                    title="¿Quién elige la fecha?"
+                                    description={`${getInspectionSubjectCapitalized(service?.categoryName)} lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su disponibilidad.`}
+                                />
+                            </header>
                             <div
                                 className={cn(
                                     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
                                     'flex min-h-0 flex-1 flex-col',
                                 )}
-                                // Reserva EXACTA del footer fijo (medido). La constante
-                                // SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS asume solo la fila de
-                                // botones (64px) y aquí el footer lleva además la línea de confianza,
-                                // así que el área centrada se metía por detrás del footer.
+                                // Reserva EXACTA del footer fijo (medido): el footer lleva la
+                                // línea de confianza además de la fila de botones. Las tarjetas
+                                // ya traen su propio `mt-4`, así que no añadimos pt aquí.
                                 style={{ paddingBottom: mobileFooterHeight || undefined }}
                             >
-                                {/* Primer paso del flujo: la barra arranca con el tramo 1 en azul.
-                                    mb-4 = mismo margen barra→título que CheckoutMobileStepHeader (mt-4)
-                                    en el resto de pasos. */}
-                                <CheckoutMobileStepper
-                                    currentStep={1}
-                                    steps={MOBILE_SELF_STEPS}
-                                    className="mb-4 shrink-0"
-                                />
                                 {coordinationStepMobileNode}
                             </div>
                         </div>
@@ -1503,11 +1518,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         >
                             {coordView === 'seller-contact' && !isWorkshopOnly ? (
                                 <CheckoutMobileStepHeader
-                                    step={3}
+                                    step={4}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Datos del vendedor"
                                     description="Le enviaremos un enlace para elegir la cita. Móvil o email; el anuncio es opcional."
-                                    className="mb-5 [@media(min-height:700px)]:mb-6"
+                                    className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
                                 />
                             ) : null}
                             {!mobileInSellerPreview && coordinationStepMobileNode}
@@ -1515,11 +1530,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 <div>
                                     {!isWorkshopOnly ? (
                                         <CheckoutMobileStepHeader
-                                            step={1}
+                                            step={2}
                                             steps={MOBILE_SELLER_PREVIEW_STEPS}
                                             title="Agenda del experto"
                                             description="Aquí solo consultas su agenda, para ver que tiene huecos libres. Tras el pago, el vendedor elegirá el día y la hora con el enlace que le enviamos."
-                                            className="mb-5 [@media(min-height:700px)]:mb-6"
+                                            className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
                                         />
                                     ) : (
                                         <CheckoutSellerChoiceMobileWarning
@@ -1551,7 +1566,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             )}
                         >
                             <CheckoutMobileStepHeader
-                                step={2}
+                                step={3}
                                 steps={MOBILE_SELF_STEPS}
                                 title={`¿Dónde está ${getInspectionSubject(service?.categoryName)}?`}
                                 description="Marca la dirección donde el experto hará la revisión."
@@ -1584,7 +1599,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 )}
                             >
                                 <CheckoutMobileStepHeader
-                                    step={mobileStep}
+                                    // +1: la elección es el tramo 1; el flujo self empieza en el 2
+                                    // (mobileStep 1 "Elige día y hora" = tramo 2, mobileStep 3 = tramo 4).
+                                    step={mobileStep + 1}
                                     steps={MOBILE_SELF_STEPS}
                                     title={mobileStep === 1 ? 'Elige día y hora' : 'Datos del vendedor'}
                                     description={
@@ -1592,7 +1609,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             ? 'Estos son los huecos libres del experto. Elige el que os venga bien a ti y al vendedor.'
                                             : 'Opcional: deja un contacto del vendedor para coordinar el acceso al vehículo. Puedes continuar sin rellenarlo.'
                                     }
-                                    className="mb-5 [@media(min-height:700px)]:mb-6"
+                                    className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
                                 />
                             </header>
                         </>

@@ -43,7 +43,18 @@ export function CheckoutMobileStepHeader({
                 {title}
             </h2>
             {description ? (
-                <p className="mx-auto mt-1.5 max-w-[42ch] text-center text-[13px] leading-relaxed text-[#565d6b]">
+                // min-h-[3lh] reserva 3 líneas de descripción (el máximo actual entre los
+                // pasos) para que TODAS las bandas midan igual y la línea inferior del topbar
+                // quede a la misma cota al navegar entre pasos (2 vs 3 líneas ya no descuadra).
+                // Solo en los pasos con barra (banda): el paso final de resumen (hideStepper)
+                // no lleva banda ni necesita igualar altura, y reservar 3 líneas ahí dejaría
+                // hueco muerto antes del resumen.
+                <p
+                    className={cn(
+                        'mx-auto mt-1.5 max-w-[42ch] text-center text-[13px] leading-relaxed text-[#565d6b]',
+                        !hideStepper && 'min-h-[3lh]',
+                    )}
+                >
                     {description}
                 </p>
             ) : null}

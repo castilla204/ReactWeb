@@ -286,8 +286,8 @@ export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS =
 export const SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS =
   'overflow-hidden rounded-xl border border-[#e2e8f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
 
-/** Padding interior del bloque calendario embebido (compacto). */
-export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2.5 lg:p-3';
+/** Padding interior del bloque calendario embebido (compacto; más ajustado en móvil para dar aire a las celdas del día). */
+export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2 lg:p-3';
 
 /** Checkout desktop — columna cita (calendario) */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_MAIN_CLASS =
@@ -322,8 +322,26 @@ export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
  * separación. Sin el degradado azul del diseño antiguo (competía con la cabecera
  * limpia y el mapa). Compartida por las barras del stepper para que se vean iguales.
  */
+// Fondo gris SUSURRO (#f8f9fb) + hairline #e9edf2: la banda se lee como topbar de
+// chrome sin romper el minimalismo (elección del usuario 2026-07-11). Mismo fondo en
+// todos los topbars: mapa, scroll, elección y AppointmentWizardShell.
 export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
-  'border-b border-[#eef0f3] bg-white';
+  'border-b border-[#e9edf2] bg-[#f8f9fb]';
+
+/**
+ * Cabecera de paso móvil como BANDA tipo topbar para los pasos con scroll (donde el
+ * título vive dentro del gutter, a diferencia de los pasos de mapa que ya tienen su
+ * propio `<header>`). Piezas:
+ * - `-mx-5 px-5`: rompe el gutter de 20px para que el fondo/línea lleguen de borde a borde.
+ * - `-mt/pt` con el mismo calc que SD_CHECKOUT_MOBILE_TOP_PAD_CLASS: la banda SUBE sobre el
+ *   padding-top (safe-area) del contenedor padre y lo re-añade DENTRO, para que el fondo
+ *   gris llegue al borde superior en vez de dejar una franja blanca arriba. Se hace en la
+ *   propia banda (no moviendo el padding del padre) porque el padre lo comparten sub-vistas
+ *   sin banda (la vista 'seller' con cabecera propia) que sí necesitan ese offset.
+ * - `pb-3` separa la copy de la línea; `mb-5` conserva el aire hasta el contenido.
+ */
+export const SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS =
+  '-mx-5 -mt-[calc(env(safe-area-inset-top,0px)+1.5rem)] border-b border-[#e9edf2] bg-[#f8f9fb] px-5 pb-3 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] mb-5 [@media(min-height:700px)]:mb-6 [@media(min-height:700px)]:-mt-[calc(env(safe-area-inset-top,0px)+2.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2.25rem)]';
 
 /** Cabecera checkout móvil — superficie blanca plana */
 export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
