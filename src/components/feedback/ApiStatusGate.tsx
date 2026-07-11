@@ -87,9 +87,10 @@ export const ApiStatusGate: React.FC = () => {
   if (!down) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white/95 backdrop-blur-sm dark:bg-gray-950/95">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-white/95 backdrop-blur-sm dark:bg-gray-950/95">
       <ErrorState
         variant="serverDown"
+        fullScreen={false}
         primaryAction={{
           label: checking ? 'Comprobando…' : 'Reintentar',
           onClick: handleRetry,

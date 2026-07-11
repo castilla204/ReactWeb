@@ -12,6 +12,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { HP_FONT } from '../constants/homepageTypography';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 import { isAdmin as isAdminUser } from '../utils/admin';
+import { getStatusTone, type StatusTone } from '../utils/statusUtils';
 
 type PendingPreHireOpen = { serviceId: number; conversationId?: number };
 
@@ -97,9 +98,20 @@ type FilterTab = 'all' | 'pre-hire' | 'post-hire';
 
 const FILTER_LABELS: Record<FilterTab, string> = {
     all: 'Todas',
-    'pre-hire': 'Pre-contratación',
-    'post-hire': 'Contratadas',
+    'pre-hire': 'Consultas',
+    'post-hire': 'Contrataciones',
 };
+
+/**
+ * Esta bandeja es la ÚNICA pantalla de actividad del cliente: "Mis contrataciones"
+ * (antes /busquedas, hoy redirige aquí salvo para admin) y "Mis mensajes" entran
+ * por la misma puerta con distinto filtro inicial vía ?filtro=.
+ */
+function filterFromParam(value: string | null): FilterTab {
+    if (value === 'contrataciones' || value === 'contratadas' || value === 'post-hire') return 'post-hire';
+    if (value === 'consultas' || value === 'precontratacion' || value === 'pre-hire') return 'pre-hire';
+    return 'all';
+}
 
 function formatRelative(iso: string): string {
     try {
@@ -154,17 +166,22 @@ const StatusChip: React.FC<StatusChipProps> = ({ label, tone, icon }) => {
 };
 
 /**
- * Heurística para mapear un estado de contratación (string libre del backend)
- * a un tono de chip. Mantiene la coherencia con el sistema de la /busquedas.
+ * Tono del chip desde el statusValue CRUDO del backend (hireStatus), vía el
+ * sistema semántico compartido getStatusTone — el mismo que gobierna los badges
+ * de SearchDetails. Antes se hacía string-matching sobre el texto traducido
+ * ("complet", "disput"…), frágil ante cualquier cambio de copy.
  */
-function tonFromHireStatus(status: string | null | undefined): StatusChipProps['tone'] {
-    const s = (status || '').toLowerCase();
-    if (!s) return 'brand';
-    if (s.includes('complet') || s.includes('entrega') || s.includes('resuelt')) return 'green';
-    if (s.includes('disput') || s.includes('cita') || s.includes('pendient') || s.includes('esperan'))
-        return 'amber';
-    if (s.includes('cancel') || s.includes('rechaz')) return 'red';
-    return 'brand';
+const TONE_TO_CHIP: Record<StatusTone, StatusChipProps['tone']> = {
+    success: 'green',
+    danger: 'red',
+    warning: 'amber',
+    info: 'brand',
+    neutral: 'neutral',
+};
+
+function chipToneFromHireStatus(statusValue: string | null | undefined): StatusChipProps['tone'] {
+    if (!statusValue) return 'brand';
+    return TONE_TO_CHIP[getStatusTone({ statusValue })];
 }
 
 export function MessagesPage() {
@@ -178,7 +195,7 @@ export function MessagesPage() {
     const token = authService.getAccessToken() || '';
 
     const [searchInput, setSearchInput] = useState('');
-    const [filter, setFilter] = useState<FilterTab>('all');
+    const [filter, setFilter] = useState<FilterTab>(() => filterFromParam(searchParams.get('filtro')));
     // Conversación abierta en el panel derecho (solo desktop). En móvil se navega.
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [pendingPreHire, setPendingPreHire] = useState<PendingPreHireOpen | null>(null);
@@ -476,7 +493,7 @@ export function MessagesPage() {
                     title="Mis mensajes"
                     counter="Cargando conversaciones…"
                 />
-                <main className="w-full flex-1 px-0 pb-6 pt-1 md:max-w-[380px]">
+                <main className="w-full flex-1 px-0 pb-6 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:max-w-[380px]">
                     <ul className="flex flex-col" aria-hidden>
                         {Array.from({ length: 7 }).map((_, i) => (
                             <li key={i}>
@@ -650,6 +667,7 @@ export function MessagesPage() {
                     <HireConversationPanel
                         key={`hire-${activeHireConversation.searchHireId}`}
                         conversation={activeHireConversation}
+                        isAdmin={isUserAdmin}
                         amountLabel={formatAmount(
                             activeHireConversation.hireAmount,
                             activeHireConversation.hireCurrency,
@@ -809,6 +827,9 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
 interface HireConversationPanelProps {
     conversation: ClientConversationSummaryDto;
     amountLabel: string;
+    /** El panel referencia SearchDetails, que necesita saber si el usuario es admin.
+     *  Antes leía `isUserAdmin` (scope de MessagesPage) → ReferenceError al montar. */
+    isAdmin: boolean;
     onClose: () => void;
 }
 
@@ -822,12 +843,13 @@ interface HireConversationPanelProps {
 const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
     conversation,
     amountLabel,
+    isAdmin,
     onClose,
 }) => {
     const statusLabel = conversation.hireStatusTranslated?.trim() || null;
     const chip =
         statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
-            ? { label: statusLabel, tone: tonFromHireStatus(statusLabel) }
+            ? { label: statusLabel, tone: chipToneFromHireStatus(conversation.hireStatus) }
             : { label: 'Contratación activa', tone: 'green' as StatusChipProps['tone'] };
 
     return (
@@ -876,7 +898,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                     }
                 >
                     <SearchDetails
-                        isAdmin={isUserAdmin}
+                        isAdmin={isAdmin}
                         searchHireId={conversation.searchHireId ?? undefined}
                         embedded
                         onBack={onClose}
@@ -1095,7 +1117,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
     const chip: { label: string; tone: StatusChipProps['tone']; icon?: 'shield' } | null = isPreHire
         ? null
         : statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
-          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel), icon: 'shield' }
+          ? { label: statusLabel, tone: chipToneFromHireStatus(conversation.hireStatus), icon: 'shield' }
           : { label: 'Contratación activa', tone: 'green', icon: 'shield' };
 
     const ariaStamp = stamp ? ` Última actividad hace ${stamp}.` : '';

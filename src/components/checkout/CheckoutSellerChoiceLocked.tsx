@@ -15,7 +15,7 @@ import {
 } from '../../constants/homepageTypography';
 
 const BADGE_BASE_CLASS =
-    'inline-flex shrink-0 items-center gap-1 rounded-full border border-[#d8dce3] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#475569]';
+    'inline-flex shrink-0 items-center gap-1 rounded-full border border-[#d8dce3] bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-[#475569]';
 
 export function CheckoutSellerChoiceBadge({
     className,
@@ -93,7 +93,7 @@ export function CheckoutSelfChoiceLockedStripe({
         >
             <span
                 className={cn(
-                    'mt-px inline-flex shrink-0 items-center justify-center rounded-full bg-white text-brand shadow-[inset_0_0_0_1px_rgba(0,102,204,0.2)]',
+                    'mt-px inline-flex shrink-0 items-center justify-center rounded-full bg-white text-brand shadow-[inset_0_0_0_1px_hsl(var(--brand)/0.2)]',
                     compactSplit ? 'size-6' : 'size-7',
                 )}
                 aria-hidden
@@ -126,7 +126,7 @@ export function CheckoutSelfChoicePreviewHeader({ className }: { className?: str
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.02em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                 {COORD_SELF_CALENDAR_HEADER_LEAD}
             </h3>
             <p className="mt-1.5 text-[12px] leading-[1.5] text-[#64748b]">
@@ -146,7 +146,7 @@ export function CheckoutSelfChoicePreviewLocationHeader({ className }: { classNa
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.02em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                 {COORD_SELF_LOCATION_HEADER_LEAD}
             </h3>
             <p className="mt-1.5 text-[12px] leading-[1.5] text-[#64748b]">
@@ -166,7 +166,7 @@ export function CheckoutSelfChoicePickLocationHeader({ className }: { className?
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.02em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
                 {COORD_SELF_PICK_LOCATION_HEADER_LEAD}
             </h3>
             <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-[#64748b]">
@@ -317,7 +317,7 @@ const LOCKED_COPY = {
 } as const;
 
 const LOCKED_PANEL_CLASS =
-    'mx-auto flex max-w-[20rem] flex-col items-center rounded-xl border border-[#eceef2] bg-white px-4 py-3.5 text-center shadow-[0_1px_4px_rgba(15,23,42,0.05)]';
+    'mx-auto flex max-w-[20rem] flex-col items-center rounded-xl border border-[#e5e7eb] bg-white px-4 py-3.5 text-center shadow-[0_1px_4px_rgba(15,23,42,0.05)]';
 
 export function CheckoutSellerChoiceLockedPanel({
     variant,
@@ -353,7 +353,7 @@ export function CheckoutSellerChoicePreviewHeader({
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#f0f0f0] bg-white lg:block',
+                'relative hidden border-b border-[#eceef2] bg-white lg:block',
                 compact ? 'px-4 py-2.5' : 'px-4 py-3.5 lg:px-5',
                 className,
             )}
@@ -386,8 +386,8 @@ export function CheckoutSellerChoicePreviewHeader({
                     </h3>
                     <p
                         className={cn(
-                            'mt-0.5 leading-[1.45] text-[#64748b]',
-                            compact ? 'text-[11px]' : 'text-[12px] leading-[1.5]',
+                            'mt-0.5 leading-[1.5] text-[#64748b]',
+                            compact ? 'text-[11px]' : 'text-[12px]',
                         )}
                     >
                         {headerDetail}
@@ -417,7 +417,7 @@ export function CheckoutSellerChoiceMobileWarning({
             className={cn(
                 'flex items-start gap-2',
                 boxed
-                    ? 'rounded-xl border border-[#e6e9ef] bg-white px-3.5 py-2.5'
+                    ? 'rounded-xl border border-[#e5e7eb] bg-white px-3.5 py-2.5'
                     : 'px-0.5 py-0.5',
                 className,
             )}
@@ -425,14 +425,14 @@ export function CheckoutSellerChoiceMobileWarning({
         >
             <Lock
                 className={cn(
-                    'shrink-0 text-brand',
+                    'shrink-0 text-[#64748b]',
                     boxed ? 'mt-px h-[15px] w-[15px]' : 'mt-[2px] h-[15px] w-[15px]',
                 )}
                 strokeWidth={2.25}
                 aria-hidden
             />
-            <p className="min-w-0 text-[12.5px] leading-[1.45] text-[#5b6472]">
-                <span className="font-semibold text-brand">Solo consulta.</span>{' '}
+            <p className="min-w-0 text-[13px] leading-[1.5] text-[#64748b]">
+                <span className="font-semibold text-[#475569]">Solo consulta.</span>{' '}
                 {stripeMessage}
             </p>
         </div>
@@ -467,7 +467,7 @@ export function CheckoutSellerChoiceLockedStripe({
     return (
         <div
             className={cn(
-                'relative flex items-start gap-2 border-b border-[#f0f0f0] bg-[#fafbfc] px-4 py-2.5',
+                'relative flex items-start gap-2 border-b border-[#eceef2] bg-[#f8fafc] px-4 py-2.5',
                 className,
             )}
             role="status"
@@ -475,7 +475,7 @@ export function CheckoutSellerChoiceLockedStripe({
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#94a3b8]" strokeWidth={2} aria-hidden />
             <div className="min-w-0">
                 <p className="text-[12px] leading-snug text-[#64748b]">
-                    <span className="font-medium text-brand">{stripeLead}</span>
+                    <span className="font-semibold text-[#475569]">{stripeLead}</span>
                     {' · '}
                     {compactSplit ? (
                         <span className="text-[#64748b]">no necesitas elegir nada aquí</span>

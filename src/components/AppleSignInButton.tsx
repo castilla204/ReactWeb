@@ -133,9 +133,9 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
     const showAsDisabled = isWebOrUnavailable;
 
     const compactEnabledClasses =
-        'flex h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#1c1c1c] bg-[#1c1c1c] font-display text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
+        'flex h-11 w-full items-center justify-center gap-2.5 rounded-[10px] border border-[#1c1c1c] bg-[#1c1c1c] font-display text-[13px] font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const compactDisabledClasses =
-        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-full border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#9ca3af]';
+        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-[10px] border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#9ca3af]';
     const defaultEnabledClasses =
         'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-[#1c1c1c] bg-[#1c1c1c] font-display text-sm font-medium text-white transition-colors hover:bg-black active:bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50';
     const defaultDisabledClasses =

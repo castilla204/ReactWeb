@@ -81,7 +81,7 @@ function ReviewsDrawerSummary({
   const showBars = reviewCount >= 3;
 
   return (
-    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-3 lg:px-6">
+    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-4 lg:px-6">
       <ServiceDetailReviewsMobileStatsRow
         averageRating={averageRating}
         reviewCount={reviewCount}

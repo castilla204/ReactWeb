@@ -169,7 +169,7 @@ export const MfaVerificationProvider: React.FC<{ children: React.ReactNode }> = 
                     shouldScaleBackground={false}
                 >
                     <DrawerContent 
-                        className="max-h-[96vh]"
+                        className="max-h-[96dvh]"
                         onPointerDownOutside={(e) => {
                             // ✅ Prevenir cierre haciendo clic fuera si no está verificado, pero permitir después de 30s
                             if (!isVerified) {

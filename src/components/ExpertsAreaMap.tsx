@@ -6,6 +6,7 @@ import { capMapWorkers } from '../lib/mapWorkers';
 capMapWorkers(maplibregl);
 import { MapPin } from 'lucide-react';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
+import { INSPECCIONO_RASTER_PAINT, enableDynamicRasterPaintByZoom } from '../utils/inspeccionoMapStyle';
 import {
   EXPERT_SPARKLE_PALETTES,
   expertSparkleMarkerHtml,
@@ -169,7 +170,8 @@ function buildCartoStyle(): maplibregl.StyleSpecification {
         id: 'carto',
         type: 'raster',
         source: 'carto',
-        paint: { 'raster-opacity': 1 },
+        // Tratamiento canónico compartido — mismo colorido que el resto de mapas.
+        paint: { ...INSPECCIONO_RASTER_PAINT },
       },
     ],
   };
@@ -275,13 +277,14 @@ function markerHtml(
 ): string {
   const size = sizeFor(city.count);
   const scale = selected ? 1.12 : hovered ? 1.06 : 1;
+  // Sombra neutra — el marcador tinta canónico no lleva glow de color.
   const shadow =
     selected || hovered
-      ? '0 8px 18px hsl(var(--brand)/0.42)'
-      : '0 4px 10px hsl(var(--brand)/0.28)';
+      ? '0 8px 18px rgba(0,0,0,0.32)'
+      : '0 4px 10px rgba(0,0,0,0.22)';
 
   const ring = selected
-    ? `<div style="position:absolute;inset:-7px;border-radius:50%;border:3px solid hsl(var(--brand)/0.35);pointer-events:none"></div>`
+    ? `<div style="position:absolute;inset:-7px;border-radius:50%;border:3px solid rgba(23,23,23,0.30);pointer-events:none"></div>`
     : '';
 
   const tooltip = hovered
@@ -291,7 +294,7 @@ function markerHtml(
   return `
     <div style="position:relative;width:${size}px;height:${size}px;transform:scale(${scale});transition:transform 150ms ease;cursor:${clickable ? 'pointer' : 'default'}">
       ${ring}
-      <div style="position:absolute;inset:0;border-radius:50%;background:#fff;border:2px solid hsl(var(--brand));box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:hsl(var(--brand));font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
+      <div style="position:absolute;inset:0;border-radius:50%;background:#171717;border:2px solid #fff;box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
       ${tooltip}
     </div>
   `;
@@ -628,6 +631,13 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           map.triggerRepaint();
         } catch (err) {
           console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
+        }
+        // Paint raster dinámico: zoom bajo → boost saturación/contraste/brillo para contrarrestar
+        // compresión JPG de tiles. Interpolación suave sin cambios visuales bruscos.
+        try {
+          enableDynamicRasterPaintByZoom(map);
+        } catch (err) {
+          console.error('[ExpertsAreaMap] Paint dinámico por zoom:', err);
         }
         setMapReady(true);
         if (isMobilePeek) {

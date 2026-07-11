@@ -591,6 +591,19 @@
         @apply text-[#1c1c1c] bg-[#f7f7f7];
     }
 
+    /* Auditoría de color (paso 2): dentro de la ficha desktop, los tokens --ep-*
+       del panel de experto se neutralizan (mismo lightness, hue 0) para que la
+       sección "Qué entregará" comparta la rama de grises neutra del resto de la
+       página en vez de su gris frío azulado. Scope local: no afecta al panel de
+       experto ni al checkout, que siguen con la rama fría. */
+    .service-detail-desktop {
+        --ep-canvas: 0 0% 93%;
+        --ep-border: 0 0% 86%;
+        --ep-border-strong: 0 0% 76%;
+        --ep-ink: 0 0% 12%;
+        --ep-muted: 0 0% 44%;
+    }
+
     .sd-page-title {
         @apply font-display text-xl font-semibold tracking-[-0.02em] text-[#1c1c1c] md:text-[1.65rem];
         text-wrap: balance;
@@ -1037,7 +1050,7 @@
     }
 
     .sd-reviews-preview-summary-mobile__row {
-        @apply flex w-full items-start gap-5;
+        @apply flex w-full items-center gap-5;
     }
 
     .sd-reviews-preview-summary-mobile__score-col {
@@ -1196,6 +1209,10 @@
 
     .sd-tab[data-active='true'] {
         @apply border-[#222222] font-semibold text-[#222222];
+    }
+
+    .sd-tab--flat[data-active='true'] {
+        @apply border-transparent;
     }
 
     .sd-tablist {

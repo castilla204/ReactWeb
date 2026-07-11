@@ -1,10 +1,17 @@
 import React from 'react';
-import { Send, UserRound } from 'lucide-react';
+import { UserRound } from 'lucide-react';
 import { PhoneInputField } from './PhoneInputField';
 import { cn } from '../../lib/utils';
 import {
+    GroupedFieldsCard,
+    GroupedFieldRow,
+    GroupedFieldsDivider,
+    groupedLabelClass,
+    bareGroupedInputClass,
+    underlineFieldInputClass,
+} from './GroupedFieldsCard';
+import {
     CHECKOUT_SELLER_PLAZO_SUMMARY,
-    COORD_OPTION_SELLER_DESC,
     SELLER_BOOKING_MAX_DAYS,
     SELLER_BOOKING_MIN_LEAD_DAYS,
     SELLER_BOOKING_TARGET_WINDOW_DAYS,
@@ -17,20 +24,6 @@ export {
     COORD_OPTION_SELLER_DESC,
     SELLER_COORD_CALENDAR_PREVIEW_NOTE,
 } from '../../utils/sellerBookingWindow';
-
-// Estética de formulario profesional (Stripe / Linear): campo BLANCO con borde de 1px y una
-// sombra muy sutil, esquinas de 8px, SIN icono decorativo dentro. La etiqueta identifica el
-// campo; el interior queda limpio. Nada de píldoras ni rellenos grises (leen «de juguete»).
-// Al enfocar: el borde pasa a la marca y aparece un halo suave de 3px.
-const fieldBaseClass =
-    'h-11 w-full rounded-lg border border-[#dcdfe4] bg-white px-3.5 text-[14px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.05)] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[#9aa0aa] focus:border-[#3d5afe] focus:shadow-[0_0_0_3px_rgba(61,90,254,0.14)]';
-
-const fieldErrorClass =
-    'border-[#f04438] focus:border-[#f04438] focus:shadow-[0_0_0_3px_rgba(240,68,56,0.14)]';
-
-const fieldLabelClass = 'block text-[13px] font-semibold text-[#374151]';
-
-const listingUrlFieldClass = fieldBaseClass;
 
 export type SellerCoordinationFieldsVariant = 'full' | 'contact' | 'plazos';
 
@@ -151,19 +144,14 @@ export function CheckoutSellerEnlaceInfoNote({
     detailed?: boolean;
 }) {
     if (detailed) {
+        // Texto plano, sin caja teñida ni icono: el checkout habla en tipografía + filetes
+        // (feedback 2026-07-10, misma regla que descartó los chips y las tarjetas con
+        // numeración). La caja con Send encima del grupo de campos eran dos recuadros
+        // apilados compitiendo antes de llegar al formulario.
         return (
-            <div
-                className={cn(
-                    'flex items-start gap-2.5 rounded-lg border border-[#e7e9ee] bg-[#fafbfc] px-3.5 py-3',
-                    className,
-                )}
-                role="note"
-            >
-                <Send className="mt-[2px] h-[15px] w-[15px] shrink-0 text-[#6b7280]" strokeWidth={2} aria-hidden />
-                <p className="min-w-0 text-[12.5px] leading-relaxed text-[#5b6472]">
-                    {SELLER_COORD_ENLACE_DETAILED}
-                </p>
-            </div>
+            <p role="note" className={cn('text-[12.5px] leading-relaxed text-[#565d6b]', className)}>
+                {SELLER_COORD_ENLACE_DETAILED}
+            </p>
         );
     }
 
@@ -195,27 +183,6 @@ export function CheckoutSellerPlazoNotice({ className }: { className?: string })
             role="note"
         >
             <p className="text-[13px] leading-[1.55] text-[#565d6b]">{CHECKOUT_SELLER_PLAZO_SUMMARY}</p>
-        </div>
-    );
-}
-
-interface LabeledFieldProps {
-    id: string;
-    label: string;
-    optional?: boolean;
-    children: React.ReactNode;
-}
-
-function LabeledField({ id, label, optional, children }: LabeledFieldProps) {
-    return (
-        <div className="space-y-1.5">
-            <label htmlFor={id} className={fieldLabelClass}>
-                {label}
-                {optional ? (
-                    <span className="ml-1.5 font-normal text-[#9ca3af]">(opcional)</span>
-                ) : null}
-            </label>
-            {children}
         </div>
     );
 }
@@ -253,62 +220,71 @@ export function CheckoutSellerCoordinationFields({
                     {variant === 'contact' && !selfMode ? (
                         <CheckoutSellerEnlaceInfoNote detailed />
                     ) : null}
-                    {/* Canal de contacto (móvil o email): uno de los dos basta. Se agrupan juntos
-                        con separación menor entre sí que con el enlace opcional de debajo. */}
-                    <div className="space-y-2.5">
-                        {/* 🌍 Móvil del vendedor con selector de país (cualquier prefijo, no solo ES):
-                            el Messaging Service de Twilio es global. Emite E.164 (+xx...) que el backend
-                            ya entiende. Mismo componente que la verificación del experto. */}
-                        <div className="space-y-1.5">
-                            <label htmlFor="seller-phone" className={fieldLabelClass}>
-                                Teléfono del vendedor
-                            </label>
+                    {/* Teléfono + email responden a UNA sola pregunta (cómo llegamos al vendedor):
+                        van en UN contenedor con filete interno — patrón Stripe/Linear — en vez de
+                        dos cajas independientes con su propio borde y sombra cada una (leía a
+                        formulario genérico, feedback 2026-07-10). El foco/error se pinta en el
+                        contenedor entero: mismo componente que la versión desktop de este paso
+                        (CheckoutDesktopLocationStepBody), un solo look para el mismo dato. */}
+                    <GroupedFieldsCard error={showContactError}>
+                        {/* Etiquetas cortas «Teléfono»/«Email» (como en desktop): el paso ya se
+                            titula «Datos del vendedor», repetirlo en cada fila era ruido. */}
+                        <GroupedFieldRow first htmlFor="seller-phone" label="Teléfono">
                             <PhoneInputField
+                                bare
                                 id="seller-phone"
                                 name="seller-phone"
                                 value={sellerPhone}
                                 onChange={onSellerPhoneChange}
-                                error={phoneFieldError}
                                 aria-invalid={phoneFieldError}
                                 defaultCountry="ES"
                             />
-                        </div>
-                        <LabeledField id="seller-email" label="Email del vendedor">
+                        </GroupedFieldRow>
+                        {/* «o» sobre el filete: con uno de los dos basta (la fila siguiente lleva
+                            `first` para no duplicar el border-t). */}
+                        <GroupedFieldsDivider label="o" />
+                        <GroupedFieldRow first htmlFor="seller-email" label="Email">
                             <input
                                 id="seller-email"
                                 value={sellerEmail}
                                 onChange={(e) => onSellerEmailChange(e.target.value)}
                                 placeholder="vendedor@email.com"
                                 type="email"
-                                className={cn(fieldBaseClass, emailFieldError && fieldErrorClass)}
+                                className={bareGroupedInputClass}
                                 autoComplete="email"
                                 aria-invalid={emailFieldError}
                             />
-                        </LabeledField>
-                        {variant !== 'contact' ? (
-                            <p className="text-[12px] leading-relaxed text-[#6b7280]">
-                                Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
-                            </p>
-                        ) : null}
-                        {showContactError ? (
-                            <p role="alert" className="text-[12px] font-medium text-red-600">
-                                {bothEmpty
-                                    ? 'Añade un teléfono o un email para continuar.'
-                                    : 'Revisa el contacto: un móvil o un email válido.'}
-                            </p>
-                        ) : null}
-                    </div>
-                    <LabeledField id="seller-listing" label="Enlace del anuncio" optional>
+                        </GroupedFieldRow>
+                    </GroupedFieldsCard>
+                    {variant !== 'contact' ? (
+                        <p className="text-[12px] leading-relaxed text-[#6b7280]">
+                            Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
+                        </p>
+                    ) : null}
+                    {showContactError ? (
+                        <p role="alert" className="text-[12px] font-medium text-red-600">
+                            {bothEmpty
+                                ? 'Añade un teléfono o un email para continuar.'
+                                : 'Revisa el contacto: un móvil o un email válido.'}
+                        </p>
+                    ) : null}
+                    {/* Enlace del anuncio: secundario y opcional, fuera del grupo obligatorio.
+                        Subrayado en vez de caja propia: lo demota deliberadamente por debajo del
+                        contacto en peso visual. */}
+                    <div>
+                        <label htmlFor="seller-listing" className={groupedLabelClass}>
+                            Enlace del anuncio <span className="font-normal text-[#6b7280]">(opcional)</span>
+                        </label>
                         <input
                             id="seller-listing"
                             value={sellerListingUrl}
                             onChange={(e) => onSellerListingUrlChange(e.target.value)}
                             placeholder="Wallapop, Milanuncios, etc."
                             type="url"
-                            className={listingUrlFieldClass}
+                            className={underlineFieldInputClass}
                             inputMode="url"
                         />
-                    </LabeledField>
+                    </div>
                 </div>
             ) : null}
 
@@ -324,7 +300,7 @@ export function CheckoutSellerCoordinationFields({
                         </span>{' '}
                         tras tu pago (hasta {SELLER_BOOKING_MAX_DAYS} si la agenda está llena).
                     </p>
-                    <p className="text-[11px] leading-relaxed text-[#9ca3af]">
+                    <p className="text-[11px] leading-relaxed text-[#6b7280]">
                         Solo podrá elegir días y horas que el experto tenga libres en su calendario.
                     </p>
                 </div>

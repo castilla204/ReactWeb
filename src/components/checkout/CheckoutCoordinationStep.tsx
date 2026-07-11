@@ -1,5 +1,5 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { CalendarDays, Check, Info, Lock, Send, Sparkles } from 'lucide-react';
+import { CalendarDays, Check, Info, Lock, Send } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -248,12 +248,21 @@ function OptionCard({
 
 export const COORD_CHOOSE_TITLE = 'La cita de la inspección';
 const COORD_CHOOSE_LEAD = '¿Quién elige la fecha de la inspección?';
-// Desktop: mismo arranque que móvil. Se quita la pregunta redundante («¿La fecha la elige
-// él o la eliges tú?»): las propias opciones la responden. La frase del escrow SÍ se queda:
-// en desktop este lead es el único sitio donde aparece (en móvil vive en el sticky footer).
+// Desktop: la cabecera es el CONTEXTO de las dos columnas. Sin la pregunta, «El vendedor» /
+// «Yo, ahora» se leían sin marco (feedback del usuario 2026-07-09), así que la description abre
+// con «¿Quién elige la fecha?» en negrita y resalta «tu pago queda protegido». Las negritas usan
+// la tinta principal (#1c1c1c) sobre el gris de la descripción para destacar sin cambiar de color.
 // El sujeto sale de la categoría: antes decía «coche» aunque inspeccionaras una casa.
-export function getCoordDesktopStep1Lead(categoryName?: string | null): string {
-    return `${getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita tiene que cuadrar con su disponibilidad. Elijas lo que elijas, tu pago queda protegido hasta que termine la revisión.`;
+export function getCoordDesktopStep1Lead(categoryName?: string | null): ReactNode {
+    return (
+        <>
+            <strong className="font-semibold text-[#1c1c1c]">¿Quién elige la fecha?</strong>{' '}
+            {getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita tiene
+            que cuadrar con su disponibilidad. Elijas lo que elijas,{' '}
+            <strong className="font-semibold text-[#1c1c1c]">tu pago queda protegido</strong> hasta que
+            termine la revisión.
+        </>
+    );
 }
 
 /** Respuestas a «¿Quién elige la fecha?». Cortas y en primera persona.
@@ -263,11 +272,11 @@ export function getCoordDesktopStep1Lead(categoryName?: string | null): string {
 const COORD_ANSWER_SELLER = 'El vendedor';
 const COORD_ANSWER_SELF = 'Yo, ahora';
 
-/** Los hechos que de verdad cambian entre las dos opciones. Sustituyen a la prosa:
- *  la primera fila explica el MECANISMO (el enlace al vendedor / tú reservas el hueco);
- *  las demás dan las consecuencias. Así la recomendación se justifica sola («Tú haces:
- *  nada») sin apoyarse en un badge. Las opciones van apiladas a todo el ancho, así que
- *  los valores pueden ser frases cortas; aun así, cuanto más cortos, mejor se comparan. */
+/** Los hechos DENTRO de cada tarjeta, estilo tabla (filetes etiqueta/valor): al usuario
+ *  le funciona ese flow visual (decisión 2026-07-10 tras probar radios+nota y tabla
+ *  comparativa compartida). La primera fila explica el MECANISMO (el enlace / tú
+ *  reservas); las demás, las consecuencias. Valores CORTOS para caber en 1-2 líneas:
+ *  «Tú haces: nada» justifica la preselección sin badge. */
 const COORD_COMPARE_FACTS: ReadonlyArray<{
     label: string;
     seller: string;
@@ -275,24 +284,17 @@ const COORD_COMPARE_FACTS: ReadonlyArray<{
 }> = [
     {
         label: 'Cómo se fija la cita',
-        seller: 'Le enviamos un enlace y él reserva un hueco libre del experto',
-        self: 'Tú reservas el hueco en el siguiente paso',
+        seller: 'Le enviamos un enlace y él reserva',
+        self: 'Tú reservas en el siguiente paso',
     },
     {
         label: 'Cuándo será',
         seller: `En ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago`,
         self: 'El día que tú elijas',
     },
-    // Fila idéntica en ambas columnas A PROPÓSITO: comunica que, elijas lo que elijas,
-    // el comprador no tiene que asistir (la vean el vendedor y el experto).
-    {
-        label: 'Quién va a la cita',
-        seller: 'El vendedor y el experto; tú, solo si quieres',
-        self: 'El vendedor y el experto; tú, solo si quieres',
-    },
     {
         label: 'Tú haces',
-        seller: 'Nada: te avisamos con el día, la hora y el lugar',
+        seller: 'Nada: te decimos día, hora y lugar',
         self: 'Eliges día, hora y lugar',
     },
     {
@@ -313,7 +315,9 @@ function CoordinationChooseHeader({
         <header className={cn('mx-auto max-w-xl text-center', className)}>
             {/* Centrado y con la fuente del sistema (como las maquetas). Copy corto:
                 pregunta + una línea de contexto. */}
-            <h2 className="text-[21px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]">
+            {/* text-[20px] = mismo tamaño de título que CheckoutMobileStepHeader en el resto
+                de pasos del checkout (antes 21px, un punto más grande). */}
+            <h2 className="text-[20px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]">
                 ¿Quién elige la fecha?
             </h2>
             {/* 48ch ≈ ancho del gutter móvil (375-40px): 2 líneas anchas, no una columnita
@@ -432,19 +436,18 @@ function CoordinationOptionCards({
 }
 
 /**
- * Comparativa de las dos opciones, estilo tabla. Mismo componente, MISMOS datos y MISMA
- * disposición (apiladas, una encima de otra) en móvil y desktop. Antes había dos
- * vocabularios para el mismo paso: botones negros en móvil, tarjetas azules en desktop.
+ * Selector de «¿Quién elige la fecha?»: DOS tarjetas apiladas, cada una con su tabla de
+ * hechos dentro (filetes etiqueta/valor). Mismo componente en móvil y desktop.
  *
- * Cada opción es una columna seleccionable: cabecera (radio + respuesta + chip
- * «Recomendado») y las tres filas de COORD_COMPARE_FACTS. Se decide comparando hechos,
- * no leyendo prosa ni fiándose de un badge de color: «Tú haces: nada» justifica la
- * recomendación por sí solo.
+ * Es el flow que el usuario validó (2026-07-10) tras probar y descartar: radios con nota
+ * en prosa, tabla comparativa compartida de dos columnas, y TODA forma de chip/badge de
+ * recomendación (12 variantes). Lo que queda de aquellas rondas: cabecera CLARA sin
+ * bandas oscuras (las dos tarjetas se leen como pares), selección por borde ink +
+ * check sólido, copy corto a 1 línea, y recomendación comunicada por el orden (el
+ * vendedor primero) + la preselección — sin badge.
  *
- * La selección se marca tiñendo la cabecera de un gris azulado MUY claro + check sólido,
- * nunca con relleno de color de marca ni banda oscura: poca superficie de color, el acento
- * vive en el check. Los hechos siguen sobre blanco, así que el contraste del cuerpo se
- * mantiene ≥4,5:1.
+ * Jerarquía tipográfica: etiqueta de fila tenue (el rótulo se repite en ambas tarjetas,
+ * es el eje) y VALOR en semibold ink (la respuesta, lo que se compara).
  *
  * Las vistas de solo-lectura (coordinar/confirmar cita) siguen con CoordinationOptionCards.
  */
@@ -462,13 +465,16 @@ function CoordinationOptionCompare({
     const columns: Array<{
         value: CoordinationSelection;
         label: string;
-        recommended?: boolean;
+        /** Subtítulo bajo el nombre (solo la recomendada): dice QUE es la recomendada y POR
+         *  QUÉ, en texto plano — el chip/badge está vetado en este paso. Se oculta si la
+         *  opción está deshabilitada (recomendar algo no elegible sería contradictorio). */
+        note?: string;
         disabled?: boolean;
     }> = [
         {
             value: 'seller',
             label: COORD_ANSWER_SELLER,
-            recommended: true,
+            note: 'Recomendado: es la opción más sencilla',
             disabled: sellerOptionDisabled,
         },
         { value: 'self', label: COORD_ANSWER_SELF },
@@ -479,7 +485,7 @@ function CoordinationOptionCompare({
             <div
                 role="radiogroup"
                 aria-label="Quién elige la fecha de la cita"
-                className="flex flex-col gap-2.5"
+                className="flex flex-col gap-3"
             >
                 {columns.map((col) => {
                     const active = sel === col.value;
@@ -499,63 +505,50 @@ function CoordinationOptionCompare({
                                 }
                             }}
                             className={cn(
-                                'cursor-pointer overflow-hidden rounded-2xl border bg-white text-left',
+                                'cursor-pointer overflow-hidden rounded-xl border bg-white text-left',
                                 'transition-[border-color,box-shadow] duration-200 ease-out',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                                 active
-                                    ? 'border-[#c2cee0]'
+                                    ? 'border-[#1c1c1c] shadow-[0_1px_3px_rgba(15,23,42,0.06)]'
                                     : 'border-[#e6e9ef] hover:border-[#cfd4dc]',
                                 col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
                             )}
                         >
-                            {/* Cabecera: LAS DOS opciones llevan fondo OSCURO para que ambas se
-                                lean como opción (si la no elegida quedaba clara, parecía apagada).
-                                Grises oscuros, NO negro puro (que pesaba demasiado): la elegida en
-                                gris azulado (#33445c) + check sólido blanco; la no elegida en gris
-                                neutro (#3b414b) + aro vacío. Texto en blanco en ambas. El azulado
-                                enlaza con el azul del pago sin SER azul-de-selección. El antiguo
-                                badge «Recomendado» (genérico) se sustituye por el beneficio real:
-                                «Lo más cómodo», que se apoya en la fila «Tú haces: nada». */}
-                            <div
-                                className={cn(
-                                    'flex items-center gap-2.5 px-3.5 py-2.5',
-                                    active ? 'bg-[#33445c]' : 'bg-[#3b414b]',
-                                )}
-                            >
+                            {/* Cabecera clara: check + respuesta, sin banda de color ni chip. La
+                                selección la marcan el borde ink de la tarjeta y el check sólido;
+                                la recomendación, el orden + la preselección. */}
+                            <div className="flex items-start gap-2.5 px-3.5 pb-2 pt-3">
                                 <span
                                     aria-hidden
                                     className={cn(
                                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
                                         active
-                                            ? 'bg-white text-[#33445c]'
-                                            : 'border-2 border-white/35 bg-transparent',
+                                            ? 'bg-[#1c1c1c] text-white'
+                                            : 'border-2 border-[#c7ccd4] bg-white',
                                     )}
                                 >
                                     {active ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                                 </span>
-                                <span className="text-[15px] font-bold tracking-[-0.01em] text-white">
-                                    {col.label}
-                                </span>
-                                {col.recommended ? (
-                                    <span
-                                        className={cn(
-                                            'ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-semibold text-white',
-                                            active ? 'bg-white/[0.16]' : 'bg-white/[0.12]',
-                                        )}
-                                    >
-                                        <Sparkles className="h-3 w-3" aria-hidden />
-                                        Lo más cómodo
+                                <span className="min-w-0">
+                                    <span className="block text-[15px] font-bold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                                        {col.label}
                                     </span>
-                                ) : null}
+                                    {col.note && !col.disabled ? (
+                                        <span className="mt-0.5 block text-[12px] leading-snug text-[#6b7280]">
+                                            {col.note}
+                                        </span>
+                                    ) : null}
+                                </span>
                             </div>
+                            {/* Tabla interior: filetes etiqueta/valor DENTRO de cada tarjeta. */}
                             <dl className="px-3.5 pb-3">
                                 {COORD_COMPARE_FACTS.map((fact) => (
                                     <div
                                         key={fact.label}
-                                        className="flex items-baseline justify-between gap-3 border-t border-[#f0f2f5] py-2"
+                                        className="flex items-baseline justify-between gap-4 border-t border-[#eef0f3] py-2"
                                     >
-                                        <dt className="shrink-0 text-[11.5px] text-[#8a93a0]">{fact.label}</dt>
-                                        <dd className="max-w-[36ch] text-right text-[12px] font-medium leading-[1.4] text-[#14161a]">
+                                        <dt className="shrink-0 text-[11.5px] text-[#6b7280]">{fact.label}</dt>
+                                        <dd className="text-right text-[12.5px] font-semibold leading-[1.4] text-[#1c1c1c]">
                                             {col.value === 'seller' ? fact.seller : fact.self}
                                         </dd>
                                     </div>
@@ -699,15 +692,17 @@ export function CheckoutCoordinationStep({
             )}
 
             {/* fillHeight (móvil, paso de elección): el ROOT es el único scroll container y
-                este div es un flex item con `my-auto`. Los márgenes automáticos centran cuando
-                sobra alto y COLAPSAN A 0 cuando falta, así nada queda inalcanzable.
-                Antes llevaba `flex-1`, que lo fijaba al alto sobrante: la tabla desbordaba ESTE
-                div (no el root), el scroll no llegaba al final y el `pb-4` del root quedaba por
-                detrás del desbordamiento → «Yo, ahora» pegado a la franja del pago protegido.
-                El `pb-4` va AQUÍ, como padding del propio item: así siempre forma parte del área
-                scrollable, sin depender de que el navegador honre el padding-bottom de un
-                contenedor de scroll. Sin mt-3: desplazaría el centro óptico. */}
-            <div className={cn(fillHeight ? 'my-auto w-full shrink-0 pb-4' : 'mt-3')}>
+                este div fluye desde arriba, como el resto de pasos del wizard (título anclado
+                bajo la barra, aire sobrante al fondo). Antes llevaba `my-auto`, que centraba
+                SOLO las tarjetas: en viewports altos (iPhone XR 896px) abría un vacío de
+                ~120px entre el subtítulo y la primera tarjeta (decisión 2026-07-10).
+                Nada de `flex-1`: fijaba el alto al sobrante y la tabla desbordaba ESTE div
+                (no el root), dejando el final inalcanzable al scroll y el pb-4 por detrás
+                del desbordamiento → «Yo, ahora» pegado a la franja del pago protegido.
+                El `pb-4` va AQUÍ, como padding del propio item: así siempre forma parte del
+                área scrollable, sin depender de que el navegador honre el padding-bottom de
+                un contenedor de scroll. */}
+            <div className={cn(fillHeight ? 'w-full shrink-0 pb-4 [@media(min-height:700px)]:pt-2' : 'mt-3')}>
                 {view === 'choose' || view === 'seller' ? (
                     readOnly ? (
                         // Solo-lectura (coordinar/confirmar cita): la tarjeta muestra la opción

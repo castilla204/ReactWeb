@@ -1,11 +1,9 @@
 import React from 'react';
-import {
-  SD_DESKTOP_STICKY_TOP_CLASS,
-  SD_CHECKOUT_MOBILE_TABLE_CLASS,
-  SD_CHECKOUT_MOBILE_META_CLASS,
-} from '../../constants/homepageTypography';
+import { Star } from 'lucide-react';
+import { SD_DESKTOP_STICKY_TOP_CLASS } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { VerifiedBadge } from '../ui/VerifiedBadge';
 
 interface CheckoutPaymentAsideProps {
   priceDisplay: React.ReactNode;
@@ -17,6 +15,9 @@ interface CheckoutPaymentAsideProps {
   expertName?: string;
   expertPicture?: string;
   serviceName?: string;
+  /** Valoración media del experto — refuerza confianza en el momento de pagar. */
+  expertRating?: number;
+  expertReviewCount?: number;
   /**
    * Aviso opcional bajo el Total cuando el importe mostrado está convertido a la divisa preferida
    * del usuario (p.ej. "≈ 115 $ · cargo en EUR"). El cobro real lo hace Stripe en la divisa del
@@ -38,40 +39,58 @@ export function CheckoutPaymentAside({
   expertName = 'Experto',
   expertPicture,
   serviceName = 'Servicio',
+  expertRating,
+  expertReviewCount,
   priceSubline,
   coordinationMode = 'self',
 }: CheckoutPaymentAsideProps) {
+  const ratingLabel =
+    expertRating != null && expertRating > 0 && (expertReviewCount ?? 0) > 0
+      ? expertRating.toFixed(1).replace('.', ',')
+      : null;
+
   const content = (
     <>
-      <section className={embedded ? 'flex-1 px-5 py-5 bg-white' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
-        <p className={`text-[13px] font-medium text-[#6a6a6a] mb-3`}>Resumen del pago</p>
+      <section className={embedded ? 'px-5 py-5 bg-white' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
+        <h2 className={`text-[13px] font-medium text-[#6a6a6a] mb-3`}>Resumen del pago</h2>
         <div className="flex items-center gap-3 mb-4">
-          {expertPicture ? (
-            <Avatar className="h-10 w-10 shrink-0 rounded-full">
+          <div className="relative shrink-0">
+            <Avatar className="h-10 w-10 rounded-full">
               <AvatarImage src={expertPicture} alt={expertName} />
               <AvatarFallback className="rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-white">
                 {expertName.charAt(0) || 'E'}
               </AvatarFallback>
             </Avatar>
-          ) : (
-            <div className="h-10 w-10 shrink-0 rounded-full bg-[#1c1c1c] flex items-center justify-center">
-              <span className="text-sm font-semibold text-white">{expertName.charAt(0) || 'E'}</span>
-            </div>
-          )}
+            <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px]" />
+          </div>
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-semibold text-[#1c1c1c] truncate">{serviceName}</p>
-            <p className="text-[11px] text-[#64748b] truncate">{expertName}</p>
+            <p className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+              <span className="truncate">{expertName}</span>
+              {ratingLabel ? (
+                <>
+                  <span className="text-[#d4d4d4]" aria-hidden>
+                    ·
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-0.5 font-semibold tabular-nums text-[#1c1c1c]">
+                    <Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" aria-hidden />
+                    {ratingLabel}
+                    <span className="font-normal text-[#64748b]">({expertReviewCount})</span>
+                  </span>
+                </>
+              ) : null}
+            </p>
           </div>
         </div>
-        <div className="flex items-baseline justify-between gap-4 border-t border-[#bfdbfe] pt-4">
-          <p className="text-[13px] text-[#6a6a6a]">Total</p>
+        <div className="flex items-baseline justify-between gap-4 border-t border-[#ebebeb] pt-4">
+          <p className="text-[13px] text-[#6a6a6a]">Total a pagar</p>
           <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]">
             {priceDisplay}
           </p>
         </div>
-        <p className="mt-1 text-[11px] text-[#94a3b8]">Impuestos incluidos</p>
+        <p className="mt-1 text-[11px] text-[#64748b]">Impuestos incluidos</p>
         {priceSubline ? (
-          <p className="mt-0.5 text-[11px] text-[#94a3b8]">{priceSubline}</p>
+          <p className="mt-0.5 text-[11px] text-[#64748b]">{priceSubline}</p>
         ) : null}
       </section>
 
@@ -87,7 +106,7 @@ export function CheckoutPaymentAside({
           disabled={!canPay || isProcessing}
           type="button"
           aria-busy={isProcessing}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#171717] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isProcessing ? (
             <>
@@ -110,7 +129,7 @@ export function CheckoutPaymentAside({
 
         <CheckoutReserveHint coordinationMode={coordinationMode} />
 
-        <p className="text-center text-[11px] text-[#94a3b8]">
+        <p className="text-center text-[11px] text-[#64748b]">
           Al reservar, aceptas los{' '}
           <a
             href="/terms.html"
@@ -127,7 +146,7 @@ export function CheckoutPaymentAside({
 
   if (embedded) {
     return (
-      <div className="w-full h-full shrink-0 rounded-xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] flex flex-col">
+      <div className="w-full shrink-0 rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         {content}
       </div>
     );
@@ -135,7 +154,7 @@ export function CheckoutPaymentAside({
 
   return (
     <aside className={`lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}>
-      <div className="rounded-xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         {content}
       </div>
     </aside>

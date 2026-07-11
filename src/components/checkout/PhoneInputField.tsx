@@ -177,7 +177,7 @@ function CountryRow({
         {entry.name}
       </span>
       <span className="shrink-0 font-mono text-[12px] tabular-nums text-[#9ca3af]">{entry.dial}</span>
-      {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-[#3d5afe]" />}
+      {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-[#0066cc]" />}
     </button>
   );
 }
@@ -204,6 +204,9 @@ export interface PhoneInputFieldProps {
   error?: boolean;
   className?: string;
   defaultCountry?: string;
+  /** Sin caja propia (borde/sombra/anillo de foco): para incrustarlo en un grupo de campos
+   *  que ya pinta el contorno y el foco a nivel de grupo (focus-within). */
+  bare?: boolean;
 }
 
 export function PhoneInputField({
@@ -216,6 +219,7 @@ export function PhoneInputField({
   error = false,
   className,
   defaultCountry = 'ES',
+  bare = false,
 }: PhoneInputFieldProps) {
   const listboxId = useId();
   const searchId = useId();
@@ -432,12 +436,17 @@ export function PhoneInputField({
       <div ref={wrapRef} className={cn('relative w-full', className)}>
         <div
           className={cn(
-            'flex h-11 w-full items-stretch overflow-hidden rounded-lg border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition-[border-color,box-shadow] duration-150',
-            hasErr
-              ? 'border-[#f04438]'
-              : open
-              ? 'border-[#3d5afe] shadow-[0_0_0_3px_rgba(61,90,254,0.14)]'
-              : 'border-[#dcdfe4] focus-within:border-[#3d5afe] focus-within:shadow-[0_0_0_3px_rgba(61,90,254,0.14)]',
+            'flex w-full items-stretch overflow-hidden transition-[border-color,box-shadow] duration-150',
+            bare
+              ? 'h-9 bg-transparent'
+              : cn(
+                    'h-11 rounded-lg border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
+                    hasErr
+                      ? 'border-[#f04438]'
+                      : open
+                      ? 'border-[#0066cc] shadow-[0_0_0_3px_rgba(0,102,204,0.14)]'
+                      : 'border-[#dcdfe4] focus-within:border-[#0066cc] focus-within:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]',
+                ),
           )}
         >
           {/* Botón país */}
@@ -449,7 +458,8 @@ export function PhoneInputField({
             aria-label={`País ${cur.name}, prefijo ${cur.dial}`}
             onClick={() => (open ? setOpen(false) : openDrop())}
             className={cn(
-              'flex shrink-0 items-center gap-1 pl-3 pr-2',
+              'flex shrink-0 items-center gap-1 pr-2',
+              bare ? 'pl-0' : 'pl-3',
               // Trigger MONOCROMO: solo el prefijo + flecha. Sin bandera (un PNG a color sería el
               // único elemento saturado del formulario y se ve escalado) y sin caja propia: se
               // integra en el campo, separado del número por un divisor de 1px. Las banderas SÍ
@@ -458,7 +468,7 @@ export function PhoneInputField({
               "after:absolute after:right-0 after:top-1/2 after:h-5 after:w-px after:-translate-y-1/2 after:bg-[#e2e5ea] after:content-['']",
               'transition-colors duration-100',
               'hover:bg-black/[0.03] active:bg-black/[0.05]',
-              'focus-visible:outline-none focus-visible:bg-[#3d5afe]/[0.06]',
+              'focus-visible:outline-none focus-visible:bg-[#0066cc]/[0.06]',
             )}
           >
             <span className="text-[14px] font-medium tabular-nums tracking-tight text-[#4b5563]">
@@ -482,7 +492,10 @@ export function PhoneInputField({
             value={local}
             onChange={handleNum}
             placeholder="600 000 000"
-            className="flex-1 bg-transparent px-3 text-[14px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa]"
+            className={cn(
+              'flex-1 bg-transparent text-[14px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa]',
+              bare ? 'px-2.5' : 'px-3',
+            )}
           />
         </div>
       </div>

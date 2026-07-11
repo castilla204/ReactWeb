@@ -1661,8 +1661,8 @@ export function ExpertPanelPage() {
 
             {/* Drawer de confirmación de modo vacaciones */}
             <Drawer open={showVacationModal} onOpenChange={setShowVacationModal}>
-                <DrawerContent className="max-h-[96vh] flex flex-col">
-                    <div className="mx-auto w-full max-w-4xl flex flex-col h-full max-h-[96vh]">
+                <DrawerContent className="max-h-[96dvh] flex flex-col">
+                    <div className="mx-auto w-full max-w-4xl flex flex-col h-full max-h-[96dvh]">
                         <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                             <div className="flex items-center gap-3">
                                 {profile?.isOnVacation ? (

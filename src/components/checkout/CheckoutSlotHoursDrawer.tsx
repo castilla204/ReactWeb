@@ -57,7 +57,7 @@ export function CheckoutSlotHoursDrawer({
             >
                 <div
                     className={cn(
-                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-[1.25rem] border border-b-0 border-[#e8ecf1] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#eceef2] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                         entered ? 'translate-y-0' : 'translate-y-full',
                         expanded ? expandedMaxHeight : 'max-h-none',
                     )}
@@ -81,15 +81,16 @@ export function CheckoutSlotHoursDrawer({
                         <button
                             type="button"
                             onClick={onToggle}
+                            aria-expanded={expanded}
                             className="flex w-full items-center gap-2.5 text-left"
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-[15px] font-semibold capitalize leading-snug tracking-[-0.02em] text-[#14161a]">
+                                <p className="truncate text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#1c1c1c]">
                                     {dateLabel}
                                 </p>
-                                {!expanded ? (
-                                    <p className="mt-1 truncate text-[12px] leading-relaxed text-[#64748b]">
-                                        {selectedLabel ? null : 'Elige una hora'}
+                                {!expanded && !selectedLabel ? (
+                                    <p className="mt-1 truncate text-[12px] leading-snug text-[#64748b]">
+                                        Elige una hora
                                     </p>
                                 ) : null}
                             </div>
@@ -113,10 +114,10 @@ export function CheckoutSlotHoursDrawer({
 
                     <div
                         className={cn(
-                            'min-h-0 overflow-y-auto overscroll-contain border-t border-[#f0f1f3] bg-white px-4 transition-[opacity,max-height] duration-300',
+                            'min-h-0 overflow-y-auto overscroll-contain border-t border-[#eceef2] bg-white px-4 transition-[opacity,max-height] duration-300',
                             expanded
-                                ? cn(bodyMaxHeight, 'pb-4 pt-2.5 opacity-100')
-                                : 'max-h-0 border-t-0 pb-0 pt-0 opacity-0',
+                                ? cn(bodyMaxHeight, 'visible pb-4 pt-2.5 opacity-100')
+                                : 'invisible max-h-0 border-t-0 pb-0 pt-0 opacity-0',
                         )}
                     >
                         {children}

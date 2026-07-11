@@ -81,7 +81,7 @@ export function PhoneVerification() {
     };
 
     return (
-        <div className="min-h-screen flex items-start justify-center pt-24">
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
             <div className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl shadow-2xl border border-gray-100">
                 <div className="text-center mb-4">
                     <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl shadow-blue-500/20 transform -rotate-6">

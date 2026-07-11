@@ -1066,9 +1066,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 }`}
                 style={{
                   background: (expandedAccordion === 'where' || isMobile) ? '#ffffff' : '#ffffff',
-                  height: (expandedAccordion === 'where' || isMobile) ? '100vh' : 'auto',
-                  minHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '280px',
-                  maxHeight: (expandedAccordion === 'where' || isMobile) ? '100vh' : '320px',
+                  height: (expandedAccordion === 'where' || isMobile) ? '100dvh' : 'auto',
+                  minHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '280px',
+                  maxHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '320px',
                   transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >

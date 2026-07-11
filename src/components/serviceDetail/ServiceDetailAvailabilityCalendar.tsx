@@ -47,8 +47,8 @@ const CALENDAR_CLASS_NAMES = {
 } as const;
 
 const LEGEND_ITEMS = [
-    { label: 'Libre', swatch: 'bg-emerald-200 ring-1 ring-emerald-400/45' },
-    { label: 'Pocos', swatch: 'bg-amber-200 ring-1 ring-amber-400/45' },
+    { label: 'Libre', swatch: 'bg-emerald-100 ring-1 ring-emerald-300/50' },
+    { label: 'Pocos', swatch: 'bg-amber-100 ring-1 ring-amber-300/50' },
     { label: 'Completo', swatch: 'bg-slate-200 ring-1 ring-slate-400/40' },
     { label: 'Cerrado', swatch: 'bg-[#f4f4f5] ring-1 ring-[#e4e4e7]' },
 ] as const;
@@ -159,11 +159,11 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
                                 ? 'bg-slate-200 text-slate-600' // trabaja pero completo
                                 : 'bg-[#f4f4f5] text-[#a1a1aa]' // cerrado ese día
                             : free <= 2
-                              ? 'bg-amber-200 text-amber-900'
-                              : 'bg-emerald-200 text-emerald-900';
+                              ? 'bg-amber-100 text-amber-900'
+                              : 'bg-emerald-100 text-emerald-900';
                 } else {
                     // Sin datos finos (fuera de ventana / sin sesión): patrón semanal.
-                    tint = open ? 'bg-emerald-100/70 text-emerald-800' : 'bg-[#f7f7f8] text-[#c4c4c4]';
+                    tint = open ? 'bg-emerald-50 text-emerald-800' : 'bg-[#f7f7f8] text-[#c4c4c4]';
                 }
             }
 
