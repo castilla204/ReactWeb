@@ -75,6 +75,8 @@ interface ServiceDetailDeliverablesGuideProps {
    */
   showUnselected?: boolean;
   className?: string;
+  /** presentation="cover": nº de columnas en pantallas anchas (checkout desktop apila solo 1 por defecto). */
+  coverColumns?: 1 | 2;
 }
 
 function DeliverableDetailContent({
@@ -132,6 +134,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   hideIcon = false,
   showUnselected = false,
   className = '',
+  coverColumns = 1,
 }) => {
   const visible = showUnselected
     ? (items as ServiceDeliverableType[]).filter(Boolean)
@@ -291,7 +294,14 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   );
 
   const surfaceCovers = (
-    <ul className="m-0 flex list-none flex-col gap-3 p-0">
+    <ul
+      className={
+        coverColumns === 2
+          ? 'm-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 sm:gap-4'
+          : 'm-0 flex list-none flex-col gap-3 p-0'
+      }
+    >
+
       {visible.map((dt, index) => {
         const label = getDeliverableLabel(dt);
         const kind = getDeliverableKind(dt);

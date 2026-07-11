@@ -5,8 +5,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { capMapWorkers } from '../lib/mapWorkers';
 capMapWorkers(maplibregl);
 import { MapPin } from 'lucide-react';
-import { isExternalMapTileUrl } from '../utils/mapTileUrls';
-import { buildInspeccionoMapStyle, enableDynamicRasterPaintByZoom } from '../utils/inspeccionoMapStyle';
+import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
+import { INSPECCIONO_RASTER_PAINT } from '../utils/inspeccionoMapStyle';
 import {
   EXPERT_SPARKLE_PALETTES,
   expertSparkleMarkerHtml,
@@ -46,6 +46,38 @@ const MAP_THEME = {
   coastHalo: '#ffffff',
   border: '#d1c4c6',
 } as const;
+
+/** Estilo Carto ESPECÍFICO para ExpertsAreaMap (homepage/hero): único mapa
+ *  descentralizado porque la vista globe + vuelo regional justifican un look propio.
+ *  Raster sin etiquetas (voyager_nolabels) + paint canónico compartido. */
+function buildCartoStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      carto: {
+        type: 'raster',
+        tiles: getCartoVoyagerNoLabelsTiles(),
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
+      },
+    },
+    layers: [
+      {
+        id: 'sky-bg',
+        type: 'background',
+        paint: { 'background-color': MAP_THEME.sky },
+      },
+      {
+        id: 'carto',
+        type: 'raster',
+        source: 'carto',
+        // Tratamiento canónico compartido — mismo colorido que el resto de mapas.
+        paint: { ...INSPECCIONO_RASTER_PAINT },
+      },
+    ],
+  };
+}
 
 /**
  * Natural Earth — el relleno de tierra NO puede depender solo de tiles raster:
@@ -539,7 +571,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
 
       map = new maplibregl.Map({
         container: el,
-        style: buildInspeccionoMapStyle({ withLabels: false }),
+        style: buildCartoStyle(),
         center: initialCamera.center,
         transformRequest: (url, resourceType) => {
           if (resourceType === 'Tile' && isExternalMapTileUrl(url)) {
@@ -603,13 +635,6 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           map.triggerRepaint();
         } catch (err) {
           console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
-        }
-        // Paint raster dinámico: zoom bajo → boost saturación/contraste/brillo para contrarrestar
-        // compresión JPG de tiles. Interpolación suave sin cambios visuales bruscos.
-        try {
-          enableDynamicRasterPaintByZoom(map);
-        } catch (err) {
-          console.error('[ExpertsAreaMap] Paint dinámico por zoom:', err);
         }
         setMapReady(true);
         if (isMobilePeek) {
