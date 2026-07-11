@@ -113,7 +113,7 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                         Imagen del título o certificación del experto
                     </DialogDescription>
 
-                    <header className="flex shrink-0 items-center justify-between px-4 py-3 text-white">
+                    <header className="flex shrink-0 items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
                         <span className="min-w-0 truncate text-sm font-medium">{zoom?.titulo}</span>
                         <button
                             type="button"

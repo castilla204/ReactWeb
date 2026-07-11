@@ -107,8 +107,9 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
 
   const menuGroups: MenuItem[][] = [
     [
-      { id: 'searches', label: 'Mis búsquedas', icon: Search, onClick: () => navigate('/busquedas') },
-      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => navigate('/mis-mensajes') },
+      // Ambas entradas van a la bandeja unificada, cada una con su filtro (/busquedas redirige salvo admin)
+      { id: 'searches', label: 'Mis contrataciones', icon: Search, onClick: () => navigate('/busquedas') },
+      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => navigate('/mis-mensajes?filtro=consultas') },
       { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => navigate('/favoritos') },
       { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => navigate('/transacciones') },
     ],

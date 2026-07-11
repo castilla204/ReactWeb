@@ -153,8 +153,9 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     el.style.alignItems = 'center';
     el.style.justifyContent = 'center';
     el.style.borderRadius = '9999px';
-    // Marca sólida (sin degradado) + borde blanco → limpio y profesional.
-    el.style.background = 'hsl(var(--brand))';
+    // Tinta sólida + borde blanco (canon de marcadores de mapa) — círculo oscuro con
+    // contador, como la app de referencia de movilidad.
+    el.style.background = '#171717';
     el.style.color = '#fff';
     el.style.border = '2px solid #fff';
     el.style.fontWeight = '700';
@@ -168,10 +169,11 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
 
   // Estilo visual del pill de precio en sus 3 estados. Único punto de verdad para
   // que init (applyServiceStyle) y update (updateServiceVisualState) no diverjan.
-  // Estilo Airbnb: pin blanco con texto tinta; el seleccionado se rellena de marca.
+  // Estilo Airbnb: pin blanco con texto tinta; el seleccionado se rellena de TINTA
+  // (canon #171717 de todos los marcadores de mapa de la app).
   //  · reposo    → blanco, texto tinta, hairline gris, sombra neutra
   //  · hover     → blanco, borde gris más marcado, leve scale
-  //  · selected  → relleno de marca sólido, texto blanco
+  //  · selected  → relleno tinta sólido, texto blanco
   const applyPillVisual = (
     inner: HTMLSpanElement,
     isSelected: boolean,
@@ -190,7 +192,7 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
       : isHovered
         ? '#8a8a8a'
         : '#c8c8c8';
-    inner.style.background = isSelected ? 'hsl(var(--brand))' : '#fff';
+    inner.style.background = isSelected ? '#171717' : '#fff';
     inner.style.color = isSelected ? '#fff' : '#111111';
     inner.style.boxShadow = isSelected
       ? '0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14)'

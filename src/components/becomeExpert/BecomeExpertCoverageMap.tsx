@@ -6,37 +6,15 @@ import { capMapWorkers } from '../../lib/mapWorkers';
 capMapWorkers(maplibregl);
 import { AlertTriangle } from 'lucide-react';
 import { boundsFromCircle, circlePolygonGeoJSON } from '../../utils/geoCircle';
-import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../../utils/mapTileUrls';
+import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
+import { buildInspeccionoMapStyle, MAP_CANON } from '../../utils/inspeccionoMapStyle';
+import { buildInkDotBareElement } from '../../utils/mapMarkers';
 import { BecomeExpertMapSkeleton } from './BecomeExpertMapSkeleton';
 import { HP_LINK_UNDERLINE_CLASS } from '../../constants/homepageTypography';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
-const MAP_THEME = {
-    sky: '#dce9f2',
-    brand: 'rgb(30, 64, 175)',
-    brandStroke: 'rgba(30, 64, 175, 0.5)',
-} as const;
-
 const INITIAL_ZOOM = 7;
-
-function buildCartoStyle(): maplibregl.StyleSpecification {
-    return {
-        version: 8,
-        sources: {
-            carto: {
-                type: 'raster',
-                tiles: getCartoVoyagerNoLabelsTiles(),
-                tileSize: 256,
-                attribution: '© OpenStreetMap · CARTO',
-            },
-        },
-        layers: [
-            { id: 'sky-bg', type: 'background', paint: { 'background-color': MAP_THEME.sky } },
-            { id: 'carto', type: 'raster', source: 'carto', paint: { 'raster-opacity': 1 } },
-        ],
-    };
-}
 
 export interface BecomeExpertCoverageMapProps {
     latitude: number;
@@ -84,7 +62,9 @@ export function BecomeExpertCoverageMap({
             try {
                 map = new maplibregl.Map({
                     container: el,
-                    style: buildCartoStyle(),
+                    // Estilo canónico único CON etiquetas: el aspirante reconoce su
+                    // ciudad/calles al colocar su ubicación de trabajo.
+                    style: buildInspeccionoMapStyle({ withLabels: true }),
                     center: [lng, lat],
                     zoom: INITIAL_ZOOM,
                     minZoom: 3,
@@ -129,22 +109,26 @@ export function BecomeExpertCoverageMap({
                                 id: 'coverage-fill',
                                 type: 'fill',
                                 source: 'coverage',
-                                paint: { 'fill-color': MAP_THEME.brand, 'fill-opacity': 0.15 },
+                                paint: {
+                                    'fill-color': MAP_CANON.ringFill,
+                                    'fill-opacity': MAP_CANON.ringFillOpacity,
+                                },
                             });
                             map.addLayer({
                                 id: 'coverage-line',
                                 type: 'line',
                                 source: 'coverage',
-                                paint: { 'line-color': MAP_THEME.brandStroke, 'line-width': 2 },
+                                paint: {
+                                    'line-color': MAP_CANON.ring,
+                                    'line-width': MAP_CANON.ringWidth,
+                                    'line-dasharray': MAP_CANON.ringDash,
+                                },
                             });
                         }
                     }
 
-                    const pin = document.createElement('div');
-                    pin.style.cssText =
-                        'width:18px;height:18px;border-radius:50%;background:' +
-                        MAP_THEME.brand +
-                        ';border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.28);cursor:grab';
+                    // Pin tinta canónico arrastrable (mismo lenguaje que checkout/ficha/panel).
+                    const pin = buildInkDotBareElement(18, { draggable: true });
                     markerRef.current?.remove();
                     const marker = new maplibregl.Marker({ element: pin, anchor: 'center', draggable: true })
                         .setLngLat([lng, lat])

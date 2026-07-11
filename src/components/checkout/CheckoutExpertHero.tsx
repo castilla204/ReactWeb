@@ -1,5 +1,6 @@
-import { BadgeCheck, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { VerifiedBadge } from '../ui/VerifiedBadge';
 
 interface CheckoutExpertHeroProps {
   expertName: string;
@@ -36,12 +37,7 @@ export function CheckoutExpertHero({
             {expertName.charAt(0) || 'E'}
           </AvatarFallback>
         </Avatar>
-        <span
-          className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
-          aria-hidden
-        >
-          <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
-        </span>
+        <VerifiedBadge className="absolute -bottom-1 -right-1 h-[22px] w-[22px]" />
       </div>
 
       <div className="min-w-0 flex-1">

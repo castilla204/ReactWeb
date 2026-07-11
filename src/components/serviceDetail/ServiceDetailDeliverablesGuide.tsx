@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
 import { DeliverableTypeIcon } from './DeliverableTypeIcon';
+import { ServiceDetailDeliverableCover } from './ServiceDetailDeliverableCover';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { getDeliverableDetail, type DeliverableDetail } from '../../utils/deliverableDetailContent';
 import { getDeliverableKind } from '../../utils/deliverableIcons';
@@ -42,6 +43,15 @@ const DELIVERABLE_DESC_FALLBACK: Record<string, string> = {
   default: 'Entregable incluido en este servicio.',
 };
 
+/** Copy de la portada (presentation="cover") por tipo de entregable. */
+const COVER_COPY: Record<string, { title: string; meta: string; footer: string }> = {
+  pdf: { title: 'Informe de inspección', meta: 'Formato PDF', footer: 'Documento con hallazgos y fotos' },
+  video: { title: 'Vídeo de la revisión', meta: 'Grabación presencial', footer: 'Recorrido en vídeo de las zonas revisadas' },
+  photo: { title: 'Fotografías', meta: 'Alta resolución', footer: 'Fotos nítidas de cada punto revisado' },
+  call: { title: 'Llamada explicativa', meta: 'Con el experto', footer: 'Te explica el informe y resuelve dudas' },
+  default: { title: 'Entregable', meta: 'Incluido en el servicio', footer: '' },
+};
+
 export function normalizeDeliverableTypes(
   items: ServiceDeliverableType[] | unknown[] | undefined | null
 ): ServiceDeliverableType[] {
@@ -52,8 +62,8 @@ export function normalizeDeliverableTypes(
 interface ServiceDetailDeliverablesGuideProps {
   items: ServiceDeliverableType[] | unknown[];
   variant?: 'overlay' | 'inline';
-  /** chips = pills (móvil/checkout); list = filas editoriales; card = tarjeta con descripción (ficha) */
-  presentation?: 'chips' | 'list' | 'card';
+  /** chips = pills (móvil/checkout); list = filas editoriales; card = tarjeta con descripción; cover = portada tipo documento (boceto D) */
+  presentation?: 'chips' | 'list' | 'card' | 'cover';
   showHeading?: boolean;
   /** Oculta el icono/badge de tipo en las filas (lista limpia solo con texto). */
   hideIcon?: boolean;
@@ -264,7 +274,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[hsl(var(--ep-ink))]">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+                  <Check className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" aria-hidden />
                   {label}
                 </span>
                 <span className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[hsl(var(--brand))]">
@@ -274,6 +284,34 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               </div>
               {desc ? <p className="mt-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
             </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const surfaceCovers = (
+    <ul className="m-0 flex list-none flex-col gap-3 p-0">
+      {visible.map((dt, index) => {
+        const label = getDeliverableLabel(dt);
+        const kind = getDeliverableKind(dt);
+        const copy = COVER_COPY[kind] ?? COVER_COPY.default;
+        const desc =
+          (dt.description && dt.description.trim()) || copy.footer || DELIVERABLE_DESC_FALLBACK[kind] || '';
+        const selected = dt.isSelected !== false;
+        return (
+          <li key={dt.id ?? `${label}-${index}`}>
+            <ServiceDetailDeliverableCover
+              kind={kind}
+              coverTitle={copy.title}
+              coverMeta={copy.meta}
+              footerText={desc}
+              linkText="Ver qué incluye"
+              selected={selected}
+              onClick={(e) => openDetail(dt, e)}
+              ariaLabel={`Ver qué incluye: ${label}`}
+              expanded={open && active?.id === dt.id}
+            />
           </li>
         );
       })}
@@ -342,7 +380,13 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             Qué incluye
           </p>
         ) : null}
-        {presentation === 'card' ? surfaceCards : presentation === 'list' ? surfaceList : surfaceChipList}
+        {presentation === 'cover'
+          ? surfaceCovers
+          : presentation === 'card'
+            ? surfaceCards
+            : presentation === 'list'
+              ? surfaceList
+              : surfaceChipList}
       </section>
       {detailModal}
     </>

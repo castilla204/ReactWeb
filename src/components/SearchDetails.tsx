@@ -1495,7 +1495,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     <div className="flex items-baseline justify-between gap-3">
                                                         <span className="text-[13px] font-medium text-[#737373]">Precio total</span>
                                                         <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-[20px] font-bold tracking-[-0.01em] text-[#1c1c1c]">{priceDisplay.formattedTotal}</span>
+                                                            <span className="text-[20px] font-bold tracking-[-0.01em] text-[#0a0a0a]">{priceDisplay.formattedTotal}</span>
                                                             {priceDisplay.hasTaxInfo && (
                                                                 <span className="text-[12px] font-medium text-[#737373]">IVA incl.</span>
                                                             )}
@@ -1866,7 +1866,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-[#ededed] bg-white px-5 py-4 space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-[#ededed] bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
                                                 <div className="space-y-1.5 border-b border-[#f0f0f0] pb-3">
@@ -2171,7 +2171,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <div className="flex items-baseline justify-between gap-3">
                                                     <span className="text-[13px] font-medium text-[#737373]">Precio total</span>
                                                     <div className="flex items-baseline gap-1.5">
-                                                        <span className="text-[20px] font-bold tracking-[-0.01em] text-[#1c1c1c]">{priceDisplay.formattedTotal}</span>
+                                                        <span className="text-[20px] font-bold tracking-[-0.01em] text-[#0a0a0a]">{priceDisplay.formattedTotal}</span>
                                                         {priceDisplay.hasTaxInfo && (
                                                             <span className="text-[10.5px] font-medium text-[#9a9a9a]">IVA incl.</span>
                                                         )}

@@ -12,7 +12,8 @@ import {
   isMapboxTokenConfigured,
   MapboxAutocompleteItem,
 } from '../utils/mapboxGeocoding';
-import { buildInspeccionoMapStyle, buildNeutralCheckoutMapStyle } from '../utils/inspeccionoMapStyle';
+import { buildNeutralCheckoutMapStyle, MAP_CANON } from '../utils/inspeccionoMapStyle';
+import { buildInkDotElement, buildInkPinElement } from '../utils/mapMarkers';
 import { boundsFromCircle } from '../utils/geoCircle';
 
 interface AppointmentMapProps {
@@ -48,8 +49,8 @@ interface AppointmentMapProps {
   searchMinimal?: boolean;
   /** Posición del buscador flotante (p. ej. bajo stepper superpuesto). */
   searchOverlayClassName?: string;
-  /** Checkout: mapa neutro, solo contorno discontinuo del radio — sin relleno ni máscara roja/verde. */
-  /** Checkout desktop: contorno discontinuo sin relleno (panel experto). `default`: zona rellena + máscara. */
+  /** Anillo canónico en ambos modos. `minimal` (checkout): solo contorno discontinuo.
+   *  `default` (elegir punto en coordinación): añade atenuación neutra fuera del radio. */
   coverageStyle?: 'default' | 'minimal';
   /** Dirección fuera del radio de cobertura (p. ej. búsqueda). */
   onLocationRejected?: (info: { reason: 'out_of_range'; address: string }) => void;
@@ -128,63 +129,7 @@ const LAYER_CIRCLE_FILL = 'appt-circle-fill';
 const LAYER_CIRCLE_LINE = 'appt-circle-line';
 const LAYER_MASK_FILL = 'appt-mask-fill';
 
-const EXPERT_MARKER_SVG = `
-  <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="14" cy="14" r="12" fill="#0066CC" stroke="#004999" stroke-width="2"/>
-    <circle cx="14" cy="14" r="5" fill="#FFFFFF"/>
-    <circle cx="14" cy="14" r="2.5" fill="#0066CC"/>
-  </svg>
-`;
-
-const SELECTED_MARKER_SVG = `
-  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="16" cy="16" r="14" fill="#10B981" stroke="#047857" stroke-width="3"/>
-    <circle cx="16" cy="16" r="6" fill="#FFFFFF"/>
-    <circle cx="16" cy="16" r="3" fill="#10B981"/>
-  </svg>
-`;
-
-const buildMarkerElement = (svg: string, size: number): HTMLDivElement => {
-  const el = document.createElement('div');
-  el.style.width = `${size}px`;
-  el.style.height = `${size}px`;
-  el.style.cursor = 'pointer';
-  el.innerHTML = svg.trim();
-  return el;
-};
-
-/**
- * Punto base del experto (centro del área de cobertura): dot NEGRO con halo neutro
- * translúcido, estética app de movilidad. Discreto, sirve de referencia sin competir
- * con el pin elegido, y cohesiona con el mapa a color (el marcador destaca en negro).
- */
-const buildExpertDotElement = (size: number): HTMLDivElement => {
-  const el = document.createElement('div');
-  el.style.cursor = 'pointer';
-  const halo = size + 12;
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;width:${halo}px;height:${halo}px;border-radius:50%;background:rgba(23,23,23,0.14)">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:#171717;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.32)"></div>
-    </div>`;
-  return el;
-};
-
-/**
- * Ubicación elegida (checkout minimal): anillo suave + punto NEGRO preciso, estilo
- * chincheta de app de movilidad sobre el mapa a color. Ancla en el centro — señala el
- * pixel exacto sin lágrima genérica.
- */
-const buildSelectedPinElement = (): HTMLDivElement => {
-  const el = document.createElement('div');
-  el.style.cursor = 'pointer';
-  el.innerHTML = `
-    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px">
-      <div style="position:absolute;inset:0;border-radius:50%;background:rgba(23,23,23,0.12)"></div>
-      <div style="position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid rgba(23,23,23,0.30);background:rgba(255,255,255,0.94)"></div>
-      <div style="position:relative;width:12px;height:12px;border-radius:50%;background:#171717;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.42)"></div>
-    </div>`;
-  return el;
-};
+// Marcadores canónicos tinta (buildInkDotElement / buildInkPinElement) — ver utils/mapMarkers.
 
 // ============================================================================
 // Component
@@ -343,7 +288,8 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: (isMinimalCoverage ? buildNeutralCheckoutMapStyle() : buildInspeccionoMapStyle()) as any,
+      // Estilo canónico único (Voyager con etiquetas + tratamiento compartido).
+      style: buildNeutralCheckoutMapStyle() as any,
       center: [memoizedCoordinates.lng, memoizedCoordinates.lat],
       zoom: defaultZoom,
       minZoom: 3,
@@ -398,85 +344,68 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         },
       });
 
-      if (isMinimalCoverage) {
-        // Checkout / vista referencia: contorno discontinuo; en preview, relleno muy suave.
-        if (referencePreview) {
-          map.addLayer({
-            id: LAYER_CIRCLE_FILL,
-            type: 'fill',
-            source: SRC_CIRCLE,
-            paint: {
-              'fill-color': '#171717',
-              'fill-opacity': 0.05,
-            },
-          });
-        }
+      // Cobertura canónica ÚNICA (todos los flujos): anillo discontinuo neutro.
+      // En preview (paso 2 checkout) va más fino, con trazo corto y lavado suave dentro.
+      if (referencePreview) {
         map.addLayer({
-          id: LAYER_CIRCLE_LINE,
-          type: 'line',
+          id: LAYER_CIRCLE_FILL,
+          type: 'fill',
           source: SRC_CIRCLE,
           paint: {
-            // Anillo neutro (negro translúcido) — cohesiona con el pin negro sobre el
-            // mapa a color, sin el azul que competía con la base Voyager.
-            'line-color': referencePreview ? 'rgba(23, 23, 23, 0.55)' : 'rgba(23, 23, 23, 0.42)',
-            'line-width': referencePreview ? 2.5 : 2,
-            'line-dasharray': [3, 3],
+            'fill-color': MAP_CANON.ringFill,
+            'fill-opacity': 0.06,
           },
         });
-      } else {
-      map.addLayer({
-        id: LAYER_CIRCLE_FILL,
-        type: 'fill',
-        source: SRC_CIRCLE,
-        paint: {
-          'fill-color': '#10B981',
-          'fill-opacity': 0.22,
-        },
-      });
-
+      }
       map.addLayer({
         id: LAYER_CIRCLE_LINE,
         type: 'line',
         source: SRC_CIRCLE,
         paint: {
-          'line-color': '#0066CC',
-          'line-opacity': 0.75,
-          'line-width': 2.5,
+          // Anillo neutro (negro translúcido) — cohesiona con el pin tinta sobre el
+          // mapa a color, sin verdes/azules que compitan con la base Voyager.
+          'line-color': referencePreview ? 'rgba(23, 23, 23, 0.45)' : MAP_CANON.ring,
+          'line-width': referencePreview ? 1.75 : MAP_CANON.ringWidth,
+          'line-dasharray': referencePreview ? [2, 2.5] : MAP_CANON.ringDash,
         },
       });
 
-      const worldRing: Array<[number, number]> = [
-        [-180, -85],
-        [180, -85],
-        [180, 85],
-        [-180, 85],
-        [-180, -85],
-      ];
+      if (!isMinimalCoverage) {
+        // Flujos donde se ELIGE punto sobre el mapa (coordinación de cita): atenuación
+        // sutil de la zona no elegible. Sustituye a la máscara roja del estilo antiguo —
+        // misma información, lenguaje neutro canónico.
+        const worldRing: Array<[number, number]> = [
+          [-180, -85],
+          [180, -85],
+          [180, 85],
+          [-180, 85],
+          [-180, -85],
+        ];
 
-      map.addSource(SRC_MASK, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: [worldRing, circleRing],
+        map.addSource(SRC_MASK, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: [worldRing, circleRing],
+            },
           },
-        },
-      });
+        });
 
-      map.addLayer(
-        {
-          id: LAYER_MASK_FILL,
-          type: 'fill',
-          source: SRC_MASK,
-          paint: {
-            'fill-color': '#EF4444',
-            'fill-opacity': 0.28,
+        map.addLayer(
+          {
+            id: LAYER_MASK_FILL,
+            type: 'fill',
+            source: SRC_MASK,
+            paint: {
+              'fill-color': MAP_CANON.maskFill,
+              'fill-opacity': MAP_CANON.maskFillOpacity,
+            },
           },
-        },
-        LAYER_CIRCLE_LINE,
-      );
+          LAYER_CIRCLE_LINE,
+        );
       }
       } // fin if (radius > 0)
 
@@ -511,9 +440,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         isFinite(memoizedCoordinates.lat) &&
         isFinite(memoizedCoordinates.lng)
       ) {
-        const expertEl = isMinimalCoverage
-          ? buildExpertDotElement(12)
-          : buildMarkerElement(EXPERT_MARKER_SVG, 28);
+        const expertEl = buildInkDotElement(12);
         expertMarkerRef.current = new mapboxgl.Marker({
           element: expertEl,
           anchor: 'center',
@@ -527,9 +454,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
         const initLat = Number(initialLocation.latitude);
         const initLng = Number(initialLocation.longitude);
         if (isFinite(initLat) && isFinite(initLng)) {
-          const el = isMinimalCoverage
-            ? buildSelectedPinElement()
-            : buildMarkerElement(SELECTED_MARKER_SVG, 32);
+          const el = buildInkPinElement();
           selectedMarkerRef.current = new mapboxgl.Marker({
             element: el,
             anchor: 'center',
@@ -566,9 +491,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       if (selectedMarkerRef.current) {
         selectedMarkerRef.current.setLngLat([clickedLng, clickedLat]);
       } else {
-        const el = isMinimalCoverage
-          ? buildSelectedPinElement()
-          : buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        const el = buildInkPinElement();
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
           anchor: 'center',
@@ -688,9 +611,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       if (selectedMarkerRef.current) {
         selectedMarkerRef.current.setLngLat([item.lng, item.lat]);
       } else {
-        const el = isMinimalCoverage
-          ? buildSelectedPinElement()
-          : buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        const el = buildInkPinElement();
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
           anchor: 'center',
@@ -732,9 +653,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
       if (selectedMarkerRef.current) {
         selectedMarkerRef.current.setLngLat([pick.longitude, pick.latitude]);
       } else {
-        const el = isMinimalCoverage
-          ? buildSelectedPinElement()
-          : buildMarkerElement(SELECTED_MARKER_SVG, 32);
+        const el = buildInkPinElement();
         selectedMarkerRef.current = new mapboxgl.Marker({
           element: el,
           anchor: 'center',

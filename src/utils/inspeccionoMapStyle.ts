@@ -13,6 +13,83 @@ export const INSPECCIONO_MAP_THEME = {
   border: '#d1c4c6',
 } as const;
 
+/**
+ * Canon visual ÚNICO de todos los mapas de la app (referencia: app de movilidad —
+ * base Voyager clara con verdes/cremas suaves, protagonismo para los marcadores tinta).
+ *
+ *  · ink        → color de TODOS los marcadores (pins, dots, clusters, seleccionado).
+ *  · ring       → anillo de cobertura discontinuo neutro (checkout, ficha, panel, alta).
+ *  · ringFill   → lavado casi imperceptible dentro del radio.
+ *  · mask       → atenuación de la zona NO elegible (flujos donde se elige punto).
+ */
+export const MAP_CANON = {
+  ink: '#171717',
+  inkBorder: '#ffffff',
+  ring: 'rgba(23, 23, 23, 0.42)',
+  ringStrong: 'rgba(23, 23, 23, 0.55)',
+  ringDash: [3, 3] as [number, number],
+  ringWidth: 2,
+  ringFill: '#171717',
+  ringFillOpacity: 0.05,
+  maskFill: '#171717',
+  maskFillOpacity: 0.06,
+} as const;
+
+/**
+ * Tratamiento raster BASE de las teselas Carto Voyager (zoom alto ≥10). Objetivo: look
+ * VIVO tipo Apple Maps claro (referencia Tribbu) — parques verde vivo, autopistas amarillas
+ * visibles, agua azul limpia — manteniendo la base clara y legible.
+ *
+ * A zoom BAJO (≤7, vista continental), los tiles raster JPG se comprimen agresivamente
+ * y pierden saturación → se ven grises. Solución: aplicar paint dinámico por zoom
+ * (ver `getPaintForZoom()`).
+ *
+ *  · saturation 0.35 → a zoom alto: enciende verdes/amarillos/azules sin quemar halos
+ *                      de etiquetas del raster (>0.5 aparecen orlas de color).
+ *  · contrast 0.10   → carreteras y bordes de parque definidos.
+ *  · brightness-min 0 / max 1 → rango tonal completo: blancos limpios.
+ * Combinado con teselas @2x (ver mapTileUrls) el resultado es nítido y premium.
+ */
+export const INSPECCIONO_RASTER_PAINT = {
+  'raster-opacity': 1,
+  'raster-saturation': 0.35,
+  'raster-contrast': 0.1,
+  'raster-brightness-min': 0,
+  'raster-brightness-max': 1,
+} as const;
+
+/**
+ * Paint dinámico por zoom: a distancia (zoom bajo) los tiles JPG se comprimen y pierden
+ * color → boost agresivo de sat/contraste/brillo para recuperar el look vivo.
+ * Interpolación suave (NO cambios bruscos) desde zoom 7 a 10.
+ * Inspirado en Apple Maps (que también boosteava zoom bajo).
+ */
+export function getPaintForZoom(zoom: number): Record<string, number> {
+  // zoom ≤ 7: vista continental/país — JPG muy comprimido, need boost máximo
+  if (zoom <= 7) {
+    return {
+      'raster-opacity': 1,
+      'raster-saturation': 0.50,      // +50% saturación (máx sin quemar etiquetas)
+      'raster-contrast': 0.15,         // definición extra para contrarrestar compresión
+      'raster-brightness-min': 0.10,   // menos oscuro de lejos
+      'raster-brightness-max': 1,
+    };
+  }
+  // zoom 8-9: región/provincia — interpolación suave hacia detalle
+  if (zoom <= 9) {
+    const t = (zoom - 7) / 2; // [0, 1] entre z7 y z9
+    return {
+      'raster-opacity': 1,
+      'raster-saturation': 0.50 - t * 0.08,           // 0.50 → 0.42
+      'raster-contrast': 0.15 - t * 0.03,             // 0.15 → 0.12
+      'raster-brightness-min': 0.10 - t * 0.04,       // 0.10 → 0.06
+      'raster-brightness-max': 1,
+    };
+  }
+  // zoom ≥ 10: ciudad/detalle — paint base (sin boost)
+  return INSPECCIONO_RASTER_PAINT;
+}
+
 export const INSPECCIONO_MAP_LAYER_IDS = {
   cartoBase: 'carto-base',
   cartoLabels: 'carto-labels',
@@ -58,13 +135,8 @@ export function buildInspeccionoMapStyle(
       id: INSPECCIONO_MAP_LAYER_IDS.cartoBase,
       type: 'raster',
       source: 'carto',
-      paint: {
-        'raster-opacity': 1,
-        // Ligero realce de verdes/amarillos Carto — más cálido sin saturar.
-        'raster-saturation': 0.12,
-        'raster-brightness-min': 0.03,
-        'raster-brightness-max': 1,
-      },
+      // Tratamiento canónico compartido por TODOS los mapas de la app.
+      paint: { ...INSPECCIONO_RASTER_PAINT },
     },
   ];
 
@@ -72,43 +144,12 @@ export function buildInspeccionoMapStyle(
 }
 
 /**
- * Mapa de checkout: base Voyager CON color (crema/verde parques, como la app de
- * referencia) y LEGIBLE (con etiquetas, para que el cliente reconozca su calle/barrio
- * al marcar el punto). El protagonismo lo da el marcador negro (ver AppointmentMap),
- * no un lavado del mapa. Un realce sutil de saturación/contraste evita el aspecto lavado.
+ * Mapa de checkout: alias del estilo canónico CON etiquetas (el cliente reconoce su
+ * calle/barrio al marcar el punto). Se conserva el nombre para los call-sites; desde la
+ * unificación visual ya no hay una variante "neutra" distinta — un único look en toda la app.
  */
 export function buildNeutralCheckoutMapStyle(): maplibregl.StyleSpecification {
-  return {
-    version: 8,
-    sources: {
-      carto: {
-        type: 'raster',
-        // Voyager CON etiquetas (un único tileset) → el cliente valida la dirección
-        // que está eligiendo. Mismo nº de peticiones que la variante sin etiquetas.
-        tiles: getCartoVoyagerTiles(),
-        tileSize: 256,
-        attribution: '© OpenStreetMap · CARTO',
-      },
-    },
-    layers: [
-      {
-        id: 'sky-bg',
-        type: 'background',
-        paint: { 'background-color': '#eaf0f6' },
-      },
-      {
-        id: 'carto-neutral',
-        type: 'raster',
-        source: 'carto',
-        paint: {
-          'raster-opacity': 1,
-          'raster-saturation': 0.06,
-          'raster-contrast': 0.05,
-          'raster-brightness-min': 0.02,
-        },
-      },
-    ],
-  };
+  return buildInspeccionoMapStyle({ withLabels: true });
 }
 
 /** Pitch moderado según zoom: curvatura de globo lejos, plano al acercar para leer precios. */
@@ -162,4 +203,31 @@ export function ensureInspeccionoLandFill(map: maplibregl.Map): void {
     },
     INSPECCIONO_MAP_LAYER_IDS.cartoBase,
   );
+}
+
+/**
+ * Activa paint raster dinámico por zoom en un mapa. A zoom bajo la base se ve apagada
+ * (tiles JPG comprimidos) → boost automático de saturación/contraste/brillo para
+ * recuperar colores vivos sin cambios visuales bruscos.
+ *
+ * Llamar en `useEffect` tras `map.loaded()` o en el callback de `onLoad`.
+ */
+export function enableDynamicRasterPaintByZoom(map: maplibregl.Map): void {
+  const applyPaint = () => {
+    const zoom = map.getZoom();
+    const paint = getPaintForZoom(zoom);
+    try {
+      map.setPaintProperty(INSPECCIONO_MAP_LAYER_IDS.cartoBase, 'raster-saturation', paint['raster-saturation']);
+      map.setPaintProperty(INSPECCIONO_MAP_LAYER_IDS.cartoBase, 'raster-contrast', paint['raster-contrast']);
+      map.setPaintProperty(INSPECCIONO_MAP_LAYER_IDS.cartoBase, 'raster-brightness-min', paint['raster-brightness-min']);
+    } catch {
+      // Layer no existe (eg. mapa aún no ready); reintentará en el próximo evento.
+    }
+  };
+
+  applyPaint(); // Aplicar paint inicial al zoom actual.
+  map.on('zoom', applyPaint); // Reaplica al cambiar zoom.
+
+  // Cleanup al desmontar mapa (caller debería llamar esto en useEffect cleanup).
+  (map as any).__dynamicPaintCleanup = () => map.off('zoom', applyPaint);
 }

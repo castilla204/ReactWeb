@@ -280,7 +280,7 @@ Dos variantes coexisten por contexto:
 ### Navigation
 
 - **Top bar desktop** (`HomepageDesktopTopBar`): fija arriba, fondo blanco con `backdrop-blur-sm`, separador inferior `{colors.border}`. Logo izquierda, navegación centro, avatar/CTA derecha.
-- **Tabs** (`sd-tab`): texto `body` en reposo (`text-ink-muted`), `body-strong` activo (`text-ink-strong`) con borde inferior `border-b-2 border-brand`. Cero animación de cambio; el estado es lo que se mueve.
+- **Tabs** (`sd-tab`): texto `body` en reposo (`text-ink-muted`), `body-strong` activo (`text-ink-strong`) con borde inferior `border-b-2 border-brand`. Modificador `sd-tab--flat` quita ese borde en tabs donde queda raro (p. ej. "Reseñas" con el contador al lado): solo queda el peso de la fuente marcando el estado. Cero animación de cambio; el estado es lo que se mueve.
 - **Mobile bottom bar fija** (`SD_MOBILE_FOOTER_SHELL_CLASS`): `position: fixed`, `bottom: 0`, fondo blanco, borde superior, sombra `0 -4px 24px rgba(15,23,42,0.09)`. Respeta `env(safe-area-inset-bottom)`.
 
 ### Toast (Signature)

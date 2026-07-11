@@ -48,7 +48,7 @@ export default function ExpertInspectionPage() {
 
     return (
         <div className="flex h-[100dvh] flex-col bg-gray-100">
-            <div className="shrink-0 px-3 pt-3 pb-2">
+            <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
                 <button
                     type="button"
                     onClick={() => navigate('/expert-panel')}

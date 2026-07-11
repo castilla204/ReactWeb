@@ -82,8 +82,8 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
 
     return (
         <Drawer open={isOpen} onOpenChange={onClose}>
-            <DrawerContent className="max-h-[96vh] flex flex-col border-t-4 border-destructive">
-                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh]">
+            <DrawerContent className="max-h-[96dvh] flex flex-col border-t-4 border-destructive">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96dvh]">
                     <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
@@ -309,8 +309,8 @@ export function DisputeModal({
 
     return (
         <Drawer open={isOpen} onOpenChange={onClose}>
-            <DrawerContent className="max-h-[96vh] flex flex-col border-t-4 border-destructive">
-                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96vh] bg-background">
+            <DrawerContent className="max-h-[96dvh] flex flex-col border-t-4 border-destructive">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96dvh] bg-background">
                     {/* Header minimalista */}
                     <DrawerHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-border flex-shrink-0">
                         <div className="flex items-center gap-3">
@@ -533,7 +533,7 @@ export function ResolveDisputeModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90dvh] overflow-y-auto">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Resolver Disputa</h3>
                 <p className="text-gray-600 mb-4">
                     Seleccione a quién dar la razón y proporcione una razón para la resolución.
@@ -631,7 +631,7 @@ export function AddAdModal({ isOpen, onClose, newAd, setNewAd, categories, onSub
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
+            <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 max-h-[90dvh] overflow-y-auto">
                 <h3 className="text-lg font-semibold mb-4">Add Manual Ad</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -810,7 +810,7 @@ export function CancelServiceModal({ isOpen, onClose, onConfirm }: CancelService
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100 animate-in slide-in-from-bottom-4 duration-300 max-h-[90dvh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center">
@@ -867,7 +867,7 @@ export function FinalizeModal({ isOpen, onClose, onFinalize }: FinalizeModalProp
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90dvh] overflow-y-auto">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Finalizar Búsqueda</h3>
                 <p className="text-gray-600 mb-6">
                     ¿A quién deseas dar la razón al finalizar esta búsqueda?
@@ -946,7 +946,7 @@ export function ReportModal({ isOpen, onClose, appointment, onSuccess, setNotifi
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90dvh] overflow-y-auto">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">

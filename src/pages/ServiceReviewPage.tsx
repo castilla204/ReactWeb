@@ -691,7 +691,6 @@ export function ServiceReviewPage({
                                         isOnVacation={finalService?.expert?.isOnVacation}
                                         rangeKm={expertRange ?? 25}
                                         mapVariant="preview"
-                                        showAvailabilityHint
                                     />
                                 </section>
                             ) : null}
@@ -723,7 +722,7 @@ export function ServiceReviewPage({
                                 aria-selected={activeTab === 'reviews'}
                                 data-active={activeTab === 'reviews' ? 'true' : undefined}
                                 onClick={() => setActiveTab('reviews')}
-                                className="sd-tab"
+                                className="sd-tab sd-tab--flat"
                             >
                                 Reseñas
                                 {finalReviews.length > 0 ? (
@@ -750,15 +749,18 @@ export function ServiceReviewPage({
                                     {showInspectionReport ? (
                                         <>
                                             <h2 className="sd-section-label mb-3">Qué entregará</h2>
-                                            <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
+                                            <div className="mt-3">
+                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
+                                            </div>
                                             {inspectionExtraDeliverables.length > 0 ? (
-                                                <ServiceDetailDeliverablesGuide
-                                                    items={inspectionExtraDeliverables}
-                                                    variant="inline"
-                                                    presentation="card"
-                                                    showHeading={false}
-                                                    showUnselected
-                                                />
+                                                <div className="mt-3">
+                                                    <ServiceDetailDeliverablesGuide
+                                                        items={inspectionExtraDeliverables}
+                                                        variant="inline"
+                                                        presentation="cover"
+                                                        showHeading={false}
+                                                    />
+                                                </div>
                                             ) : null}
                                         </>
                                     ) : visibleDeliverableTypes.length > 0 ? (
@@ -838,7 +840,7 @@ export function ServiceReviewPage({
                         <ServiceDetailDesktopPhotoMapHero
                             images={validImages}
                             onBack={onBack}
-                            secondPhotoTopRight={
+                            primaryPhotoTopRight={
                                 isAuthenticated ? (
                                     <button
                                         type="button"
@@ -930,9 +932,8 @@ export function ServiceReviewPage({
                                                         <ServiceDetailDeliverablesGuide
                                                             items={inspectionExtraDeliverables}
                                                             variant="inline"
-                                                            presentation="card"
+                                                            presentation="cover"
                                                             showHeading={false}
-                                                            showUnselected
                                                         />
                                                     </div>
                                                 ) : null}

@@ -25,12 +25,11 @@ interface ServiceDetailDesktopPhotoMapHeroProps {
   rangeKm?: number;
   /** Título/meta superpuesto sobre la imagen principal (columna izquierda) */
   titleOverlay?: React.ReactNode;
-  /** Volver — disco flotante arriba-derecha de la galería (desktop) */
+  /** Volver — disco flotante arriba-izquierda de la foto principal (desktop) */
   onBack?: () => void;
-  /** Acción flotante arriba-derecha del hero (p. ej. guardar/favorito) */
-  topRight?: React.ReactNode;
-  /** Acción anclada arriba-derecha de la SEGUNDA foto de la galería (p. ej. favorito) */
-  secondPhotoTopRight?: React.ReactNode;
+  /** Acción flotante arriba-derecha de la foto principal (p. ej. guardar/favorito) —
+      misma foto que onBack, para que ambas lean como un par (igual que el top bar móvil). */
+  primaryPhotoTopRight?: React.ReactNode;
   className?: string;
 }
 
@@ -47,8 +46,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
   rangeKm = 25,
   titleOverlay,
   onBack,
-  topRight,
-  secondPhotoTopRight,
+  primaryPhotoTopRight,
   className = '',
 }) => {
   // rangeKm === 0: el experto atiende solo en su taller (punto fijo) — etiqueta
@@ -61,15 +59,11 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
       className={`relative grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2 lg:gap-4 ${className}`}
       style={{ minHeight: SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX }}
     >
-      {topRight ? (
-        <div className="absolute right-3 top-3 z-30">{topRight}</div>
-      ) : null}
       <div className={`relative min-h-0 min-w-0 ${SD_DESKTOP_PHOTO_MAP_HERO_HEIGHT_CLASS}`}>
         <ServiceDetailDesktopGallery
           layout="split"
           className="h-full"
           images={images}
-          secondPhotoTopRight={secondPhotoTopRight}
           onOpen={onOpen}
           loadingImages={loadingImages}
           failedImages={failedImages}
@@ -87,6 +81,7 @@ export const ServiceDetailDesktopPhotoMapHero: React.FC<ServiceDetailDesktopPhot
                 <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
               </button>
             ) : undefined,
+            topRight: primaryPhotoTopRight,
             bottom: titleOverlay ? (
               <div className="bg-gradient-to-t from-black/70 via-black/35 to-transparent px-5 pb-4 pt-16">
                 <div className="flex flex-col items-start gap-2">

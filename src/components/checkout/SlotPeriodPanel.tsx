@@ -27,9 +27,14 @@ interface SlotPeriodPanelProps {
     onSelectSlot: (slot: ChosenSlot | null) => void;
 }
 
+/** Rótulo de franja (Mañana/Tarde) — una sola piel en todas las variantes. */
+const SLOT_PERIOD_LABEL_CLASS =
+    'text-[11px] font-semibold uppercase tracking-wide text-[#475569] lg:text-xs';
+
 const slotButtonClass = (active: boolean, embedded?: boolean) =>
     cn(
         'inline-flex w-full select-none items-center justify-center rounded-md border font-semibold tabular-nums transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
         embedded ? 'h-9 text-[12px]' : 'h-9 min-w-[3.75rem] px-2.5 text-[13px] sm:min-w-[4.25rem]',
         active
             ? 'border-brand bg-brand text-white shadow-sm'
@@ -87,9 +92,9 @@ function PeriodFilterChips({
 function PreviewPeriodBlock({ period, count }: { period: SlotDayPeriod; count: number }) {
     return (
         <div className="rounded-xl bg-[#f8f9fb] px-3 py-2.5">
-            <p className="text-[11px] font-semibold text-[#1c1c1c]">{SLOT_PERIOD_LABELS[period]}</p>
-            <p className="text-[10px] text-[#9ca3af]">{SLOT_PERIOD_HINTS[period]}</p>
-            <p className="mt-1 text-xs font-medium text-[#4b5563]">
+            <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
+            <p className="mt-0.5 text-[11px] text-[#6b7280]">{SLOT_PERIOD_HINTS[period]}</p>
+            <p className="mt-1 text-xs font-medium text-[#475569]">
                 {count === 0
                     ? 'Sin huecos'
                     : count === 1
@@ -118,7 +123,7 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
     // Chip de solo consulta: aspecto atenuado a trazas (el cliente no elige la hora aquí),
     // pero pulsable para explicar el modo «lo coordina Inspecciono».
     const browseChipClass =
-        'inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-[#9ca7b4] bg-[#f8f9fb] px-2.5 py-1.5 text-[13px] font-semibold tabular-nums text-[#64748b] transition-colors hover:border-[#7d8896] hover:bg-[#f1f3f6]';
+        'inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-[#9ca7b4] bg-[#f8f9fb] px-2.5 py-1.5 text-[13px] font-semibold tabular-nums text-[#64748b] transition-colors hover:border-[#7d8896] hover:bg-[#f1f3f6] hover:text-[#475569] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 active:scale-[0.98]';
 
     const renderBrowseChip = (s: ChosenSlot) => (
         <button
@@ -136,7 +141,7 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
         if (periodSlots.length === 0) return null;
         return (
             <div key={period}>
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#64748b] lg:text-xs">
+                <p className={cn('mb-2', SLOT_PERIOD_LABEL_CLASS)}>
                     {SLOT_PERIOD_LABELS[period]}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -154,7 +159,7 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
             {sorted.map(renderBrowseChip)}
         </div>
     ) : (
-        <div className="space-y-3.5">
+        <div className="space-y-3">
             {renderChipRow('morning', morning)}
             {renderChipRow('afternoon', afternoon)}
         </div>
@@ -169,7 +174,7 @@ const embeddedMiniSlotChipClass = (active: boolean) =>
         'max-lg:min-w-[2.75rem] max-lg:px-2 max-lg:py-1 max-lg:text-[12px]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
         active
-            ? 'bg-brand text-white shadow-[0_2px_8px_rgba(0,102,204,0.22)]'
+            ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.22)]'
             : 'bg-[#f3f5f8] text-[#1c1c1c] hover:bg-brand/[0.08] hover:text-brand active:scale-[0.98]',
     );
 
@@ -259,10 +264,10 @@ function SelectableEmbeddedSlotHours({
         return (
             <div key={period} className={splitPeriodsOnMobile ? 'rounded-lg bg-white px-2.5 py-2' : undefined}>
                 <div className={cn('mb-2 flex items-center gap-2', splitPeriodsOnMobile && 'mb-1.5')}>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.07em] text-[#475569] lg:text-xs">
+                    <p className={SLOT_PERIOD_LABEL_CLASS}>
                         {SLOT_PERIOD_LABELS[period]}
                     </p>
-                    <span className="text-[10px] text-[#94a3b8] lg:text-[11px]">{SLOT_PERIOD_HINTS[period]}</span>
+                    <span className="text-[11px] text-[#6b7280]">{SLOT_PERIOD_HINTS[period]}</span>
                 </div>
                 <div
                     className={cn(
@@ -326,18 +331,18 @@ function SelectablePeriodBlock({
     if (slots.length === 0) {
         return (
             <div className="rounded-xl bg-[#f8f9fb] px-3 py-2.5">
-                <p className="text-[11px] font-semibold text-[#1c1c1c]">{SLOT_PERIOD_LABELS[period]}</p>
-                <p className="mt-0.5 text-[11px] text-[#9ca3af]">Sin huecos en esta franja</p>
+                <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
+                <p className="mt-1 text-[11px] text-[#6b7280]">Sin huecos en esta franja</p>
             </div>
         );
     }
 
     return (
         <div>
-            <p className="mb-1.5 text-[11px] font-semibold text-[#1c1c1c]">
-                {SLOT_PERIOD_LABELS[period]}
-                <span className="ml-1.5 font-normal text-[#9ca3af]">{SLOT_PERIOD_HINTS[period]}</span>
-            </p>
+            <div className="mb-1.5 flex items-baseline gap-1.5">
+                <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
+                <span className="text-[11px] text-[#6b7280]">{SLOT_PERIOD_HINTS[period]}</span>
+            </div>
             <div
                 className={cn(
                     compact
@@ -413,7 +418,7 @@ export function SlotPeriodPanel({
                         <PreviewPeriodBlock period="afternoon" count={afternoon.length} />
                     ) : null}
                 </div>
-                <p className="text-xs font-medium text-[#4b5563] lg:hidden">
+                <p className="text-xs font-medium text-[#475569] lg:hidden">
                     {morning.length + afternoon.length === 1
                         ? '1 hueco libre'
                         : `${morning.length + afternoon.length} huecos libres`}

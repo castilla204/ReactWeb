@@ -7,6 +7,7 @@ import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
 import {
   buildInspeccionoMapStyle,
   ensureInspeccionoLandFill,
+  enableDynamicRasterPaintByZoom,
   INSPECCIONO_MAP_THEME,
 } from '../../utils/inspeccionoMapStyle';
 capMapWorkers(maplibregl);
@@ -451,6 +452,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       try {
         applyFlat();
         ensureInspeccionoLandFill(map);
+        enableDynamicRasterPaintByZoom(map); // Paint dinámico: zoom bajo → boost saturación
         map.triggerRepaint();
       } catch {
         // Proyección plana / capa de tierra son cosméticas; el mapa es usable sin ellas.

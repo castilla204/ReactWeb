@@ -42,7 +42,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
           ? 'gap-2.5'
           : isMobile
             ? hidePercent
-              ? 'gap-0.5'
+              ? 'gap-1.5'
               : 'gap-2'
             : isCompact
               ? 'gap-1'
@@ -69,7 +69,7 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             <span
               className={`tabular-nums ${
                 isMobile
-                  ? `${isProminent ? 'text-xs' : 'text-[10px]'} font-medium leading-none text-[#717171]`
+                  ? `${isProminent ? 'text-xs' : 'text-[11px]'} font-medium leading-none text-[#717171]`
                   : `flex items-center gap-0.5 text-[#6a6a6a] ${isCompact ? 'text-[10px]' : 'text-xs'}`
               }`}
             >
@@ -83,8 +83,8 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
               ) : null}
             </span>
             <div
-              className={`overflow-hidden rounded-full bg-[#dddddd] ${
-                isProminent ? 'h-2.5' : isMobile ? (hidePercent ? 'h-[7px]' : 'h-[7px]') : isCompact ? 'h-1' : 'h-1.5'
+              className={`overflow-hidden rounded-full bg-[#ececec] ${
+                isProminent ? 'h-2.5' : isMobile ? 'h-1.5' : isCompact ? 'h-1' : 'h-1.5'
               } ${isMobile ? 'self-center' : ''}`}
             >
               <div

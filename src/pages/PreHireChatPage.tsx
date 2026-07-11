@@ -480,7 +480,7 @@ export function PreHireChatPage() {
                                 <DropdownMenuItem onClick={() => navigate(`/service/${serviceIdNumber}`)}>
                                     Ver servicio
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate('/mis-mensajes')}>
+                                <DropdownMenuItem onClick={() => navigate('/mis-mensajes?filtro=consultas')}>
                                     Mis mensajes
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -675,11 +675,6 @@ export function PreHireChatPage() {
                 </div>
             )}
 
-            {service && !loading && (
-                <div className="shrink-0 bg-white px-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:hidden">
-                </div>
-            )}
-            
             {/* Modal para ampliar foto de perfil */}
             <Dialog open={showAvatarModal} onOpenChange={setShowAvatarModal}>
                 <DialogContent className="max-w-2xl p-0 bg-transparent border-0 shadow-none">

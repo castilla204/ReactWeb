@@ -6,6 +6,10 @@ import { SileoSkeleton } from '../ui/sileo-skeleton';
 interface ServiceDetailDesktopGalleryPrimaryOverlays {
   /** Arriba-izquierda de la foto principal (p. ej. volver) */
   topLeft?: React.ReactNode;
+  /** Arriba-derecha de la foto principal (p. ej. guardar/favorito) — mismo
+      emparejamiento visual que el top bar flotante móvil (volver + favorito
+      en las dos esquinas de la MISMA foto). */
+  topRight?: React.ReactNode;
   /** Abajo con degradado (p. ej. formación + título del servicio) */
   bottom?: React.ReactNode;
 }
@@ -22,9 +26,6 @@ interface ServiceDetailDesktopGalleryProps {
   layout?: 'default' | 'split';
   /** Overlays anclados SOLO a la celda de la foto principal (índice 0) */
   primaryOverlays?: ServiceDetailDesktopGalleryPrimaryOverlays;
-  /** Acción anclada arriba-derecha de la SEGUNDA foto (índice 1); cae a la
-      principal si solo hay una imagen. P. ej. el botón de guardar/favorito. */
-  secondPhotoTopRight?: React.ReactNode;
   className?: string;
 }
 
@@ -44,29 +45,14 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   onImageLoadStart,
   layout = 'default',
   primaryOverlays,
-  secondPhotoTopRight,
   className = '',
 }) => {
   const shellHeight = resolveShellHeight(className);
   const isSplit = layout === 'split';
   const shellClass = `sd-gallery-shell ${isSplit ? '!rounded-none' : ''}`;
-  const hasPrimaryOverlays = Boolean(primaryOverlays?.topLeft || primaryOverlays?.bottom);
-
-  // Ancla una acción flotante (p. ej. favorito) en la esquina superior derecha de
-  // una celda, fuera del <button> de la imagen para no anidar botones.
-  const wrapCellTopRight = (node: React.ReactNode, cellClassName: string, topRight?: React.ReactNode) => {
-    if (!topRight) {
-      return node;
-    }
-    return (
-      <div className={`relative min-h-0 ${cellClassName}`}>
-        {node}
-        <div className="pointer-events-none absolute right-0 top-0 z-20 p-3">
-          <div className="pointer-events-auto">{topRight}</div>
-        </div>
-      </div>
-    );
-  };
+  const hasPrimaryOverlays = Boolean(
+    primaryOverlays?.topLeft || primaryOverlays?.topRight || primaryOverlays?.bottom,
+  );
 
   const wrapPrimaryCell = (node: React.ReactNode, cellClassName: string) => {
     if (!hasPrimaryOverlays) {
@@ -78,6 +64,11 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
         {primaryOverlays?.topLeft ? (
           <div className="pointer-events-none absolute left-0 top-0 z-20 p-3">
             <div className="pointer-events-auto">{primaryOverlays.topLeft}</div>
+          </div>
+        ) : null}
+        {primaryOverlays?.topRight ? (
+          <div className="pointer-events-none absolute right-0 top-0 z-20 p-3">
+            <div className="pointer-events-auto">{primaryOverlays.topRight}</div>
           </div>
         ) : null}
         {primaryOverlays?.bottom ? (
@@ -153,16 +144,11 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
   }
 
   if (images.length === 1) {
-    // Sin segunda foto: el favorito cae a la esquina de la principal.
     return (
       <div className={`${shellClass} relative ${shellHeight} ${className}`}>
-        {wrapCellTopRight(
-          wrapPrimaryCell(
-            cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true),
-            'h-full w-full',
-          ),
+        {wrapPrimaryCell(
+          cell(images[0], 'Imagen principal del servicio', 0, 'h-full w-full', true),
           'h-full w-full',
-          secondPhotoTopRight,
         )}
       </div>
     );
@@ -177,7 +163,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
       <div className={`relative h-full min-h-0 ${className}`}>
         <div className={`${shellClass} grid ${shellHeight} ${twoColClass} ${GAP}`}>
           {wrapPrimaryCell(cell(images[0], 'Imagen 1', 0, 'h-full min-h-0', true), 'h-full min-h-0')}
-          {wrapCellTopRight(cell(images[1], 'Imagen 2', 1, 'h-full min-h-0'), 'h-full min-h-0', secondPhotoTopRight)}
+          {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         </div>
         {showAllButton}
       </div>
@@ -192,7 +178,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
             cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
             'col-span-2 row-span-2 h-full min-h-0',
           )}
-          {wrapCellTopRight(cell(images[1], 'Imagen 2', 1, 'col-span-2 h-full min-h-0'), 'col-span-2 h-full min-h-0', secondPhotoTopRight)}
+          {cell(images[1], 'Imagen 2', 1, 'col-span-2 h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'col-span-2 h-full min-h-0')}
         </div>
         {showAllButton}
@@ -208,7 +194,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
             cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
             'col-span-2 row-span-2 h-full min-h-0',
           )}
-          {wrapCellTopRight(cell(images[1], 'Imagen 2', 1, 'h-full min-h-0'), 'h-full min-h-0', secondPhotoTopRight)}
+          {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
           {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
           {cell(images[3], 'Imagen 4', 3, 'col-span-2 h-full min-h-0')}
         </div>
@@ -226,7 +212,7 @@ export const ServiceDetailDesktopGallery: React.FC<ServiceDetailDesktopGalleryPr
           cell(images[0], 'Imagen principal', 0, 'col-span-2 row-span-2 h-full min-h-0', true),
           'col-span-2 row-span-2 h-full min-h-0',
         )}
-        {wrapCellTopRight(cell(images[1], 'Imagen 2', 1, 'h-full min-h-0'), 'h-full min-h-0', secondPhotoTopRight)}
+        {cell(images[1], 'Imagen 2', 1, 'h-full min-h-0')}
         {cell(images[2], 'Imagen 3', 2, 'h-full min-h-0')}
         {cell(images[3], 'Imagen 4', 3, 'h-full min-h-0')}
         {cell(

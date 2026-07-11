@@ -149,7 +149,7 @@ const HangfirePanel: React.FC = () => {
                         <iframe
                             src={hangfireUrl}
                             className="w-full"
-                            style={{ height: 'calc(100vh - 300px)', minHeight: '600px', border: 'none' }}
+                            style={{ height: 'clamp(600px, calc(100dvh - 300px), 720px)', border: 'none' }}
                             title="Hangfire Dashboard"
                             allow="fullscreen"
                             onError={() => {

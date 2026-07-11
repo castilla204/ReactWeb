@@ -1,32 +1,45 @@
 import { cn } from '../../lib/utils';
 
-interface InfoPoint {
+export interface InfoPoint {
     title: string;
     body: string;
 }
 
-/**
- * Tarjeta de confianza bajo el calendario (columna derecha, checkout desktop).
- * Rellena el espacio que queda bajo el calendario —que es de alto fijo— con
- * argumentos de tranquilidad. Sin iconos: solo tipografía limpia y un filete
- * sutil entre puntos.
- */
-export function CheckoutCalendarSideInfo({ className }: { className?: string }) {
-    const points: InfoPoint[] = [
-        {
-            title: 'Pago protegido',
-            body: 'Retenemos el importe y solo se libera al experto cuando termina la inspección.',
-        },
-    ];
+const DEFAULT_POINTS: InfoPoint[] = [
+    {
+        title: 'Pago protegido',
+        body: 'Retenemos el importe y solo se libera al experto cuando termina la inspección.',
+    },
+];
 
+/**
+ * Tarjeta de confianza que rellena el hueco bajo el bloque principal de la columna
+ * derecha del checkout desktop (calendario en flujo self, tarjeta de contacto en flujo
+ * seller — ambos de alto fijo). Sin iconos: solo tipografía limpia y un filete sutil
+ * entre puntos; MISMA estructura en los dos flujos para que ambas columnas se lean como
+ * pares (antes el flujo seller tenía una tarjeta de pasos numerados con icono, un
+ * lenguaje visual distinto al resto del checkout — feedback 2026-07-10).
+ *
+ * `points` por defecto trae 1 solo punto A PROPÓSITO: la altura de esta tarjeta la fija
+ * el hueco que queda bajo el bloque de arriba (flex-1 la estira). Con 2-3 puntos crecía
+ * más que ese hueco y descuadraba los bajos con la columna izquierda (feedback
+ * 2026-07-09). Si se pasan más puntos, comprobar que el conjunto siga cabiendo.
+ */
+export function CheckoutCalendarSideInfo({
+    className,
+    points = DEFAULT_POINTS,
+}: {
+    className?: string;
+    points?: InfoPoint[];
+}) {
     return (
         <div
             className={cn(
-                'flex min-h-0 flex-col justify-center rounded-xl border border-[#e5e7eb] bg-white px-5 py-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:px-6',
+                'flex min-h-0 flex-col justify-center rounded-xl border border-[#ebebeb] bg-white px-4 py-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:px-5',
                 className,
             )}
         >
-            <ul className="flex flex-col divide-y divide-[#f1f3f6]">
+            <ul className="flex flex-col divide-y divide-[#eef0f3]">
                 {points.map(({ title, body }) => (
                     <li key={title} className="py-3.5">
                         <p className="text-[13.5px] font-semibold leading-snug text-[#1c1c1c]">{title}</p>
