@@ -55,7 +55,9 @@ export function CheckoutMobileStepper({
                     className={cn(
                         'h-[3px] flex-1 rounded-full',
                         'transition-colors duration-300 ease-out motion-reduce:transition-none',
-                        i <= index ? 'bg-brand' : 'bg-[#e8eaed]',
+                        // Segmento vacío #dde2ea (un pelín más oscuro que el antiguo #e8eaed):
+                        // se lee sobre el fondo gris susurro del topbar sin perderse.
+                        i <= index ? 'bg-brand' : 'bg-[#dde2ea]',
                     )}
                 />
             ))}

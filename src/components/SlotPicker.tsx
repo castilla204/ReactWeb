@@ -76,10 +76,13 @@ const EMBEDDED_CALENDAR_CLASS_NAMES = {
     nav: 'hidden',
     month_caption: 'hidden',
     month: 'flex w-full flex-col gap-2',
-    weekdays: 'mb-1.5 flex w-full',
+    weekdays: 'mb-1 flex w-full sm:mb-1.5',
     weekday: 'flex-1 text-center text-[11px] font-medium uppercase tracking-wide text-[#6b7280] lg:text-xs',
     week: 'flex w-full',
-    day: 'flex-1 p-[3px]',
+    // Padding más ajustado por debajo de 640px: en un móvil estrecho (390px) el botón del
+    // día cae a ~40.9px con 3px de aire; a 2px sube a ~43.4px, más cerca del objetivo táctil
+    // de 44px sin sacrificar legibilidad en tablet/desktop (que ya sobra ancho).
+    day: 'flex-1 p-[2px] sm:p-[3px]',
 } as const;
 
 const SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES = {
@@ -131,10 +134,15 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
     );
 }
 
+// Mismo hue que el resto de la app (STATUS_TONE_BADGE_CLASSES en statusUtils.ts:
+// success #0F6A3E, warning #8a5a10) en vez de los verdes/ámbares de stock de Tailwind
+// (hue distinto, más teal/naranja) y gris neutro real en vez de slate azulado (que
+// remite al azul de marca del día seleccionado). Luminosidad ajustada para AA ≥4.5:1
+// con y sin el brightness(0.96) del hover.
 const AVAILABILITY_LEGEND_ITEMS = [
-    { label: 'Libre', swatch: 'bg-emerald-200' },
-    { label: 'Pocos', swatch: 'bg-amber-200' },
-    { label: 'Lleno', swatch: 'bg-slate-200' },
+    { label: 'Libre', swatch: 'bg-[#d2f4e4]' },
+    { label: 'Pocos', swatch: 'bg-[#f8e9ce]' },
+    { label: 'Lleno', swatch: 'bg-[#e6e6e6]' },
 ] as const;
 
 /** Leyenda de disponibilidad bajo el calendario (colores = celdas del mes). */
@@ -150,7 +158,7 @@ function AvailabilityLegend({
     return (
         <div
             className={cn(
-                'flex flex-wrap items-center border-t border-[#eceef2] px-[3px]',
+                'flex flex-wrap items-center border-t border-[#eceef2] px-[2px] sm:px-[3px]',
                 compact ? 'mt-2 gap-x-2 gap-y-1 pt-2' : 'mt-2.5 gap-x-3 gap-y-1.5 pt-2.5',
                 align === 'between' ? 'justify-between' : 'justify-center',
             )}
@@ -363,10 +371,10 @@ const SlotPicker: React.FC<Props> = ({
                 if (hasSummary && free !== undefined) {
                     tint =
                         free === 0
-                            ? 'bg-slate-200 text-slate-600'
+                            ? 'bg-[#e6e6e6] text-[#4a4a4a]'
                             : free <= 2
-                              ? 'bg-amber-200 text-amber-900'
-                              : 'bg-emerald-200 text-emerald-900';
+                              ? 'bg-[#f8e9ce] text-[#8a5a10]'
+                              : 'bg-[#d2f4e4] text-[#0F6A3E]';
                 }
             }
 
@@ -458,7 +466,7 @@ const SlotPicker: React.FC<Props> = ({
 
     function CalendarToolbar() {
         return (
-            <div className="mb-3 flex select-none items-center justify-between gap-3 px-[3px]">
+            <div className="mb-3 flex select-none items-center justify-between gap-3 px-[2px] sm:px-[3px]">
                 <div>
                     <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">{calMonthLabel}</h3>
                 </div>

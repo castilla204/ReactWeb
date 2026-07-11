@@ -47,6 +47,8 @@ export interface CheckoutSummaryTableProps {
   hideExpertHeader?: boolean;
   /** Muestra un bloque "Qué incluye" con las portadas de entregables (solo en revisar-y-pagar). */
   showDeliverables?: boolean;
+  /** Nº de columnas de las portadas de "Qué incluye" en pantallas anchas (desktop: 2, apiladas por defecto). */
+  deliverablesColumns?: 1 | 2;
   className?: string;
 }
 
@@ -125,6 +127,7 @@ export function CheckoutSummaryTable({
   hideExpertHeader = false,
   deliverables = [],
   showDeliverables = false,
+  deliverablesColumns = 1,
   className = '',
 }: CheckoutSummaryTableProps) {
   // Chunking del resumen (no-compacto): agrupa las filas relacionadas bajo una
@@ -261,6 +264,7 @@ export function CheckoutSummaryTable({
               variant="inline"
               presentation="cover"
               showHeading={false}
+              coverColumns={deliverablesColumns}
             />
           </div>
         ) : null}
