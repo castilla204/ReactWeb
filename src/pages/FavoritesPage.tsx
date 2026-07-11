@@ -112,7 +112,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
       : `${count} ${count === 1 ? 'servicio guardado' : 'servicios guardados'}`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-white pb-[65px] md:pb-0">
+    <div className="flex min-h-screen flex-col bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-0">
       <SEO title="Tus favoritos | Inspecciono" description="Servicios de inspección que has guardado." noindex />
       {/* Cabecera editorial — sin barra sticky; respira y deja la marca clara. */}
       <header className="border-b border-[#ececec]">

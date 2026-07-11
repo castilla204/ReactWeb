@@ -19,11 +19,11 @@ const ICON_SIZE = 22;
 const ICON_STROKE = 2;
 
 /**
- * Tab individual de la barra inferior. Cada tab reparte el ancho por igual
- * (`flex: 1`) — sin anchos fijos ni márgenes negativos — así la barra nunca
- * desborda con 3 tabs (invitado) ni con 6 (experto autenticado) en pantallas
- * de 360 px. El estado activo se comunica sin fondos ni contornos (patrón
+ * Tab individual de la barra inferior. Ancho fijo 56px + gap 4px, centrados en
+ * contenedor flex. El estado activo se comunica sin fondos ni contornos (patrón
  * iOS/Airbnb): color de marca, trazo del icono más grueso y etiqueta semibold.
+ * Nota: en pantallas >380px los tabs dejan hueco; para distribución full-width
+ * cambiar a `flex: 1 min-w-0 max-w-[5rem]` en contenedor y `flex:1 justify-evenly` en div.
  */
 type TabButtonProps = {
   label: string;
@@ -203,7 +203,9 @@ export const MobileBottomBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (isAuthenticated) {
-      navigate('/mis-mensajes');
+      // Bandeja unificada: la entrada "Mensajes" abre con el filtro de consultas
+      // precontratación; "Mis contrataciones" (menú) entra con el filtro contrataciones.
+      navigate('/mis-mensajes?filtro=consultas');
     }
   };
 
@@ -266,7 +268,7 @@ export const MobileBottomBar: React.FC = () => {
       data-shared-element-id="tab-bar"
       data-xray-jira-component="Guest: Navigation: Header"
       style={{
-        height: '65px',
+        height: 'calc(65px + env(safe-area-inset-bottom, 0px))',
         paddingTop: '11px',
         paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
         background: '#ffffff',
