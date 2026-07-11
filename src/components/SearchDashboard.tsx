@@ -66,7 +66,7 @@ const SearchDashboard: React.FC = () => {
 
     if (error && !isNetworkErr) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-white p-6 pb-[65px]">
+            <div className="flex min-h-screen items-center justify-center bg-white p-6 pb-[calc(65px+env(safe-area-inset-bottom,0px))]">
                 <div className="max-w-sm text-center">
                     <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[#cccccc]" />
                     <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
@@ -86,7 +86,7 @@ const SearchDashboard: React.FC = () => {
             : `${searches.length} inspección${searches.length !== 1 ? 'es' : ''}`;
 
     return (
-        <div className="min-h-screen bg-[#fafafa] pb-[65px] md:pb-10">
+        <div className="min-h-screen bg-[#fafafa] pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-10">
             <SearchDashboardToolbar
                 searchInput={searchInput}
                 searchInputRef={searchInputRef}
@@ -135,24 +135,9 @@ const SearchDashboard: React.FC = () => {
                         </div>
 
                         {searches.length === 0 ? (
-                            <div className="relative overflow-hidden rounded-2xl border border-[#e8e8e8] bg-white px-6 py-16 text-center md:py-20">
-                                {/* Sello de bandeja vacía. El círculo doble en brand
-                                    transparente es el único decorativo del sistema —
-                                    referencia al sello del perito sobre el informe. */}
-                                <div
-                                    aria-hidden
-                                    className="pointer-events-none absolute right-6 top-6 hidden md:block"
-                                    style={{ transform: 'rotate(-8deg)' }}
-                                >
-                                    <div className="flex h-[88px] w-[88px] flex-col items-center justify-center rounded-full border-[1.5px] border-brand/30 text-brand/70">
-                                        <div className="absolute inset-2 rounded-full border border-brand/15" />
-                                        <span className="text-[8px] font-bold uppercase leading-tight tracking-[0.2em]">
-                                            Bandeja
-                                        </span>
-                                        <span className="text-[8px] font-bold uppercase leading-tight tracking-[0.2em]">
-                                            Vacía
-                                        </span>
-                                    </div>
+                            <div className="w-full px-6 py-12 text-center md:py-16">
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f5]">
+                                    <ClipboardList className="h-6 w-6 text-[#737373]" strokeWidth={1.5} aria-hidden />
                                 </div>
 
                                 <h2

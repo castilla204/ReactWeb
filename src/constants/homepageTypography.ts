@@ -235,12 +235,11 @@ export const SD_CHECKOUT_INNER_MAX_CLASS =
 export const SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[94rem] px-4 sm:px-5 lg:px-6 xl:px-8 2xl:max-w-[100rem]';
 
-/** Altura fija del bloque cita+mapa desktop (mapa en paso 2; paso 1 va a altura de contenido). */
+/** Altura fija COMPARTIDA por los pasos 1 (cita) y 2 (mapa) del checkout desktop: al
+ *  navegar entre pasos la fila no salta de alto (feedback 2026-07-10). 620px ≈ alto
+ *  natural del paso 1 con mes de 6 filas (calendario ~515 + gap + «Pago protegido»). */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS =
-  'h-[min(72vh,680px)] max-h-[680px]';
-
-/** Paso 1 desktop — altura según contenido; el footer queda pegado al bloque. */
-export const SD_CHECKOUT_DESKTOP_COORD_SHELL_HEIGHT_CLASS = 'h-auto';
+  'h-[min(72vh,620px)] max-h-[620px]';
 
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
@@ -254,7 +253,7 @@ export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
 
 /** Bloque cita+mapa desktop — una sola tarjeta */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS =
-  'overflow-hidden rounded-2xl border border-[#eceef2] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]';
+  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]';
 
 /** Cabecera de sección dentro de tarjeta checkout desktop */
 export const SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS =
@@ -411,9 +410,12 @@ export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
  * Margen superior del contenido del checkout móvil (no hay top bar como en desktop).
  * Suma aire visible POR ENCIMA del safe-area en lugar de `max()` —que sobre un notch
  * dejaba el contenido pegado al borde sin margen real—. Respeta el notch + 1.5rem.
+ * En pantallas ALTAS (≥700px de viewport: iPhone XR/11+, no el SE) sube a 2.25rem:
+ * top-align + aire progresivo con la altura, en vez de centrar (patrón responsive
+ * height; el centrado abría un vacío en mitad del paso de elección).
  */
 export const SD_CHECKOUT_MOBILE_TOP_PAD_CLASS =
-  'pt-[calc(env(safe-area-inset-top,0px)+1.5rem)]';
+  'pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2.25rem)]';
 
 /** Degradado marca — asistente / chat (ámbar → crema → azul) */
 export const SD_BRAND_CHAT_GRADIENT_WASH =
@@ -440,7 +442,11 @@ export const SD_BRAND_BLUE_GRADIENT_LINE_SUBTLE =
 export const SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS = 'min-h-[100dvh] bg-[#f7f7f7]';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS =
-  'relative pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))] pt-[max(1.25rem,env(safe-area-inset-top,0px))]';
+  // pt suma el safe-area en vez de max(): con notch, max() dejaba el título pegado
+  // al borde sin aire propio (mismo fix que SD_CHECKOUT_MOBILE_TOP_PAD_CLASS).
+  // 1.25rem + el pt-1 de la cabecera del paso = 24px, a la par de los pasos 1-3;
+  // en pantallas altas 2rem (+pt-1 = 36px), misma progresión que TOP_PAD.
+  'relative pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))] pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2rem)]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
   'fixed bottom-0 left-0 right-0 z-[70] border-t border-[#ebebeb] bg-white';
@@ -457,7 +463,7 @@ export const SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS =
 export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
 
 export const SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS =
-  'inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#d1d5db] bg-white px-4 text-[13px] font-semibold text-[#4b5563] transition-colors hover:border-[#9ca3af] hover:bg-[#f9fafb] hover:text-[#1c1c1c] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#d1d5db] bg-white px-4 text-[13px] font-semibold text-[#4b5563] transition-colors hover:border-[#9ca3af] hover:bg-[#f9fafb] hover:text-[#1c1c1c] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 /** Contenedor calendario checkout — contorno neutro */
 export const SD_CHECKOUT_CALENDAR_FRAME_CLASS =
@@ -582,11 +588,14 @@ export const SD_MOBILE_TOPBAR_COMPACT_INNER_CLASS = `flex min-h-12 items-center 
 export const SD_MOBILE_FOOTER_SHELL_CLASS =
   'fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.09)]';
 
-/** Altura footprint de MobileBottomBar (safe-area ya incluida internamente) */
+/** Altura footprint de MobileBottomBar (safe-area incluida via calc en el componente) */
 export const MOBILE_TAB_BAR_HEIGHT_PX = 65;
 
+/** Offset inferior de contenido móvil que respeta la barra + safe-area del dispositivo */
+export const MOBILE_CONTENT_PADDING_BOTTOM_CLASS = 'pb-[calc(65px+env(safe-area-inset-bottom,0px))]';
+
 /** Offset inferior del FAB con tab bar (20px de aire sobre los 65px de la barra) */
-export const CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS = 'bottom-[calc(65px+1.25rem)]';
+export const CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS = 'bottom-[calc(65px+1.25rem+env(safe-area-inset-bottom,0px))]';
 
 /** Barra fija «Nuevo servicio» en panel experto (móvil) */
 export const CHATBOT_FAB_BOTTOM_WITH_EXPERT_SERVICES_CLASS =
