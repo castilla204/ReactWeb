@@ -91,8 +91,7 @@ const AdminEmailTemplatesPage: React.FC = () => {
                   style={{
                     width: mobile ? 390 : '100%',
                     maxWidth: '100%',
-                    height: 'calc(100vh - 230px)',
-                    minHeight: 560,
+                    height: 'clamp(560px, calc(100dvh - 230px), 720px)',
                     border: 'none',
                     background: '#fff',
                     borderRadius: 8,

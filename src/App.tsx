@@ -340,8 +340,12 @@ const AppContent: React.FC = () => {
     const isExpert = userRole === 'Expert';
     const userIsAdmin = isAdmin(userEmail) || userRole === 'Admin' || userRole === 'admin';
 
+    // overflow-x-CLIP, no hidden: hidden convierte el shell en scroll container y
+    // rompe TODO position:sticky descendiente (el aside de pago del checkout, el
+    // panel de reseñas…). clip recorta igual el desborde horizontal sin crear
+    // scroll container, así los sticky se anclan al viewport como se espera.
     return (
-        <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
+        <div className="min-h-screen bg-background text-foreground relative overflow-x-clip">
             <GoogleIdentityBootstrap />
             {/* Header global unificado: el mismo HomepageDesktopTopBar que ya usa la home,
                 ficha de servicio, checkout y mapa — pero con variant="plain" y showLogo
@@ -479,7 +483,7 @@ const AppContent: React.FC = () => {
                                     </button>
                                 </div>
                             </nav>
-                            <div className="p-4 border-t border-border/20">
+                            <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] border-t border-border/20">
                                 <div className="mb-4">
                                     <p className="text-xs font-medium text-muted-foreground mb-2 px-1">País / Región</p>
                                     <CountrySelector

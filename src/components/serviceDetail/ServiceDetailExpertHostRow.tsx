@@ -1,6 +1,6 @@
 import React from 'react';
-import { BadgeCheck, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { VerifiedBadge } from '../ui/VerifiedBadge';
 import { Button } from '../ui/button';
 import { parseFormacion } from '../expertPanel/formacion';
 import {
@@ -34,8 +34,6 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
   expertPicture,
   expertDescription,
   completedSearches = 0,
-  rating,
-  reviewCount,
   formacion,
   onAvatarClick,
   onChatClick,
@@ -44,9 +42,6 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
 }) => {
   const isMobile = variant === 'mobile';
   const formacionItems = !isMobile ? parseFormacion(formacion) : [];
-  const showMobileRating = isMobile && rating != null && rating > 0 && (reviewCount ?? 0) > 0;
-  const ratingLabel =
-    rating != null && rating > 0 ? rating.toFixed(1).replace('.', ',') : null;
   const trimmedExpertDescription = expertDescription?.trim() ?? '';
   const showDesktopExpertBio = !isMobile && trimmedExpertDescription.length > 0;
 
@@ -64,12 +59,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
         </AvatarFallback>
       </Avatar>
       {isMobile ? (
-        <span
-          className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white ring-2 ring-white"
-          aria-hidden
-        >
-          <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
-        </span>
+        <VerifiedBadge className="absolute -bottom-1 -right-1 h-[22px] w-[22px]" />
       ) : null}
     </button>
   );
@@ -86,7 +76,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
               {formacionItems.map((it, i) => (
                 <span
                   key={i}
-                  className="inline-flex max-w-[200px] items-center rounded-full bg-[#f4f7fb] px-2.5 py-1 text-[12px] font-medium leading-none text-[#1C63B4] ring-1 ring-[#1C63B4]/10"
+                  className="inline-flex max-w-[200px] items-center rounded-full bg-[#f4f4f5] px-2.5 py-1 text-[12px] font-medium leading-none text-[#52525b] ring-1 ring-[#e4e4e7]"
                   title={it.titulo}
                 >
                   <span className="truncate">{it.titulo}</span>
@@ -105,6 +95,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
 
       {isMobile ? (
         <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${SD_MOBILE_META_CLASS}`}>
+          {/* El rating vive en el titular de la página y en la tab Reseñas; repetirlo aquí lo triplicaba */}
           <span>Revisor verificado</span>
           {completedSearches > 0 ? (
             <>
@@ -113,18 +104,6 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
               </span>
               <span>
                 {completedSearches} {completedSearches === 1 ? 'trabajo' : 'trabajos'}
-              </span>
-            </>
-          ) : null}
-          {showMobileRating && ratingLabel ? (
-            <>
-              <span className="text-[#d4d4d4]" aria-hidden>
-                ·
-              </span>
-              <span className="inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums text-[#1c1c1c]">
-                <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" aria-hidden />
-                {ratingLabel}
-                <span className="font-normal text-[#6a6a6a]">({reviewCount})</span>
               </span>
             </>
           ) : null}
@@ -139,12 +118,7 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       onClick={onChatClick}
       variant="outline"
       size="sm"
-      style={{
-        border: '2px solid transparent',
-        background:
-          'linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box',
-      }}
-      className={`rounded-full font-semibold text-[#222222] hover:bg-transparent hover:shadow-sm ${
+      className={`rounded-full border-[#d5e3f5] font-semibold text-brand hover:bg-[#eef4fb] hover:text-brand ${
         isMobile
           ? 'h-9 shrink-0 px-3.5 text-sm'
           : `${SD_DESKTOP_HOST_CHAT_CLASS} h-9 px-4 text-sm`

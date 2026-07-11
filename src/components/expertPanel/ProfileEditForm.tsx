@@ -12,7 +12,7 @@ import MapGL, {
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { circlePolygonGeoJSON } from '../../utils/geoCircle';
-import { getCartoVoyagerNoLabelsTiles } from '../../utils/mapTileUrls';
+import { buildInspeccionoMapStyle, MAP_CANON } from '../../utils/inspeccionoMapStyle';
 import {
     searchMapboxAutocomplete,
     reverseGeocodeMapbox,
@@ -38,34 +38,17 @@ const MAPBOX_TOKEN =
     import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ||
     '';
 
-const MAP_SKY_COLOR = '#e6ecf2';
-
-function buildCartoMapStyle() {
-    return {
-        version: 8 as const,
-        sources: {
-            carto: {
-                type: 'raster' as const,
-                tiles: getCartoVoyagerNoLabelsTiles(),
-                tileSize: 256,
-                attribution: '© OpenStreetMap · CARTO',
-            },
-        },
-        layers: [
-            { id: 'sky-bg', type: 'background' as const, paint: { 'background-color': MAP_SKY_COLOR } },
-            { id: 'carto', type: 'raster' as const, source: 'carto', paint: { 'raster-opacity': 1 } },
-        ],
-    };
-}
+// Estilo canónico único (Voyager con etiquetas + tratamiento compartido): el experto
+// reconoce su ciudad/calles al ajustar dónde trabaja. Ver utils/inspeccionoMapStyle.
 
 const defaultCenter = { lat: 40.4168, lng: -3.7038 };
 const DEFAULT_WORK_RADIUS_KM = 100;
 const MAX_WORK_RADIUS_KM = 200;
 const MIN_MOBILE_RADIUS_KM = 5;
 
-const CIRCLE_LINE_COLOR = 'rgba(0, 102, 204, 0.62)';
-const CIRCLE_LINE_WIDTH = 2;
-const CIRCLE_LINE_DASH: [number, number] = [3, 3];
+const CIRCLE_LINE_COLOR = MAP_CANON.ring;
+const CIRCLE_LINE_WIDTH = MAP_CANON.ringWidth;
+const CIRCLE_LINE_DASH: [number, number] = MAP_CANON.ringDash;
 
 function readWorkRadiusKm(profile: unknown): number {
     const p = profile as { workRadiusKm?: unknown; WorkRadiusKm?: unknown } | null | undefined;
@@ -192,7 +175,7 @@ export function ProfileEditForm({
     const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
     const [mobileEditorTab, setMobileEditorTab] = useState<'profile' | 'map'>('profile');
 
-    const cartoMapStyle = useMemo(() => buildCartoMapStyle(), []);
+    const cartoMapStyle = useMemo(() => buildInspeccionoMapStyle({ withLabels: true }), []);
     const [mapCanRender, setMapCanRender] = useState(false);
     const [mapHeight, setMapHeight] = useState(260);
 

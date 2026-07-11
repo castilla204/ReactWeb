@@ -9,7 +9,7 @@ interface FormacionChipsProps {
 }
 
 /**
- * Formación del experto como chips azules discretos — MISMO estilo que los que
+ * Formación del experto como chips neutros discretos — MISMO estilo que los que
  * salen junto al nombre en desktop (ServiceDetailExpertHostRow). Se usa en móvil,
  * bajo "Acerca del servicio", para mostrar la titulación sin robar protagonismo.
  * Con `scrollable`, queda en una fila con scroll horizontal y sin barra visible.
@@ -30,7 +30,7 @@ export default function FormacionChips({ value, scrollable = false, className }:
                 <span
                     key={i}
                     title={it.titulo}
-                    className={`inline-flex items-center rounded-full bg-[#f4f7fb] px-2.5 py-1 text-[12px] font-medium leading-none text-[#1C63B4] ring-1 ring-[#1C63B4]/10 ${
+                    className={`inline-flex items-center rounded-full bg-[#f4f4f5] px-2.5 py-1 text-[12px] font-medium leading-none text-[#52525b] ring-1 ring-[#e4e4e7] ${
                         scrollable ? 'shrink-0 whitespace-nowrap' : 'max-w-full'
                     }`}
                 >

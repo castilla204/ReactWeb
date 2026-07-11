@@ -80,12 +80,14 @@ export function AppointmentWizardShell({
                         title={title}
                         description={description}
                         onBack={onBack}
-                        className="mb-4"
+                        steps={steps}
+                        currentStepId={currentStep}
+                        className="mb-5"
                     />
                     <div className={cn('flex flex-col', desktopTallRight && SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS)}>
                         <div className={cn('flex flex-1 items-stretch gap-5 overflow-hidden xl:gap-6', desktopTallRight && 'min-h-0')}>
                             <div className={cn(
-                                'flex min-w-0 flex-[0_0_45%] flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]',
+                                'flex min-w-0 flex-[0_0_45%] flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]',
                                 desktopTallRight ? 'h-full min-h-0' : 'min-h-0 self-stretch',
                             )}>
                                 <div className={cn('px-6 pb-5 pt-5 xl:px-7', desktopTallRight ? 'flex min-h-0 flex-1 flex-col overflow-y-auto' : 'flex min-h-0 flex-col justify-start')}>
@@ -93,7 +95,7 @@ export function AppointmentWizardShell({
                                 </div>
                             </div>
                             <aside className={cn(
-                                'relative flex min-w-0 flex-1 flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+                                'relative flex min-w-0 flex-1 flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
                                 desktopTallRight ? 'h-full min-h-0' : 'min-h-0 items-stretch self-start',
                             )}>
                                 {desktopTallRight ? desktopRight : (

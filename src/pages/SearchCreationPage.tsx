@@ -679,7 +679,7 @@ const SearchCreationPage: React.FC = () => {
                     )}
             
                     {currentStep === 3 && selectedServiceId && (
-                <div className="w-full h-screen flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
+                <div className="w-full h-[100dvh] flex flex-col bg-gray-50 overflow-hidden lg:min-h-screen lg:h-auto relative">
                         <div className="flex-1 overflow-y-auto">
                             <SearchForm
                                 parameters={searchParameters as SearchParameters & { latitude: string; longitude: string; locationRange: number }}

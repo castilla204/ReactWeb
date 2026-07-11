@@ -48,7 +48,9 @@ export const ServiceDetailAvailabilityWidget: React.FC<ServiceDetailAvailability
     'bg-brand/[0.09] font-semibold text-brand';
   const sidebarInactiveDayClass =
     'bg-transparent font-medium text-[#9ca3af]';
-  const mobileActiveDayClass = 'bg-brand font-semibold text-white';
+  // Tinte, no acento sólido: los días son información pasiva y no deben gritar
+  // más que los CTAs de la página.
+  const mobileActiveDayClass = 'bg-brand/10 font-semibold text-brand';
   const mobileInactiveDayClass = 'bg-[#f0f0f0] font-medium text-[#b0b0b0]';
 
   const denseDaysRow = (

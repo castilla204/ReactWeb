@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 // 🛡️ Round 28 — Sprint 4: i18n para textos UI multi-idioma (ES/EN).
 import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User as UserIcon, Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff, X } from 'lucide-react';
+import { Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { toast } from '../lib/toast';
@@ -58,14 +58,12 @@ interface OtpContext {
     isLinking?: boolean;
 }
 
-// Cabecera limpia: tinte azul de marca plano (sin el degradado azul→ámbar).
-const AUTH_HEADER_BG = '#f4f8fd';
-
-// Copys de la cabecera "título + enlace" (patrón Stripe/Linear/Supabase): el título
-// y el subtítulo conmutan según el modo; no hay conmutador en caja.
-const AUTH_COPY: Record<'login' | 'register', { subtitle: string }> = {
-    login: { subtitle: 'Inicia sesión para gestionar tus inspecciones' },
-    register: { subtitle: 'Crea tu cuenta' },
+// Copys de la cabecera: el titular es la propia acción ("Inicia sesión"), no el logo —
+// el wordmark pasa a firma discreta arriba. Sin subtítulo: era redundante con el titular
+// y el conmutador de modo ya vive en el pie (AuthFooterLine).
+const AUTH_COPY: Record<'login' | 'register', { title: string }> = {
+    login: { title: 'Inicia sesión' },
+    register: { title: 'Crea tu cuenta' },
 };
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -277,19 +275,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 };
 
 /**
- * Cabecera "título + enlace" (patrón Stripe/Linear/Supabase): marca constante arriba
- * + título/subtítulo que conmutan según el modo con un cross-fade sutil. Sin conmutador
- * en caja — el cambio de modo se hace desde AuthSwitchLink (enlace al pie).
+ * Cabecera: el wordmark baja a firma discreta arriba y el titular real ("Inicia sesión")
+ * pasa a ser el elemento dominante — la pantalla habla de la acción, no del logo.
+ * Fondo blanco plano + hairline (antes tenía un tinte azul de marca).
  */
 const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> = ({ tab, onClose }) => {
     const { t } = useTranslation();
-    const { subtitle } = AUTH_COPY[tab];
+    const { title } = AUTH_COPY[tab];
 
     return (
-        <div
-            className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#e6eef7] md:rounded-t-2xl"
-            style={{ background: AUTH_HEADER_BG }}
-        >
+        <div className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#ececec] bg-white md:rounded-t-2xl">
             {/* Asa del drawer (solo móvil) — la fila ocupa solo ~10px. */}
             <div className="flex justify-center pt-1.5 md:hidden">
                 <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-[#c4c4c4]" />
@@ -303,21 +298,21 @@ const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> =
             >
                 <X className="h-[18px] w-[18px]" />
             </button>
-            <div className="px-5 pb-4 pt-2 md:px-7 md:pb-5 md:pt-4">
-                <div className="relative min-h-[52px]">
+            <div className="px-5 pb-4 pt-3 md:px-7 md:pb-5 md:pt-4">
+                <p className="font-display text-[11px] font-semibold leading-none tracking-[-0.01em]">
+                    <span className="text-[#2563EB]">Inspecciono</span>
+                    <span className="text-[#F59E0B]">.</span>
+                </p>
+                <div className="relative mt-1.5">
                     <motion.div
                         key={tab}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     >
-                        <h2 className="font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em]">
-                            <span className="text-[#2563EB]">Inspecciono</span>
-                            <span className="text-[#F59E0B]">.</span>
+                        <h2 className="font-display text-[20px] font-bold leading-tight tracking-[-0.02em] text-[#171717]">
+                            {title}
                         </h2>
-                        <p className="mt-1 font-display text-[13px] leading-snug text-[#5b6370]">
-                            {subtitle}
-                        </p>
                     </motion.div>
                 </div>
             </div>
@@ -514,26 +509,26 @@ const LoginForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="space-y-3.5">
-            <Field icon={<Mail className="w-4 h-4" />}>
+            <FieldGroup label="Correo electrónico">
                 <Input
                     type="email"
                     autoComplete="email"
                     required
-                    placeholder="Correo electrónico"
+                    placeholder="nombre@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={INPUT_REBRAND}
                 />
-            </Field>
-            <Field icon={<Lock className="w-4 h-4" />}>
+            </FieldGroup>
+            <FieldGroup label="Contraseña">
                 <Input
                     type={showPwd ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
-                    placeholder="Contraseña"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-10`}
+                    className={`${INPUT_REBRAND} pr-11`}
                 />
                 <button
                     type="button"
@@ -544,7 +539,7 @@ const LoginForm: React.FC<{
                 >
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-            </Field>
+            </FieldGroup>
             <div className="flex justify-end -mt-0.5">
                 <button
                     type="button"
@@ -638,41 +633,41 @@ const RegisterForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="space-y-3.5">
-            <Field icon={<UserIcon className="w-4 h-4" />}>
+            <FieldGroup label="Nombre completo">
                 <Input
                     type="text"
                     autoComplete="name"
                     required
                     minLength={2}
                     maxLength={100}
-                    placeholder="Nombre completo"
+                    placeholder="Ana García"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={INPUT_REBRAND}
                 />
-            </Field>
-            <Field icon={<Mail className="w-4 h-4" />}>
+            </FieldGroup>
+            <FieldGroup label="Correo electrónico">
                 <Input
                     type="email"
                     autoComplete="email"
                     required
-                    placeholder="Correo electrónico"
+                    placeholder="nombre@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={INPUT_REBRAND}
                 />
-            </Field>
-            <Field icon={<Lock className="w-4 h-4" />}>
+            </FieldGroup>
+            <FieldGroup label="Contraseña">
                 <Input
                     type={showPwd ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     minLength={8}
                     maxLength={128}
-                    placeholder="Contraseña (mínimo 8 caracteres)"
+                    placeholder="Mínimo 8 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-10`}
+                    className={`${INPUT_REBRAND} pr-11`}
                 />
                 <button
                     type="button"
@@ -683,9 +678,9 @@ const RegisterForm: React.FC<{
                 >
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-            </Field>
+            </FieldGroup>
             {strengthHint && (
-                <p className={`text-[11px] -mt-1.5 ml-3 ${strengthHint.cls}`}>
+                <p className={`text-[11px] -mt-1.5 ${strengthHint.cls}`}>
                     {strengthHint.label}
                 </p>
             )}
@@ -904,17 +899,17 @@ const ForgotPasswordForm: React.FC<{
             <p className="mb-3 font-display text-sm leading-snug text-[#5b6370]">
                 Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
-            <Field icon={<Mail className="w-4 h-4" />}>
+            <FieldGroup label="Correo electrónico">
                 <Input
                     type="email"
                     autoComplete="email"
                     required
-                    placeholder="Correo electrónico"
+                    placeholder="nombre@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={INPUT_REBRAND}
                 />
-            </Field>
+            </FieldGroup>
             <Button type="submit" disabled={busy || !email} className={`${PRIMARY_BTN} mt-6`}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Enviar código'}
             </Button>
@@ -1027,17 +1022,17 @@ const ResetPasswordForm: React.FC<{
                     </InputOTPGroup>
                 </InputOTP>
             </div>
-            <Field icon={<Lock className="w-4 h-4" />}>
+            <FieldGroup label="Nueva contraseña">
                 <Input
                     type={showPwd ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
                     minLength={8}
                     maxLength={128}
-                    placeholder="Nueva contraseña (mínimo 8 caracteres)"
+                    placeholder="Mínimo 8 caracteres"
                     value={newPwd}
                     onChange={(e) => setNewPwd(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-10`}
+                    className={`${INPUT_REBRAND} pr-11`}
                 />
                 <button
                     type="button"
@@ -1048,7 +1043,7 @@ const ResetPasswordForm: React.FC<{
                 >
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-            </Field>
+            </FieldGroup>
             <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Restableciendo…</> : 'Restablecer contraseña'}
             </Button>
@@ -1067,24 +1062,29 @@ const ResetPasswordForm: React.FC<{
     );
 };
 
-// Helper: input con icono prepended.
-const Field: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
-    <div className="relative">
-        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af]">{icon}</span>
-        {children}
+// Helper: label pequeña encima del input (antes era un icono dentro del campo — sin
+// función real, solo relleno visual). La label dice qué es el campo; ya no hace falta
+// repetirlo en el placeholder, que ahora muestra un ejemplo de formato.
+const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+    <div>
+        <label className="mb-1.5 block font-display text-[12px] font-medium text-[#6b7280]">{label}</label>
+        <div className="relative">{children}</div>
     </div>
 );
 
-/** Clases compartidas para todos los Input del modal. Pastilla (rounded-full), 44px. */
+/** Clases compartidas para todos los Input del modal. Esquina 10px — comparte familia
+ *  con los botones sociales, deja la pastilla (rounded-full) exclusiva del CTA. */
 const INPUT_REBRAND =
-    'h-11 rounded-full border-[#d4d4d8] bg-white pl-11 font-display text-base md:text-[14px] text-[#1a1a1a] placeholder:text-[#767676] transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
+    'h-11 rounded-[10px] border-[#d4d4d8] bg-white px-4 font-display text-base md:text-[14px] text-[#1a1a1a] placeholder:text-[#9a9a9a] transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
 
-/** Clases compartidas para los botones primarios (submit). Pastilla (rounded-full), 44px. */
+/** Botón primario: única forma en pastilla de la tarjeta — por eso ahora se distingue
+ *  como "la acción". Plano en reposo, elevación solo al hover (antes tenía un halo
+ *  azul difuminado siempre activo). */
 const PRIMARY_BTN =
-    'mt-3 h-11 w-full rounded-full bg-brand font-display text-[14px] font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover disabled:opacity-50';
+    'mt-3 h-11 w-full rounded-full bg-brand font-display text-[14px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:bg-brand-hover hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] disabled:opacity-50 disabled:shadow-none';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =
-    'h-14 w-12 rounded-xl border-[#e0e0e0] text-xl font-bold shadow-sm focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15';
+    'h-14 w-12 rounded-xl border-[#e0e0e0] text-xl font-bold focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15';
 
 export default LoginModal;

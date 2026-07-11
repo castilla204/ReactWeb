@@ -69,7 +69,7 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
 
       {/* Header propio SOLO en móvil (en desktop el topbar global ya es la cabecera). */}
       <header className="sticky top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm md:hidden">
-        <div className="flex h-12 items-center gap-2 px-4">
+        <div className="flex min-h-12 items-center gap-2 px-4 pt-[max(0.5rem,env(safe-area-inset-top,0px))]">
           <button
             type="button"
             onClick={() => navigate(-1)}

@@ -159,7 +159,7 @@ export function DisableMFAModal({ isOpen, onClose, onSuccess }: DisableMFAModalP
                 handleClose();
             }
         }}>
-            <DrawerContent className="max-h-[96vh]">
+            <DrawerContent className="max-h-[96dvh]">
                 <DrawerHeader>
                     <div className="flex items-center gap-3">
                         <Shield className="h-6 w-6 text-destructive" />

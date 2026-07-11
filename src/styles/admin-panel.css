@@ -38,7 +38,7 @@
   /* Fija al viewport: permanece visible en cualquier posición de scroll.
      (sticky dependía del contexto de scroll del padre y se desplazaba). */
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
-  height: 100vh; display: flex; flex-direction: column;
+  display: flex; flex-direction: column;
   background: hsl(var(--ap-sidebar)); color: hsl(var(--ap-sidebar-ink));
   border-right: 1px solid hsl(var(--ap-sidebar-border));
 }

@@ -7,40 +7,11 @@ capMapWorkers(maplibregl);
 import { Maximize2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
 import { boundsFromCircle, circlePolygonGeoJSON } from '../../utils/geoCircle';
-import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../../utils/mapTileUrls';
+import { isExternalMapTileUrl } from '../../utils/mapTileUrls';
+import { buildInspeccionoMapStyle, MAP_CANON } from '../../utils/inspeccionoMapStyle';
+import { buildInkDotBareElement } from '../../utils/mapMarkers';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
-
-// ⚠️ MapLibre paint specs no resuelven CSS var(--brand) — necesita color CSS literal.
-// Este es uno de los pocos sitios del frontend donde se conserva el hex de marca hardcoded.
-// Si cambia `--brand` en index.css, actualizar también estos literales (#0066CC).
-const MAP_THEME = {
-  sky: '#dce9f2',
-  brand: '#0066CC',
-  brandStroke: 'rgba(0, 102, 204, 0.5)',
-  // Preview (miniatura del hero): el círculo se veía casi transparente y el mapa
-  // lavado. Subimos relleno y trazo de marca para que la cobertura "tenga color".
-  brandFillPreview: 'rgba(0, 102, 204, 0.16)',
-  brandStrokePreview: 'rgba(0, 102, 204, 0.6)',
-} as const;
-
-function buildCartoStyle(): maplibregl.StyleSpecification {
-  return {
-    version: 8,
-    sources: {
-      carto: {
-        type: 'raster',
-        tiles: getCartoVoyagerNoLabelsTiles(),
-        tileSize: 256,
-        attribution: '© OpenStreetMap · CARTO',
-      },
-    },
-    layers: [
-      { id: 'sky-bg', type: 'background', paint: { 'background-color': MAP_THEME.sky } },
-      { id: 'carto', type: 'raster', source: 'carto', paint: { 'raster-opacity': 1 } },
-    ],
-  };
-}
 
 export interface CoverageMapCanvasProps {
   latitude: number;
@@ -89,7 +60,9 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
 
       map = new maplibregl.Map({
         container: el,
-        style: buildCartoStyle(),
+        // Estilo canónico único. Con etiquetas: el visitante reconoce su zona (calles,
+        // municipios) al valorar si el experto le cubre — mismo tileset que el checkout.
+        style: buildInspeccionoMapStyle({ withLabels: true }),
         center: [lng, lat],
         zoom: 9,
         pitch: 0,
@@ -136,8 +109,8 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
               type: 'fill',
               source: 'coverage',
               paint: {
-                'fill-color': isPreview ? MAP_THEME.brandFillPreview : MAP_THEME.brand,
-                'fill-opacity': isPreview ? 1 : 0.16,
+                'fill-color': MAP_CANON.ringFill,
+                'fill-opacity': MAP_CANON.ringFillOpacity,
               },
             });
             map.addLayer({
@@ -145,8 +118,9 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
               type: 'line',
               source: 'coverage',
               paint: {
-                'line-color': isPreview ? MAP_THEME.brandStrokePreview : MAP_THEME.brandStroke,
+                'line-color': isPreview ? MAP_CANON.ringStrong : MAP_CANON.ring,
                 'line-width': isPreview ? 2 : 2.5,
+                'line-dasharray': MAP_CANON.ringDash,
               },
             });
           } else {
@@ -154,13 +128,10 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
           }
         }
 
-        const pin = document.createElement('div');
-        const pinSize = isPreview ? 8 : 16;
-        const pinBorder = isPreview ? '1.5px' : '2.5px';
-        const pinShadow = isPreview
-          ? '0 1px 4px hsl(var(--brand)/0.2)'
-          : '0 2px 10px hsl(var(--brand)/0.4)';
-        pin.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;border-radius:50%;background:${MAP_THEME.brand};border:${pinBorder} solid #fff;box-shadow:${pinShadow}"></div>`;
+        // Pin tinta canónico (mismo lenguaje que checkout/alta/panel), a escala de la miniatura.
+        const pin = buildInkDotBareElement(isPreview ? 8 : 16, {
+          borderWidth: isPreview ? 1.5 : 2.5,
+        });
         markerRef.current?.remove();
         markerRef.current = new maplibregl.Marker({ element: pin, anchor: 'center' })
           .setLngLat([lng, lat])
@@ -236,9 +207,10 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
       <div
         ref={containerRef}
         className="absolute inset-0 h-full w-full"
-        // Preview: las teselas Carto Voyager se ven lavadas → un punto de saturación
-        // y contraste devuelve algo de color (verdes/azules) sin pasarse.
-        style={isPreview ? { filter: 'saturate(1.14) contrast(1.03)' } : undefined}
+        // Preview: teselas Carto Voyager a saturación nativa (sin boost) para que el
+        // mapa recede y no compita en color con el resto de la ficha; un punto de
+        // contraste evita que se vean grises del todo.
+        style={isPreview ? { filter: 'saturate(1.0) contrast(1.02)' } : undefined}
       />
       {isPreview && (
         <div
@@ -393,7 +365,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
           <p className="shrink-0 border-t border-[#e8e8e8] bg-[#fafafa] px-4 py-2.5 text-center text-[11px] text-[#6a6a6a]">
             {rangeKm === 0
               ? 'El marcador indica el taller del experto: las inspecciones se realizan en ese punto fijo.'
-              : 'El área azul es donde el experto puede atender. Puedes mover y hacer zoom en el mapa.'}
+              : 'La zona delimitada es donde el experto puede atender. Puedes mover y hacer zoom en el mapa.'}
           </p>
         </DialogContent>
       </Dialog>

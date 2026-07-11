@@ -41,9 +41,23 @@ export default function InspectionReportSummary({
 
     return (
         <div className="px-4 py-3 sm:px-5 sm:py-4">
-            <p className="mb-4 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">
-                Puntos que revisará el experto · {countActivePoints(t)} de {total} · {t.sections.length} secciones.
-            </p>
+            {/* El PDF es el entregable real: la acción va ARRIBA, no enterrada tras el scroll de secciones */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <p className="text-[12px] leading-snug text-[hsl(var(--ep-muted))]">
+                    Puntos que revisará el experto · {countActivePoints(t)} de {total} · {t.sections.length} secciones.
+                </p>
+                <button
+                    type="button"
+                    onClick={openPdf}
+                    disabled={generating}
+                    className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ep-border))] bg-white px-4 py-2 text-[13px] font-semibold text-[hsl(var(--ep-ink))] transition-colors hover:border-[hsl(var(--ep-border-strong))] hover:bg-[hsl(var(--ep-canvas))] disabled:opacity-60"
+                >
+                    {generating
+                        ? <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--brand))]" aria-hidden />
+                        : <FileText className="h-4 w-4 text-[hsl(var(--brand))]" aria-hidden />}
+                    {generating ? 'Generando informe…' : 'Ver el informe en PDF'}
+                </button>
+            </div>
 
             <div className="divide-y divide-[hsl(var(--ep-border))]">
                 {t.sections.map((sec) => (
@@ -66,20 +80,6 @@ export default function InspectionReportSummary({
                         </div>
                     </section>
                 ))}
-            </div>
-
-            <div className="mt-4 border-t border-[hsl(var(--ep-border))] pt-4">
-                <button
-                    type="button"
-                    onClick={openPdf}
-                    disabled={generating}
-                    className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ep-border))] bg-white px-4 py-2 text-[13px] font-semibold text-[hsl(var(--ep-ink))] transition-colors hover:border-[hsl(var(--ep-border-strong))] hover:bg-[hsl(var(--ep-canvas))] disabled:opacity-60"
-                >
-                    {generating
-                        ? <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--brand))]" aria-hidden />
-                        : <FileText className="h-4 w-4 text-[hsl(var(--brand))]" aria-hidden />}
-                    {generating ? 'Generando informe…' : 'Ver el informe en PDF'}
-                </button>
             </div>
         </div>
     );

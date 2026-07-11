@@ -35,7 +35,11 @@ interface GoogleSignInButtonProps {
     active?: boolean;
 }
 
-const OAUTH_RADIUS = 'rounded-full';
+// Round: el botón "compact" solo se usa en LoginModal (grid social), donde los inputs
+// y el CTA ya no comparten forma pastilla — este radio los alinea con esa familia.
+// El variant "default" (sidebar de App.tsx) se queda en pastilla, sin tocar.
+const OAUTH_RADIUS_COMPACT = 'rounded-[10px]';
+const OAUTH_RADIUS_DEFAULT = 'rounded-full';
 
 const compactClasses =
     'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-[13px] font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
@@ -58,9 +62,10 @@ export const GoogleSignInButton = ({
     const buttonRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const isNative = Capacitor.isNativePlatform();
+    const oauthRadius = variant === 'compact' ? OAUTH_RADIUS_COMPACT : OAUTH_RADIUS_DEFAULT;
     const shellClasses = cn(
         variant === 'compact' ? compactClasses : defaultClasses,
-        OAUTH_RADIUS,
+        oauthRadius,
         shellClassName,
     );
 
@@ -219,7 +224,7 @@ export const GoogleSignInButton = ({
                     disabled={isAuthenticating}
                     className={cn(
                         'absolute inset-0 z-[2]',
-                        OAUTH_RADIUS,
+                        oauthRadius,
                         isAuthenticating && 'cursor-wait opacity-75',
                     )}
                     aria-label={label}
@@ -228,14 +233,14 @@ export const GoogleSignInButton = ({
                 <>
                     <div
                         ref={buttonRef}
-                        className={cn('absolute inset-0 z-[2] overflow-hidden opacity-[0.011]', OAUTH_RADIUS, '[&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full', !isReady && 'pointer-events-none')}
+                        className={cn('absolute inset-0 z-[2] overflow-hidden opacity-[0.011]', oauthRadius, '[&>div]:!h-full [&>div]:!w-full [&_iframe]:!h-full [&_iframe]:!w-full', !isReady && 'pointer-events-none')}
                         aria-hidden={isReady}
                     />
                     {!isReady && active && (
                         <button
                             type="button"
                             onClick={handleWebFallbackClick}
-                            className={cn('absolute inset-0 z-[1]', OAUTH_RADIUS)}
+                            className={cn('absolute inset-0 z-[1]', oauthRadius)}
                             aria-label={`${label} — cargando`}
                         />
                     )}
@@ -243,7 +248,7 @@ export const GoogleSignInButton = ({
             )}
 
             {isAuthenticating && (
-                <div className={cn('absolute inset-0 z-[3] cursor-wait bg-white/80', OAUTH_RADIUS)} aria-hidden />
+                <div className={cn('absolute inset-0 z-[3] cursor-wait bg-white/80', oauthRadius)} aria-hidden />
             )}
         </div>
     );

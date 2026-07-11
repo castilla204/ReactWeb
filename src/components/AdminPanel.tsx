@@ -1541,7 +1541,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialTab = 'status' }) => {
         {/* Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {editingConfig ? 'Editar Configuración' : 'Crear Nueva Configuración'}

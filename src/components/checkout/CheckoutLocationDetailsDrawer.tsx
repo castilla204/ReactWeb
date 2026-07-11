@@ -58,7 +58,7 @@ export function CheckoutLocationDetailsDrawer({
             >
                 <div
                     className={cn(
-                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-[1.25rem] bg-white shadow-[0_-8px_32px_rgba(15,23,42,0.1)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-[1.25rem] border border-b-0 border-[#e8ecf1] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                         entered ? 'translate-y-0' : 'translate-y-full',
                         expanded ? expandedMaxHeight : 'max-h-none',
                     )}

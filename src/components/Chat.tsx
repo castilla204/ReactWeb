@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { showToast } from '../lib/toast';
 import Map, { Marker, NavigationControl, type MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { buildNeutralCheckoutMapStyle, MAP_CANON } from '../utils/inspeccionoMapStyle';
 
 interface ChatProps {
     searchId: number | null;
@@ -190,6 +191,8 @@ const Chat: React.FC<ChatProps> = ({
     const [messageSent, setMessageSent] = useState(false);
     const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || '';
+    // Estilo canónico único de la app; memoizado para que react-map-gl no recargue el estilo en cada render.
+    const chatMapStyle = useMemo(() => buildNeutralCheckoutMapStyle(), []);
 
     const otherParticipantId = isClient
         ? Number(expertId ?? 0)
@@ -935,13 +938,13 @@ const Chat: React.FC<ChatProps> = ({
             {/* Map Modal */}
             {isMapModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-                        <div className="p-6 border-b border-[#e8e8e8]">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-[#e8e8e8] shrink-0">
                             <h3 className="text-lg font-semibold text-[#1c1c1c]">Seleccionar Ubicación</h3>
                         </div>
 
                         {mapboxToken ? (
-                            <div className="relative h-[400px]">
+                            <div className="relative flex-1 min-h-[200px]">
                                 <Map
                                     mapboxAccessToken={mapboxToken}
                                     initialViewState={{
@@ -950,7 +953,9 @@ const Chat: React.FC<ChatProps> = ({
                                         zoom: 14,
                                     }}
                                     style={{ width: '100%', height: '100%' }}
-                                    mapStyle="mapbox://styles/mapbox/streets-v12"
+                                    // Estilo canónico único de la app (Voyager + tratamiento
+                                    // compartido) — antes streets-v12, el único mapa distinto.
+                                    mapStyle={chatMapStyle as never}
                                     onClick={handleMapClick}
                                 >
                                     <NavigationControl position="top-right" />
@@ -960,12 +965,13 @@ const Chat: React.FC<ChatProps> = ({
                                             latitude={selectedMapLocation.lat}
                                             anchor="center"
                                         >
+                                            {/* Pin tinta canónico (mismo lenguaje que el checkout). */}
                                             <div
                                                 style={{
                                                     width: '18px',
                                                     height: '18px',
-                                                    backgroundColor: '#3b82f6',
-                                                    border: '2px solid #ffffff',
+                                                    backgroundColor: MAP_CANON.ink,
+                                                    border: `2px solid ${MAP_CANON.inkBorder}`,
                                                     borderRadius: '50%',
                                                     boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
                                                 }}
@@ -987,12 +993,12 @@ const Chat: React.FC<ChatProps> = ({
                                 )}
                             </div>
                         ) : (
-                            <div className="h-[400px] flex items-center justify-center bg-gray-50">
+                            <div className="relative flex-1 min-h-[200px] flex items-center justify-center bg-gray-50">
                                 <span className="text-red-500">Error al cargar el mapa: falta VITE_MAPBOX_PUBLIC_TOKEN</span>
                             </div>
                         )}
 
-                        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3">
+                        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3 shrink-0">
                             <button
                                 onClick={() => setIsMapModalOpen(false)}
                                 className="px-6 py-2 bg-[#f5f5f5] text-[#1c1c1c] rounded-xl hover:bg-gray-200 transition-colors"

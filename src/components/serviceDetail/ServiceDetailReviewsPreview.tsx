@@ -102,7 +102,7 @@ function MobileReviewsPreview({
                   variant="mobile"
                   onClick={onShowAll}
                   neutral={neutral}
-                  className="py-2.5"
+                  className="py-4"
                 />
               </li>
             );

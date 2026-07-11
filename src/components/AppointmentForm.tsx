@@ -361,7 +361,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   return (
     <Drawer open={true} onOpenChange={(open) => !open && onCancel()}>
-      <DrawerContent className="max-h-[96vh] bg-gradient-to-b from-gray-50 to-white border-t-4 border-destructive">
+      <DrawerContent className="max-h-[96dvh] bg-gradient-to-b from-gray-50 to-white border-t-4 border-destructive">
         <DrawerHeader className="border-b border-gray-200/80 bg-white/80 backdrop-blur-sm shadow-sm">
           <div className="flex items-center justify-between max-w-7xl mx-auto w-full px-6 lg:px-8">
             <div className="space-y-1">

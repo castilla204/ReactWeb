@@ -128,7 +128,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
             const itemPy = isCompact
               ? 'py-3.5 first:pt-0 last:pb-0'
               : isDrawer
-                ? 'py-4 first:pt-4 last:pb-1'
+                ? 'py-5 first:pt-4 last:pb-2'
                 : 'py-5 first:pt-5';
 
             return (

@@ -63,14 +63,12 @@ export function ServiceDetailDesktopBookingAside({
     <article
       className={`sd-aside-card sd-service-booking-aside flex flex-col overflow-hidden ${SD_DESKTOP_ASIDE_MAX_H_CLASS}`}
     >
-      <div className="relative overflow-hidden border-b border-[#ebebeb] bg-[#e0ecff] px-5 py-5">
-        <div className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 rounded-full bg-[#1C63B4]/20 blur-xl" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-[#F59E0B]/18 blur-xl" aria-hidden />
-        <p className="relative z-10 text-[12px] font-medium text-[#9ca3af]">Precio</p>
-        <p className="sd-aside-price relative z-10 mt-1">{priceDisplay}</p>
-        <p className="relative z-10 mt-1 text-xs leading-snug text-[#717171]">Impuestos incluidos</p>
+      <div className="border-b border-[#ebebeb] bg-[#171717] px-5 py-5">
+        <p className="text-[12px] font-medium text-[#a1a1aa]">Precio</p>
+        <p className="sd-aside-price mt-1 text-white">{priceDisplay}</p>
+        <p className="mt-1 text-xs leading-snug text-[#a1a1aa]">Impuestos incluidos</p>
         {priceWasConverted && priceSourceFormatted ? (
-          <p className="relative z-10 mt-1 text-[11px] leading-snug text-[#9ca3af]">{priceSourceFormatted}</p>
+          <p className="mt-1 text-[11px] leading-snug text-[#8b8b93]">{priceSourceFormatted}</p>
         ) : null}
       </div>
 
