@@ -2086,6 +2086,33 @@ img[alt*="country"],
     }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Tab bar móvil COMPACTA en landscape / viewports muy bajos.
+   En vertical el chrome fijo de 65px + safe-area es correcto y NO se
+   toca (footprint load-bearing en 10 sitios, altura fija = convención
+   nativa iOS 49pt / Android 56dp). Pero en landscape de móviles pequeños
+   (alto ≤480px) esos 65px son ~17% de la pantalla; iOS comprime su
+   UITabBar en compact-height por lo mismo. Aquí bajamos a 50px.
+   `!important` porque la barra fija alto/padding vía estilo inline.
+   Los consumidores siguen reservando 65px → en landscape sobre-reservan
+   ~15px: inofensivo (un pelín más de aire inferior, nunca solapamiento).
+   Umbral 480px: en vertical ningún móvil real es tan bajo (SE = 667),
+   así que solo dispara en landscape de pantallas pequeñas (SE/mini/old,
+   cuyo ancho landscape <768px las mantiene en la vista móvil).
+   ───────────────────────────────────────────────────────────── */
+@media (max-height: 480px) {
+    nav[data-shared-element-id="tab-bar"] {
+        height: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-top: 4px !important;
+        padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
+    }
+    /* Fila de tabs (primer div hijo) y cada botón: 44 → 42px, aún táctil. */
+    nav[data-shared-element-id="tab-bar"] > div:first-of-type,
+    nav[data-shared-element-id="tab-bar"] button {
+        height: 42px !important;
+    }
+}
+
 .become-expert-map .maplibregl-ctrl-group {
     border: none !important;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08) !important;
