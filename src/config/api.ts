@@ -147,6 +147,10 @@ export const API_CONFIG = {
             markAllAsRead: `${API_PATH}/Notification/read-all`,
             unreadCount: `${API_PATH}/Notification/unread-count`,
         },
+        deviceToken: {
+            register: `${API_PATH}/DeviceToken`,
+            // DELETE se construye en runtime: `${register}/${encodeURIComponent(token)}`
+        },
         expert: {
             profile: `${API_PATH}/User/expert-profile`,
             becomeExpert: `${API_PATH}/User/become-expert`,
