@@ -25,6 +25,8 @@ import {
     sellerCoordinationCanContinue,
     CheckoutSellerCoordinationFields,
     COORD_SELF_PICK_LOCATION_HEADER_LEAD,
+    isValidSellerPhone,
+    isValidSellerEmail,
 } from '../components/checkout/CheckoutSellerCoordinationFields';
 import { CheckoutDesktopLocationStepBody } from '../components/checkout/CheckoutDesktopLocationStepBody';
 import { CheckoutSellerChoiceMobileWarning } from '../components/checkout/CheckoutSellerChoiceLocked';
@@ -569,9 +571,15 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 // 🤝 Coordinación con el vendedor. En modo "seller" el hueco va nulo (arriba) y
                 // el experto propone la cita después; aquí viajan los datos del vendedor.
                 coordinationMode: paymentCoordMode ?? effectiveCoordinationMode,
-                sellerPhone: effectiveCoordinationMode === 'seller' ? sellerPhone.trim() || null : null,
-                sellerEmail: effectiveCoordinationMode === 'seller' ? sellerEmail.trim() || null : null,
-                sellerListingUrl: effectiveCoordinationMode === 'seller' ? sellerListingUrl.trim() || null : null,
+                // W12 FIX (auditoría 2026-07-12): también en modo "self". El paso de ubicación pide
+                // el contacto del vendedor "para que el experto pueda coordinar el acceso" y luego
+                // se descartaba aquí (siempre null en self) → formulario que promete y tira el dato.
+                // El webhook lo persiste en el hire y lo vuelca en Appointment.OwnerPhone. Solo
+                // valores VÁLIDOS: en self los campos son opcionales y no bloquean aunque estén mal
+                // (y el saneado del backend solo corre en modo seller).
+                sellerPhone: isValidSellerPhone(sellerPhone) ? sellerPhone.trim() : null,
+                sellerEmail: isValidSellerEmail(sellerEmail) ? sellerEmail.trim() : null,
+                sellerListingUrl: sellerListingUrl.trim() || null,
             });
 
             if (import.meta.env.DEV) {
@@ -898,6 +906,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         showPriceDetails,
         onTogglePriceDetails: () => setShowPriceDetails(!showPriceDetails),
         showFooterNotes: false,
+        stripedRows: true,
     };
 
     // Resumen final "Revisa y reserva": mismo bloque en el flujo self (paso 4) y
@@ -919,6 +928,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 includePrice
                 showFooterNotes
                 showDeliverables
+                expertHeroPosition="bottom"
                 paymentStep
             />
         </>
@@ -1251,11 +1261,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 />
                 {desktopOnPaymentStep ? (
                     <div className="mx-auto w-full max-w-[75rem] px-4 pb-12 pt-8 sm:px-5 lg:px-8">
-                        {/* Misma cabecera que los pasos 1-2 del wizard: pill Volver + título (h2)
-                            + lead. Antes este paso era el único sin título ni contexto. */}
+                        {/* Sin título ni lead: la miga ya marca "Pago" como paso actual y el
+                            resumen de abajo es autoexplicativo — repetirlo aquí era redundante. */}
                         <CheckoutDesktopAppointmentHeader
-                            title="Revisa y reserva"
-                            description="Comprueba que todo está bien antes de pagar."
                             onBack={handleDesktopBack}
                             backLabel={desktopBackLabel}
                             steps={desktopCrumbSteps}
@@ -1277,53 +1285,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     className="[&_article]:rounded-2xl [&_article]:border [&_article]:border-[#ebebeb] [&_article]:shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
                                 />
                             </section>
-                            {/* La columna derecha era solo el panel de pago (mucho más corta que la
-                                izquierda). La tarjeta de confianza vive aquí debajo, fuera del sticky,
-                                para que la columna crezca con contenido real en vez de quedar un hueco
-                                en blanco junto al detalle del servicio. */}
-                            <div className="flex flex-col gap-4">
-                                <aside className={cn('lg:sticky lg:self-start', SD_DESKTOP_STICKY_TOP_CLASS)}>
-                                    <CheckoutPaymentAside
-                                        embedded
-                                        coordinationMode={effectiveCoordinationMode}
-                                        priceDisplay={priceDisplayNode}
-                                        priceSubline={priceSublineNode}
-                                        canPay={expertCanReceivePayments && desktopPaymentReady}
-                                        isProcessing={isProcessing}
-                                        onPay={handlePayment}
-                                        expertName={finalExpertName}
-                                        expertPicture={expertPicture}
-                                        serviceName={finalServiceTypeName}
-                                        expertRating={expertRating}
-                                        expertReviewCount={expertReviewCount}
-                                    />
-                                </aside>
-                                <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-4">
-                                    <ul className="space-y-3.5">
-                                        <li className="flex items-start gap-3">
-                                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                            </svg>
-                                            <div>
-                                                <p className="text-[13px] font-semibold text-[#1c1c1c]">Pago seguro</p>
-                                                <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Los datos de tu tarjeta se procesan con cifrado SSL a través de Stripe.</p>
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-3 border-t border-[#f5f5f5] pt-3.5">
-                                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-[#64748b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                            </svg>
-                                            <div>
-                                                <p className="text-[13px] font-semibold text-[#1c1c1c]">Garantía Inspecciono</p>
-                                                <p className="mt-0.5 text-[11px] leading-[1.5] text-[#64748b]">Si el experto no realiza la revisión, te devolvemos el importe al instante.</p>
-                                            </div>
-                                        </li>
-                                        {/* "Cancelación gratuita" ya vive en la letra pequeña del panel de pago
-                                            (CheckoutReserveHint) — repetirla aquí era el mismo mensaje dos veces
-                                            en la misma columna. */}
-                                    </ul>
-                                </div>
-                            </div>
+                            <aside className={cn('lg:sticky lg:self-start', SD_DESKTOP_STICKY_TOP_CLASS)}>
+                                <CheckoutPaymentAside
+                                    embedded
+                                    coordinationMode={effectiveCoordinationMode}
+                                    priceDisplay={priceDisplayNode}
+                                    priceSubline={priceSublineNode}
+                                    canPay={expertCanReceivePayments && desktopPaymentReady}
+                                    isProcessing={isProcessing}
+                                    onPay={handlePayment}
+                                    expertName={finalExpertName}
+                                    expertPicture={expertPicture}
+                                    serviceName={finalServiceTypeName}
+                                    expertRating={expertRating}
+                                    expertReviewCount={expertReviewCount}
+                                />
+                            </aside>
                         </div>
                     </div>
                 ) : (
@@ -1366,16 +1343,25 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             <div className="flex min-h-0 flex-1 items-stretch gap-5 overflow-hidden xl:gap-6">
                                     {desktopOnCoordCalendarStep ? (
                                         <>
+                                            {/* Sin tarjeta de relleno ni centrado forzado (el justify-center
+                                                repartía el sobrante de forma asimétrica, feedback 2026-07-12):
+                                                alineado simple arriba, apoyado en que SD_CHECKOUT_DESKTOP_
+                                                APPOINTMENT_SHELL_HEIGHT_CLASS ya está calibrada al alto del
+                                                calendario, así que el hueco restante es pequeño y predecible.
+                                                pb-2 en vez del pb-5 compartido: compensa el pb-3 propio del
+                                                wrapper embebido de CheckoutCoordinationStep (sin cabecera
+                                                encima no hay mt-4 que lo equilibre desde arriba) para que el
+                                                margen quede simétrico con el pt-5 de arriba (feedback
+                                                2026-07-12: mucho más margen arriba que abajo). */}
                                             <div className={desktopSplitLeftClass}>
-                                                <div className={desktopSplitPanelScrollClass}>
+                                                <div className={cn(desktopSplitPanelScrollClass, 'pb-2')}>
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-4 self-stretch overflow-y-auto">
-                                                <div className="flex shrink-0 flex-col rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:p-5">
+                                            <aside className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                                                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 xl:p-5">
                                                     {desktopCalendarColumnNode}
                                                 </div>
-                                                <CheckoutCalendarSideInfo className="flex-1" />
                                             </aside>
                                         </>
                                     ) : null}

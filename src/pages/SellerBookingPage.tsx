@@ -7,6 +7,7 @@ import CheckoutLocationPicker, { type CheckoutLocationData } from '../components
 import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
 import { AppointmentWizardShell } from '../components/checkout/AppointmentWizardShell';
 import { cn } from '../lib/utils';
+import { SELLER_BOOKING_MIN_LEAD_DAYS, SELLER_BOOKING_MAX_DAYS } from '../utils/sellerBookingWindow';
 import { SD_CHECKOUT_DESKTOP_CARD_CLASS } from '../constants/homepageTypography';
 import { SileoLoader } from '../components/ui/sileo-loader';
 import { SileoButton } from '../components/ui/sileo-button';
@@ -41,6 +42,9 @@ export default function SellerBookingPage() {
         fromYmd: string; days: number; windowExtended: boolean; hasAvailability: boolean;
     } | null>(null);
     const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+    // W5: época del listado de huecos — se incrementa tras un confirm fallido para REMONTAR el
+    // SlotPicker (key) y refrescar la lista (el hueco pudo ocuparlo otro: 409 GiST).
+    const [slotsEpoch, setSlotsEpoch] = useState(0);
 
     const base = useMemo(
         () => (token ? `${API_CONFIG.baseUrl}/api/seller-booking/${encodeURIComponent(token)}` : ''),
@@ -112,16 +116,29 @@ export default function SellerBookingPage() {
                 }),
             });
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data?.message || 'No se pudo confirmar la cita.');
+                const data: { message?: string } = await res.json().catch(() => ({}));
+                setError(data?.message || 'No se pudo confirmar la cita.');
+                // W5 FIX: en un 409 (carrera: el hueco se acaba de ocupar / ya reservada) o un 400
+                // (ventana/plazo), el hueco elegido ya no vale: soltarlo, volver al paso 1 y remontar
+                // el SlotPicker para refrescar la lista. Antes el hueco obsoleto seguía seleccionado y
+                // listado como libre → re-click → mismo error en bucle.
+                if (res.status === 409 || res.status === 400) {
+                    setSlot(null);
+                    setSlotsEpoch((n) => n + 1);
+                    setWizardStep(1);
+                }
+                // Refrescar contexto; si el token ya no existe (404: watchdog/decline en otra pestaña),
+                // pasar a 'invalid' en vez de dejar el formulario vivo encadenando errores.
+                try {
+                    const r = await fetch(base);
+                    if (r.ok) setCtx(await r.json());
+                    else if (r.status === 404) setStatus('invalid');
+                } catch { /* ignore */ }
+                return;
             }
             setDone(true);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'No se pudo confirmar la cita.');
-            try {
-                const r = await fetch(base);
-                if (r.ok) setCtx(await r.json());
-            } catch { /* ignore */ }
         } finally {
             setSubmitting(false);
             submitLockRef.current = false;
@@ -145,6 +162,8 @@ export default function SellerBookingPage() {
             try {
                 const r = await fetch(base);
                 if (r.ok) setCtx(await r.json());
+                // Token consumido (confirm en otra pestaña / watchdog): a 'invalid', no formulario vivo.
+                else if (r.status === 404) setStatus('invalid');
             } catch { /* ignore */ }
         } finally {
             setDeclining(false);
@@ -154,13 +173,18 @@ export default function SellerBookingPage() {
     };
 
     const slotConstraints = useMemo(() => {
-        if (!windowInfo) return { minLeadDays: 0, windowDays: ctx?.maxDays ?? 14 };
+        // W6 FIX: fallback cuando /window falló (blip de red). ctx.maxDays es "+N días desde el
+        // PAGO", no "días desde hoy": usarlo aquí desalineaba el calendario (podía perder el día
+        // +14 real). Cubrimos [hoy .. hoy+17): contiene la ventana real [pago+3 .. pago+14] se
+        // abra cuando se abra el enlace (≤48h tras el pago); los días fuera de ventana salen
+        // vacíos por la defensa server-side de /slots, así que solo son ruido "sin huecos".
+        if (!windowInfo) return { minLeadDays: 0, windowDays: SELLER_BOOKING_MAX_DAYS + SELLER_BOOKING_MIN_LEAD_DAYS };
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const [y, m, d] = windowInfo.fromYmd.split('-').map(Number);
         const from = new Date(y, m - 1, d);
         const minLeadDays = Math.max(0, Math.round((from.getTime() - today.getTime()) / 86400000));
         return { minLeadDays, windowDays: windowInfo.days };
-    }, [windowInfo, ctx?.maxDays]);
+    }, [windowInfo]);
 
     const showForm = status === 'ok' && ctx && !ctx.alreadyBooked && !ctx.expired && !done && !declined
         && windowInfo?.hasAvailability !== false;
@@ -181,6 +205,7 @@ export default function SellerBookingPage() {
 
     const calendarNode = ctx ? (
         <SlotPicker
+            key={slotsEpoch} // W5: remonta (y refresca) el listado tras un confirm fallido
             serviceId={ctx.serviceId}
             selected={slot}
             onSelect={setSlot}
@@ -220,6 +245,55 @@ export default function SellerBookingPage() {
         />
     ) : null;
 
+    // Banda "disponibilidad ampliada" (windowExtended): compartida entre móvil y desktop.
+    const extendedBanner = windowInfo?.windowExtended ? (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+            <p className="text-[13px] text-amber-800">
+                El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
+            </p>
+        </div>
+    ) : null;
+
+    // Enlace/confirmación de declinar: compartido entre el cuerpo móvil (paso 1) y el pie desktop.
+    // W7 FIX: antes SOLO se pintaba después del shell → en móvil quedaba bajo el fold (y en el paso
+    // mapa, h-[100dvh] overflow-hidden lo hacía inalcanzable). Igual con el error del confirm.
+    const declineNode = !declineConfirming ? (
+        <button
+            type="button"
+            onClick={() => { setError(null); setDeclineConfirming(true); }}
+            disabled={submitting || declining}
+            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+        >
+            No voy a poder coordinar la cita
+        </button>
+    ) : (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
+            <p className="mb-2.5 text-[13px] text-red-800">
+                Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
+            </p>
+            <div className="flex gap-2">
+                <SileoButton
+                    onClick={decline}
+                    disabled={declining}
+                    loading={declining}
+                    loadingText="Cancelando…"
+                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                    Sí, cancelar
+                </SileoButton>
+                <button
+                    type="button"
+                    onClick={() => setDeclineConfirming(false)}
+                    disabled={declining}
+                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                >
+                    Volver
+                </button>
+            </div>
+        </div>
+    );
+
     // Formulario activo: shell del wizard a ancho completo
     if (showForm && ctx) {
         return (
@@ -236,7 +310,13 @@ export default function SellerBookingPage() {
                     }
                     onBack={wizardStep === 2 ? () => setWizardStep(1) : () => { /* primer paso: no hay atrás */ }}
                     desktopTallRight={!isWorkshop && wizardStep === 2}
-                    desktopLeft={wizardStep === 1 ? lockedCards : (
+                    desktopLeft={wizardStep === 1 ? (
+                        <div className="space-y-4">
+                            {/* W8 FIX: la banda windowExtended antes solo existía en móvil. */}
+                            {extendedBanner}
+                            {lockedCards}
+                        </div>
+                    ) : (
                         <div className="space-y-2">
                             <p className="text-[15px] font-semibold text-[#1c1c1c]">Ubicación del vehículo</p>
                             <p className="text-[13px] leading-[1.5] text-[#64748b]">
@@ -248,16 +328,11 @@ export default function SellerBookingPage() {
                     mobileFullBleed={!isWorkshop && wizardStep === 2}
                     mobileBody={wizardStep === 1 ? (
                         <div className="space-y-4">
-                            {windowInfo?.windowExtended && (
-                                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                                    <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                                    <p className="text-[13px] text-amber-800">
-                                        El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
-                                    </p>
-                                </div>
-                            )}
+                            {extendedBanner}
                             {lockedCards}
                             {calendarNode}
+                            {/* W7 FIX: declinar accesible dentro del cuerpo scrolleable móvil. */}
+                            <div className="pt-1">{declineNode}</div>
                         </div>
                     ) : (
                         <div className="absolute inset-0">{mapNodeMobile}</div>
@@ -270,44 +345,23 @@ export default function SellerBookingPage() {
                     }}
                     onSecondary={wizardStep === 2 ? () => setWizardStep(1) : undefined}
                 />
-                {/* Decline: discreto, siempre accesible */}
-                <div className="mx-auto w-full max-w-md px-5 pb-6 lg:max-w-[75rem] lg:px-8">
+                {/* W7 FIX: error SIEMPRE visible en móvil — tira fija justo encima del footer del
+                    wizard (mismo cálculo de altura que la reserva de padding del shell). Cubre
+                    también el paso mapa (overflow-hidden), donde el cuerpo no puede scrollear. */}
+                {error && (
+                    <div
+                        className="fixed inset-x-0 z-[71] px-5 lg:hidden"
+                        style={{ bottom: 'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)) + 0.5rem)' }}
+                    >
+                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800 shadow-lg">
+                            {error}
+                        </p>
+                    </div>
+                )}
+                {/* Pie desktop: error + declinar (en móvil viven en el cuerpo / tira fija). */}
+                <div className="mx-auto hidden w-full px-5 pb-6 lg:block lg:max-w-[75rem] lg:px-8">
                     {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
-                    {!declineConfirming ? (
-                        <button
-                            type="button"
-                            onClick={() => { setError(null); setDeclineConfirming(true); }}
-                            disabled={submitting || declining}
-                            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
-                        >
-                            No voy a poder coordinar la cita
-                        </button>
-                    ) : (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
-                            <p className="mb-2.5 text-[13px] text-red-800">
-                                Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
-                            </p>
-                            <div className="flex gap-2">
-                                <SileoButton
-                                    onClick={decline}
-                                    disabled={declining}
-                                    loading={declining}
-                                    loadingText="Cancelando…"
-                                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-                                >
-                                    Sí, cancelar
-                                </SileoButton>
-                                <button
-                                    type="button"
-                                    onClick={() => setDeclineConfirming(false)}
-                                    disabled={declining}
-                                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
-                                >
-                                    Volver
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    {declineNode}
                 </div>
             </div>
         );
@@ -326,7 +380,14 @@ export default function SellerBookingPage() {
                     {status === 'invalid' && (
                         <div className="flex items-start gap-3">
                             <AlertTriangle size={20} className="shrink-0 text-red-600" />
-                            <p className="text-sm">Este enlace no es válido o ya ha caducado. Pide al comprador que te lo reenvíe.</p>
+                            {/* W9 FIX de copy: el enlace es de un solo uso, así que el caso más común de
+                                este estado es re-abrir el SMS/email DESPUÉS de haber reservado bien.
+                                Antes decía solo "pide que te lo reenvíen" — alarmante e inútil ahí. */}
+                            <p className="text-sm">
+                                Este enlace ya no es válido: ya se usó o ha caducado. Si ya elegiste día y hora,
+                                no tienes que hacer nada más — te enviamos el resumen por SMS o email. Si no llegaste
+                                a reservar, pide al comprador que te reenvíe el enlace.
+                            </p>
                         </div>
                     )}
 
@@ -334,8 +395,14 @@ export default function SellerBookingPage() {
                         <div className="flex items-start gap-3">
                             <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
                             <div>
-                                <p className="mb-1 text-[15px] font-semibold">Cita confirmada</p>
-                                <p className="text-sm text-muted-foreground">El técnico acudirá en la fecha elegida. ¡Gracias!</p>
+                                {/* W9 FIX de copy: la cita nace PENDIENTE de que el experto la confirme
+                                    (pending_expert_confirmation); prometer "el técnico acudirá" era
+                                    afirmarlo antes de tiempo. El SMS del backend ya lo decía bien. */}
+                                <p className="mb-1 text-[15px] font-semibold">Reserva registrada</p>
+                                <p className="text-sm text-muted-foreground">
+                                    El técnico confirmará la cita en breve; te avisaremos por SMS o email si hubiera
+                                    cualquier cambio. ¡Gracias!
+                                </p>
                             </div>
                         </div>
                     )}

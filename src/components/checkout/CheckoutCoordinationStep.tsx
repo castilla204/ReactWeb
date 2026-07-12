@@ -289,7 +289,10 @@ const COORD_COMPARE_FACTS: ReadonlyArray<{
     },
     {
         label: 'Cuándo será',
-        seller: `En ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago`,
+        // «Normalmente»: la ventana real del backend es +3..+14 (SellerBookingWindow); solo se
+        // ofrece 8-14 si el experto no tiene huecos en 3-7. Sin el matiz, una cita a +10 días
+        // contradiría lo prometido en el checkout (auditoría 2026-07-12, M2).
+        seller: `Normalmente en ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días`,
         self: 'El día que tú elijas',
     },
     {
@@ -454,10 +457,15 @@ function CoordinationOptionCards({
 function CoordinationOptionCompare({
     selection,
     sellerOptionDisabled,
+    /** Desktop embebido: no hay cabecera de pregunta encima (showStepHeader=false), así
+     *  que el mt-4 pensado para separarse de esa cabecera sobra y desequilibraba el
+     *  margen arriba/abajo de la columna (feedback 2026-07-12). */
+    embedded,
     onSelect,
 }: {
     selection: CoordinationSelection | null;
     sellerOptionDisabled?: boolean;
+    embedded?: boolean;
     onSelect: (value: CoordinationSelection) => void;
 }) {
     const sel: CoordinationSelection = selection ?? (sellerOptionDisabled ? 'self' : 'seller');
@@ -481,7 +489,7 @@ function CoordinationOptionCompare({
     ];
 
     return (
-        <div className="mt-4">
+        <div className={cn(!embedded && 'mt-4')}>
             <div
                 role="radiogroup"
                 aria-label="Quién elige la fecha de la cita"
@@ -540,19 +548,35 @@ function CoordinationOptionCompare({
                                     ) : null}
                                 </span>
                             </div>
-                            {/* Tabla interior: filetes etiqueta/valor DENTRO de cada tarjeta. */}
-                            <dl className="px-3.5 pb-3">
-                                {COORD_COMPARE_FACTS.map((fact) => (
-                                    <div
-                                        key={fact.label}
-                                        className="flex items-baseline justify-between gap-4 border-t border-[#eef0f3] py-2"
-                                    >
-                                        <dt className="shrink-0 text-[11.5px] text-[#6b7280]">{fact.label}</dt>
-                                        <dd className="text-right text-[12.5px] font-semibold leading-[1.4] text-[#1c1c1c]">
-                                            {col.value === 'seller' ? fact.seller : fact.self}
-                                        </dd>
-                                    </div>
-                                ))}
+                            {/* Tabla interior: filetes etiqueta/valor DENTRO de cada tarjeta, con
+                                banda alterna (zebra) — la fila impar lleva fondo gris muy sutil en
+                                vez de depender solo del hairline para separar renglones.
+                                El pb ya NO vive en el <dl>: ese padding quedaba fuera del propio
+                                div de la fila (que lleva el bg-*), así que bajo la última fila
+                                (gris) se veía un filete blanco sin cubrir — parecía una fila
+                                cortada. Ahora el aire extra es pb de la ÚLTIMA fila, dentro del
+                                mismo div que pinta el fondo, así el gris llega hasta la esquina
+                                redondeada de la tarjeta (que recorta con overflow-hidden). */}
+                            <dl className="px-3.5">
+                                {COORD_COMPARE_FACTS.map((fact, idx) => {
+                                    const isLast = idx === COORD_COMPARE_FACTS.length - 1;
+                                    return (
+                                        <div
+                                            key={fact.label}
+                                            className={cn(
+                                                'flex items-baseline justify-between gap-4 -mx-3.5 px-3.5 py-2',
+                                                idx === 0 && 'border-t border-[#eef0f3]',
+                                                idx % 2 === 1 && 'bg-[#f6f7f9]',
+                                                isLast && 'pb-3',
+                                            )}
+                                        >
+                                            <dt className="shrink-0 text-[11.5px] text-[#6b7280]">{fact.label}</dt>
+                                            <dd className="text-right text-[12.5px] font-semibold leading-[1.4] text-[#1c1c1c]">
+                                                {col.value === 'seller' ? fact.seller : fact.self}
+                                            </dd>
+                                        </div>
+                                    );
+                                })}
                             </dl>
                         </div>
                     );
@@ -624,6 +648,7 @@ export function CheckoutCoordinationStep({
                         <CoordinationOptionCompare
                             selection={effectiveSelection}
                             sellerOptionDisabled={sellerOptionDisabled}
+                            embedded
                             onSelect={onSelect}
                         />
                     )}

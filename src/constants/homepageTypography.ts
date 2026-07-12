@@ -236,10 +236,14 @@ export const SD_CHECKOUT_APPOINTMENT_INNER_MAX_CLASS =
   'mx-auto w-full max-w-[94rem] px-4 sm:px-5 lg:px-6 xl:px-8 2xl:max-w-[100rem]';
 
 /** Altura fija COMPARTIDA por los pasos 1 (cita) y 2 (mapa) del checkout desktop: al
- *  navegar entre pasos la fila no salta de alto (feedback 2026-07-10). 620px ≈ alto
- *  natural del paso 1 con mes de 6 filas (calendario ~515 + gap + «Pago protegido»). */
+ *  navegar entre pasos la fila no salta de alto (feedback 2026-07-10). Bajado de 620 a
+ *  520px (feedback 2026-07-12): 620 estaba calibrado con la tarjeta «Pago protegido» de
+ *  relleno bajo el calendario; al quitarla (ver CheckoutPage.tsx paso 1) quedaba un hueco
+ *  muerto grande bajo el calendario y bajo las tarjetas de coordinación. 520px ≈ alto
+ *  natural del calendario con mes de 6 filas + su padding, con margen para el mapa del
+ *  paso 2 (no reducir más sin comprobar que el picker de mapa sigue siendo usable). */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS =
-  'h-[min(72vh,620px)] max-h-[620px]';
+  'h-[min(62vh,520px)] max-h-[520px]';
 
 export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';

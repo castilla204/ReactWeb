@@ -34,10 +34,16 @@ export function CheckoutMobileStepHeader({
     return (
         <header className={cn('min-w-0', className)}>
             {hideStepper ? null : <CheckoutMobileStepper currentStep={step} steps={steps} />}
+            {/* Sin barra de progreso en este paso (ya se llegó al final), pero perder el
+                hilo azul de marca de golpe se notaba. Un subrayado (no una barra suelta
+                centrada en el contenedor, que caía bajo una palabra al azar) lo mantiene:
+                sigue el ancho real del texto porque es una decoración del propio texto. */}
             <h2
                 className={cn(
                     !hideStepper && 'mt-4',
                     'text-center text-[20px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]',
+                    hideStepper &&
+                        'underline decoration-brand decoration-[3px] underline-offset-[7px]',
                 )}
             >
                 {title}
