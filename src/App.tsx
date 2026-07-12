@@ -37,9 +37,7 @@ import { HomePageSkeleton } from './components/homepage/HomePageSkeleton';
 import * as LazyPages from './routes/lazyPages';
 import { GoogleAuth } from './components/GoogleAuth';
 import { GoogleSignInButton } from './components/GoogleSignInButton';
-import { setupRateLimitHandler } from './services/rateLimitHandler';
 import { authService } from './services/authService';
-import { setupErrorInterceptor } from './services/errorInterceptor';
 import { ProtectedRouteWithMFA } from './components/layout/ProtectedRouteWithMFA';
 import { UserRole } from './utils/roleChecker';
 import CountryFlag from './components/CountryFlag';
@@ -188,18 +186,11 @@ const AppContent: React.FC = () => {
         return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
     }, [navigate, setUser]);
 
-    // Inicializar servicios de seguridad
+    // Inicializar servicios nativos
     useEffect(() => {
-        // 1. Inicializar authService (esto configura el interceptor de tokens)
-        // authService ya se inicializa automáticamente en su constructor
-
-        // 2. Configurar rate limiting (debe ir después del authService)
-        setupRateLimitHandler();
-
-        // 3. Configurar interceptor de errores HTTP (debe ir después de rateLimitHandler)
-        setupErrorInterceptor();
+        // authService ya se inicializa automáticamente en su constructor (import en main/App).
         
-        // 4. Configurar StatusBar (barra de estado blanca)
+        // Configurar StatusBar (barra de estado blanca)
         const initStatusBar = async () => {
             try {
                 const { Capacitor } = await import('@capacitor/core');

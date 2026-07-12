@@ -32,6 +32,22 @@ function prerenderSeoPlugin(mode: string) {
     };
 }
 
+/** Target del proxy /api en dev: local por defecto; remoto (v0/Vercel/CI) → Render. */
+function resolveDevApiProxyTarget(): string {
+    const envUrl = process.env.VITE_API_URL?.replace(/\/$/, '');
+    if (envUrl && !/localhost|127\.0\.0\.1/i.test(envUrl)) {
+        return envUrl;
+    }
+    if (
+        process.env.VERCEL === '1' ||
+        process.env.CI === 'true' ||
+        process.env.CODESPACES === 'true'
+    ) {
+        return 'https://newapi-yn9v.onrender.com';
+    }
+    return envUrl || 'http://localhost:7124';
+}
+
 export default defineConfig(({ command, mode }) => ({
     // ⚠️ base: WEB usa '/' (absoluto), Capacitor usa './' (relativo).
     // Por qué: con base './' el index.html referencia './index.<hash>.js'. En una
@@ -248,8 +264,7 @@ export default defineConfig(({ command, mode }) => ({
         },
         proxy: {
             '/api': {
-                // Permitir ngrok en desarrollo mediante variable de entorno VITE_API_URL
-                target: process.env.VITE_API_URL || 'http://localhost:7124', // URL del backend en desarrollo
+                target: resolveDevApiProxyTarget(),
                 changeOrigin: true,
                 secure: false,
                 ws: true,
