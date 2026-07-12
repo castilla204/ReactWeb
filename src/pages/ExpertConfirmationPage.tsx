@@ -47,6 +47,10 @@ export default function ExpertConfirmationPage() {
         try {
             const r = await fetch(base);
             if (r.ok) setCtx(await r.json());
+            // W10 FIX: si el token ya se consumió (cancel-pending del comprador, watchdog, otra
+            // pestaña), el GET devuelve 404. Antes se ignoraba → `pending` seguía true y el wizard
+            // quedaba interactivo para siempre encadenando 409/404. Pasar a 'invalid'.
+            else if (r.status === 404) setStatus('invalid');
         } catch { /* ignore */ }
     };
 
@@ -98,10 +102,12 @@ export default function ExpertConfirmationPage() {
         try {
             const res = await fetch(`${base}/approve`, { method: 'POST' });
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
+                const data: { message?: string } = await res.json().catch(() => ({}));
                 if (res.status === 409) {
                     await reload();
-                    throw new Error('La cita ya no está pendiente de confirmación.');
+                    // W10 FIX: mostrar el mensaje REAL del backend (distingue "el plazo ha vencido"
+                    // de "ya no está pendiente"); antes se pisaba con un texto único ambiguo.
+                    throw new Error(data?.message || 'La cita ya no está pendiente de confirmación.');
                 }
                 throw new Error(data?.message || 'No se pudo confirmar la cita.');
             }
@@ -122,10 +128,12 @@ export default function ExpertConfirmationPage() {
         try {
             const res = await fetch(`${base}/reject`, { method: 'POST' });
             if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
+                const data: { message?: string } = await res.json().catch(() => ({}));
                 if (res.status === 409) {
                     await reload();
-                    throw new Error('La cita ya no está pendiente de confirmación.');
+                    // W10 FIX: en la carrera reject-vs-approve el backend dice "La cita acaba de
+                    // confirmarse. No se puede rechazar." — el experto DEBE saber que tiene que acudir.
+                    throw new Error(data?.message || 'La cita ya no está pendiente de confirmación.');
                 }
                 throw new Error(data?.message || 'No se pudo rechazar la cita.');
             }
@@ -206,6 +214,46 @@ export default function ExpertConfirmationPage() {
         </CheckoutSelfChoicePreviewMap>
     ) : null;
 
+    // Enlace/confirmación de rechazo: compartido entre el cuerpo móvil (paso 1) y el pie desktop.
+    // W7 FIX (gemelo de SellerBookingPage): antes SOLO se pintaba después del shell → en móvil
+    // quedaba bajo el fold y en el paso mapa (h-[100dvh] overflow-hidden) era inalcanzable; el
+    // error del approve/reject (incluido el 402 de captura reintentable) era invisible.
+    const rejectNode = !rejectConfirming ? (
+        <button
+            type="button"
+            onClick={() => { setError(null); setRejectConfirming(true); }}
+            disabled={submitting || rejecting}
+            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+        >
+            No podré atender la cita
+        </button>
+    ) : (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
+            <p className="mb-2.5 text-[13px] text-red-800">
+                Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
+            </p>
+            <div className="flex gap-2">
+                <SileoButton
+                    onClick={reject}
+                    disabled={rejecting}
+                    loading={rejecting}
+                    loadingText="Rechazando…"
+                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                    Sí, rechazar
+                </SileoButton>
+                <button
+                    type="button"
+                    onClick={() => setRejectConfirming(false)}
+                    disabled={rejecting}
+                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                >
+                    Volver
+                </button>
+            </div>
+        </div>
+    );
+
     // Estado pendiente: wizard a ancho completo
     if (pending && ctx) {
         return (
@@ -235,6 +283,8 @@ export default function ExpertConfirmationPage() {
                         <div className="space-y-4">
                             {lockedCards}
                             {calendarNode}
+                            {/* W7 FIX: rechazo accesible dentro del cuerpo scrolleable móvil. */}
+                            <div className="pt-1">{rejectNode}</div>
                         </div>
                     ) : (
                         <div className="absolute inset-0">{mapNode}</div>
@@ -247,44 +297,22 @@ export default function ExpertConfirmationPage() {
                     }}
                     onSecondary={wizardStep === 2 ? () => setWizardStep(1) : undefined}
                 />
-                {/* Rechazo: enlace discreto inferior */}
-                <div className="mx-auto w-full max-w-md px-5 pb-6 lg:max-w-[75rem] lg:px-8">
+                {/* W7 FIX: error SIEMPRE visible en móvil — tira fija sobre el footer del wizard
+                    (cubre el 402 de captura reintentable y los 409 de carrera, en ambos pasos). */}
+                {error && (
+                    <div
+                        className="fixed inset-x-0 z-[71] px-5 lg:hidden"
+                        style={{ bottom: 'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)) + 0.5rem)' }}
+                    >
+                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800 shadow-lg">
+                            {error}
+                        </p>
+                    </div>
+                )}
+                {/* Pie desktop: error + rechazo (en móvil viven en el cuerpo / tira fija). */}
+                <div className="mx-auto hidden w-full px-5 pb-6 lg:block lg:max-w-[75rem] lg:px-8">
                     {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
-                    {!rejectConfirming ? (
-                        <button
-                            type="button"
-                            onClick={() => { setError(null); setRejectConfirming(true); }}
-                            disabled={submitting || rejecting}
-                            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
-                        >
-                            No podré atender la cita
-                        </button>
-                    ) : (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
-                            <p className="mb-2.5 text-[13px] text-red-800">
-                                Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
-                            </p>
-                            <div className="flex gap-2">
-                                <SileoButton
-                                    onClick={reject}
-                                    disabled={rejecting}
-                                    loading={rejecting}
-                                    loadingText="Rechazando…"
-                                    className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
-                                >
-                                    Sí, rechazar
-                                </SileoButton>
-                                <button
-                                    type="button"
-                                    onClick={() => setRejectConfirming(false)}
-                                    disabled={rejecting}
-                                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
-                                >
-                                    Volver
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    {rejectNode}
                 </div>
             </div>
         );

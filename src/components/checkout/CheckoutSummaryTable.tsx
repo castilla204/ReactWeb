@@ -45,10 +45,19 @@ export interface CheckoutSummaryTableProps {
   brandAccent?: boolean;
   /** Oculta el header del experto (cuando ya se muestra en el panel de pago) */
   hideExpertHeader?: boolean;
+  /**
+   * Dónde se sitúa la ficha del experto (foto+nombre+valoración). 'top' (por
+   * defecto) es la cabecera de siempre; 'bottom' la baja a una firma discreta
+   * tras el detalle del servicio — para el resumen final, donde lo primero que
+   * hay que revisar es la reserva en sí, no la cara del experto.
+   */
+  expertHeroPosition?: 'top' | 'bottom';
   /** Muestra un bloque "Qué incluye" con las portadas de entregables (solo en revisar-y-pagar). */
   showDeliverables?: boolean;
   /** Nº de columnas de las portadas de "Qué incluye" en pantallas anchas (desktop: 2, apiladas por defecto). */
   deliverablesColumns?: 1 | 2;
+  /** Zebra muy sutil en las filas del detalle (paso final de pago). */
+  stripedRows?: boolean;
   className?: string;
 }
 
@@ -57,12 +66,15 @@ function CheckoutSummaryTableRow({
   children,
   compact = false,
   firstInGroup = false,
+  striped = false,
 }: {
   label: string;
   children: React.ReactNode;
   compact?: boolean;
   /** Primera fila tras una etiqueta de grupo: sin línea propia, la etiqueta ya separa. */
   firstInGroup?: boolean;
+  /** Zebra muy sutil (paso final de pago): fondo gris casi imperceptible en filas alternas. */
+  striped?: boolean;
 }) {
   return (
     <div
@@ -70,6 +82,7 @@ function CheckoutSummaryTableRow({
         SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
         compact ? 'py-1.5' : 'px-6 py-3.5',
         firstInGroup && 'border-t-0',
+        striped && 'bg-[#f8f9fb]',
       )}
     >
       <dt className={cn(SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS, !compact && 'text-[13px] w-[28%]')}>{label}</dt>
@@ -125,9 +138,11 @@ export function CheckoutSummaryTable({
   compact = false,
   brandAccent = false,
   hideExpertHeader = false,
+  expertHeroPosition = 'top',
   deliverables = [],
   showDeliverables = false,
   deliverablesColumns = 1,
+  stripedRows = false,
   className = '',
 }: CheckoutSummaryTableProps) {
   // Chunking del resumen (no-compacto): agrupa las filas relacionadas bajo una
@@ -138,6 +153,12 @@ export function CheckoutSummaryTable({
   const locationIsFirst =
     hasLogisticsGroup && !coordinationLabel && !appointmentLabel && Boolean(locationLabel || locationHint);
   const hasSellerGroup = !compact && Boolean(sellerContactLabel);
+
+  // Zebra sutil: cuenta solo las filas de datos reales (no las etiquetas de
+  // grupo, que no son filas) para que la alternancia no se rompa cuando una
+  // fila condicional falta.
+  let rowIndex = 0;
+  const nextRowStriped = () => stripedRows && rowIndex++ % 2 === 1;
 
   return (
     <div className={className}>
@@ -157,7 +178,7 @@ export function CheckoutSummaryTable({
           </header>
         )}
 
-        {!compact && !hideExpertHeader && expertName ? (
+        {!compact && !hideExpertHeader && expertName && expertHeroPosition === 'top' ? (
           <CheckoutExpertHero
             expertName={expertName}
             expertPicture={expertPicture}
@@ -177,19 +198,19 @@ export function CheckoutSummaryTable({
 
         <dl aria-label="Detalles del servicio">
           {!compact && !hideExpertHeader && serviceName ? (
-            <CheckoutSummaryTableRow label="Servicio" compact={compact}>
+            <CheckoutSummaryTableRow label="Servicio" compact={compact} striped={nextRowStriped()}>
               {serviceName}
             </CheckoutSummaryTableRow>
           ) : null}
 
           {categoryName ? (
-            <CheckoutSummaryTableRow label="Categoría" compact={compact}>
+            <CheckoutSummaryTableRow label="Categoría" compact={compact} striped={nextRowStriped()}>
               {categoryName}
             </CheckoutSummaryTableRow>
           ) : null}
 
           {durationLabel ? (
-            <CheckoutSummaryTableRow label="Duración" compact={compact}>
+            <CheckoutSummaryTableRow label="Duración" compact={compact} striped={nextRowStriped()}>
               {durationLabel}
             </CheckoutSummaryTableRow>
           ) : null}
@@ -199,19 +220,19 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {coordinationLabel ? (
-            <CheckoutSummaryTableRow label="Coordinación" compact={compact} firstInGroup={coordinationIsFirst}>
+            <CheckoutSummaryTableRow label="Coordinación" compact={compact} firstInGroup={coordinationIsFirst} striped={nextRowStriped()}>
               {coordinationLabel}
             </CheckoutSummaryTableRow>
           ) : null}
 
           {appointmentLabel ? (
-            <CheckoutSummaryTableRow label="Cita" compact={compact} firstInGroup={appointmentIsFirst}>
+            <CheckoutSummaryTableRow label="Cita" compact={compact} firstInGroup={appointmentIsFirst} striped={nextRowStriped()}>
               {appointmentLabel}
             </CheckoutSummaryTableRow>
           ) : null}
 
           {locationLabel || locationHint ? (
-            <CheckoutSummaryTableRow label="Ubicación" compact={compact} firstInGroup={locationIsFirst}>
+            <CheckoutSummaryTableRow label="Ubicación" compact={compact} firstInGroup={locationIsFirst} striped={nextRowStriped()}>
               <SummaryValue hint={locationHint}>{locationLabel ?? '—'}</SummaryValue>
             </CheckoutSummaryTableRow>
           ) : null}
@@ -221,13 +242,13 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {sellerContactLabel ? (
-            <CheckoutSummaryTableRow label="Vendedor" compact={compact} firstInGroup={hasSellerGroup}>
+            <CheckoutSummaryTableRow label="Vendedor" compact={compact} firstInGroup={hasSellerGroup} striped={nextRowStriped()}>
               {sellerContactLabel}
             </CheckoutSummaryTableRow>
           ) : null}
 
           {sellerListingLabel ? (
-            <CheckoutSummaryTableRow label="Anuncio" compact={compact}>
+            <CheckoutSummaryTableRow label="Anuncio" compact={compact} striped={nextRowStriped()}>
               <span className="break-all">{sellerListingLabel}</span>
             </CheckoutSummaryTableRow>
           ) : null}
@@ -265,6 +286,21 @@ export function CheckoutSummaryTable({
               presentation="cover"
               showHeading={false}
               coverColumns={deliverablesColumns}
+            />
+          </div>
+        ) : null}
+
+        {!compact && !hideExpertHeader && expertName && expertHeroPosition === 'bottom' ? (
+          <div className="border-t border-[#f5f5f5] px-6 py-4">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">
+              Experto asignado
+            </p>
+            <CheckoutExpertHero
+              expertName={expertName}
+              expertPicture={expertPicture}
+              rating={expertRating}
+              reviewCount={expertReviewCount}
+              size="sm"
             />
           </div>
         ) : null}

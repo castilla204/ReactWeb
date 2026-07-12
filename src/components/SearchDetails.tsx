@@ -1103,6 +1103,43 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         );
     };
 
+    // W11 FIX: lock síncrono anti doble-click del cancel-pending (ver el case más abajo).
+    const cancelPendingLockRef = useRef(false);
+
+    // 🛡️ FIX [GAP-CANCEL-UI] (auditoría 2026-07-12): el checkout promete "cancelación sin coste si
+    // cambias de idea antes de que el vendedor reserve" y el backend tiene el endpoint expreso para
+    // honrarla (FIX [GAP-CANCEL] → POST /api/SearchHire/{id}/cancel-seller-booking), pero NINGÚN
+    // componente lo llamaba: el comprador arrepentido se quedaba con la autorización retenida hasta
+    // el watchdog de 48h. Botón discreto en la fase "coordinando con el vendedor" (sin cita aún).
+    const [cancellingSellerBooking, setCancellingSellerBooking] = useState(false);
+    const handleCancelSellerBooking = async () => {
+        const hireId = search?.searchHire?.id;
+        if (!hireId) { showToast('error', 'No se pudo identificar la contratación.'); return; }
+        if (cancellingSellerBooking) return;
+        if (!window.confirm('¿Cancelar la inspección? El vendedor aún no ha reservado la cita, así que no se te cobrará nada (devolución del 100%).')) return;
+        setCancellingSellerBooking(true);
+        try {
+            const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-seller-booking`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({} as any));
+                // 409 = carrera (el vendedor acaba de reservar / ya gestionada): el mensaje del
+                // backend lo explica; refrescar para que la vista muestre la realidad.
+                showToast('error', err.message || 'No se pudo cancelar la contratación.');
+                invalidateAll();
+                return;
+            }
+            showToast('success', 'Contratación cancelada. No se te ha cobrado nada.');
+            invalidateAll();
+        } catch {
+            showToast('error', 'No se pudo cancelar la contratación. Inténtalo de nuevo.');
+        } finally {
+            setCancellingSellerBooking(false);
+        }
+    };
+
     const handleAppointmentAction = async (action: string, appointment: Appointment) => {
         console.log('[SearchDetails] handleAppointmentAction called:', { action, appointmentId: appointment.id, appointment });
         try {
@@ -1148,17 +1185,29 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 case 'cancelPending': {
                     const hireId = appointment.searchHireId;
                     if (!hireId) { showToast('error', 'No se pudo identificar la contratación.'); break; }
-                    if (!window.confirm('¿Cancelar la cita? Como el experto aún no la ha confirmado, no se te cobrará nada (devolución del 100%).')) break;
-                    const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-pending`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-                    });
-                    if (!resp.ok) {
-                        const err = await resp.json().catch(() => ({} as any));
-                        throw new Error(err.message || 'No se pudo cancelar la cita.');
+                    // W11 FIX: lock síncrono anti doble-click (el botón no tiene disabled y un doble
+                    // click lanzaba dos POST → el 2º devolvía 409 "ya se está procesando" justo
+                    // después del toast de éxito). Mismo patrón submitLockRef de los magic links.
+                    if (cancelPendingLockRef.current) break;
+                    cancelPendingLockRef.current = true;
+                    try {
+                        if (!window.confirm('¿Cancelar la cita? Como el experto aún no la ha confirmado, no se te cobrará nada (devolución del 100%).')) break;
+                        const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-pending`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json().catch(() => ({} as any));
+                            // W11 FIX: en un 409 (el experto acaba de responder / watchdog) la vista está
+                            // obsoleta → refrescar además de avisar; antes el botón muerto persistía.
+                            if (resp.status === 409) invalidateAll();
+                            throw new Error(err.message || 'No se pudo cancelar la cita.');
+                        }
+                        showToast('success', 'Cita cancelada. No se te ha cobrado nada.');
+                        invalidateAll();
+                    } finally {
+                        cancelPendingLockRef.current = false;
                     }
-                    showToast('success', 'Cita cancelada. No se te ha cobrado nada.');
-                    invalidateAll();
                     break;
                 }
             }
@@ -1636,7 +1685,21 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     )}
                                                 </>
                                             ) : (
-                                                <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                <div>
+                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                    {/* FIX [GAP-CANCEL-UI]: cancelación sin coste prometida en el checkout
+                                                        (modo seller, antes de que el vendedor reserve). */}
+                                                    {isClient && coordinationMode === 'seller' && !isSearchHireFinalized && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleCancelSellerBooking}
+                                                            disabled={cancellingSellerBooking}
+                                                            className="mt-2 text-[12.5px] text-[#737373] underline underline-offset-2 transition-colors hover:text-[#1c1c1c] disabled:opacity-50"
+                                                        >
+                                                            {cancellingSellerBooking ? 'Cancelando…' : 'Cancelar sin coste'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                         {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
@@ -2276,7 +2339,21 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     )}
                                                 </>
                                             ) : (
-                                                <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                <div>
+                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                    {/* FIX [GAP-CANCEL-UI]: cancelación sin coste prometida en el checkout
+                                                        (modo seller, antes de que el vendedor reserve). */}
+                                                    {isClient && coordinationMode === 'seller' && !isSearchHireFinalized && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleCancelSellerBooking}
+                                                            disabled={cancellingSellerBooking}
+                                                            className="mt-2 text-[12.5px] text-[#737373] underline underline-offset-2 transition-colors hover:text-[#1c1c1c] disabled:opacity-50"
+                                                        >
+                                                            {cancellingSellerBooking ? 'Cancelando…' : 'Cancelar sin coste'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

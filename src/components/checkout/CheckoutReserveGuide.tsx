@@ -32,5 +32,13 @@ export const CheckoutReserveHint: React.FC<{
       El experto no cobra hasta que tú des el visto bueno al informe. Cancelación gratuita antes de que
       empiece la revisión.
     </p>
+    <p>
+      <span className="font-semibold text-[#1c1c1c]">Pago seguro</span>: tus datos de tarjeta se
+      procesan con cifrado SSL a través de Stripe.
+    </p>
+    <p>
+      <span className="font-semibold text-[#1c1c1c]">Garantía Inspecciono</span>: si el experto no
+      realiza la revisión, te devolvemos el importe al instante.
+    </p>
   </div>
 );

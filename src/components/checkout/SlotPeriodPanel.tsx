@@ -218,7 +218,15 @@ function FlatEmbeddedSlotGrid({
 
     return (
         <div
-            className="grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3 lg:gap-2"
+            className={cn(
+                'grid gap-1.5 max-lg:gap-1 lg:gap-2',
+                // auto-fill en vez de un nº de columnas fijo por breakpoint: en columnas
+                // estrechas (p.ej. calendario+horas partido en desktop, ~184px) un
+                // grid-cols-3 fijo dejaba huecos/desbordaba; auto-fill calcula cuántas
+                // columnas caben de verdad al ancho mínimo del chip y llena el espacio
+                // real de borde a borde (feedback 2026-07-12).
+                'grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))]',
+            )}
             role="listbox"
             aria-label="Horarios disponibles"
         >
@@ -273,7 +281,11 @@ function SelectableEmbeddedSlotHours({
                     className={cn(
                         splitPeriodsOnMobile
                             ? 'flex flex-wrap gap-1.5'
-                            : 'grid grid-cols-4 gap-1.5 max-lg:grid-cols-4 max-lg:gap-1 lg:grid-cols-3 lg:gap-2',
+                            // auto-fill: la columna partida calendario+horas en desktop es
+                            // estrecha (~184px) y un grid-cols-3 fijo dejaba huecos sin llenar
+                            // (feedback 2026-07-12); con auto-fill caben las columnas que el
+                            // ancho real permite, de borde a borde.
+                            : 'grid gap-1.5 max-lg:gap-1 lg:gap-2 grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))]',
                     )}
                     role="listbox"
                     aria-label={`Horarios de ${SLOT_PERIOD_LABELS[period].toLowerCase()}`}
