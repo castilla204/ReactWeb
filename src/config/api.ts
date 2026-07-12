@@ -1,22 +1,32 @@
 // ✅ API: localhost en desarrollo, producción en render
-// Permitir ngrok en desarrollo mediante variable de entorno VITE_API_URL
-const getDevServer = () => {
+const PRODUCTION_API = 'https://newapi-yn9v.onrender.com';
+
+/** v0 preview y sandboxes remotos no tienen backend en localhost:7124. */
+function isRemotePreviewHost(): boolean {
+    if (typeof window === 'undefined') return false;
+    const host = window.location.hostname;
+    return host.endsWith('.vusercontent.net') || host.endsWith('.vercel.app');
+}
+
+const getApiBaseUrl = (): string => {
     if (import.meta.env.DEV) {
-        // Si hay una variable de entorno VITE_API_URL, usarla (para ngrok)
         if (import.meta.env.VITE_API_URL) {
             return import.meta.env.VITE_API_URL;
         }
-        // Si no, usar localhost por defecto
+        if (isRemotePreviewHost()) {
+            return PRODUCTION_API;
+        }
         return 'http://localhost:7124';
     }
-    return 'https://newapi-yn9v.onrender.com';
+    return import.meta.env.VITE_API_URL || PRODUCTION_API;
 };
 
-const DEV_SERVER = getDevServer();
 const API_PATH = '/api';
 
 export const API_CONFIG = {
-    baseUrl: DEV_SERVER,
+    get baseUrl() {
+        return getApiBaseUrl();
+    },
     endpoints: {
         auth: {
             googleAuth: `${API_PATH}/User/google-auth`,
