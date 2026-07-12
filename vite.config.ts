@@ -5,6 +5,7 @@ import circularDependencyPlugin from 'vite-plugin-circular-dependency';
 import { VitePWA } from 'vite-plugin-pwa';
 import { compression } from 'vite-plugin-compression2';
 import { constants as zlibConstants } from 'node:zlib';
+import { fileURLToPath } from 'node:url';
 import { prerenderSeo } from './scripts/prerender-seo.mjs';
 
 /**
@@ -219,6 +220,16 @@ export default defineConfig(({ command, mode }) => ({
     // ✅ Asegurar que React sea tratado como externo y no se duplique
     resolve: {
         dedupe: ['react', 'react-dom'],
+        alias: {
+            // 🩹 Push SOLO nativo: el bundle web de @capacitor-firebase/messaging
+            // importa `firebase/messaging` (peer OPCIONAL no instalada). Ese web.js
+            // jamás se ejecuta (pushService no-op en web; nativo usa el puente),
+            // pero Rollup necesita resolver el import. Aliaseamos a un stub de no-ops
+            // para no arrastrar el SDK de Firebase. Ver src/stubs/firebase-messaging-stub.ts.
+            'firebase/messaging': fileURLToPath(
+                new URL('./src/stubs/firebase-messaging-stub.ts', import.meta.url),
+            ),
+        },
     },
     // ✅ Fuerza la pre-optimización de dependencias
     optimizeDeps: {

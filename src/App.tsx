@@ -207,7 +207,18 @@ const AppContent: React.FC = () => {
         };
         initStatusBar();
     }, []);
-    
+
+    // 📲 Push nativo: registra el token FCM tras login, lo desregistra en logout. No-op en web.
+    const wasAuthenticatedRef = useRef(false);
+    useEffect(() => {
+        if (isAuthenticated && !wasAuthenticatedRef.current) {
+            import('./services/pushService').then(({ initPush }) => initPush((u) => navigate(u)));
+        } else if (!isAuthenticated && wasAuthenticatedRef.current) {
+            import('./services/pushService').then(({ teardownPush }) => teardownPush());
+        }
+        wasAuthenticatedRef.current = isAuthenticated;
+    }, [isAuthenticated, navigate]);
+
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
     const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
