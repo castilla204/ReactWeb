@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useCallback } from 'react';
 import { useApi } from './useApi';
 import { API_CONFIG } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
+import {
+    stageFavoriteToggle,
+    clearFavoriteToggle,
+    getPendingFavoriteToggles,
+    resolveFavoriteState,
+} from '../utils/favoriteOfflineQueue';
 
 // Tipos según la guía
 interface ToggleFavoriteResponse {
@@ -74,12 +81,25 @@ export const useServiceFavorites = () => {
 
     // Toggle favorito (recomendado)
     const toggleFavoriteMutation = useMutation({
-        mutationFn: async (searchServiceId: number): Promise<ToggleFavoriteResponse> => {
-            return post<ToggleFavoriteResponse>(API_CONFIG.endpoints.favorites.toggle, {
-                searchServiceId
-            });
+        mutationFn: async (params: number | { searchServiceId: number; optimisticIsFavorite: boolean }): Promise<ToggleFavoriteResponse> => {
+            const searchServiceId = typeof params === 'number' ? params : params.searchServiceId;
+            const optimisticIsFavorite = typeof params === 'number' ? undefined : params.optimisticIsFavorite;
+            if (optimisticIsFavorite !== undefined) {
+                stageFavoriteToggle(searchServiceId, optimisticIsFavorite);
+            }
+            try {
+                const result = await post<ToggleFavoriteResponse>(API_CONFIG.endpoints.favorites.toggle, {
+                    searchServiceId
+                });
+                clearFavoriteToggle(searchServiceId);
+                return result;
+            } catch (error) {
+                // Mantener en cola local para sync al reconectar
+                throw error;
+            }
         },
-        onSuccess: (data, searchServiceId) => {
+        onSuccess: (data, params) => {
+            const searchServiceId = typeof params === 'number' ? params : params.searchServiceId;
             // Invalidar queries relacionadas
             queryClient.invalidateQueries({ queryKey: ['favorites'] });
             queryClient.invalidateQueries({ queryKey: ['favorite', searchServiceId] });
@@ -87,6 +107,37 @@ export const useServiceFavorites = () => {
             queryClient.invalidateQueries({ queryKey: ['favoriteCount', searchServiceId] });
         },
     });
+
+    /** Sincroniza toggles pendientes tras reconexión o al montar. */
+    const syncPendingFavorites = useCallback(async () => {
+        if (!isAuthenticated || !navigator.onLine) return;
+        const pending = getPendingFavoriteToggles();
+        if (pending.length === 0) return;
+
+        for (const item of pending) {
+            try {
+                const raw = await get<any>(API_CONFIG.endpoints.favorites.check(item.serviceId));
+                const inner = raw?.data ?? raw?.Data ?? {};
+                const serverFavorite = inner.isFavorite ?? inner.IsFavorite ?? false;
+                if (serverFavorite !== item.isFavorite) {
+                    await post<ToggleFavoriteResponse>(API_CONFIG.endpoints.favorites.toggle, {
+                        searchServiceId: item.serviceId,
+                    });
+                }
+                clearFavoriteToggle(item.serviceId);
+            } catch {
+                break;
+            }
+        }
+        queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    }, [isAuthenticated, get, post, queryClient]);
+
+    useEffect(() => {
+        void syncPendingFavorites();
+        const onOnline = () => { void syncPendingFavorites(); };
+        window.addEventListener('online', onOnline);
+        return () => window.removeEventListener('online', onOnline);
+    }, [syncPendingFavorites]);
 
     // Verificar si un servicio es favorito
     const checkFavorite = (searchServiceId: number, options?: { enabled?: boolean }) => {
@@ -194,6 +245,7 @@ export const useServiceFavorites = () => {
         toggleFavorite: toggleFavoriteMutation.mutate,
         toggleFavoriteAsync: toggleFavoriteMutation.mutateAsync,
         isToggling: toggleFavoriteMutation.isPending,
+        resolveFavoriteState,
 
         // Queries
         checkFavorite,

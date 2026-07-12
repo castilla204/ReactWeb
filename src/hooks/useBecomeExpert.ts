@@ -68,7 +68,7 @@ export function useBecomeExpert(options: UseBecomeExpertOptions = {}): UseBecome
     const [errorCode, setErrorCode] = useState<string | null>(null);
     const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
     // ✅ Round 30: flag de éxito — la página lo usa para renderizar el bloque Stripe inline
-    //    sin navegar a otra ruta (antes hacía navigate('/expert-panel')).
+    //    sin navegar a otra ruta (antes hacía navigate('/expert')).
     const [submitted, setSubmitted] = useState(false);
 
     const applyProfilePhoto = useCallback((file: File, previewUrl: string) => {
@@ -433,7 +433,7 @@ export function useBecomeExpert(options: UseBecomeExpertOptions = {}): UseBecome
 
             // ✅ Round 30: NO navegamos a /expert-panel. La página detectará `submitted=true`
             //    y mostrará el bloque "Conecta Stripe" inline como continuación del wizard.
-            //    Antes: navigate('/expert-panel'). Ahora se gestiona dentro del propio paso 3.
+            //    Antes: navigate('/expert'). Ahora se gestiona dentro del propio paso 3.
             console.log('✅ [useBecomeExpert] Registro completo — mostrando bloque Stripe inline');
             setSubmitted(true);
 

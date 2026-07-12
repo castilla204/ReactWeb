@@ -54,9 +54,9 @@ export const MFABanner: React.FC = () => {
 
     // Estilos según severidad
     const bannerStyles = {
-        info: 'bg-blue-50 dark:bg-blue-950/20 border-l-4 border-blue-500 text-blue-900 dark:text-blue-100',
-        warning: 'bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-500 text-yellow-900 dark:text-yellow-100',
-        critical: 'bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 text-red-900 dark:text-red-100 animate-pulse'
+        info: 'bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100',
+        warning: 'bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 text-yellow-900 dark:text-yellow-100',
+        critical: 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-900 dark:text-red-100 animate-pulse'
     };
 
     const iconComponents = {
@@ -70,7 +70,7 @@ export const MFABanner: React.FC = () => {
     return (
         <div 
             className={`
-                border-l-4 p-4 mb-4 rounded-r-lg
+                border p-4 mb-4 rounded-lg
                 ${bannerStyles[severity]}
                 relative
             `}
@@ -111,7 +111,7 @@ export const MFABanner: React.FC = () => {
                     
                     <div className="flex gap-2 flex-wrap">
                         <Button
-                            onClick={() => navigate('/mfa/setup-required')}
+                            onClick={() => navigate('/mfa/setup')}
                             size="sm"
                             variant={severity === 'critical' ? 'destructive' : 'default'}
                             className="text-xs"

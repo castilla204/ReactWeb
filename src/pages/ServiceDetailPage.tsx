@@ -182,7 +182,7 @@ const ServiceDetailPage: React.FC = () => {
       if (service.categoryId) {
         params.append('categoryId', service.categoryId.toString());
       }
-      navigate(`/crear-busqueda?${params.toString()}`);
+      navigate(`/hire?${params.toString()}`);
     }
   };
 

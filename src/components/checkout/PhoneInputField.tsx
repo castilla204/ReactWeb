@@ -127,7 +127,7 @@ function FlagImg({ code, size = 'sm' }: { code: string; size?: 'sm' | 'md' }) {
     return (
       <span
         style={{ width: w, height: h, fontSize: 8.5 }}
-        className="inline-flex shrink-0 items-center justify-center rounded-[3px] bg-[#e2e5ea] font-bold leading-none text-[#6b7280]"
+        className="inline-flex shrink-0 items-center justify-center rounded-[3px] bg-line-soft font-bold leading-none text-ink-muted"
       >
         {code}
       </span>
@@ -168,16 +168,16 @@ function CountryRow({
       aria-selected={selected}
       className={cn(
         'flex w-full items-center gap-3 px-4 py-[10px] text-left transition-colors duration-100',
-        'hover:bg-[#f5f6f8] focus-visible:bg-[#f5f6f8] focus-visible:outline-none',
-        selected && 'bg-[#eef1fd]',
+        'hover:bg-surface-tinted focus-visible:bg-surface-tinted focus-visible:outline-none',
+        selected && 'bg-brand/10',
       )}
     >
       <FlagImg code={entry.code} size="sm" />
-      <span className={cn('flex-1 truncate text-[13.5px] leading-none text-[#1c1c1c]', selected && 'font-semibold')}>
+      <span className={cn('flex-1 truncate text-meta leading-none text-ink-strong', selected && 'font-semibold')}>
         {entry.name}
       </span>
-      <span className="shrink-0 font-mono text-[12px] tabular-nums text-[#9ca3af]">{entry.dial}</span>
-      {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-[#0066cc]" />}
+      <span className="shrink-0 font-mono text-caption tabular-nums text-ink-soft">{entry.dial}</span>
+      {selected && <Check aria-hidden className="h-4 w-4 shrink-0 text-brand" />}
     </button>
   );
 }
@@ -365,13 +365,13 @@ export function PhoneInputField({
         transformOrigin: pos.origin === 'top' ? 'top center' : 'bottom center',
         animation: '_pdrop 0.15s cubic-bezier(0.16,1,0.3,1) both',
       }}
-      className="flex flex-col overflow-hidden rounded-2xl border border-[#e4e7ec] bg-white shadow-[0_4px_8px_-2px_rgba(0,0,0,0.08),0_16px_48px_-8px_rgba(0,0,0,0.16)]"
+      className="flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_4px_8px_-2px_rgba(0,0,0,0.08),0_16px_48px_-8px_rgba(0,0,0,0.16)]"
     >
       {/* Buscador */}
-      <div className="shrink-0 border-b border-[#f0f2f5] p-2.5">
+      <div className="shrink-0 border-b border-line-soft p-2.5">
         <label htmlFor={searchId} className="sr-only">Buscar país</label>
-        <div className="flex items-center gap-2 rounded-lg bg-[#f5f6f8] px-3 py-2">
-          <Search aria-hidden className="h-[13px] w-[13px] shrink-0 text-[#adb5bd]" />
+        <div className="flex items-center gap-2 rounded-lg bg-surface-tinted px-3 py-2">
+          <Search aria-hidden className="h-[13px] w-[13px] shrink-0 text-ink-soft" />
           <input
             ref={searchRef}
             id={searchId}
@@ -379,7 +379,7 @@ export function PhoneInputField({
             placeholder="Buscar país o prefijo…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-[13px] text-[#1c1c1c] placeholder:text-[#adb5bd] outline-none"
+            className="flex-1 bg-transparent text-meta text-ink-strong placeholder:text-ink-soft outline-none"
             autoComplete="off"
           />
           {query && (
@@ -387,7 +387,7 @@ export function PhoneInputField({
               type="button"
               onClick={() => { setQuery(''); searchRef.current?.focus(); }}
               aria-label="Limpiar búsqueda"
-              className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#d1d5db] text-[11px] font-bold leading-none text-white hover:bg-[#9ca3af] focus-visible:outline-none"
+              className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-line text-kicker font-bold leading-none text-white hover:bg-ink-soft focus-visible:outline-none"
             >
               ×
             </button>
@@ -398,20 +398,20 @@ export function PhoneInputField({
       {/* Lista */}
       <div className="overflow-y-auto overscroll-contain pb-1.5 pt-1" style={{ maxHeight: pos.maxHeight }}>
         {empty ? (
-          <p className="px-4 py-8 text-center text-[13px] text-[#adb5bd]">
+          <p className="px-4 py-8 text-center text-meta text-ink-soft">
             Sin resultados para «{query}»
           </p>
         ) : (
           <>
             {!q && vPinned.length > 0 && (
               <>
-                <p className="px-4 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#c8ccd4]">
+                <p className="px-4 pb-1 pt-1.5 text-badge font-bold uppercase tracking-[0.08em] text-line">
                   Frecuentes
                 </p>
                 {vPinned.map((c) => (
                   <CountryRow key={c.code} entry={c} selected={c.code === cur.code} onClick={() => select(c)} />
                 ))}
-                {vOthers.length > 0 && <div className="mx-4 my-1.5 border-t border-[#f0f2f5]" />}
+                {vOthers.length > 0 && <div className="mx-4 my-1.5 border-t border-line-soft" />}
               </>
             )}
             {q && vPinned.map((c) => (
@@ -442,10 +442,10 @@ export function PhoneInputField({
               : cn(
                     'h-11 rounded-lg border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)]',
                     hasErr
-                      ? 'border-[#f04438]'
+                      ? 'border-destructive'
                       : open
-                      ? 'border-[#0066cc] shadow-[0_0_0_3px_rgba(0,102,204,0.14)]'
-                      : 'border-[#dcdfe4] focus-within:border-[#0066cc] focus-within:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]',
+                      ? 'border-brand shadow-[0_0_0_3px_rgba(0,102,204,0.14)]'
+                      : 'border-line focus-within:border-brand focus-within:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]',
                 ),
           )}
         >
@@ -465,18 +465,18 @@ export function PhoneInputField({
               // integra en el campo, separado del número por un divisor de 1px. Las banderas SÍ
               // van en la lista desplegable, que es donde ayudan a localizar el país.
               'relative bg-transparent',
-              "after:absolute after:right-0 after:top-1/2 after:h-5 after:w-px after:-translate-y-1/2 after:bg-[#e2e5ea] after:content-['']",
+              "after:absolute after:right-0 after:top-1/2 after:h-5 after:w-px after:-translate-y-1/2 after:bg-line-soft after:content-['']",
               'transition-colors duration-100',
               'hover:bg-black/[0.03] active:bg-black/[0.05]',
-              'focus-visible:outline-none focus-visible:bg-[#0066cc]/[0.06]',
+              'focus-visible:outline-none focus-visible:bg-brand/[0.06]',
             )}
           >
-            <span className="text-[14px] font-medium tabular-nums tracking-tight text-[#4b5563]">
+            <span className="text-body font-medium tabular-nums tracking-tight text-ink-muted">
               {cur.dial}
             </span>
             <ChevronDown
               aria-hidden
-              className={cn('h-3 w-3 text-[#adb5bd] transition-transform duration-200', open && 'rotate-180')}
+              className={cn('h-3 w-3 text-ink-soft transition-transform duration-200', open && 'rotate-180')}
             />
           </button>
 
@@ -493,7 +493,7 @@ export function PhoneInputField({
             onChange={handleNum}
             placeholder="600 000 000"
             className={cn(
-              'flex-1 bg-transparent text-[14px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa]',
+              'flex-1 bg-transparent text-body text-ink-strong outline-none placeholder:text-ink-soft',
               bare ? 'px-2.5' : 'px-3',
             )}
           />

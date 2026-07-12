@@ -21,7 +21,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   }
 
   const sizeClasses = {
-    sm: 'px-2 py-0.5 text-[11px]',
+    sm: 'px-2 py-0.5 text-kicker',
     md: 'px-2.5 py-0.5 text-xs',
     lg: 'px-3 py-1 text-sm'
   };
@@ -39,7 +39,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
       </span>
 
       {showDescription && statusInfo.description && (
-        <span className="mt-1 max-w-xs text-xs text-[#737373]">
+        <span className="mt-1 max-w-xs text-xs text-ink-muted">
           {statusInfo.description}
         </span>
       )}

@@ -393,7 +393,10 @@ export function ProfileSetupWizard({
                         aria-valuemin={0}
                         aria-valuemax={100}
                     >
-                        <div className="expert-setup-progress-fill" style={{ width: `${progress}%` }} />
+                        <div
+                            className="expert-setup-progress-fill"
+                            style={{ transform: `scaleX(${progress / 100})` }}
+                        />
                     </div>
                 </div>
 

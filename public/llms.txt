@@ -21,9 +21,14 @@ Idioma: español (España). Ámbito: España. Contacto: soporte@inspecciono.com
 - [Peritaje de maquinaria de segunda mano](https://inspecciono.com/peritaje-maquinaria-segunda-mano): tractor, carretilla o máquina industrial; horas reales, motor, hidráulica y estructura.
 - [Inspección de bici eléctrica de segunda mano](https://inspecciono.com/inspeccion-bici-electrica-segunda-mano): salud de la batería, motor, electrónica y cuadro.
 
+## Cobertura por provincia (toda España)
+Inspecciono opera en las 50 provincias más Ceuta y Melilla; los expertos se desplazan a la ubicación del producto.
+- [Cobertura de inspección en toda España (índice de provincias)](https://inspecciono.com/inspeccion-segunda-mano-espana)
+- Patrón de URL por provincia: https://inspecciono.com/inspeccion-segunda-mano-{ciudad} (ej. .../inspeccion-segunda-mano-madrid, .../inspeccion-segunda-mano-soria, .../inspeccion-segunda-mano-sevilla).
+
 ## Ayuda
-- [Centro de ayuda: quiénes somos, cómo funciona y preguntas frecuentes](https://inspecciono.com/ayuda)
-- [Buscar expertos en el mapa](https://inspecciono.com/crear-busqueda)
+- [Centro de ayuda: quiénes somos, cómo funciona y preguntas frecuentes](https://inspecciono.com/help)
+- [Buscar expertos en el mapa](https://inspecciono.com/hire)
 
 ## Puntos clave para citar
 - El pago es en escrow: el cliente no paga al experto hasta dar el visto bueno tras recibir el informe.

@@ -42,7 +42,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 font-normal leading-none group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-end=true]:bg-brand data-[range-end=true]:text-white data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-brand/10 data-[range-middle=true]:text-[#1c1c1c] data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md data-[range-start=true]:bg-brand data-[range-start=true]:text-white data-[selected-single=true]:bg-brand data-[selected-single=true]:text-white hover:data-[selected-single=true]:bg-brand-hover dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 font-normal leading-none group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-end=true]:bg-brand data-[range-end=true]:text-white data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-brand/10 data-[range-middle=true]:text-ink-strong data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md data-[range-start=true]:bg-brand data-[range-start=true]:text-white data-[selected-single=true]:bg-brand data-[selected-single=true]:text-white hover:data-[selected-single=true]:bg-brand-hover dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className
       )}
@@ -111,7 +111,7 @@ function Calendar({
         ),
         dropdown: cn("absolute inset-0 opacity-0", defaultClassNames.dropdown),
         caption_label: cn(
-          "select-none font-semibold capitalize text-[#1c1c1c]",
+          "select-none font-semibold capitalize text-ink-strong",
           captionLayout === "label"
             ? "text-sm"
             : "flex h-8 items-center gap-1 rounded-md pl-2 pr-1 text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
@@ -121,7 +121,7 @@ function Calendar({
         month_grid: "flex w-full flex-col",
         weekdays: cn("flex gap-1", defaultClassNames.weekdays),
         weekday: cn(
-          "min-w-0 flex-1 basis-0 select-none rounded-md text-center text-[0.75rem] font-medium uppercase tracking-wide text-[#6b7280]",
+          "min-w-0 flex-1 basis-0 select-none rounded-md text-center text-[0.75rem] font-medium uppercase tracking-wide text-ink-muted",
           defaultClassNames.weekday
         ),
         week: cn("mt-1 flex w-full gap-1 sm:mt-2", defaultClassNames.week),

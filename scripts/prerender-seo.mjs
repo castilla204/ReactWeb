@@ -92,6 +92,9 @@ export async function prerenderSeo(distDir) {
   const { CATEGORY_LANDINGS, LANDING_STEPS } = await import(
     '../src/content/categoryLandingContent.ts'
   );
+  const { CITY_LANDINGS, CITY_LANDING_STEPS } = await import(
+    '../src/content/cityLandingContent.ts'
+  );
   const { serviceSchema, breadcrumbSchema, faqPageSchema, organizationSchema, howToSchema } =
     await import('../src/utils/jsonLd.ts');
 
@@ -100,7 +103,7 @@ export async function prerenderSeo(distDir) {
   // Rutas públicas no-landing. Meta espejo de los props <SEO> de sus páginas
   // (CentroAyudaPage / SearchCreationPage) — textos estables.
   routes.push({
-    path: '/ayuda',
+    path: '/help',
     title: 'Centro de Ayuda · Inspecciono — quiénes somos, cómo funciona y FAQ',
     description:
       'Todo en un sitio: quiénes somos, cómo funciona Inspecciono en 4 pasos con pago seguro, preguntas frecuentes y acceso a términos y privacidad actualizados.',
@@ -110,7 +113,7 @@ export async function prerenderSeo(distDir) {
     jsonLd: [organizationSchema()],
   });
   routes.push({
-    path: '/crear-busqueda',
+    path: '/hire',
     title: 'Busca expertos cerca de ti en el mapa | Inspecciono',
     description:
       'Elige qué quieres inspeccionar (coche, piso, moto…) y encuentra peritos verificados cerca de la ubicación del producto. Compara precios y valoraciones.',
@@ -137,6 +140,54 @@ export async function prerenderSeo(distDir) {
           `Cómo funciona ${c.h1.toLowerCase()}`,
           c.answerFirst,
           LANDING_STEPS.map((s) => ({ name: s.title, text: s.body })),
+        ),
+      ],
+    });
+  }
+
+  // Hub de cobertura nacional (ancla de jerarquía interna).
+  const hubPath = '/inspeccion-segunda-mano-espana';
+  routes.push({
+    path: hubPath,
+    title: 'Inspección de segunda mano en toda España — provincias | Inspecciono',
+    description:
+      'Contrata un perito verificado que inspecciona en persona coches, pisos, motos y maquinaria de segunda mano en cualquier provincia de España. Elige tu provincia y compara expertos en el mapa.',
+    ogTitle: 'Peritos verificados en toda España para revisar lo que vas a comprar',
+    jsonLd: [
+      organizationSchema(),
+      breadcrumbSchema([
+        { name: 'Inicio', url: '/' },
+        { name: 'Cobertura en España', url: hubPath },
+      ]),
+    ],
+  });
+
+  // Landings SEO locales por provincia (datos reales → JSON-LD espejo de CityLandingPage).
+  for (const c of CITY_LANDINGS) {
+    const path = `/inspeccion-segunda-mano-${c.slug}`;
+    routes.push({
+      path,
+      title: c.seoTitle,
+      description: c.seoDescription,
+      ogTitle: c.ogTitle,
+      ogDescription: c.seoDescription,
+      jsonLd: [
+        serviceSchema({
+          name: c.serviceName,
+          description: c.seoDescription,
+          url: `${SITE}${path}`,
+          areaServed: `${c.city}, ${c.province}`,
+        }),
+        breadcrumbSchema([
+          { name: 'Inicio', url: '/' },
+          { name: 'Cobertura en España', url: hubPath },
+          { name: c.city, url: path },
+        ]),
+        faqPageSchema(c.faqs),
+        howToSchema(
+          `Cómo contratar una inspección en ${c.city}`,
+          c.answerFirst,
+          CITY_LANDING_STEPS.map((s) => ({ name: s.title, text: s.body })),
         ),
       ],
     });

@@ -218,12 +218,12 @@ export function BecomeExpertCoverageMap({
     return (
         <div
             ref={wrapperRef}
-            className="become-expert-map relative h-[280px] w-full shrink-0 overflow-hidden bg-[#dce9f2] sm:h-[300px]"
+            className="become-expert-map relative h-[280px] w-full shrink-0 overflow-hidden bg-brand/[0.08] sm:h-[300px]"
         >
             {error ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
-                    <AlertTriangle className="h-6 w-6 text-[#9ca3af]" />
-                    <p className="text-sm text-[#444]">{error}</p>
+                    <AlertTriangle className="h-6 w-6 text-ink-soft" />
+                    <p className="text-sm text-ink">{error}</p>
                     <button
                         type="button"
                         onClick={retry}

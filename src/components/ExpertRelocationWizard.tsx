@@ -84,7 +84,7 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
 
   const goToReonboarding = () => {
     onClose();
-    navigate(result?.nextStep || '/become-expert');
+    navigate(result?.nextStep || '/expert/join');
   };
 
   if (!isOpen) return null;

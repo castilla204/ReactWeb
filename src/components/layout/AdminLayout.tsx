@@ -42,10 +42,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { path: '/admin/config', label: 'Configuración', icon: Settings },
     { path: '/admin/categories', label: 'Categorías', icon: FolderTree },
     { path: '/admin/mappings', label: 'Mapeos de Estado', icon: Link2 },
-    { path: '/admin/email-templates', label: 'Plantillas de email', icon: Mail },
+    { path: '/admin/templates/email', label: 'Plantillas de email', icon: Mail },
     { path: '/admin/notifications', label: 'Notificaciones', icon: Bell },
     { path: '/admin/disputes', label: 'Disputas', icon: AlertTriangle },
-    { path: '/admin/hangfire', label: 'Hangfire', icon: Activity },
+    { path: '/admin/jobs', label: 'Hangfire', icon: Activity },
   ];
 
   const isActive = (path: string) => {
@@ -61,10 +61,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     '/admin/config': { title: 'Configuración', subtitle: 'Reparto de pagos, Stripe y cancelaciones' },
     '/admin/categories': { title: 'Categorías', subtitle: 'Categorías del catálogo de servicios' },
     '/admin/mappings': { title: 'Mapeos de Estado', subtitle: 'Relación estado de cita → estado general' },
-    '/admin/email-templates': { title: 'Plantillas de email', subtitle: 'Previsualización del diseño de los emails' },
+    '/admin/templates/email': { title: 'Plantillas de email', subtitle: 'Previsualización del diseño de los emails' },
     '/admin/notifications': { title: 'Notificaciones', subtitle: 'Envío y historial de notificaciones' },
     '/admin/disputes': { title: 'Disputas', subtitle: 'Resolución de incidencias y reembolsos' },
-    '/admin/hangfire': { title: 'Hangfire', subtitle: 'Trabajos en segundo plano' },
+    '/admin/jobs': { title: 'Hangfire', subtitle: 'Trabajos en segundo plano' },
   };
 
   const activeKey = Object.keys(sectionMeta)
@@ -80,7 +80,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <div className="admin-sidebar-brand">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-[hsl(var(--ap-sidebar-muted))] hover:text-[hsl(var(--ap-sidebar-ink))] transition-colors text-[12.5px] font-medium"
+              className="flex items-center gap-2 text-[hsl(var(--ap-sidebar-muted))] hover:text-[hsl(var(--ap-sidebar-ink))] transition-colors text-caption font-medium"
             >
               <ArrowLeft className="w-4 h-4" /> Volver al sitio
             </button>

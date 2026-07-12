@@ -52,49 +52,49 @@ export function CheckoutPaymentAside({
   const content = (
     <>
       <section className={embedded ? 'px-5 py-5 bg-white' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
-        <h2 className={`text-[13px] font-medium text-[#6a6a6a] mb-3`}>Resumen del pago</h2>
+        <h2 className={`text-meta font-medium text-ink-muted mb-3`}>Resumen del pago</h2>
         <div className="flex items-center gap-3 mb-4">
           <div className="relative shrink-0">
             <Avatar className="h-10 w-10 rounded-full">
               <AvatarImage src={expertPicture} alt={expertName} />
-              <AvatarFallback className="rounded-full bg-[#1c1c1c] text-[11px] font-semibold text-white">
+              <AvatarFallback className="rounded-full bg-ink-strong text-kicker font-semibold text-white">
                 {expertName.charAt(0) || 'E'}
               </AvatarFallback>
             </Avatar>
             <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-[#1c1c1c] truncate">{serviceName}</p>
-            <p className="flex items-center gap-1.5 text-[11px] text-[#64748b]">
+            <p className="text-meta font-semibold text-ink-strong truncate">{serviceName}</p>
+            <p className="flex items-center gap-1.5 text-kicker text-ink-muted">
               <span className="truncate">{expertName}</span>
               {ratingLabel ? (
                 <>
-                  <span className="text-[#d4d4d4]" aria-hidden>
+                  <span className="text-line" aria-hidden>
                     ·
                   </span>
-                  <span className="inline-flex shrink-0 items-center gap-0.5 font-semibold tabular-nums text-[#1c1c1c]">
-                    <Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" aria-hidden />
+                  <span className="inline-flex shrink-0 items-center gap-0.5 font-semibold tabular-nums text-ink-strong">
+                    <Star className="h-3 w-3 fill-amber-500 text-amber-500" aria-hidden />
                     {ratingLabel}
-                    <span className="font-normal text-[#64748b]">({expertReviewCount})</span>
+                    <span className="font-normal text-ink-muted">({expertReviewCount})</span>
                   </span>
                 </>
               ) : null}
             </p>
           </div>
         </div>
-        <div className="flex items-baseline justify-between gap-4 border-t border-[#ebebeb] pt-4">
-          <p className="text-[13px] text-[#6a6a6a]">Total a pagar</p>
-          <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]">
+        <div className="flex items-baseline justify-between gap-4 border-t border-line pt-4">
+          <p className="text-meta text-ink-muted">Total a pagar</p>
+          <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong">
             {priceDisplay}
           </p>
         </div>
-        <p className="mt-1 text-[11px] text-[#64748b]">Impuestos incluidos</p>
+        <p className="mt-1 text-kicker text-ink-muted">Impuestos incluidos</p>
         {priceSubline ? (
-          <p className="mt-0.5 text-[11px] text-[#64748b]">{priceSubline}</p>
+          <p className="mt-0.5 text-kicker text-ink-muted">{priceSubline}</p>
         ) : null}
       </section>
 
-      <footer className={embedded ? 'space-y-4 border-t border-[#ebebeb] px-5 py-5' : 'space-y-3 border-t border-[#f5f5f5] px-3.5 py-3'}>
+      <footer className={embedded ? 'space-y-4 border-t border-line px-5 py-5' : 'space-y-3 border-t border-line-soft px-3.5 py-3'}>
         {!canPay ? (
           <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-md">
             Este experto no puede recibir contrataciones ahora.
@@ -106,7 +106,7 @@ export function CheckoutPaymentAside({
           disabled={!canPay || isProcessing}
           type="button"
           aria-busy={isProcessing}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isProcessing ? (
             <>
@@ -129,10 +129,10 @@ export function CheckoutPaymentAside({
 
         <CheckoutReserveHint coordinationMode={coordinationMode} />
 
-        <p className="text-center text-[11px] text-[#64748b]">
+        <p className="text-center text-kicker text-ink-muted">
           Al reservar, aceptas los{' '}
           <a
-            href="/terms.html"
+            href="/legal/terms"
             target="_blank"
             rel="noopener noreferrer"
             className="text-brand hover:text-brand-hover transition-colors"
@@ -146,7 +146,7 @@ export function CheckoutPaymentAside({
 
   if (embedded) {
     return (
-      <div className="w-full shrink-0 rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="w-full shrink-0 rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         {content}
       </div>
     );
@@ -154,7 +154,7 @@ export function CheckoutPaymentAside({
 
   return (
     <aside className={`lg:sticky lg:self-start ${SD_DESKTOP_STICKY_TOP_CLASS}`}>
-      <div className="rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         {content}
       </div>
     </aside>

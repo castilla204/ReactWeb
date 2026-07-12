@@ -104,8 +104,8 @@ export const ProtectedRouteWithMFA: React.FC<ProtectedRouteWithMFAProps> = ({
                 allowedRoles,
                 token: token ? 'present' : 'missing'
             });
-            if (location.pathname === '/expert-panel') {
-                return <Navigate to="/become-expert" replace />;
+            if (location.pathname === '/expert') {
+                return <Navigate to="/expert/join" replace />;
             }
             return <Navigate to="/" replace />;
         }

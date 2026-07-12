@@ -14,15 +14,15 @@ const FONT = HP_FONT;
 const C = {
   // Sistema según DESIGN.md ("El gabinete del perito" — plano por defecto,
   // el azul firma, no decora). Sin gradientes ni washes decorativos.
-  bg: '#fafafa',
-  bgAlt: '#ffffff',
-  text: '#1c1c1c',
-  textBody: '#6a6a6a',
-  textMuted: '#6a6a6a',
+  bg: 'hsl(var(--surface-tinted))',
+  bgAlt: 'hsl(var(--surface))',
+  text: 'hsl(var(--ink-strong))',
+  textBody: 'hsl(var(--ink-muted))',
+  textMuted: 'hsl(var(--ink-muted))',
   brand: 'hsl(var(--brand))',
   brandHover: 'hsl(var(--brand-hover))',
-  border: '#e5e5e5',
-  borderLight: '#ebebeb',
+  border: 'hsl(var(--line))',
+  borderLight: 'hsl(var(--line))',
 } as const;
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -67,9 +67,9 @@ const FAQS = [
 ] as const;
 
 const sectionTitle =
-  'text-[1.65rem] lg:text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-[#1c1c1c]';
+  'text-[1.65rem] lg:text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-ink-strong';
 
-const sectionSubtitle = 'mt-3 text-[15px] lg:text-[16px] leading-snug text-[#666666]';
+const sectionSubtitle = 'mt-3 text-lead lg:text-[16px] leading-snug text-ink-muted';
 
 const SectionHeading: React.FC<{
   eyebrow?: string;
@@ -86,7 +86,7 @@ const SectionHeading: React.FC<{
     className={align === 'center' ? 'text-center max-w-2xl mx-auto' : 'max-w-xl'}
   >
     {eyebrow && (
-      <p className="text-[13px] font-medium text-[#737373]">{eyebrow}</p>
+      <p className="text-meta font-medium text-ink-muted">{eyebrow}</p>
     )}
     <h2 id={id} className={`${eyebrow ? 'mt-2' : ''} ${sectionTitle}`}>
       {title}
@@ -98,7 +98,7 @@ const SectionHeading: React.FC<{
 const ExpertsBand: React.FC = () => (
   <section
     aria-labelledby="experts-title"
-    className="py-16 lg:py-20 border-t border-[#e8e8e8]/80 bg-white"
+    className="py-16 lg:py-20 border-t border-line/80 bg-white"
   >
     <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
       <div className="grid grid-cols-12 gap-10 items-center">
@@ -109,7 +109,7 @@ const ExpertsBand: React.FC = () => (
           viewport={viewportOnce}
           className="col-span-7"
         >
-          <motion.p variants={fadeUp} className="text-[13px] font-medium text-[#737373]">
+          <motion.p variants={fadeUp} className="text-meta font-medium text-ink-muted">
             Para expertos
           </motion.p>
 
@@ -120,7 +120,7 @@ const ExpertsBand: React.FC = () => (
 
           <motion.ul
             variants={fadeUp}
-            className="mt-6 space-y-2 text-[15px] leading-snug text-[#666666] list-disc pl-5 marker:text-[#cccccc]"
+            className="mt-6 space-y-2 text-lead leading-snug text-ink-muted list-disc pl-5 marker:text-line"
           >
             <li>Cobra por inspección — desde 25€ por una revisión rápida.</li>
             <li>Eliges tú las zonas, los horarios y las categorías que aceptas.</li>
@@ -129,12 +129,12 @@ const ExpertsBand: React.FC = () => (
 
           <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-4">
             <Link
-              to="/become-expert"
-              className="inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
+              to="/expert/join"
+              className="inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
             >
               Hazte experto
             </Link>
-            <span className="text-[13px] text-[#737373]">Alta gratis · sin permanencia</span>
+            <span className="text-meta text-ink-muted">Alta gratis · sin permanencia</span>
           </motion.div>
         </motion.div>
 
@@ -145,7 +145,7 @@ const ExpertsBand: React.FC = () => (
           transition={{ duration: 0.45, ease: EASE }}
           className="col-span-5"
         >
-          <div className="relative aspect-[5/6] rounded-2xl overflow-hidden border border-[#e5e5e5]">
+          <div className="relative aspect-[5/6] rounded-2xl overflow-hidden border border-line">
             <img
               src={revisionCasa}
               alt="Experto inmobiliario inspeccionando una vivienda"
@@ -162,7 +162,7 @@ const ExpertsBand: React.FC = () => (
 const FAQ: React.FC = () => (
   <section
     aria-labelledby="faq-title"
-    className="py-16 lg:py-20 border-t border-[#e8e8e8]/80"
+    className="py-16 lg:py-20 border-t border-line/80"
     style={{ background: C.bg }}
   >
     <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
@@ -188,23 +188,23 @@ const FAQ: React.FC = () => (
             type="single"
             collapsible
             defaultValue="faq-0"
-            className="rounded-2xl bg-white border border-[#e5e5e5] divide-y divide-[#ebebeb] overflow-hidden"
+            className="rounded-2xl bg-white border border-line divide-y divide-line overflow-hidden"
           >
             {FAQS.map((f, i) => (
               <Accordion.Item key={f.q} value={`faq-${i}`}>
                 <Accordion.Header asChild>
                   <h3>
-                    <Accordion.Trigger className="group w-full flex items-center justify-between gap-6 text-left px-5 py-4 hover:bg-[#fafafa] transition-colors">
-                      <span className="text-[15px] font-medium text-[#222222]">{f.q}</span>
+                    <Accordion.Trigger className="group w-full flex items-center justify-between gap-6 text-left px-5 py-4 hover:bg-surface-tinted transition-colors">
+                      <span className="text-lead font-medium text-ink">{f.q}</span>
                       <ChevronDown
-                        className="w-4 h-4 text-[#737373] shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-brand"
+                        className="w-4 h-4 text-ink-muted shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-brand"
                         aria-hidden
                       />
                     </Accordion.Trigger>
                   </h3>
                 </Accordion.Header>
                 <Accordion.Content className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                  <p className="px-5 pb-4 text-[15px] leading-snug text-[#666666]">{f.a}</p>
+                  <p className="px-5 pb-4 text-lead leading-snug text-ink-muted">{f.a}</p>
                 </Accordion.Content>
               </Accordion.Item>
             ))}
@@ -218,7 +218,7 @@ const FAQ: React.FC = () => (
 const FinalCTA: React.FC = () => (
   <section
     aria-labelledby="cta-final-title"
-    className="py-14 lg:py-16 border-t border-[#e8e8e8]/80"
+    className="py-14 lg:py-16 border-t border-line/80"
     style={{ background: C.bgAlt }}
   >
     <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10">
@@ -239,8 +239,8 @@ const FinalCTA: React.FC = () => (
           </p>
         </div>
         <Link
-          to="/crear-busqueda"
-          className="inline-flex w-fit shrink-0 items-center rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
+          to="/hire"
+          className="inline-flex w-fit shrink-0 items-center rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] hover:bg-brand-hover transition-colors"
         >
           Pedir una revisión
         </Link>

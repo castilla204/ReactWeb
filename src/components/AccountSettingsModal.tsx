@@ -1,4 +1,4 @@
-Ôªøimport React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Lock, Shield, Bell, Globe, Trash2, AlertTriangle, X, ChevronRight, ChevronLeft, CheckCircle, Mail, Plane, MapPin, MessageCircle } from 'lucide-react';
 import { SileoLoader } from './ui/sileo-loader';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,8 +9,8 @@ import { AccountDeletionStatus, ActiveContract } from '../types/accountDeletion'
 import { mfaService } from '../services/mfaService';
 import { MFASetup } from './MFASetup';
 import { DisableMFAModal } from './DisableMFAModal';
-// üõ°Ô∏è Round 28 MUD-F: wizard de mudanza self-service del experto.
-// üõ°Ô∏è Round 28 MUD-U: import retirado ‚Äî el wizard ya no se monta aqu√≠. Lo monta
+// ??? Round 28 MUD-F: wizard de mudanza self-service del experto.
+// ??? Round 28 MUD-U: import retirado ó el wizard ya no se monta aquÌ. Lo monta
 // ExpertPanelPage tras recibir el evento global dispatchado al cerrar este modal.
 import { showToast } from '../lib/toast';
 import { ProfilePhotoCropModal } from './becomeExpert/ProfilePhotoCropModal';
@@ -41,15 +41,15 @@ interface AccountSettingsModalProps {
 
 type TabType = 'profile' | 'security' | 'notifications' | 'privacy' | 'relocate' | 'delete';
 
-// üõ°Ô∏è Round 28 MUD-F: el tab 'relocate' solo se muestra a expertos (filtrado m√°s abajo
-// seg√∫n user.Role === 'Expert'). El hook React no permite condicionales en `const tabs`
-// por estar en module scope, as√≠ que el filtrado se hace al renderizar.
+// ??? Round 28 MUD-F: el tab 'relocate' solo se muestra a expertos (filtrado m·s abajo
+// seg˙n user.Role === 'Expert'). El hook React no permite condicionales en `const tabs`
+// por estar en module scope, asÌ que el filtrado se hace al renderizar.
 const allTabs = [
   { id: 'profile' as TabType, label: 'Perfil', icon: User, expertOnly: false },
   { id: 'security' as TabType, label: 'Seguridad', icon: Shield, expertOnly: false },
   { id: 'notifications' as TabType, label: 'Notificaciones', icon: Bell, expertOnly: false },
   { id: 'privacy' as TabType, label: 'Privacidad', icon: Globe, expertOnly: false },
-  { id: 'relocate' as TabType, label: 'Mudarme a otro pa√≠s', icon: Plane, expertOnly: true },
+  { id: 'relocate' as TabType, label: 'Mudarme a otro paÌs', icon: Plane, expertOnly: true },
   { id: 'delete' as TabType, label: 'Eliminar Cuenta', icon: Trash2, destructive: true, expertOnly: false },
 ];
 
@@ -59,33 +59,33 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 }) => {
   const { user, setUser, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
-  // üñºÔ∏è Avatar de cuenta: selecci√≥n de fichero ‚Üí recorte ‚Üí subida.
+  // ??? Avatar de cuenta: selecciÛn de fichero ? recorte ? subida.
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  // ‚úèÔ∏è Edici√≥n del nombre de la cuenta (el email no es editable).
+  // ?? EdiciÛn del nombre de la cuenta (el email no es editable).
   const [nameInput, setNameInput] = useState(user?.name || '');
   const [isSavingName, setIsSavingName] = useState(false);
-  // üõ°Ô∏è Round 28 MUD-F: detecci√≥n rol experto + estado del wizard de mudanza.
+  // ??? Round 28 MUD-F: detecciÛn rol experto + estado del wizard de mudanza.
   const userRole = (user as any)?.Role || (user as any)?.role;
   const isExpert = userRole === 'Expert';
   const tabs = allTabs.filter(t => !t.expertOnly || isExpert);
-  // üõ°Ô∏è MUD-U: state retirado ‚Äî el wizard vive en ExpertPanelPage.
-  // üì± Navegaci√≥n m√≥vil maestro-detalle (estilo ajustes nativo): 'list' muestra
-  //    el √≠ndice de secciones; 'detail' muestra el contenido del tab activo.
-  //    Sustituye al antiguo drawer anidado con hamburguesa (3 toques ‚Üí 1 toque).
+  // ??? MUD-U: state retirado ó el wizard vive en ExpertPanelPage.
+  // ?? NavegaciÛn mÛvil maestro-detalle (estilo ajustes nativo): 'list' muestra
+  //    el Ìndice de secciones; 'detail' muestra el contenido del tab activo.
+  //    Sustituye al antiguo drawer anidado con hamburguesa (3 toques ? 1 toque).
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  // üîê Modal para deshabilitar MFA (sustituye a los prompt() nativos).
+  // ?? Modal para deshabilitar MFA (sustituye a los prompt() nativos).
   const [showDisableMFA, setShowDisableMFA] = useState(false);
-  // üîî Ajustes de notificaciones reales (email / WhatsApp) desde el backend.
+  // ?? Ajustes de notificaciones reales (email / WhatsApp) desde el backend.
   const { settings, isLoadingSettings, toggleEmail, toggleWhatsApp, isUpdating: isUpdatingSettings } = useUserSettings();
-  // ‚úÖ Ref para rastrear si el componente est√° montado y limpiar timeouts
+  // ? Ref para rastrear si el componente est· montado y limpiar timeouts
   const isMountedRef = React.useRef(true);
   const closeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
-  // Estados para eliminaci√≥n de cuenta
+  // Estados para eliminaciÛn de cuenta
   const [deletionStep, setDeletionStep] = useState<'initial' | 'check' | 'confirm' | 'processing' | 'result'>('initial');
   const [deletionStatus, setDeletionStatus] = useState<AccountDeletionStatus | null>(null);
   
@@ -97,8 +97,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [deletionReason, setDeletionReason] = useState('');
   const [deletionPassword, setDeletionPassword] = useState('');
   const [deletionResult, setDeletionResult] = useState<any>(null);
-  // üõ°Ô∏è SEC-1: reautenticaci√≥n. usesOtp=null mientras se determina el m√©todo;
-  // true para cuentas OAuth (OTP step-up por email), false para cuentas con contrase√±a.
+  // ??? SEC-1: reautenticaciÛn. usesOtp=null mientras se determina el mÈtodo;
+  // true para cuentas OAuth (OTP step-up por email), false para cuentas con contraseÒa.
   const [deletionUsesOtp, setDeletionUsesOtp] = useState<boolean | null>(null);
   const [deletionToken, setDeletionToken] = useState('');
   const [deletionCode, setDeletionCode] = useState('');
@@ -113,7 +113,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     clearError
   } = useAccountDeletion();
 
-  // ‚úèÔ∏è Mantener el input de nombre en sync con el usuario (al abrir el modal o tras refresh).
+  // ?? Mantener el input de nombre en sync con el usuario (al abrir el modal o tras refresh).
   useEffect(() => {
     setNameInput(user?.name || '');
   }, [user?.name]);
@@ -125,10 +125,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     }
   }, [activeTab]);
 
-  // Cargar estado MFA cuando se abre la pesta√±a de seguridad (con debounce)
+  // Cargar estado MFA cuando se abre la pestaÒa de seguridad (con debounce)
   useEffect(() => {
     if (activeTab === 'security' && !mfaStatus && !loadingMFAStatus) {
-      // Agregar un peque√±o delay para evitar m√∫ltiples llamadas
+      // Agregar un pequeÒo delay para evitar m˙ltiples llamadas
       const timer = setTimeout(() => {
         loadMFAStatus();
       }, 300);
@@ -137,7 +137,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   }, [activeTab]);
 
   const loadMFAStatus = async () => {
-    // Evitar m√∫ltiples llamadas simult√°neas
+    // Evitar m˙ltiples llamadas simult·neas
     if (loadingMFAStatus) return;
     
     setLoadingMFAStatus(true);
@@ -146,7 +146,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       setMfaStatus(status);
     } catch (error: any) {
       console.error('Error loading MFA status:', error);
-      // Si el error es 404, 429 o similar, MFA no est√° habilitado o hay rate limiting
+      // Si el error es 404, 429 o similar, MFA no est· habilitado o hay rate limiting
       if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
         // Para rate limiting, mostrar estado por defecto sin alarmar
         setMfaStatus({ isEnabled: false });
@@ -163,7 +163,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   const handleMFASetupComplete = () => {
     setShowMFASetup(false);
-    // Limpiar cach√© y forzar refresh
+    // Limpiar cachÈ y forzar refresh
     console.log('[AccountSettings] MFA setup complete, clearing cache');
     mfaService.clearCache();
     // Limpiar banners dismissed
@@ -172,10 +172,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setTimeout(() => {
       loadMFAStatus();
     }, 500);
-    showToast('success', 'MFA configurado exitosamente. La pr√≥xima vez que inicies sesi√≥n, se te pedir√° el c√≥digo MFA.');
+    showToast('success', 'MFA configurado exitosamente. La prÛxima vez que inicies sesiÛn, se te pedir· el cÛdigo MFA.');
   };
 
-  // üîê Tras deshabilitar MFA desde el modal: limpiar cach√© y refrescar estado.
+  // ?? Tras deshabilitar MFA desde el modal: limpiar cachÈ y refrescar estado.
   const handleDisableMFASuccess = () => {
     mfaService.clearCache();
     setTimeout(() => {
@@ -188,8 +188,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     if (status) {
       setDeletionStatus(status);
       setDeletionStep('confirm');
-      // üõ°Ô∏è SEC-1: NO determinamos el m√©todo ni enviamos el OTP autom√°ticamente. El correo de
-      // verificaci√≥n se env√≠a SOLO cuando el usuario pulsa "Verificar identidad"
+      // ??? SEC-1: NO determinamos el mÈtodo ni enviamos el OTP autom·ticamente. El correo de
+      // verificaciÛn se envÌa SOLO cuando el usuario pulsa "Verificar identidad"
       // (requestDeletionReauth), para no mandar emails sin que los pida.
       setDeletionUsesOtp(null);
     } else {
@@ -197,9 +197,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     }
   };
 
-  // üõ°Ô∏è SEC-1: dispara la reautenticaci√≥n BAJO DEMANDA (al pulsar el bot√≥n). Para cuentas OAuth
-  // esto env√≠a el c√≥digo OTP por email; para cuentas con contrase√±a solo revela el campo de
-  // contrase√±a (en ese caso el backend no env√≠a ning√∫n correo).
+  // ??? SEC-1: dispara la reautenticaciÛn BAJO DEMANDA (al pulsar el botÛn). Para cuentas OAuth
+  // esto envÌa el cÛdigo OTP por email; para cuentas con contraseÒa solo revela el campo de
+  // contraseÒa (en ese caso el backend no envÌa ning˙n correo).
   const requestDeletionReauth = async () => {
     const otp = await requestDeletionOtp();
     if (otp) {
@@ -214,7 +214,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     }
   };
 
-  // üõ°Ô∏è SEC-1: reenviar el c√≥digo OTP.
+  // ??? SEC-1: reenviar el cÛdigo OTP.
   const resendDeletionOtp = async () => {
     const otp = await requestDeletionOtp();
     if (otp?.requiresOtp && otp.verificationToken) {
@@ -228,7 +228,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     setDeletionStep('processing');
     clearError();
 
-    // üõ°Ô∏è SEC-1: el backend exige reautenticaci√≥n. Enviamos contrase√±a (cuentas con
+    // ??? SEC-1: el backend exige reautenticaciÛn. Enviamos contraseÒa (cuentas con
     // password) u OTP step-up (verificationToken + code) para cuentas OAuth.
     const request: any = {};
     if (deletionReason.trim()) request.reason = deletionReason.trim();
@@ -244,12 +244,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     if (response) {
       setDeletionResult(response);
       setDeletionStep('result');
-      // üõ°Ô∏è FIX: Desloguear INMEDIATAMENTE al confirmar la eliminaci√≥n.
+      // ??? FIX: Desloguear INMEDIATAMENTE al confirmar la eliminaciÛn.
       //    Antes, el signOut solo se ejecutaba si el usuario pulsaba "Continuar";
-      //    si cerraba el modal con ESC/X o abr√≠a otra pesta√±a, el JWT segu√≠a
-      //    en localStorage y el AuthContext segu√≠a creyendo que estaba logueado.
-      //    Llamamos a signOut() en background ‚Äî el AuthContext ya es defensivo
-      //    ante un /logout backend ca√≠do (la cuenta acaba de borrarse).
+      //    si cerraba el modal con ESC/X o abrÌa otra pestaÒa, el JWT seguÌa
+      //    en localStorage y el AuthContext seguÌa creyendo que estaba logueado.
+      //    Llamamos a signOut() en background ó el AuthContext ya es defensivo
+      //    ante un /logout backend caÌdo (la cuenta acaba de borrarse).
       void signOut();
     } else {
       setDeletionStep('confirm');
@@ -257,7 +257,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   };
 
   const handleDeleteSuccess = () => {
-    // El signOut() ya se dispar√≥ en handleDelete; aqu√≠ solo cerramos y redirigimos.
+    // El signOut() ya se disparÛ en handleDelete; aquÌ solo cerramos y redirigimos.
     onClose();
     // Hard redirect para garantizar que cualquier estado en memoria (React Query,
     // contextos, etc.) se descarte por completo.
@@ -277,7 +277,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     clearError();
   };
 
-  // üñºÔ∏è ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ Avatar de cuenta ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+  // ??? ------------------------- Avatar de cuenta -------------------------
   const avatarUrl =
     (user as { ProfilePictureUrl?: string } | null)?.ProfilePictureUrl ??
     user?.profilePictureUrl ??
@@ -303,10 +303,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         obj.ProfilePictureUrl = url ?? undefined;
         localStorage.setItem(key, JSON.stringify(obj));
       }
-    } catch { /* localStorage no disponible: el estado en memoria ya est√° actualizado */ }
+    } catch { /* localStorage no disponible: el estado en memoria ya est· actualizado */ }
   };
 
-  // ‚úèÔ∏è Refleja el nombre nuevo en el contexto y en localStorage (sobrevive a recargas).
+  // ?? Refleja el nombre nuevo en el contexto y en localStorage (sobrevive a recargas).
   const persistName = (newName: string) => {
     setUser(prev => (prev ? { ...prev, name: newName } : prev));
     try {
@@ -318,7 +318,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         obj.Name = newName;
         localStorage.setItem(key, JSON.stringify(obj));
       }
-    } catch { /* localStorage no disponible: el estado en memoria ya est√° actualizado */ }
+    } catch { /* localStorage no disponible: el estado en memoria ya est· actualizado */ }
   };
 
   const trimmedName = nameInput.trim();
@@ -326,7 +326,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   const handleSaveName = async () => {
     if (!trimmedName) {
-      showToast('error', 'El nombre no puede estar vac√≠o');
+      showToast('error', 'El nombre no puede estar vacÌo');
       return;
     }
     setIsSavingName(true);
@@ -359,7 +359,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   const handleAvatarFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // Permitir volver a elegir el mismo fichero m√°s tarde.
+    // Permitir volver a elegir el mismo fichero m·s tarde.
     if (e.target) e.target.value = '';
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -367,7 +367,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       return;
     }
     if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-      showToast('error', 'Solo se permiten im√°genes JPG o PNG');
+      showToast('error', 'Solo se permiten im·genes JPG o PNG');
       return;
     }
     setCropFile(file);
@@ -429,9 +429,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       {/* Profile Tab */}
       {activeTab === 'profile' && (
         <div className="space-y-6">
-          {/* ‚îÄ‚îÄ Foto de perfil ‚îÄ‚îÄ */}
+          {/* -- Foto de perfil -- */}
           <div className="flex items-center gap-4">
-            {/* üñºÔ∏è Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
+            {/* ??? Avatar: foto si existe, si no iniciales (registro por email sin foto) */}
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -462,9 +462,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   disabled={isUploadingAvatar}
                   onClick={() => avatarInputRef.current?.click()}
                 >
-                  {isUploadingAvatar ? 'Guardando‚Ä¶' : (avatarUrl ? 'Cambiar foto' : 'A√±adir foto')}
+                  {isUploadingAvatar ? 'GuardandoÖ' : (avatarUrl ? 'Cambiar foto' : 'AÒadir foto')}
                 </Button>
-                {/* El experto no puede quitar su foto (es p√∫blica y obligatoria) */}
+                {/* El experto no puede quitar su foto (es p˙blica y obligatoria) */}
                 {avatarUrl && !isExpert && (
                   <Button
                     type="button"
@@ -478,12 +478,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 )}
               </div>
               <p className="mt-1.5 text-xs text-gray-600 dark:text-gray-300">
-                JPG o PNG, m√°ximo 5 MB.{isExpert ? ' Es tambi√©n tu foto p√∫blica como experto.' : ''}
+                JPG o PNG, m·ximo 5 MB.{isExpert ? ' Es tambiÈn tu foto p˙blica como experto.' : ''}
               </p>
             </div>
           </div>
 
-          {/* üñºÔ∏è Recorte de la foto antes de subir (reutiliza el flujo del experto) */}
+          {/* ??? Recorte de la foto antes de subir (reutiliza el flujo del experto) */}
           <ProfilePhotoCropModal
             open={cropOpen}
             onOpenChange={setCropOpen}
@@ -493,7 +493,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
           <Separator />
 
-          {/* ‚îÄ‚îÄ Datos de la cuenta ‚îÄ‚îÄ */}
+          {/* -- Datos de la cuenta -- */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="account-name">Nombre</Label>
@@ -521,7 +521,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Bot√≥n √∫nico de guardado al pie del formulario */}
+          {/* BotÛn ˙nico de guardado al pie del formulario */}
           <div className="flex justify-end">
             <Button
               type="button"
@@ -529,7 +529,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               disabled={isSavingName || !nameChanged || !trimmedName}
               onClick={handleSaveName}
             >
-              {isSavingName ? 'Guardando‚Ä¶' : 'Guardar cambios'}
+              {isSavingName ? 'GuardandoÖ' : 'Guardar cambios'}
             </Button>
           </div>
         </div>
@@ -550,8 +550,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <div className="flex items-center gap-3">
                     <Lock className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     <div>
-                      <h4 className="text-sm font-medium">Cambiar Contrase√±a</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Actualiza tu contrase√±a para mantener tu cuenta segura</p>
+                      <h4 className="text-sm font-medium">Cambiar ContraseÒa</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Actualiza tu contraseÒa para mantener tu cuenta segura</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm">
@@ -563,7 +563,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <div className="p-4 border border-border rounded-xl space-y-5">
                   <div className="flex items-center gap-2">
                     <Shield className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                    <h4 className="text-sm font-medium">Autenticaci√≥n de Dos Factores (MFA)</h4>
+                    <h4 className="text-sm font-medium">AutenticaciÛn de Dos Factores (MFA)</h4>
                   </div>
 
                   {loadingMFAStatus ? (
@@ -581,17 +581,17 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                       )}
                       {mfaStatus.lastVerifiedAt && (
                         <p className="text-xs text-gray-600 dark:text-gray-300">
-                          √öltima verificaci√≥n: {new Date(mfaStatus.lastVerifiedAt).toLocaleDateString('es-ES')}
+                          ⁄ltima verificaciÛn: {new Date(mfaStatus.lastVerifiedAt).toLocaleDateString('es-ES')}
                         </p>
                       )}
                       {mfaStatus.remainingRecoveryCodes !== undefined && (
                         <p className="text-xs text-gray-600 dark:text-gray-300">
-                          C√≥digos de recuperaci√≥n restantes: {mfaStatus.remainingRecoveryCodes}
+                          CÛdigos de recuperaciÛn restantes: {mfaStatus.remainingRecoveryCodes}
                         </p>
                       )}
                       {mfaStatus.remainingRecoveryCodes !== undefined && mfaStatus.remainingRecoveryCodes <= 3 && (
                         <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-600 dark:text-yellow-400">
-                          ‚ö†Ô∏è Quedan pocos c√≥digos de recuperaci√≥n. Considera regenerarlos.
+                          ?? Quedan pocos cÛdigos de recuperaciÛn. Considera regenerarlos.
                         </div>
                       )}
                       <Button
@@ -632,7 +632,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       {activeTab === 'notifications' && (
         <div className="space-y-5">
           {isLoadingSettings ? (
-            <SileoLoader size="sm" message="Cargando preferencias‚Ä¶" color="muted" />
+            <SileoLoader size="sm" message="Cargando preferenciasÖ" color="muted" />
           ) : (
             <div className="space-y-2">
               {/* Email */}
@@ -641,7 +641,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Mail className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
                   <div className="min-w-0">
                     <h4 className="text-sm font-medium">Notificaciones por Email</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Recibe avisos por correo electr√≥nico</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Recibe avisos por correo electrÛnico</p>
                   </div>
                 </div>
                 <span className="relative inline-flex items-center shrink-0">
@@ -689,11 +689,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               <Globe className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
               <div>
                 <h4 className="text-sm font-medium">Visibilidad del Perfil</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Controla qui√©n puede ver tu perfil</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Controla quiÈn puede ver tu perfil</p>
               </div>
             </div>
             <select className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 sm:h-10 sm:w-[150px]">
-              <option>P√∫blico</option>
+              <option>P˙blico</option>
               <option>Privado</option>
               <option>Solo Amigos</option>
             </select>
@@ -701,7 +701,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         </div>
       )}
 
-      {/* üõ°Ô∏è Round 28 MUD-F: Tab Mudarme (solo expertos) */}
+      {/* ??? Round 28 MUD-F: Tab Mudarme (solo expertos) */}
       {activeTab === 'relocate' && isExpert && (
         <div className="space-y-5">
           <div className="p-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl">
@@ -712,9 +712,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </div>
               </div>
               <div className="flex-1">
-                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">¬øTe has mudado a otro pa√≠s?</h4>
+                <h4 className="text-base font-semibold text-blue-900 dark:text-blue-100">øTe has mudado a otro paÌs?</h4>
                 <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
-                  Stripe Connect no permite cambiar el pa√≠s de tu cuenta de cobros. Si te has mudado, este asistente cierra tu cuenta Stripe actual y te prepara para hacer un onboarding nuevo en tu pa√≠s de residencia.
+                  Stripe Connect no permite cambiar el paÌs de tu cuenta de cobros. Si te has mudado, este asistente cierra tu cuenta Stripe actual y te prepara para hacer un onboarding nuevo en tu paÌs de residencia.
                 </p>
               </div>
             </div>
@@ -723,22 +723,22 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           <div className="bg-muted/50 border border-border rounded-xl p-4">
             <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              Qu√© pasa al ejecutar el asistente
+              QuÈ pasa al ejecutar el asistente
             </h5>
             <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1.5 pl-5 list-disc">
               <li>Verificamos que no haya dinero en vuelo (disputas, refunds o servicios contratados activos).</li>
               <li>Cerramos tu cuenta Stripe Connect actual.</li>
-              <li>Desactivamos tus servicios actuales (siguen visibles en historial, pero no aparecen en b√∫squedas).</li>
-              <li>Tus reviews recibidas se preservan con badge "Servicio prestado en {`{pa√≠s}`}".</li>
-              <li>Te dirigimos a "Convertirse en experto" para registrar tu nuevo pa√≠s y reanudar el onboarding.</li>
+              <li>Desactivamos tus servicios actuales (siguen visibles en historial, pero no aparecen en b˙squedas).</li>
+              <li>Tus reviews recibidas se preservan con badge "Servicio prestado en {`{paÌs}`}".</li>
+              <li>Te dirigimos a "Convertirse en experto" para registrar tu nuevo paÌs y reanudar el onboarding.</li>
             </ul>
           </div>
 
           <Button
             onClick={() => {
-              // üõ°Ô∏è Round 28 MUD-U: cerrar este modal ANTES de abrir el wizard.
-              // Radix Dialog/Vaul aplica inert/aria-hidden a body cuando est√° abierto,
-              // as√≠ que un wizard en portal queda inert (visible pero sin eventos).
+              // ??? Round 28 MUD-U: cerrar este modal ANTES de abrir el wizard.
+              // Radix Dialog/Vaul aplica inert/aria-hidden a body cuando est· abierto,
+              // asÌ que un wizard en portal queda inert (visible pero sin eventos).
               // Cerramos primero y dispatchamos evento que ExpertPanelPage recoge.
               onClose();
               setTimeout(() => {
@@ -752,7 +752,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </Button>
 
           <p className="text-xs text-gray-600 dark:text-gray-300 text-center">
-            Esta acci√≥n cierra tu cuenta Stripe Connect actual. La acci√≥n es irreversible.
+            Esta acciÛn cierra tu cuenta Stripe Connect actual. La acciÛn es irreversible.
           </p>
         </div>
       )}
@@ -763,7 +763,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           {/* Step 1: Checking Status */}
           {deletionStep === 'check' && (
             <div className="py-10">
-              <SileoLoader size="lg" layout="center" message="Verificando estado de tu cuenta‚Ä¶" color="muted" />
+              <SileoLoader size="lg" layout="center" message="Verificando estado de tu cuentaÖ" color="muted" />
             </div>
           )}
 
@@ -778,7 +778,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Eliminar cuenta permanentemente</h3>
                   <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                    Esta acci√≥n elimina o anonimiza tu cuenta y tus datos personales de forma irreversible.
+                    Esta acciÛn elimina o anonimiza tu cuenta y tus datos personales de forma irreversible.
                   </p>
                 </div>
               </div>
@@ -788,11 +788,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <div className="space-y-2.5">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-500" />
-                    Tienes {deletionStatus.activeContractsCount} contrataci√≥n(es) activa(s)
+                    Tienes {deletionStatus.activeContractsCount} contrataciÛn(es) activa(s)
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Si alguna tiene un pago en curso, no podr√°s eliminar la cuenta hasta que se complete o se cancele.
-                    El dinero se liquida autom√°ticamente (al experto, reembolso al cliente o anulaci√≥n); no se abren
+                    Si alguna tiene un pago en curso, no podr·s eliminar la cuenta hasta que se complete o se cancele.
+                    El dinero se liquida autom·ticamente (al experto, reembolso al cliente o anulaciÛn); no se abren
                     disputas.
                   </p>
                   {deletionStatus.activeContracts.length > 0 && (
@@ -817,24 +817,24 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {/* Deletion reason */}
               <div>
-                <Label>Raz√≥n para eliminar la cuenta (opcional)</Label>
+                <Label>RazÛn para eliminar la cuenta (opcional)</Label>
                 <textarea
                   value={deletionReason}
                   onChange={(e) => setDeletionReason(e.target.value)}
-                  placeholder="Ej: Ya no necesito el servicio, problemas t√©cnicos, etc."
+                  placeholder="Ej: Ya no necesito el servicio, problemas tÈcnicos, etc."
                   className="w-full px-4 py-3 border border-input rounded-xl bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   rows={3}
                 />
               </div>
 
 
-              {/* üõ°Ô∏è SEC-1: reautenticaci√≥n obligatoria */}
+              {/* ??? SEC-1: reautenticaciÛn obligatoria */}
               {deletionUsesOtp === null && (
                 <div className="space-y-2">
-                  <Label>Verificaci√≥n de seguridad</Label>
+                  <Label>VerificaciÛn de seguridad</Label>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Para confirmar debes verificar tu identidad. Si accedes con Google, te enviaremos un c√≥digo de un
-                    solo uso a tu correo al pulsar el bot√≥n.
+                    Para confirmar debes verificar tu identidad. Si accedes con Google, te enviaremos un cÛdigo de un
+                    solo uso a tu correo al pulsar el botÛn.
                   </p>
                   <Button
                     type="button"
@@ -843,19 +843,19 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     disabled={deletionLoading}
                     className="w-full sm:w-auto"
                   >
-                    {deletionLoading ? 'Comprobando‚Ä¶' : 'Verificar identidad'}
+                    {deletionLoading ? 'ComprobandoÖ' : 'Verificar identidad'}
                   </Button>
                 </div>
               )}
 
               {deletionUsesOtp === false && (
                 <div>
-                  <Label>Confirma tu contrase√±a para continuar</Label>
+                  <Label>Confirma tu contraseÒa para continuar</Label>
                   <input
                     type="password"
                     value={deletionPassword}
                     onChange={(e) => setDeletionPassword(e.target.value)}
-                    placeholder="Tu contrase√±a"
+                    placeholder="Tu contraseÒa"
                     autoComplete="current-password"
                     className="w-full px-4 py-3 border border-input rounded-xl bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                   />
@@ -864,11 +864,11 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
               {deletionUsesOtp === true && (
                 <div>
-                  <Label>Introduce el c√≥digo de verificaci√≥n</Label>
+                  <Label>Introduce el cÛdigo de verificaciÛn</Label>
                   <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 mb-2">
                     {otpSent
-                      ? 'Te hemos enviado un c√≥digo de 6 d√≠gitos a tu correo electr√≥nico. Caduca en 10 minutos.'
-                      : 'No pudimos enviar el c√≥digo. Pulsa "Reenviar c√≥digo" para intentarlo de nuevo.'}
+                      ? 'Te hemos enviado un cÛdigo de 6 dÌgitos a tu correo electrÛnico. Caduca en 10 minutos.'
+                      : 'No pudimos enviar el cÛdigo. Pulsa "Reenviar cÛdigo" para intentarlo de nuevo.'}
                   </p>
                   <input
                     type="text"
@@ -886,14 +886,14 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     disabled={deletionLoading}
                     className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
                   >
-                    Reenviar c√≥digo
+                    Reenviar cÛdigo
                   </button>
                 </div>
               )}
 
-              {/* Nota legal de retenci√≥n (letra peque√±a, secundaria) */}
+              {/* Nota legal de retenciÛn (letra pequeÒa, secundaria) */}
               <p className="text-xs leading-relaxed text-muted-foreground/80">
-                Por obligaci√≥n legal, las facturas y pagos se conservan anonimizados hasta 6 a√±os; no se eliminan de
+                Por obligaciÛn legal, las facturas y pagos se conservan anonimizados hasta 6 aÒos; no se eliminan de
                 inmediato.
               </p>
 
@@ -918,7 +918,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   }
                   className="flex-1"
                 >
-                  {deletionLoading ? 'Eliminando‚Ä¶' : 'Eliminar Cuenta'}
+                  {deletionLoading ? 'EliminandoÖ' : 'Eliminar Cuenta'}
                 </Button>
                       </div>
                     </div>
@@ -927,7 +927,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           {/* Step 3: Processing */}
           {deletionStep === 'processing' && (
             <div className="py-10">
-              <SileoLoader size="lg" layout="center" message="Eliminando tu cuenta‚Ä¶" color="muted" />
+              <SileoLoader size="lg" layout="center" message="Eliminando tu cuentaÖ" color="muted" />
             </div>
           )}
 
@@ -954,12 +954,12 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     {deletionResult.disputesCreated.map((item: any) => (
                       <li key={item.searchHireId} className="text-sm text-muted-foreground">
                         {item.reason}
-                        {item.affectedPartyName ? ` ¬∑ ${item.affectedPartyName}` : ''}
+                        {item.affectedPartyName ? ` ∑ ${item.affectedPartyName}` : ''}
                       </li>
                     ))}
                   </ul>
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    El dinero se liquid√≥ autom√°ticamente (transferencia al experto o reembolso al cliente, seg√∫n el
+                    El dinero se liquidÛ autom·ticamente (transferencia al experto o reembolso al cliente, seg˙n el
                     caso). No se abrieron disputas.
                   </p>
                 </div>
@@ -981,7 +981,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <h3 className="text-lg font-semibold text-foreground">Eliminar cuenta permanentemente</h3>
                 <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
                   Elimina o anonimiza tu cuenta y todos tus datos de forma irreversible. Si tienes contrataciones con
-                  pagos en curso, tendr√°s que esperar a que se completen o se cancelen antes de poder eliminarla.
+                  pagos en curso, tendr·s que esperar a que se completen o se cancelen antes de poder eliminarla.
                 </p>
               </div>
 
@@ -993,7 +993,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 }}
                 className="w-full sm:w-auto"
               >
-                Iniciar eliminaci√≥n
+                Iniciar eliminaciÛn
               </Button>
             </div>
           )}
@@ -1002,8 +1002,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     </>
   );
 
-  // ‚úÖ TODOS LOS HOOKS DEBEN ESTAR ANTES DE CUALQUIER RETURN CONDICIONAL
-  // ‚úÖ Cleanup effect para limpiar timeouts cuando el componente se desmonta
+  // ? TODOS LOS HOOKS DEBEN ESTAR ANTES DE CUALQUIER RETURN CONDICIONAL
+  // ? Cleanup effect para limpiar timeouts cuando el componente se desmonta
   React.useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -1016,7 +1016,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     };
   }, []);
 
-  // ‚úÖ Al cerrar el drawer principal, volver al √≠ndice de secciones (vista lista)
+  // ? Al cerrar el drawer principal, volver al Ìndice de secciones (vista lista)
   React.useEffect(() => {
     if (!isOpen) {
       setMobileView('list');
@@ -1028,7 +1028,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     }
   }, [isOpen]);
 
-  // ‚úÖ Mobile version handlers
+  // ? Mobile version handlers
   const handleDrawerOpenChange = React.useCallback((open: boolean) => {
     if (!open) {
       // Limpiar timeout anterior si existe
@@ -1037,10 +1037,10 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         closeTimeoutRef.current = null;
       }
 
-      // Volver a la vista lista para la pr√≥xima apertura
+      // Volver a la vista lista para la prÛxima apertura
       setMobileView('list');
 
-      // üõ°Ô∏è Si la cuenta ya se elimin√≥, cerrar el modal debe redirigir SIEMPRE
+      // ??? Si la cuenta ya se eliminÛ, cerrar el modal debe redirigir SIEMPRE
       //    al login para evitar dejar al usuario en una vista zombi.
       if (deletionStep === 'result') {
         closeTimeoutRef.current = setTimeout(() => {
@@ -1053,7 +1053,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         return;
       }
 
-      // Peque√±o delay para asegurar que el drawer anidado se cierre antes
+      // PequeÒo delay para asegurar que el drawer anidado se cierre antes
       // Solo llamar onClose si el componente sigue montado
       closeTimeoutRef.current = setTimeout(() => {
         if (isMountedRef.current) {
@@ -1062,16 +1062,16 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         closeTimeoutRef.current = null;
       }, 150);
     }
-    // Si open es true, no hacemos nada - el drawer se abre autom√°ticamente
+    // Si open es true, no hacemos nada - el drawer se abre autom·ticamente
   }, [onClose, deletionStep]);
 
-  // üì± Selecci√≥n de secci√≥n en m√≥vil: fija el tab y pasa a la vista detalle.
+  // ?? SelecciÛn de secciÛn en mÛvil: fija el tab y pasa a la vista detalle.
   const handleSelectTab = React.useCallback((tab: TabType) => {
     setActiveTab(tab);
     setMobileView('detail');
   }, []);
 
-  // ‚úÖ Handler para el Dialog de desktop - debe manejar correctamente el estado
+  // ? Handler para el Dialog de desktop - debe manejar correctamente el estado
   const handleDialogOpenChange = React.useCallback((open: boolean) => {
     if (!open && isMountedRef.current) {
       // Limpiar timeout si existe
@@ -1079,20 +1079,20 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
       }
-      // üõ°Ô∏è Si la cuenta ya se elimin√≥, cerrar el modal debe redirigir SIEMPRE
+      // ??? Si la cuenta ya se eliminÛ, cerrar el modal debe redirigir SIEMPRE
       //    al login para evitar dejar al usuario en una vista zombi.
       if (deletionStep === 'result') {
         onClose();
         window.location.href = '/login';
         return;
       }
-      // Cerrar inmediatamente - Radix UI maneja el overlay autom√°ticamente
+      // Cerrar inmediatamente - Radix UI maneja el overlay autom·ticamente
       onClose();
     }
   }, [onClose, deletionStep]);
 
   if (isDesktop) {
-    // ‚úÖ Solo renderizar el Dialog si est√° abierto para evitar overlays hu√©rfanos
+    // ? Solo renderizar el Dialog si est· abierto para evitar overlays huÈrfanos
     if (!isOpen) {
       return null;
     }
@@ -1108,7 +1108,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               handleDialogOpenChange(false);
             }}
             onPointerDownOutside={(e) => {
-              // üõ°Ô∏è Round 28 MUD-T: dejar pasar clicks del wizard de mudanza (portal en body).
+              // ??? Round 28 MUD-T: dejar pasar clicks del wizard de mudanza (portal en body).
               const target = e.target as HTMLElement | null;
               if (target?.closest('[data-relocation-wizard]')) return;
               // Permitir cerrar haciendo clic fuera
@@ -1117,7 +1117,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             }}
           >
             <DialogHeader className="sr-only">
-              <DialogTitle>Configuraci√≥n de Cuenta</DialogTitle>
+              <DialogTitle>ConfiguraciÛn de Cuenta</DialogTitle>
               <DialogDescription>Gestiona tu perfil, seguridad, notificaciones y privacidad</DialogDescription>
             </DialogHeader>
             <div className="flex overflow-hidden">
@@ -1148,7 +1148,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               <main className="flex h-[480px] flex-1 flex-col overflow-hidden bg-background">
                 <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Configuraci√≥n</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">ConfiguraciÛn</span>
                     <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     <span className="text-sm font-medium">
                       {tabs.find(t => t.id === activeTab)?.label}
@@ -1171,7 +1171,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           </DialogContent>
         </Dialog>
 
-        {/* üîê Modal para deshabilitar MFA (dialog en desktop). */}
+        {/* ?? Modal para deshabilitar MFA (dialog en desktop). */}
         <DisableMFAModal
           isOpen={showDisableMFA}
           onClose={() => setShowDisableMFA(false)}
@@ -1181,7 +1181,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     );
   }
 
-  // ‚úÖ Solo renderizar el Drawer m√≥vil si est√° abierto para evitar overlays hu√©rfanos
+  // ? Solo renderizar el Drawer mÛvil si est· abierto para evitar overlays huÈrfanos
   if (!isOpen) {
     return null;
   }
@@ -1193,15 +1193,15 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       <Drawer open={isOpen} onOpenChange={handleDrawerOpenChange}>
         <DrawerContent className="max-h-[92vh] bg-background">
           <DrawerHeader className="sr-only">
-            <DrawerTitle>Configuraci√≥n de Cuenta</DrawerTitle>
+            <DrawerTitle>ConfiguraciÛn de Cuenta</DrawerTitle>
             <DrawerDescription>Gestiona tu perfil, seguridad, notificaciones y privacidad</DrawerDescription>
           </DrawerHeader>
           <div className="mx-auto flex w-full max-w-lg flex-col max-h-[92vh]">
             {mobileView === 'list' ? (
-              /* ‚îÄ‚îÄ Vista √≠ndice: lista de secciones (estilo ajustes nativo) ‚îÄ‚îÄ */
+              /* -- Vista Ìndice: lista de secciones (estilo ajustes nativo) -- */
               <>
                 <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-                  <h2 className="text-lg font-semibold">Configuraci√≥n</h2>
+                  <h2 className="text-lg font-semibold">ConfiguraciÛn</h2>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1214,7 +1214,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </div>
 
                 <nav className="overflow-y-auto px-4 pb-6">
-                  {/* Usuario ‚Üí atajo al perfil (fila plana, sin caja) */}
+                  {/* Usuario ? atajo al perfil (fila plana, sin caja) */}
                   <button
                     type="button"
                     onClick={() => handleSelectTab('profile')}
@@ -1228,7 +1228,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium leading-tight">{user?.name || 'Usuario'}</p>
+                      <p className="truncate text-lead font-medium leading-tight">{user?.name || 'Usuario'}</p>
                       <p className="truncate text-xs text-gray-600 dark:text-gray-300">{user?.email || ''}</p>
                     </div>
                     <ChevronRight className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-300/50" />
@@ -1254,7 +1254,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                               className={`h-[18px] w-[18px] shrink-0 ${tab.destructive ? '' : 'text-gray-600 dark:text-gray-300'}`}
                               strokeWidth={1.75}
                             />
-                            <span className="flex-1 text-[15px]">{tab.label}</span>
+                            <span className="flex-1 text-lead">{tab.label}</span>
                             <ChevronRight className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-300/40" />
                           </button>
                         </React.Fragment>
@@ -1264,7 +1264,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 </nav>
               </>
             ) : (
-              /* ‚îÄ‚îÄ Vista detalle: contenido del tab activo con bot√≥n atr√°s ‚îÄ‚îÄ */
+              /* -- Vista detalle: contenido del tab activo con botÛn atr·s -- */
               <>
                 <div className="flex h-14 shrink-0 items-center gap-1 border-b border-border px-2">
                   <Button
@@ -1299,7 +1299,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         </DrawerContent>
       </Drawer>
 
-      {/* üîê Modal para deshabilitar MFA (drawer en m√≥vil, dialog en desktop). Se
+      {/* ?? Modal para deshabilitar MFA (drawer en mÛvil, dialog en desktop). Se
           renderiza fuera del drawer principal pero monta su propio portal. */}
       <DisableMFAModal
         isOpen={showDisableMFA}
@@ -1307,25 +1307,25 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         onSuccess={handleDisableMFASuccess}
       />
 
-      {/* üõ°Ô∏è Round 28 MUD-U: wizard NO se monta aqu√≠ ‚Äî ExpertPanelPage lo monta y
+      {/* ??? Round 28 MUD-U: wizard NO se monta aquÌ ó ExpertPanelPage lo monta y
           escucha el evento global 'openExpertRelocationWizard' (necesario porque este
-          modal aplica inert al wizard portal cuando est√° abierto). */}
+          modal aplica inert al wizard portal cuando est· abierto). */}
     </>
   );
 };
 
-// Componente para mostrar informaci√≥n de contrataci√≥n activa
-// Los StatusValue del backend son identificadores de m√°quina; aqu√≠ los mostramos legibles.
+// Componente para mostrar informaciÛn de contrataciÛn activa
+// Los StatusValue del backend son identificadores de m·quina; aquÌ los mostramos legibles.
 const CONTRACT_STATUS_LABELS: Record<string, string> = {
   pending: 'Reserva pendiente',
-  awaiting_client_decision: 'Esperando tu decisi√≥n',
+  awaiting_client_decision: 'Esperando tu decisiÛn',
 };
 
 const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }) => {
   const statusLabel = CONTRACT_STATUS_LABELS[contract.status] ?? 'En curso';
   const amount = new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    // üõ°Ô∏è Round 28 ‚Äî Sprint 3: el backend emite Currency en ActiveContractInfo.
+    // ??? Round 28 ó Sprint 3: el backend emite Currency en ActiveContractInfo.
     currency: ((contract.currency || (contract as any).chargeCurrency || 'EUR') as string).toUpperCase(),
   }).format(contract.amount);
 
@@ -1341,12 +1341,12 @@ const ActiveContractCard: React.FC<{ contract: ActiveContract }> = ({ contract }
         <p className="truncate text-sm font-medium text-foreground">{contract.serviceName}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
           {contract.otherPartyName}
-          {appointmentDate ? ` ¬∑ ${appointmentDate}` : ''}
+          {appointmentDate ? ` ∑ ${appointmentDate}` : ''}
         </p>
       </div>
       <div className="flex flex-shrink-0 flex-col items-end">
         <span className="text-sm font-semibold text-foreground">{amount}</span>
-        <span className="mt-0.5 text-[11px] text-muted-foreground">{statusLabel}</span>
+        <span className="mt-0.5 text-kicker text-muted-foreground">{statusLabel}</span>
       </div>
     </div>
   );

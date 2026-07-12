@@ -1,6 +1,8 @@
 /** Paleta por ciudad — cada experto / hub con identidad cromática propia. */
+import { MAP_LITERAL } from '../../constants/designTokens';
+
 export const EXPERT_SPARKLE_PALETTES = [
-  { primary: '#0066CC', accent: '#38bdf8', flare: '#93c5fd' },
+  { primary: MAP_LITERAL.brand, accent: '#38bdf8', flare: '#93c5fd' },
   { primary: '#8b5cf6', accent: '#c4b5fd', flare: '#ddd6fe' },
   { primary: '#10b981', accent: '#6ee7b7', flare: '#a7f3d0' },
   { primary: '#f59e0b', accent: '#fcd34d', flare: '#fde68a' },

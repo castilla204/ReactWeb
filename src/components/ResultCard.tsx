@@ -133,7 +133,7 @@ export function ResultCard({ result, searchId, setNotifications }: ResultCardPro
                 </div>
                 <div className="flex items-center justify-between mt-auto">
                     <div className="flex items-baseline gap-1 flex-wrap">
-                        <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                        <span className="text-lg font-bold text-blue-700">
                             {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
                         </span>
                         {priceInfo.wasConverted && (

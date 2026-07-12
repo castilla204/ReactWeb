@@ -213,7 +213,7 @@ const AdminMappingsPage: React.FC = () => {
               <AlertTriangle className="h-5 w-5 flex-shrink-0" />
               <div>
                 <h3 className="text-sm font-bold text-[hsl(var(--ap-ink))]">Error al cargar mapeos</h3>
-                <p className="mt-1 text-[13px] text-[hsl(var(--ap-muted))]">{statusMappings.error}</p>
+                <p className="mt-1 text-meta text-[hsl(var(--ap-muted))]">{statusMappings.error}</p>
               </div>
             </div>
           </AdminCardBody>
@@ -250,12 +250,12 @@ const AdminMappingsPage: React.FC = () => {
                     <AdminTR key={rowKey}>
                       <AdminTD>
                         <div className="flex items-center gap-3">
-                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(var(--ap-brand)/0.12)] text-[12px] font-bold text-[hsl(var(--ap-brand))]">
+                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(var(--ap-brand)/0.12)] text-caption font-bold text-[hsl(var(--ap-brand))]">
                             {sourceStatusType === 'AppointmentStatus' ? 'A' : 'S'}
                           </span>
                           <div>
-                            <div className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{sourceDisplayName}</div>
-                            <div className="text-[12px] text-[hsl(var(--ap-muted))]">{sourceStatusValue}</div>
+                            <div className="text-meta font-medium text-[hsl(var(--ap-ink))]">{sourceDisplayName}</div>
+                            <div className="text-caption text-[hsl(var(--ap-muted))]">{sourceStatusValue}</div>
                           </div>
                         </div>
                       </AdminTD>
@@ -263,8 +263,8 @@ const AdminMappingsPage: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <ArrowRight className="h-4 w-4 flex-shrink-0 text-[hsl(var(--ap-muted))]" />
                           <div>
-                            <div className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{targetDisplayName}</div>
-                            <div className="text-[12px] text-[hsl(var(--ap-muted))]">{targetStatusValue}</div>
+                            <div className="text-meta font-medium text-[hsl(var(--ap-ink))]">{targetDisplayName}</div>
+                            <div className="text-caption text-[hsl(var(--ap-muted))]">{targetStatusValue}</div>
                           </div>
                         </div>
                       </AdminTD>
@@ -381,7 +381,7 @@ const AdminMappingsPage: React.FC = () => {
       >
         {editing && (
           <div className="space-y-4">
-            <div className="text-[13px] text-[hsl(var(--ap-muted))]">
+            <div className="text-meta text-[hsl(var(--ap-muted))]">
               Estado origen: <strong className="text-[hsl(var(--ap-ink))]">{editingSourceDisplayName}</strong>
             </div>
             <div>
@@ -391,7 +391,7 @@ const AdminMappingsPage: React.FC = () => {
               <select
                 value={editTargetStatusId}
                 onChange={(e) => setEditTargetStatusId(Number(e.target.value))}
-                className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+                className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-meta text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
               >
                 {(statusMappings.searchHireStatuses || []).map((status) => {
                   const statusDisplayName = status.displayName || (status as any).DisplayName || 'Estado desconocido';
@@ -459,7 +459,7 @@ const AdminMappingsPage: React.FC = () => {
             <select
               value={mappingFormData.sourceStatusId}
               onChange={(e) => setMappingFormData({ ...mappingFormData, sourceStatusId: Number(e.target.value) })}
-              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-meta text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
             >
               <option value={0}>Seleccionar estado de cita</option>
               {(statusMappings.appointmentStatuses || []).map((status) => {
@@ -482,7 +482,7 @@ const AdminMappingsPage: React.FC = () => {
             <select
               value={mappingFormData.targetStatusId}
               onChange={(e) => setMappingFormData({ ...mappingFormData, targetStatusId: Number(e.target.value) })}
-              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
+              className="w-full rounded-md border border-[hsl(var(--ap-border-strong))] bg-[hsl(var(--ap-surface))] px-3 py-2 text-meta text-[hsl(var(--ap-ink))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ap-brand))]"
             >
               <option value={0}>Seleccionar estado general</option>
               {(statusMappings.searchHireStatuses || []).map((status) => {

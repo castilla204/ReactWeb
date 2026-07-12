@@ -62,7 +62,7 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
 
   return (
     <section
-      className={`mt-8 border-t border-[#e8e8e8] pt-6 lg:mt-10 lg:pt-8 ${className}`}
+      className={`mt-8 border-t border-line pt-6 lg:mt-10 lg:pt-8 ${className}`}
       aria-labelledby={headingId}
     >
       {hideHeading ? (
@@ -83,8 +83,8 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
             Reseñas
           </h2>
           {reviews.length > 0 && (
-            <p className={isCompact ? 'text-xs text-[#6a6a6a]' : 'text-sm text-[#6a6a6a]'}>
-              <span className="font-semibold tabular-nums text-[#1c1c1c]">
+            <p className={isCompact ? 'text-xs text-ink-muted' : 'text-sm text-ink-muted'}>
+              <span className="font-semibold tabular-nums text-ink-strong">
                 {averageRating.toFixed(1).replace('.', ',')}
               </span>
               {' · '}
@@ -98,10 +98,10 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
         <p
           className={
             isCompact
-              ? 'border-l-2 border-brand py-0 pl-2.5 text-xs text-[#6a6a6a]'
+              ? 'rounded-lg border border-line bg-surface-tinted px-2.5 py-2 text-xs text-ink-muted'
               : isDrawer
-                ? 'border-l-2 border-[#222222] py-0 pl-3 text-[15px] leading-relaxed text-[#6a6a6a]'
-                : 'border-l-2 border-brand py-0 pl-3 text-sm text-[#6a6a6a]'
+                ? 'rounded-lg border border-line bg-surface-tinted px-3 py-2 text-lead leading-relaxed text-ink-muted'
+                : 'rounded-lg border border-line bg-brand/5 px-3 py-2 text-sm text-ink-muted'
           }
         >
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
@@ -110,10 +110,10 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
         <ul
           className={
             isCompact
-              ? 'divide-y divide-[#ebebeb]'
+              ? 'divide-y divide-line'
               : isDrawer
-                ? 'divide-y divide-[#ebebeb]'
-                : 'divide-y divide-[#e8e8e8] border-y border-[#e8e8e8]'
+                ? 'divide-y divide-line'
+                : 'divide-y divide-line border-y border-line'
           }
         >
           {sortedReviews.map((review, idx) => {
@@ -145,15 +145,15 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                   <Avatar
                     className={
                       isCompact
-                        ? 'h-8 w-8 shrink-0 rounded-full border border-[#ebebeb]'
+                        ? 'h-8 w-8 shrink-0 rounded-full border border-line'
                         : isDrawer
-                          ? 'h-10 w-10 shrink-0 rounded-full border border-[#ebebeb]'
-                          : 'h-9 w-9 shrink-0 rounded-full border border-[#ebebeb]'
+                          ? 'h-10 w-10 shrink-0 rounded-full border border-line'
+                          : 'h-9 w-9 shrink-0 rounded-full border border-line'
                     }
                   >
                     <AvatarImage src={review.client?.profilePictureUrl} alt="" />
                     <AvatarFallback
-                      className={`rounded-full bg-[#f0f0f0] font-semibold text-[#1c1c1c] ${
+                      className={`rounded-full bg-line-soft font-semibold text-ink-strong ${
                         isCompact ? 'text-xs' : isDrawer ? 'text-sm' : 'text-sm'
                       }`}
                     >
@@ -165,16 +165,16 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                       <span
                         className={
                           isCompact
-                            ? 'truncate text-xs font-semibold text-[#1c1c1c]'
+                            ? 'truncate text-xs font-semibold text-ink-strong'
                             : isDrawer
-                              ? 'truncate text-sm font-semibold text-[#222222]'
-                              : 'text-sm font-semibold text-[#1c1c1c]'
+                              ? 'truncate text-sm font-semibold text-ink'
+                              : 'text-sm font-semibold text-ink-strong'
                         }
                       >
                         {clientName}
                       </span>
                       {formattedDate ? (
-                        <time className={`shrink-0 text-[#717171] ${isDrawer ? 'text-xs' : 'text-[11px]'}`}>
+                        <time className={`shrink-0 text-ink-muted ${isDrawer ? 'text-xs' : 'text-kicker'}`}>
                           {formattedDate}
                         </time>
                       ) : null}
@@ -186,18 +186,18 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                       className={isDrawer ? 'mt-1' : 'mt-1'}
                     />
                     {isDrawer && review.client?.location ? (
-                      <p className="mt-1 truncate text-xs text-[#717171]">{review.client.location}</p>
+                      <p className="mt-1 truncate text-xs text-ink-muted">{review.client.location}</p>
                     ) : null}
                   </div>
                 </div>
                 {reviewText ? (
                   <>
                     <p
-                      className={`text-[#444] ${
+                      className={`text-ink ${
                         isCompact
                           ? 'text-xs leading-5'
                           : isDrawer
-                            ? 'text-sm leading-[1.65] text-[#484848]'
+                            ? 'text-sm leading-[1.65] text-ink-muted'
                             : 'text-sm leading-snug'
                       } ${!isExpanded && shouldTruncate ? (isCompact ? 'line-clamp-2' : isDrawer ? 'line-clamp-4' : 'line-clamp-3') : ''}`}
                     >
@@ -209,9 +209,9 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                         onClick={() => onToggleExpand(key)}
                         className={
                           isCompact
-                            ? 'mt-1 text-xs font-medium text-[#1c1c1c] underline-offset-2 hover:underline'
+                            ? 'mt-1 text-xs font-medium text-ink-strong underline-offset-2 hover:underline'
                             : isDrawer
-                              ? 'mt-2 text-sm font-medium text-[#222222] underline-offset-2 hover:underline'
+                              ? 'mt-2 text-sm font-medium text-ink underline-offset-2 hover:underline'
                               : 'mt-2 text-sm font-medium text-brand hover:underline'
                         }
                       >
@@ -230,12 +230,12 @@ export const ServiceDetailReviewsSection: React.FC<ServiceDetailReviewsSectionPr
                       <button
                         key={imgIdx}
                         type="button"
-                        className={`sd-review-images-row__thumb shrink-0 overflow-hidden border bg-[#f5f5f5] transition-opacity hover:opacity-90 ${
+                        className={`sd-review-images-row__thumb shrink-0 overflow-hidden border bg-surface-tinted transition-opacity hover:opacity-90 ${
                           isDrawer
-                            ? 'h-12 w-12 rounded-lg border-[#ebebeb]'
+                            ? 'h-12 w-12 rounded-lg border-line'
                             : isCompact
-                              ? 'h-10 w-10 rounded-md border-[#ebebeb]'
-                              : 'h-14 w-14 rounded border-[#e8e8e8]'
+                              ? 'h-10 w-10 rounded-md border-line'
+                              : 'h-14 w-14 rounded border-line'
                         }`}
                         onClick={() => onOpenReviewImage?.(key, imgIdx)}
                       >

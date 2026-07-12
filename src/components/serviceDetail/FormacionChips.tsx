@@ -30,7 +30,7 @@ export default function FormacionChips({ value, scrollable = false, className }:
                 <span
                     key={i}
                     title={it.titulo}
-                    className={`inline-flex items-center rounded-full bg-[#f4f4f5] px-2.5 py-1 text-[12px] font-medium leading-none text-[#52525b] ring-1 ring-[#e4e4e7] ${
+                    className={`inline-flex items-center rounded-full bg-surface-tinted px-2.5 py-1 text-caption font-medium leading-none text-ink-muted ring-1 ring-line ${
                         scrollable ? 'shrink-0 whitespace-nowrap' : 'max-w-full'
                     }`}
                 >

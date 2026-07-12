@@ -153,12 +153,12 @@ export function MapAddressSearchBar({
     const hasQuery = query.length > 0;
 
     const inputCls = embedded
-        ? 'w-full rounded-full border border-[#e5e7eb] bg-white py-2.5 pl-11 pr-10 text-[13px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15'
+        ? 'w-full rounded-full border border-line bg-white py-2.5 pl-11 pr-10 text-meta text-ink-strong placeholder:text-ink-muted transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15'
         : overlay
-          ? 'w-full rounded-full border-0 bg-white/96 py-3 pl-4 pr-10 text-[15px] text-[#1c1c1c] shadow-[0_4px_20px_rgba(15,23,42,0.14),0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-md placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-brand/25'
+          ? 'w-full rounded-full border-0 bg-white/96 py-3 pl-4 pr-10 text-lead text-ink-strong shadow-[0_4px_20px_rgba(15,23,42,0.14),0_1px_4px_rgba(15,23,42,0.08)] backdrop-blur-md placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brand/25'
           : bare
-            ? 'h-11 w-full rounded-none border-0 bg-transparent pl-9 pr-9 font-display text-[14px] text-[#222222] placeholder:text-[#9aa0a6] focus:outline-none focus:ring-0'
-            : 'h-11 w-full rounded-full border-0 bg-white/95 pl-4 pr-10 font-display text-[15px] text-[#222222] shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-brand/30';
+            ? 'h-11 w-full rounded-none border-0 bg-transparent pl-9 pr-9 font-display text-body text-ink placeholder:text-ink-muted focus:outline-none focus:ring-0'
+            : 'h-11 w-full rounded-full border-0 bg-white/95 pl-4 pr-10 font-display text-lead text-ink shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brand/30';
 
     const handleClear = () => {
         committedRef.current = null;
@@ -173,7 +173,7 @@ export function MapAddressSearchBar({
         <div className={`relative ${className}`}>
             {embedded || bare ? (
                 <Search
-                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aa0aa]"
+                    className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft"
                     strokeWidth={2.1}
                     aria-hidden
                 />
@@ -201,14 +201,14 @@ export function MapAddressSearchBar({
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={handleClear}
-                    className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-black/[0.06] hover:text-[#1c1c1c]"
+                    className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.06] hover:text-ink-strong"
                     aria-label="Borrar búsqueda"
                 >
                     <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </button>
             ) : !embedded && !bare ? (
                 <Search
-                    className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171]"
+                    className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
                     strokeWidth={2.2}
                     aria-hidden
                 />
@@ -223,15 +223,15 @@ export function MapAddressSearchBar({
                                 e.preventDefault();
                                 handleSelect(item);
                             }}
-                            className="flex cursor-pointer items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-[#f5f5f5]"
+                            className="flex cursor-pointer items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-surface-tinted"
                         >
-                            <Search className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9aa0a6]" aria-hidden />
+                            <Search className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-soft" aria-hidden />
                             <span className="min-w-0">
-                                <span className="block truncate font-display text-[13.5px] font-medium text-[#222222]">
+                                <span className="block truncate font-display text-meta font-medium text-ink">
                                     {item.address}
                                 </span>
                                 {item.locationName && item.locationName !== 'Ubicación' && (
-                                    <span className="block truncate text-[12px] text-[#8a8a8a]">
+                                    <span className="block truncate text-caption text-ink-muted">
                                         {item.locationName}
                                     </span>
                                 )}

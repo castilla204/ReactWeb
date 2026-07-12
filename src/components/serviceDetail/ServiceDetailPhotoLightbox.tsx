@@ -84,7 +84,7 @@ export const ServiceDetailPhotoLightbox: React.FC<ServiceDetailPhotoLightboxProp
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sd-photo-lightbox !fixed !inset-0 !left-0 !top-0 z-[100] flex h-[100dvh] max-h-[100dvh] w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 rounded-none border-0 bg-[#0a0a0a] p-0 shadow-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100 duration-200"
+        className="sd-photo-lightbox !fixed !inset-0 !left-0 !top-0 z-[100] flex h-[100dvh] max-h-[100dvh] w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 rounded-none border-0 bg-ink-strong p-0 shadow-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100 duration-200"
         overlayClassName="bg-black/90"
         hideCloseButton
         onEscapeKeyDown={() => onOpenChange(false)}

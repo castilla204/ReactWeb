@@ -14,6 +14,7 @@ import {
   CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS,
   CHATBOT_FAB_RIGHT_MOBILE_CLASS,
 } from '../constants/homepageTypography';
+import { CHATBOT_HIDDEN_PREFIXES, ROUTES, TAB_BAR_PATHS } from '../constants/routes';
 
 const PANEL_ID = 'support-chat-panel';
 const PANEL_TITLE = 'Asistente de Inspecciono';
@@ -21,21 +22,10 @@ const PANEL_DESCRIPTION = 'Respuestas sobre la plataforma';
 /** Deja de llamar la atención en cuanto el usuario lo abre una vez por sesión. */
 const SEEN_KEY = 'support-chat-seen';
 
-const HIDDEN_PATH_PREFIXES = [
-  '/admin',
-  '/chat-pre-contratacion',
-  '/mis-mensajes',
-  '/service/',
-  '/checkout/',
-  '/crear-busqueda',
-];
-
-const TAB_BAR_PATHS = new Set(['/', '/explorar', '/busquedas', '/como-funciona']);
-
 const RESERVE_FOOTER_PATH_PREFIXES = ['/service/', '/checkout/'];
 
 function hasMobileTabBar(pathname: string): boolean {
-  return TAB_BAR_PATHS.has(pathname) || pathname.startsWith('/busquedas/');
+  return TAB_BAR_PATHS.has(pathname) || pathname.startsWith(`${ROUTES.hires}/`);
 }
 
 function hasMobileReserveFooter(pathname: string): boolean {
@@ -44,7 +34,7 @@ function hasMobileReserveFooter(pathname: string): boolean {
 
 /** Panel del experto: el FAB tapa barras fijas y el área de trabajo. */
 function isExpertPanelRoute(pathname: string): boolean {
-  return pathname === '/expert-panel' || pathname.startsWith('/expert-panel/');
+  return pathname === ROUTES.expert.panel || pathname.startsWith('/expert/inspection/');
 }
 
 function getMobileBottomClass(pathname: string, expertServicesFooter: boolean): string {
@@ -87,7 +77,7 @@ export const ChatbotFab: React.FC = () => {
   const keyboardViewport = useKeyboardViewport(isMobile && isOpen);
 
   const isHidden =
-    HIDDEN_PATH_PREFIXES.some((path) => location.pathname.startsWith(path))
+    CHATBOT_HIDDEN_PREFIXES.some((path) => location.pathname.startsWith(path))
     || isExpertPanelRoute(location.pathname)
     || mobileSearchOverlay;
   const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
@@ -169,7 +159,7 @@ export const ChatbotFab: React.FC = () => {
             isMobile
               ? // Pantalla completa: sin asa, sin esquinas redondeadas, sin gesto de arrastre.
                 'support-chat-in-up inset-0 h-full max-h-none w-full border-0'
-              : 'support-chat-in-right h-full w-full max-w-[25rem] border-l border-[#ececec] sm:max-w-[25rem]',
+              : 'support-chat-in-right h-full w-full max-w-[25rem] border-l border-line sm:max-w-[25rem]',
           )}
           /**
            * iOS: el visualViewport encoge pero el layout viewport no, así que un

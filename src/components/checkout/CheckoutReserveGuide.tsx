@@ -11,11 +11,11 @@ export const CheckoutReserveHint: React.FC<{
   coordinationMode?: 'self' | 'seller';
 }> = ({ className = '', coordinationMode = 'self' }) => (
   <div
-    className={`space-y-2 text-xs leading-relaxed text-[#6a6a6a] ${className}`.trim()}
+    className={`space-y-2 text-xs leading-relaxed text-ink-muted ${className}`.trim()}
     aria-label="Cómo funciona el cobro"
   >
     <p>
-      <span className="font-semibold text-[#1c1c1c]">Hoy no se te cobra nada</span>: solo reservamos el
+      <span className="font-semibold text-ink-strong">Hoy no se te cobra nada</span>: solo reservamos el
       importe en tu tarjeta.
     </p>
     {coordinationMode === 'seller' ? (
@@ -33,11 +33,11 @@ export const CheckoutReserveHint: React.FC<{
       empiece la revisión.
     </p>
     <p>
-      <span className="font-semibold text-[#1c1c1c]">Pago seguro</span>: tus datos de tarjeta se
+      <span className="font-semibold text-ink-strong">Pago seguro</span>: tus datos de tarjeta se
       procesan con cifrado SSL a través de Stripe.
     </p>
     <p>
-      <span className="font-semibold text-[#1c1c1c]">Garantía Inspecciono</span>: si el experto no
+      <span className="font-semibold text-ink-strong">Garantía Inspecciono</span>: si el experto no
       realiza la revisión, te devolvemos el importe al instante.
     </p>
   </div>

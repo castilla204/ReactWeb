@@ -72,7 +72,7 @@ export function CheckoutSlotHoursDrawer({
             >
                 <div
                     className={cn(
-                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#eceef2] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-2xl border border-b-0 border-line bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                         entered ? 'translate-y-0' : 'translate-y-full',
                         !expanded && 'max-h-none',
                     )}
@@ -91,7 +91,7 @@ export function CheckoutSlotHoursDrawer({
                             aria-expanded={expanded}
                             aria-label={expanded ? 'Contraer horarios' : 'Expandir horarios'}
                         >
-                            <span className="h-1 w-9 rounded-full bg-[#d1d5db]" aria-hidden />
+                            <span className="h-1 w-9 rounded-full bg-line" aria-hidden />
                         </button>
 
                         <button
@@ -101,21 +101,21 @@ export function CheckoutSlotHoursDrawer({
                             className="flex w-full items-center gap-2.5 text-left"
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#1c1c1c]">
+                                <p className="truncate text-lead font-semibold leading-snug tracking-[-0.01em] text-ink-strong">
                                     {dateLabel}
                                 </p>
                                 {!expanded && !selectedLabel ? (
-                                    <p className="mt-1 truncate text-[12px] leading-snug text-[#64748b]">
+                                    <p className="mt-1 truncate text-caption leading-snug text-ink-muted">
                                         Elige una hora
                                     </p>
                                 ) : null}
                             </div>
                             {selectedLabel && !expanded ? (
-                                <span className="shrink-0 rounded-lg bg-brand px-2.5 py-1 text-[12px] font-bold tabular-nums text-white">
+                                <span className="shrink-0 rounded-lg bg-brand px-2.5 py-1 text-caption font-bold tabular-nums text-white">
                                     {selectedLabel}
                                 </span>
                             ) : (
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-[#fafafa] text-[#64748b]">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface-tinted text-ink-muted">
                                     <ChevronDown
                                         className={cn(
                                             'h-4 w-4 transition-transform duration-300',
@@ -135,7 +135,7 @@ export function CheckoutSlotHoursDrawer({
                             // en el propio motor, independiente del valor de destino). El alto pasa
                             // a ser 100% inline e instantáneo; el crecimiento visual ya lo aporta la
                             // lámina exterior, que sí anima su max-height sin problemas.
-                            'min-h-0 overflow-y-auto overscroll-contain border-t border-[#eceef2] bg-white px-4 transition-opacity duration-300',
+                            'min-h-0 overflow-y-auto overscroll-contain border-t border-line bg-white px-4 transition-opacity duration-300',
                             expanded
                                 ? 'visible pb-4 pt-2.5 opacity-100'
                                 : 'invisible border-t-0 pb-0 pt-0 opacity-0',

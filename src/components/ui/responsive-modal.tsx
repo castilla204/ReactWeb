@@ -43,12 +43,12 @@ interface ResponsiveModalProps {
 }
 
 const AUTH_SURFACE_GRADIENT =
-  'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), #ffffff'
+  'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), hsl(var(--surface))'
 
 // Panel lateral derecho a pantalla completa (desktop). Doble override con `!`
 // para anular el centrado por defecto de DialogContent y respetar el deslizado.
 const DESKTOP_SIDE_PANEL_CLASS =
-  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(440px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-[#ebebeb] bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[440px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none'
+  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(440px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-line bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[440px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none'
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   open,
@@ -160,24 +160,24 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             {(!noHandle || title) && (
               <div
                 className={cn(
-                  "sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#ebebeb]",
+                  "sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-line",
                   drawerHeaderClassName,
                 )}
                 style={{ background: AUTH_SURFACE_GRADIENT }}
               >
                 {!noHandle && (
                   <div className="flex justify-center pb-0 pt-2">
-                    <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-[#c4c4c4]" />
+                    <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-line" />
                   </div>
                 )}
                 {title && (
                   <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-0.5 md:px-6">
                     <div className="min-w-0 pr-1">
-                      <h2 className="font-display text-[16px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+                      <h2 className="font-display text-subtitle font-semibold leading-tight text-ink">
                         {title}
                       </h2>
                       {description && (
-                        <p className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+                        <p className="mt-0.5 font-display text-caption font-normal leading-snug text-ink-muted">
                           {description}
                         </p>
                       )}
@@ -185,7 +185,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
                     <DrawerClose asChild>
                       <button
                         type="button"
-                        className="-mr-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-[#6b7280] transition-colors hover:bg-black/[0.1] hover:text-[#1c1c1c] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="-mr-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label="Cerrar"
                       >
                         <X className="h-[18px] w-[18px]" />
@@ -206,18 +206,18 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
     title && !hideDialogHeader ? (
       <DialogHeader
         className={cn(
-          'flex-shrink-0 border-b border-[#ebebeb] px-6 pb-3 pt-4 text-left md:px-7',
+          'flex-shrink-0 border-b border-line px-6 pb-3 pt-4 text-left md:px-7',
           dialogHeaderClassName
         )}
         style={{ background: AUTH_SURFACE_GRADIENT }}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 pr-2">
-            <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+            <DialogTitle className="font-display text-title font-semibold leading-tight tracking-[-0.015em] text-ink">
               {title}
             </DialogTitle>
             {description && (
-              <DialogDescription className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+              <DialogDescription className="mt-0.5 font-display text-caption font-normal leading-snug text-ink-muted">
                 {description}
               </DialogDescription>
             )}
@@ -225,7 +225,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           <DialogClose asChild>
             <button
               type="button"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-[#6b7280] ring-offset-background transition-colors hover:bg-black/[0.1] hover:text-[#1c1c1c] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted ring-offset-background transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="Cerrar"
             >
               <X className="h-[18px] w-[18px]" />
@@ -277,18 +277,18 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         {title && !hideDialogHeader && (
           <DialogHeader
             className={cn(
-              'flex-shrink-0 border-b border-[#ebebeb] px-6 pb-3 pt-4 text-left md:px-7',
+              'flex-shrink-0 border-b border-line px-6 pb-3 pt-4 text-left md:px-7',
               dialogHeaderClassName
             )}
             style={{ background: AUTH_SURFACE_GRADIENT }}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 pr-2">
-                <DialogTitle className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+                <DialogTitle className="font-display text-title font-semibold leading-tight tracking-[-0.015em] text-ink">
                   {title}
                 </DialogTitle>
                 {description && (
-                  <DialogDescription className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+                  <DialogDescription className="mt-0.5 font-display text-caption font-normal leading-snug text-ink-muted">
                     {description}
                   </DialogDescription>
                 )}
@@ -296,7 +296,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="shrink-0 rounded-full p-2 text-[#717171] ring-offset-background transition-colors hover:bg-[#f0f0f0] hover:text-[#222222] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="shrink-0 rounded-full p-2 text-ink-muted ring-offset-background transition-colors hover:bg-line-soft hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   aria-label="Cerrar"
                 >
                   <X className="h-5 w-5" />

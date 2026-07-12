@@ -10,6 +10,8 @@ import {
   SD_ASIDE_MAP_PREVIEW_MIN_HEIGHT_PX,
   SD_ASIDE_SECTION_LABEL_CLASS,
   SD_MOBILE_BOOKING_DIVIDER_CLASS,
+  SD_MOBILE_BOOKING_LABEL_CLASS,
+  SD_MOBILE_AVAILABILITY_TIME_CLASS,
   SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS,
   SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX,
   SD_MOBILE_META_CLASS,
@@ -44,7 +46,7 @@ export interface ServiceDetailBookingMetaProps {
   className?: string;
 }
 
-const asideSectionDividerClass = 'mt-5 border-t border-[#ebebeb] pt-5';
+const asideSectionDividerClass = 'mt-5 border-t border-line pt-5';
 
 export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> = ({
   availability,
@@ -84,9 +86,9 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
       ? formatAvailabilityTimeRange(availability.startTime, availability.endTime)
       : null;
 
-  const defaultAsideMapClass = `${SD_ASIDE_MAP_PREVIEW_HEIGHT_CLASS} w-full rounded-lg border border-[#e8e8e8]`;
+  const defaultAsideMapClass = `${SD_ASIDE_MAP_PREVIEW_HEIGHT_CLASS} w-full rounded-lg border border-line`;
   const defaultMinimalMapClass =
-    `${SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS} w-full rounded-lg border border-[#ebebeb]`;
+    `${SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS} w-full rounded-lg border border-line`;
 
   const resolvedMapClassName =
     mapClassName ?? (isMinimal ? defaultMinimalMapClass : defaultAsideMapClass);
@@ -124,7 +126,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           <p className={`${minimalPadX} ${SD_MOBILE_META_CLASS}`}>
             {locationLabel ? <span>{locationLabel}</span> : null}
             {locationLabel ? (
-              <span className="mx-1.5 text-[#d4d4d4]" aria-hidden>
+              <span className="mx-1.5 text-line" aria-hidden>
                 ·
               </span>
             ) : null}
@@ -152,14 +154,14 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
     ) : (
       <section className="w-full">
         <p className={`${SD_ASIDE_SECTION_LABEL_CLASS} mb-2`}>Cobertura</p>
-        <p className="mb-2.5 text-sm font-medium text-[#1c1c1c]">
+        <p className="mb-2.5 text-sm font-medium text-ink-strong">
           {locationLabel ? <span>{locationLabel}</span> : null}
           {locationLabel ? (
-            <span className="mx-1.5 font-normal text-[#d4d4d4]" aria-hidden>
+            <span className="mx-1.5 font-normal text-line" aria-hidden>
               ·
             </span>
           ) : null}
-          <span className="font-normal text-[#6a6a6a]">{radiusLabel}</span>
+          <span className="font-normal text-ink-muted">{radiusLabel}</span>
         </p>
         <LazyMount aspectRatio="16/9" minHeight={SD_ASIDE_MAP_PREVIEW_MIN_HEIGHT_PX}>
           <Suspense fallback={null}>
@@ -186,34 +188,17 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           renderCoverage && coverageFirst ? SD_MOBILE_BOOKING_DIVIDER_CLASS : ''
         }`}
       >
-        <div
-          className="flex items-center gap-3"
-          aria-label={[
-            'Horario habitual',
-            availabilityTimeRange,
-            isOnVacation ? 'vacaciones' : null,
-          ]
-            .filter(Boolean)
-            .join(', ')}
-        >
-          <ServiceDetailAvailabilityWidget
-            availability={availability}
-            timezone={timezone}
-            isOnVacation={isOnVacation}
-            variant="sidebar"
-            showHeading={false}
-            hideScheduleRow
-            dense
-          />
-          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className={SD_MOBILE_BOOKING_LABEL_CLASS}>Horario habitual</span>
+          <div className="flex shrink-0 items-center gap-1.5">
             {availabilityTimeRange ? (
-              <span className="text-xs font-semibold tabular-nums text-[#1c1c1c]">
+              <span className={SD_MOBILE_AVAILABILITY_TIME_CLASS}>
                 {availabilityTimeRange}
               </span>
             ) : null}
             {isOnVacation ? (
               <span
-                className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                className="rounded-full bg-warning-tint px-1.5 py-0.5 text-badge font-semibold text-warning"
                 title="El experto está de vacaciones"
               >
                 Vacaciones
@@ -221,18 +206,23 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
             ) : null}
           </div>
         </div>
-        {/* Una sola caption: nombra el bloque (plantilla semanal, no agenda) y aclara el flujo */}
-        <p className="mt-1.5 text-[11px] leading-snug text-[#737373]">
-          Horario habitual · eliges día y hora al reservar
-        </p>
+        <ServiceDetailAvailabilityWidget
+          availability={availability}
+          timezone={timezone}
+          isOnVacation={isOnVacation}
+          variant="mobile"
+          showHeading={false}
+          hideScheduleRow
+          className="mt-1.5 w-fit"
+        />
       </div>
     ) : (
       <section className="w-full">
-        <p className="mb-2.5 text-xs font-medium text-[#6a6a6a]">
+        <p className="mb-2.5 text-xs font-medium text-ink-muted">
           Horario habitual
           {isOnVacation ? (
             <span
-              className="ml-2 font-normal text-[#b45309]"
+              className="ml-2 font-normal text-warning"
               title="El experto está de vacaciones"
             >
               · De vacaciones
@@ -240,10 +230,10 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           ) : null}
         </p>
         {availabilityTimeRange ? (
-          <p className="mb-2.5 text-sm font-medium tabular-nums text-[#222222]">
+          <p className="mb-2.5 text-sm font-medium tabular-nums text-ink">
             {availabilityTimeRange}
             {tzShort ? (
-              <span className="ml-1 font-normal text-[#9ca3af]">· {tzShort}</span>
+              <span className="ml-1 font-normal text-ink-soft">· {tzShort}</span>
             ) : null}
           </p>
         ) : null}
@@ -256,7 +246,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           hideScheduleRow
         />
         {showAvailabilityHint ? (
-          <p className="mt-2 text-[11px] leading-relaxed text-[#737373]">
+          <p className="mt-2 text-kicker leading-relaxed text-ink-muted">
             Al reservar eliges día y hora dentro de este horario.
           </p>
         ) : null}

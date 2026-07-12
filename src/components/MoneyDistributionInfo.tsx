@@ -135,7 +135,7 @@ const MoneyDistributionInfo: React.FC<MoneyDistributionInfoProps> = ({
           
           {/* 🛡️ Round 10 — P-C FIX: usar effectiveXxxPct (snapshots > config). */}
           {hasSnapshots && (
-            <p className="text-[10px] text-gray-500 italic mb-2">
+            <p className="text-badge text-gray-500 italic mb-2">
               Reparto pactado al momento de contratar (no se ve afectado por cambios posteriores)
             </p>
           )}

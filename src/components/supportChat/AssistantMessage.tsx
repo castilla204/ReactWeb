@@ -10,13 +10,12 @@ import { Link } from 'react-router-dom';
 
 /** Rutas internas sin parámetro que el asistente menciona y podemos enlazar. */
 const INTERNAL_ROUTES = [
-  '/become-expert',
-  '/como-funciona',
-  '/busquedas',
-  '/favoritos',
-  '/privacidad',
-  '/explorar',
-  '/faq',
+  '/expert/join',
+  '/help',
+  '/hires',
+  '/favorites',
+  '/legal/privacy',
+  '/',
 ] as const;
 
 const ROUTE_ALT = INTERNAL_ROUTES.map((r) => r.replace('/', '\\/')).join('|');
@@ -55,7 +54,7 @@ function renderInline(
 
     if (bold) {
       nodes.push(
-        <strong key={k} className="font-semibold text-[#1c1c1c]">
+        <strong key={k} className="font-semibold text-ink-strong">
           {bold.slice(2, -2)}
         </strong>,
       );
@@ -185,8 +184,8 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({ content, onC
             key={bi}
             className={
               block.type === 'ol'
-                ? 'list-decimal space-y-1 pl-[1.15rem] marker:text-[#9b9b9b]'
-                : 'list-disc space-y-1 pl-[1.15rem] marker:text-[#c8c8c8]'
+                ? 'list-decimal space-y-1 pl-[1.15rem] marker:text-ink-soft'
+                : 'list-disc space-y-1 pl-[1.15rem] marker:text-line'
             }
           >
             {block.lines.map((line, li) => (

@@ -355,7 +355,7 @@ export function ExpertPanelPage() {
         // ✅ Verificación robusta del rol — si no es experto (ni por user ni por token), fuera.
         if (user && !isExpert) {
             console.log('User is not Expert, redirecting to become-expert');
-            navigate('/become-expert');
+            navigate('/expert/join');
         }
     }, [user, isExpert, navigate]);
 
@@ -1194,7 +1194,7 @@ export function ExpertPanelPage() {
                         )}
                     </div>
                     <button
-                        onClick={() => navigate('/become-expert')}
+                        onClick={() => navigate('/expert/join')}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                         Continuar con la mudanza
@@ -1268,12 +1268,12 @@ export function ExpertPanelPage() {
     if (!canAccessPanel && stripeStatus !== null) {
         return (
             <>
-                <div className="min-h-screen bg-[#fafafa]">
+                <div className="min-h-screen bg-surface-tinted">
                     <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8 lg:py-12">
                         <button
                             type="button"
                             onClick={() => navigate('/')}
-                            className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#6a6a6a] transition-colors hover:text-[#1c1c1c]"
+                            className="mb-5 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink-strong"
                         >
                             <ArrowLeft className="h-4 w-4" aria-hidden />
                             Volver al inicio
@@ -1339,7 +1339,12 @@ export function ExpertPanelPage() {
     return (
         <div className="expert-panel-layout">
             {sidebarOpen && (
-                <div className="expert-sidebar-overlay lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden />
+                <button
+                    type="button"
+                    className="expert-sidebar-overlay lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-label="Cerrar menú del panel"
+                />
             )}
 
             <aside className={`expert-sidebar ${sidebarOpen ? 'expert-sidebar--open' : ''}`}>
@@ -1373,7 +1378,7 @@ export function ExpertPanelPage() {
                     >
                         <Bell className="w-4 h-4" />
                         {notificationUnreadCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-badge font-bold text-background">
                                 {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
                             </span>
                         )}
@@ -1449,7 +1454,7 @@ export function ExpertPanelPage() {
                     {profile?.country && (
                         <div className="expert-sidebar-meta">
                             <span>País</span>
-                            <Badge variant="outline" className="text-[10px] py-0">{profile.country}</Badge>
+                            <Badge variant="outline" className="text-badge py-0">{profile.country}</Badge>
                         </div>
                     )}
                     <button type="button" className="expert-nav-item" onClick={() => setShowRelocationWizard(true)}>
@@ -1481,7 +1486,7 @@ export function ExpertPanelPage() {
                         >
                             <Bell className="w-5 h-5" />
                             {notificationUnreadCount > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-badge font-bold text-background">
                                     {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
                                 </span>
                             )}

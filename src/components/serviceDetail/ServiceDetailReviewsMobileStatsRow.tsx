@@ -13,7 +13,7 @@ interface ServiceDetailReviewsMobileStatsRowProps {
   neutral?: boolean;
 }
 
-/** Resumen móvil a ancho completo: nota + estrellas | barras. */
+/** Resumen móvil en drawer: nota + estrellas | barras. */
 export function ServiceDetailReviewsMobileStatsRow({
   averageRating,
   reviewCount,
@@ -26,11 +26,18 @@ export function ServiceDetailReviewsMobileStatsRow({
 
   if (!showHistogram) {
     return (
-      <div className="sd-reviews-preview-summary-mobile__row">
+      <div className="sd-reviews-preview-summary-mobile__row sd-reviews-preview-summary-mobile__row--solo">
         <div className="sd-reviews-preview-summary-mobile__score-col">
-          <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-          <ServiceDetailReviewStars rating={averageRating} size="md" neutral={neutral} className="mt-1.5" />
-          <p className="mt-1 text-[13px] leading-snug text-[#717171]">{opinionsLabel}</p>
+          <p className="sd-rating-numeral text-[1.875rem] leading-none md:text-[1.875rem]">
+            {ratingLabel}
+          </p>
+          <ServiceDetailReviewStars
+            rating={averageRating}
+            size="sm"
+            neutral={neutral}
+            className="mt-1.5"
+          />
+          <p className="mt-1 text-meta leading-snug text-ink-muted">{opinionsLabel}</p>
         </div>
       </div>
     );
@@ -39,9 +46,16 @@ export function ServiceDetailReviewsMobileStatsRow({
   return (
     <div className="sd-reviews-preview-summary-mobile__row">
       <div className="sd-reviews-preview-summary-mobile__score-col">
-        <p className="sd-reviews-mobile-score tabular-nums text-[#222222]">{ratingLabel}</p>
-        <ServiceDetailReviewStars rating={averageRating} size="sm" neutral={neutral} className="mt-1.5" />
-        <p className="mt-1.5 text-[13px] leading-snug text-[#717171]">{opinionsLabel}</p>
+        <p className="sd-rating-numeral text-[1.875rem] leading-none md:text-[1.875rem]">
+          {ratingLabel}
+        </p>
+        <ServiceDetailReviewStars
+          rating={averageRating}
+          size="sm"
+          neutral={neutral}
+          className="mt-1.5"
+        />
+        <p className="mt-1 text-meta leading-snug text-ink-muted">{opinionsLabel}</p>
       </div>
       <div className="sd-reviews-preview-summary-mobile__bars-col">
         <ServiceDetailReviewHistogram
@@ -49,7 +63,9 @@ export function ServiceDetailReviewsMobileStatsRow({
           total={reviewCount}
           variant="mobile"
           showPercent={false}
+          emphasis="default"
           neutral={neutral}
+          barTone="solid"
         />
       </div>
     </div>

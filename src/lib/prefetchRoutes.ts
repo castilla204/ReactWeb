@@ -10,7 +10,7 @@
  * navega y React resuelve el `lazy()`, la promesa resuelve sin red.
  *
  * Reglas:
- * - Solo se ejecuta desde la home (`/` o `/explorar`). Desde otras rutas la
+ * - Solo se ejecuta desde la home (`/` o `/`). Desde otras rutas la
  *   probabilidad de saltar a estas concretas es más difusa.
  * - Solo en navegadores con `requestIdleCallback` (no compite con la
  *   hidratación). En navegadores sin él, se usa setTimeout largo como red de
@@ -48,7 +48,7 @@ function shouldPrefetch(): boolean {
     if (isCapacitorNative()) return false;
     // Solo desde la home — desde otras rutas el conjunto de "siguiente probable"
     // cambia y este módulo es demasiado romo para acertarlo.
-    if (!['/', '/explorar'].includes(window.location.pathname)) return false;
+    if (!['/', '/'].includes(window.location.pathname)) return false;
 
     const nav = navigator as unknown as { connection?: ConnectionLike };
     const conn = nav.connection;

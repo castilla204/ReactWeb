@@ -40,7 +40,7 @@ export function CheckoutExpertHero({
           <AvatarImage src={expertPicture} alt={expertName} />
           <AvatarFallback
             className={cn(
-              'rounded-full bg-[#1c1c1c] font-semibold text-white',
+              'rounded-full bg-ink-strong font-semibold text-white',
               isSmall ? 'text-xs' : 'text-sm',
             )}
           >
@@ -55,22 +55,22 @@ export function CheckoutExpertHero({
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            'truncate font-semibold tracking-[-0.01em] text-[#222222]',
-            isSmall ? 'text-[13px] leading-[18px]' : 'text-sm leading-5',
+            'truncate font-semibold tracking-[-0.01em] text-ink',
+            isSmall ? 'text-meta leading-[18px]' : 'text-sm leading-5',
           )}
         >
           {expertName}
         </p>
         <p
           className={cn(
-            'mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[#6a6a6a]',
-            isSmall ? 'text-[11px] leading-[15px]' : 'text-xs leading-4',
+            'mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-ink-muted',
+            isSmall ? 'text-kicker leading-[15px]' : 'text-xs leading-4',
           )}
         >
           <span>Experto verificado</span>
           {completedSearches > 0 ? (
             <>
-              <span className="text-[#d4d4d4]" aria-hidden>
+              <span className="text-line" aria-hidden>
                 ·
               </span>
               <span>
@@ -80,13 +80,13 @@ export function CheckoutExpertHero({
           ) : null}
           {showRating ? (
             <>
-              <span className="text-[#d4d4d4]" aria-hidden>
+              <span className="text-line" aria-hidden>
                 ·
               </span>
-              <span className="inline-flex items-center gap-0.5 font-semibold tabular-nums text-[#1c1c1c]">
-                <Star className={cn(isSmall ? 'h-3 w-3' : 'h-3.5 w-3.5', 'fill-[#F59E0B] text-[#F59E0B]')} aria-hidden />
+              <span className="inline-flex items-center gap-0.5 font-semibold tabular-nums text-ink-strong">
+                <Star className={cn(isSmall ? 'h-3 w-3' : 'h-3.5 w-3.5', 'fill-amber-500 text-amber-500')} aria-hidden />
                 {ratingLabel}
-                <span className="font-normal text-[#6a6a6a]">({reviewCount})</span>
+                <span className="font-normal text-ink-muted">({reviewCount})</span>
               </span>
             </>
           ) : null}

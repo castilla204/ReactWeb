@@ -17,11 +17,11 @@ export function buildClientPreHireChatPath(
 
     if (mobile) {
         return conversationId
-            ? `/chat-pre-contratacion/${serviceId}?conversationId=${conversationId}`
-            : `/chat-pre-contratacion/${serviceId}`;
+            ? `/inquiry/${serviceId}?conversationId=${conversationId}`
+            : `/inquiry/${serviceId}`;
     }
 
     const params = new URLSearchParams({ serviceId: String(serviceId) });
     if (conversationId) params.set('conversationId', String(conversationId));
-    return `/mis-mensajes?${params.toString()}`;
+    return `/messages?${params.toString()}`;
 }

@@ -31,8 +31,8 @@ interface HomepageDesktopKayakProps {
 }
 
 const HeroMapLoadingPlaceholder: React.FC = () => (
-  <div className="absolute inset-0 overflow-hidden bg-[#fafafa]" aria-hidden>
-    <div className="absolute inset-0 animate-pulse bg-[#f0f4f7]/80" />
+  <div className="absolute inset-0 overflow-hidden bg-surface-tinted" aria-hidden>
+    <div className="absolute inset-0 animate-pulse bg-surface-tinted/80" />
   </div>
 );
 
@@ -48,51 +48,53 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
   return (
     <section
       data-homepage-hero
-      className="relative hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] overflow-hidden border-b border-[#e8e8e8] bg-[#fafafa]"
+      className="relative hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-surface-tinted"
     >
-      <div className="absolute inset-0 z-[1]">
-        <Suspense fallback={<HeroMapLoadingPlaceholder />}>
-          <ExpertsAreaMap
-            className="h-full w-full"
-            overlayPaddingRatio={DESKTOP_HERO_MAP_OVERLAY_PADDING}
-            ipLanding={ipLanding}
-            ipLandingResolved={ipLandingResolved}
-            hideCornerStats
-            showCityMarkers={false}
-            showExpertSparkles
-            sparkleRegion="global"
-            sparkleDensity="spread"
-          />
-        </Suspense>
-      </div>
-
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[5]"
-        style={{ background: DESKTOP_HERO_SOFT_OVAL }}
-      />
-
-      <div className="pointer-events-none relative z-10 h-full w-full overflow-visible">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-[6] overflow-hidden"
-          style={{
-            width: textBlockLeft,
-            WebkitMaskImage: DESKTOP_HERO_BANNER_MASK,
-            maskImage: DESKTOP_HERO_BANNER_MASK,
-          }}
-        >
-          <HeroBannerPhoto
-            className="h-full w-full -scale-x-100"
-            imgClassName="h-full w-full min-w-[520px] object-cover object-right"
-          />
+      {/* ── Contenido del hero clipeado a los bordes de la sección ── */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 z-[1]">
+          <Suspense fallback={<HeroMapLoadingPlaceholder />}>
+            <ExpertsAreaMap
+              className="h-full w-full"
+              overlayPaddingRatio={DESKTOP_HERO_MAP_OVERLAY_PADDING}
+              ipLanding={ipLanding}
+              ipLandingResolved={ipLandingResolved}
+              hideCornerStats
+              showCityMarkers={false}
+              showExpertSparkles
+              sparkleRegion="global"
+              sparkleDensity="spread"
+            />
+          </Suspense>
         </div>
 
         <div
-          className="pointer-events-none flex h-full items-center"
-          style={{ paddingLeft: textBlockLeft, paddingRight: '1.25rem' }}
-        >
-          <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[5]"
+          style={{ background: DESKTOP_HERO_SOFT_OVAL }}
+        />
+
+        <div className="pointer-events-none relative z-10 h-full w-full overflow-visible">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-[6] overflow-hidden"
+            style={{
+              width: textBlockLeft,
+              WebkitMaskImage: DESKTOP_HERO_BANNER_MASK,
+              maskImage: DESKTOP_HERO_BANNER_MASK,
+            }}
+          >
+            <HeroBannerPhoto
+              className="h-full w-full -scale-x-100"
+              imgClassName="h-full w-full min-w-[520px] object-cover object-right"
+            />
+          </div>
+
+          <div
+            className="pointer-events-none flex h-full items-center"
+            style={{ paddingLeft: textBlockLeft, paddingRight: '1.25rem' }}
+          >
+            <div className="pointer-events-auto relative z-10 min-w-0 max-w-[34rem]">
             <p className="hp-eyebrow mb-2 inline-flex items-center">
               Inspección antes de comprar
             </p>
@@ -101,7 +103,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
               Antes de comprar,
               <span className="block text-brand">
                 que lo revise{' '}
-                <span className="underline decoration-[#F59E0B] decoration-[3px] underline-offset-[6px]">
+                <span className="underline decoration-amber-500 decoration-[3px] underline-offset-[6px]">
                   un experto
                 </span>
               </span>
@@ -131,8 +133,8 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                       ? {
                           border: '2px solid transparent',
                           background: cat.isActive
-                            ? 'linear-gradient(#1c1c1c, #1c1c1c) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box'
-                            : 'linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(to right, #0066CC, #F59E0B) border-box',
+                            ? 'linear-gradient(hsl(var(--ink-strong)), hsl(var(--ink-strong))) padding-box, linear-gradient(to right, hsl(var(--brand)), hsl(var(--warning))) border-box'
+                            : 'linear-gradient(hsl(var(--surface)), hsl(var(--surface))) padding-box, linear-gradient(to right, hsl(var(--brand)), hsl(var(--warning))) border-box',
                         }
                       : undefined
                   }
@@ -140,10 +142,10 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                     cat.highlight
                       ? cat.isActive
                         ? 'font-medium text-white shadow-sm'
-                        : 'font-medium text-[#222222] hover:shadow-sm'
+                        : 'font-medium text-ink hover:shadow-sm'
                       : cat.isActive
-                        ? 'bg-[#1c1c1c] font-medium text-white shadow-sm'
-                        : 'border border-[#e8e8e8] bg-white font-medium text-[#3a3a3a] shadow-sm hover:border-[#d4d4d4] hover:text-[#111] hover:shadow-md'
+                        ? 'bg-ink-strong font-medium text-white shadow-sm'
+                        : 'border border-line bg-white font-medium text-ink shadow-sm hover:border-line hover:text-ink-strong hover:shadow-md'
                   }`}
                 >
                   {cat.icon && (
@@ -172,6 +174,7 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
           </div>
         </div>
       </div>
+      </div>{/* ── fin inner overflow-hidden ── */}
     </section>
   );
 };

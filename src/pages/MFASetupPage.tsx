@@ -36,7 +36,7 @@ export const MFASetupPage: React.FC = () => {
         
         // Mostrar mensaje de éxito
         setTimeout(() => {
-            navigate('/busquedas', { 
+            navigate('/hires', { 
                 state: { message: '✅ MFA configurado exitosamente' } 
             });
         }, 2000);

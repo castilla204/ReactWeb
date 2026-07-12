@@ -394,7 +394,7 @@ export default function PdfFormEditor({ hireId, templateUrl, onSaved }: PdfFormE
                                 const common = {
                                     style: { position: 'absolute' as const, left, top, width, height, fontSize },
                                     className:
-                                        'box-border border border-blue-400/60 bg-blue-50/40 px-1 text-gray-900 outline-none focus:border-blue-600 focus:bg-white',
+                                        'box-border border border-blue-400/60 bg-blue-50/40 px-1 text-blue-950 outline-none focus:border-blue-600 focus:bg-white',
                                 };
                                 if (f.kind === 'select') {
                                     return (

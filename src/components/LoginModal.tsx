@@ -109,7 +109,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         onOpenChange(false);
         if (pendingExpertRedirect) {
             setPendingExpertRedirect(false);
-            navigate(isExpert ? '/expert-panel' : '/become-expert');
+            navigate(isExpert ? '/expert' : '/expert/join');
             return;
         }
         onSuccess?.();
@@ -118,7 +118,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const handleExpertSignupClick = useCallback(() => {
         if (isAuthenticated) {
             onOpenChange(false);
-            navigate(isExpert ? '/expert-panel' : '/become-expert');
+            navigate(isExpert ? '/expert' : '/expert/join');
             return;
         }
         setPendingExpertRedirect(true);
@@ -150,8 +150,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             drawerClassName="!h-auto !max-w-none bg-white"
             drawerMaxHeight="min(92dvh, calc(100dvh - env(safe-area-inset-bottom, 0px) - 2.75rem))"
             drawerScrollClassName="bg-white"
-            dialogClassName="md:!max-w-[560px] lg:!max-w-[560px] overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_16px_48px_rgba(15,23,42,0.14)]"
-            dialogHeaderClassName="border-[#ebebeb]"
+            dialogClassName="md:!max-w-[560px] lg:!max-w-[560px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_48px_rgba(15,23,42,0.14)]"
+            dialogHeaderClassName="border-line"
         >
             <div className="w-full">
                 <div
@@ -211,7 +211,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -233,7 +233,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -256,7 +256,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         >
                             <button
                                 onClick={() => setStep('forgot-email')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-[13px] font-medium text-[#5b6370] transition-colors hover:text-brand"
+                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
                             >
                                 <ArrowLeft className="h-4 w-4" /> Volver
                             </button>
@@ -284,24 +284,24 @@ const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> =
     const { title } = AUTH_COPY[tab];
 
     return (
-        <div className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-[#ececec] bg-white md:rounded-t-2xl">
+        <div className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-line bg-white md:rounded-t-2xl">
             {/* Asa del drawer (solo móvil) — la fila ocupa solo ~10px. */}
             <div className="flex justify-center pt-1.5 md:hidden">
-                <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-[#c4c4c4]" />
+                <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-line" />
             </div>
             {/* Botón cerrar: absoluto esquina sup-der. Wordmark es siempre izquierdo → no chocan. */}
             <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-2 top-2 rounded-full p-1.5 text-[#5b6370] transition-colors hover:bg-black/[0.05] hover:text-[#1a1a1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1"
+                className="absolute right-2 top-2 rounded-full p-1.5 text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1"
                 aria-label={t('common.actions.close')}
             >
                 <X className="h-[18px] w-[18px]" />
             </button>
             <div className="px-5 pb-4 pt-3 md:px-7 md:pb-5 md:pt-4">
-                <p className="font-display text-[11px] font-semibold leading-none tracking-[-0.01em]">
-                    <span className="text-[#2563EB]">Inspecciono</span>
-                    <span className="text-[#F59E0B]">.</span>
+                <p className="font-display text-kicker font-semibold leading-none tracking-[-0.01em]">
+                    <span className="text-brand">Inspecciono</span>
+                    <span className="text-amber-500">.</span>
                 </p>
                 <div className="relative mt-1.5">
                     <motion.div
@@ -310,7 +310,7 @@ const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> =
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     >
-                        <h2 className="font-display text-[20px] font-bold leading-tight tracking-[-0.02em] text-[#171717]">
+                        <h2 className="font-display text-xl font-bold leading-tight tracking-[-0.02em] text-ink-strong">
                             {title}
                         </h2>
                     </motion.div>
@@ -332,7 +332,7 @@ const AuthFooterLine: React.FC<{
         'font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30';
     return (
         <div className="pb-1 flex flex-col items-center gap-1.5">
-            <p className="text-center font-display text-[13px] leading-relaxed text-[#5b6370]">
+            <p className="text-center font-display text-meta leading-relaxed text-ink-muted">
                 {isLogin ? (
                     <>
                         ¿Aún no tienes cuenta?{' '}
@@ -350,12 +350,12 @@ const AuthFooterLine: React.FC<{
                 )}
             </p>
             {!isLogin && (
-                <p className="text-center font-display text-[12px] leading-relaxed text-[#9ca3af]">
+                <p className="text-center font-display text-caption leading-relaxed text-ink-soft">
                     ¿Eres profesional?{' '}
                     <button
                         type="button"
                         onClick={onExpertAction}
-                        className="font-semibold text-[#6b7280] underline-offset-2 transition-colors hover:text-[#374151] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                        className="font-semibold text-ink-muted underline-offset-2 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
                     >
                         {isExpert ? 'Panel de experto' : 'Hazte experto'}
                     </button>
@@ -379,13 +379,13 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                 required
                 aria-label={t('auth.register.termsRequired')}
             />
-            <span className="text-[11px] leading-relaxed text-[#5b6370]">
+            <span className="text-kicker leading-relaxed text-ink-muted">
                 <Trans
                     i18nKey="auth.register.acceptTerms"
                     components={{
                         terms: (
                             <a
-                                href="/terms.html"
+                                href="/legal/terms"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-brand underline-offset-2 hover:underline"
@@ -393,7 +393,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                         ),
                         privacy: (
                             <a
-                                href="/privacy-policy.html"
+                                href="/legal/privacy"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-brand underline-offset-2 hover:underline"
@@ -410,11 +410,11 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
 
 const Separator: React.FC = () => (
     <div className="relative flex items-center py-3">
-        <span className="h-px flex-1 bg-[#e4e7ec]" />
-        <span className="mx-3 shrink-0 font-display text-xs font-medium tracking-[0.01em] text-[#9ca3af]">
+        <span className="h-px flex-1 bg-line" />
+        <span className="mx-3 shrink-0 font-display text-xs font-medium tracking-[0.01em] text-ink-soft">
             o usa tu correo
         </span>
-        <span className="h-px flex-1 bg-[#e4e7ec]" />
+        <span className="h-px flex-1 bg-line" />
     </div>
 );
 
@@ -533,7 +533,7 @@ const LoginForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -544,7 +544,7 @@ const LoginForm: React.FC<{
                 <button
                     type="button"
                     onClick={onGoToForgot}
-                    className="font-display text-[13px] font-medium text-[#5b6370] underline-offset-2 transition-colors hover:text-brand hover:underline"
+                    className="font-display text-meta font-medium text-ink-muted underline-offset-2 transition-colors hover:text-brand hover:underline"
                 >
                     ¿Olvidaste tu contraseña?
                 </button>
@@ -672,7 +672,7 @@ const RegisterForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -680,7 +680,7 @@ const RegisterForm: React.FC<{
                 </button>
             </FieldGroup>
             {strengthHint && (
-                <p className={`text-[11px] -mt-1.5 ${strengthHint.cls}`}>
+                <p className={`text-kicker -mt-1.5 ${strengthHint.cls}`}>
                     {strengthHint.label}
                 </p>
             )}
@@ -806,8 +806,8 @@ const OtpForm: React.FC<{
                     <ShieldCheck className="h-6 w-6 text-brand" />
                 </div>
             </div>
-            <p className="font-display text-sm leading-snug text-[#5b6370]">
-                Introduce el código de 6 dígitos que enviamos a <strong className="font-semibold text-[#1a1a1a]">{ctx.email}</strong>.
+            <p className="font-display text-sm leading-snug text-ink-muted">
+                Introduce el código de 6 dígitos que enviamos a <strong className="font-semibold text-ink-strong">{ctx.email}</strong>.
             </p>
             {showLinkingSubtitle && (
                 <p className="-mt-2 font-display text-sm text-brand">
@@ -841,12 +841,12 @@ const OtpForm: React.FC<{
             <Button onClick={() => submit()} disabled={busy || code.length !== 6} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verificando…</> : 'Verificar'}
             </Button>
-            <div className="font-display text-sm text-[#5b6370]">
+            <div className="font-display text-sm text-ink-muted">
                 ¿No te llegó?{' '}
                 <button
                     onClick={resend}
                     disabled={cooldown > 0 || resending}
-                    className="font-medium text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline disabled:text-[#b0b0b0] disabled:no-underline"
+                    className="font-medium text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline disabled:text-ink-soft disabled:no-underline"
                 >
                     {cooldown > 0 ? `Reenviar en ${cooldown}s` : (resending ? 'Reenviando…' : 'Reenviar código')}
                 </button>
@@ -896,7 +896,7 @@ const ForgotPasswordForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col">
-            <p className="mb-3 font-display text-sm leading-snug text-[#5b6370]">
+            <p className="mb-3 font-display text-sm leading-snug text-ink-muted">
                 Te enviaremos un código para restablecer o añadir tu contraseña.
             </p>
             <FieldGroup label="Correo electrónico">
@@ -1006,8 +1006,8 @@ const ResetPasswordForm: React.FC<{
 
     return (
         <form onSubmit={onSubmit} className="space-y-4">
-            <p className="text-center font-display text-sm leading-snug text-[#5b6370]">
-                Introduce el código que enviamos a <strong className="font-semibold text-[#1a1a1a]">{ctx.email}</strong> y tu nueva contraseña.
+            <p className="text-center font-display text-sm leading-snug text-ink-muted">
+                Introduce el código que enviamos a <strong className="font-semibold text-ink-strong">{ctx.email}</strong> y tu nueva contraseña.
             </p>
             <div className="flex justify-center">
                 <InputOTP maxLength={6} value={code} onChange={(v) => setCode(v.replace(/\D/g, ''))} autoFocus>
@@ -1037,7 +1037,7 @@ const ResetPasswordForm: React.FC<{
                 <button
                     type="button"
                     onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] transition-colors hover:text-[#5b6370]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
                     tabIndex={-1}
                     aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
@@ -1047,13 +1047,13 @@ const ResetPasswordForm: React.FC<{
             <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Restableciendo…</> : 'Restablecer contraseña'}
             </Button>
-            <div className="text-center font-display text-sm text-[#5b6370]">
+            <div className="text-center font-display text-sm text-ink-muted">
                 ¿No te llegó?{' '}
                 <button
                     type="button"
                     onClick={resend}
                     disabled={cooldown > 0 || resending}
-                    className="font-medium text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline disabled:text-[#b0b0b0] disabled:no-underline"
+                    className="font-medium text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline disabled:text-ink-soft disabled:no-underline"
                 >
                     {cooldown > 0 ? `Reenviar en ${cooldown}s` : (resending ? 'Reenviando…' : 'Reenviar código')}
                 </button>
@@ -1067,7 +1067,7 @@ const ResetPasswordForm: React.FC<{
 // repetirlo en el placeholder, que ahora muestra un ejemplo de formato.
 const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <div>
-        <label className="mb-1.5 block font-display text-[12px] font-medium text-[#6b7280]">{label}</label>
+        <label className="mb-1.5 block font-display text-caption font-medium text-ink-muted">{label}</label>
         <div className="relative">{children}</div>
     </div>
 );
@@ -1075,16 +1075,16 @@ const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ la
 /** Clases compartidas para todos los Input del modal. Esquina 10px — comparte familia
  *  con los botones sociales, deja la pastilla (rounded-full) exclusiva del CTA. */
 const INPUT_REBRAND =
-    'h-11 rounded-[10px] border-[#d4d4d8] bg-white px-4 font-display text-base md:text-[14px] text-[#1a1a1a] placeholder:text-[#9a9a9a] transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
+    'h-11 rounded-[10px] border-line bg-white px-4 font-display text-base md:text-body text-ink-strong placeholder:text-ink-soft transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
 
 /** Botón primario: única forma en pastilla de la tarjeta — por eso ahora se distingue
  *  como "la acción". Plano en reposo, elevación solo al hover (antes tenía un halo
  *  azul difuminado siempre activo). */
 const PRIMARY_BTN =
-    'mt-3 h-11 w-full rounded-full bg-brand font-display text-[14px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:bg-brand-hover hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] disabled:opacity-50 disabled:shadow-none';
+    'mt-3 h-11 w-full rounded-full bg-brand font-display text-body font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:bg-brand-hover hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] disabled:opacity-50 disabled:shadow-none';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =
-    'h-14 w-12 rounded-xl border-[#e0e0e0] text-xl font-bold focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15';
+    'h-14 w-12 rounded-xl border-line text-xl font-bold focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15';
 
 export default LoginModal;

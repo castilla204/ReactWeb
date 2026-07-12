@@ -369,10 +369,10 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                     className={cn(
                         'group/cell relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg text-sm tabular-nums transition-[transform,box-shadow,background-color] duration-150',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1',
-                        past && 'cursor-default font-medium text-[#c2c2c2]',
+                        past && 'cursor-default font-medium text-line',
                         !past && !isSelected && 'cursor-pointer font-semibold motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
                         !past && works && !isSelected && KIND_CLASS[kind === 'closed' ? 'full' : kind],
-                        !past && !works && !isSelected && 'av-closed-cell text-[#8b8b8b] hover:text-[#5f5f5f]',
+                        !past && !works && !isSelected && 'av-closed-cell text-ink-soft hover:text-ink-muted',
                         !past && isToday && !isSelected && 'ring-2 ring-inset ring-brand/70',
                         // seleccionado = relleno azul sólido, número blanco, realce (inconfundible)
                         isSelected && 'cursor-pointer bg-brand text-white font-bold scale-[1.06] z-10 shadow-[0_4px_12px_hsl(var(--brand)/0.5)] ring-2 ring-inset ring-white/70',
@@ -389,7 +389,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                     {(isPending || hasPersisted) && (
                         <span
                             className={cn('absolute right-1 top-1 z-10 h-1.5 w-1.5 rounded-full ring-2 ring-white',
-                                isPending ? 'bg-amber-500' : past ? 'bg-[#c4c4c4]' : 'bg-brand')}
+                                isPending ? 'bg-amber-500' : past ? 'bg-line' : 'bg-brand')}
                             aria-hidden
                         />
                     )}
@@ -419,7 +419,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
         <section className="av-calendar">
             {error && <p className="av-calendar__alert av-calendar__alert--error">{error}</p>}
             {success && !pendingCount && (
-                <p className="av-calendar__alert" style={{ background: 'hsl(142 60% 96%)', color: 'hsl(142 50% 28%)' }}>{success}</p>
+                <p className="av-calendar__alert bg-success-tint text-success">{success}</p>
             )}
 
             {loading ? (
@@ -457,16 +457,16 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
 
                         {/* Atajos de selección múltiple: alcance + columna de día de la semana, todo el mes, limpiar. */}
                         <div className="av-calendar__quickselect" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 6px' }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#999' }}>Seleccionar:</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--ink-soft))' }}>Seleccionar:</span>
                             {/* Alcance: ¿el botón de día abarca solo el mes o todo el calendario hasta el horizonte? */}
                             <div role="group" aria-label="Alcance de la selección por día de la semana"
-                                style={{ display: 'inline-flex', border: '1px solid #e3e3e3', borderRadius: 999, overflow: 'hidden' }}>
+                                style={{ display: 'inline-flex', border: '1px solid hsl(var(--line))', borderRadius: 999, overflow: 'hidden' }}>
                                 <button type="button" aria-pressed={scope === 'month'} onClick={() => setScope('month')}
-                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'month' ? 'bg-brand text-white' : 'bg-white text-[#666] hover:text-brand')}>
+                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'month' ? 'bg-brand text-white' : 'bg-white text-ink-muted hover:text-brand')}>
                                     Este mes
                                 </button>
                                 <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')}
-                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'all' ? 'bg-brand text-white' : 'bg-white text-[#666] hover:text-brand')}>
+                                    className={cn('px-3 py-1 text-xs font-semibold', scope === 'all' ? 'bg-brand text-white' : 'bg-white text-ink-muted hover:text-brand')}>
                                     Todo el calendario
                                 </button>
                             </div>
@@ -474,23 +474,23 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                 <button key={w.dow} type="button" onClick={() => selectWeekdayColumn(w.dow)}
                                     aria-label={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
                                     title={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
-                                    className="h-7 w-7 rounded-full border border-[#e3e3e3] text-xs font-semibold text-[#555] hover:border-brand/50 hover:text-brand">
+                                    className="h-7 w-7 rounded-full border border-line text-xs font-semibold text-ink-muted hover:border-brand/50 hover:text-brand">
                                     {w.short}
                                 </button>
                             ))}
                             <button type="button" onClick={selectWholeMonth}
-                                className="rounded-full border border-[#e3e3e3] px-3 py-1 text-xs font-medium text-[#555] hover:border-brand/50 hover:text-brand">
+                                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink-muted hover:border-brand/50 hover:text-brand">
                                 Todo el mes
                             </button>
                             {selCount > 0 && (
                                 <button type="button" onClick={clearSelection} aria-label={`Limpiar selección de ${selCount} días`}
-                                    className="rounded-full border border-[#e3e3e3] px-3 py-1 text-xs font-medium text-[#999] hover:border-red-300 hover:text-red-500">
+                                    className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink-soft hover:border-red-300 hover:text-red-500">
                                     Limpiar selección ({selCount})
                                 </button>
                             )}
                         </div>
                         {(scope === 'all' || selOutsideMonth > 0) && (
-                            <p className={cn('mb-2 text-xs', selCount > BULK_THRESHOLD ? 'font-medium text-amber-700' : 'text-[#888]')}>
+                            <p className={cn('mb-2 text-xs', selCount > BULK_THRESHOLD ? 'font-medium text-amber-700' : 'text-ink-muted')}>
                                 {scope === 'all' && <>Alcance ampliado: los botones de día seleccionan hasta <strong>{horizonLabel}</strong>. </>}
                                 {selCount > 0 && <>{selCount} día{selCount !== 1 ? 's' : ''} seleccionado{selCount !== 1 ? 's' : ''}{selOutsideMonth > 0 ? ` (${selOutsideMonth} en otros meses — navega para verlos)` : ''}.</>}
                             </p>
@@ -525,7 +525,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                 Cerrado
                             </span>
                             <span className="av-calendar__legend-item">
-                                <span className="av-calendar__legend-swatch" style={{ background: 'hsl(38 92% 50%)' }} aria-hidden />
+                                <span className="av-calendar__legend-swatch bg-warning" aria-hidden />
                                 Sin guardar
                             </span>
                         </div>
@@ -592,16 +592,16 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                 ) : null}
 
                                 {confirmBulk ? (
-                                    <div className="av-day-editor__section" style={{ background: 'hsl(38 92% 96%)', border: '1px solid hsl(38 80% 80%)', borderRadius: 12, padding: 12 }}>
-                                        <p className="text-sm font-semibold" style={{ color: 'hsl(32 60% 28%)' }}>
+                                    <div className="av-day-editor__section rounded-xl border border-warning-border bg-warning-tint p-3">
+                                        <p className="text-sm font-semibold text-warning">
                                             {draft.isWorking
                                                 ? `Vas a aplicar este horario a ${selCount} días.`
                                                 : `Vas a marcar como CERRADOS ${selCount} días.`}
                                         </p>
-                                        <p className="text-xs" style={{ color: 'hsl(32 40% 38%)', marginTop: 4 }}>Son muchos días — revisa antes de continuar.</p>
-                                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                                        <p className="mt-1 text-xs text-ink-muted">Son muchos días — revisa antes de continuar.</p>
+                                        <div className="mt-2.5 flex gap-2">
                                             <button type="button" onClick={() => setConfirmBulk(false)}
-                                                className="rounded-xl border border-[#e3e3e3] bg-white px-3 py-2 text-sm font-medium text-[#666] hover:bg-[#f5f5f5]">
+                                                className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:bg-surface-tinted">
                                                 Cancelar
                                             </button>
                                             <button type="button" onClick={applyToSelection}
@@ -644,18 +644,17 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
             )}
 
             {!embedded && pendingCount > 0 && (
-                <div className="av-calendar__savebar" role="region" aria-label="Cambios sin guardar"
-                    style={{
-                        position: 'sticky', bottom: 0, marginTop: 16, display: 'flex', alignItems: 'center',
-                        justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-                        background: 'hsl(38 92% 96%)', border: '1px solid hsl(38 80% 80%)', borderRadius: 14, padding: '10px 14px',
-                    }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'hsl(32 60% 28%)' }}>
+                <div
+                    className="av-calendar__savebar sticky bottom-0 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-warning-border bg-warning-tint px-3.5 py-2.5"
+                    role="region"
+                    aria-label="Cambios sin guardar"
+                >
+                    <span className="text-body font-semibold text-warning">
                         {pendingCount} día{pendingCount !== 1 ? 's' : ''} con cambios sin guardar
                     </span>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="flex gap-2">
                         <button type="button" onClick={discardAll} disabled={saving}
-                            className="inline-flex items-center gap-1 rounded-xl border border-[#e3e3e3] bg-white px-3 py-2 text-sm font-medium text-[#666] hover:bg-[#f5f5f5] disabled:opacity-50">
+                            className="inline-flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:bg-surface-tinted disabled:opacity-50">
                             <Undo2 className="h-4 w-4" /> Descartar
                         </button>
                         <button type="button" onClick={saveAll} disabled={saving}

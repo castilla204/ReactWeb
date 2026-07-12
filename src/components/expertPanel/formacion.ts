@@ -31,6 +31,39 @@ export function parseFormacion(json?: string | null): FormacionItem[] {
     }
 }
 
+/** Resumen compacto para la fila del experto en desktop (títulos separados por ·). */
+export function formatFormacionInlineSummary(
+    json?: string | null,
+    maxVisible = 2,
+): { text: string; fullText: string; hiddenCount: number; linkLabel: string } {
+    const items = parseFormacion(json);
+    if (items.length === 0) {
+        return { text: '', fullText: '', hiddenCount: 0, linkLabel: '' };
+    }
+
+    const sorted = [...items].sort((a, b) => Number(Boolean(b.esOficial)) - Number(Boolean(a.esOficial)));
+    const visible = sorted.slice(0, maxVisible);
+    const hiddenCount = Math.max(0, sorted.length - visible.length);
+
+    const labelFor = (item: FormacionItem) => item.titulo.trim();
+    const fullText = sorted.map(labelFor).join(' · ');
+    let text = visible.map(labelFor).join(' · ');
+    if (hiddenCount > 0) {
+        text += ` · +${hiddenCount}`;
+    }
+
+    let linkLabel: string;
+    if (sorted.length === 1) {
+        linkLabel = labelFor(sorted[0]);
+    } else if (sorted.length === 2) {
+        linkLabel = sorted.map(labelFor).join(' · ');
+    } else {
+        linkLabel = `${labelFor(sorted[0])} · +${sorted.length - 1}`;
+    }
+
+    return { text, fullText, hiddenCount, linkLabel };
+}
+
 export function stringifyFormacion(items: FormacionItem[]): string {
     const clean = items
         .map((i) => ({

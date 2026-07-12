@@ -31,10 +31,10 @@ import {
 
 const inputClass =
   'w-full px-3 py-2 rounded-lg border border-[hsl(var(--ap-border))] bg-[hsl(var(--ap-surface))] ' +
-  'text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus-visible:ring-2 ' +
+  'text-meta text-[hsl(var(--ap-ink))] focus:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-[hsl(var(--ap-brand))] focus:border-[hsl(var(--ap-brand))]';
-const labelClass = 'block text-[12px] font-medium text-[hsl(var(--ap-muted))] mb-1.5';
-const helpClass = 'mt-1 text-[11px] text-[hsl(var(--ap-muted))]';
+const labelClass = 'block text-caption font-medium text-[hsl(var(--ap-muted))] mb-1.5';
+const helpClass = 'mt-1 text-kicker text-[hsl(var(--ap-muted))]';
 
 function buildCreatePayload(data: {
   title: string;

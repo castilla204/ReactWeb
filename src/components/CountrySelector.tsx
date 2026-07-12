@@ -192,7 +192,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({
                         />
                       ) : (
                         <div className={isCompact ? "w-10 h-7 bg-muted flex items-center justify-center rounded border border-gray-200/50" : "w-7 h-5 bg-muted flex items-center justify-center"}>
-                          <span className="text-[10px] text-muted-foreground">{country.code}</span>
+                          <span className="text-badge text-muted-foreground">{country.code}</span>
                         </div>
                       )}
                       {!isCompact && (

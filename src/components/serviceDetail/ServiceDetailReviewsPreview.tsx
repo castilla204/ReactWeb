@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { ServiceReviewItem } from './ServiceDetailReviewsSection';
 import { ServiceDetailReviewSnippet } from './ServiceDetailReviewSnippet';
+import { ServiceDetailDesktopReviewsCard } from './ServiceDetailDesktopReviewsCard';
 import { ServiceDetailReviewStars } from './ServiceDetailReviewStars';
 import { ServiceDetailReviewHistogram } from './ServiceDetailReviewHistogram';
 import { ServiceDetailReviewsMobileStatsRow } from './ServiceDetailReviewsMobileStatsRow';
@@ -22,12 +23,11 @@ interface ServiceDetailReviewsPreviewProps {
   /** En pestaña móvil el título ya está en el tab. */
   hideHeading?: boolean;
   headingId?: string;
-  /** Estrellas y barras en carbón (p. ej. pestaña móvil sobria). */
+  /** Estrellas en carbón solo en drawer/modal; la pestaña móvil usa ámbar por defecto. */
   neutral?: boolean;
 }
 
 const MIN_REVIEWS_FOR_HISTOGRAM = 3;
-const MOBILE_PREVIEW_COUNT = 2;
 const DESKTOP_PREVIEW_COUNT = 4;
 const DESKTOP_FULL_PREVIEW_COUNT = 3;
 
@@ -37,22 +37,21 @@ function MobileReviewsPreview({
   onShowAll,
   headingId,
   hideHeading,
-  neutral = false,
-}: Omit<ServiceDetailReviewsPreviewProps, 'variant'>) {
-  const distribution = useMemo(() => computeReviewRatingDistribution(reviews), [reviews]);
-  const previewReviews = useMemo(() => pickPreviewReviews(reviews, MOBILE_PREVIEW_COUNT), [reviews]);
-  const showHistogram = reviews.length >= MIN_REVIEWS_FOR_HISTOGRAM;
+}: Omit<ServiceDetailReviewsPreviewProps, 'variant' | 'neutral'>) {
   const showFeaturedBadge = averageRating >= 4.8 && reviews.length >= 5;
-  const ctaLabel =
-    reviews.length > 1 ? `Ver las ${reviews.length} opiniones` : 'Ver la opinión';
 
   if (reviews.length === 0) {
     return (
       <section
         className="sd-reviews-preview sd-reviews-preview--mobile w-full"
-        aria-labelledby={hideHeading ? undefined : headingId}
+        aria-labelledby={headingId}
       >
-        <p className="text-sm leading-relaxed text-[#6a6a6a]">
+        {hideHeading && headingId ? (
+          <h2 id={headingId} className="sr-only">
+            Reseñas
+          </h2>
+        ) : null}
+        <p className="sd-body text-ink-muted">
           Aún no hay valoraciones. Sé el primero en contratar este servicio.
         </p>
       </section>
@@ -61,58 +60,33 @@ function MobileReviewsPreview({
 
   return (
     <section
-      className="sd-reviews-preview sd-reviews-preview--mobile w-full"
-      aria-labelledby={hideHeading ? undefined : headingId}
+      className="sd-reviews-preview sd-reviews-preview--mobile sd-reviews-mobile-tab w-full"
+      aria-labelledby={headingId}
     >
-      <div className="sd-reviews-preview-summary-mobile">
-        {showFeaturedBadge ? (
-          <p className="mb-2">
-            <span className="inline-flex rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#1c1c1c]">
-              Valoración destacada
-            </span>
-          </p>
-        ) : null}
-
-        {showHistogram ? (
-          <ServiceDetailReviewsMobileStatsRow
-            averageRating={averageRating}
-            reviewCount={reviews.length}
-            distribution={distribution}
-            neutral={neutral}
-          />
-        ) : (
-          <ServiceDetailReviewsMobileStatsRow
-            averageRating={averageRating}
-            reviewCount={reviews.length}
-            distribution={distribution}
-            showHistogram={false}
-            neutral={neutral}
-          />
-        )}
-      </div>
-
-      {previewReviews.length > 0 ? (
-        <ul className="mt-3 w-full divide-y divide-[#ebebeb] border-t border-[#ebebeb]">
-          {previewReviews.map((review, idx) => {
-            const key = review.id ?? `${review.createdAt}-${idx}`;
-            return (
-              <li key={key}>
-                <ServiceDetailReviewSnippet
-                  review={review}
-                  variant="mobile"
-                  onClick={onShowAll}
-                  neutral={neutral}
-                  className="py-4"
-                />
-              </li>
-            );
-          })}
-        </ul>
+      {hideHeading && headingId ? (
+        <h2 id={headingId} className="sr-only">
+          Reseñas
+        </h2>
       ) : null}
 
-      <button type="button" onClick={onShowAll} className="sd-btn-secondary mt-4 w-full justify-center">
-        {ctaLabel}
-      </button>
+      {showFeaturedBadge ? (
+        <p className="sd-reviews-mobile-tab__eyebrow mb-2.5">
+          <span className="text-kicker font-semibold uppercase tracking-[0.1em] text-brand">
+            Valoración destacada
+          </span>
+        </p>
+      ) : null}
+
+      <ServiceDetailDesktopReviewsCard
+        layout="mobile"
+        reviews={reviews}
+        averageRating={averageRating}
+        onShowAll={onShowAll}
+      />
+
+      <p className="sd-reviews-mobile-tab__note mt-2 text-kicker leading-snug text-ink-soft">
+        Opiniones verificadas de clientes que contrataron este servicio.
+      </p>
     </section>
   );
 }
@@ -161,7 +135,7 @@ function DesktopReviewsPreview({
       <ServiceDetailReviewHistogram distribution={distribution} total={reviews.length} />
     </div>
   ) : (
-    <p className="min-w-0 flex-1 text-xs leading-relaxed text-[#6a6a6a]">
+    <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink-muted">
       {reviews.length === 1
         ? 'Basada en una opinión verificada.'
         : 'Aún hay pocas opiniones para mostrar la distribución por estrellas.'}
@@ -188,16 +162,16 @@ function DesktopReviewsPreview({
               <h2 id={headingId} className="hp-section-title">
                 Reseñas
               </h2>
-              <p className="mt-1.5 text-sm text-[#6a6a6a]">{opinionsLabel}</p>
+              <p className="mt-1.5 text-sm text-ink-muted">{opinionsLabel}</p>
             </div>
             {showFeaturedBadge ? (
-              <span className="inline-flex shrink-0 rounded-full border border-[#e8e8e8] bg-[#fafafa] px-2.5 py-1 text-[11px] font-medium text-[#1c1c1c]">
+              <span className="inline-flex shrink-0 rounded-full border border-line bg-surface-tinted px-2.5 py-1 text-kicker font-medium text-ink-strong">
                 Valoración destacada
               </span>
             ) : null}
           </div>
 
-          <div className="sd-reviews-preview-full-row grid grid-cols-1 items-start gap-5 border-b border-[#ebebeb] pb-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-x-10 xl:gap-x-12">
+          <div className="sd-reviews-preview-full-row grid grid-cols-1 items-start gap-5 border-b border-line pb-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-x-10 xl:gap-x-12">
             <div className="min-w-0">
               <div className="flex items-center gap-4 lg:gap-5">
                 <div className="shrink-0">
@@ -211,7 +185,7 @@ function DesktopReviewsPreview({
                     <ServiceDetailReviewHistogram distribution={distribution} total={reviews.length} />
                   </div>
                 ) : (
-                  <p className="min-w-0 flex-1 text-xs leading-relaxed text-[#6a6a6a]">
+                  <p className="min-w-0 flex-1 text-xs leading-relaxed text-ink-muted">
                     {reviews.length === 1
                       ? 'Basada en una opinión verificada.'
                       : 'Aún hay pocas opiniones para mostrar la distribución por estrellas.'}
@@ -220,7 +194,7 @@ function DesktopReviewsPreview({
               </div>
             </div>
 
-            <div className="min-w-0 lg:border-l lg:border-[#ebebeb] lg:pl-8 xl:pl-10">
+            <div className="min-w-0 lg:border-l lg:border-line lg:pl-8 xl:pl-10">
               {previewReviews.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
                   {previewReviews.map((review, idx) => {
@@ -255,16 +229,16 @@ function DesktopReviewsPreview({
               <h2 id={headingId} className="hp-section-title">
                 Reseñas
               </h2>
-              <p className="mt-1.5 text-[13px] text-[#6a6a6a]">{opinionsLabel}</p>
+              <p className="mt-1.5 text-meta text-ink-muted">{opinionsLabel}</p>
             </div>
             {showFeaturedBadge ? (
-              <span className="inline-flex rounded-full border border-[#e8e8e8] bg-[#fafafa] px-2.5 py-1 text-[11px] font-medium text-[#1c1c1c]">
+              <span className="inline-flex rounded-full border border-line bg-surface-tinted px-2.5 py-1 text-kicker font-medium text-ink-strong">
                 Valoración destacada
               </span>
             ) : null}
           </div>
 
-          <div className="sd-reviews-preview-summary mt-6 grid grid-cols-1 gap-5 border-b border-[#ebebeb] pb-7 lg:grid-cols-[140px_1fr] lg:items-center lg:gap-10">
+          <div className="sd-reviews-preview-summary mt-6 grid grid-cols-1 gap-5 border-b border-line pb-7 lg:grid-cols-[140px_1fr] lg:items-center lg:gap-10">
             <div className="flex shrink-0 flex-col lg:items-start lg:text-left">
               <p className="sd-rating-numeral text-[2rem] leading-none md:text-[2rem]">
                 {ratingLabel}

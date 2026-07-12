@@ -22,7 +22,7 @@ import CountryFlag from '../components/CountryFlag';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
-import AppointmentMap from '../components/AppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from '../components/map/LazyAppointmentMap';
 import { LoginModal } from '../components/LoginModal';
 
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -279,7 +279,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-[#6a6a6a] mb-4">ID de servicio inválido</p>
+                    <p className="text-ink-muted mb-4">ID de servicio inválido</p>
                 </div>
             </div>
         );
@@ -291,7 +291,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex flex-col" aria-busy="true">
                 {/* Cabecera: avatar + nombre/meta + acciones */}
-                <div className="flex items-center gap-3 border-b border-[#ededed] px-4 py-3">
+                <div className="flex items-center gap-3 border-b border-line px-4 py-3">
                     <SileoSkeleton className="h-10 w-10" rounded="full" />
                     <div className="flex-1 space-y-2">
                         <SileoSkeleton className="h-4 w-40 max-w-[55%] rounded" />
@@ -315,7 +315,7 @@ export function PreHireChatPage() {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-[#6a6a6a] mb-4">No se pudo cargar la información del servicio.</p>
+                    <p className="text-ink-muted mb-4">No se pudo cargar la información del servicio.</p>
                 </div>
             </div>
         );
@@ -428,17 +428,17 @@ export function PreHireChatPage() {
                                 )}
                             </button>
                             <Link to={`/service/${serviceIdNumber}`} className="min-w-0 flex-1 leading-tight">
-                                <span className="block truncate text-[15px] font-semibold text-[#1c1c1c]">
+                                <span className="block truncate text-lead font-semibold text-ink-strong">
                                     {expertName}
                                 </span>
-                                <span className={`block truncate text-[12px] ${isChatConnected ? 'text-green-600' : 'text-[#717171]'}`}>
+                                <span className={`block truncate text-caption ${isChatConnected ? 'text-green-600' : 'text-ink-muted'}`}>
                                     {isChatConnected ? 'En directo' : locationLabel}
                                 </span>
                             </Link>
                             <Button
                                 type="button"
                                 onClick={handleHireClick}
-                                className="ml-auto shrink-0 rounded-full bg-brand hover:bg-brand-hover text-white text-[13px] font-semibold px-4 py-1.5 shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-all hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] active:scale-[0.98]"
+                                className="ml-auto shrink-0 rounded-full bg-brand hover:bg-brand-hover text-white text-meta font-semibold px-4 py-1.5 shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-all hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] active:scale-[0.98]"
                             >
                                 Contratar{priceLabel ? ` · ${priceLabel}` : ''}
                             </Button>
@@ -464,7 +464,7 @@ export function PreHireChatPage() {
                             </button>
                             <Link 
                                 to={`/service/${serviceIdNumber}`}
-                                className="font-semibold text-[#1c1c1c] hover:opacity-80 transition-opacity"
+                                className="font-semibold text-ink-strong hover:opacity-80 transition-opacity"
                             >
                                 {expertName}
                             </Link>
@@ -480,7 +480,7 @@ export function PreHireChatPage() {
                                 <DropdownMenuItem onClick={() => navigate(`/service/${serviceIdNumber}`)}>
                                     Ver servicio
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate('/mis-mensajes?filtro=consultas')}>
+                                <DropdownMenuItem onClick={() => navigate('/messages?filter=inquiries')}>
                                     Mis mensajes
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -524,7 +524,7 @@ export function PreHireChatPage() {
                                                                 key={star}
                                                                 className={`w-3.5 h-3.5 ${
                                                                     star <= Math.round(expertRating)
-                                                                        ? 'fill-gray-900 text-[#1c1c1c]'
+                                                                        ? 'fill-gray-900 text-ink-strong'
                                                                         : 'fill-gray-200 text-gray-200'
                                                                 }`}
                                                             />
@@ -581,23 +581,23 @@ export function PreHireChatPage() {
                                 </div>
                             </div>
 
-                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-[#1c1c1c]">
+                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-ink-strong">
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-[#737373]" />}
+                                    {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-ink-muted" />}
                                     <span className="truncate">{locationLabel}</span>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    <Clock className="h-4 w-4 text-[#737373]" />
+                                    <Clock className="h-4 w-4 text-ink-muted" />
                                     <span className="truncate">Mensajes antes de contratar</span>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowMapPreview((value) => !value)}
                                     disabled={!hasExpertLocation}
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-[#1c1c1c] shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-ink-strong shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-expanded={showMapPreview}
                                 >
-                                    <MapPin className="h-4 w-4 text-[#E31C5F]" />
+                                    <MapPin className="h-4 w-4 text-destructive" />
                                     {showMapPreview ? 'Ocultar mapa' : 'Ver zona'}
                                 </button>
                             </div>
@@ -636,7 +636,7 @@ export function PreHireChatPage() {
                                     }}
                                 >
                                     <Heart 
-                                        className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-[#6a6a6a]'}`}
+                                        className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-ink-muted'}`}
                                     />
                                     Favorito
                                 </Button>

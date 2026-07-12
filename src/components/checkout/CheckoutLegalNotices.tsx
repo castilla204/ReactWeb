@@ -19,31 +19,31 @@ export function CheckoutLegalNotices({
 }: CheckoutLegalNoticesProps) {
   const body = (
     <>
-      <p className="text-xs leading-relaxed text-[#595959]">
-        <strong className="text-[#1c1c1c]">Conversión bancaria:</strong> Stripe cobra en{' '}
+      <p className="text-xs leading-relaxed text-ink-muted">
+        <strong className="text-ink-strong">Conversión bancaria:</strong> Stripe cobra en{' '}
         {sourceCurrency}. Tu banco puede aplicar comisiones distintas; el importe final puede variar
         ligeramente respecto a la estimación.
       </p>
       {showCancellation ? (
-        <p className="mt-2 text-xs leading-relaxed text-[#595959]">
-          <strong className="text-[#1c1c1c]">Cancelación gratuita</strong> antes de que empiece la
+        <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+          <strong className="text-ink-strong">Cancelación gratuita</strong> antes de que empiece la
           revisión.{' '}
           <a
-            href="/terms.html"
+            href="/legal/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-[#1c1c1c] underline decoration-brand underline-offset-2 hover:no-underline"
+            className="font-semibold text-ink-strong underline decoration-brand underline-offset-2 hover:no-underline"
           >
             Ver condiciones
           </a>
         </p>
       ) : (
-        <p className="mt-2 text-xs leading-relaxed text-[#595959]">
+        <p className="mt-2 text-xs leading-relaxed text-ink-muted">
           <a
-            href="/terms.html"
+            href="/legal/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-[#1c1c1c] underline decoration-brand underline-offset-2 hover:no-underline"
+            className="font-semibold text-ink-strong underline decoration-brand underline-offset-2 hover:no-underline"
           >
             Ver condiciones
           </a>
@@ -53,7 +53,7 @@ export function CheckoutLegalNotices({
   );
 
   const boxClass =
-    variant === 'plain' ? 'space-y-2' : 'rounded-xl border border-[#e8e8e8] bg-[#fafafa] p-3';
+    variant === 'plain' ? 'space-y-2' : 'rounded-xl border border-line bg-surface-tinted p-3';
 
   if (!collapsible) {
     return <div className={boxClass}>{body}</div>;
@@ -61,7 +61,7 @@ export function CheckoutLegalNotices({
 
   return (
     <details className="group" defaultOpen={defaultOpen}>
-      <summary className="cursor-pointer list-none text-xs font-medium text-[#6a6a6a] underline-offset-2 hover:text-[#222222] hover:underline [&::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer list-none text-xs font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline [&::-webkit-details-marker]:hidden">
         Condiciones y cancelación
       </summary>
       <div className={variant === 'plain' ? 'mt-2 space-y-2' : `${boxClass} mt-2`}>{body}</div>

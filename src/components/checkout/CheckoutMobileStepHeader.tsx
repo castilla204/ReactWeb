@@ -41,7 +41,7 @@ export function CheckoutMobileStepHeader({
             <h2
                 className={cn(
                     !hideStepper && 'mt-4',
-                    'text-center text-[20px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]',
+                    'text-center text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]',
                     hideStepper &&
                         'underline decoration-brand decoration-[3px] underline-offset-[7px]',
                 )}
@@ -57,7 +57,7 @@ export function CheckoutMobileStepHeader({
                 // hueco muerto antes del resumen.
                 <p
                     className={cn(
-                        'mx-auto mt-1.5 max-w-[42ch] text-center text-[13px] leading-relaxed text-[#565d6b]',
+                        'mx-auto mt-1.5 max-w-[42ch] text-center text-meta leading-relaxed text-ink-muted',
                         !hideStepper && 'min-h-[3lh]',
                     )}
                 >

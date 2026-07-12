@@ -18,8 +18,8 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-[12.5px]',
-  md: 'h-9 px-4 text-[13px]',
+  sm: 'h-8 px-3 text-caption',
+  md: 'h-9 px-4 text-meta',
   lg: 'h-11 px-6 text-sm',
 };
 

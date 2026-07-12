@@ -25,20 +25,20 @@ export function CheckoutDesktopStepCrumbs({
     className?: string;
 }) {
     return (
-        <nav aria-label="Pasos del proceso" className={cn('flex items-center gap-1.5 text-[12px] leading-none', className)}>
+        <nav aria-label="Pasos del proceso" className={cn('flex items-center gap-1.5 text-caption leading-none', className)}>
             {steps.map((step, i) => {
                 const isCurrent = step.id === currentId;
                 const isDone = step.id < currentId;
                 return (
                     <Fragment key={step.id}>
                         {i > 0 ? (
-                            <ChevronRight className="h-3 w-3 shrink-0 text-[#c7ccd4]" aria-hidden />
+                            <ChevronRight className="h-3 w-3 shrink-0 text-line" aria-hidden />
                         ) : null}
                         {isDone && onStepSelect ? (
                             <button
                                 type="button"
                                 onClick={() => onStepSelect(step.id)}
-                                className="font-medium text-[#475569] underline-offset-2 transition-colors hover:text-[#1c1c1c] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2"
+                                className="font-medium text-ink-muted underline-offset-2 transition-colors hover:text-ink-strong hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2"
                             >
                                 {step.label}
                             </button>
@@ -47,10 +47,10 @@ export function CheckoutDesktopStepCrumbs({
                                 aria-current={isCurrent ? 'step' : undefined}
                                 className={cn(
                                     isCurrent
-                                        ? 'font-semibold text-[#1c1c1c]'
+                                        ? 'font-semibold text-ink-strong'
                                         : isDone
-                                          ? 'font-medium text-[#475569]'
-                                          : 'text-[#9aa3b0]',
+                                          ? 'font-medium text-ink-muted'
+                                          : 'text-ink-soft',
                                 )}
                             >
                                 {step.label}
@@ -98,7 +98,7 @@ export function CheckoutDesktopAppointmentHeader({
                         <button
                             type="button"
                             onClick={onBack}
-                            className="group/back inline-flex h-9 items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white pl-2.5 pr-3.5 text-[13px] font-medium text-[#475569] shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#cdd3db] hover:bg-[#f7f8fa] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2"
+                            className="group/back inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-white pl-2.5 pr-3.5 text-meta font-medium text-ink-muted shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-line hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2"
                         >
                             <ArrowLeft
                                 className="h-4 w-4 transition-transform duration-200 group-hover/back:-translate-x-0.5"
@@ -121,10 +121,10 @@ export function CheckoutDesktopAppointmentHeader({
             ) : null}
             {title ? (
                 <>
-                    <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] lg:text-[19px]">
+                    <h2 className="text-title font-semibold leading-snug tracking-[-0.02em] text-ink-strong lg:text-title">
                         {title}
                     </h2>
-                    <p className="mt-1.5 max-w-2xl text-[13px] leading-[1.5] text-[#565d6b] lg:text-[14px]">
+                    <p className="mt-1.5 max-w-2xl text-meta leading-[1.5] text-ink-muted lg:text-body">
                         {description}
                     </p>
                 </>

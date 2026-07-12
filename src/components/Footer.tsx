@@ -8,9 +8,9 @@ const FONT =
   '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif';
 
 const linkClass =
-  'text-[13px] text-[#737373] hover:text-[#222222] transition-colors whitespace-nowrap';
+  'text-meta text-ink-muted hover:text-ink transition-colors whitespace-nowrap';
 
-const Sep = () => <span className="text-[#d1d5db] select-none" aria-hidden>·</span>;
+const Sep = () => <span className="text-ink-soft select-none" aria-hidden>·</span>;
 
 export const Footer = () => {
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export const Footer = () => {
 
   return (
     <footer
-      className="hidden md:block border-t border-[#e8e8e8]/80 bg-[#fafafa]"
+      className="hidden md:block border-t border-line/80 bg-surface-tinted"
       style={{ fontFamily: FONT }}
     >
       {/* Enlazado interno a las landings de categoría (SEO): fila discreta propia. */}
@@ -36,19 +36,25 @@ export const Footer = () => {
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 py-3.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
         <Link to="/" className="inline-flex items-center gap-1.5 shrink-0 mr-1">
           <img src={erizoImg} alt="" className="h-5 w-5 -scale-x-100 object-contain" />
-          <span className="text-[13px] font-semibold text-[#222222]">inspecciono.com</span>
+          <span className="text-meta font-semibold text-ink">inspecciono.com</span>
         </Link>
 
         <Sep />
 
-        <Link to="/ayuda" className={linkClass}>
+        <Link to="/help" className={linkClass}>
           Ayuda
+        </Link>
+
+        <Sep />
+
+        <Link to="/inspeccion-segunda-mano-espana" className={linkClass}>
+          Cobertura en España
         </Link>
 
         {!isExpert && (
           <>
             <Sep />
-            <Link to="/become-expert" className={linkClass}>
+            <Link to="/expert/join" className={linkClass}>
               Hazte experto
             </Link>
           </>
@@ -56,13 +62,13 @@ export const Footer = () => {
 
         <Sep />
 
-        <a href="/terms.html" className={linkClass}>
+        <a href="/legal/terms" className={linkClass}>
           Términos
         </a>
 
         <Sep />
 
-        <a href="/privacy-policy.html" className={linkClass}>
+        <a href="/legal/privacy" className={linkClass}>
           Privacidad
         </a>
 
@@ -74,7 +80,7 @@ export const Footer = () => {
 
         <Sep />
 
-        <span className="text-[12px] text-[#9ca3af] whitespace-nowrap">
+        <span className="text-caption text-ink-soft whitespace-nowrap">
           © {new Date().getFullYear()}
         </span>
       </div>

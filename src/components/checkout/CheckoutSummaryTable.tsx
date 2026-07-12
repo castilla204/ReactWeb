@@ -82,11 +82,11 @@ function CheckoutSummaryTableRow({
         SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
         compact ? 'py-1.5' : 'px-6 py-3.5',
         firstInGroup && 'border-t-0',
-        striped && 'bg-[#f8f9fb]',
+        striped && 'bg-surface-tinted',
       )}
     >
-      <dt className={cn(SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS, !compact && 'text-[13px] w-[28%]')}>{label}</dt>
-      <dd className={cn('m-0', SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS, !compact && 'text-[14px]')}>{children}</dd>
+      <dt className={cn(SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS, !compact && 'text-meta w-[28%]')}>{label}</dt>
+      <dd className={cn('m-0', SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS, !compact && 'text-body')}>{children}</dd>
     </div>
   );
 }
@@ -94,8 +94,8 @@ function CheckoutSummaryTableRow({
 /** Micro-cabecera de grupo dentro del resumen — junta filas relacionadas (chunking ≤4). */
 function CheckoutSummaryGroupLabel({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
   return (
-    <div className={cn('border-t border-[#f5f5f5] pb-1 pt-4', compact ? 'px-4' : 'px-6')}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">{children}</p>
+    <div className={cn('border-t border-line-soft pb-1 pt-4', compact ? 'px-4' : 'px-6')}>
+      <p className="text-kicker font-semibold uppercase tracking-[0.06em] text-ink-soft">{children}</p>
     </div>
   );
 }
@@ -110,7 +110,7 @@ function SummaryValue({
   return (
     <>
       <span>{children}</span>
-      {hint ? <span className="mt-0.5 block text-[11px] font-normal leading-snug text-[#64748b]">{hint}</span> : null}
+      {hint ? <span className="mt-0.5 block text-kicker font-normal leading-snug text-ink-muted">{hint}</span> : null}
     </>
   );
 }
@@ -166,15 +166,15 @@ export function CheckoutSummaryTable({
         className={cn(
           SD_CHECKOUT_MOBILE_TABLE_CLASS,
           brandAccent && 'relative overflow-hidden',
-          compact && 'rounded-xl border border-[#eceef2] shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
+          compact && 'rounded-xl border border-line shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
         )}
       >
         {!compact ? null : (
-          <header className="border-b border-[#f0f0f0] px-4 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#64748b]">
+          <header className="border-b border-line-soft px-4 py-2.5">
+            <p className="text-kicker font-semibold uppercase tracking-[0.06em] text-ink-muted">
               Resumen
             </p>
-            <p className="mt-0.5 truncate text-[13px] font-semibold text-[#1c1c1c]">{serviceName}</p>
+            <p className="mt-0.5 truncate text-meta font-semibold text-ink-strong">{serviceName}</p>
           </header>
         )}
 
@@ -189,10 +189,10 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {!compact && hideExpertHeader ? (
-          <div className="px-6 py-5 border-b border-[#f5f5f5]">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">Detalles del servicio</h2>
+          <div className="px-6 py-5 border-b border-line-soft">
+            <h2 className="text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">Detalles del servicio</h2>
             {/* La duración ya sale en su fila («Duración») — aquí duplicaba el dato. */}
-            <p className="mt-1 text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">{serviceName}</p>
+            <p className="mt-1 text-subtitle font-semibold text-ink-strong">{serviceName}</p>
           </div>
         ) : null}
 
@@ -254,12 +254,12 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className={cn('border-t border-[#f5f5f5]', compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
+            <div className={cn('border-t border-line-soft', compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-xs text-[#6a6a6a] font-medium">Total a pagar</p>
+                <p className="text-xs text-ink-muted font-medium">Total a pagar</p>
                 <p
                   className={cn(
-                    'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-[#1c1c1c]',
+                    'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong',
                     compact ? 'text-xl' : 'text-2xl',
                   )}
                 >
@@ -267,17 +267,17 @@ export function CheckoutSummaryTable({
                 </p>
               </div>
               {priceSubline ? (
-                <p className="mt-1 text-xs text-[#64748b]">{priceSubline}</p>
+                <p className="mt-1 text-xs text-ink-muted">{priceSubline}</p>
               ) : (
-                <p className="mt-1 text-xs text-[#64748b]">Impuestos incluidos</p>
+                <p className="mt-1 text-xs text-ink-muted">Impuestos incluidos</p>
               )}
             </div>
           ) : null}
         </dl>
 
         {showDeliverables && deliverables.length > 0 ? (
-          <div className={cn('border-t border-[#f5f5f5]', compact ? 'px-4 py-3' : 'px-6 py-4')}>
-            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">
+          <div className={cn('border-t border-line-soft', compact ? 'px-4 py-3' : 'px-6 py-4')}>
+            <h2 className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
               Qué incluye
             </h2>
             <ServiceDetailDeliverablesGuide
@@ -291,8 +291,8 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {!compact && !hideExpertHeader && expertName && expertHeroPosition === 'bottom' ? (
-          <div className="border-t border-[#f5f5f5] px-6 py-4">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#64748b]">
+          <div className="border-t border-line-soft px-6 py-4">
+            <p className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
               Experto asignado
             </p>
             <CheckoutExpertHero
@@ -306,13 +306,13 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {showFooterNotes ? (
-          <footer className="space-y-2.5 border-t border-[#f5f5f5] px-6 py-3.5">
+          <footer className="space-y-2.5 border-t border-line-soft px-6 py-3.5">
             <CheckoutReserveHint coordinationMode={coordinationMode} />
             <a
-              href="/terms.html"
+              href="/legal/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className={`${SD_CHECKOUT_MOBILE_META_CLASS} underline decoration-[#d4d4d4] underline-offset-2 hover:no-underline`}
+              className={`${SD_CHECKOUT_MOBILE_META_CLASS} underline decoration-line underline-offset-2 hover:no-underline`}
             >
               Condiciones
             </a>

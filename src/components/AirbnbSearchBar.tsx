@@ -18,13 +18,12 @@ import {
   Check,
   type LucideIcon,
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useServiceTypes } from '../hooks/useServiceTypes';
 import { useCategories } from '../contexts/CategoryContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 // Importar imágenes directamente desde src/media para que Vite las procese
-import { LoginModal } from './LoginModal';
 import { CurrencySelector } from './CurrencySelector';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 import casapngImg from '../media/casapng.png';
@@ -90,13 +89,15 @@ const getImageWithCache = (filename: string, cacheKey: number): string => {
 import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
 import { SileoSkeleton } from './ui/sileo-skeleton';
-import { MapPageSkeleton } from './ui/map-page-skeleton';
 import {
   HOMEPAGE_PICK_CATEGORY,
   type HomepagePickCategoryDetail,
 } from '../utils/homepageCategoryPick';
 const HomepageDesktopKayak = lazy(() =>
   import('./HomepageDesktopKayak').then((m) => ({ default: m.HomepageDesktopKayak })),
+);
+const LoginModalLazy = lazy(() =>
+  import('./LoginModal').then((m) => ({ default: m.LoginModal })),
 );
 import {
   HP_FONT,
@@ -221,12 +222,12 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
           isSelected
             ? 'border-brand bg-brand/[0.04] shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(0,0,0,0.06)]'
-            : 'border-[#e8e8e8] hover:border-[#d4d4d4] hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
+            : 'border-line hover:border-line hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
         ].join(' ')}
         style={{ fontFamily: HP_FONT }}
       >
         {/* THUMB del oficio · foto real si existe, ilustración si no. */}
-        <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[10px] bg-[#f5f5f5]">
+        <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[10px] bg-surface-tinted">
           {thumbSrc ? (
             <img
               src={thumbSrc}
@@ -237,7 +238,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
               className={`h-full w-full select-none ${isPhotoReal ? 'object-cover' : 'object-contain p-2'}`}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[#6a6a6a]">
+            <div className="flex h-full w-full items-center justify-center text-ink-muted">
               <Icon className="h-7 w-7" strokeWidth={1.75} />
             </div>
           )}
@@ -245,26 +246,26 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
 
         {/* FICHA: nombre + entrega + meta-line (precio · expertos) */}
         <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
-          <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+          <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
             {name}
           </h3>
           {meta ? (
             <>
-              <p className="mt-0.5 line-clamp-1 text-[12px] leading-snug text-[#6a6a6a]">
+              <p className="mt-0.5 line-clamp-1 text-caption leading-snug text-ink-muted">
                 {meta.delivery}
               </p>
-              <div className="mt-1.5 flex items-center gap-1.5 text-[12px] leading-none">
-                <span className="font-semibold text-[#1c1c1c]">
+              <div className="mt-1.5 flex items-center gap-1.5 text-caption leading-none">
+                <span className="font-semibold text-ink-strong">
                   desde {meta.priceFromEur}€
                 </span>
-                <span className="text-[#d4d4d4]" aria-hidden>·</span>
-                <span className="text-[#737373]">
+                <span className="text-line" aria-hidden>·</span>
+                <span className="text-ink-muted">
                   {meta.expertCount} expertos
                 </span>
               </div>
             </>
           ) : (
-            <p className="mt-0.5 line-clamp-1 text-[12px] leading-snug text-[#737373]">
+            <p className="mt-0.5 line-clamp-1 text-caption leading-snug text-ink-muted">
               Toca para empezar
             </p>
           )}
@@ -273,7 +274,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
         {/* Indicador a la derecha · chevron sutil (sin tick en la activa). */}
         <div className="flex shrink-0 items-center pr-0.5">
           <ChevronRight
-            className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand' : 'text-[#cccccc] group-hover:text-brand'}`}
+            className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand' : 'text-line group-hover:text-brand'}`}
             strokeWidth={2}
             aria-hidden
           />
@@ -291,7 +292,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           aria-disabled
           aria-label={`${name} (próximamente)`}
           tabIndex={-1}
-          className="relative flex aspect-square cursor-not-allowed flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-[#e8e8e8] bg-[#fafafa] p-3 text-center"
+          className="relative flex aspect-square cursor-not-allowed flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-line bg-surface-tinted p-3 text-center"
         >
           <div className="flex h-[64px] w-[64px] items-center justify-center opacity-55">
             {imgSrc ? (
@@ -304,7 +305,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
                 className="h-full w-full select-none object-contain grayscale"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f0f0f0] text-[#a0a0a0]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-line-soft text-ink-soft">
                 <Icon className="h-6 w-6" strokeWidth={2} />
               </div>
             )}
@@ -312,12 +313,12 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
               grid no se descuadre cuando algún label parta. line-clamp-2 corta
               con "..." en el (improbable) caso de un nombre aún más largo. */}
-          <span className="line-clamp-2 min-h-[2.2em] text-[13px] font-semibold leading-tight tracking-[-0.01em] text-[#6a6a6a]">
+          <span className="line-clamp-2 min-h-[2.2em] text-meta font-semibold leading-tight tracking-[-0.01em] text-ink-muted">
             {name}
           </span>
           <span
             aria-hidden
-            className="absolute right-2 top-2 inline-flex h-[18px] items-center rounded-full bg-[#1c1c1c] px-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.06em] text-white"
+            className="absolute right-2 top-2 inline-flex h-[18px] items-center rounded-full bg-ink-strong px-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.06em] text-white"
           >
             Pronto
           </span>
@@ -338,7 +339,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
           isSelected
             ? 'border-brand bg-brand/[0.04] shadow-[0_6px_20px_-6px_hsl(var(--brand)/0.28)]'
-            : 'border-[#e8e8e8] hover:border-[#a0a0a0] hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
+            : 'border-line hover:border-ink-soft hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
         ].join(' ')}
       >
         {/* PNG real de la app si existe; icon lucide solo como fallback */}
@@ -360,7 +361,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           ) : (
             <div
               className={`flex h-14 w-14 items-center justify-center rounded-full ${
-                isSelected ? 'bg-brand text-white' : 'bg-[#f5f5f5] text-[#6a6a6a]'
+                isSelected ? 'bg-brand text-white' : 'bg-surface-tinted text-ink-muted'
               }`}
             >
               <Icon className="h-6 w-6" strokeWidth={2} />
@@ -370,7 +371,7 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
 
         {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
             grid no se descuadre cuando algún label del backend parta. */}
-        <span className="line-clamp-2 min-h-[2.2em] text-[14px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+        <span className="line-clamp-2 min-h-[2.2em] text-body font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
           {name}
         </span>
 
@@ -396,12 +397,12 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
       className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
         isSelected
           ? 'border-brand/30 bg-brand/[0.06]'
-          : 'border-transparent hover:bg-[#f4f4f4]/80 active:bg-[#f4f4f4]'
+          : 'border-transparent hover:bg-line-soft/80 active:bg-line-soft'
       }`}
     >
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden ${
-          imgSrc ? 'bg-white' : isSelected ? 'bg-brand/10' : 'bg-[#f0f0f0]'
+          imgSrc ? 'bg-white' : isSelected ? 'bg-brand/10' : 'bg-line-soft'
         }`}
       >
         {imgSrc ? (
@@ -415,12 +416,12 @@ const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
           />
         ) : (
           <Icon
-            className={`h-[18px] w-[18px] ${isSelected ? 'text-brand' : 'text-[#6a6a6a]'}`}
+            className={`h-[18px] w-[18px] ${isSelected ? 'text-brand' : 'text-ink-muted'}`}
             strokeWidth={2}
           />
         )}
       </div>
-      <span className="min-w-0 flex-1 truncate text-[15px] font-medium leading-tight text-[#1c1c1c]">
+      <span className="min-w-0 flex-1 truncate text-lead font-medium leading-tight text-ink-strong">
         {name}
       </span>
     </button>
@@ -467,6 +468,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const [isServiceTypeOpen, setIsServiceTypeOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | null>(null);
+  const [mobileHeaderScrolled, setMobileHeaderScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const onScroll = () => setMobileHeaderScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [isMobile]);
   
   // ✅ En móvil, abrir automáticamente el acordeón de categorías cuando se abre el modal
   useEffect(() => {
@@ -557,6 +567,20 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
   selectedCategory = normalizedCategories.find(c => c.id === categoryId);
 
+  const mobilePillMeta = useMemo(() => {
+    const categoryByTab: Record<'coches' | 'motos' | 'inmobiliaria', string> = {
+      coches: 'Coches',
+      motos: 'Motos',
+      inmobiliaria: 'Inmobiliaria',
+    };
+    const categoryLabel =
+      (activeTab && activeTab !== 'drawer' ? categoryByTab[activeTab] : undefined) ||
+      selectedCategory?.name ||
+      'Todas las categorías';
+    const locationLabel = adUrl.trim() ? adUrl.trim() : 'Cualquier zona';
+    return { categoryLabel, locationLabel };
+  }, [activeTab, selectedCategory?.name, adUrl]);
+
   // ✅ Leer parámetros de retorno desde SearchParameterForm y abrir modal automáticamente
   useEffect(() => {
     const returnToSearch = sessionStorage.getItem('returnToSearch');
@@ -640,21 +664,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   //   }
   // }, []);
 
-  const [isNavigating, setIsNavigating] = useState(false);
-  
-  // ✅ Resetear estado de navegación cuando la ruta cambia
-  const location = useLocation();
-  useEffect(() => {
-    // Si estamos navegando y la ruta cambió a crear-busqueda, resetear después de un delay
-    if (isNavigating && location.pathname === '/crear-busqueda') {
-      const timer = setTimeout(() => {
-        setIsNavigating(false);
-      }, 2000); // Mantener skeleton 2 segundos para que se vea la transición
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isNavigating, location.pathname]);
-
   // Filtro automático en homepage al cambiar categoría / tipo de servicio
   useEffect(() => {
     if (!onSearch || categoryId == null) return;
@@ -663,24 +672,23 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
   const handleSearch = () => {
     if (serviceTypeId && categoryId) {
-      // ✅ Activar estado de navegación para mostrar skeletons INMEDIATAMENTE
-      setIsNavigating(true);
-      
-      // ✅ Navegar inmediatamente - el skeleton ya está visible
+      // El skeleton de transición lo pinta el fallback de RouteSuspense de /hire
+      // (mismo MapPageSkeleton que usa SearchCreationPage) — no hace falta un
+      // overlay propio aquí: React desmonta este componente en el mismo commit
+      // en que cambia la ruta, así que nunca llegaría a pintarse.
       const params = new URLSearchParams();
       params.append('serviceTypeId', serviceTypeId.toString());
       params.append('categoryId', categoryId.toString());
       if (adUrl) params.append('adUrl', adUrl);
       
       // ✅ Navegar directamente sin pasar por homepage
-      navigate(`/crear-busqueda?${params.toString()}`, { replace: true });
+      navigate(`/hire?${params.toString()}`, { replace: true });
     } else if (categoryId) {
-      setIsNavigating(true);
       const params = new URLSearchParams();
       params.append('categoryId', categoryId.toString());
       if (serviceTypeId) params.append('serviceTypeId', serviceTypeId.toString());
       if (adUrl) params.append('adUrl', adUrl);
-      navigate(`/crear-busqueda?${params.toString()}`, { replace: true });
+      navigate(`/hire?${params.toString()}`, { replace: true });
     }
   };
 
@@ -746,7 +754,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     // Reset explícito por si onOpenChange no se dispara al navegar/desmontar.
     setDrawerIntent('filter');
     setCategorySearchQuery('');
-    navigate(`/crear-busqueda?categoryId=${mapCategoryId}&serviceTypeId=${stId}&step=map`);
+    navigate(`/hire?categoryId=${mapCategoryId}&serviceTypeId=${stId}&step=map`);
   };
 
   useEffect(() => {
@@ -849,16 +857,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
   return (
     <>
-      {/* ✅ Overlay de transición con skeletons */}
-      {isNavigating && <MapPageSkeleton />}
-      
       <HomepageDesktopTopBar variant="plain" showLogo />
 
       {!isMobile && (
         <Suspense
           fallback={
             <div
-              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-[#fafafa] animate-pulse"
+              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-surface-tinted animate-pulse"
               aria-hidden
             />
           }
@@ -872,27 +877,44 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       )}
 
       {/* Mobile */}
-      <header className="sticky top-0 z-50 md:hidden bg-white border-b border-[#ebebeb] relative">
+      <header
+        className={`sticky top-0 z-50 md:hidden border-b border-line bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 transition-shadow duration-200 ${
+          mobileHeaderScrolled ? 'shadow-[0_1px_0_rgba(0,0,0,0.04),0_4px_16px_rgba(15,23,42,0.08)]' : ''
+        }`}
+        style={{ top: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="px-4 pt-3.5 pb-1">
           <div className="relative">
             {/* Halo/sombra con degradado azul→ámbar de marca, rodeando todo el botón */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(to_right,#0066CC,#F59E0B)] opacity-50 blur-[12px]"
+              className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-brand to-amber-500 opacity-50 blur-[12px]"
               style={{ transform: 'translateY(2px)' }}
             />
           <div
             onClick={openMobileSearch}
-            className="relative w-full bg-white border border-[#e8e8e8] rounded-full transition-all flex items-center justify-center gap-3 px-4 cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openMobileSearch();
+              }
+            }}
+            aria-label={`Buscar revisión de ${mobilePillMeta.categoryLabel.toLowerCase()} en ${mobilePillMeta.locationLabel}`}
+            className="relative w-full bg-white border border-line rounded-full transition-all grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 cursor-pointer"
             style={{
               height: '56px',
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
             }}
           >
-            {/* Contenido centrado: Texto */}
-            <div className="flex flex-col items-center flex-1 min-w-0">
-              <span 
-                className="mb-0.5"
+            {/* Espaciador izquierdo — equilibra el botón mapa para centrar el texto */}
+            <div aria-hidden className="h-11 w-11 shrink-0" />
+
+            {/* Texto centrado ópticamente en la pill */}
+            <div className="flex min-w-0 flex-col items-center justify-center text-center">
+              <span
+                className="mb-0.5 max-w-[13.5rem] truncate min-[390px]:max-w-[15rem]"
                 style={{
                   fontSize: '14px',
                   lineHeight: '18px',
@@ -903,8 +925,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               >
                 ¿Qué revisamos?
               </span>
-              <div 
-                className="flex items-center gap-1"
+              <div
+                className="flex max-w-[13.5rem] min-[390px]:max-w-[15rem] items-center justify-center gap-1"
                 style={{
                   fontSize: '12px',
                   lineHeight: '16px',
@@ -913,30 +935,25 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   color: HP_COLOR.muted,
                 }}
               >
-                <span className="truncate">
-                  {adUrl || 'Ubicación'}
-                </span>
-                <span>·</span>
-                <span className="truncate">
-                  Fecha
-                </span>
-                <span>·</span>
-                <span className="truncate">
-                  Categoría
-                </span>
+                <span className="truncate">{mobilePillMeta.categoryLabel}</span>
+                <span aria-hidden="true" className="shrink-0">·</span>
+                <span className="truncate">{mobilePillMeta.locationLabel}</span>
               </div>
             </div>
-            
-            {/* Botón circular con ícono de mapa - Posicionado absoluto a la derecha */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                openMobileSearch();
-              }}
-              className="absolute right-4 flex-shrink-0 w-10 h-10 rounded-full bg-brand hover:bg-brand-hover transition-colors flex items-center justify-center cursor-pointer"
-              aria-label="Mapa"
-            >
-              <Map className="w-5 h-5 text-white" strokeWidth={2.1} />
+
+            {/* Botón circular con ícono de mapa */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMobileSearch();
+                }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand transition-colors hover:bg-brand-hover cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                aria-label="Abrir búsqueda en mapa"
+              >
+                <Map className="h-5 w-5 text-white" strokeWidth={2.1} aria-hidden />
+              </button>
             </div>
           </div>
           </div>
@@ -944,7 +961,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
         {/* Tabs Mobile — fila compacta centrada (estilo Airbnb) */}
         <div className="w-full" role="tablist" aria-label="Categorías principales">
-          <div className="flex justify-center gap-5 min-[390px]:gap-6 px-2 pt-0 pb-0">
+          <div className="flex justify-center gap-4 min-[390px]:gap-5 px-2 pt-0 pb-0.5">
             {(
               [
                 {
@@ -978,19 +995,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => handleTabClick(tab.id, tab.categoryId)}
-                  className={`flex w-[5.25rem] min-[390px]:w-24 shrink-0 flex-col items-center border-b-2 bg-transparent py-0.5 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
+                  className={`flex w-[4.75rem] min-[390px]:w-[5.25rem] shrink-0 flex-col items-center border-b-2 bg-transparent py-0 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
                     isActive ? 'border-brand' : 'border-transparent'
                   }`}
                 >
                   <img
                     src={getImageWithCache(tab.image, imageCacheKey)}
                     alt={tab.alt}
-                    className="mb-0 h-14 w-14 min-[390px]:h-16 min-[390px]:w-16 object-contain"
-                    width={56}
-                    height={56}
+                    className="mb-0 h-12 w-12 min-[390px]:h-14 min-[390px]:w-14 object-contain"
+                    width={48}
+                    height={48}
                   />
                   <span
-                    className="-mt-0.5 max-w-full truncate text-center text-[13px] min-[390px]:text-sm leading-tight"
+                    className="-mt-0.5 max-w-full truncate text-center text-caption min-[390px]:text-meta leading-tight"
                     style={{
                       fontWeight: isActive ? 600 : 400,
                       fontFamily: HP_FONT,
@@ -1012,7 +1029,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           <div 
             className="md:hidden fixed inset-0 z-50 flex flex-col"
             style={{
-              background: '#ffffff',
+              background: 'hsl(var(--surface))',
               boxShadow: isMobile ? undefined : '0 4px 24px rgba(15, 23, 42, 0.08)',
             }}
           >
@@ -1065,11 +1082,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     : ''
                 }`}
                 style={{
-                  background: (expandedAccordion === 'where' || isMobile) ? '#ffffff' : '#ffffff',
                   height: (expandedAccordion === 'where' || isMobile) ? '100dvh' : 'auto',
                   minHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '280px',
                   maxHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '320px',
-                  transition: isMobile ? 'none' : 'height 150ms cubic-bezier(0.4, 0, 0.2, 1), min-height 150ms cubic-bezier(0.4, 0, 0.2, 1), max-height 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  transition: isMobile ? 'none' : 'box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 {/* ✅ En móvil: Siempre mostrar desplegado, sin modo colapsado */}
@@ -1113,7 +1129,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     )}
 
                     <div
-                      className={`px-5 ${isMobile ? 'pb-4 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3.25rem)]' : 'border-b border-[#e8e8e8] pb-4 pt-6'}`}
+                      className={`px-5 ${isMobile ? 'pb-4 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3.25rem)]' : 'border-b border-line pb-4 pt-6'}`}
                     >
                       <div className={`flex items-start justify-between gap-3 ${isMobile ? '' : 'mb-4'}`}>
                         <div className="min-w-0 flex-1">
@@ -1121,7 +1137,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                             tabIndex={-1}
                             className={
                               isMobile
-                                ? 'm-0 text-[20px] font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c]'
+                                ? 'm-0 text-xl font-semibold leading-tight tracking-[-0.02em] text-ink-strong'
                                 : 'hp-section-title m-0'
                             }
                             style={isMobile ? { fontFamily: HP_FONT } : undefined}
@@ -1130,7 +1146,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                           </h2>
                           {isMobile && (
                             <p
-                              className="mt-1 text-[13px] leading-snug text-[#6a6a6a]"
+                              className="mt-1 text-meta leading-snug text-ink-muted"
                               style={{ fontFamily: HP_FONT }}
                             >
                               Elige qué bien quieres que revise el experto.
@@ -1184,7 +1200,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               placeholder="Buscar categorías"
                               value={categorySearchQuery}
                               onChange={(e) => setCategorySearchQuery(e.target.value)}
-                              className="flex-1 border-0 text-sm outline-none bg-transparent text-[#1c1c1c] placeholder:text-[#a0a0a0]"
+                              className="flex-1 border-0 text-sm outline-none bg-transparent text-ink-strong placeholder:text-ink-muted"
                               style={{
                                 fontSize: '14px',
                                 lineHeight: '18px',
@@ -1247,7 +1263,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                           params.append('adUrl', adUrl);
                                         }
 
-                                        window.location.href = `/crear-busqueda?${params.toString()}`;
+                                        window.location.href = `/hire?${params.toString()}`;
 
                                         if (onSearch) {
                                           onSearch({
@@ -1258,7 +1274,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                         }
                                       }}
                                       className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
-                                        selected ? 'bg-brand/[0.06]' : 'active:bg-[#f6f6f7]'
+                                        selected ? 'bg-brand/[0.06]' : 'active:bg-surface-tinted'
                                       }`}
                                     >
                                       <div className="flex h-14 w-14 shrink-0 items-center justify-center">
@@ -1272,32 +1288,32 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                             className="h-full w-full select-none object-contain"
                                           />
                                         ) : (
-                                          <FolderTree className="h-6 w-6 text-[#bdbdbd]" strokeWidth={1.75} />
+                                          <FolderTree className="h-6 w-6 text-line" strokeWidth={1.75} />
                                         )}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                                        <h3 className="text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
                                           {category.name}
                                         </h3>
                                         {meta ? (
                                           <>
-                                            <p className="mt-0.5 truncate text-[12.5px] leading-snug text-[#8a8a8a]">
+                                            <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
                                               {meta.delivery}
                                             </p>
-                                            <p className="mt-1 text-[12.5px] leading-none text-[#717171]">
-                                              <span className="font-semibold text-[#1c1c1c]">desde {meta.priceFromEur}€</span>
+                                            <p className="mt-1 text-caption leading-none text-ink-muted">
+                                              <span className="font-semibold text-ink-strong">desde {meta.priceFromEur}€</span>
                                               {' · '}
                                               {meta.expertCount} expertos
                                             </p>
                                           </>
                                         ) : (
-                                          <p className="mt-0.5 text-[12.5px] leading-snug text-[#8a8a8a]">
+                                          <p className="mt-0.5 text-caption leading-snug text-ink-muted">
                                             Toca para ver expertos
                                           </p>
                                         )}
                                       </div>
                                       <ChevronRight
-                                        className={`h-4 w-4 shrink-0 ${selected ? 'text-brand' : 'text-[#d0d0d0]'}`}
+                                        className={`h-4 w-4 shrink-0 ${selected ? 'text-brand' : 'text-line'}`}
                                         strokeWidth={2}
                                         aria-hidden
                                       />
@@ -1361,7 +1377,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     {!isMobile && (
                       <>
                         {/* Header fijo con título y buscador - Estilo Airbnb */}
-                        <div className="px-4 pt-6 pb-4 border-b border-[#e8e8e8]">
+                        <div className="px-4 pt-6 pb-4 border-b border-line">
                           <h2
                             tabIndex={-1}
                             className="relative mb-4 inline-block"
@@ -1405,7 +1421,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 placeholder="Buscar categorías"
                                 value={categorySearchQuery}
                                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                                className="flex-1 border-0 text-sm outline-none bg-transparent text-[#1c1c1c] placeholder:text-[#a0a0a0]"
+                                className="flex-1 border-0 text-sm outline-none bg-transparent text-ink-strong placeholder:text-ink-muted"
                                 style={{ 
                                   fontSize: '14px',
                                   lineHeight: '18px',
@@ -1468,7 +1484,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                     return true;
                                   }).length === 0 && (
                                   <div 
-                                    className="text-center py-4 text-[#737373]"
+                                    className="text-center py-4 text-ink-muted"
                                     style={{ 
                                       fontSize: '14px',
                                       lineHeight: '18px',
@@ -1491,13 +1507,13 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {/* Separador y flecha al final - Solo cuando NO está expandido Y NO es móvil */}
                 {/* ✅ En móvil: Nunca mostrar la flecha de expandir */}
                 {expandedAccordion !== 'where' && !isMobile && (
-                  <div className="border-t border-[#e8e8e8] mt-auto">
+                  <div className="border-t border-line mt-auto">
                     <button
                       type="button"
                       onClick={() => setExpandedAccordion('where')}
                       className="w-full flex items-center justify-center py-3 bg-transparent border-none cursor-pointer hover:bg-gray-50 transition-colors"
                     >
-                      <ChevronDown className="w-4 h-4 text-[#6a6a6a]" style={{ strokeWidth: 2.5 }} />
+                      <ChevronDown className="w-4 h-4 text-ink-muted" style={{ strokeWidth: 2.5 }} />
                     </button>
                   </div>
                 )}
@@ -1513,7 +1529,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 >
                   <div className="flex flex-col items-start">
                     <span 
-                      className="font-semibold text-[#1c1c1c] mb-1"
+                      className="font-semibold text-ink-strong mb-1"
                       style={{ 
                         fontSize: '12px',
                         lineHeight: '16px',
@@ -1524,7 +1540,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       Tipo de servicio
                     </span>
                     <span 
-                      className="text-[#737373]"
+                      className="text-ink-muted"
                       style={{ 
                         fontSize: '14px',
                         lineHeight: '18px',
@@ -1535,7 +1551,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       {selectedServiceType?.name || 'Añade tipo'}
                     </span>
                   </div>
-                  <ChevronDown className={`w-3 h-3 text-[#a0a0a0] transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
+                  <ChevronDown className={`w-3 h-3 text-ink-soft transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'type' && (
@@ -1570,15 +1586,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                             className={`w-full px-4 py-4 rounded-lg text-left transition-colors flex flex-col gap-1 ${
                               serviceTypeId === st.id
                                 ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)]'
-                                : 'bg-[#fafafa] text-[#1c1c1c] hover:bg-[#f5f5f5]'
+                                : 'bg-surface-tinted text-ink-strong hover:bg-surface-tinted'
                             }`}
                           >
                             <span className="text-sm font-semibold">{st.name}</span>
                             {st.description && (
                               <span className={`text-xs ${
                                 serviceTypeId === st.id 
-                                  ? 'text-[#d4d4d4]' 
-                                  : 'text-[#6a6a6a]'
+                                  ? 'text-line' 
+                                  : 'text-ink-muted'
                               }`}>
                                 {st.description}
                               </span>
@@ -1600,11 +1616,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
                   className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
                 >
-                  <label className="text-xs font-semibold text-[#1c1c1c] flex items-center gap-1" style={{ fontFamily: HP_FONT }}>
+                  <label className="text-xs font-semibold text-ink-strong flex items-center gap-1" style={{ fontFamily: HP_FONT }}>
                       URL del anuncio
-                    <span className="text-[#a0a0a0] font-normal">(opcional)</span>
+                    <span className="text-ink-soft font-normal">(opcional)</span>
                   </label>
-                  <ChevronDown className={`w-3 h-3 text-[#a0a0a0] transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
+                  <ChevronDown className={`w-3 h-3 text-ink-soft transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
                 </button>
                 
                 {expandedAccordion === 'url' && (
@@ -1614,7 +1630,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                       placeholder="Pega la URL aquí..."
                         value={adUrl}
                         onChange={(e) => setAdUrl(e.target.value)}
-                      className="w-full px-4 py-4 border border-[#e8e8e8] rounded-lg text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
+                      className="w-full px-4 py-4 border border-line rounded-lg text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
                       autoFocus
                     />
                     </div>
@@ -1626,7 +1642,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
           {/* ✅ OCULTAR en móvil: Botones de acción */}
           {!isMobile && (
-          <div className="px-4 py-5 border-t border-[#e8e8e8] bg-white flex justify-between gap-4">
+          <div className="px-4 py-5 border-t border-line bg-white flex justify-between gap-4">
             <button
               type="button"
               onClick={() => {
@@ -1636,7 +1652,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 setCategorySearchQuery('');
                 setExpandedAccordion(null);
               }}
-              className="px-4 py-2 text-sm font-semibold text-[#1c1c1c] underline bg-transparent border-none cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold text-ink-strong underline bg-transparent border-none cursor-pointer"
             >
               Restablecer
             </button>
@@ -1688,7 +1704,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
           <div className="flex-shrink-0 px-4 pb-3 pt-4 md:px-5">
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-soft"
                 strokeWidth={2.2}
               />
               <input
@@ -1696,7 +1712,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 placeholder="Buscar categoría…"
                 value={categorySearchQuery}
                 onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="h-12 w-full rounded-full bg-[#f4f4f5] pl-12 pr-5 text-[15px] text-[#1c1c1c] transition-colors placeholder:text-[#9ca3af] focus:bg-[#ededf0] focus:outline-none"
+                className="h-12 w-full rounded-full bg-surface-tinted pl-12 pr-5 text-lead text-ink-strong transition-colors placeholder:text-ink-muted focus:bg-line-soft focus:outline-none"
                 style={{ fontFamily: HP_FONT }}
                 autoComplete="off"
                 autoCorrect="off"
@@ -1732,15 +1748,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 if (list.length === 0) {
                   return (
                     <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f3f4f6]">
-                        <Search className="h-5 w-5 text-[#9ca3af]" strokeWidth={2} />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-tinted">
+                        <Search className="h-5 w-5 text-ink-soft" strokeWidth={2} />
                       </div>
-                      <p className="text-[14px] font-semibold text-[#1c1c1c]">
+                      <p className="text-body font-semibold text-ink-strong">
                         {categorySearchQuery.trim()
                           ? `Sin resultados para “${categorySearchQuery.trim()}”`
                           : 'No hay categorías disponibles'}
                       </p>
-                      <p className="max-w-[16rem] text-[12.5px] leading-snug text-[#737373]">
+                      <p className="max-w-[16rem] text-caption leading-snug text-ink-muted">
                         Prueba con otra palabra o revisa más tarde: el catálogo crece cada semana.
                       </p>
                     </div>
@@ -1749,7 +1765,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
                 return (
                   <>
-                    <p className="px-1 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-[0.1em] text-[#b0b0b0]">
+                    <p className="px-1 pb-1.5 pt-1 text-kicker font-medium uppercase tracking-[0.1em] text-ink-soft">
                       {list.length} {list.length === 1 ? 'categoría' : 'categorías'}
                     </p>
                     <div className="flex flex-col">
@@ -1768,7 +1784,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                 : handleDrawerCategoryClick(category.id, category.name)
                             }
                             className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
-                              selected ? 'bg-brand/[0.06]' : 'hover:bg-[#f6f6f7]'
+                              selected ? 'bg-brand/[0.06]' : 'hover:bg-surface-tinted'
                             }`}
                           >
                             <div className="flex h-14 w-14 shrink-0 items-center justify-center">
@@ -1782,26 +1798,26 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                   className="h-full w-full select-none object-contain"
                                 />
                               ) : (
-                                <FolderTree className="h-6 w-6 text-[#bdbdbd]" strokeWidth={1.75} />
+                                <FolderTree className="h-6 w-6 text-line" strokeWidth={1.75} />
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                              <h3 className="text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
                                 {category.name}
                               </h3>
                               {meta ? (
                                 <>
-                                  <p className="mt-0.5 truncate text-[12.5px] leading-snug text-[#8a8a8a]">
+                                  <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
                                     {meta.delivery}
                                   </p>
-                                  <p className="mt-1 text-[12.5px] leading-none text-[#717171]">
-                                    <span className="font-semibold text-[#1c1c1c]">desde {meta.priceFromEur}€</span>
+                                  <p className="mt-1 text-caption leading-none text-ink-muted">
+                                    <span className="font-semibold text-ink-strong">desde {meta.priceFromEur}€</span>
                                     {' · '}
                                     {meta.expertCount} expertos
                                   </p>
                                 </>
                               ) : (
-                                <p className="mt-0.5 text-[12.5px] leading-snug text-[#8a8a8a]">
+                                <p className="mt-0.5 text-caption leading-snug text-ink-muted">
                                   Toca para ver expertos
                                 </p>
                               )}
@@ -1815,7 +1831,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               </span>
                             ) : (
                               <ChevronRight
-                                className="h-4 w-4 shrink-0 text-[#d0d0d0] transition-colors group-hover:text-[#9ca3af]"
+                                className="h-4 w-4 shrink-0 text-line transition-colors group-hover:text-ink-soft"
                                 strokeWidth={2}
                                 aria-hidden
                               />
@@ -1832,12 +1848,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         </div>
       </ResponsiveModal>
 
-      <LoginModal
-        open={isLoginModalOpen}
-        onOpenChange={setIsLoginModalOpen}
-        initialTab="login"
-        onSuccess={() => setIsLoginModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <LoginModalLazy
+          open={isLoginModalOpen}
+          onOpenChange={setIsLoginModalOpen}
+          initialTab="login"
+          onSuccess={() => setIsLoginModalOpen(false)}
+        />
+      </Suspense>
     </>
   );
 }, (prevProps, nextProps) =>

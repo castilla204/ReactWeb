@@ -52,7 +52,7 @@ const NotificationsPage: React.FC = () => {
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-[15px] font-semibold tracking-tight" style={{ color: 'hsl(var(--nc-ink))' }}>
+                        <h1 className="text-lead font-semibold tracking-tight" style={{ color: 'hsl(var(--nc-ink))' }}>
                             Notificaciones
                         </h1>
                         <p className="text-xs mt-0.5" style={{ color: 'hsl(215 14% 38%)' }}>

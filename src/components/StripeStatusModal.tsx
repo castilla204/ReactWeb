@@ -190,7 +190,7 @@ export const StripeStatusModal: React.FC<StripeStatusModalProps> = ({
                                 <button
                                     onClick={() => {
                                         // Redirigir a configuración de Stripe
-                                        window.location.href = '/become-expert';
+                                        window.location.href = '/expert/join';
                                         onClose();
                                     }}
                                     className="text-sm text-blue-600 hover:text-blue-800 underline"

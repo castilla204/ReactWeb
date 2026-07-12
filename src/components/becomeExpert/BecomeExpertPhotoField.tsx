@@ -44,11 +44,11 @@ export function BecomeExpertPhotoField({ previewUrl, onPhotoReady }: BecomeExper
                     className="group relative shrink-0"
                     aria-label={previewUrl ? 'Cambiar foto de perfil' : 'Añadir foto de perfil'}
                 >
-                    <div className="relative h-20 w-20 overflow-hidden rounded-full bg-[#f3f4f6] ring-1 ring-[#e8e8e8] sm:h-[88px] sm:w-[88px]">
+                    <div className="relative h-20 w-20 overflow-hidden rounded-full bg-surface-tinted ring-1 ring-line sm:h-[88px] sm:w-[88px]">
                         {previewUrl ? (
                             <img src={previewUrl} alt="" className="h-full w-full object-cover" />
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center text-[#9ca3af]">
+                            <div className="flex h-full w-full items-center justify-center text-ink-soft">
                                 <Camera className="h-7 w-7" strokeWidth={1.5} aria-hidden />
                             </div>
                         )}
@@ -59,8 +59,8 @@ export function BecomeExpertPhotoField({ previewUrl, onPhotoReady }: BecomeExper
                 </button>
 
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#1c1c1c]">Foto de perfil</p>
-                    <p className="mt-1 text-xs leading-relaxed text-[#6a6a6a]">
+                    <p className="text-sm font-semibold text-ink-strong">Foto de perfil</p>
+                    <p className="mt-1 text-xs leading-relaxed text-ink-muted">
                         Rostro centrado, fondo neutro y buena luz. Podrás recortar antes de guardar.
                     </p>
                     <button
@@ -70,7 +70,7 @@ export function BecomeExpertPhotoField({ previewUrl, onPhotoReady }: BecomeExper
                     >
                         {previewUrl ? 'Cambiar foto' : 'Subir y encuadrar'}
                     </button>
-                    <p className="mt-1.5 text-[11px] text-[#9ca3af]">JPG o PNG · máx. 5 MB</p>
+                    <p className="mt-1.5 text-kicker text-ink-soft">JPG o PNG · máx. 5 MB</p>
                 </div>
             </div>
 

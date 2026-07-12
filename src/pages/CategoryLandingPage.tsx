@@ -57,7 +57,7 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-display text-[#1c1c1c]">
+    <div className="min-h-screen bg-surface-tinted font-display text-ink-strong">
       <SEO
         title={config.seoTitle}
         description={config.seoDescription}
@@ -68,12 +68,12 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
       />
 
       {/* Header propio SOLO en móvil (en desktop el topbar global ya es la cabecera). */}
-      <header className="sticky top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-sm md:hidden">
+      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur-sm md:hidden">
         <div className="flex min-h-12 items-center gap-2 px-4 pt-[max(0.5rem,env(safe-area-inset-top,0px))]">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-[#f5f5f5]"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-strong hover:bg-surface-tinted"
             aria-label="Volver"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -83,29 +83,29 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
       </header>
 
       {/* Hero */}
-      <section className="border-b border-[#e8e8e8]" style={{ background: HP_PANEL_GRADIENT }}>
+      <section className="border-b border-line" style={{ background: HP_PANEL_GRADIENT }}>
         <div className={`${SD_PAGE_INNER_MAX_CLASS} px-4 py-8 md:px-6 md:py-12 lg:py-14`}>
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">
             {config.eyebrow}
           </p>
-          <h1 className="mt-2 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-[-0.03em] text-[#1c1c1c] md:text-[2rem]">
+          <h1 className="mt-2 max-w-2xl font-display text-2xl font-semibold leading-tight tracking-[-0.03em] text-ink-strong md:text-[2rem]">
             {config.h1}
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#6a6a6a] md:text-base">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-muted md:text-base">
             {config.intro}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => navigate('/crear-busqueda')}
+              onClick={() => navigate('/hire')}
               className="sd-btn-primary min-w-0 px-5"
             >
               Buscar expertos en el mapa
             </button>
             <button
               type="button"
-              onClick={() => navigate('/ayuda')}
-              className="inline-flex h-12 items-center justify-center rounded-full border border-[#1c1c1c] bg-white px-5 text-sm font-semibold text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7]"
+              onClick={() => navigate('/help')}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-ink-strong bg-white px-5 text-sm font-semibold text-ink-strong transition-colors hover:bg-surface-tinted"
             >
               Cómo funciona
             </button>
@@ -118,11 +118,11 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
             motores de respuesta (AI Overviews, ChatGPT, Perplexity) extraen y citan.
             Coincide LITERALMENTE con el HowTo.description del JSON-LD. */}
         <section aria-label="En resumen" className="mb-10">
-          <div className="rounded-xl border border-[#e3ecf6] bg-[#f5f9fe] p-4 md:p-5">
+          <div className="rounded-xl border border-brand/15 bg-brand/5 p-4 md:p-5">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.1em] text-brand">
               En resumen
             </p>
-            <p className="text-sm leading-relaxed text-[#1c1c1c] md:text-base">
+            <p className="text-sm leading-relaxed text-ink-strong md:text-base">
               {config.answerFirst}
             </p>
           </div>
@@ -133,68 +133,68 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
           <h2 id="checks-heading" className="hp-section-title mb-2">
             {config.checksTitle}
           </h2>
-          <p className="mb-5 max-w-2xl text-sm leading-relaxed text-[#6a6a6a]">
+          <p className="mb-5 max-w-2xl text-sm leading-relaxed text-ink-muted">
             Una revisión presencial y a fondo, hecha por un profesional verificado que trabaja
             para ti, no para el vendedor.
           </p>
           <ul className="grid gap-3 sm:grid-cols-2">
             {config.checks.map((check) => (
-              <li key={check} className="flex gap-3 rounded-lg border border-[#ebebeb] bg-white px-4 py-3">
+              <li key={check} className="flex gap-3 rounded-lg border border-line bg-white px-4 py-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
-                <p className="text-sm leading-relaxed text-[#1c1c1c]">{check}</p>
+                <p className="text-sm leading-relaxed text-ink-strong">{check}</p>
               </li>
             ))}
           </ul>
         </section>
 
         {/* Cómo funciona */}
-        <section aria-labelledby="steps-heading" className="mt-12 border-t border-[#e8e8e8] pt-8">
+        <section aria-labelledby="steps-heading" className="mt-12 border-t border-line pt-8">
           <h2 id="steps-heading" className="hp-section-title mb-6">
             Cómo funciona · en 4 pasos
           </h2>
           <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {LANDING_STEPS.map((step, index) => (
-              <li key={step.title} className="relative rounded-xl border border-[#e8e8e8] bg-white p-4 shadow-sm">
-                <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f6fc] text-xs font-bold text-brand">
+              <li key={step.title} className="relative rounded-xl border border-line bg-white p-4 shadow-sm">
+                <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand/10 text-xs font-bold text-brand">
                   {index + 1}
                 </span>
-                <h3 className="text-sm font-semibold text-[#1c1c1c]">{step.title}</h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-[#6a6a6a]">{step.body}</p>
+                <h3 className="text-sm font-semibold text-ink-strong">{step.title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{step.body}</p>
               </li>
             ))}
           </ol>
         </section>
 
         {/* FAQ visibles (deben coincidir con el FAQPage JSON-LD) */}
-        <section aria-labelledby="faq-heading" className="mt-12 border-t border-[#e8e8e8] pt-8">
+        <section aria-labelledby="faq-heading" className="mt-12 border-t border-line pt-8">
           <h2 id="faq-heading" className="hp-section-title mb-5">
             Preguntas frecuentes
           </h2>
           <div className="grid gap-3">
             {config.faqs.map((faq) => (
-              <details key={faq.question} className="group rounded-lg border border-[#ebebeb] bg-white px-4 py-3 open:pb-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#1c1c1c] [&::-webkit-details-marker]:hidden">
+              <details key={faq.question} className="group rounded-lg border border-line bg-white px-4 py-3 open:pb-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ink-strong [&::-webkit-details-marker]:hidden">
                   {faq.question}
-                  <ChevronRight className="h-4 w-4 shrink-0 text-[#9ca3af] transition-transform group-open:rotate-90" aria-hidden />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft transition-transform group-open:rotate-90" aria-hidden />
                 </summary>
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#6a6a6a]">{faq.answer}</p>
+                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-ink-muted">{faq.answer}</p>
               </details>
             ))}
           </div>
         </section>
 
         {/* CTA final */}
-        <section className="mt-12 rounded-xl border border-[#e8e8e8] bg-white p-5 md:p-6">
-          <h2 className="text-base font-semibold text-[#1c1c1c]">
+        <section className="mt-12 rounded-xl border border-line bg-white p-5 md:p-6">
+          <h2 className="text-base font-semibold text-ink-strong">
             Encuentra un experto cerca y reserva en dos minutos
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6a6a6a]">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
             Compara precios y valoraciones de expertos verificados en el mapa, elige hueco en su
             calendario y paga con el dinero protegido en escrow hasta tu visto bueno.
           </p>
           <button
             type="button"
-            onClick={() => navigate('/crear-busqueda')}
+            onClick={() => navigate('/hire')}
             className="sd-btn-primary mt-4 min-w-0 px-5"
           >
             Buscar expertos en el mapa
@@ -202,7 +202,7 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
         </section>
 
         {/* Enlazado interno entre landings */}
-        <section aria-labelledby="related-heading" className="mt-12 border-t border-[#e8e8e8] pt-8">
+        <section aria-labelledby="related-heading" className="mt-12 border-t border-line pt-8">
           <h2 id="related-heading" className="hp-section-title mb-4">
             Otras inspecciones
           </h2>
@@ -211,10 +211,10 @@ const CategoryLandingPage: React.FC<CategoryLandingPageProps> = ({ slug }) => {
               <li key={c.slug}>
                 <Link
                   to={`/${c.slug}`}
-                  className="inline-flex items-center gap-1 rounded-full border border-[#ebebeb] bg-white px-4 py-2 text-sm font-medium text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7]"
+                  className="inline-flex items-center gap-1 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium text-ink-strong transition-colors hover:bg-surface-tinted"
                 >
                   {c.shortName}
-                  <ChevronRight className="h-3.5 w-3.5 text-[#9ca3af]" aria-hidden />
+                  <ChevronRight className="h-3.5 w-3.5 text-ink-soft" aria-hidden />
                 </Link>
               </li>
             ))}

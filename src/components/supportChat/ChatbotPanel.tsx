@@ -126,19 +126,19 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
   };
 
   const iconButton =
-    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#6a6a6a] transition-colors hover:bg-[#f2f3f5] hover:text-[#1c1c1c] touch-manipulation [-webkit-tap-highlight-color:transparent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong touch-manipulation [-webkit-tap-highlight-color:transparent] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
   const lastTurnIndex = turns.length - 1;
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white font-display">
-      <header className="flex shrink-0 items-center gap-1 border-b border-[#ececec] bg-white px-2 py-2 md:px-3">
+      <header className="flex shrink-0 items-center gap-1 border-b border-line bg-white px-2 py-2 md:px-3">
         {isFullscreen && (
           <button type="button" onClick={onClose} className={iconButton} aria-label="Cerrar asistente">
             <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2.1} aria-hidden />
           </button>
         )}
-        <h2 className="min-w-0 flex-1 truncate px-1.5 text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]">
+        <h2 className="min-w-0 flex-1 truncate px-1.5 text-lead font-semibold leading-[1.25] tracking-[-0.015em] text-ink-strong">
           Asistente
         </h2>
         {turns.length > 0 && (
@@ -167,10 +167,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
         >
           {isEmpty ? (
             <div className={READING_WIDTH}>
-              <h3 className="text-[17px] font-semibold leading-[1.3] tracking-[-0.015em] text-[#1c1c1c]">
+              <h3 className="text-title font-semibold leading-[1.3] tracking-[-0.015em] text-ink-strong">
                 {CHATBOT_EMPTY_TITLE}
               </h3>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#6a6a6a]">
+              <p className="mt-1.5 text-meta leading-relaxed text-ink-muted">
                 {CHATBOT_WELCOME_MESSAGE}
               </p>
               <ul className="-mx-2 mt-5">
@@ -179,11 +179,11 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                     <button
                       type="button"
                       onClick={() => handleSuggested(q)}
-                      className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-[#f5f6f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      className="group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-surface-tinted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                     >
-                      <span className="min-w-0 text-[14px] leading-snug text-[#1c1c1c]">{q}</span>
+                      <span className="min-w-0 text-body leading-snug text-ink-strong">{q}</span>
                       <ArrowRight
-                        className="h-3.5 w-3.5 shrink-0 text-[#8a8a8a] transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:text-brand"
+                        className="h-3.5 w-3.5 shrink-0 text-ink-muted transition-[color,transform] duration-200 group-hover:translate-x-0.5 group-hover:text-brand"
                         strokeWidth={2.1}
                         aria-hidden
                       />
@@ -201,16 +201,16 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                 return (
                   <article
                     key={turn.id}
-                    className={cn('chat-message-enter', i > 0 && 'mt-6 border-t border-[#ececec] pt-6')}
+                    className={cn('chat-message-enter', i > 0 && 'mt-6 border-t border-line pt-6')}
                   >
                     {turn.question && (
-                      <p className="text-[13px] font-medium leading-5 text-[#6a6a6a]">
+                      <p className="text-meta font-medium leading-5 text-ink-muted">
                         {turn.question}
                       </p>
                     )}
                     <div
                       className={cn(
-                        'text-[14.5px] leading-[1.65] text-[#1c1c1c]',
+                        'text-body leading-[1.65] text-ink-strong',
                         turn.question && 'mt-2.5',
                       )}
                     >
@@ -219,17 +219,17 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                       )}
                       {awaiting && (
                         <>
-                          <TypingDots className="text-[#a3a3a3]" />
+                          <TypingDots className="text-ink-soft" />
                           <span className="sr-only">El asistente está escribiendo…</span>
                         </>
                       )}
                       {failed && (
-                        <div role="alert" className="rounded-lg bg-[#fdf6f5] px-3 py-2.5">
-                          <p className="text-[13px] leading-snug text-[#b42318]">{error}</p>
+                        <div role="alert" className="rounded-lg bg-destructive/5 px-3 py-2.5">
+                          <p className="text-meta leading-snug text-destructive">{error}</p>
                           <button
                             type="button"
                             onClick={retry}
-                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#b42318] transition-colors hover:bg-[#fbeeec] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b42318] focus-visible:ring-offset-2"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
                           >
                             <RotateCcw className="h-3 w-3" strokeWidth={2.25} aria-hidden />
                             Reintentar
@@ -249,7 +249,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
             type="button"
             onClick={() => scrollToBottom()}
             /* Sin `chat-message-enter`: su keyframe fija `transform`, que pisaría el `-translate-x-1/2` del centrado. */
-            className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-medium text-[#1c1c1c] shadow-[0_4px_16px_rgba(16,24,40,0.14)] transition-colors hover:bg-[#fafafa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink-strong shadow-[0_4px_16px_rgba(16,24,40,0.14)] transition-colors hover:bg-surface-tinted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             <ArrowDown className="h-3.5 w-3.5" strokeWidth={2.1} aria-hidden />
             Ir al final
@@ -259,10 +259,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
 
       <form
         onSubmit={handleSubmit}
-        className="shrink-0 border-t border-[#ececec] bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5"
+        className="shrink-0 border-t border-line bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5"
       >
         <div className={READING_WIDTH}>
-          <div className="flex items-end gap-2 rounded-2xl border border-[#e2e4e8] bg-white py-1.5 pl-3.5 pr-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand focus-within:shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]">
+          <div className="flex items-end gap-2 rounded-2xl border border-line bg-white py-1.5 pl-3.5 pr-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand focus-within:shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]">
             <textarea
               ref={inputRef}
               rows={1}
@@ -279,14 +279,14 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
               disabled={isLoading}
               enterKeyHint="send"
               /* text-base en móvil evita el auto-zoom de iOS al enfocar. */
-              className="min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base leading-5 text-[#1c1c1c] placeholder:text-[#767676] focus:outline-none disabled:opacity-60 md:text-sm"
+              className="min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base leading-5 text-ink-strong placeholder:text-ink-muted focus:outline-none disabled:opacity-60 md:text-sm"
               style={{ maxHeight: TEXTAREA_MAX_PX }}
               aria-label="Tu pregunta"
             />
             <button
               type="submit"
               disabled={!canSend}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors duration-150 hover:bg-brand-hover active:scale-95 disabled:cursor-not-allowed disabled:bg-[#e4e6ea] disabled:text-[#9b9b9b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors duration-150 hover:bg-brand-hover active:scale-95 disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
               aria-label="Enviar pregunta"
             >
               <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
@@ -295,7 +295,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
           <Link
             to="/faq"
             onClick={onClose}
-            className="mt-2.5 block rounded text-center text-xs font-medium text-[#6a6a6a] underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="mt-2.5 block rounded text-center text-xs font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             Ver preguntas frecuentes
           </Link>

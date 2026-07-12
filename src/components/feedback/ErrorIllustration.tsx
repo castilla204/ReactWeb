@@ -7,7 +7,7 @@ import React from 'react';
  * así un rebrand se propaga solo.
  *
  * Si en el futuro se generan PNG 3D reales, basta pasar <ErrorState illustration={...}/>
- * con un <img/>; este componente es el fallback por defecto y la fuente de estilo.
+ * con un nodo de imagen externo; este componente es el fallback por defecto y la fuente de estilo.
  */
 
 export type IllustrationVariant = 'generic' | 'notFound' | 'serverDown' | 'offline';

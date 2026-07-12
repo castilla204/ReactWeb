@@ -52,7 +52,7 @@ function PhotoCell({
     <button
       type="button"
       onClick={() => onOpen(index)}
-      className="relative h-full w-full min-h-0 overflow-hidden border-0 bg-[#1c1c1c] p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97]"
+      className="relative h-full w-full min-h-0 overflow-hidden border-0 bg-ink-strong p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97]"
       aria-label={alt}
     >
       {loadingImages.has(src) ? (
@@ -72,8 +72,8 @@ function PhotoCell({
         draggable={false}
       />
       {failedImages.has(src) ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#f0f0f0]">
-          <Image className="h-8 w-8 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
+        <div className="absolute inset-0 flex items-center justify-center bg-line-soft">
+          <Image className="h-8 w-8 text-ink-soft" strokeWidth={1.5} aria-hidden />
         </div>
       ) : null}
       {overlay}
@@ -101,9 +101,9 @@ function MobileHeroPhotoStack({
 >) {
   if (images.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-[#f5f5f5] px-3 text-center">
-        <Image className="mb-2 h-8 w-8 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
-        <p className="text-xs font-medium text-[#484848]">Sin imágenes</p>
+      <div className="flex h-full flex-col items-center justify-center bg-surface-tinted px-3 text-center">
+        <Image className="mb-2 h-8 w-8 text-ink-soft" strokeWidth={1.5} aria-hidden />
+        <p className="text-xs font-medium text-ink-muted">Sin imágenes</p>
       </div>
     );
   }
@@ -130,7 +130,7 @@ function MobileHeroPhotoStack({
           // bottom-12 = por encima del solape de la card (2.5rem) + aire; misma
           // línea base que el botón de ampliar mapa (bottom-raised) en la otra columna.
           <span
-            className="pointer-events-none absolute bottom-12 left-2 z-[2] inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white/95 px-2.5 text-[11px] font-medium text-[#334155] shadow-sm"
+            className="pointer-events-none absolute bottom-12 left-2 z-[2] inline-flex h-7 items-center gap-1.5 rounded-sm bg-black/45 px-2.5 text-kicker font-medium text-white backdrop-blur-[2px]"
             aria-hidden
           >
             <Image className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
@@ -159,7 +159,7 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
   const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
 
   return (
-    <div className="relative grid aspect-[4/3] w-full grid-cols-2 bg-[#1c1c1c]">
+    <div className="relative grid aspect-[4/3] w-full grid-cols-2 bg-ink-strong">
       <div className="sd-mobile-hero-top-scrim" aria-hidden />
       <div className="relative min-h-0 min-w-0 overflow-hidden">
         <MobileHeroPhotoStack
@@ -178,8 +178,8 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
         {location ? (
           <Suspense
             fallback={
-              <div className="flex h-full w-full items-center justify-center bg-[#dce9f2]">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#ddd] border-t-brand" />
+              <div className="flex h-full w-full items-center justify-center bg-brand/10">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-brand" />
               </div>
             }
           >
@@ -194,9 +194,9 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
             />
           </Suspense>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-1.5 bg-[#f0f0f0] px-3 text-center">
-            <MapPin className="h-6 w-6 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
-            <p className="text-[11px] font-medium leading-snug text-[#484848]">
+          <div className="flex h-full flex-col items-center justify-center gap-1.5 bg-line-soft px-3 text-center">
+            <MapPin className="h-6 w-6 text-ink-soft" strokeWidth={1.5} aria-hidden />
+            <p className="text-kicker font-medium leading-snug text-ink-muted">
               {locationLabel || 'Sin ubicación'}
             </p>
           </div>

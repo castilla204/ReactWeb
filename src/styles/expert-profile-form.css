@@ -367,10 +367,18 @@
 }
 
 .pf-progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 2px;
   background: hsl(var(--brand));
-  transition: width 0.25s ease;
+  transform-origin: left center;
+  transition: transform 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-progress-fill {
+    transition: none;
+  }
 }
 
 .pf-progress-fill--ok {
@@ -2092,20 +2100,20 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 2.5px solid #fff;
+  border: 2.5px solid hsl(var(--surface));
   box-shadow: 0 2px 8px hsl(220 30% 22% / 0.28);
   cursor: grab;
 }
 
 /* Canon tinta de los mapas (#171717): mismo marcador que checkout/ficha/alta. */
 .pf-map-marker--fixed {
-  background: #171717;
-  color: #fff;
+  background: hsl(var(--ink-strong));
+  color: hsl(var(--surface));
 }
 
 .pf-map-marker--mobile {
-  background: #171717;
-  color: #fff;
+  background: hsl(var(--ink-strong));
+  color: hsl(var(--surface));
 }
 
 .pf-map-canvas {
@@ -2139,7 +2147,7 @@
   height: 14px;
   border-radius: 50%;
   background: hsl(var(--brand));
-  border: 2px solid #fff;
+  border: 2px solid hsl(var(--surface));
   box-shadow: 0 2px 6px hsl(var(--brand) / 0.45);
   cursor: grab;
 }
@@ -2334,7 +2342,7 @@
   height: 14px;
   margin-top: -5px;
   border-radius: 50%;
-  background: #fff;
+  background: hsl(var(--surface));
   border: 2px solid hsl(var(--brand));
   box-sizing: border-box;
   box-shadow: 0 1px 3px hsl(220 25% 15% / 0.12);
@@ -2358,7 +2366,7 @@
   height: 14px;
   border: 2px solid hsl(var(--brand));
   border-radius: 50%;
-  background: #fff;
+  background: hsl(var(--surface));
   box-sizing: border-box;
   box-shadow: 0 1px 3px hsl(220 25% 15% / 0.12);
   cursor: grab;

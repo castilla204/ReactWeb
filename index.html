@@ -1,31 +1,31 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es-ES">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
 
     <!-- Security Meta Tags -->
-    <!-- ✅ X-Frame-Options se configura en headers HTTP (nginx.conf y vite.config.ts), no funciona como meta tag -->
-    <!-- ✅ Content-Security-Policy SÍ funciona como meta tag y se agrega como respaldo adicional -->
-    <!-- ⚠️ frame-ancestors NO funciona en meta tags, solo en headers HTTP (ya configurado en vite.config.ts y nginx.conf) -->
+    <!-- âœ… X-Frame-Options se configura en headers HTTP (nginx.conf y vite.config.ts), no funciona como meta tag -->
+    <!-- âœ… Content-Security-Policy SÃ funciona como meta tag y se agrega como respaldo adicional -->
+    <!-- âš ï¸ frame-ancestors NO funciona en meta tags, solo en headers HTTP (ya configurado en vite.config.ts y nginx.conf) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googleapis.com https://js.stripe.com https://api.mapbox.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com https://api.mapbox.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:7124 ws://localhost:7124 https://newapi-yn9v.onrender.com https://api.atrapo.io https://ipapi.co https://accounts.google.com https://api.stripe.com https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com https://*.basemaps.cartocdn.com https://*.cartocdn.com https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com wss://cckrnifvbrwuagzlsrbj.supabase.co https://cckrnifvbrwuagzlsrbj.supabase.co; frame-src 'self' https://accounts.google.com https://js.stripe.com;" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta http-equiv="Permissions-Policy" content="geolocation=(self), microphone=(), camera=()" />
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════
-         SEO — Tarjeta de SERP (lo que se ve en Google ANTES de hacer clic)
-         ═══════════════════════════════════════════════════════════════════════════ -->
-    <title>Antes de comprar, inspecciona · Peritos verificados | Inspecciono</title>
-    <meta name="description" content="¿Vas a comprar un coche, un piso o una moto de segunda mano? Un experto verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow." />
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         SEO â€” Tarjeta de SERP (lo que se ve en Google ANTES de hacer clic)
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <title>Antes de comprar, inspecciona Â· Peritos verificados | Inspecciono</title>
+    <meta name="description" content="Â¿Vas a comprar un coche, un piso o una moto de segunda mano? Un experto verificado lo revisa por ti y te entrega un informe. Pago seguro en escrow." />
     <meta name="author" content="Inspecciono" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <meta name="theme-color" content="#0066cc" />
 
     <!-- Canonical: SOLO la home queda hardcoded a /. Para subrutas, el componente
          <SEO> (src/components/SEO.tsx) MUTA este mismo tag en runtime (upsert imperativo;
-         React 19 hoisting NO deduplica contra tags estáticos y creaba canonicals dobles).
-         OJO: no añadir "<link rel='canonical' href='/foo'>" estático aquí — perjudica indexación. -->
+         React 19 hoisting NO deduplica contra tags estÃ¡ticos y creaba canonicals dobles).
+         OJO: no aÃ±adir "<link rel='canonical' href='/foo'>" estÃ¡tico aquÃ­ â€” perjudica indexaciÃ³n. -->
     <link rel="canonical" href="https://inspecciono.com/" />
 
     <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
@@ -34,12 +34,12 @@
     <meta property="og:site_name" content="Inspecciono" />
     <meta property="og:locale" content="es_ES" />
     <meta property="og:title" content="Antes de comprar, que un experto lo revise por ti" />
-    <meta property="og:description" content="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. Tú no pagas hasta dar el visto bueno." />
+    <meta property="og:description" content="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. TÃº no pagas hasta dar el visto bueno." />
     <meta property="og:image" content="https://inspecciono.com/og-image.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/jpeg" />
-    <meta property="og:image:alt" content="Inspecciono — inspecciones y peritajes pre-compra con expertos verificados en España" />
+    <meta property="og:image:alt" content="Inspecciono â€” inspecciones y peritajes pre-compra con expertos verificados en EspaÃ±a" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -47,11 +47,11 @@
     <meta name="twitter:title" content="Antes de comprar, que un experto lo revise por ti" />
     <meta name="twitter:description" content="Coches, pisos, motos. Un perito verificado lo inspecciona y te entrega un informe. Pago retenido hasta tu visto bueno." />
     <meta name="twitter:image" content="https://inspecciono.com/og-image.jpg" />
-    <meta name="twitter:image:alt" content="Inspecciono — inspecciones y peritajes pre-compra" />
+    <meta name="twitter:image:alt" content="Inspecciono â€” inspecciones y peritajes pre-compra" />
 
-    <!-- ═══════════════════════════════════════════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          JSON-LD Structured Data (rich snippets en Google)
-         ═══════════════════════════════════════════════════════════════════════════ -->
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 
     <!-- Organization: identifica la marca a Google. Logo + dominio + contacto. -->
     <script type="application/ld+json">
@@ -62,8 +62,8 @@
       "legalName": "Inspecciono",
       "url": "https://inspecciono.com",
       "logo": "https://inspecciono.com/favicon.png",
-      "description": "Marketplace español de servicios de inspección y peritaje pre-compra: coches, inmuebles, motos, maquinaria y más, realizados por expertos verificados con pago en escrow.",
-      "areaServed": { "@type": "Country", "name": "España" },
+      "description": "Marketplace espaÃ±ol de servicios de inspecciÃ³n y peritaje pre-compra: coches, inmuebles, motos, maquinaria y mÃ¡s, realizados por expertos verificados con pago en escrow.",
+      "areaServed": { "@type": "Country", "name": "EspaÃ±a" },
       "contactPoint": [{
         "@type": "ContactPoint",
         "contactType": "customer support",
@@ -74,7 +74,7 @@
     }
     </script>
 
-    <!-- WebSite: name + url. (Sin SearchAction porque /buscar?q= aún no existe. Añadirlo cuando exista.) -->
+    <!-- WebSite: name + url. (Sin SearchAction porque /buscar?q= aÃºn no existe. AÃ±adirlo cuando exista.) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -85,40 +85,40 @@
     }
     </script>
 
-    <!-- Service + OfferCatalog: describe el catálogo de inspecciones a Google. -->
+    <!-- Service + OfferCatalog: describe el catÃ¡logo de inspecciones a Google. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Service",
-      "serviceType": "Inspección y peritaje pre-compra",
+      "serviceType": "InspecciÃ³n y peritaje pre-compra",
       "provider": {
         "@type": "Organization",
         "name": "Inspecciono",
         "url": "https://inspecciono.com"
       },
-      "areaServed": { "@type": "Country", "name": "España" },
+      "areaServed": { "@type": "Country", "name": "EspaÃ±a" },
       "audience": {
         "@type": "Audience",
         "audienceType": "Compradores de productos de segunda mano"
       },
       "hasOfferCatalog": {
         "@type": "OfferCatalog",
-        "name": "Categorías de inspección",
+        "name": "CategorÃ­as de inspecciÃ³n",
         "itemListElement": [
-          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de coche de segunda mano" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "InspecciÃ³n de coche de segunda mano" } },
           { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peritaje de piso antes de comprar" } },
-          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de moto de segunda mano" } },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "InspecciÃ³n de moto de segunda mano" } },
           { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Peritaje de maquinaria de segunda mano" } },
-          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Inspección de bici eléctrica de segunda mano" } }
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "InspecciÃ³n de bici elÃ©ctrica de segunda mano" } }
         ]
       }
     }
     </script>
 
-    <!-- FAQPage JSON-LD: ahora se inyecta dinámicamente desde HomePage.tsx (5 preguntas) y
-         FAQPage.tsx (las 41) vía componente <SEO>, no aquí. Antes este bloque emitía las
-         mismas 5 preguntas en TODAS las rutas — error: Google penaliza JSON-LD que no
-         coincide con el contenido visible de la página. -->
+    <!-- FAQPage JSON-LD: ahora se inyecta dinÃ¡micamente desde HomePage.tsx (5 preguntas) y
+         FAQPage.tsx (las 41) vÃ­a componente <SEO>, no aquÃ­. Antes este bloque emitÃ­a las
+         mismas 5 preguntas en TODAS las rutas â€” error: Google penaliza JSON-LD que no
+         coincide con el contenido visible de la pÃ¡gina. -->
 
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png" />
@@ -126,52 +126,50 @@
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- ⚡ Preconnects auditados: solo los CRÍTICOS de la home van como preconnect
+    <!-- âš¡ Preconnects auditados: solo los CRÃTICOS de la home van como preconnect
          (Chrome procesa preconnects en lotes de ~3, los extras compiten).
-         Manrope ahora se auto-hospeda (src/index.css) → fonts.googleapis y
+         Manrope ahora se auto-hospeda (src/index.css) â†’ fonts.googleapis y
          fonts.gstatic ya no se usan.
          accounts.google.com / api.mapbox.com / js.stripe.com solo se necesitan
-         en flujos concretos (login, mapas mapbox, checkout) — quedan en
+         en flujos concretos (login, mapas mapbox, checkout) â€” quedan en
          `dns-prefetch` y se promueven a preconnect desde la ruta que los usa. -->
 
-    <!-- ✅ API Backend: preconnect ahorra DNS+TCP+TLS (~150-280 ms) en el primer fetch del mapa -->
+    <!-- âœ… API Backend: preconnect ahorra DNS+TCP+TLS (~150-280 ms) en el primer fetch del mapa -->
     <link rel="preconnect" href="https://newapi-yn9v.onrender.com" crossorigin />
     <link rel="dns-prefetch" href="https://newapi-yn9v.onrender.com" />
     <link rel="preconnect" href="https://api.atrapo.io" crossorigin />
     <link rel="dns-prefetch" href="https://api.atrapo.io" />
 
-    <!-- ✅ CartoCDN: SINGLE host. Con HTTP/2 multiplexing + connection coalescing
+    <!-- âœ… CartoCDN: SINGLE host. Con HTTP/2 multiplexing + connection coalescing
          de Cloudflare, repartir entre a/b/c/d subdominios obligaba a 3 DNS+TLS
          extra sin ganar paralelismo real. MapLibre multiplexa decenas de tiles
-         en una sola conexión H2. Refs en src/utils/mapTileUrls.ts. -->
+         en una sola conexiÃ³n H2. Refs en src/utils/mapTileUrls.ts. -->
     <link rel="dns-prefetch" href="https://a.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
-    <!-- ⚡ api.mapbox.com solo se necesita en rutas con Mapbox (chat / citas /
+    <!-- âš¡ api.mapbox.com solo se necesita en rutas con Mapbox (chat / citas /
          perfil-experto), NO en la home (la home usa MapLibre con Carto). El
-         preconnect se inyecta dinámicamente desde esas rutas para no robar
+         preconnect se inyecta dinÃ¡micamente desde esas rutas para no robar
          el cupo de pre-resolvers en la home. -->
     <link rel="dns-prefetch" href="https://api.mapbox.com" />
 
     <link rel="prefetch" href="/geo/ne_110m_land.geojson" as="fetch" crossorigin />
 
-    <!-- Hero LCP: imagen importada vía Vite (src/media/imagenbanner.png) con fetchPriority en el componente. -->
+    <!-- Hero LCP: imagen importada vÃ­a Vite (src/media/imagenbanner.png) con fetchPriority en el componente. -->
 
-    <!-- ✅ DNS Prefetch para hosts terciarios (promovidos a preconnect bajo demanda) -->
+    <!-- âœ… DNS Prefetch para hosts terciarios (promovidos a preconnect bajo demanda) -->
     <link rel="dns-prefetch" href="https://accounts.google.com" />
     <link rel="dns-prefetch" href="https://js.stripe.com" />
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- ⚡ Manrope auto-hospedada vía @fontsource-variable/manrope (src/index.css).
-         Se eliminó el <link> a fonts.googleapis.com — antes costaba 2 RTTs
+    <!-- âš¡ Manrope auto-hospedada vÃ­a @fontsource-variable/manrope (src/index.css).
+         Se eliminÃ³ el <link> a fonts.googleapis.com â€” antes costaba 2 RTTs
          (CSS de Google + WOFF2 en gstatic). Ahora un solo WOFF2 servido desde
-         el mismo dominio que el HTML, con conexión ya caliente. -->
+         el mismo dominio que el HTML, con conexiÃ³n ya caliente. -->
 
-    <!-- ✅ Optimizaciones para webview: reducir layout shifts -->
+    <!-- âœ… Optimizaciones para webview: reducir layout shifts -->
     <style>
-      /* Critical CSS inline para evitar FOUC */
-      body { margin: 0; padding: 0; }
+      body { margin: 0; padding: 0; background: #fff; }
       #root { min-height: 100vh; }
-      /* Optimizar rendering */
       * { box-sizing: border-box; }
     </style>
 </head>

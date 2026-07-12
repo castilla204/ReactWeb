@@ -61,11 +61,11 @@ export default function InspectionTemplateEditor({ catalog, config, onChange }: 
   };
 
   // Chip base: una sola "forma" de chip en todo el editor (consistencia).
-  const chipBase = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none transition-colors';
+  const chipBase = 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-caption font-medium leading-none transition-colors';
 
   return (
     <div className="px-4 py-3 sm:px-5 sm:py-4">
-      <p className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">
+      <p className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption leading-snug text-[hsl(var(--ep-muted))]">
         Si no quitas nada se entrega el informe completo. Los puntos con
         <Lock className="h-3 w-3 text-[hsl(var(--ep-muted))]" aria-hidden />
         son obligatorios.
@@ -81,10 +81,10 @@ export default function InspectionTemplateEditor({ catalog, config, onChange }: 
             <section key={sec.id} className="py-3.5 first:pt-0">
               <header className="mb-2.5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <h4 className={`truncate text-[13px] font-semibold text-[hsl(var(--ep-ink))] ${off ? 'opacity-50' : ''}`}>
+                  <h4 className={`truncate text-meta font-semibold text-[hsl(var(--ep-ink))] ${off ? 'opacity-50' : ''}`}>
                     {sec.id} · {sec.title}
                   </h4>
-                  <p className="mt-0.5 text-[11px] text-[hsl(var(--ep-muted))]">
+                  <p className="mt-0.5 text-kicker text-[hsl(var(--ep-muted))]">
                     {off ? 'Sección desactivada' : `${sec.points.length} puntos · ${active} activos`}
                   </p>
                 </div>
@@ -160,12 +160,12 @@ export default function InspectionTemplateEditor({ catalog, config, onChange }: 
                         }}
                         onBlur={() => { if (!draft.trim()) setAdding(null); }}
                         placeholder="Nueva pregunta…"
-                        className="h-[30px] rounded-full border border-[hsl(var(--ep-border))] bg-white px-3 text-[12px] text-[hsl(var(--ep-ink))] outline-none focus:border-[hsl(var(--brand))]"
+                        className="h-[30px] rounded-full border border-[hsl(var(--ep-border))] bg-white px-3 text-caption text-[hsl(var(--ep-ink))] outline-none focus:border-[hsl(var(--brand))]"
                       />
                       <button
                         type="button"
                         onClick={() => addCustom(sec.id)}
-                        className="h-[30px] rounded-full bg-[hsl(var(--brand))] px-3 text-[12px] font-semibold text-white hover:bg-[hsl(var(--brand-hover))]"
+                        className="h-[30px] rounded-full bg-[hsl(var(--brand))] px-3 text-caption font-semibold text-white hover:bg-[hsl(var(--brand-hover))]"
                       >
                         Añadir
                       </button>
@@ -186,7 +186,7 @@ export default function InspectionTemplateEditor({ catalog, config, onChange }: 
         })}
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-[hsl(var(--ep-border))] pt-3 text-[13px]">
+      <div className="mt-4 flex items-center justify-between border-t border-[hsl(var(--ep-border))] pt-3 text-meta">
         <span className="font-medium text-[hsl(var(--ep-ink))]">
           {countActivePoints(resolved)} de {totalPoints} puntos · {resolved.sections.length} de {catalog.sections.length} secciones
         </span>

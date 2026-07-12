@@ -25,6 +25,7 @@ import {
   pickVisibleSparkleHubIds,
   sparkleMarkerScale,
 } from './Map/expertSparkleVisibility';
+import { MAP_LITERAL } from '../constants/designTokens';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -34,17 +35,15 @@ maplibregl.setWorkerUrl(maplibreWorkerUrl);
  */
 
 /** Paleta clara — agua suave, costas en azul marca (alineada con Carto Voyager).
- *  ⚠️ MapLibre `paint.line-color` exige un color CSS resuelto (hex/rgb/hsl con valores
- *  literales). NO acepta `hsl(var(--brand))` — la `var()` se queda como string opaco.
- *  Por eso este es el único punto del frontend donde se conserva el hex de marca
- *  hardcoded. Si cambia `--brand`, actualizar también este literal. */
+ *  ⚠️ MapLibre `paint.line-color` exige color CSS resuelto (hex/rgb/hsl literal).
+ *  Valores en MAP_LITERAL (designTokens.ts), sincronizados con --brand y --map-*. */
 const MAP_THEME = {
-  sky: '#dce9f2',
-  land: '#ebe8e3',
-  brand: '#0066CC',
-  coastLine: '#0066CC',
-  coastHalo: '#ffffff',
-  border: '#d1c4c6',
+  sky: MAP_LITERAL.sky,
+  land: MAP_LITERAL.land,
+  brand: MAP_LITERAL.brand,
+  coastLine: MAP_LITERAL.brand,
+  coastHalo: MAP_LITERAL.coastHalo,
+  border: MAP_LITERAL.border,
 } as const;
 
 /** Paint VIVO específico para ExpertsAreaMap (homepage/hero/globe): saturación más
@@ -303,13 +302,13 @@ function markerHtml(
     : '';
 
   const tooltip = hovered
-    ? `<div style="position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#fff;color:#222;font-size:11px;font-weight:600;padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb;box-shadow:0 6px 16px rgba(15,23,42,0.12);white-space:nowrap;pointer-events:none">${city.name} · ${city.count} experto${city.count === 1 ? '' : 's'}</div>`
+    ? `<div style="position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:${MAP_LITERAL.coastHalo};color:${MAP_LITERAL.inkStrong};font-size:11px;font-weight:600;padding:4px 8px;border-radius:8px;border:1px solid hsl(0 0% 91%);box-shadow:0 6px 16px rgba(15,23,42,0.12);white-space:nowrap;pointer-events:none">${city.name} · ${city.count} experto${city.count === 1 ? '' : 's'}</div>`
     : '';
 
   return `
     <div style="position:relative;width:${size}px;height:${size}px;transform:scale(${scale});transition:transform 150ms ease;cursor:${clickable ? 'pointer' : 'default'}">
       ${ring}
-      <div style="position:absolute;inset:0;border-radius:50%;background:#171717;border:2px solid #fff;box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
+      <div style="position:absolute;inset:0;border-radius:50%;background:${MAP_LITERAL.inkStrong};border:2px solid ${MAP_LITERAL.coastHalo};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;color:${MAP_LITERAL.coastHalo};font-weight:700;font-size:12px;font-family:system-ui,sans-serif">${city.count}</div>
       ${tooltip}
     </div>
   `;
@@ -881,7 +880,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative h-full w-full overflow-hidden bg-[#dce9f2] ${className}`.trim()}
+      className={`relative h-full w-full overflow-hidden bg-map-sky ${className}`.trim()}
     >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
 
@@ -895,24 +894,24 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       />
 
       {mapLoadFailed && (
-        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-[#e8f0f7] pointer-events-none">
-          <p className="text-xs text-[#64748b] px-4 text-center">
+        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-map-sky-muted pointer-events-none">
+          <p className="text-xs text-ink-muted px-4 text-center">
             El mapa no pudo cargarse. Recarga la página o comprueba tu conexión.
           </p>
         </div>
       )}
 
       {detectedCountryCode && introComplete && !isMobilePeek && (
-        <div className="absolute bottom-3 left-3 z-[500] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] font-medium text-[#475569] shadow-sm pointer-events-none select-none">
+        <div className="absolute bottom-3 left-3 z-[500] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/90 border border-line text-kicker font-medium text-ink-muted shadow-sm pointer-events-none select-none">
               <MapPin size={12} className="text-brand" />
           Tu zona
         </div>
       )}
 
       {!hideCornerStats && (
-        <div className="absolute bottom-3 right-3 z-[500] px-2.5 py-1 rounded-full bg-white/90 border border-[#e5e7eb] text-[11px] text-[#6b7280] shadow-sm pointer-events-none select-none">
-          <span className="font-semibold text-[#475569]">{CITY_EXPERTS.length} ciudades</span>
-          <span className="mx-1.5 text-[#cbd5e1]">·</span>
+        <div className="absolute bottom-3 right-3 z-[500] px-2.5 py-1 rounded-full bg-white/90 border border-line text-kicker text-ink-muted shadow-sm pointer-events-none select-none">
+          <span className="font-semibold text-ink-muted">{CITY_EXPERTS.length} ciudades</span>
+          <span className="mx-1.5 text-ink-soft">·</span>
           <span>{totalExperts} expertos</span>
         </div>
       )}
@@ -928,14 +927,14 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         .maplibregl-ctrl-attribution {
           font-size: 9px !important;
           background: rgba(255,255,255,0.82) !important;
-          color: #94a3b8 !important;
+          color: hsl(0 0% 65%) !important;
         }
-        .maplibregl-ctrl-attribution a { color: #64748b !important; }
+        .maplibregl-ctrl-attribution a { color: hsl(0 0% 42%) !important; }
         .maplibregl-ctrl-group {
           border: none !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
         }
-        .maplibregl-ctrl-group button { color: #334155 !important; }
+        .maplibregl-ctrl-group button { color: hsl(0 0% 13%) !important; }
         .maplibregl-marker-covered {
           visibility: hidden !important;
           pointer-events: none !important;

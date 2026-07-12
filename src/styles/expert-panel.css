@@ -646,7 +646,7 @@
     min-height: 76px;
     border-radius: 0;
     border: none;
-    border-right: 1px solid hsl(var(--ep-border) / 0.45);
+    box-shadow: inset -1px 0 0 hsl(var(--ep-border) / 0.45);
     background: hsl(220 14% 96%);
     font-size: 0.6875rem;
   }
@@ -891,7 +891,7 @@
 .profile-status-ring-check {
   width: 22px;
   height: 22px;
-  animation: profile-ring-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: profile-ring-pop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes profile-ring-pop {
@@ -1359,10 +1359,18 @@
 }
 
 .expert-setup-progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 2px;
   background: hsl(var(--brand));
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expert-setup-progress-fill {
+    transition: none;
+  }
 }
 
 .expert-setup-header-title {
@@ -3223,7 +3231,11 @@
   position: fixed;
   inset: 0;
   z-index: 50;
+  margin: 0;
+  padding: 0;
+  border: 0;
   background: rgba(0, 0, 0, 0.35);
+  cursor: default;
 }
 
 @media (max-width: 1023px) {
@@ -4370,7 +4382,7 @@
   border: none;
   border-radius: 6px;
   background: hsl(0 0% 0% / 0.58);
-  color: #fff;
+  color: hsl(var(--surface));
   cursor: pointer;
   transition: background 0.15s ease, opacity 0.15s ease;
 }
@@ -6063,7 +6075,7 @@
   gap: 6px;
   border-radius: 12px;
   border: 1px solid hsl(var(--ep-border));
-  background: #fff;
+  background: hsl(var(--surface));
   padding: 8px 12px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -6084,7 +6096,7 @@
   padding: 8px 20px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #fff;
+  color: hsl(var(--surface));
   box-shadow: 0 3px 12px hsl(var(--brand) / 0.45);
   transition: opacity 0.15s;
 }

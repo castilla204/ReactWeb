@@ -69,9 +69,9 @@ export function ProfileCompletionCard({ profile, onEdit }: { profile: ProfileLik
                 {/* Anillo de progreso */}
                 <div className="relative shrink-0 w-14 h-14">
                     <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-                        <circle cx="18" cy="18" r={R} fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                        <circle cx="18" cy="18" r={R} fill="none" stroke="hsl(var(--line-soft))" strokeWidth="3" />
                         <circle cx="18" cy="18" r={R} fill="none"
-                            stroke={allRequiredDone ? '#3b82f6' : '#f59e0b'} strokeWidth="3" strokeLinecap="round"
+                            stroke={allRequiredDone ? 'hsl(var(--brand))' : 'hsl(var(--warning))'} strokeWidth="3" strokeLinecap="round"
                             strokeDasharray={`${(pct / 100) * C} ${C}`} className="transition-all duration-500" />
                     </svg>
                     <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-700">{pct}%</span>
@@ -99,7 +99,7 @@ export function ProfileCompletionCard({ profile, onEdit }: { profile: ProfileLik
                             {item.label}
                         </span>
                         {item.required && !item.done && (
-                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">requerido</span>
+                            <span className="text-badge font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">requerido</span>
                         )}
                     </li>
                 ))}

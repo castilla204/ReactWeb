@@ -8,7 +8,7 @@ const cards = [
   { to: '/admin/config', icon: Settings, title: 'Configuración', desc: 'Porcentajes, estados y mapeos', tone: 'text-[hsl(var(--ap-brand))]' },
   { to: '/admin/notifications', icon: Bell, title: 'Notificaciones', desc: 'Gestiona notificaciones del sistema', tone: 'text-[hsl(var(--ap-warning))]' },
   { to: '/admin/disputes', icon: AlertTriangle, title: 'Disputas', desc: 'Revisa y resuelve disputas', tone: 'text-[hsl(var(--ap-error))]' },
-  { to: '/admin/hangfire', icon: Activity, title: 'Hangfire', desc: 'Monitoreo de trabajos en segundo plano', tone: 'text-[hsl(var(--ap-success))]' },
+  { to: '/admin/jobs', icon: Activity, title: 'Hangfire', desc: 'Monitoreo de trabajos en segundo plano', tone: 'text-[hsl(var(--ap-success))]' },
 ];
 
 const AdminDashboard: React.FC = () => {

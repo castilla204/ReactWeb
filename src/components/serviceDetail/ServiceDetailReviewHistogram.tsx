@@ -16,6 +16,8 @@ interface ServiceDetailReviewHistogramProps {
   emphasis?: 'default' | 'prominent';
   /** Barras en carbón en lugar de color de marca (drawer sobrio). */
   neutral?: boolean;
+  /** soft = barras tenues (pestaña móvil); solid = contraste pleno (drawer/desktop). */
+  barTone?: 'soft' | 'solid';
 }
 
 export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogramProps> = ({
@@ -26,12 +28,14 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
   showPercent = true,
   emphasis = 'default',
   neutral = false,
+  barTone = 'solid',
 }) => {
   const resolvedVariant: ReviewHistogramVariant =
     variant ?? (compact ? 'compact' : 'default');
   const isMobile = resolvedVariant === 'mobile';
   const isCompact = resolvedVariant === 'compact';
   const isProminent = isMobile && emphasis === 'prominent';
+  const isSoftBar = barTone === 'soft';
   const maxCount = Math.max(...distribution.map((b) => b.count), 1);
   const hidePercent = isMobile && !showPercent;
 
@@ -69,35 +73,43 @@ export const ServiceDetailReviewHistogram: React.FC<ServiceDetailReviewHistogram
             <span
               className={`tabular-nums ${
                 isMobile
-                  ? `${isProminent ? 'text-xs' : 'text-[11px]'} font-medium leading-none text-[#717171]`
-                  : `flex items-center gap-0.5 text-[#6a6a6a] ${isCompact ? 'text-[10px]' : 'text-xs'}`
+                  ? `${isProminent ? 'text-xs' : 'text-kicker'} font-medium leading-none text-ink-muted`
+                  : `flex items-center gap-0.5 text-ink-muted ${isCompact ? 'text-badge' : 'text-xs'}`
               }`}
             >
               <span className="sr-only">{star} estrellas</span>
               <span aria-hidden>{star}</span>
               {!isMobile ? (
                 <Star
-                  className={`fill-[#1c1c1c] text-[#1c1c1c] ${isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
+                  className={`fill-ink-strong text-ink-strong ${isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`}
                   aria-hidden
                 />
               ) : null}
             </span>
             <div
-              className={`overflow-hidden rounded-full bg-[#ececec] ${
-                isProminent ? 'h-2.5' : isMobile ? 'h-1.5' : isCompact ? 'h-1' : 'h-1.5'
+              className={`overflow-hidden bg-line-soft ${
+                isSoftBar
+                  ? 'h-1 rounded-sm'
+                  : isProminent
+                    ? 'h-2.5 rounded-full'
+                    : isMobile
+                      ? 'h-1.5 rounded-full'
+                      : isCompact
+                        ? 'h-1 rounded-full'
+                        : 'h-1.5 rounded-full'
               } ${isMobile ? 'self-center' : ''}`}
             >
               <div
-                className={`h-full rounded-full transition-[width] duration-300 ${
-                  count > 0 ? (neutral ? 'bg-[#222222]' : 'bg-[#1c1c1c]') : 'bg-transparent'
-                }`}
+                className={`h-full transition-[width] duration-300 ${
+                  isSoftBar ? 'rounded-sm' : 'rounded-full'
+                } ${count > 0 ? (isSoftBar ? 'bg-ink/20' : 'bg-ink-strong') : 'bg-transparent'}`}
                 style={{ width: `${barWidth}%` }}
               />
             </div>
             {!hidePercent ? (
               <span
-                className={`text-right tabular-nums text-[#717171] ${
-                  isMobile ? 'text-[11px]' : isCompact ? 'text-[10px]' : 'text-[11px]'
+                className={`text-right tabular-nums text-ink-muted ${
+                  isMobile ? 'text-kicker' : isCompact ? 'text-badge' : 'text-kicker'
                 }`}
               >
                 {percent > 0 ? `${percent}%` : '—'}

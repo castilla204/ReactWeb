@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Check, Maximize2, X } from 'lucide-react';
-import AppointmentMap from './AppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from './map/LazyAppointmentMap';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { cn } from '../lib/utils';
 import {
@@ -52,16 +52,16 @@ interface Props {
 }
 
 const FIELD_INPUT_CLS =
-    'w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#1c1c1c] placeholder:text-[#b0b0b0] transition-colors focus:border-[#c5c9d0] focus:outline-none focus:ring-2 focus:ring-[#1c1c1c]/8';
+    'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink-strong placeholder:text-ink-soft transition-colors focus:border-line focus:outline-none focus:ring-2 focus:ring-ink-strong/8';
 
 const DRAWER_FIELD_INPUT_CLS =
-    'h-12 w-full rounded-2xl border border-transparent bg-[#f3f4f6] px-4 text-[15px] text-[#1c1c1c] placeholder:text-[#9ca3af] transition-all focus:border-brand/20 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15';
+    'h-12 w-full rounded-2xl border border-transparent bg-surface-tinted px-4 text-lead text-ink-strong placeholder:text-ink-soft transition-all focus:border-brand/20 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 const DRAWER_MOBILE_FIELD_INPUT_CLS =
-    'h-11 w-full rounded-full bg-[#f4f5f7] px-4 text-[15px] text-[#1c1c1c] outline-none placeholder:text-[#9aa0aa] transition-colors focus:bg-white focus:ring-2 focus:ring-brand/20';
+    'h-11 w-full rounded-full bg-surface-tinted px-4 text-lead text-ink-strong outline-none placeholder:text-ink-soft transition-colors focus:bg-white focus:ring-2 focus:ring-brand/20';
 
 const DESKTOP_SIDEBAR_FIELD_INPUT_CLS =
-    'h-9 w-full rounded-lg border border-[#e5e7eb] bg-white px-2.5 text-[13px] text-[#1c1c1c] placeholder:text-[#b0b0b0] transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15';
+    'h-9 w-full rounded-lg border border-line bg-white px-2.5 text-meta text-ink-strong placeholder:text-ink-soft transition-colors focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15';
 
 interface LocationDetailsFieldsProps {
     picked: { address: string } | null;
@@ -92,18 +92,18 @@ function LocationDetailsFields({
     doorInputRef,
 }: LocationDetailsFieldsProps) {
     const labelCls = drawerCompact
-        ? 'mb-1.5 block text-[12px] font-medium text-[#64748b]'
+        ? 'mb-1.5 block text-caption font-medium text-ink-muted'
         : drawer
-          ? 'mb-2 block text-[13px] font-medium leading-snug text-[#374151]'
+          ? 'mb-2 block text-meta font-medium leading-snug text-ink'
           : minimal
-          ? 'mb-0.5 block text-[10px] font-medium uppercase tracking-wide text-[#999]'
-          : 'mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#888]';
+          ? 'mb-0.5 block text-badge font-medium uppercase tracking-wide text-ink-soft'
+          : 'mb-1 block text-kicker font-medium uppercase tracking-wide text-ink-muted';
 
     const optionalCls = drawerCompact
-        ? 'font-normal text-[#b0b0b0]'
+        ? 'font-normal text-ink-soft'
         : drawer
-          ? 'shrink-0 text-[11px] font-normal text-[#9ca3af]'
-          : 'ml-1 normal-case tracking-normal text-[#bbb]';
+          ? 'shrink-0 text-kicker font-normal text-ink-soft'
+          : 'ml-1 normal-case tracking-normal text-ink-soft';
 
     const inputCls = drawerDesktop
         ? DESKTOP_SIDEBAR_FIELD_INPUT_CLS
@@ -112,19 +112,19 @@ function LocationDetailsFields({
           : drawer
             ? DRAWER_FIELD_INPUT_CLS
             : minimal
-            ? 'w-full rounded-md border border-[#e8e8e8] bg-white px-2 py-1.5 text-xs text-[#1c1c1c] placeholder:text-[#c4c4c4] focus:border-[#c5c9d0] focus:outline-none focus:ring-1 focus:ring-[#1c1c1c]/8'
+            ? 'w-full rounded-md border border-line bg-white px-2 py-1.5 text-xs text-ink-strong placeholder:text-ink-soft focus:border-line focus:outline-none focus:ring-1 focus:ring-ink-strong/8'
             : FIELD_INPUT_CLS;
 
     if (drawerDesktop) {
         return (
             <div className="space-y-2.5">
                 {picked ? (
-                    <p className="flex items-start gap-1.5 text-[12px] font-medium leading-snug text-[#1c1c1c]">
+                    <p className="flex items-start gap-1.5 text-caption font-medium leading-snug text-ink-strong">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
                         <span className="line-clamp-1">{picked.address}</span>
                     </p>
                 ) : (
-                    <p className="text-[12px] font-medium leading-snug text-[#64748b]">
+                    <p className="text-caption font-medium leading-snug text-ink-muted">
                         Marca un punto en el mapa o búscalo arriba
                     </p>
                 )}
@@ -132,10 +132,10 @@ function LocationDetailsFields({
                     <div>
                         <label
                             htmlFor="checkout-door-sidebar"
-                            className="mb-1 block text-[11px] font-medium text-[#64748b]"
+                            className="mb-1 block text-kicker font-medium text-ink-muted"
                         >
                             Puerta / garaje{' '}
-                            <span className="font-normal text-[#b0b0b0]">(opc.)</span>
+                            <span className="font-normal text-ink-soft">(opc.)</span>
                         </label>
                         <input
                             ref={doorInputRef}
@@ -151,10 +151,10 @@ function LocationDetailsFields({
                     <div>
                         <label
                             htmlFor="checkout-details-sidebar"
-                            className="mb-1 block text-[11px] font-medium text-[#64748b]"
+                            className="mb-1 block text-kicker font-medium text-ink-muted"
                         >
                             Indicaciones{' '}
-                            <span className="font-normal text-[#b0b0b0]">(opc.)</span>
+                            <span className="font-normal text-ink-soft">(opc.)</span>
                         </label>
                         <input
                             id="checkout-details-sidebar"
@@ -166,7 +166,7 @@ function LocationDetailsFields({
                         />
                     </div>
                 </div>
-                <p className="text-[10px] leading-snug text-[#9ca3af]">
+                <p className="text-badge leading-snug text-ink-soft">
                     Solo el experto que contrates verá la dirección exacta.
                 </p>
             </div>
@@ -177,9 +177,9 @@ function LocationDetailsFields({
         return (
             <div className={cn('space-y-0', drawerCompact && 'pb-1')}>
                 {picked && !drawerCompact ? (
-                    <div className="border-b border-[#f0f0f0] pb-4">
+                    <div className="border-b border-line-soft pb-4">
                         <p className={SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS}>Dirección</p>
-                        <p className="mt-1.5 text-[13px] font-medium leading-snug text-[#1c1c1c]">
+                        <p className="mt-1.5 text-meta font-medium leading-snug text-ink-strong">
                             {picked.address}
                         </p>
                     </div>
@@ -226,8 +226,8 @@ function LocationDetailsFields({
                 <p
                     className={cn(
                         drawerCompact
-                            ? 'mt-3 text-[11px] leading-relaxed text-[#9ca3af]'
-                            : cn('border-t border-[#f5f5f5] pt-3.5', SD_CHECKOUT_MOBILE_META_CLASS),
+                            ? 'mt-3 text-kicker leading-relaxed text-ink-soft'
+                            : cn('border-t border-line-soft pt-3.5', SD_CHECKOUT_MOBILE_META_CLASS),
                     )}
                 >
                     Solo el experto que contrates verá la dirección exacta.
@@ -241,18 +241,18 @@ function LocationDetailsFields({
             {picked ? (
                 <div
                     className={cn(
-                        'flex items-start gap-1.5 rounded-md border border-[#ececec] px-2 py-1.5',
-                        minimal ? 'mb-2 bg-[#fafafa]' : compact ? 'mb-2.5 bg-white' : 'mb-3 bg-white',
+                        'flex items-start gap-1.5 rounded-md border border-line px-2 py-1.5',
+                        minimal ? 'mb-2 bg-surface-tinted' : compact ? 'mb-2.5 bg-white' : 'mb-3 bg-white',
                     )}
                 >
                     <Check
-                        className={cn('shrink-0 text-[#1c1c1c]', minimal ? 'mt-px h-3 w-3' : 'mt-0.5 h-4 w-4')}
+                        className={cn('shrink-0 text-ink-strong', minimal ? 'mt-px h-3 w-3' : 'mt-0.5 h-4 w-4')}
                         aria-hidden
                     />
                     <p
                         className={cn(
-                            'font-medium leading-snug text-[#333]',
-                            minimal ? 'line-clamp-2 text-[11px]' : 'text-sm',
+                            'font-medium leading-snug text-ink',
+                            minimal ? 'line-clamp-2 text-kicker' : 'text-sm',
                         )}
                     >
                         {picked.address}
@@ -261,7 +261,7 @@ function LocationDetailsFields({
             ) : minimal ? null : (
                 <p
                     className={cn(
-                        'leading-relaxed text-[#888]',
+                        'leading-relaxed text-ink-muted',
                         compact ? 'mb-3 text-xs' : 'mb-3.5 text-xs',
                     )}
                 >
@@ -305,7 +305,7 @@ function LocationDetailsFields({
             </div>
 
             {!minimal ? (
-                <p className={cn('leading-relaxed text-[#aaa]', compact ? 'mt-2 text-[10px]' : 'mt-3 text-[10px]')}>
+                <p className={cn('leading-relaxed text-ink-soft', compact ? 'mt-2 text-badge' : 'mt-3 text-badge')}>
                     Solo el experto verá la dirección exacta.
                 </p>
             ) : null}
@@ -347,7 +347,7 @@ function LocationMapDrawer({
                 )}
                 aria-live="polite"
             >
-                <div className="overflow-hidden rounded-xl border border-[#eceef2] bg-white/98 px-3.5 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.1)] backdrop-blur-sm">
+                <div className="overflow-hidden rounded-xl border border-line bg-white/98 px-3.5 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.1)] backdrop-blur-sm">
                     <LocationDetailsFields
                         picked={picked}
                         doorNumber={doorNumber}
@@ -570,10 +570,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         return (
             <div className={cn('overflow-hidden', SD_CHECKOUT_DESKTOP_CARD_CLASS)}>
                 <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
-                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-ink-strong">
                         Ubicación del taller
                     </h3>
-                    <p className="mt-0.5 text-[11px] text-[#6a6a6a]">
+                    <p className="mt-0.5 text-kicker text-ink-muted">
                         La inspección es en el punto fijo del experto.
                     </p>
                 </div>
@@ -741,7 +741,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         type="button"
                         onClick={() => setExpanded(true)}
                         className={cn(
-                            'absolute right-4 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#475569] shadow-sm backdrop-blur-sm transition-[transform,bottom,top] duration-300 active:scale-95',
+                            'absolute right-4 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink-muted shadow-sm backdrop-blur-sm transition-[transform,bottom,top] duration-300 active:scale-95',
                             externalForm ? 'bottom-4 top-auto' : 'bottom-[8.75rem] top-auto',
                         )}
                         aria-label="Ampliar mapa a pantalla completa"
@@ -771,10 +771,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         <DialogDescription className="sr-only">
                             Mapa interactivo para marcar dónde será la inspección
                         </DialogDescription>
-                        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f0f0f0] px-4 py-3">
+                        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4 py-3">
                             <div className="min-w-0">
-                                <p className="text-sm font-semibold text-[#1c1c1c]">Ubicación de la inspección</p>
-                                <p className="truncate text-xs text-[#6a6a6a]">
+                                <p className="text-sm font-semibold text-ink-strong">Ubicación de la inspección</p>
+                                <p className="truncate text-xs text-ink-muted">
                                     {referenceMode
                                         ? 'Zona de cobertura del experto'
                                         : picked?.address ?? 'Marca un punto dentro del área del experto'}
@@ -783,7 +783,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             <button
                                 type="button"
                                 onClick={() => setExpanded(false)}
-                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#333]"
+                                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-white text-ink"
                                 aria-label="Cerrar mapa ampliado"
                             >
                                 <X className="h-4 w-4" />
@@ -793,7 +793,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             <AppointmentMap {...mapProps} className="h-full w-full" />
                         </div>
                         {!referenceMode && !externalForm && picked ? (
-                        <footer className="shrink-0 border-t border-[#f0f0f0] p-4">
+                        <footer className="shrink-0 border-t border-line-soft p-4">
                             <LocationDetailsFields {...fieldProps} drawerDesktop doorInputRef={doorInputRef} />
                         </footer>
                         ) : null}
@@ -813,10 +813,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
         >
             {!isWizard ? (
                 <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
-                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                    <h3 className="text-sm font-semibold tracking-[-0.01em] text-ink-strong">
                         ¿Dónde es la inspección?
                     </h3>
-                    <p className="mt-0.5 text-[11px] text-[#6a6a6a] lg:block">
+                    <p className="mt-0.5 text-kicker text-ink-muted lg:block">
                         {referenceMode
                             ? 'Vista previa de la zona. La dirección la elige el vendedor al reservar.'
                             : 'Busca la dirección o haz clic en el mapa.'}
@@ -837,7 +837,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     className={cn(
                         isWizard
                             ? 'absolute inset-0 h-full w-full'
-                            : 'relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 lg:relative lg:left-0 lg:h-full lg:w-full lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:border-r lg:border-[#f0f0f0]',
+                            : 'relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 lg:relative lg:left-0 lg:h-full lg:w-full lg:max-w-none lg:translate-x-0 lg:overflow-hidden lg:border-r lg:border-line-soft',
                         mapHeightCls,
                     )}
                 >
@@ -860,7 +860,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             type="button"
                             onClick={() => setExpanded(true)}
                             className={cn(
-                                'absolute right-3 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/95 text-[#334155] shadow-[0_4px_16px_rgba(15,23,42,0.12)] backdrop-blur-sm transition-[transform,bottom] duration-300 active:scale-95 lg:bottom-3 lg:right-3',
+                                'absolute right-3 z-[10] inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/95 text-ink shadow-[0_4px_16px_rgba(15,23,42,0.12)] backdrop-blur-sm transition-[transform,bottom] duration-300 active:scale-95 lg:bottom-3 lg:right-3',
                                 picked && drawerExpanded
                                     ? 'bottom-[min(calc(54vh+0.5rem),calc(380px+0.5rem))] lg:bottom-3'
                                     : picked
@@ -904,17 +904,17 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         Mapa interactivo para marcar dónde será la inspección
                     </DialogDescription>
 
-                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#f0f0f0] px-4 py-3">
+                    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line-soft px-4 py-3">
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[#1c1c1c]">Ubicación de la inspección</p>
-                            <p className="truncate text-xs text-[#6a6a6a]">
+                            <p className="text-sm font-semibold text-ink-strong">Ubicación de la inspección</p>
+                            <p className="truncate text-xs text-ink-muted">
                                 {picked?.address ?? 'Marca un punto dentro del área del experto'}
                             </p>
                         </div>
                         <button
                             type="button"
                             onClick={() => setExpanded(false)}
-                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f5f5f5] text-[#444] transition-colors hover:bg-[#ebebeb]"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-tinted text-ink transition-colors hover:bg-line-soft"
                             aria-label="Cerrar mapa"
                         >
                             <X className="h-4 w-4" />
@@ -927,10 +927,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         )}
                     </div>
 
-                    <div className="shrink-0 rounded-t-[1.25rem] border-t border-[#ececec] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+                    <div className="shrink-0 rounded-t-[1.25rem] border-t border-line bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
                         {picked ? (
-                            <p className="mb-2 flex items-start gap-1.5 text-[13px] text-[#333]">
-                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" aria-hidden />
+                            <p className="mb-2 flex items-start gap-1.5 text-meta text-ink">
+                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-strong" aria-hidden />
                                 <span className="line-clamp-2">{picked.address}</span>
                             </p>
                         ) : null}
@@ -938,7 +938,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                             type="button"
                             onClick={() => setExpanded(false)}
                             disabled={!picked}
-                            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-brand text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-brand text-lead font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {picked ? 'Confirmar ubicación' : 'Marca un punto en el mapa'}
                         </button>

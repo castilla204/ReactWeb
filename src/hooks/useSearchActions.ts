@@ -45,7 +45,7 @@ export function useSearchActions() {
                 body: JSON.stringify({ SearchHireId: searchHireId }),
             });
             addNotification('success', '✅ Servicio cancelado correctamente');
-            navigate('/expert-panel');
+            navigate('/expert');
         } catch (error) {
             console.error('Error canceling service:', error);
             addNotification('error', '❌ Error al cancelar el servicio');

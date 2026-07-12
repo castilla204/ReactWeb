@@ -30,21 +30,21 @@ export function CheckoutSummaryCard({
   const metaParts = [durationLabel, categoryName].filter(Boolean);
 
   return (
-    <article className="rounded-xl border border-[#e8e8e8] bg-white p-5">
+    <article className="rounded-xl border border-line bg-white p-5">
       <div className="flex gap-3">
         {imageUrl ? (
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-[#ececec]">
+          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-line">
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-semibold leading-snug text-[#222222]">{serviceName}</h2>
-          <p className="mt-0.5 text-xs text-[#6a6a6a]">con {expertName}</p>
+          <h2 className="text-sm font-semibold leading-snug text-ink">{serviceName}</h2>
+          <p className="mt-0.5 text-xs text-ink-muted">con {expertName}</p>
           {metaParts.length > 0 ? (
-            <p className="mt-1.5 text-xs text-[#6a6a6a]">{metaParts.join(' · ')}</p>
+            <p className="mt-1.5 text-xs text-ink-muted">{metaParts.join(' · ')}</p>
           ) : null}
           {locationLabel ? (
-            <p className="mt-1 text-xs text-[#6a6a6a]">{locationLabel}</p>
+            <p className="mt-1 text-xs text-ink-muted">{locationLabel}</p>
           ) : null}
         </div>
       </div>

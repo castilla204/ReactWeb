@@ -68,8 +68,8 @@ const SearchDashboard: React.FC = () => {
         return (
             <div className="flex min-h-screen items-center justify-center bg-white p-6 pb-[calc(65px+env(safe-area-inset-bottom,0px))]">
                 <div className="max-w-sm text-center">
-                    <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[#cccccc]" />
-                    <p className="text-sm text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
+                    <AlertCircle className="mx-auto mb-3 h-10 w-10 text-line" />
+                    <p className="text-sm text-ink-muted" style={{ fontFamily: HP_FONT }}>
                         {error instanceof Error ? error.message : 'Error al cargar las inspecciones'}
                     </p>
                     <Button type="button" onClick={refetch} variant="outline" className="mt-4 rounded-lg">
@@ -86,7 +86,7 @@ const SearchDashboard: React.FC = () => {
             : `${searches.length} inspección${searches.length !== 1 ? 'es' : ''}`;
 
     return (
-        <div className="min-h-screen bg-[#fafafa] pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-10">
+        <div className="min-h-screen bg-surface-tinted pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-10">
             <SearchDashboardToolbar
                 searchInput={searchInput}
                 searchInputRef={searchInputRef}
@@ -111,9 +111,9 @@ const SearchDashboard: React.FC = () => {
 
             <main className="mx-auto w-full max-w-3xl px-4 py-4 md:max-w-5xl md:px-6 md:py-6 lg:max-w-6xl">
                 {isNetworkErr ? (
-                    <div className="rounded-xl border border-[#e8e8e8] bg-white px-6 py-16 text-center">
-                        <WifiOff className="mx-auto mb-3 h-9 w-9 text-[#737373]" />
-                        <p className="text-sm font-medium text-[#1c1c1c]" style={{ fontFamily: HP_FONT }}>
+                    <div className="rounded-xl border border-line bg-white px-6 py-16 text-center">
+                        <WifiOff className="mx-auto mb-3 h-9 w-9 text-ink-muted" />
+                        <p className="text-sm font-medium text-ink-strong" style={{ fontFamily: HP_FONT }}>
                             Sin conexión
                         </p>
                         <Button type="button" onClick={refetch} variant="outline" className="mt-4 rounded-lg">
@@ -124,11 +124,11 @@ const SearchDashboard: React.FC = () => {
                 ) : (
                     <>
                         <div className="mb-3 flex items-center justify-between">
-                            <p className="text-[13px] font-medium text-[#6a6a6a]" style={{ fontFamily: HP_FONT }}>
+                            <p className="text-meta font-medium text-ink-muted" style={{ fontFamily: HP_FONT }}>
                                 {countLabel}
                             </p>
                             {isAdmin && pagination && pagination.totalPages > 1 && (
-                                <p className="text-[12px] text-[#737373]" style={{ fontFamily: HP_FONT }}>
+                                <p className="text-caption text-ink-muted" style={{ fontFamily: HP_FONT }}>
                                     Pág. {pagination.currentPage}/{pagination.totalPages}
                                 </p>
                             )}
@@ -136,18 +136,18 @@ const SearchDashboard: React.FC = () => {
 
                         {searches.length === 0 ? (
                             <div className="w-full px-6 py-12 text-center md:py-16">
-                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f5]">
-                                    <ClipboardList className="h-6 w-6 text-[#737373]" strokeWidth={1.5} aria-hidden />
+                                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-tinted">
+                                    <ClipboardList className="h-6 w-6 text-ink-muted" strokeWidth={1.5} aria-hidden />
                                 </div>
 
                                 <h2
-                                    className="text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c] md:text-[20px]"
+                                    className="text-title font-semibold tracking-[-0.015em] text-ink-strong md:text-xl"
                                     style={{ fontFamily: HP_FONT }}
                                 >
                                     Aún no tienes inspecciones
                                 </h2>
                                 <p
-                                    className="mx-auto mt-2 max-w-md text-[14px] leading-snug text-[#6a6a6a]"
+                                    className="mx-auto mt-2 max-w-md text-body leading-snug text-ink-muted"
                                     style={{ fontFamily: HP_FONT }}
                                 >
                                     Cuando contrates una revisión, aparecerá aquí con su
@@ -195,14 +195,14 @@ const SearchDashboard: React.FC = () => {
                                 <button
                                     type="button"
                                     disabled={!pagination.hasPrevious}
-                                    className="rounded-lg border border-[#e8e8e8] bg-white px-4 py-2 text-sm font-medium text-[#1c1c1c] hover:bg-[#fafafa] transition-colors disabled:opacity-40 disabled:hover:bg-white"
+                                    className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-medium text-ink-strong hover:bg-surface-tinted transition-colors disabled:opacity-40 disabled:hover:bg-white"
                                 >
                                     Anterior
                                 </button>
                                 <button
                                     type="button"
                                     disabled={!pagination.hasNext}
-                                    className="rounded-lg border border-[#e8e8e8] bg-white px-4 py-2 text-sm font-medium text-[#1c1c1c] hover:bg-[#fafafa] transition-colors disabled:opacity-40 disabled:hover:bg-white"
+                                    className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-medium text-ink-strong hover:bg-surface-tinted transition-colors disabled:opacity-40 disabled:hover:bg-white"
                                 >
                                     Siguiente
                                 </button>

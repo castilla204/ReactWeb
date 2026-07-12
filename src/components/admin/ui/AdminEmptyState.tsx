@@ -10,7 +10,7 @@ export const AdminEmptyState = ({
       </div>
     )}
     <h3 className="text-sm font-bold text-[hsl(var(--ap-ink))]">{title}</h3>
-    {description && <p className="mt-1 max-w-sm text-[13px] text-[hsl(var(--ap-muted))]">{description}</p>}
+    {description && <p className="mt-1 max-w-sm text-meta text-[hsl(var(--ap-muted))]">{description}</p>}
     {action && <div className="mt-4">{action}</div>}
   </div>
 );

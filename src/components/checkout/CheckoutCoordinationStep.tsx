@@ -31,7 +31,7 @@ export type CoordinationSelection = 'self' | 'seller';
 type Theme = 'blue' | 'amber';
 
 const PANEL_BG: Record<Theme, string> = {
-    amber: '#1c1c1c',
+    amber: 'hsl(var(--ink-strong))',
     blue: 'hsl(var(--brand))',
 };
 
@@ -83,7 +83,7 @@ function OptionCardInfoTrigger({
                         'grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors',
                         onBlue
                             ? 'bg-white/15 text-white/90 hover:bg-white/25'
-                            : 'bg-[#f4f5f7] text-[#6a6a6a] ring-1 ring-[#e8eaed] hover:bg-brand/10 hover:text-brand hover:ring-brand/20',
+                            : 'bg-surface-tinted text-ink-muted ring-1 ring-line hover:bg-brand/10 hover:text-brand hover:ring-brand/20',
                     )}
                 >
                     <Info className="h-3.5 w-3.5" aria-hidden />
@@ -92,7 +92,7 @@ function OptionCardInfoTrigger({
             <PopoverContent
                 side="bottom"
                 align="end"
-                className="max-w-[18rem] border-[#e8ecf1] bg-white p-3 shadow-md"
+                className="max-w-[18rem] border-line bg-white p-3 shadow-md"
                 onClick={(e) => e.stopPropagation()}
             >
                 {children}
@@ -105,8 +105,8 @@ function OptionCardCancelNote({ hint, onBlue }: { hint: string; onBlue?: boolean
     return (
         <p
             className={cn(
-                'text-[11px] leading-[1.55] lg:text-[12px]',
-                onBlue ? 'text-white/75' : 'text-[#7a7a7a]',
+                'text-kicker leading-[1.55] lg:text-caption',
+                onBlue ? 'text-white/75' : 'text-ink-muted',
             )}
         >
             {COORD_OPTION_FREE_CANCEL} {hint}
@@ -150,16 +150,16 @@ function OptionCard({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                 selected
                     ? 'border-brand bg-brand shadow-[0_8px_24px_rgba(0,102,204,0.18)]'
-                    : 'border-[#e6e9ef] bg-white hover:-translate-y-px hover:border-[#cfd4dc] hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)]',
+                    : 'border-line bg-white hover:-translate-y-px hover:border-line hover:shadow-[0_2px_10px_rgba(15,23,42,0.06)]',
                 disabled && 'pointer-events-none cursor-not-allowed opacity-40 grayscale hover:translate-y-0',
-                locked && 'cursor-default hover:translate-y-0 hover:border-[#e6e9ef] hover:shadow-none',
+                locked && 'cursor-default hover:translate-y-0 hover:border-line hover:shadow-none',
                 locked && !selected && 'opacity-55',
             )}
         >
             {recommended && !(locked && selected) ? (
                 <span
                     className={cn(
-                        'absolute right-3 top-3 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                        'absolute right-3 top-3 z-10 rounded-full px-2 py-0.5 text-badge font-semibold',
                         selected ? 'bg-white text-brand' : 'bg-brand/10 text-brand',
                     )}
                 >
@@ -167,7 +167,7 @@ function OptionCard({
                 </span>
             ) : null}
             {locked && selected && lockedBadge ? (
-                <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-brand shadow-sm">
+                <span className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-badge font-semibold text-brand shadow-sm">
                     <Lock className="h-2.5 w-2.5" aria-hidden />
                     {lockedBadge}
                 </span>
@@ -186,7 +186,7 @@ function OptionCard({
                             compact
                                 ? 'mb-1.5 [&>svg]:h-[22px] [&>svg]:w-[22px]'
                                 : 'mb-2 [&>svg]:h-7 [&>svg]:w-7 lg:[&>svg]:h-8 lg:[&>svg]:w-8',
-                            selected ? 'text-white/90' : 'text-[#c8cfda]',
+                            selected ? 'text-white/90' : 'text-line',
                         )}
                     >
                         {icon}
@@ -196,8 +196,8 @@ function OptionCard({
                     <h3
                         className={cn(
                             'min-w-0 flex-1 text-[16px] font-bold leading-snug tracking-[-0.02em]',
-                            compact ? 'lg:text-[16px]' : 'lg:text-[17px]',
-                            selected ? 'text-white' : 'text-[#14161a]',
+                            compact ? 'lg:text-[16px]' : 'lg:text-title',
+                            selected ? 'text-white' : 'text-ink-strong',
                         )}
                         style={{ fontFamily: HP_FONT }}
                     >
@@ -212,8 +212,8 @@ function OptionCard({
                 {tagline ? (
                     <p
                         className={cn(
-                            'mt-2 text-[12px] font-medium leading-snug',
-                            selected ? 'text-white/80' : 'text-[#64748b]',
+                            'mt-2 text-caption font-medium leading-snug',
+                            selected ? 'text-white/80' : 'text-ink-muted',
                         )}
                     >
                         {tagline}
@@ -221,11 +221,11 @@ function OptionCard({
                 ) : null}
                 <p
                     className={cn(
-                        'flex-1 text-[13px]',
-                        selected ? 'text-white/90' : 'text-[#565d6b]',
+                        'flex-1 text-meta',
+                        selected ? 'text-white/90' : 'text-ink-muted',
                         compact
-                            ? 'mt-2 leading-[1.55] lg:mt-2.5 lg:text-[13px] lg:leading-[1.6]'
-                            : 'mt-2.5 leading-[1.6] lg:text-[13px] lg:leading-[1.6]',
+                            ? 'mt-2 leading-[1.55] lg:mt-2.5 lg:text-meta lg:leading-[1.6]'
+                            : 'mt-2.5 leading-[1.6] lg:text-meta lg:leading-[1.6]',
                     )}
                 >
                     {description}
@@ -234,7 +234,7 @@ function OptionCard({
                     <div
                         className={cn(
                             'border-t',
-                            selected ? 'border-white/20' : 'border-[#eef0f3]',
+                            selected ? 'border-white/20' : 'border-line-soft',
                             compact ? 'mt-3 pt-3 lg:mt-4 lg:pt-4' : 'mt-3.5 pt-3.5',
                         )}
                     >
@@ -256,10 +256,10 @@ const COORD_CHOOSE_LEAD = '¿Quién elige la fecha de la inspección?';
 export function getCoordDesktopStep1Lead(categoryName?: string | null): ReactNode {
     return (
         <>
-            <strong className="font-semibold text-[#1c1c1c]">¿Quién elige la fecha?</strong>{' '}
+            <strong className="font-semibold text-ink-strong">¿Quién elige la fecha?</strong>{' '}
             {getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita tiene
             que cuadrar con su disponibilidad. Elijas lo que elijas,{' '}
-            <strong className="font-semibold text-[#1c1c1c]">tu pago queda protegido</strong> hasta que
+            <strong className="font-semibold text-ink-strong">tu pago queda protegido</strong> hasta que
             termine la revisión.
         </>
     );
@@ -318,15 +318,15 @@ function CoordinationChooseHeader({
         <header className={cn('mx-auto max-w-xl text-center', className)}>
             {/* Centrado y con la fuente del sistema (como las maquetas). Copy corto:
                 pregunta + una línea de contexto. */}
-            {/* text-[20px] = mismo tamaño de título que CheckoutMobileStepHeader en el resto
+            {/* text-xl = mismo tamaño de título que CheckoutMobileStepHeader en el resto
                 de pasos del checkout (antes 21px, un punto más grande). */}
-            <h2 className="text-[20px] font-extrabold leading-[1.15] tracking-[-0.025em] text-[#14161a] [text-wrap:balance]">
+            <h2 className="text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]">
                 ¿Quién elige la fecha?
             </h2>
             {/* 48ch ≈ ancho del gutter móvil (375-40px): 2 líneas anchas, no una columnita
                 de 4. Sin «Elige quién pone…»: el título ya hace esa pregunta.
                 El sujeto lo pone la categoría: «El coche» / «El inmueble» / «La moto». */}
-            <p className="mx-auto mt-2 max-w-[48ch] text-[13.5px] leading-[1.5] text-[#565d6b]">
+            <p className="mx-auto mt-2 max-w-[48ch] text-meta leading-[1.5] text-ink-muted">
                 {getInspectionSubjectCapitalized(categoryName)} lo tiene el vendedor, así que la cita
                 de la inspección tiene que cuadrar con su disponibilidad.
             </p>
@@ -429,7 +429,7 @@ function CoordinationOptionCards({
                 />
             </div>
             {sellerOptionDisabled ? (
-                <p role="note" className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]">
+                <p role="note" className="mt-2.5 text-caption leading-relaxed text-warning">
                     Este técnico no tiene disponibilidad en plazo. Elige la opción «{COORD_OPTION_SELF_TITLE}» o
                     prueba más tarde.
                 </p>
@@ -517,8 +517,8 @@ function CoordinationOptionCompare({
                                 'transition-[border-color,box-shadow] duration-200 ease-out',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                                 active
-                                    ? 'border-[#1c1c1c] shadow-[0_1px_3px_rgba(15,23,42,0.06)]'
-                                    : 'border-[#e6e9ef] hover:border-[#cfd4dc]',
+                                    ? 'border-ink-strong shadow-sm'
+                                    : 'border-line hover:border-line',
                                 col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
                             )}
                         >
@@ -531,18 +531,18 @@ function CoordinationOptionCompare({
                                     className={cn(
                                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
                                         active
-                                            ? 'bg-[#1c1c1c] text-white'
-                                            : 'border-2 border-[#c7ccd4] bg-white',
+                                            ? 'bg-ink-strong text-white'
+                                            : 'border-2 border-line bg-white',
                                     )}
                                 >
                                     {active ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
                                 </span>
                                 <span className="min-w-0">
-                                    <span className="block text-[15px] font-bold leading-tight tracking-[-0.01em] text-[#1c1c1c]">
+                                    <span className="block text-lead font-bold leading-tight tracking-[-0.01em] text-ink-strong">
                                         {col.label}
                                     </span>
                                     {col.note && !col.disabled ? (
-                                        <span className="mt-0.5 block text-[12px] leading-snug text-[#6b7280]">
+                                        <span className="mt-0.5 block text-caption leading-snug text-ink-muted">
                                             {col.note}
                                         </span>
                                     ) : null}
@@ -565,13 +565,13 @@ function CoordinationOptionCompare({
                                             key={fact.label}
                                             className={cn(
                                                 'flex items-baseline justify-between gap-4 -mx-3.5 px-3.5 py-2',
-                                                idx === 0 && 'border-t border-[#eef0f3]',
-                                                idx % 2 === 1 && 'bg-[#f6f7f9]',
+                                                idx === 0 && 'border-t border-line-soft',
+                                                idx % 2 === 1 && 'bg-surface-tinted',
                                                 isLast && 'pb-3',
                                             )}
                                         >
-                                            <dt className="shrink-0 text-[11.5px] text-[#6b7280]">{fact.label}</dt>
-                                            <dd className="text-right text-[12.5px] font-semibold leading-[1.4] text-[#1c1c1c]">
+                                            <dt className="shrink-0 text-[11.5px] text-ink-muted">{fact.label}</dt>
+                                            <dd className="text-right text-caption font-semibold leading-[1.4] text-ink-strong">
                                                 {col.value === 'seller' ? fact.seller : fact.self}
                                             </dd>
                                         </div>
@@ -584,7 +584,7 @@ function CoordinationOptionCompare({
             </div>
 
             {sellerOptionDisabled ? (
-                <p role="note" className="mt-2.5 text-[12px] leading-relaxed text-[#b45309]">
+                <p role="note" className="mt-2.5 text-caption leading-relaxed text-warning">
                     Este técnico no tiene disponibilidad en plazo. Elige «{COORD_ANSWER_SELF}» o prueba
                     más tarde.
                 </p>
@@ -687,8 +687,8 @@ export function CheckoutCoordinationStep({
                         <SellerContactAvatar />
                         <h2
                             className={cn(
-                                'font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]',
-                                'text-[17px] sm:text-lg',
+                                'font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]',
+                                'text-title sm:text-lg',
                                 headingClassName,
                             )}
                             style={{ fontFamily: HP_FONT }}
@@ -699,8 +699,8 @@ export function CheckoutCoordinationStep({
                 ) : (
                     <h2
                         className={cn(
-                            'font-bold leading-[1.15] tracking-[-0.02em] text-[#14161a] [text-wrap:balance]',
-                            isSubStep ? 'text-[17px] sm:text-lg' : 'text-[20px] sm:text-[22px] lg:text-[24px]',
+                            'font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]',
+                            isSubStep ? 'text-title sm:text-lg' : 'text-xl sm:text-[22px] lg:text-[24px]',
                             headingClassName,
                         )}
                         style={{ fontFamily: HP_FONT }}
@@ -709,7 +709,7 @@ export function CheckoutCoordinationStep({
                     </h2>
                 )}
                 {subtitle ? (
-                    <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[#565d6b] sm:text-sm">
+                    <p className="mt-2 max-w-[46ch] text-meta leading-relaxed text-ink-muted sm:text-sm">
                         {subtitle}
                     </p>
                 ) : null}

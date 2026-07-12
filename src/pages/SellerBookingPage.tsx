@@ -249,7 +249,7 @@ export default function SellerBookingPage() {
     const extendedBanner = windowInfo?.windowExtended ? (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
             <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-            <p className="text-[13px] text-amber-800">
+            <p className="text-meta text-amber-800">
                 El técnico no tiene huecos en los próximos 7 días; te mostramos su disponibilidad ampliada.
             </p>
         </div>
@@ -263,13 +263,13 @@ export default function SellerBookingPage() {
             type="button"
             onClick={() => { setError(null); setDeclineConfirming(true); }}
             disabled={submitting || declining}
-            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+            className="w-full py-2 text-center text-meta text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
         >
             No voy a poder coordinar la cita
         </button>
     ) : (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
-            <p className="mb-2.5 text-[13px] text-red-800">
+            <p className="mb-2.5 text-meta text-red-800">
                 Se cancelará la inspección y el comprador recuperará su dinero. ¿Confirmar?
             </p>
             <div className="flex gap-2">
@@ -286,7 +286,7 @@ export default function SellerBookingPage() {
                     type="button"
                     onClick={() => setDeclineConfirming(false)}
                     disabled={declining}
-                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                    className="flex-1 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface-tinted"
                 >
                     Volver
                 </button>
@@ -297,7 +297,7 @@ export default function SellerBookingPage() {
     // Formulario activo: shell del wizard a ancho completo
     if (showForm && ctx) {
         return (
-            <div className="min-h-[100dvh] bg-[#f3f4f6]">
+            <div className="min-h-[100dvh] bg-surface-tinted">
                 <SEO title="Coordina la cita | Inspecciono" description="Elige fecha y lugar para la inspección." noindex />
                 <AppointmentWizardShell
                     steps={wizardSteps}
@@ -318,8 +318,8 @@ export default function SellerBookingPage() {
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            <p className="text-[15px] font-semibold text-[#1c1c1c]">Ubicación del vehículo</p>
-                            <p className="text-[13px] leading-[1.5] text-[#64748b]">
+                            <p className="text-lead font-semibold text-ink-strong">Ubicación del vehículo</p>
+                            <p className="text-meta leading-[1.5] text-ink-muted">
                                 Busca la dirección o marca el punto en el mapa. Solo el experto verá la dirección exacta.
                             </p>
                         </div>
@@ -353,14 +353,14 @@ export default function SellerBookingPage() {
                         className="fixed inset-x-0 z-[71] px-5 lg:hidden"
                         style={{ bottom: 'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)) + 0.5rem)' }}
                     >
-                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800 shadow-lg">
+                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-meta text-red-800 shadow-lg">
                             {error}
                         </p>
                     </div>
                 )}
                 {/* Pie desktop: error + declinar (en móvil viven en el cuerpo / tira fija). */}
                 <div className="mx-auto hidden w-full px-5 pb-6 lg:block lg:max-w-[75rem] lg:px-8">
-                    {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
+                    {error && <p className="mb-2 text-meta text-red-600">{error}</p>}
                     {declineNode}
                 </div>
             </div>
@@ -369,7 +369,7 @@ export default function SellerBookingPage() {
 
     // Estados sin formulario (cargando / error / éxito): tarjeta centrada, sin cambios.
     return (
-        <div className="flex min-h-[100dvh] items-start justify-center bg-[#f7f7f7] px-4 py-8 sm:py-12">
+        <div className="flex min-h-[100dvh] items-start justify-center bg-surface-tinted px-4 py-8 sm:py-12">
             <SEO title="Coordina la cita | Inspecciono" description="Elige fecha y lugar para la inspección." noindex />
             <div className="w-full max-w-3xl">
                 <div className={cn(SD_CHECKOUT_DESKTOP_CARD_CLASS, 'px-5 py-6 sm:px-6')}>
@@ -398,7 +398,7 @@ export default function SellerBookingPage() {
                                 {/* W9 FIX de copy: la cita nace PENDIENTE de que el experto la confirme
                                     (pending_expert_confirmation); prometer "el técnico acudirá" era
                                     afirmarlo antes de tiempo. El SMS del backend ya lo decía bien. */}
-                                <p className="mb-1 text-[15px] font-semibold">Reserva registrada</p>
+                                <p className="mb-1 text-lead font-semibold">Reserva registrada</p>
                                 <p className="text-sm text-muted-foreground">
                                     El técnico confirmará la cita en breve; te avisaremos por SMS o email si hubiera
                                     cualquier cambio. ¡Gracias!
@@ -411,7 +411,7 @@ export default function SellerBookingPage() {
                         <div className="flex items-start gap-3">
                             <CheckCircle2 size={20} className="shrink-0 text-emerald-600" />
                             <div>
-                                <p className="mb-1 text-[15px] font-semibold">Coordinación cancelada</p>
+                                <p className="mb-1 text-lead font-semibold">Coordinación cancelada</p>
                                 <p className="text-sm text-muted-foreground">Hemos cancelado la inspección y devuelto el importe al comprador. Gracias por avisar.</p>
                             </div>
                         </div>

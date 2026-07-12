@@ -150,7 +150,7 @@
   animation: support-chat-fab-pulse 2.8s ease-out infinite;
 }
 
-/* Asistente — typing dots con onda suave (sustituye animate-bounce) */
+/* Asistente: typing dots con onda suave (sustituye el bounce de Tailwind) */
 @keyframes chat-typing-wave {
   0%,
   60%,
@@ -456,6 +456,34 @@
         --brand: 210 100% 40%;
         --brand-hover: 210 100% 36%;
         --brand-foreground: 0 0% 100%;
+        --brand-deep: 210 100% 30%;
+        --ink-strong: 0 0% 11%;
+        --ink: 0 0% 13%;
+        --ink-muted: 0 0% 42%;
+        --ink-soft: 0 0% 45%;
+        --surface: 0 0% 100%;
+        --surface-tinted: 0 0% 98%;
+        --line: 0 0% 91%;
+        --line-soft: 0 0% 92%;
+        /* Éxito (#0F6A3E) — CTAs de confirmación y badges positivos */
+        --success: 152 75% 24%;
+        --success-hover: 152 76% 19%;
+        --success-foreground: 0 0% 100%;
+        --success-tint: 152 40% 95%;
+        --success-border: 152 35% 88%;
+        /* Warning (#D97706) — estados con reloj / avisos */
+        --warning: 32 95% 44%;
+        --warning-tint: 40 90% 96%;
+        --warning-border: 40 70% 88%;
+        /* Calendario de citas — celdas por ocupación (SlotPicker, checkout) */
+        --avail-free: 152 55% 82%;
+        --avail-low: 40 92% 76%;
+        --avail-full: 0 0% 87%;
+        /* Mapas — agua/tierra (ExpertsAreaMap, skeletons). Literales en MAP_LITERAL. */
+        --map-sky: 206 45% 88%;
+        --map-sky-muted: 206 35% 92%;
+        --map-land: 40 10% 91%;
+        --map-border: 10 8% 80%;
     }
 
     .dark {
@@ -483,32 +511,56 @@
         --brand: 210 100% 55%;
         --brand-hover: 210 100% 60%;
         --brand-foreground: 0 0% 100%;
+        --brand-deep: 210 100% 45%;
+        --ink-strong: 0 0% 96%;
+        --ink: 0 0% 90%;
+        --ink-muted: 0 0% 72%;
+        --ink-soft: 0 0% 65%;
+        --surface: 222 47% 11%;
+        --surface-tinted: 217 33% 14%;
+        --line: 217 33% 22%;
+        --line-soft: 217 33% 20%;
+        --success: 152 55% 42%;
+        --success-hover: 152 55% 48%;
+        --success-foreground: 0 0% 100%;
+        --success-tint: 152 30% 18%;
+        --success-border: 152 25% 28%;
+        --warning: 32 80% 55%;
+        --warning-tint: 32 30% 18%;
+        --warning-border: 32 25% 28%;
+        --avail-free: 152 35% 28%;
+        --avail-low: 32 45% 32%;
+        --avail-full: 217 33% 24%;
+        --map-sky: 217 33% 22%;
+        --map-sky-muted: 217 33% 18%;
+        --map-land: 217 25% 20%;
+        --map-border: 217 20% 28%;
     }
 }
 
 @layer components {
     .hp-hero-title {
-        @apply font-display font-semibold leading-[1.08] tracking-[-0.03em] text-[#1c1c1c];
+        @apply font-display font-semibold leading-[1.08] tracking-[-0.03em] text-ink-strong;
     }
 
     .hp-hero-title-lg {
-        @apply font-display text-[1.85rem] font-semibold leading-[1.1] tracking-[-0.035em] text-[#1c1c1c] lg:text-[2.45rem];
+        @apply font-display text-[1.85rem] font-semibold leading-[1.1] tracking-[-0.035em] text-ink-strong lg:text-[2.45rem];
     }
 
     .hp-hero-body {
-        @apply text-sm leading-snug text-[#6a6a6a];
+        @apply text-sm leading-snug text-ink-muted;
     }
 
     .hp-section-title {
-        @apply font-display text-[1.125rem] leading-[1.25] md:text-[1.25rem] md:leading-[1.3] font-semibold text-[#1c1c1c] m-0 tracking-[-0.01em];
+        @apply font-display text-[1.125rem] leading-[1.25] md:text-[1.25rem] md:leading-[1.3] font-semibold text-ink-strong m-0 tracking-[-0.01em];
     }
 
     .hp-section-subtitle {
-        @apply mt-0.5 text-sm text-[#6a6a6a];
+        @apply mt-0.5 text-sm text-ink-muted;
     }
 
     .hp-eyebrow {
-        @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-brand;
+        @apply text-kicker font-semibold uppercase tracking-[0.12em] text-brand;
     }
 
     /* ───────────────────────────────────────────────────────────────
@@ -519,7 +571,7 @@
        el resto de la web: sin bordes duros, jerarquía por tipografía.
        ─────────────────────────────────────────────────────────────── */
     .legal-prose {
-        @apply font-display text-[13.5px] md:text-[14px] leading-[1.6] text-[#474d56];
+        @apply font-display text-meta md:text-body leading-[1.6] text-ink-muted;
     }
     .legal-prose > :first-child {
         @apply mt-0;
@@ -530,53 +582,53 @@
     }
     /* Texto corrido, sin divisiones ni adornos: todo seguido. */
     .legal-prose h2 {
-        @apply font-display text-[1rem] md:text-[1.05rem] font-semibold tracking-[-0.01em] text-[#1c1c1c] mt-5 mb-2 normal-case;
+        @apply font-display text-[1rem] md:text-[1.05rem] font-semibold tracking-[-0.01em] text-ink-strong mt-5 mb-2 normal-case;
         scroll-margin-top: 5.5rem;
     }
     .legal-prose h2:first-of-type {
         @apply mt-0;
     }
     .legal-prose h3 {
-        @apply text-[0.9rem] font-semibold text-[#1c1c1c] mt-4 mb-1;
+        @apply text-[0.9rem] font-semibold text-ink-strong mt-4 mb-1;
     }
     .legal-prose p {
         @apply my-2.5 text-left;
     }
     .legal-prose strong {
-        @apply font-semibold text-[#1c1c1c];
+        @apply font-semibold text-ink-strong;
     }
     /* Enlaces neutros (subrayado gris), sin color de marca: más documental. */
     .legal-prose a {
-        @apply font-medium text-[#1c1c1c] underline decoration-[#cbced3] underline-offset-2 hover:decoration-[#1c1c1c];
+        @apply font-medium text-ink-strong underline decoration-line underline-offset-2 hover:decoration-ink-strong;
     }
     .legal-prose ul {
-        @apply my-2.5 pl-5 list-disc space-y-1 marker:text-[#c4c7cc];
+        @apply my-2.5 pl-5 list-disc space-y-1 marker:text-line;
     }
     .legal-prose li {
         @apply pl-1;
     }
     .legal-prose em {
-        @apply text-[#787d85];
+        @apply text-ink-muted;
     }
     /* Ficha de cabecera (titular, contacto, fecha) → gris neutro, sin borde duro. */
     .legal-prose .header-info {
-        @apply mt-0 mb-7 text-[12.5px] leading-relaxed text-[#5d626b];
+        @apply mt-0 mb-7 text-[12.5px] leading-relaxed text-ink-muted;
     }
     .legal-prose .header-info p {
         @apply my-0.5;
     }
     .legal-prose .header-info strong {
-        @apply text-[#1c1c1c];
+        @apply text-ink-strong;
     }
     /* Tablas → limpias, grises neutros, separadores finísimos, sin marco exterior. */
     .legal-prose table {
-        @apply my-5 w-full border-collapse text-[12.5px] md:text-[13px];
+        @apply my-5 w-full border-collapse text-caption md:text-meta;
     }
     .legal-prose thead th {
-        @apply bg-[#f7f7f8] px-3 py-2 text-left text-[11.5px] md:text-[12px] font-semibold text-[#1c1c1c] first:rounded-l-md last:rounded-r-md;
+        @apply bg-surface-tinted px-3 py-2 text-left text-kicker md:text-caption font-semibold text-ink-strong first:rounded-l-md last:rounded-r-md;
     }
     .legal-prose tbody td {
-        @apply px-3 py-2 align-top text-[#474d56] border-b border-[#efefef];
+        @apply px-3 py-2 align-top text-ink-muted border-b border-line-soft;
     }
     .legal-prose tbody tr:last-child td {
         @apply border-b-0;
@@ -584,11 +636,11 @@
 
     /* Ficha servicio — minimalista */
     .service-detail-page {
-        @apply font-display text-[#1c1c1c] bg-[#fafafa];
+        @apply font-display text-ink-strong bg-surface-tinted;
     }
 
     .service-detail-desktop {
-        @apply text-[#1c1c1c] bg-[#f7f7f7];
+        @apply text-ink-strong bg-surface-tinted;
     }
 
     /* Auditoría de color (paso 2): dentro de la ficha desktop, los tokens --ep-*
@@ -605,17 +657,33 @@
     }
 
     .sd-page-title {
-        @apply font-display text-xl font-semibold tracking-[-0.02em] text-[#1c1c1c] md:text-[1.65rem];
+        @apply font-display text-xl font-semibold tracking-[-0.02em] text-ink-strong md:text-[1.65rem];
         text-wrap: balance;
+    }
+
+    .sd-page-title-compact {
+        text-wrap: balance;
+    }
+
+    .sd-mobile-identity-stack {
+        @apply mb-0;
+    }
+
+    .service-detail-page .sd-mobile-identity-stack {
+        @apply gap-3;
+    }
+
+    .service-detail-page .sd-tablist {
+        @apply mt-0;
     }
 
 
     .sd-section-label {
-        @apply mb-1.5 text-sm font-semibold leading-5 text-[#1c1c1c];
+        @apply mb-1.5 text-sm font-semibold leading-5 text-ink-strong;
     }
 
     .sd-body {
-        @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-[#1c1c1c];
+        @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-ink-strong;
         text-wrap: pretty;
         /* Rompe cadenas larguísimas sin espacios (texto pegado, URLs, etc.) */
         overflow-wrap: anywhere;
@@ -628,17 +696,17 @@
     }
 
     .service-detail-desktop .sd-page-title {
-        @apply lg:text-[1.625rem] lg:leading-[1.25] text-[#222222];
+        @apply lg:text-[1.625rem] lg:leading-[1.25] text-ink-strong;
     }
 
     .service-detail-desktop .sd-body {
-        @apply w-full max-w-none text-[0.9375rem] leading-[1.6] text-[#484848];
+        @apply w-full max-w-none text-[0.9375rem] leading-[1.6] text-ink-muted;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
 
     .service-detail-desktop .hp-section-title {
-        @apply text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#222222];
+        @apply text-lead font-semibold leading-snug tracking-[-0.01em] text-ink-strong;
     }
 
     .service-detail-desktop .sd-rating-numeral {
@@ -646,16 +714,16 @@
     }
 
     .service-detail-desktop .sd-deliverable-list {
-        @apply max-w-none rounded-none border-0 border-y border-[#ebebeb] bg-transparent;
+        @apply max-w-none rounded-none border-0 border-y border-line bg-transparent;
     }
 
     /* Precio del aside / numeral de rating — único paso grande fuera de headline */
     .sd-price {
-        @apply font-display text-[1.65rem] font-semibold leading-none tracking-[-0.01em] tabular-nums text-[#1c1c1c];
+        @apply font-display text-[1.65rem] font-semibold leading-none tracking-[-0.01em] tabular-nums text-ink-strong;
     }
 
     .sd-rating-numeral {
-        @apply font-display text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums text-[#1c1c1c] md:text-[2rem];
+        @apply font-display text-[1.65rem] font-semibold leading-none tracking-tight tabular-nums text-ink-strong md:text-[2rem];
     }
 
     .sd-btn-primary {
@@ -676,7 +744,7 @@
         width: 100%;
         height: 5px;
         border-radius: 9999px;
-        background: linear-gradient(to right, #0066cc 0%, #1d4ed8 32%, #f59e0b 100%);
+        background: linear-gradient(to right, hsl(var(--brand)) 0%, hsl(var(--brand-deep)) 32%, hsl(38 92% 50%) 100%);
         box-shadow:
             0 2px 10px rgba(0, 102, 204, 0.45),
             0 1px 8px rgba(245, 158, 11, 0.4);
@@ -690,7 +758,7 @@
         width: 2.75rem;
         height: 2px;
         border-radius: 9999px;
-        background: #0066cc;
+        background: hsl(var(--brand));
         opacity: 0.55;
     }
 
@@ -739,19 +807,50 @@
     }
 
     .sd-mobile-footer-price {
-        @apply shrink-0 text-lg font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#1c1c1c];
+        @apply shrink-0 text-lg font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink-strong;
     }
 
     .sd-mobile-footer-price-sep {
-        @apply mx-1 shrink-0 text-sm font-normal text-[#d4d4d4];
+        @apply mx-1 shrink-0 text-sm font-normal text-line;
     }
 
     .sd-mobile-footer-price-suffix {
-        @apply min-w-0 truncate text-xs font-normal text-[#6a6a6a];
+        @apply min-w-0 truncate text-xs font-normal text-ink-muted;
     }
 
     .sd-mobile-footer-trust {
-        @apply mb-1.5 flex items-center gap-1.5 text-xs font-normal leading-4 text-[#6a6a6a];
+        @apply mb-2;
+    }
+
+    .sd-mobile-footer-note {
+        @apply max-w-none;
+    }
+
+    /* Días de la semana — ficha móvil (22px = token calendario desktop) */
+    .service-detail-page {
+        --sd-avail-day-mobile: 1.375rem;
+    }
+
+    .service-detail-page .sd-availability-mobile-days {
+        @apply inline-flex max-w-full flex-wrap items-center gap-1;
+    }
+
+    .service-detail-page .sd-availability-mobile-day {
+        @apply inline-flex shrink-0 items-center justify-center rounded-full text-badge leading-none;
+        width: var(--sd-avail-day-mobile);
+        height: var(--sd-avail-day-mobile);
+    }
+
+    .service-detail-page .sd-availability-mobile-day--active {
+        @apply bg-white font-semibold text-brand ring-1 ring-inset ring-brand/30;
+    }
+
+    .service-detail-page .sd-availability-mobile-day--inactive {
+        @apply bg-surface-tinted font-medium text-ink-muted;
+    }
+
+    .service-detail-page .sd-aside-card .sd-escrow-trust-line {
+        @apply mt-3 text-center;
     }
 
     .sd-mobile-footer-cta {
@@ -767,28 +866,26 @@
     }
 
     .sd-icon-btn {
-        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#737373] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] hover:text-[#1c1c1c];
+        @apply inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-muted transition-colors hover:border-line hover:bg-surface-tinted hover:text-ink-strong;
     }
 
     /* Flotantes hero móvil — disco blanco plano (legacy) */
     .sd-icon-btn-float {
-        @apply inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white p-0 text-[#222222] shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-opacity active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
+        @apply inline-flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-white p-0 text-ink shadow-[0_2px_12px_rgba(0,0,0,0.12)] transition-opacity active:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
     }
 
-    /* Top bar móvil ficha / overlays del hero — glass oscuro esmerilado.
-       (Antes: disco blanco abombado con sombra fuerte → efecto "juguete".)
-       Translúcido sobre las fotos, contorno e sombra sutiles = más premium. */
+    /* Top bar móvil — blanco hairline sobre hero (gabinete, no glass oscuro tipo travel app) */
     .sd-mobile-topbar-btn {
-        @apply inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border-0 bg-black/40 p-0 text-white shadow-[0_2px_10px_rgba(0,0,0,0.28)] ring-1 ring-white/20 backdrop-blur-md transition-[transform,background-color] duration-150 hover:bg-black/55 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80;
+        @apply inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-white/80 bg-white/92 p-0 text-ink shadow-[0_1px_4px_rgba(0,0,0,0.14)] backdrop-blur-sm transition-[transform,background-color] duration-150 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/90;
     }
 
     .sd-mobile-hero-top-scrim {
-        @apply pointer-events-none absolute inset-x-0 top-0 z-[5] h-24 bg-gradient-to-b from-black/35 via-black/12 to-transparent;
+        @apply pointer-events-none absolute inset-x-0 top-0 z-[5] h-20 bg-gradient-to-b from-black/22 via-black/8 to-transparent;
     }
 
     /* Galería móvil — carrusel horizontal con snap */
     .sd-gallery-hero {
-        @apply relative w-full bg-[#1c1c1c];
+        @apply relative w-full bg-ink-strong;
     }
 
     .sd-gallery-hero-track {
@@ -806,7 +903,7 @@
     }
 
     .sd-gallery-hero-empty {
-        @apply bg-[#f5f5f5];
+        @apply bg-surface-tinted;
     }
 
     /* Lightbox fotos servicio */
@@ -878,7 +975,7 @@
     }
 
     .sd-deliverable-guide-on-image .sd-deliverable-chip {
-        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border-0 bg-transparent px-1 py-0.5 text-[10px] font-medium leading-none text-white shadow-none backdrop-blur-none;
+        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border-0 bg-transparent px-1 py-0.5 text-badge font-medium leading-none text-white shadow-none backdrop-blur-none;
         opacity: 1;
         animation: none;
         transition: opacity 0.15s ease;
@@ -901,7 +998,7 @@
     }
 
     .sd-deliverable-type-badge {
-        @apply inline-flex shrink-0 items-center justify-center font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.08em] text-[#525252];
+        @apply inline-flex shrink-0 items-center justify-center font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.08em] text-ink-muted;
     }
 
     .sd-deliverable-type-badge--overlay {
@@ -910,15 +1007,15 @@
     }
 
     .sd-deliverable-type-badge--chip {
-        @apply h-5 w-5 rounded border border-[#e3e3e3] bg-[#f7f7f7] text-[#525252];
+        @apply h-5 w-5 rounded border border-line bg-surface-tinted text-ink-muted;
     }
 
     .sd-deliverable-type-badge--list {
-        @apply h-9 w-9 rounded-lg border border-[#e8e8e8] bg-[#fafafa] text-[#525252];
+        @apply h-9 w-9 rounded-lg border border-line bg-surface-tinted text-ink-muted;
     }
 
     .sd-deliverable-include-marker {
-        @apply mt-[0.55rem] h-px w-3 shrink-0 bg-[#c4c4c4];
+        @apply mt-[0.55rem] h-px w-3 shrink-0 bg-line;
     }
 
     @keyframes sd-deliverable-rise-from-sheet {
@@ -933,11 +1030,11 @@
     }
 
     .sd-deliverable-chip-inline {
-        @apply inline-flex items-center gap-1 rounded-full border border-[#e8e8e8] bg-white px-2.5 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c];
+        @apply inline-flex items-center gap-1 rounded-full border border-line bg-white px-2.5 py-1 text-kicker font-medium leading-snug text-ink-strong;
     }
 
     .sd-deliverable-chip-surface {
-        @apply inline-flex items-center gap-1.5 rounded-md border border-[#e8e8e8] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#1c1c1c] transition-colors hover:border-[#d4d4d4] hover:bg-[#fafafa] active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c];
+        @apply inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-ink-strong transition-colors hover:border-line hover:bg-surface-tinted active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-strong;
     }
 
     .sd-deliverable-chip-surface-icon {
@@ -975,7 +1072,7 @@
         }
 
         .sd-deliverable-guide:not(.sd-deliverable-guide-on-image) .sd-deliverable-chip {
-            @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/75 px-2 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
+            @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/75 px-2 py-1 text-[11px] font-medium leading-snug text-ink-strong shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
             opacity: 0;
             animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
@@ -989,7 +1086,7 @@
     }
 
     .sd-deliverable-chip {
-        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/70 px-2 py-1 text-[11px] font-medium leading-snug text-[#1c1c1c] shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
+        @apply pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/50 bg-white/70 px-2 py-1 text-[11px] font-medium leading-snug text-ink-strong shadow-[0_2px_8px_rgba(15,23,42,0.12)] backdrop-blur-[8px];
         opacity: 0;
         animation: sd-deliverable-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
@@ -1017,11 +1114,11 @@
     }
 
     .sd-btn-secondary {
-        @apply inline-flex h-9 items-center gap-2 rounded-md border border-[#e8e8e8] bg-white px-3 text-sm font-medium text-[#1c1c1c] transition-colors hover:bg-[#fafafa];
+        @apply inline-flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink-strong transition-colors hover:bg-surface-tinted;
     }
 
     .sd-reviews-preview {
-        @apply border-t border-[#e8e8e8] py-8 lg:py-10;
+        @apply border-t border-line py-8 lg:py-10;
     }
 
     .sd-reviews-preview--desktop {
@@ -1029,7 +1126,11 @@
     }
 
     .sd-reviews-preview--desktop-full {
-        @apply border-t border-[#e8e8e8] pt-10 lg:pt-12;
+        @apply border-t-0 pt-8 lg:pt-10;
+    }
+
+    .service-detail-desktop .sd-reviews-preview--desktop-full {
+        @apply pt-8 lg:pt-10;
     }
 
     .sd-reviews-preview--desktop-full .sd-reviews-preview-summary {
@@ -1045,28 +1146,52 @@
         @apply border-0 border-t-0 bg-transparent p-0 pt-0 shadow-none;
     }
 
+    .sd-reviews-mobile-tab {
+        @apply flex flex-col;
+    }
+
+    .sd-reviews-mobile-tab__note {
+        @apply max-w-[42ch];
+    }
+
+    .service-detail-page .sd-reviews-highlight-card--mobile {
+        @apply shadow-none;
+    }
+
+    .service-detail-page .sd-reviews-highlight-card--mobile .sd-reviews-highlight-card__head {
+        @apply py-3;
+    }
+
+    .service-detail-page .sd-reviews-highlight-card--mobile .sd-reviews-highlight-card__quote {
+        @apply py-2.5;
+    }
+
+    .service-detail-page .sd-reviews-highlight-card--mobile .sd-reviews-highlight-card__footer {
+        @apply py-2.5;
+    }
+
+    .sd-reviews-drawer-summary {
+        @apply w-full;
+    }
+
     .sd-reviews-preview-summary-mobile {
-        @apply w-full pb-3;
+        @apply w-full;
     }
 
     .sd-reviews-preview-summary-mobile__row {
         @apply flex w-full items-center gap-5;
     }
 
+    .sd-reviews-preview-summary-mobile__row--solo {
+        @apply justify-start;
+    }
+
     .sd-reviews-preview-summary-mobile__score-col {
-        @apply flex w-auto min-w-[4.5rem] shrink-0 flex-col items-start justify-center pr-4;
+        @apply flex w-auto min-w-[4.75rem] shrink-0 flex-col items-start justify-center;
     }
 
     .sd-reviews-preview-summary-mobile__bars-col {
         @apply min-w-0 flex-1;
-    }
-
-    .sd-reviews-mobile-score {
-        @apply font-display text-[1.875rem] font-semibold leading-none tracking-tight;
-    }
-
-    .sd-reviews-drawer-summary {
-        @apply w-full;
     }
 
     .sd-review-images-row {
@@ -1090,12 +1215,20 @@
 
     /* Aside reserva desktop — paridad checkout */
     .sd-aside-card {
-        @apply rounded-2xl border border-[#e8e8e8] bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.06)];
+        @apply rounded-2xl border border-line bg-white p-4 shadow-[0_6px_20px_rgba(0,0,0,0.06)];
     }
 
     .checkout-page .sd-aside-card,
     .service-detail-desktop .sd-aside-card {
-        @apply gap-0 overflow-hidden rounded-2xl border-[#ebebeb] shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)];
+        @apply gap-0 overflow-hidden border-line;
+    }
+
+    .checkout-page .sd-aside-card {
+        @apply rounded-2xl shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)];
+    }
+
+    .service-detail-desktop .sd-aside-card {
+        @apply rounded-none shadow-none;
     }
 
     .checkout-page .sd-aside-card {
@@ -1121,21 +1254,21 @@
 
     .checkout-page .sd-aside-summary-title,
     .service-detail-desktop .sd-aside-summary-title {
-        @apply text-base font-semibold leading-snug text-[#222222];
+        @apply text-base font-semibold leading-snug text-ink;
     }
 
     .checkout-page .sd-aside-summary-meta,
     .service-detail-desktop .sd-aside-summary-meta {
-        @apply text-sm text-[#6a6a6a];
+        @apply text-sm text-ink-muted;
     }
 
     .checkout-page .sd-aside-cta,
     .service-detail-desktop .sd-aside-cta {
-        @apply h-11 rounded-full text-[15px] shadow-none hover:shadow-none;
+        @apply h-11 rounded-md text-lead shadow-none hover:shadow-none;
     }
 
     .sd-aside-price {
-        @apply font-display text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-[#222222];
+        @apply font-display text-[1.375rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink;
     }
 
     .sd-aside-cta {
@@ -1148,19 +1281,94 @@
        Debe declararse DESPUÉS de .sd-aside-cta y de .sd-mobile-footer-cta: misma
        especificidad en :hover, gana el último. */
     .sd-cta-dark {
-        @apply bg-[#171717] text-white shadow-none hover:bg-[#2a2d33] hover:shadow-none focus-visible:outline-[#171717];
+        @apply rounded-md bg-ink-strong text-white shadow-none hover:bg-ink hover:shadow-none focus-visible:outline-ink-strong;
+    }
+
+    .service-detail-page .sd-mobile-footer-cta.sd-cta-dark {
+        @apply rounded-md shadow-none;
     }
 
     .service-detail-desktop .sd-deliverable-list-item-btn {
         @apply py-3;
     }
 
-    .service-detail-desktop .sd-deliverable-list-icon {
+    /* Calendario y entregables anidados — plano dentro del panel desktop */
+    .service-detail-desktop .sd-availability-calendar-frame {
+        @apply rounded-none border-0;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame--embedded {
+        @apply w-fit border-0 bg-transparent p-0 shadow-none;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame--embedded [data-slot='calendar'] {
+        @apply p-0;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame .rdp-weekday {
+        @apply normal-case tracking-normal font-medium text-ink-soft;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame--embedded .rdp-weekday {
+        @apply text-[10px] leading-none;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame--embedded .rdp-day {
+        @apply h-[var(--cell-size)] w-[var(--cell-size)] flex-none;
+    }
+
+    .service-detail-desktop .sd-availability {
+        --sd-avail-cell: 1.375rem;
+    }
+
+    .service-detail-desktop .sd-availability-calendar-frame--embedded .rdp {
+        --cell-size: var(--sd-avail-cell);
+    }
+
+    .service-detail-desktop .sd-deliverable-cover,
+    .service-detail-desktop .sd-deliverable-cover-placeholder {
+        @apply rounded-none;
+    }
+
+    .service-detail-desktop .sd-gallery-show-all {
+        @apply border border-ink/12 bg-white text-ink shadow-[0_1px_3px_rgba(0,0,0,0.14)] ring-0 backdrop-blur-none hover:bg-surface-tinted;
+    }
+
+    .service-detail-desktop .sd-gallery-cell--secondary .sd-gallery-cell-overlay {
+        @apply bg-black/0;
+    }
+
+    .service-detail-desktop .sd-gallery-cell--secondary:hover .sd-gallery-cell-overlay {
+        background-color: rgb(0 0 0 / 0.04);
+    }
+
+    .service-detail-desktop .sd-gallery-cell:not(.sd-gallery-cell--secondary):hover .sd-gallery-cell-overlay {
+        background-color: rgb(0 0 0 / 0.04);
+    }
+
+    .sd-formacion-ficha-item {
+        @apply py-3 first:pt-0 last:pb-0;
+    }
+
+    .service-detail-desktop .sd-formacion-ficha {
+        @apply max-w-none;
+    }
+
+    .service-detail-desktop .sd-host-expediente-link {
+        @apply max-w-full truncate text-left;
+    }
+
+    .service-detail-page .sd-host-interactive:focus-visible {
+        outline: 2px solid hsl(var(--brand));
+        outline-offset: 2px;
+    }
+
+    .sd-deliverable-list-icon {
         @apply hidden;
     }
 
     .service-detail-desktop .sd-deliverable-chip-surface {
-        @apply px-2.5 py-1.5 text-[13px] leading-snug;
+        @apply px-2.5 py-1.5 text-meta leading-snug;
     }
 
     .service-detail-desktop .sd-btn-secondary {
@@ -1168,11 +1376,23 @@
     }
 
     .sd-gallery-shell {
-        @apply overflow-hidden rounded-xl bg-[#f0f0f0];
+        @apply overflow-hidden rounded-xl bg-line-soft;
+    }
+
+    .service-detail-desktop .sd-gallery-shell {
+        @apply rounded-none;
+    }
+
+    #sd-reviews-desktop {
+        scroll-margin-top: 5rem;
+    }
+
+    .service-detail-desktop .sd-reviews-sidebar-card {
+        @apply rounded-none shadow-none;
     }
 
     .sd-gallery-cell {
-        @apply relative block h-full w-full cursor-pointer overflow-hidden bg-[#f0f0f0] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+        @apply relative block h-full w-full cursor-pointer overflow-hidden bg-line-soft text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
     }
 
     .sd-gallery-cell-overlay {
@@ -1184,11 +1404,11 @@
     }
 
     .sd-deliverable-list {
-        @apply m-0 list-none divide-y divide-[#ebebeb] border-y border-[#ebebeb] p-0;
+        @apply m-0 list-none divide-y divide-line border-y border-line p-0;
     }
 
     .sd-deliverable-list-item-btn {
-        @apply flex w-full items-center gap-3 py-3.5 text-left transition-colors hover:bg-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
+        @apply flex w-full items-center gap-3 py-3.5 text-left transition-colors hover:bg-surface-tinted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
     }
 
     .sd-deliverable-list-icon {
@@ -1196,27 +1416,27 @@
     }
 
     .sd-deliverable-list-label {
-        @apply min-w-0 flex-1 text-sm font-medium leading-snug text-[#1c1c1c];
+        @apply min-w-0 flex-1 text-sm font-medium leading-snug text-ink-strong;
     }
 
     .sd-deliverable-list-chevron {
-        @apply h-4 w-4 shrink-0 text-[#9ca3af];
+        @apply h-4 w-4 shrink-0 text-ink-soft;
     }
 
     .sd-tab {
-        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-4 text-center text-sm leading-5 text-[#717171] font-normal transition-colors;
+        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-4 text-center text-sm leading-5 text-ink-muted font-normal transition-colors;
     }
 
     .sd-tab[data-active='true'] {
-        @apply border-[#222222] font-semibold text-[#222222];
+        @apply border-brand font-semibold text-ink-strong;
     }
 
     .sd-tab--flat[data-active='true'] {
-        @apply border-transparent;
+        @apply border-transparent font-semibold text-ink-strong;
     }
 
     .sd-tablist {
-        @apply flex w-full;
+        @apply flex w-full border-b border-line;
     }
 
 }
@@ -1258,7 +1478,7 @@
     /* Professional Scrollbars */
     * {
         scrollbar-width: thin;
-        scrollbar-color: #cbd5e1 #f1f5f9;
+        scrollbar-color: hsl(var(--line)) hsl(var(--surface-tinted));
     }
 
     /* Webkit Scrollbars (Chrome, Safari, Edge) */
@@ -1268,24 +1488,24 @@
     }
 
     *::-webkit-scrollbar-track {
-        background: #f1f5f9;
+        background: hsl(var(--surface-tinted));
         border-radius: 8px;
     }
 
     *::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+        background: linear-gradient(135deg, hsl(var(--line)), hsl(var(--ink-soft)));
         border-radius: 8px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid hsl(var(--line));
         transition: all 0.2s ease-out;
     }
 
     *::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #94a3b8, #64748b);
+        background: linear-gradient(135deg, hsl(var(--ink-soft)), hsl(var(--ink-muted)));
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     *::-webkit-scrollbar-corner {
-        background: #f1f5f9;
+        background: hsl(var(--surface-tinted));
     }
 
     /* Mantener foco visible accesible; evitar reset global agresivo */
@@ -1536,6 +1756,19 @@ input, textarea {
         animation-delay: var(--sk-delay, 0ms);
     }
 }
+
+/* Entrada suave del muro cuando los datos sustituyen al skeleton (sin slide). */
+@keyframes hp-wall-enter {
+    from { opacity: 0.88; }
+    to { opacity: 1; }
+}
+.hp-wall-enter {
+    animation: hp-wall-enter 0.28s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hp-wall-enter { animation: none; }
+}
+
 
 /* ✅ Scroll táctil mejorado - Momentum y elastic */
 .horizontal-scroll-container {
@@ -1809,7 +2042,7 @@ img[alt*="country"],
     font-size: 18px;
     line-height: 22px;
     font-weight: 600;
-    color: #222222;
+    color: hsl(var(--ink));
     margin-bottom: 16px;
     margin-top: 0;
     padding: 0;
@@ -1819,7 +2052,7 @@ img[alt*="country"],
     font-size: 18px;
     line-height: 22px;
     font-weight: 600;
-    color: #222222;
+    color: hsl(var(--ink));
 }
 
 .c1upgqkb {
@@ -1866,11 +2099,11 @@ img[alt*="country"],
     padding-top: 0;
     padding-bottom: 10px;
     border: none;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid hsl(var(--line));
     background-color: transparent;
     font-size: 16px;
     line-height: 20px;
-    color: #222222;
+    color: hsl(var(--ink));
     outline: none;
 }
 
@@ -1895,7 +2128,7 @@ img[alt*="country"],
 
 .s15ewrxi {
     display: block;
-    background-color: #e5e7eb;
+    background-color: hsl(var(--line));
 }
 
 .pmfttci {
@@ -1922,7 +2155,7 @@ img[alt*="country"],
     font-size: 12px;
     line-height: 16px;
     font-weight: 600;
-    color: #222222;
+    color: hsl(var(--ink));
     margin-bottom: 12px;
 }
 
@@ -1940,7 +2173,7 @@ img[alt*="country"],
 }
 
 .c13nkf84:hover {
-    background-color: #f7f7f7;
+    background-color: hsl(var(--surface-tinted));
 }
 
 .l1p3292q {
@@ -1961,21 +2194,21 @@ img[alt*="country"],
     font-size: 15px;
     line-height: 20px;
     font-weight: 600;
-    color: #222222;
+    color: hsl(var(--ink));
     margin-bottom: 0;
 }
 
 .a8jt5op {
     font-size: 12px;
     line-height: 16px;
-    color: #717171;
+    color: hsl(var(--ink-muted));
     display: block;
 }
 
 .s7juzsk {
     font-size: 12px;
     line-height: 16px;
-    color: #717171;
+    color: hsl(var(--ink-muted));
 }
 
 
@@ -2000,7 +2233,7 @@ img[alt*="country"],
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #6a6a6a;
+    color: hsl(var(--ink-muted));
 }
 
 .be-fast-form-title {
@@ -2010,14 +2243,14 @@ img[alt*="country"],
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.25;
-    color: #1c1c1c;
+    color: hsl(var(--ink-strong));
 }
 
 .be-fast-form-lead {
     margin: 0;
     font-size: 14px;
     line-height: 1.55;
-    color: #6a6a6a;
+    color: hsl(var(--ink-muted));
 }
 
 .be-fast-form-field {
@@ -2031,14 +2264,14 @@ img[alt*="country"],
 .be-fast-form-label {
     font-size: 13px;
     font-weight: 600;
-    color: #334155;
+    color: hsl(var(--ink));
 }
 
 .be-fast-form-hint {
     margin: 0;
     font-size: 12px;
     line-height: 1.5;
-    color: #6a6a6a;
+    color: hsl(var(--ink-muted));
 }
 
 /* Controles del alta rápida (selector de país + CTA "Continuar con Stripe").
@@ -2057,7 +2290,7 @@ img[alt*="country"],
 .be-fast-cta:focus-visible {
     outline: none;
     box-shadow:
-        0 0 0 2px #ffffff,
+        0 0 0 2px hsl(var(--surface)),
         0 0 0 4px hsl(var(--brand));
 }
 

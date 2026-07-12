@@ -485,7 +485,7 @@ const SearchCreationPage: React.FC = () => {
     const handleSearchComplete = () => {
         showToast('success', '¡Búsqueda creada con éxito!', 6000, {
             description: 'Te avisaremos en cuanto un experto coincida con tu búsqueda.',
-            action: { label: 'Ver mis búsquedas', onClick: () => navigate('/busquedas') },
+            action: { label: 'Ver mis búsquedas', onClick: () => navigate('/hires') },
         });
         setCurrentStep(0);
         setSearchParameters({
@@ -580,7 +580,7 @@ const SearchCreationPage: React.FC = () => {
             <SEO
                 title="Busca expertos cerca de ti en el mapa | Inspecciono"
                 description="Elige qué quieres inspeccionar (coche, piso, moto…) y encuentra peritos verificados cerca de la ubicación del producto. Compara precios y valoraciones."
-                canonical="/crear-busqueda"
+                canonical="/hire"
             />
             {currentStep === 0 && (
                 <>

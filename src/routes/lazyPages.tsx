@@ -17,16 +17,9 @@ function lazyNamed<T extends Record<string, ComponentType<unknown>>>(
   );
 }
 
-// ⚡ Precalentamiento de la home: si la URL actual es la home, arrancar la descarga
-// del chunk YA (en paralelo con el arranque de React) en vez de esperar a que React
-// monte el Router, evalúe la ruta y recién entonces pida el chunk. Elimina un viaje
-// de red completo de la cascada index.js → HomePage.js → AirbnbSearchBar.js.
+// HomePage se importa de forma eager en App.tsx (shell persistente, sin swap de
+// skeleton de ruta). El export lazy queda por compatibilidad con prefetchRoutes.
 const importHomePage = () => import('../pages/HomePage');
-const homePageWarmup =
-  typeof window !== 'undefined' && ['/', '/explorar'].includes(window.location.pathname)
-    ? importHomePage()
-    : null;
-export const HomePage = lazyDefault(() => homePageWarmup ?? importHomePage());
 // 🛡️ Round 15 — R5 FIX: LoginPage real para que navigate('/login') no caiga en 404.
 export const LoginPage = lazyDefault(() => import('../pages/LoginPage'));
 export const SearchCreationPage = lazyDefault(() => import('../pages/SearchCreationPage'));
@@ -34,7 +27,7 @@ export const SearchesPage = lazyDefault(() => import('../pages/SearchesPage'));
 export const BecomeExpertPage = lazyDefault(() => import('../pages/BecomeExpertPage'));
 const importExpertPanelPage = () => import('../pages/ExpertPanelPage');
 const expertPanelWarmup =
-  typeof window !== 'undefined' && window.location.pathname === '/expert-panel'
+  typeof window !== 'undefined' && window.location.pathname === '/expert'
     ? importExpertPanelPage()
     : null;
 export const ExpertPanelPage = lazyNamed(
@@ -61,6 +54,9 @@ export const CentroAyudaPage = lazyDefault(() => import('../pages/CentroAyudaPag
 // lazy() directo (no lazyDefault): la página recibe la prop `slug` y lazyDefault
 // borra el tipado de props (ComponentType<unknown> → TS2322 en App.tsx).
 export const CategoryLandingPage = lazy(() => import('../pages/CategoryLandingPage'));
+// Landings SEO locales por provincia + hub de cobertura.
+export const CityLandingPage = lazy(() => import('../pages/CityLandingPage'));
+export const CoverageHubPage = lazyDefault(() => import('../pages/CoverageHubPage'));
 export const FavoritesPage = lazyNamed(() => import('../pages/FavoritesPage'), 'FavoritesPage');
 // 🛡️ MUD-DI — página full-page para emails que apuntan a /notifications.
 export const NotificationsPage = lazyDefault(() => import('../pages/NotificationsPage'));

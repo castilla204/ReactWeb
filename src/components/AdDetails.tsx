@@ -131,7 +131,7 @@ export function AdDetails({ onBack }: AdDetailsProps) {
                             onClick={() => toggleLike()}
                             className={`p-2 rounded-full ${isLiked
                                 ? 'text-red-500 bg-red-50'
-                                : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                : 'text-red-700/70 hover:text-red-600 hover:bg-red-50'
                                 } transition-colors`}
                         >
                             <Heart className="w-6 h-6" fill={isLiked ? "currentColor" : "none"} />

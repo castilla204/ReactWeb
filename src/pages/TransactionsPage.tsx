@@ -186,7 +186,7 @@ export default function TransactionsPage() {
                                                             {transaction.transactionTypeDisplay}
                                                         </span>
                                                         {transaction.isRefunded && (
-                                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                                            <Badge variant="secondary" className="text-badge px-1.5 py-0 h-4">
                                                                 Reembolsado
                                                             </Badge>
                                                         )}

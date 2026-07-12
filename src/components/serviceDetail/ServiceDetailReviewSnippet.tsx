@@ -36,12 +36,12 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
     ? {
         type: 'button' as const,
         onClick,
-        className: `sd-reviews-preview-item group w-full text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1c1c1c] ${
+        className: `sd-reviews-preview-item group w-full text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-strong ${
           isMobile
-            ? 'touch-manipulation active:bg-[#f9fafb]'
+            ? 'touch-manipulation active:bg-surface-tinted'
             : isDesktop
               ? 'rounded-none hover:opacity-90'
-              : 'hover:bg-[#fafafa]'
+              : 'hover:bg-surface-tinted'
         } ${className}`,
       }
     : {
@@ -50,42 +50,41 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
 
   return (
     <Wrapper {...wrapperProps}>
-      <header className={`flex items-center gap-2.5 ${isMobile ? 'mb-2' : 'mb-2'}`}>
+      <header className={`flex items-start gap-3 ${isMobile ? 'mb-2.5' : 'mb-2'}`}>
         <Avatar
-          className={`shrink-0 rounded-full border border-[#e8e8e8] ${
-            isMobile ? 'h-9 w-9' : isDesktop ? 'h-9 w-9' : 'h-10 w-10'
+          className={`shrink-0 rounded-full border border-line ${
+            isMobile ? 'h-10 w-10' : isDesktop ? 'h-9 w-9' : 'h-10 w-10'
           }`}
         >
           <AvatarImage src={review.client?.profilePictureUrl} alt="" />
-          <AvatarFallback className="rounded-full bg-[#f0f0f0] text-sm font-semibold text-[#1c1c1c]">
+          <AvatarFallback className="rounded-full bg-line-soft text-sm font-semibold text-ink-strong">
             {initial}
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-[#222222]">
-            {clientName}
-          </p>
-          {dateLabel ? (
-            <p className="text-xs text-[#6a6a6a]">{dateLabel}</p>
-          ) : null}
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5">
+            <p className="truncate text-sm font-semibold text-ink-strong">{clientName}</p>
+            {dateLabel ? (
+              <time className="shrink-0 text-xs text-ink-muted">{dateLabel}</time>
+            ) : null}
+          </div>
+          <ServiceDetailReviewStars
+            rating={rating}
+            size="sm"
+            neutral={neutral}
+            className="mt-1"
+          />
         </div>
       </header>
 
-      <ServiceDetailReviewStars
-        rating={rating}
-        size={isDesktop ? 'sm' : 'sm'}
-        neutral={neutral}
-        className={isMobile ? 'mb-1' : 'mb-2'}
-      />
-
       {reviewText ? (
         <p
-          className={`leading-relaxed text-[#484848] ${
+          className={`leading-relaxed text-ink-muted ${
             isDesktop
               ? 'line-clamp-4 text-sm leading-[1.65]'
               : isMobile
-                ? 'line-clamp-3 text-sm'
-                : 'line-clamp-4 text-sm text-[#1c1c1c]'
+                ? 'line-clamp-4 text-sm leading-[1.65]'
+                : 'line-clamp-4 text-sm text-ink-strong'
           }`}
         >
           {reviewText}
@@ -93,15 +92,15 @@ export const ServiceDetailReviewSnippet: React.FC<ServiceDetailReviewSnippetProp
       ) : null}
 
       {images.length > failedImages.size ? (
-        <div className={`sd-review-images-row ${isMobile ? 'mt-2' : 'mt-2.5'}`}>
+        <div className={`sd-review-images-row ${isMobile ? 'mt-3' : 'mt-2.5'}`}>
           {images.map((img, idx) =>
             failedImages.has(idx) ? null : (
               <img
                 key={idx}
                 src={img}
                 alt=""
-                className={`shrink-0 rounded-md border border-[#e8e8e8] object-cover bg-[#f5f5f5] ${
-                  isMobile ? 'h-11 w-11' : 'h-12 w-12'
+                className={`shrink-0 rounded-lg border border-line object-cover bg-surface-tinted ${
+                  isMobile ? 'h-12 w-12' : 'h-12 w-12'
                 }`}
                 loading="lazy"
                 onError={() =>

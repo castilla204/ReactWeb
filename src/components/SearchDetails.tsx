@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserId } from '../utils/userId';
-import Chat from './Chat';
+import { LazyChat as Chat } from './chat/LazyChat';
 import { MobileDetailsSheet } from './chat/MobileDetailsSheet';
 import { ReviewModal, DisputeModal } from './Modals';
 import { ExpertResponseModal } from './ExpertResponseModal';
@@ -65,7 +65,8 @@ import { isAdmin as checkIsAdmin } from '../utils/admin';
 import { API_CONFIG } from '../config/api';
 import {
     SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS,
-    SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_CHAT_CARD_CLASS,
+    SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CARD_CLASS,
     SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS,
     SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS,
     SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS,
@@ -123,7 +124,7 @@ const statusRoadmap = [
 /** Micro-etiqueta de sección, en mayúsculas finas — solo para escanear el panel. */
 function SdSectionTitle({ children }: { children: ReactNode }) {
     return (
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-[#9a9a9a]">
+        <h3 className="text-kicker font-semibold uppercase tracking-[0.07em] text-ink-soft">
             {children}
         </h3>
     );
@@ -1335,12 +1336,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         return (
             <div className={`flex items-center justify-center bg-gray-50 p-4 ${embedded ? 'h-full min-h-[20rem]' : 'min-h-screen'}`}>
                 <div className="text-center space-y-4 max-w-md">
-                    <div className="w-16 h-16 bg-[#f0f0f0] rounded-full flex items-center justify-center mx-auto">
-                        <AlertCircle className="w-8 h-8 text-[#9a9a9a]" />
+                    <div className="w-16 h-16 bg-line-soft rounded-full flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-8 h-8 text-ink-soft" />
                     </div>
                     <div className="space-y-1">
-                        <p className="text-sm font-medium text-[#1c1c1c]">Error al cargar</p>
-                        <p className="text-xs text-[#737373]">
+                        <p className="text-sm font-medium text-ink-strong">Error al cargar</p>
+                        <p className="text-xs text-ink-muted">
                             {error?.message || 'Ha ocurrido un error inesperado'}
                         </p>
                     </div>
@@ -1368,11 +1369,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         ? 'flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row lg:items-stretch'
         : `${SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS} max-md:gap-0 max-md:p-0`;
     const sdChatClass = embedded
-        ? `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} overflow-hidden lg:border-r lg:border-[#ededed]`
-        : `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS} max-md:rounded-none max-md:border-0 max-md:shadow-none`;
+        ? `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} overflow-hidden lg:border-r lg:border-line`
+        : `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CHAT_CARD_CLASS} max-md:rounded-none max-md:border-0 max-md:shadow-none max-lg:border max-lg:border-line`;
     const sdSidebarClass = embedded
         ? `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} overflow-hidden bg-white`
-        : `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS}`;
+        : `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CARD_CLASS}`;
 
     return (
         <div className={
@@ -1382,21 +1383,21 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }>
             {/* Header de página — oculto cuando va incrustado (la bandeja ya aporta cabecera) */}
             {!embedded && (
-            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-[#ebebeb] bg-white" style={{ margin: 0 }}>
+            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-line bg-white" style={{ margin: 0 }}>
                 <div className={`${SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS} px-6 py-3.5`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 flex-1 items-center gap-3">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={onBack || (() => navigate('/busquedas'))}
-                                className="h-9 w-9 shrink-0 rounded-full hover:bg-[#f5f5f5]"
+                                onClick={onBack || (() => navigate('/hires'))}
+                                className="h-9 w-9 shrink-0 rounded-full hover:bg-surface-tinted"
                             >
-                                <ArrowLeft className="h-4 w-4 text-[#444]" />
+                                <ArrowLeft className="h-4 w-4 text-ink" />
                             </Button>
                             <div className="min-w-0 flex-1">
                                 <h1
-                                    className="truncate font-display text-[17px] font-semibold tracking-[-0.02em] text-[#1c1c1c]"
+                                    className="truncate font-display text-title font-semibold tracking-[-0.02em] text-ink-strong"
                                     style={{ fontFamily: HP_FONT }}
                                 >
                                     {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
@@ -1413,12 +1414,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-[#f5f5f5]" title="Compartir">
-                                <Share2 className="h-4 w-4 text-[#666]" />
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-surface-tinted" title="Compartir">
+                                <Share2 className="h-4 w-4 text-ink-muted" />
                             </Button>
                             {canViewChat && (
-                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-[#f5f5f5]" title="Mensajes">
-                                    <MessageCircle className="h-4 w-4 text-[#666]" />
+                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-surface-tinted" title="Mensajes">
+                                    <MessageCircle className="h-4 w-4 text-ink-muted" />
                                 </Button>
                             )}
                         </div>
@@ -1428,7 +1429,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             )}
 
             {searchHireStatus === SEARCH_HIRE_STATUS.TRANSFER_FAILED && (
-                <div className="mx-4 mt-3 rounded-xl border border-[#f5dada] bg-[#fdf2f2] px-4 py-3 text-sm text-[#b42318]">
+                <div className="mx-4 mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                     <div className="flex items-center gap-2 font-medium">
                         <AlertCircle className="h-4 w-4" />
                         Error en la transferencia de pago
@@ -1443,14 +1444,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             {isNetworkErr && (
                 <div className="flex flex-col items-center justify-center py-16 px-4 flex-1 bg-gray-50 overflow-y-auto">
                     <div className="flex flex-col items-center gap-4 max-w-sm text-center">
-                        <div className="w-16 h-16 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                            <WifiOff className="w-8 h-8 text-[#9a9a9a]" />
+                        <div className="w-16 h-16 rounded-full bg-line-soft flex items-center justify-center">
+                            <WifiOff className="w-8 h-8 text-ink-soft" />
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-[#1c1c1c]">
+                            <p className="text-sm font-medium text-ink-strong">
                                 No se pudo conectar con el servidor
                             </p>
-                            <p className="text-xs text-[#737373]">
+                            <p className="text-xs text-ink-muted">
                                 Intenta nuevamente en unos minutos
                             </p>
                         </div>
@@ -1488,8 +1489,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     }}
                                     isDetailsOpen={mobileDetailsOpen}
                                     onOpenDetails={() => setMobileDetailsOpen((v) => !v)}
-                                    onBack={onBack || (() => navigate('/busquedas'))}
+                                    onBack={onBack || (() => navigate('/hires'))}
                                     embedded={embedded}
+                                    hideHeaderOnLg={!embedded}
                                 />
                             </div>
 
@@ -1513,24 +1515,24 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </div>
                                     )}
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-[13px] text-[#1c1c1c]">
-                                            <Tag className="h-4 w-4 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                        <div className="flex items-center gap-2 text-meta text-ink-strong">
+                                            <Tag className="h-4 w-4 shrink-0 text-ink-soft" strokeWidth={1.75} />
                                             <span>{serviceInfo?.categoryName || category?.name || 'N/A'}</span>
                                         </div>
                                         {serviceInfo?.serviceTypeName && (
-                                            <div className="text-[13px]">
-                                                <span className="text-[#737373]">Tipo: </span>
-                                                <span className="font-medium text-[#1c1c1c]">{serviceInfo.serviceTypeName}</span>
+                                            <div className="text-meta">
+                                                <span className="text-ink-muted">Tipo: </span>
+                                                <span className="font-medium text-ink-strong">{serviceInfo.serviceTypeName}</span>
                                             </div>
                                         )}
                                         {search?.description && (
-                                            <p className="sd-user-text break-words text-[13px] leading-relaxed text-[#6a6a6a]">
+                                            <p className="sd-user-text break-words text-meta leading-relaxed text-ink-muted">
                                                 {search.description}
                                             </p>
                                         )}
                                         {serviceInfo?.locationRange && (
-                                            <p className="text-[12px] text-[#737373]">
-                                                Radio de servicio <span className="font-medium text-[#1c1c1c]">{serviceInfo.locationRange} km</span>
+                                            <p className="text-caption text-ink-muted">
+                                                Radio de servicio <span className="font-medium text-ink-strong">{serviceInfo.locationRange} km</span>
                                             </p>
                                         )}
                                         {/* Precio con desglose */}
@@ -1540,31 +1542,31 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             const priceDisplay = getPriceDisplay(priceSource);
 
                                             return (
-                                                <div className="border-t border-[#f4f4f4] pt-3">
+                                                <div className="border-t border-line-soft pt-3">
                                                     <div className="flex items-baseline justify-between gap-3">
-                                                        <span className="text-[13px] font-medium text-[#737373]">Precio total</span>
+                                                        <span className="text-meta font-medium text-ink-muted">Precio total</span>
                                                         <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-[20px] font-bold tracking-[-0.01em] text-[#0a0a0a]">{priceDisplay.formattedTotal}</span>
+                                                            <span className="text-xl font-bold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
                                                             {priceDisplay.hasTaxInfo && (
-                                                                <span className="text-[12px] font-medium text-[#737373]">IVA incl.</span>
+                                                                <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
                                                             )}
                                                         </div>
                                                     </div>
 
                                                     {priceDisplay.hasTaxInfo && (
-                                                        <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-[#ededed]">
+                                                        <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-line">
                                                             <AccordionItem value="price-breakdown" className="border-none">
-                                                                <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
+                                                                <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                                     <span>Ver desglose de impuestos</span>
                                                                 </AccordionTrigger>
                                                                 <AccordionContent className="space-y-1 pb-0 pt-1">
-                                                                    <div className="flex justify-between text-[12px]">
-                                                                        <span className="text-[#737373]">Base imponible</span>
-                                                                        <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedBase}</span>
+                                                                    <div className="flex justify-between text-caption">
+                                                                        <span className="text-ink-muted">Base imponible</span>
+                                                                        <span className="font-medium text-ink-strong">{priceDisplay.formattedBase}</span>
                                                                     </div>
-                                                                    <div className="flex justify-between text-[12px]">
-                                                                        <span className="text-[#737373]">IVA</span>
-                                                                        <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedTax}</span>
+                                                                    <div className="flex justify-between text-caption">
+                                                                        <span className="text-ink-muted">IVA</span>
+                                                                        <span className="font-medium text-ink-strong">{priceDisplay.formattedTax}</span>
                                                                     </div>
                                                                 </AccordionContent>
                                                             </AccordionItem>
@@ -1579,15 +1581,15 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     {searchHireStatusInfo && (
                                         <Accordion type="multiple" className="w-full">
                                             <AccordionItem value="status-info" className="border-none">
-                                                <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
+                                                <AccordionTrigger className="py-2 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                     ¿Qué significa este estado?
                                                 </AccordionTrigger>
-                                                <AccordionContent className="pt-2 pb-0 text-[12px] text-[#737373]">
+                                                <AccordionContent className="pt-2 pb-0 text-caption text-ink-muted">
                                                     <p className="leading-relaxed">
                                                         {searchHireStatusInfo.description || 'Estado del servicio contratado.'}
                                                     </p>
                                                     {searchHireStatusInfo.statusValue === 'pending' && (
-                                                        <p className="mt-2 border-t border-[#f0f0f0] pt-2">
+                                                        <p className="mt-2 border-t border-line-soft pt-2">
                                                             El experto aún no ha aceptado la contratación. Puedes comunicarte con él a través del chat.
                                                         </p>
                                                     )}
@@ -1595,7 +1597,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             </AccordionItem>
                                             {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
                                                 <AccordionItem value="status-timeline" className="border-none">
-                                                    <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
+                                                    <AccordionTrigger className="py-2 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                         Timeline del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
@@ -1613,11 +1615,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-6 border-t border-[#f0f0f0] pt-5 lg:hidden">
+                                    <div className="mt-6 border-t border-line-soft pt-5 lg:hidden">
                                         <div className="mb-2.5 flex items-center justify-between gap-2">
                                             <SdSectionTitle>Cita</SdSectionTitle>
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-[11px] font-medium text-[#737373]">
+                                                <span className="text-kicker font-medium text-ink-muted">
                                                     {appointment
                                                         ? (appointmentStatusInfo?.displayName ||
                                                             (appointment.status === 'appointment_proposed' ? 'Propuesta' :
@@ -1637,7 +1639,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
                                                         const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                         return (
-                                                            <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                            <p className="text-meta font-medium text-ink-strong">
                                                                 {new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -1647,24 +1649,24 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         );
                                                     })()}
                                                     {appointment.location && (
-                                                        <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                        <p className="text-meta leading-relaxed text-ink-muted">
                                                             {appointment.location}
                                                             {appointment.doorNumber && (
-                                                                <span className="mt-0.5 block text-[#737373]">
-                                                                    Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                                <span className="mt-0.5 block text-ink-muted">
+                                                                    Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                                 </span>
                                                             )}
                                                         </p>
                                                     )}
                                                     {appointment.doorNumber && !appointment.location && (
-                                                        <p className="text-[13px] text-[#6a6a6a]">
-                                                            Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                        <p className="text-meta text-ink-muted">
+                                                            Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                         </p>
                                                     )}
                                                     {/* Reportes del Experto - Dentro del cuadro de cita */}
                                                     {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
                                                         <div className="space-y-1.5 pt-1">
-                                                            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#0F6A3E]">
+                                                            <div className="flex items-center gap-1.5 text-caption font-medium text-success">
                                                                 <FileCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                                                                 <span>Informe enviado</span>
                                                             </div>
@@ -1674,9 +1676,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                     <button
                                                                         key={deliverable.id}
                                                                         onClick={() => window.open(deliverable.url, '_blank')}
-                                                                        className="flex w-full items-center gap-1.5 text-left text-[12px] text-[#737373] transition-colors hover:text-[#1c1c1c]"
+                                                                        className="flex w-full items-center gap-1.5 text-left text-caption text-ink-muted transition-colors hover:text-ink-strong"
                                                                     >
-                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
                                                                         <span className="truncate underline-offset-2 hover:underline">{fileName}</span>
                                                                     </button>
                                                                 );
@@ -1686,7 +1688,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 </>
                                             ) : (
                                                 <div>
-                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                    <p className="text-meta leading-relaxed text-ink-muted">{noAppointmentMessage}</p>
                                                     {/* FIX [GAP-CANCEL-UI]: cancelación sin coste prometida en el checkout
                                                         (modo seller, antes de que el vendedor reserve). */}
                                                     {isClient && coordinationMode === 'seller' && !isSearchHireFinalized && (
@@ -1694,7 +1696,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             type="button"
                                                             onClick={handleCancelSellerBooking}
                                                             disabled={cancellingSellerBooking}
-                                                            className="mt-2 text-[12.5px] text-[#737373] underline underline-offset-2 transition-colors hover:text-[#1c1c1c] disabled:opacity-50"
+                                                            className="mt-2 text-caption text-ink-muted underline underline-offset-2 transition-colors hover:text-ink-strong disabled:opacity-50"
                                                         >
                                                             {cancellingSellerBooking ? 'Cancelando…' : 'Cancelar sin coste'}
                                                         </button>
@@ -1705,7 +1707,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         {appointment && appointmentStatusInfo && appointmentStatuses && Array.isArray(appointmentStatuses) && appointmentStatuses.length > 0 && (
                                             <Accordion type="single" collapsible className="mt-3 w-full">
                                                 <AccordionItem value="appointment-timeline" className="border-none">
-                                                    <AccordionTrigger className="py-2 text-[12px] font-normal text-[#737373] hover:text-[#1c1c1c] hover:no-underline">
+                                                    <AccordionTrigger className="py-2 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                         Timeline del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
@@ -1723,7 +1725,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Cliente */}
                                 {search?.user && (
-                                    <div className="border-t border-[#f0f0f0] pt-5">
+                                    <div className="border-t border-line-soft pt-5">
                                         <SdSectionTitle>Cliente</SdSectionTitle>
                                         <div className="mt-2.5 flex items-center gap-3">
                                             <Avatar className="h-9 w-9 shrink-0">
@@ -1731,13 +1733,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     src={search.user.profilePictureUrl || undefined}
                                                     alt={search.user.name}
                                                 />
-                                                <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
+                                                <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
                                                     {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{search.user.name}</p>
-                                                <p className="mt-0.5 truncate text-[12px] text-[#737373]">{search.user.email}</p>
+                                                <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
+                                                <p className="mt-0.5 truncate text-caption text-ink-muted">{search.user.email}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1745,7 +1747,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Experto */}
                                 {expertData && (
-                                    <div className="border-t border-[#f0f0f0] pt-5">
+                                    <div className="border-t border-line-soft pt-5">
                                         <SdSectionTitle>Experto</SdSectionTitle>
                                         <div className="mt-2.5 flex items-center gap-3">
                                             <Avatar className="h-9 w-9 shrink-0">
@@ -1753,13 +1755,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     src={expertData.profilePictureUrl || undefined}
                                                     alt={expertData.name}
                                                 />
-                                                <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
+                                                <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
                                                     {expertData.name?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5">
-                                                    <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{expertData.name}</p>
+                                                    <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
                                                     {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
                                                     {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                         <CountryFlag
@@ -1774,8 +1776,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     )}
                                                 </div>
                                                 <div className="mt-0.5 flex items-center gap-1.5">
-                                                    <CheckCircle className="h-3.5 w-3.5 text-[#0F6A3E]" strokeWidth={2} />
-                                                    <span className="text-[12px] text-[#737373]">Verificado</span>
+                                                    <CheckCircle className="h-3.5 w-3.5 text-success" strokeWidth={2} />
+                                                    <span className="text-caption text-ink-muted">Verificado</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1793,13 +1795,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Subir informe (móvil) — selección de archivos; el envío está en la barra fija */}
                                 {isExpert && appointment?.status === 'appointment_awaiting_report' && (
-                                    <div className="space-y-3 border-t border-[#f0f0f0] pt-5">
+                                    <div className="space-y-3 border-t border-line-soft pt-5">
                                         <SdSectionTitle>Subir informe</SdSectionTitle>
                                         {fileValidation && (
-                                            <div className={`rounded-xl px-3 py-2.5 text-[12.5px] font-medium ${
+                                            <div className={`rounded-xl px-3 py-2.5 text-caption font-medium ${
                                                 fileValidation.canSubmit
-                                                    ? 'bg-[#ecf6f0] text-[#0F6A3E]'
-                                                    : 'bg-[#eef4fb] text-brand'
+                                                    ? 'bg-success-tint text-success'
+                                                    : 'bg-brand/10 text-brand'
                                             }`} role="status">
                                                 {fileValidation.message}
                                             </div>
@@ -1807,16 +1809,16 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         {uploadedFiles.length > 0 && (
                                             <div className="space-y-1.5">
                                                 {uploadedFiles.map((file) => (
-                                                    <div key={file.id} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
+                                                    <div key={file.id} className="flex items-center justify-between rounded-lg border border-line bg-white px-2.5 py-2 text-caption">
                                                         <div className="flex min-w-0 items-center gap-2">
-                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
-                                                            <span className="truncate text-[#1c1c1c]">{file.fileName}</span>
+                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
+                                                            <span className="truncate text-ink-strong">{file.fileName}</span>
                                                         </div>
                                                         <Button
                                                             onClick={() => handleDeleteFile(file.id)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-8 w-8 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            className="h-8 w-8 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                             aria-label={`Eliminar ${file.fileName}`}
                                                         >
                                                             <X className="h-3.5 w-3.5" />
@@ -1845,12 +1847,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 onChange={handleDeliverableFileChange}
                                                 className="hidden"
                                             />
-                                            <div className="group w-full cursor-pointer rounded-xl border-2 border-dashed border-[#e0e0e0] p-5 text-center transition-colors hover:border-brand/40 hover:bg-[#fafafa]">
-                                                <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-[#f0f0f0] transition-colors group-hover:bg-brand/10">
-                                                    <Upload className="h-5 w-5 text-[#737373] transition-colors group-hover:text-brand" strokeWidth={1.75} />
+                                            <div className="group w-full cursor-pointer rounded-xl border-2 border-dashed border-line p-5 text-center transition-colors hover:border-brand/40 hover:bg-surface-tinted">
+                                                <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full bg-line-soft transition-colors group-hover:bg-brand/10">
+                                                    <Upload className="h-5 w-5 text-ink-muted transition-colors group-hover:text-brand" strokeWidth={1.75} />
                                                 </div>
-                                                <p className="mb-0.5 text-[13px] font-semibold text-[#1c1c1c]">Seleccionar archivos</p>
-                                                <p className="text-[12px] text-[#737373]">
+                                                <p className="mb-0.5 text-meta font-semibold text-ink-strong">Seleccionar archivos</p>
+                                                <p className="text-caption text-ink-muted">
                                                     {(() => {
                                                         // ✅ Mostrar tipos requeridos dinámicamente
                                                         if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
@@ -1867,13 +1869,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         {selectedDeliverableFiles.length > 0 && (
                                             <div className="space-y-1.5">
                                                 {selectedDeliverableFiles.map((file, index) => (
-                                                    <div key={index} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
-                                                        <span className="truncate text-[#1c1c1c]">{file.name}</span>
+                                                    <div key={index} className="flex items-center justify-between rounded-lg border border-line bg-white px-2.5 py-2 text-caption">
+                                                        <span className="truncate text-ink-strong">{file.name}</span>
                                                         <Button
                                                             onClick={() => removeSelectedFile(index)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-8 w-8 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            className="h-8 w-8 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                             aria-label={`Eliminar ${file.name}`}
                                                         >
                                                             <X className="h-3.5 w-3.5" />
@@ -1886,8 +1888,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             onClick={handleSubmitReport}
                                             className={`h-11 w-full font-semibold transition-colors ${
                                                 fileValidation && !fileValidation.canSubmit
-                                                    ? 'cursor-not-allowed bg-[#ededed] text-[#9a9a9a] hover:bg-[#ededed]'
-                                                    : 'bg-[#0F6A3E] text-white hover:bg-[#0c5733]'
+                                                    ? 'cursor-not-allowed bg-line text-ink-soft hover:bg-line'
+                                                    : 'bg-success text-white hover:bg-success-hover'
                                             }`}
                                             disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
                                             size="sm"
@@ -1911,16 +1913,16 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 )}
 
                                 {review && (
-                                    <div className="space-y-2.5 border-t border-[#f0f0f0] pt-5">
+                                    <div className="space-y-2.5 border-t border-line-soft pt-5">
                                         <div className="flex items-center justify-between">
                                             <SdSectionTitle>Reseña</SdSectionTitle>
-                                            <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1c1c1c]">
+                                            <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
                                                 <Star className="h-3.5 w-3.5" />
                                                 {review.score}/5
                                             </span>
                                         </div>
                                         {review.description && (
-                                            <p className="rounded-xl bg-[#f7f7f7] p-3 text-[13px] leading-relaxed text-[#4a4a4a]">
+                                            <p className="rounded-xl bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
                                                 {review.description}
                                             </p>
                                         )}
@@ -1929,11 +1931,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-[#ededed] bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
-                                                <div className="space-y-1.5 border-b border-[#f0f0f0] pb-3">
-                                                    <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                <div className="space-y-1.5 border-b border-line-soft pb-3">
+                                                    <p className="text-meta font-medium text-ink-strong">
                                                         {(() => {
                                                             // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
                                                             // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
@@ -1946,18 +1948,18 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             })} · ${timeToUse.substring(0, 5)}`;
                                                         })()}
                                                     </p>
-                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                    <p className="text-meta leading-relaxed text-ink-muted">
                                                         {appointment.location && appointment.location.trim()
                                                             ? appointment.location
                                                             : 'Ubicación no aportada'}
-                                                        <span className="mt-0.5 block text-[#737373]">
-                                                            Puerta <span className="font-medium text-[#1c1c1c]">
+                                                        <span className="mt-0.5 block text-ink-muted">
+                                                            Puerta <span className="font-medium text-ink-strong">
                                                                 {appointment.doorNumber && appointment.doorNumber.trim()
                                                                     ? appointment.doorNumber
                                                                     : 'no aportada'}
                                                             </span>
-                                                            <span className="px-1.5 text-[#d4d4d4]">·</span>
-                                                            Tel. <span className="font-medium text-[#1c1c1c]">
+                                                            <span className="px-1.5 text-line">·</span>
+                                                            Tel. <span className="font-medium text-ink-strong">
                                                                 {appointment.phoneNumber && appointment.phoneNumber.trim()
                                                                     ? appointment.phoneNumber
                                                                     : 'no aportado'}
@@ -2040,7 +2042,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             setShowRejectModal(true);
                                                         }}
                                                         variant="outline"
-                                                        className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
+                                                        className="h-11 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                                         size="sm"
                                                         disabled={isCancelling}
                                                     >
@@ -2072,13 +2074,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                 handleAppointmentAction('cancelPending', appointment as Appointment);
                                                             }}
                                                             variant="outline"
-                                                            className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
+                                                            className="h-11 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                                             size="sm"
                                                         >
                                                             <XCircle className="w-4 h-4 mr-2" />
                                                             Cancelar cita
                                                         </Button>
-                                                        <p className="text-[12px] leading-relaxed text-[#737373]">
+                                                        <p className="text-caption leading-relaxed text-ink-muted">
                                                             El experto aún no ha confirmado. Si cancelas ahora no se te cobra nada (devolución del 100%).
                                                         </p>
                                                     </div>
@@ -2127,7 +2129,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             {canApprove && (
                                                 <Button
                                                     onClick={handleApproveService}
-                                                    className="h-11 w-full bg-[#0F6A3E] text-white hover:bg-[#0c5733]"
+                                                    className="h-11 w-full bg-success text-white hover:bg-success-hover"
                                                     size="sm"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -2138,7 +2140,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <Button
                                                     onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                     variant="outline"
-                                                    className="h-11 w-full border-[#f0d4d1] text-[#b42318] hover:bg-[#fdf2f2] hover:text-[#8f1d13]"
+                                                    className="h-11 w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                                     size="sm"
                                                 >
                                                     <AlertTriangle className="w-4 h-4 mr-2" />
@@ -2149,7 +2151,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <Button
                                                     onClick={() => setShowExpertResponseModal(true)}
                                                     variant="outline"
-                                                    className="h-11 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
+                                                    className="h-11 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                                     size="sm"
                                                 >
                                                     <MessageCircle className="w-4 h-4 mr-2" />
@@ -2161,11 +2163,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                     {/* Escribir Reseña */}
                                     {canReview && (
-                                        <div className="space-y-2.5 border-t border-[#f0f0f0] pt-5">
+                                        <div className="space-y-2.5 border-t border-line-soft pt-5">
                                             <SdSectionTitle>Reseña</SdSectionTitle>
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                                className="h-11 w-full bg-[#1c1c1c] text-white hover:bg-black"
+                                                className="h-11 w-full bg-ink-strong text-white hover:bg-black"
                                                 size="sm"
                                             >
                                                 <Star className="w-4 h-4 mr-2" />
@@ -2187,7 +2189,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                             const typeLabel = serviceInfo?.serviceTypeName || '';
                             const primary = typeLabel || categoryLabel || 'Detalles del servicio';
                             return (
-                                <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">{primary}</h2>
+                                <h2 className="truncate text-lead font-semibold tracking-[-0.01em] text-ink-strong">{primary}</h2>
                             );
                         })()}
                         {searchHireStatusInfo && (
@@ -2206,12 +2208,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 <div className="space-y-3">
                                 <div className="space-y-3">
                                     {search?.description && (
-                                        <p className="sd-user-text break-words text-[13px] leading-relaxed text-[#6a6a6a]">
+                                        <p className="sd-user-text break-words text-meta leading-relaxed text-ink-muted">
                                             {search.description}
                                         </p>
                                     )}
                                     {(search?.createdAt || serviceInfo?.locationRange) && (
-                                        <p className="text-[12px] text-[#9a9a9a]">
+                                        <p className="text-caption text-ink-soft">
                                             {search?.createdAt && (
                                                 <>Creado el {new Date(search.createdAt).toLocaleDateString('es-ES', {
                                                     day: 'numeric',
@@ -2219,7 +2221,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     year: 'numeric'
                                                 })}</>
                                             )}
-                                            {search?.createdAt && serviceInfo?.locationRange && <span className="px-1.5 text-[#d4d4d4]">·</span>}
+                                            {search?.createdAt && serviceInfo?.locationRange && <span className="px-1.5 text-line">·</span>}
                                             {serviceInfo?.locationRange && <>Radio {serviceInfo.locationRange} km</>}
                                         </p>
                                     )}
@@ -2230,31 +2232,31 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         const priceDisplay = getPriceDisplay(priceSource);
 
                                         return (
-                                            <div className="border-t border-[#f4f4f4] pt-3">
+                                            <div className="border-t border-line-soft pt-3">
                                                 <div className="flex items-baseline justify-between gap-3">
-                                                    <span className="text-[13px] font-medium text-[#737373]">Precio total</span>
+                                                    <span className="text-meta font-medium text-ink-muted">Precio total</span>
                                                     <div className="flex items-baseline gap-1.5">
-                                                        <span className="text-[20px] font-bold tracking-[-0.01em] text-[#0a0a0a]">{priceDisplay.formattedTotal}</span>
+                                                        <span className="text-xl font-bold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
                                                         {priceDisplay.hasTaxInfo && (
-                                                            <span className="text-[10.5px] font-medium text-[#9a9a9a]">IVA incl.</span>
+                                                            <span className="text-[10.5px] font-medium text-ink-soft">IVA incl.</span>
                                                         )}
                                                     </div>
                                                 </div>
 
                                                 {priceDisplay.hasTaxInfo && (
-                                                    <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-[#ededed]">
+                                                    <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-line">
                                                         <AccordionItem value="price-breakdown" className="border-none">
-                                                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-[12px] font-normal text-[#9a9a9a] hover:text-[#1c1c1c] hover:no-underline">
+                                                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-soft hover:text-ink-strong hover:no-underline">
                                                                 <span>Ver desglose de impuestos</span>
                                                             </AccordionTrigger>
                                                             <AccordionContent className="space-y-1 pb-0 pt-1">
-                                                                <div className="flex justify-between text-[12px]">
-                                                                    <span className="text-[#737373]">Base imponible</span>
-                                                                    <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedBase}</span>
+                                                                <div className="flex justify-between text-caption">
+                                                                    <span className="text-ink-muted">Base imponible</span>
+                                                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedBase}</span>
                                                                 </div>
-                                                                <div className="flex justify-between text-[12px]">
-                                                                    <span className="text-[#737373]">IVA</span>
-                                                                    <span className="font-medium text-[#1c1c1c]">{priceDisplay.formattedTax}</span>
+                                                                <div className="flex justify-between text-caption">
+                                                                    <span className="text-ink-muted">IVA</span>
+                                                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedTax}</span>
                                                                 </div>
                                                             </AccordionContent>
                                                         </AccordionItem>
@@ -2271,7 +2273,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="mb-2.5 flex items-center justify-between gap-2">
                                             <SdSectionTitle>Cita</SdSectionTitle>
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-[11px] font-medium text-[#737373]">
+                                                <span className="text-kicker font-medium text-ink-muted">
                                                     {appointment
                                                         ? (appointmentStatusInfo?.displayName ||
                                                             (appointment.status === 'appointment_proposed' ? 'Propuesta' :
@@ -2291,7 +2293,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         const dateToUse = appointment.proposedDateLocal || appointment.proposedDate;
                                                         const timeToUse = appointment.proposedTimeLocal || appointment.proposedTime;
                                                         return (
-                                                            <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                            <p className="text-meta font-medium text-ink-strong">
                                                                 {new Date(dateToUse).toLocaleDateString('es-ES', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -2301,24 +2303,24 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         );
                                                     })()}
                                                     {appointment.location && (
-                                                        <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                        <p className="text-meta leading-relaxed text-ink-muted">
                                                             {appointment.location}
                                                             {appointment.doorNumber && (
-                                                                <span className="mt-0.5 block text-[#9a9a9a]">
-                                                                    Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                                <span className="mt-0.5 block text-ink-soft">
+                                                                    Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                                 </span>
                                                             )}
                                                         </p>
                                                     )}
                                                     {appointment.doorNumber && !appointment.location && (
-                                                        <p className="text-[13px] text-[#6a6a6a]">
-                                                            Puerta <span className="font-medium text-[#1c1c1c]">{appointment.doorNumber}</span>
+                                                        <p className="text-meta text-ink-muted">
+                                                            Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                         </p>
                                                     )}
                                                     {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
                                                     {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
                                                         <div className="space-y-1.5 pt-1">
-                                                            <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#0F6A3E]">
+                                                            <div className="flex items-center gap-1.5 text-caption font-medium text-success">
                                                                 <FileCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                                                                 <span>Informe enviado</span>
                                                             </div>
@@ -2328,9 +2330,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                     <button
                                                                         key={deliverable.id}
                                                                         onClick={() => window.open(deliverable.url, '_blank')}
-                                                                        className="flex w-full items-center gap-1.5 text-left text-[12px] text-[#737373] transition-colors hover:text-[#1c1c1c]"
+                                                                        className="flex w-full items-center gap-1.5 text-left text-caption text-ink-muted transition-colors hover:text-ink-strong"
                                                                     >
-                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
+                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
                                                                         <span className="truncate underline-offset-2 hover:underline">{fileName}</span>
                                                                     </button>
                                                                 );
@@ -2340,7 +2342,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 </>
                                             ) : (
                                                 <div>
-                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">{noAppointmentMessage}</p>
+                                                    <p className="text-meta leading-relaxed text-ink-muted">{noAppointmentMessage}</p>
                                                     {/* FIX [GAP-CANCEL-UI]: cancelación sin coste prometida en el checkout
                                                         (modo seller, antes de que el vendedor reserve). */}
                                                     {isClient && coordinationMode === 'seller' && !isSearchHireFinalized && (
@@ -2348,7 +2350,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             type="button"
                                                             onClick={handleCancelSellerBooking}
                                                             disabled={cancellingSellerBooking}
-                                                            className="mt-2 text-[12.5px] text-[#737373] underline underline-offset-2 transition-colors hover:text-[#1c1c1c] disabled:opacity-50"
+                                                            className="mt-2 text-caption text-ink-muted underline underline-offset-2 transition-colors hover:text-ink-strong disabled:opacity-50"
                                                         >
                                                             {cancellingSellerBooking ? 'Cancelando…' : 'Cancelar sin coste'}
                                                         </button>
@@ -2365,8 +2367,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="space-y-3">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
-                                                <div className="space-y-1.5 border-b border-[#f0f0f0] pb-3">
-                                                    <p className="text-[13.5px] font-medium text-[#1c1c1c]">
+                                                <div className="space-y-1.5 border-b border-line-soft pb-3">
+                                                    <p className="text-meta font-medium text-ink-strong">
                                                         {(() => {
                                                             // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
                                                             // ⚠️ NO usar proposedDate/proposedTime para mostrar (están en UTC)
@@ -2379,18 +2381,18 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             })} · ${timeToUse.substring(0, 5)}`;
                                                         })()}
                                                     </p>
-                                                    <p className="text-[13px] leading-relaxed text-[#6a6a6a]">
+                                                    <p className="text-meta leading-relaxed text-ink-muted">
                                                         {appointment.location && appointment.location.trim()
                                                             ? appointment.location
                                                             : 'Ubicación no aportada'}
-                                                        <span className="mt-0.5 block text-[#737373]">
-                                                            Puerta <span className="font-medium text-[#1c1c1c]">
+                                                        <span className="mt-0.5 block text-ink-muted">
+                                                            Puerta <span className="font-medium text-ink-strong">
                                                                 {appointment.doorNumber && appointment.doorNumber.trim()
                                                                     ? appointment.doorNumber
                                                                     : 'no aportada'}
                                                             </span>
-                                                            <span className="px-1.5 text-[#d4d4d4]">·</span>
-                                                            Tel. <span className="font-medium text-[#1c1c1c]">
+                                                            <span className="px-1.5 text-line">·</span>
+                                                            Tel. <span className="font-medium text-ink-strong">
                                                                 {appointment.phoneNumber && appointment.phoneNumber.trim()
                                                                     ? appointment.phoneNumber
                                                                     : 'no aportado'}
@@ -2546,13 +2548,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 src={search.user.profilePictureUrl || undefined}
                                                 alt={search.user.name}
                                             />
-                                            <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
+                                            <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
                                                 {search.user.name?.charAt(0).toUpperCase() || 'C'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{search.user.name}</p>
-                                            <p className="mt-0.5 truncate text-[12px] text-[#9a9a9a]">{search.user.email}</p>
+                                            <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
+                                            <p className="mt-0.5 truncate text-caption text-ink-soft">{search.user.email}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2568,13 +2570,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 src={expertData.profilePictureUrl || undefined}
                                                 alt={expertData.name}
                                             />
-                                            <AvatarFallback className="bg-[#f0f0f0] text-[13px] font-semibold text-[#737373]">
+                                            <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
                                                 {expertData.name?.charAt(0).toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5">
-                                                <p className="truncate text-[13.5px] font-medium text-[#1c1c1c]">{expertData.name}</p>
+                                                <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
                                                 {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
                                                 {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                     <CountryFlag
@@ -2589,8 +2591,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 )}
                                             </div>
                                             <div className="mt-0.5 flex items-center gap-1.5">
-                                                <CheckCircle className="h-3.5 w-3.5 text-[#0F6A3E]" strokeWidth={2} />
-                                                <span className="text-[12px] text-[#9a9a9a]">Verificado</span>
+                                                <CheckCircle className="h-3.5 w-3.5 text-success" strokeWidth={2} />
+                                                <span className="text-caption text-ink-soft">Verificado</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2615,7 +2617,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         {canApprove && (
                                             <Button
                                                 onClick={handleApproveService}
-                                                className="h-10 w-full bg-[#0F6A3E] text-white hover:bg-[#0c5733]"
+                                                className="h-10 w-full bg-success text-white hover:bg-success-hover"
                                                 size="sm"
                                             >
                                                 <CheckCircle className="mr-2 h-4 w-4" />
@@ -2626,7 +2628,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showDisputeModal: true }))}
                                                 variant="outline"
-                                                className="h-10 w-full border-[#f0d4d1] text-[#b42318] hover:bg-[#fdf2f2] hover:text-[#8f1d13]"
+                                                className="h-10 w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                                 size="sm"
                                             >
                                                 <AlertTriangle className="mr-2 h-4 w-4" />
@@ -2637,7 +2639,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <Button
                                                 onClick={() => setShowExpertResponseModal(true)}
                                                 variant="outline"
-                                                className="h-10 w-full border-[#e8e8e8] text-[#1c1c1c] hover:bg-[#fafafa]"
+                                                className="h-10 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                                 size="sm"
                                             >
                                                 <MessageCircle className="mr-2 h-4 w-4" />
@@ -2654,10 +2656,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 <div className="space-y-3 pt-4">
                                     <SdSectionTitle>Subir informe</SdSectionTitle>
                                 {fileValidation && (
-                                            <div className={`rounded-xl px-3 py-2.5 text-[12.5px] font-medium ${
+                                            <div className={`rounded-md px-3 py-2.5 text-caption font-medium ${
                                         fileValidation.canSubmit
-                                                    ? 'bg-[#ecf6f0] text-[#0F6A3E]'
-                                                    : 'bg-[#eef4fb] text-brand'
+                                                    ? 'bg-success-tint text-success'
+                                                    : 'bg-brand/10 text-brand'
                                             }`}>
                                                 {fileValidation.message}
                                     </div>
@@ -2665,16 +2667,16 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 {uploadedFiles.length > 0 && (
                                             <div className="space-y-1.5">
                                             {uploadedFiles.map((file) => (
-                                                    <div key={file.id} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
+                                                    <div key={file.id} className="flex items-center justify-between rounded-lg border border-line bg-white px-2.5 py-2 text-caption">
                                                     <div className="flex min-w-0 items-center gap-2">
-                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-[#9a9a9a]" strokeWidth={1.75} />
-                                                            <span className="truncate text-[#1c1c1c]">{file.fileName}</span>
+                                                            <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
+                                                            <span className="truncate text-ink-strong">{file.fileName}</span>
                                                     </div>
                                                         <Button
                                                         onClick={() => handleDeleteFile(file.id)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-6 w-6 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            className="h-6 w-6 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                     >
                                                             <X className="h-3 w-3" />
                                                         </Button>
@@ -2702,12 +2704,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
-                                            <div className="group w-full cursor-pointer rounded-xl border-2 border-dashed border-[#e0e0e0] p-6 text-center transition-colors hover:border-brand/40 hover:bg-[#fafafa]">
-                                                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#f0f0f0] transition-colors group-hover:bg-brand/10">
-                                                    <Upload className="h-5 w-5 text-[#737373] transition-colors group-hover:text-brand" strokeWidth={1.75} />
+                                            <div className="group w-full cursor-pointer rounded-md border-2 border-dashed border-line p-6 text-center transition-colors hover:border-brand/40 hover:bg-surface-tinted">
+                                                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-line-soft transition-colors group-hover:bg-brand/10">
+                                                    <Upload className="h-5 w-5 text-ink-muted transition-colors group-hover:text-brand" strokeWidth={1.75} />
                                                 </div>
-                                                <p className="mb-0.5 text-[13px] font-semibold text-[#1c1c1c]">Seleccionar archivos</p>
-                                                <p className="text-[12px] text-[#9a9a9a]">
+                                                <p className="mb-0.5 text-meta font-semibold text-ink-strong">Seleccionar archivos</p>
+                                                <p className="text-caption text-ink-soft">
                                                     {(() => {
                                                         // ✅ Mostrar tipos requeridos dinámicamente
                                                         if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
@@ -2724,13 +2726,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     {selectedDeliverableFiles.length > 0 && (
                                             <div className="space-y-1.5">
                                             {selectedDeliverableFiles.map((file, index) => (
-                                                    <div key={index} className="flex items-center justify-between rounded-lg border border-[#ededed] bg-white px-2.5 py-2 text-[12px]">
-                                                        <span className="truncate text-[#1c1c1c]">{file.name}</span>
+                                                    <div key={index} className="flex items-center justify-between rounded-lg border border-line bg-white px-2.5 py-2 text-caption">
+                                                        <span className="truncate text-ink-strong">{file.name}</span>
                                                         <Button
                                                         onClick={() => removeSelectedFile(index)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-6 w-6 shrink-0 p-0 text-[#9a9a9a] hover:text-[#1c1c1c]"
+                                                            className="h-6 w-6 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                     >
                                                             <X className="h-3 w-3" />
                                                         </Button>
@@ -2742,8 +2744,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             onClick={handleSubmitReport}
                                             className={`h-11 w-full font-semibold transition-colors ${
                                                 fileValidation && !fileValidation.canSubmit
-                                                    ? 'cursor-not-allowed bg-[#ededed] text-[#9a9a9a] hover:bg-[#ededed]'
-                                                    : 'bg-[#0F6A3E] text-white hover:bg-[#0c5733]'
+                                                    ? 'cursor-not-allowed bg-line text-ink-soft hover:bg-line'
+                                                    : 'bg-success text-white hover:bg-success-hover'
                                             }`}
                                             disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
                                             size="lg"
@@ -2772,7 +2774,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <SdSectionTitle>Reseña</SdSectionTitle>
                                     <Button
                                         onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                        className="h-10 w-full bg-[#1c1c1c] text-white hover:bg-black"
+                                        className="h-10 w-full bg-ink-strong text-white hover:bg-black"
                                         size="sm"
                                     >
                                         <Star className="mr-2 h-3.5 w-3.5" />
@@ -2785,13 +2787,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 <div className="space-y-2.5 pt-4">
                                     <div className="flex items-center justify-between">
                                         <SdSectionTitle>Reseña</SdSectionTitle>
-                                        <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#1c1c1c]">
+                                        <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
                                             <Star className="h-3.5 w-3.5" />
                                             {review.score}/5
                                         </span>
                                     </div>
                                     {review.description && (
-                                        <p className="rounded-xl bg-[#f7f7f7] p-3 text-[13px] leading-relaxed text-[#4a4a4a]">
+                                        <p className="rounded-md bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
                                             {review.description}
                                         </p>
                                     )}
@@ -2885,8 +2887,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     </AlertDialogHeader>
                     {appointmentToConfirm && (
                         <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-[#737373]">
-                                <Calendar className="w-4 h-4 text-[#9a9a9a]" />
+                            <div className="flex items-center gap-2 text-ink-muted">
+                                <Calendar className="w-4 h-4 text-ink-soft" />
                                 <span>
                                     {(() => {
                                         // ✅ CORRECTO: Usar campos *Local que el backend proporciona (ya están en hora local)
@@ -2907,8 +2909,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 </span>
                             </div>
                             {appointmentToConfirm.location && (
-                                <div className="flex items-center gap-2 text-[#737373]">
-                                    <MapPin className="w-4 h-4 text-[#9a9a9a]" />
+                                <div className="flex items-center gap-2 text-ink-muted">
+                                    <MapPin className="w-4 h-4 text-ink-soft" />
                                     <span>{appointmentToConfirm.location}</span>
                                 </div>
                             )}
@@ -2923,7 +2925,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 }
                             }}
                             disabled={isConfirming}
-                            className="bg-[#0F6A3E] text-white hover:bg-[#0c5733]"
+                            className="bg-success text-white hover:bg-success-hover"
                         >
                             {isConfirming ? (
                                 <>

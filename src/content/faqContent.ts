@@ -96,7 +96,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'messages',
     question: '¿Dónde veo mis mensajes y revisiones?',
     answer:
-      'Inicia sesión y entra en "Mis revisiones" (/busquedas) para ver el estado de cada contratación. Los mensajes con el experto están en el chat de cada reserva o en la sección de mensajes de la app.',
+      'Inicia sesión y entra en "Mis revisiones" (/hires) para ver el estado de cada contratación. Los mensajes con el experto están en el chat de cada reserva o en la sección de mensajes de la app.',
   },
   {
     id: 'cancel',
@@ -174,7 +174,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'favorites',
     question: '¿Puedo guardar expertos en favoritos?',
     answer:
-      'Sí. Usa el icono de corazón en la ficha del servicio o entra en /favoritos para ver los servicios guardados. Necesitas iniciar sesión.',
+      'Sí. Usa el icono de corazón en la ficha del servicio o entra en /favorites para ver los servicios guardados. Necesitas iniciar sesión.',
   },
   {
     id: 'response-time',
@@ -186,7 +186,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'become-expert',
     question: '¿Cómo puedo convertirme en experto?',
     answer:
-      'Crea una cuenta, ve a /become-expert, completa tu perfil profesional, verifica tu identidad y configura Stripe Connect para recibir pagos. Cuando te aprueben, podrás publicar servicios con precio, zona y entregables.',
+      'Crea una cuenta, ve a /expert/join, completa tu perfil profesional, verifica tu identidad y configura Stripe Connect para recibir pagos. Cuando te aprueben, podrás publicar servicios con precio, zona y entregables.',
   },
   {
     id: 'expert-stripe',
@@ -240,7 +240,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: 'my-booking-status',
     question: '¿Puedes decirme el estado de mi reserva?',
     answer:
-      'No tengo acceso a reservas concretas ni a datos de tu cuenta. Inicia sesión en /busquedas para ver el estado, los mensajes y las acciones disponibles. Para ayuda personalizada escribe a soporte@inspecciono.com con el email de tu cuenta.',
+      'No tengo acceso a reservas concretas ni a datos de tu cuenta. Inicia sesión en /hires para ver el estado, los mensajes y las acciones disponibles. Para ayuda personalizada escribe a soporte@inspecciono.com con el email de tu cuenta.',
   },
   {
     id: 'support',

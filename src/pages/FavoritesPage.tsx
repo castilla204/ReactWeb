@@ -21,7 +21,7 @@ import {
   hpIconButtonClass,
 } from '../constants/homepageTypography';
 
-const FAVORITES_PATH = '/favoritos';
+const FAVORITES_PATH = '/favorites';
 
 // Barra inferior móvil — lazy para no cargarla en escritorio (mismo patrón que HomePage).
 const MobileBottomBar = lazy(() =>
@@ -40,7 +40,7 @@ const FAVORITES_GRID_CARDS_CLASS = `${FAVORITES_GRID_CLASS} [&>a]:!w-full [&>a]:
 
 /** Botón pill de marca — mismas reglas de color/animación que los CTA del sitio. */
 const BRAND_CTA_CLASS =
-  'inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-[15px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+  'inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-lead font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 /** Convierte la fila de favorito al DTO que consume la tarjeta de la homepage. */
 const toServiceDetail = (service: any): SearchServiceDetailDto => ({
@@ -84,12 +84,12 @@ const toServiceDetail = (service: any): SearchServiceDetailDto => ({
 const FavoriteCardSkeleton: React.FC<{ isMobile: boolean }> = ({ isMobile }) => (
   <div className="w-full" aria-hidden="true">
     <div
-      className="w-full animate-pulse rounded-[20px] bg-[#eeeeee] md:rounded-xl"
+      className="w-full animate-pulse rounded-[20px] bg-line md:rounded-xl"
       style={{ aspectRatio: isMobile ? '1' : '4 / 3' }}
     />
-    <div className="mt-2 h-[14px] w-3/4 animate-pulse rounded bg-[#eeeeee]" />
-    <div className="mt-1.5 h-3 w-1/2 animate-pulse rounded bg-[#f1f1f1]" />
-    <div className="mt-1.5 h-3 w-2/3 animate-pulse rounded bg-[#f1f1f1]" />
+    <div className="mt-2 h-[14px] w-3/4 animate-pulse rounded bg-line" />
+    <div className="mt-1.5 h-3 w-1/2 animate-pulse rounded bg-line-soft" />
+    <div className="mt-1.5 h-3 w-2/3 animate-pulse rounded bg-line-soft" />
   </div>
 );
 
@@ -113,9 +113,15 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
 
   return (
     <div className="flex min-h-screen flex-col bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-0">
-      <SEO title="Tus favoritos | Inspecciono" description="Servicios de inspección que has guardado." noindex />
+      <SEO
+        title="Tus favoritos | Inspecciono"
+        description="Guarda y consulta tus servicios de inspección favoritos en Inspecciono. Compara peritos verificados de coches, pisos, motos y más antes de comprar."
+        canonical="/favorites"
+        ogTitle="Tus favoritos en Inspecciono"
+        ogDescription="Tu colección personal de servicios de inspección guardados. Vuelve cuando quieras a reservar con el perito que elegiste."
+      />
       {/* Cabecera editorial — sin barra sticky; respira y deja la marca clara. */}
-      <header className="border-b border-[#ececec]">
+      <header className="border-b border-line">
         <div className={SD_PAGE_INNER_MAX_CLASS}>
           <div className="py-6 md:py-9">
             {showBack && (
@@ -144,7 +150,7 @@ const FavoritesShell: React.FC<FavoritesShellProps> = ({ count, showBack = true,
               </h1>
             </div>
             <p
-              className="mt-3.5 text-[14px] md:text-[15px]"
+              className="mt-3.5 text-body md:text-lead"
               style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}
             >
               {subtitle}
@@ -177,16 +183,16 @@ const CenteredState: React.FC<{
   onCta: () => void;
 }> = ({ icon, title, description, ctaLabel, onCta }) => (
   <div className="mx-auto flex max-w-md flex-col items-center px-2 py-12 text-center md:py-20">
-    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f6f6f6]">
+    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-surface-tinted">
       {icon}
     </div>
     <h2
-      className="text-[19px] font-semibold tracking-[-0.01em] md:text-[21px]"
+      className="text-title font-semibold tracking-[-0.01em] md:text-[21px]"
       style={{ fontFamily: HP_FONT, color: HP_COLOR.primary }}
     >
       {title}
     </h2>
-    <p className="mt-2 text-[14px] leading-relaxed" style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}>
+    <p className="mt-2 text-body leading-relaxed" style={{ fontFamily: HP_FONT, color: HP_COLOR.muted }}>
       {description}
     </p>
     <button type="button" onClick={onCta} className={`${BRAND_CTA_CLASS} mt-6`}>
@@ -213,13 +219,13 @@ export const FavoritesPage: React.FC = () => {
   );
 
   const handleToggleFavorite = useCallback(
-    async (serviceId: number) => {
+    async (serviceId: number, optimisticIsFavorite: boolean) => {
       if (!isAuthenticated) {
         homepageToast.loginRequired();
         return null;
       }
       try {
-        const result = await toggleFavoriteAsync(serviceId);
+        const result = await toggleFavoriteAsync({ searchServiceId: serviceId, optimisticIsFavorite });
         return { isFavorite: result.isFavorite, message: result.message };
       } catch (err: any) {
         homepageToast.error(err?.message || 'Error al actualizar favorito', 3000);

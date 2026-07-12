@@ -13,12 +13,12 @@
   <!-- /explorar renderiza la misma HomePage con canonical="/" → no se lista (señal duplicada).
        /quienes-somos, /como-funciona y /faq redirigen a /ayuda desde 2026-06 → se lista /ayuda. -->
   <url>
-    <loc>https://inspecciono.com/ayuda</loc>
+    <loc>https://inspecciono.com/help</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://inspecciono.com/crear-busqueda</loc>
+    <loc>https://inspecciono.com/hire</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -48,16 +48,75 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <!-- SEO local: hub de cobertura nacional -->
+  <url>
+    <loc>https://inspecciono.com/inspeccion-segunda-mano-espana</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- Landings por provincia (una por provincia + Ceuta y Melilla). Datos locales reales. -->
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-a-coruna</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-vitoria-gasteiz</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-albacete</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-alicante</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-almeria</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-oviedo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-avila</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-badajoz</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-palma</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-barcelona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-bilbao</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-burgos</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-caceres</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-cadiz</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-santander</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-castellon</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-ciudad-real</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-cordoba</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-cuenca</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-girona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-granada</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-guadalajara</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-san-sebastian</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-huelva</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-huesca</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-jaen</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-leon</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-lleida</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-santiago-lugo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-madrid</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-malaga</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-murcia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-pamplona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-ourense</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-palencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-las-palmas</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-pontevedra</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-logrono</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-salamanca</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-santa-cruz-de-tenerife</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-segovia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-sevilla</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-soria</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-tarragona</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-teruel</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-toledo</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-valencia</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-valladolid</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-zamora</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-zaragoza</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-ceuta</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://inspecciono.com/inspeccion-segunda-mano-melilla</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <!-- /become-expert NO se lista: está tras ProtectedRoute (redirige a login sin sesión),
        así que Google —que rastrea sin sesión— vería el login, no una página indexable.
        Si en el futuro hay una landing pública de captación de expertos, listar ESA. -->
   <url>
-    <loc>https://inspecciono.com/privacy-policy.html</loc>
+    <loc>https://inspecciono.com/legal/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://inspecciono.com/terms.html</loc>
+    <loc>https://inspecciono.com/legal/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
