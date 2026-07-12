@@ -21,6 +21,7 @@ const airbnbSearchBarPromise = import('../components/AirbnbSearchBar');
 const homepageWallPromise = import('../components/HomepageWall');
 const mobileBottomBarPromise = import('../components/MobileBottomBar');
 const desktopLandingPromise = import('../components/DesktopLanding');
+const howItWorksPromise = import('../components/HomepageHowItWorks');
 
 const AirbnbSearchBar = lazy(() =>
   airbnbSearchBarPromise.then((m) => ({ default: m.AirbnbSearchBar })),
@@ -32,6 +33,9 @@ const MobileBottomBar = lazy(() =>
   mobileBottomBarPromise.then((m) => ({ default: m.MobileBottomBar })),
 );
 const DesktopLanding = lazy(() => desktopLandingPromise);
+const HomepageHowItWorks = lazy(() =>
+  howItWorksPromise.then((m) => ({ default: m.HomepageHowItWorks })),
+);
 
 const HomePage: React.FC = () => {
   const location = useLocation();
@@ -160,6 +164,10 @@ const HomePage: React.FC = () => {
             </Suspense>
           </div>
         </div>
+
+        <Suspense fallback={null}>
+          <HomepageHowItWorks />
+        </Suspense>
 
         {!isMobile && (
           <Suspense fallback={null}>
