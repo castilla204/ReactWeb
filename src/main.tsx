@@ -15,6 +15,8 @@ import { CurrencyProvider } from './contexts/CurrencyContext'
 import { MfaVerificationProvider } from './contexts/MfaVerificationContext'
 import { useBodyScrollSafety } from './hooks/useBodyScrollLock'
 import { getFriendlyErrorMessage, isNetworkError } from './hooks/useErrorHandler'
+import { setupRateLimitHandler } from './services/rateLimitHandler'
+import { setupErrorInterceptor } from './services/errorInterceptor'
 // 🛡️ Round 28 — Sprint 4: inicializar i18next antes de renderizar la app.
 import './i18n'
 import './index.css'
@@ -123,6 +125,16 @@ function handleMutationError(error: unknown) {
 if (typeof document !== 'undefined') {
   document.documentElement.classList.remove('dark')
   localStorage.removeItem('theme')
+}
+
+// 🛡️ CRITICAL: Initialize fetch interceptors BEFORE mounting providers
+// CurrencyProvider mounts and tries to fetch /api/currencies on initialization.
+// If interceptors aren't set up first, the fetch will fail silently.
+// These must be called before createRoot().render() to ensure they're ready
+// when any component tries to fetch.
+if (typeof window !== 'undefined') {
+  setupRateLimitHandler()
+  setupErrorInterceptor()
 }
 
 /**
