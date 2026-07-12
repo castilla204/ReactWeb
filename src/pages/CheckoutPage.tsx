@@ -665,7 +665,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         // Skeleton con la forma del checkout (columna del wizard + resumen lateral)
         // en vez de un spinner a pantalla completa.
         return (
-            <div className="min-h-screen bg-[#f3f4f6] px-4 pb-12 pt-8 sm:px-5 lg:px-8" aria-busy="true">
+            <div className="min-h-screen bg-surface-tinted px-4 pb-12 pt-8 sm:px-5 lg:px-8" aria-busy="true">
                 <div className="mx-auto w-full max-w-[75rem]">
                     <SileoSkeleton className="mb-6 h-7 w-56 max-w-[70%] rounded-lg" />
                     <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
@@ -678,7 +678,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 ))}
                             </div>
                         </div>
-                        <div className="space-y-4 rounded-2xl border border-[#ebebeb] bg-white p-4">
+                        <div className="space-y-4 rounded-2xl border border-line bg-white p-4">
                             <div className="flex items-center gap-3">
                                 <SileoSkeleton className="h-12 w-12" rounded="full" />
                                 <div className="flex-1 space-y-2">
@@ -699,13 +699,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
 
     if (!service) {
         return (
-            <div className="flex min-h-[100dvh] items-center justify-center bg-[#fafafa]">
+            <div className="flex min-h-[100dvh] items-center justify-center bg-surface-tinted">
                 <div className="text-center">
                     <p className="mb-4 text-sm text-red-600" style={{ fontFamily: HP_FONT }}>Servicio no encontrado</p>
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
-                        className="inline-flex h-11 items-center justify-center rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2"
+                        className="inline-flex h-11 items-center justify-center rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2"
                     >
                         Volver
                     </button>
@@ -1149,9 +1149,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // _SHELL_HEIGHT_CLASS en el wrapper), así que los paneles llenan el alto en los dos y el
     // scroll interior protege los viewports bajos.
     const desktopSplitLeftClass =
-        'min-w-0 flex-[0_0_45%] xl:flex-[0_0_42%] flex flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
+        'min-w-0 flex-[0_0_45%] xl:flex-[0_0_42%] flex flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
     const desktopSplitRightClass =
-        'relative min-w-0 flex-1 flex flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
+        'relative min-w-0 flex-1 flex flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
     const desktopSplitPanelScrollClass =
         'px-6 pb-5 pt-5 xl:px-7 flex min-h-0 flex-1 flex-col overflow-y-auto';
 
@@ -1243,7 +1243,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continuar
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -1282,7 +1282,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     hideExpertHeader
                                     showDeliverables
                                     deliverablesColumns={2}
-                                    className="[&_article]:rounded-2xl [&_article]:border [&_article]:border-[#ebebeb] [&_article]:shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                                    className="[&_article]:rounded-2xl [&_article]:border [&_article]:border-line [&_article]:shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
                                 />
                             </section>
                             <aside className={cn('lg:sticky lg:self-start', SD_DESKTOP_STICKY_TOP_CLASS)}>
@@ -1358,7 +1358,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                                            <aside className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden rounded-xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 xl:p-5">
                                                     {desktopCalendarColumnNode}
                                                 </div>
@@ -1376,7 +1376,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             // 2026-07-10). Una sola tarjeta a la altura del mapa dejaba
                                             // ~250px de vacío bajo los campos.
                                             <div className="flex h-full min-h-0 min-w-0 flex-[0_0_45%] flex-col gap-4 xl:flex-[0_0_42%]">
-                                                <div className="flex min-h-0 flex-col rounded-xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                                                <div className="flex min-h-0 flex-col rounded-xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                                     <div className="flex min-h-0 flex-col overflow-y-auto px-6 pb-5 pt-5 xl:px-7">
                                                         {desktopMapDetailsBody}
                                                     </div>
@@ -1401,10 +1401,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                             <aside
                                                 className={cn(
                                                     desktopSplitRightClass,
-                                                    'items-center justify-center bg-[#fafbfc] px-6',
+                                                    'items-center justify-center bg-surface-tinted px-6',
                                                 )}
                                             >
-                                                <p className="max-w-sm text-center text-[13px] leading-[1.55] text-[#64748b]">
+                                                <p className="max-w-sm text-center text-meta leading-[1.55] text-ink-muted">
                                                     La inspección será en el taller del experto. No hace falta
                                                     indicar ubicación en el mapa.
                                                 </p>
@@ -1623,7 +1623,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     {inCoordinationChoice && coordView === 'choose' ? (
                         <div className="mb-2.5 flex items-start gap-2">
                             <ShieldCheck className="mt-[1px] h-[15px] w-[15px] shrink-0 text-brand" strokeWidth={2} aria-hidden />
-                            <p className="text-[12px] leading-[1.4] text-[#565d6b]">
+                            <p className="text-caption leading-[1.4] text-ink-muted">
                                 Elijas lo que elijas, tu pago queda protegido: no cobramos al experto hasta que apruebes el informe.
                             </p>
                         </div>

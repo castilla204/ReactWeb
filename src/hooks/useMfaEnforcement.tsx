@@ -223,7 +223,7 @@ export function useMfaEnforcement() {
      * Fuerza el setup de MFA (admin puede llamar esto)
      */
     const forceSetup = () => {
-        navigate('/mfa/setup-required', { 
+        navigate('/mfa/setup', { 
             state: { reason: 'admin_enforced' } 
         });
     };

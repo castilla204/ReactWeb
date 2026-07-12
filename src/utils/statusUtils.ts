@@ -2,9 +2,11 @@ import { SystemStatusDto } from '../types/searchDetails';
 
 import { DISPUTE_RESOLVED_STATUSES, TERMINAL_SEARCH_HIRE_STATUSES } from '../constants/hireStatuses';
 
+import { INK } from '../constants/designTokens';
+
 // Utilidades para manejar información de estados
 export const getStatusColor = (statusInfo: SystemStatusDto): string => {
-  return statusInfo.color || '#6C757D';
+  return statusInfo.color || INK.muted;
 };
 
 export const getStatusDisplayName = (statusInfo: SystemStatusDto): string => {
@@ -36,7 +38,7 @@ export const getStatusInfoWithFallback = (
     statusValue: fallbackStatus,
     displayName: fallbackStatus.replace(/_/g, ' '),
     description: null,
-    color: '#6C757D',
+    color: INK.muted,
     isActive: true,
     isFinalizationStatus: false,
     sortOrder: 999,
@@ -98,11 +100,11 @@ export const getStatusTone = (statusInfo: Pick<SystemStatusDto, 'statusValue'>):
 
 /** Tinte + texto + hairline por tono (AA ≥4.5:1 verificado sobre su fondo). */
 export const STATUS_TONE_BADGE_CLASSES: Record<StatusTone, string> = {
-  success: 'bg-[#ecf6f0] text-[#0F6A3E] border-[#d8ebdf]',
-  danger: 'bg-[#fdf2f2] text-[#b42318] border-[#f5dada]',
-  warning: 'bg-[#fdf6e7] text-[#8a5a10] border-[#f3e6c8]',
-  info: 'bg-[#eef4fb] text-[#0059b3] border-[#dbe7f7]',
-  neutral: 'bg-[#f4f4f4] text-[#4a4a4a] border-[#e8e8e8]',
+  success: 'bg-success-tint text-success border-success-border',
+  danger: 'bg-destructive/10 text-destructive border-destructive/30',
+  warning: 'bg-warning-tint text-warning border-warning-border',
+  info: 'bg-brand/10 text-brand border-brand/20',
+  neutral: 'bg-line-soft text-ink border-line',
 };
 
 // Función para determinar si un estado es "positivo" (verde)

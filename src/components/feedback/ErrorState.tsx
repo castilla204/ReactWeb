@@ -30,7 +30,7 @@ interface ErrorStateProps {
   fullScreen?: boolean;
   /** Versión reducida para incrustar dentro de tarjetas/listas. */
   compact?: boolean;
-  /** Sustituye la ilustración por un nodo propio (p. ej. un <img> PNG 3D). */
+  /** Sustituye la ilustración por un nodo propio (p. ej. un PNG 3D externo). */
   illustration?: React.ReactNode;
   className?: string;
 }
@@ -91,7 +91,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
           {resolvedTitle}
         </h2>
 
-        <p className={`mt-2 leading-relaxed text-gray-500 dark:text-gray-400 ${compact ? 'text-sm' : 'text-[15px]'}`}>
+        <p className={`mt-2 leading-relaxed text-gray-500 dark:text-gray-400 ${compact ? 'text-sm' : 'text-lead'}`}>
           {resolvedDescription}
         </p>
 
@@ -110,7 +110,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
               <button
                 type="button"
                 onClick={secondaryAction.onClick}
-                className="rounded-full px-5 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                className="rounded-full px-5 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand/40 dark:text-gray-400 dark:hover:text-white"
               >
                 {secondaryAction.label}
               </button>

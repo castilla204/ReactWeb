@@ -108,17 +108,17 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
   const menuGroups: MenuItem[][] = [
     [
       // Ambas entradas van a la bandeja unificada, cada una con su filtro (/busquedas redirige salvo admin)
-      { id: 'searches', label: 'Mis contrataciones', icon: Search, onClick: () => navigate('/busquedas') },
-      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => navigate('/mis-mensajes?filtro=consultas') },
-      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => navigate('/favoritos') },
-      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => navigate('/transacciones') },
+      { id: 'searches', label: 'Mis contrataciones', icon: Search, onClick: () => navigate('/hires') },
+      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => navigate('/messages?filter=inquiries') },
+      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => navigate('/favorites') },
+      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => navigate('/account/transactions') },
     ],
     [
       {
         id: 'become-expert',
         label: isExpert ? 'Panel de experto' : 'Hazte revisor',
         icon: isExpert ? Briefcase : UserPlus,
-        onClick: () => navigate(isExpert ? '/expert-panel' : '/become-expert'),
+        onClick: () => navigate(isExpert ? '/expert' : '/expert/join'),
         highlight: !isExpert,
       },
       ...(userIsAdmin
@@ -148,8 +148,8 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
 
   const itemClass = cn(
     'group mx-1 flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5',
-    'text-[13.5px] font-medium text-[#222222]',
-    'focus:bg-[#f5f5f5] data-[highlighted]:bg-[#f5f5f5]',
+    'text-meta font-medium text-ink',
+    'focus:bg-surface-tinted data-[highlighted]:bg-surface-tinted',
   );
 
   const renderMenuItem = (item: MenuItem) => {
@@ -166,14 +166,14 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
         <Icon
           className={cn(
             'h-[17px] w-[17px] shrink-0',
-            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-[#717171]',
+            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-ink-muted',
           )}
           strokeWidth={2.1}
         />
         <span className="min-w-0 flex-1 leading-none">{item.label}</span>
         {!item.destructive ? (
           <ChevronRight
-            className="h-3.5 w-3.5 shrink-0 text-[#d1d5db] opacity-0 transition-opacity group-focus:opacity-100 group-data-[highlighted]:opacity-100"
+            className="h-3.5 w-3.5 shrink-0 text-ink-soft opacity-0 transition-opacity group-focus:opacity-100 group-data-[highlighted]:opacity-100"
             strokeWidth={2.2}
             aria-hidden
           />
@@ -191,7 +191,7 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
           className={
             isMap
               ? 'sd-icon-btn shrink-0'
-              : 'inline-flex shrink-0 items-center gap-2 rounded-full border border-[#dddddd] bg-white py-1 pl-1 pr-2.5 text-[13px] font-semibold text-[#222222] shadow-sm transition-colors hover:border-[#b0b0b0] hover:bg-[#fafafa]'
+              : 'inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-2.5 text-meta font-semibold text-ink shadow-sm transition-colors hover:border-ink-soft hover:bg-surface-tinted'
           }
         >
           {isMap ? (
@@ -200,7 +200,7 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
             <>
               {renderAvatar(26)}
               <span className="hidden lg:inline">Mi cuenta</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#717171]" strokeWidth={2.4} aria-hidden />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={2.4} aria-hidden />
             </>
           )}
         </button>
@@ -209,16 +209,16 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
       <DropdownMenuContent
         align="end"
         sideOffset={10}
-        className="w-[248px] overflow-hidden rounded-xl border border-[#ebebeb] bg-white p-0 shadow-[0_8px_28px_rgba(0,0,0,0.12)]"
+        className="w-[248px] overflow-hidden rounded-xl border border-line bg-white p-0 shadow-[0_8px_28px_rgba(0,0,0,0.12)]"
       >
-        <div className="flex items-center gap-2.5 border-b border-[#ebebeb] px-3 py-2.5">
+        <div className="flex items-center gap-2.5 border-b border-line px-3 py-2.5">
           {renderAvatar(36)}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-semibold leading-tight text-[#222222]">
+            <p className="truncate text-body font-semibold leading-tight text-ink">
               {userName || 'Mi cuenta'}
             </p>
             {userEmail ? (
-              <p className="truncate text-[11.5px] leading-tight text-[#717171]">
+              <p className="truncate text-[11.5px] leading-tight text-ink-muted">
                 {userEmail}
                 {roleHint ? <span className="text-brand">{roleHint}</span> : null}
               </p>
@@ -231,12 +231,12 @@ export const AccountMenu: React.FC<{ isMap?: boolean }> = ({ isMap = false }) =>
         <div className="py-1">
           {menuGroups.map((group, index) => (
             <React.Fragment key={index}>
-              {index > 0 ? <DropdownMenuSeparator className="my-1 bg-[#ebebeb]" /> : null}
+              {index > 0 ? <DropdownMenuSeparator className="my-1 bg-line" /> : null}
               {group.map(renderMenuItem)}
             </React.Fragment>
           ))}
 
-          <DropdownMenuSeparator className="my-1 bg-[#ebebeb]" />
+          <DropdownMenuSeparator className="my-1 bg-line" />
 
           {renderMenuItem({
             id: 'logout',

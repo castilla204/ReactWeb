@@ -40,8 +40,8 @@ export function SearchCategoryIcon({
     }
 
     return (
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f0f0]">
-            <FolderTree className="h-5 w-5 text-[#9ca3af]" strokeWidth={1.5} />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-line-soft">
+            <FolderTree className="h-5 w-5 text-ink-soft" strokeWidth={1.5} />
         </div>
     );
 }

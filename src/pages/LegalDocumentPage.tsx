@@ -169,7 +169,7 @@ export function LegalDocumentPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fafafa] font-display text-[#1c1c1c]">
+    <div className="flex min-h-screen flex-col bg-surface-tinted font-display text-ink-strong">
       <SEO title={seoTitle} description={seoDescription} canonical={canonical} noindex={false} />
 
       {/* Contenido */}
@@ -177,15 +177,15 @@ export function LegalDocumentPage({
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-5 inline-flex items-center gap-1.5 rounded-md border border-[#e2e2e2] bg-white px-3 py-1.5 text-[12.5px] font-medium text-[#4a4a4a] shadow-sm transition-colors hover:border-[#c8c8c8] hover:text-[#1c1c1c]"
+          className="mb-5 inline-flex items-center gap-1.5 rounded-md border border-line bg-white px-3 py-1.5 text-caption font-medium text-ink shadow-sm transition-colors hover:border-line-soft hover:text-ink-strong"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Volver
         </button>
-        <h1 className="font-display text-[1.4rem] font-semibold leading-tight tracking-[-0.02em] text-[#1c1c1c] md:text-[1.6rem]">
+        <h1 className="font-display text-[1.4rem] font-semibold leading-tight tracking-[-0.02em] text-ink-strong md:text-[1.6rem]">
           {title}
         </h1>
-        <p className="mt-1.5 mb-6 max-w-2xl text-[13px] leading-relaxed text-[#6a6a6a]">
+        <p className="mt-1.5 mb-6 max-w-2xl text-meta leading-relaxed text-ink-muted">
           {subtitle}
         </p>
         {loading ? (
@@ -193,7 +193,7 @@ export function LegalDocumentPage({
             <SileoLoader size="lg" color="brand" />
           </div>
         ) : error ? (
-          <div className="rounded-lg bg-white px-6 py-12 text-center text-sm text-[#b42318] ring-1 ring-[#ececec]">
+          <div className="rounded-lg bg-white px-6 py-12 text-center text-sm text-destructive ring-1 ring-line">
             {error}
           </div>
         ) : (

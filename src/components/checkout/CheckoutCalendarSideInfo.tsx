@@ -35,15 +35,15 @@ export function CheckoutCalendarSideInfo({
     return (
         <div
             className={cn(
-                'flex min-h-0 flex-col justify-center rounded-xl border border-[#ebebeb] bg-white px-4 py-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:px-5',
+                'flex min-h-0 flex-col justify-center rounded-xl border border-line bg-white px-4 py-2 shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:px-5',
                 className,
             )}
         >
-            <ul className="flex flex-col divide-y divide-[#eef0f3]">
+            <ul className="flex flex-col divide-y divide-line-soft">
                 {points.map(({ title, body }) => (
                     <li key={title} className="py-3.5">
-                        <p className="text-[13.5px] font-semibold leading-snug text-[#1c1c1c]">{title}</p>
-                        <p className="mt-1 text-[12.5px] leading-[1.5] text-[#6b7280]">{body}</p>
+                        <p className="text-meta font-semibold leading-snug text-ink-strong">{title}</p>
+                        <p className="mt-1 text-caption leading-[1.5] text-ink-muted">{body}</p>
                     </li>
                 ))}
             </ul>

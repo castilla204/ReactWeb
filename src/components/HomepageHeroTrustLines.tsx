@@ -13,11 +13,11 @@ export const HomepageHeroTrustLines: React.FC<HomepageHeroTrustLinesProps> = ({
   className = 'mt-4',
 }) => (
   <p
-    className={`hidden md:block text-xs leading-snug text-[#6a6a6a] ${className}`}
+    className={`hidden md:block text-xs leading-snug text-ink-muted ${className}`}
     role="status"
   >
     <span className="font-medium text-brand">{HP_HERO_COVERAGE.countriesMin}+</span> países
-    <span className="mx-2 text-[#d4d4d4]" aria-hidden>
+    <span className="mx-2 text-line" aria-hidden>
       ·
     </span>
     <span className="font-medium text-brand">{HP_HERO_COVERAGE.expertsMin}+</span> expertos

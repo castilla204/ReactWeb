@@ -13,20 +13,13 @@ interface VerifiedBadgeProps {
 export function VerifiedBadge({ className = 'h-5 w-5' }: VerifiedBadgeProps) {
     return (
         <span className={`pointer-events-none ${className}`.trim()} aria-hidden>
-            <svg viewBox="0 0 24 24" className="h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.28)]">
-                {/* Borde blanco (sello ampliado) */}
-                <path
-                    d={SEAL_PATH}
-                    fill="#ffffff"
-                    transform="translate(12 12) scale(1.16) translate(-12 -12)"
-                />
-                {/* Sello negro */}
-                <path d={SEAL_PATH} fill="#171717" />
-                {/* Check blanco */}
+            <svg viewBox="0 0 24 24" className="h-full w-full fill-ink-strong text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.28)]">
+                <path d={SEAL_PATH} fill="currentColor" transform="translate(12 12) scale(1.16) translate(-12 -12)" />
+                <path d={SEAL_PATH} />
                 <path
                     d="m8.5 12 2.5 2.5 4.5-4.5"
                     fill="none"
-                    stroke="#ffffff"
+                    stroke="currentColor"
                     strokeWidth={2.4}
                     strokeLinecap="round"
                     strokeLinejoin="round"

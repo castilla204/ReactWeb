@@ -77,7 +77,7 @@ const EMBEDDED_CALENDAR_CLASS_NAMES = {
     month_caption: 'hidden',
     month: 'flex w-full flex-col gap-2',
     weekdays: 'mb-1 flex w-full sm:mb-1.5',
-    weekday: 'flex-1 text-center text-[11px] font-medium uppercase tracking-wide text-[#6b7280] lg:text-xs',
+    weekday: 'flex-1 text-center text-kicker font-medium uppercase tracking-wide text-ink-muted lg:text-xs',
     week: 'flex w-full',
     // Padding más ajustado por debajo de 640px: en un móvil estrecho (390px) el botón del
     // día cae a ~40.9px con 3px de aire; a 2px sube a ~43.4px, más cerca del objetivo táctil
@@ -107,26 +107,26 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
                             'h-3 rounded-sm',
                             i === 4
                                 ? 'bg-brand/20 outline outline-[1.5px] -outline-offset-1 outline-brand/55'
-                                : 'bg-[#e5e7eb]',
+                                : 'bg-line',
                         )}
                     />
                 ))}
             </div>
-            <p className={cn('font-semibold text-[#1c1c1c]', compactSplit ? 'text-[13px]' : 'text-sm')}>
+            <p className={cn('font-semibold text-ink-strong', compactSplit ? 'text-meta' : 'text-sm')}>
                 Elige un día en el calendario
             </p>
             {!compactSplit ? (
                 <>
-            <p className="mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-[#6b7280] max-lg:hidden">
+            <p className="mt-1.5 max-w-[32ch] text-meta leading-relaxed text-ink-muted max-lg:hidden">
                 Los días en verde tienen más huecos libres. Al pulsar uno verás las franjas de mañana
                 y tarde con las horas concretas del experto.
             </p>
-            <p className="mt-1.5 max-w-[32ch] text-[13px] leading-relaxed text-[#6b7280] lg:hidden">
+            <p className="mt-1.5 max-w-[32ch] text-meta leading-relaxed text-ink-muted lg:hidden">
                 Los días en verde tienen más huecos libres. Al pulsar uno se abrirá el selector de hora.
             </p>
                 </>
             ) : (
-                <p className="mt-1 max-w-[18ch] text-[11px] leading-snug text-[#6b7280]">
+                <p className="mt-1 max-w-[18ch] text-kicker leading-snug text-ink-muted">
                     Pulsa un día en verde para ver las horas.
                 </p>
             )}
@@ -134,15 +134,12 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
     );
 }
 
-// Mismo hue que el resto de la app (STATUS_TONE_BADGE_CLASSES en statusUtils.ts:
-// success #0F6A3E, warning #8a5a10) en vez de los verdes/ámbares de stock de Tailwind
-// (hue distinto, más teal/naranja) y gris neutro real en vez de slate azulado (que
-// remite al azul de marca del día seleccionado). Misma viveza que los -200 originales
-// (no la versión pálida): AA ≥4.5:1 con y sin el brightness(0.96) del hover.
+// Misma viveza que los -200 originales (no la versión pálida de success-tint/warning-tint):
+// AA ≥4.5:1 con y sin el brightness(0.96) del hover.
 const AVAILABILITY_LEGEND_ITEMS = [
-    { label: 'Libre', swatch: 'bg-[#a5f3cd]' },
-    { label: 'Pocos', swatch: 'bg-[#fdd48b]' },
-    { label: 'Lleno', swatch: 'bg-[#dedede]' },
+    { label: 'Libre', swatch: 'bg-avail-free' },
+    { label: 'Pocos', swatch: 'bg-avail-low' },
+    { label: 'Lleno', swatch: 'bg-avail-full' },
 ] as const;
 
 /** Leyenda de disponibilidad bajo el calendario (colores = celdas del mes). */
@@ -158,7 +155,7 @@ function AvailabilityLegend({
     return (
         <div
             className={cn(
-                'flex flex-wrap items-center border-t border-[#eceef2] px-[2px] sm:px-[3px]',
+                'flex flex-wrap items-center border-t border-line px-[2px] sm:px-[3px]',
                 compact ? 'mt-2 gap-x-2 gap-y-1 pt-2' : 'mt-2.5 gap-x-3 gap-y-1.5 pt-2.5',
                 align === 'between' ? 'justify-between' : 'justify-center',
             )}
@@ -170,8 +167,8 @@ function AvailabilityLegend({
                     <span
                         key={label}
                         className={cn(
-                            'inline-flex items-center gap-1.5 font-medium leading-none text-[#475569]',
-                            compact ? 'text-[11px]' : 'text-[12px]',
+                            'inline-flex items-center gap-1.5 font-medium leading-none text-ink-muted',
+                            compact ? 'text-kicker' : 'text-caption',
                         )}
                     >
                         <span
@@ -371,10 +368,10 @@ const SlotPicker: React.FC<Props> = ({
                 if (hasSummary && free !== undefined) {
                     tint =
                         free === 0
-                            ? 'bg-[#dedede] text-[#4a4a4a]'
+                            ? 'bg-avail-full text-ink'
                             : free <= 2
-                              ? 'bg-[#fdd48b] text-[#7a4e0d]'
-                              : 'bg-[#a5f3cd] text-[#0F6A3E]';
+                              ? 'bg-avail-low text-warning'
+                              : 'bg-avail-free text-success';
                 }
             }
 
@@ -394,12 +391,12 @@ const SlotPicker: React.FC<Props> = ({
                     className={cn(
                         'relative flex aspect-square w-full select-none items-center justify-center overflow-hidden rounded-lg font-semibold tabular-nums transition-[translate,scale,background-color,box-shadow] duration-150 motion-reduce:transition-[background-color,box-shadow]',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/55',
-                        embedded ? 'text-[13px] lg:text-[14px]' : 'text-sm',
+                        embedded ? 'text-meta lg:text-body' : 'text-sm',
                         !disabled && !selected && !blockDayPick && 'cursor-pointer motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
                         selected && !blockDayPick && 'bg-brand text-white font-bold scale-[1.06] z-10 shadow-[0_3px_10px_hsl(var(--brand)/0.35)] ring-2 ring-inset ring-white/70',
                         !selected && tint,
                         !selected && tint && !blockDayPick && 'hover:brightness-[0.96]',
-                        !selected && !tint && !blockDayPick && 'text-[#1c1c1c] hover:bg-[#f3f4f6]',
+                        !selected && !tint && !blockDayPick && 'text-ink-strong hover:bg-surface-tinted',
                         !selected && isToday && !blockDayPick && 'ring-2 ring-inset ring-brand/70',
                         blockDayPick && 'cursor-not-allowed',
                         disabled && 'opacity-35',
@@ -433,12 +430,12 @@ const SlotPicker: React.FC<Props> = ({
         'flex flex-col',
         embedded
             ? cn(
-                  'pt-0 pb-0 lg:items-start lg:border-r lg:border-[#eceef2]',
+                  'pt-0 pb-0 lg:items-start lg:border-r lg:border-line',
                   embeddedSplitColumn ? 'lg:px-3' : 'lg:pr-4',
                   embeddedSplitColumn && embeddedSplitLayout && 'lg:flex lg:flex-col lg:self-start',
                   !embeddedSplitColumn && 'lg:self-stretch',
               )
-            : 'max-lg:border-b max-lg:border-[#eceef2] max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-[#eceef2] lg:p-3 lg:py-3',
+            : 'max-lg:border-b max-lg:border-line max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-line lg:p-3 lg:py-3',
     );
 
     const slotsColClass = cn(
@@ -468,23 +465,23 @@ const SlotPicker: React.FC<Props> = ({
         return (
             <div className="mb-3 flex select-none items-center justify-between gap-3 px-[2px] sm:px-[3px]">
                 <div>
-                    <h3 className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">{calMonthLabel}</h3>
+                    <h3 className="text-subtitle font-semibold text-ink-strong">{calMonthLabel}</h3>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={goCalToday}
-                        className="h-8 rounded-lg border border-[#e5e7eb] bg-white px-3 text-xs font-semibold text-[#1c1c1c] transition-colors hover:bg-[#f7f7f7] hover:border-[#cbd5e1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1"
+                        className="h-8 rounded-lg border border-line bg-white px-3 text-xs font-semibold text-ink-strong transition-colors hover:bg-surface-tinted hover:border-line-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1"
                     >
                         Hoy
                     </button>
-                    <div className="flex items-center gap-0.5 rounded-lg border border-[#e5e7eb] bg-[#fafafa] p-0.5">
+                    <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface-tinted p-0.5">
                         <button
                             type="button"
                             onClick={() => goCalMonth(-1)}
                             disabled={atCurrentMonth}
                             aria-label="Mes anterior"
-                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-[#6a6a6a] transition-colors hover:bg-white hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
+                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-white hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
                         >
                             <ChevronLeft className="h-[18px] w-[18px]" />
                         </button>
@@ -493,7 +490,7 @@ const SlotPicker: React.FC<Props> = ({
                             onClick={() => goCalMonth(1)}
                             disabled={atMaxMonth}
                             aria-label="Mes siguiente"
-                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-[#6a6a6a] transition-colors hover:bg-white hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
+                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-white hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
                         >
                             <ChevronRight className="h-[18px] w-[18px]" />
                         </button>
@@ -544,10 +541,10 @@ const SlotPicker: React.FC<Props> = ({
                     )}
                     role="status"
                 >
-                    <p className="text-[13px] font-semibold text-[#1c1c1c]">
+                    <p className="text-meta font-semibold text-ink-strong">
                         Sin huecos este día
                     </p>
-                    <p className="text-[12px] text-[#6b7280]">
+                    <p className="text-caption text-ink-muted">
                         Elige otra fecha en el calendario
                     </p>
                 </div>
@@ -620,8 +617,8 @@ const SlotPicker: React.FC<Props> = ({
                     <>
                         <p
                             className={cn(
-                                'mb-2 font-semibold leading-snug text-[#1c1c1c]',
-                                previewBrowseHours ? 'text-center text-sm lg:text-[14px]' : 'text-[13px] lg:text-[14px]',
+                                'mb-2 font-semibold leading-snug text-ink-strong',
+                                previewBrowseHours ? 'text-center text-sm lg:text-body' : 'text-meta lg:text-body',
                             )}
                         >
                             {capitalize(dayLong(selectedDate))}
@@ -676,13 +673,13 @@ const SlotPicker: React.FC<Props> = ({
                 <div className={SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS}>
                     <h3
                         className={cn(
-                            'font-semibold tracking-[-0.01em] text-[#1c1c1c]',
-                            'text-sm lg:text-[15px]',
+                            'font-semibold tracking-[-0.01em] text-ink-strong',
+                            'text-sm lg:text-lead',
                         )}
                     >
                         {sectionTitle}
                     </h3>
-                    <p className="mt-0.5 text-[13px] text-[#6a6a6a]">
+                    <p className="mt-0.5 text-meta text-ink-muted">
                         {SELLER_COORD_CALENDAR_PREVIEW_NOTE}
                     </p>
                 </div>
@@ -799,8 +796,8 @@ const SlotPicker: React.FC<Props> = ({
                 <>
                 <p
                     className={cn(
-                        'mb-2.5 font-semibold leading-snug text-[#1c1c1c]',
-                        embedded ? 'text-[13px]' : 'mb-2 text-sm',
+                        'mb-2.5 font-semibold leading-snug text-ink-strong',
+                        embedded ? 'text-meta' : 'mb-2 text-sm',
                     )}
                 >
                     {selectedDate ? capitalize(dayLong(selectedDate)) : ''}

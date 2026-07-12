@@ -37,7 +37,7 @@ export function PaymentCancelPage() {
         if (serviceId != null && `${serviceId}`.length > 0) {
             navigate(`/service/${serviceId}`, { replace: true });
         } else {
-            navigate('/crear-busqueda', { replace: true });
+            navigate('/hire', { replace: true });
         }
     }, [navigate]);
 

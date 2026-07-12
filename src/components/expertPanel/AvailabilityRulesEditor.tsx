@@ -341,16 +341,16 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
             {open && (
             <div className={collapsible ? 'av-schedule__body av-schedule__body--collapsible' : 'av-schedule__body'}>
             {prefilledFromLegacy && (
-                <p className="mb-3 flex items-start gap-2 rounded-lg border border-[hsl(var(--ep-info-border))] bg-[hsl(var(--ep-info-bg))] px-3 py-2 text-[13px] text-[hsl(var(--ep-info))]">
+                <p className="mb-3 flex items-start gap-2 rounded-lg border border-[hsl(var(--ep-info-border))] bg-[hsl(var(--ep-info-bg))] px-3 py-2 text-meta text-[hsl(var(--ep-info))]">
                     <Info className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>Hemos cargado tu horario actual. Revísalo y <strong>guárdalo</strong> para activarlo en las reservas.</span>
                 </p>
             )}
-            {error && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-error-border))] bg-[hsl(var(--ep-error-bg))] px-3 py-2 text-[13px] font-medium text-[hsl(var(--ep-error))]">{error}</p>}
-            {!embedded && success && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-success-border))] bg-[hsl(var(--ep-success-bg))] px-3 py-2 text-[13px] font-medium text-[hsl(var(--ep-success))]">{success}</p>}
+            {error && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-error-border))] bg-[hsl(var(--ep-error-bg))] px-3 py-2 text-meta font-medium text-[hsl(var(--ep-error))]">{error}</p>}
+            {!embedded && success && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-success-border))] bg-[hsl(var(--ep-success-bg))] px-3 py-2 text-meta font-medium text-[hsl(var(--ep-success))]">{success}</p>}
 
             {loading ? (
-                <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#7a7f88]">
+                <div className="flex items-center justify-center gap-2 py-10 text-meta text-ink-muted">
                     <Loader2 className="h-4 w-4 animate-spin text-brand" /> Cargando horario…
                 </div>
             ) : (
@@ -389,11 +389,11 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                                             className="flex shrink-0 items-center gap-2.5"
                                         >
                                             <span
-                                                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${day.enabled ? 'bg-brand' : 'bg-[#cfd3da]'}`}
+                                                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${day.enabled ? 'bg-brand' : 'bg-line'}`}
                                             >
                                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                             </span>
-                                            <span className={`w-[4.75rem] truncate text-left text-[14px] font-semibold ${day.enabled ? 'text-[#171a1f]' : 'text-[#9aa0a8]'}`}>{d.label}</span>
+                                            <span className={`w-[4.75rem] truncate text-left text-body font-semibold ${day.enabled ? 'text-ink-strong' : 'text-ink-soft'}`}>{d.label}</span>
                                         </button>
 
                                         {day.enabled ? (
@@ -402,14 +402,14 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                                                     <div key={i} className="flex items-center gap-1.5">
                                                         <input type="time" value={r.start}
                                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRange(d.id, i, 'start', e.target.value)}
-                                                            className="rounded-lg border border-[#e3e6ec] bg-white px-2 py-1 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
-                                                        <span className="text-[#b4b8bf]">—</span>
+                                                            className="rounded-lg border border-line bg-white px-2 py-1 text-meta tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
+                                                        <span className="text-line">—</span>
                                                         <input type="time" value={r.end}
                                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRange(d.id, i, 'end', e.target.value)}
-                                                            className="rounded-lg border border-[#e3e6ec] bg-white px-2 py-1 text-[13px] tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
+                                                            className="rounded-lg border border-line bg-white px-2 py-1 text-meta tabular-nums focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25" />
                                                         {day.ranges.length > 1 && (
                                                             <button type="button" onClick={() => removeRange(d.id, i)}
-                                                                className="rounded-lg p-1 text-[#aeb3bb] transition-colors hover:bg-[hsl(var(--ep-error-bg))] hover:text-[hsl(var(--ep-error))]" aria-label="Quitar franja">
+                                                                className="rounded-lg p-1 text-ink-soft transition-colors hover:bg-[hsl(var(--ep-error-bg))] hover:text-[hsl(var(--ep-error))]" aria-label="Quitar franja">
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                             </button>
                                                         )}
@@ -417,19 +417,19 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                                                 ))}
                                                 <div className="ml-auto flex items-center gap-0.5">
                                                     <button type="button" onClick={() => addRange(d.id)}
-                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-brand transition-colors hover:bg-brand/[0.08]"
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-brand transition-colors hover:bg-brand/[0.08]"
                                                         title="Añadir turno partido">
                                                         <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Franja</span>
                                                     </button>
                                                     <button type="button" onClick={() => copyToAll(d.id)}
-                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-[#777c85] transition-colors hover:bg-[#f1f3f7] hover:text-brand"
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-ink-muted transition-colors hover:bg-surface-tinted hover:text-brand"
                                                         title="Copiar este horario a todos los días">
                                                         <Copy className="h-3.5 w-3.5" /> <span className="hidden md:inline">Copiar a todos</span>
                                                     </button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <span className="ml-auto text-[12.5px] font-medium text-[#b4b8bf]">Cerrado</span>
+                                            <span className="ml-auto text-caption font-medium text-line">Cerrado</span>
                                         )}
                                     </div>
                                 </div>
@@ -438,17 +438,17 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                     </div>
 
                     {!anyEnabled && (
-                        <p className="mt-3 text-[12.5px] text-[#9aa0a8]">
+                        <p className="mt-3 text-caption text-ink-soft">
                             No tienes ningún día activo. Usa una plantilla de arriba o activa los días en los que atiendes.
                         </p>
                     )}
 
                     {!embedded && (
                     <div className="mt-4 flex items-center justify-end gap-3">
-                        <span className="hidden text-[12px] text-[#9aa0a8] sm:inline">Recuerda guardar para que tenga efecto</span>
+                        <span className="hidden text-caption text-ink-soft sm:inline">Recuerda guardar para que tenga efecto</span>
                         <button type="button" onClick={save} disabled={saving || !isDirty}
                             className={cn(
-                                'inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-[13px] font-semibold text-white transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-[0.6] disabled:shadow-none',
+                                'inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-meta font-semibold text-white transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-[0.6] disabled:shadow-none',
                                 isDirty && !saving ? 'shadow-[0_3px_12px_hsl(var(--brand)/0.5)]' : 'shadow-none',
                             )}>
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

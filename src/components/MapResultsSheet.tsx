@@ -59,7 +59,7 @@ export function MapResultsSheet({
                         ? undefined
                         : 'calc(env(safe-area-inset-bottom, 0px) + 0.625rem)',
                 }}
-                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl bg-[#f6f7f8] px-3.5 pt-2.5 pb-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
+                className="pointer-events-auto flex w-full touch-none items-center gap-2.5 rounded-t-2xl bg-surface-tinted px-3.5 pt-2.5 pb-2.5 text-left shadow-[0_-4px_20px_rgba(0,0,0,0.10)]"
             >
                 {thumbnails.length > 0 && (
                     <span className="flex shrink-0 items-center">
@@ -76,17 +76,17 @@ export function MapResultsSheet({
                     </span>
                 )}
                 <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-semibold leading-tight text-[#222222]">
+                    <span className="block text-body font-semibold leading-tight text-ink">
                         {count} {count === 1 ? 'resultado' : 'resultados'}
                     </span>
                     {summary && (
-                        <span className="block truncate text-[12px] leading-tight text-[#717171]">
+                        <span className="block truncate text-caption leading-tight text-ink-muted">
                             {summary}
                         </span>
                     )}
                 </span>
                 <ChevronUp
-                    className="h-5 w-5 shrink-0 text-[#717171]"
+                    className="h-5 w-5 shrink-0 text-ink-muted"
                     style={{
                         transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
                         transition: reduceMotion ? 'none' : 'transform 0.3s ease',

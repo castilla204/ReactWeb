@@ -15,6 +15,7 @@ capMapWorkers(maplibregl);
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 import { useServiceLoader, ViewportRequest, Service } from '../../hooks/useServiceLoader';
 import { getCurrencySymbol } from '../../utils/priceUtils';
+import { MAP_LITERAL } from '../../constants/designTokens';
 // ✅ Default import → activa React.memo del ClusteredMarkers. Antes (named import)
 //    cada hover/select sobre la lista forzaba el bucle remove+create de TODOS los markers.
 import ClusteredMarkers from './ClusteredMarkers';
@@ -544,26 +545,26 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const price = svc.price > 0 ? `${getCurrencySymbol(cur)}${Math.round(svc.price)}` : 'Consultar';
     const typeLabel = esc(raw.serviceTypeName || raw.ServiceTypeName || 'Revisión');
     const ratingHtml = rating > 0
-      ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:#222">
-           <svg width="11" height="11" viewBox="0 0 24 24" fill="#F59E0B"><path d="M12 17.3l-6.16 3.7 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.48 4.73 1.64 7.03z"/></svg>
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:${MAP_LITERAL.inkStrong}">
+           <svg width="11" height="11" viewBox="0 0 24 24" fill="${MAP_LITERAL.warning}"><path d="M12 17.3l-6.16 3.7 1.64-7.03L2 9.24l7.19-.61L12 2l2.81 6.63 7.19.61-5.48 4.73 1.64 7.03z"/></svg>
            <strong style="font-weight:600">${rating.toFixed(1).replace('.', ',')}</strong>
-           ${reviews > 0 ? `<span style="color:#737373">(${reviews})</span>` : ''}
+           ${reviews > 0 ? `<span style="color:${MAP_LITERAL.inkMuted}">(${reviews})</span>` : ''}
          </span>`
       : '';
     const html = `
       <a href="/service/${svc.id}" style="display:block;text-decoration:none;color:inherit;width:236px">
-        ${img ? `<div style="height:108px;width:100%;overflow:hidden;border-radius:12px 12px 0 0;background:#eceff3"><img src="${esc(img)}" style="height:100%;width:100%;object-fit:cover;display:block"/></div>` : ''}
+        ${img ? `<div style="height:108px;width:100%;overflow:hidden;border-radius:12px 12px 0 0;background:${MAP_LITERAL.surfaceMuted}"><img src="${esc(img)}" style="height:100%;width:100%;object-fit:cover;display:block"/></div>` : ''}
         <div style="padding:9px 11px 11px;font-family:Manrope,system-ui,sans-serif">
           <div style="display:flex;align-items:center;gap:8px">
-            ${avatar ? `<img src="${esc(avatar)}" style="height:26px;width:26px;border-radius:50%;object-fit:cover;flex:none;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.18)"/>` : ''}
+            ${avatar ? `<img src="${esc(avatar)}" style="height:26px;width:26px;border-radius:50%;object-fit:cover;flex:none;border:1.5px solid ${MAP_LITERAL.coastHalo};box-shadow:0 1px 3px rgba(0,0,0,.18)"/>` : ''}
             <div style="min-width:0;flex:1">
-              <div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a8a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typeLabel}</div>
-              <div style="font-size:14px;font-weight:600;letter-spacing:-.01em;color:#1c1c1c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:${MAP_LITERAL.inkSoft};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typeLabel}</div>
+              <div style="font-size:14px;font-weight:600;letter-spacing:-.01em;color:${MAP_LITERAL.inkStrong};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
             </div>
           </div>
           <div style="margin-top:7px;display:flex;align-items:center;justify-content:space-between">
             ${ratingHtml}
-            <span style="font-size:14px;font-weight:600;color:#1c1c1c;font-variant-numeric:tabular-nums">${price}<span style="font-size:11px;font-weight:400;color:#737373"> / servicio</span></span>
+            <span style="font-size:14px;font-weight:600;color:${MAP_LITERAL.inkStrong};font-variant-numeric:tabular-nums">${price}<span style="font-size:11px;font-weight:400;color:${MAP_LITERAL.inkMuted}"> / servicio</span></span>
           </div>
         </div>
       </a>`;

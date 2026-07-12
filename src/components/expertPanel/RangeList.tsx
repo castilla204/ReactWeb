@@ -33,14 +33,14 @@ const RangeList: React.FC<Props> = ({
                         type="time"
                         value={r.start}
                         onChange={(e) => update(i, 'start', e.target.value)}
-                        className={isPanel ? 'av-day-editor__time' : 'rounded-lg border border-[#e3e3e3] px-2 py-1 text-sm'}
+                        className={isPanel ? 'av-day-editor__time' : 'rounded-lg border border-line px-2 py-1 text-sm'}
                     />
-                    <span className={isPanel ? 'av-day-editor__range-sep' : 'text-[#999]'} aria-hidden>—</span>
+                    <span className={isPanel ? 'av-day-editor__range-sep' : 'text-ink-soft'} aria-hidden>—</span>
                     <input
                         type="time"
                         value={r.end}
                         onChange={(e) => update(i, 'end', e.target.value)}
-                        className={isPanel ? 'av-day-editor__time' : 'rounded-lg border border-[#e3e3e3] px-2 py-1 text-sm'}
+                        className={isPanel ? 'av-day-editor__time' : 'rounded-lg border border-line px-2 py-1 text-sm'}
                     />
                     <button
                         type="button"

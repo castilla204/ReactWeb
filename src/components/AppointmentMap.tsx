@@ -713,7 +713,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     : 'absolute inset-0 h-full w-full overflow-hidden rounded-lg';
 
   const searchInputCls = searchMinimal
-    ? 'w-full rounded-full border-0 bg-white/92 px-4 py-2.5 pr-10 text-sm text-[#333] shadow-[0_2px_14px_rgba(0,0,0,0.14)] backdrop-blur-md placeholder:text-[#999] focus:outline-none focus:ring-2 focus:ring-brand/25'
+    ? 'w-full rounded-full border-0 bg-white/92 px-4 py-2.5 pr-10 text-sm text-ink shadow-[0_2px_14px_rgba(0,0,0,0.14)] backdrop-blur-md placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-brand/25'
     : 'w-full rounded-lg border-2 border-gray-300 bg-white/98 px-4 py-2.5 pr-10 text-sm shadow-lg backdrop-blur-md placeholder:text-gray-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2';
 
   const searchOverlayCls =
@@ -726,7 +726,7 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
 
       {mapError && (
         <div className={`absolute inset-0 z-[9998] flex items-center justify-center bg-blue-50/95 p-6 text-center ${frameless ? '' : 'rounded-lg'}`}>
-          <p className="max-w-sm text-sm font-medium text-[#0b5cad]">{mapError}</p>
+          <p className="max-w-sm text-sm font-medium text-brand">{mapError}</p>
         </div>
       )}
 
@@ -774,14 +774,14 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleClearSearch}
-                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-black/[0.06] hover:text-[#1c1c1c]"
+                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.06] hover:text-ink-strong"
                   aria-label="Borrar búsqueda"
                 >
                   <X className="h-4 w-4" strokeWidth={2.25} aria-hidden />
                 </button>
               ) : (
                 <Search
-                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748b]"
+                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
                   strokeWidth={2.25}
                   aria-hidden
                 />

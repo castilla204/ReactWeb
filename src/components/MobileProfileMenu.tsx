@@ -101,17 +101,17 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   const menuGroups: MenuItem[][] = [
     [
       // Ambas entradas van a la bandeja unificada, cada una con su filtro (/busquedas redirige salvo admin)
-      { id: 'searches', label: 'Mis contrataciones', icon: Search, onClick: () => handleNavigate('/busquedas') },
-      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => handleNavigate('/mis-mensajes?filtro=consultas') },
-      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => handleNavigate('/favoritos') },
-      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => handleNavigate('/transacciones') },
+      { id: 'searches', label: 'Mis contrataciones', icon: Search, onClick: () => handleNavigate('/hires') },
+      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => handleNavigate('/messages?filter=inquiries') },
+      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => handleNavigate('/favorites') },
+      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => handleNavigate('/account/transactions') },
     ],
     [
       {
         id: 'become-expert',
         label: isExpert ? 'Panel de experto' : 'Hazte revisor',
         icon: isExpert ? Briefcase : UserPlus,
-        onClick: () => handleNavigate(isExpert ? '/expert-panel' : '/become-expert'),
+        onClick: () => handleNavigate(isExpert ? '/expert' : '/expert/join'),
         highlight: !isExpert,
       },
       ...(userIsAdmin
@@ -135,7 +135,7 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
     ) : (
       <span
         aria-hidden
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-[13px] font-semibold text-white"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-meta font-semibold text-white"
       >
         {initials || <User className="h-4 w-4" strokeWidth={2.1} />}
       </span>
@@ -150,26 +150,26 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
         onClick={item.onClick}
         className={cn(
           'group flex w-full items-center gap-2.5 px-4 py-2.5 text-left transition-colors',
-          item.destructive ? 'hover:bg-red-50 active:bg-red-100' : 'hover:bg-[#f7f7f7] active:bg-[#efefef]',
+          item.destructive ? 'hover:bg-red-50 active:bg-red-100' : 'hover:bg-surface-tinted active:bg-line/40',
         )}
       >
         <Icon
           className={cn(
             'h-[18px] w-[18px] shrink-0',
-            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-[#717171]',
+            item.destructive ? 'text-red-600' : item.highlight ? 'text-brand' : 'text-ink-muted',
           )}
           strokeWidth={2.1}
         />
         <span
           className={cn(
-            'min-w-0 flex-1 text-[14px] font-medium leading-none',
-            item.destructive ? 'text-red-600' : 'text-[#222222]',
+            'min-w-0 flex-1 text-body font-medium leading-none',
+            item.destructive ? 'text-red-600' : 'text-ink',
           )}
         >
           {item.label}
         </span>
         {!item.destructive ? (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#d1d5db]" strokeWidth={2.2} aria-hidden />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={2.2} aria-hidden />
         ) : null}
       </button>
     );
@@ -185,22 +185,22 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
         <SheetTitle className="sr-only">Menú de cuenta</SheetTitle>
 
         <div className="flex justify-center pt-2 pb-0.5" aria-hidden>
-          <div className="h-1 w-9 rounded-full bg-[#dddddd]" />
+          <div className="h-1 w-9 rounded-full bg-line" />
         </div>
 
-        <div className="flex items-center gap-2.5 border-b border-[#ebebeb] px-4 py-2.5">
+        <div className="flex items-center gap-2.5 border-b border-line px-4 py-2.5">
           {renderAvatar()}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold leading-tight text-[#222222]">
+            <p className="truncate text-lead font-semibold leading-tight text-ink">
               {userName || 'Mi cuenta'}
             </p>
             {userEmail ? (
-              <p className="truncate text-[12px] leading-tight text-[#717171]">
+              <p className="truncate text-caption leading-tight text-ink-muted">
                 {userEmail}
                 {roleHint ? <span className="text-brand">{roleHint}</span> : null}
               </p>
             ) : roleHint ? (
-              <p className="text-[12px] leading-tight text-brand">{roleHint.replace(/^ · /, '')}</p>
+              <p className="text-caption leading-tight text-brand">{roleHint.replace(/^ · /, '')}</p>
             ) : null}
           </div>
         </div>
@@ -208,12 +208,12 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
         <div className="overflow-y-auto overscroll-contain py-1">
           {menuGroups.map((group, index) => (
             <React.Fragment key={index}>
-              {index > 0 ? <div className="mx-4 my-0.5 h-px bg-[#ebebeb]" /> : null}
+              {index > 0 ? <div className="mx-4 my-0.5 h-px bg-line" /> : null}
               <div>{group.map(renderMenuItem)}</div>
             </React.Fragment>
           ))}
 
-          <div className="mx-4 my-0.5 h-px bg-[#ebebeb]" />
+          <div className="mx-4 my-0.5 h-px bg-line" />
 
           {renderMenuItem({
             id: 'logout',

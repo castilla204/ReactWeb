@@ -100,16 +100,16 @@ function DeliverableDetailContent({
 
   return (
     <div className="px-4 py-3 sm:px-5 sm:py-4">
-      <p className="text-[13px] leading-relaxed text-[hsl(var(--ep-ink))]">{detail.description}</p>
+      <p className="text-meta leading-relaxed text-[hsl(var(--ep-ink))]">{detail.description}</p>
       {detail.isRequired ? (
-        <p className="mt-2 text-[12px] font-medium text-[hsl(var(--ep-muted))]">Incluido en el precio del servicio.</p>
+        <p className="mt-2 text-caption font-medium text-[hsl(var(--ep-muted))]">Incluido en el precio del servicio.</p>
       ) : null}
 
       <section className="mt-4">
-        <p className="mb-2.5 text-[12px] font-semibold text-[hsl(var(--ep-ink))]">{includesHeading}</p>
+        <p className="mb-2.5 text-caption font-semibold text-[hsl(var(--ep-ink))]">{includesHeading}</p>
         <ul className="m-0 list-none space-y-2 p-0">
           {detail.includes.map((line) => (
-            <li key={line} className="flex gap-2 text-[12px] leading-relaxed text-[hsl(var(--ep-muted))]">
+            <li key={line} className="flex gap-2 text-caption leading-relaxed text-[hsl(var(--ep-muted))]">
               <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[hsl(var(--brand))]" aria-hidden />
               <span>{line}</span>
             </li>
@@ -117,7 +117,7 @@ function DeliverableDetailContent({
         </ul>
       </section>
 
-      <p className="mt-4 border-t border-[hsl(var(--ep-border))] pt-3 text-[12px] leading-relaxed text-[hsl(var(--ep-muted))]">
+      <p className="mt-4 border-t border-[hsl(var(--ep-border))] pt-3 text-caption leading-relaxed text-[hsl(var(--ep-muted))]">
         El experto lo sube en el chat de la reserva cuando finalice la revisión. El pago retenido se
         libera cuando apruebes el informe.
       </p>
@@ -216,7 +216,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
               <div className="sd-deliverable-list-item-btn cursor-default opacity-70" aria-disabled="true">
                 {!hideIcon ? <DeliverableTypeIcon deliverable={dt} variant="list" /> : null}
                 <span className="sd-deliverable-list-label text-[hsl(var(--ep-muted))]">{label}</span>
-                <span className="ml-auto shrink-0 text-[11px] font-semibold text-[hsl(var(--ep-muted))]">
+                <span className="ml-auto shrink-0 text-kicker font-semibold text-[hsl(var(--ep-muted))]">
                   No incluido
                 </span>
               </div>
@@ -253,14 +253,14 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
         if (!selected) {
           return (
             <li key={dt.id ?? `${label}-${index}`}>
-              <div className="block w-full rounded-2xl border border-dashed border-[#e4e4e4] bg-[hsl(var(--ep-canvas))] p-3.5 opacity-80">
+              <div className="block w-full rounded-2xl border border-dashed border-line bg-[hsl(var(--ep-canvas))] p-3.5 opacity-80">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[13px] font-semibold text-[hsl(var(--ep-muted))]">{label}</span>
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[hsl(var(--ep-border))] bg-white px-2 py-0.5 text-[11px] font-semibold text-[hsl(var(--ep-muted))]">
+                  <span className="text-meta font-semibold text-[hsl(var(--ep-muted))]">{label}</span>
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-[hsl(var(--ep-border))] bg-white px-2 py-0.5 text-kicker font-semibold text-[hsl(var(--ep-muted))]">
                     No incluido
                   </span>
                 </div>
-                {desc ? <p className="mt-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
+                {desc ? <p className="mt-1 text-caption leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
               </div>
             </li>
           );
@@ -269,23 +269,23 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           <li key={dt.id ?? `${label}-${index}`}>
             <button
               type="button"
-              className="group block w-full rounded-2xl border border-[#ececec] bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
+              className="group block w-full rounded-2xl border border-line bg-white p-3.5 text-left transition-colors hover:border-[hsl(var(--ep-border-strong))]"
               onClick={(e) => openDetail(dt, e)}
               aria-haspopup="dialog"
               aria-expanded={open && active?.id === dt.id}
               aria-label={`Ver qué incluye: ${label}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[hsl(var(--ep-ink))]">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-[#1c1c1c]" aria-hidden />
+                <span className="inline-flex items-center gap-1.5 text-meta font-semibold text-[hsl(var(--ep-ink))]">
+                  <Check className="h-3.5 w-3.5 shrink-0 text-ink-strong" aria-hidden />
                   {label}
                 </span>
-                <span className="inline-flex shrink-0 items-center gap-0.5 text-[12px] font-semibold text-[hsl(var(--brand))]">
+                <span className="inline-flex shrink-0 items-center gap-0.5 text-caption font-semibold text-[hsl(var(--brand))]">
                   Ver qué incluye
                   <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </span>
               </div>
-              {desc ? <p className="mt-1 text-[12px] leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
+              {desc ? <p className="mt-1 text-caption leading-snug text-[hsl(var(--ep-muted))]">{desc}</p> : null}
             </button>
           </li>
         );

@@ -99,7 +99,7 @@ export function GoogleAuth() {
                         // return;
                         // Continuar sin MFA
                         console.log('[GoogleAuth] MFA not configured, but MFA is no longer mandatory');
-                        navigate('/busquedas');
+                        navigate('/hires');
                         return;
                     }
                     

@@ -18,7 +18,7 @@ export function PaymentSuccessPage() {
         if (handledRef.current) return;
         handledRef.current = true;
 
-        const goToPanel = () => navigate('/busquedas', { replace: true });
+        const goToPanel = () => navigate('/hires', { replace: true });
         const sessionId = searchParams.get('session_id');
 
         if (!sessionId) {

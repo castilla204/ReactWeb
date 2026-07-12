@@ -8,9 +8,7 @@ import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, Fi
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { showToast } from '../lib/toast';
-import Map, { Marker, NavigationControl, type MapMouseEvent } from 'react-map-gl/mapbox';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { buildNeutralCheckoutMapStyle, MAP_CANON } from '../utils/inspeccionoMapStyle';
+import { ChatLocationMapModal } from './chat/ChatLocationMapModal';
 
 interface ChatProps {
     searchId: number | null;
@@ -35,6 +33,8 @@ interface ChatProps {
      * del chat para no duplicarla. Por defecto false (vista a pantalla completa).
      */
     embedded?: boolean;
+    /** Oculta la cabecera del chat en desktop (p. ej. SearchDetails ya tiene header de página). */
+    hideHeaderOnLg?: boolean;
 }
 
 function formatLastSeen(iso: string): string {
@@ -61,7 +61,7 @@ function TypingDots({ className = '' }: { className?: string }) {
             {[0, 120, 240].map((delay) => (
                 <span
                     key={delay}
-                    className="h-1.5 w-1.5 rounded-full bg-current opacity-70 animate-bounce"
+                    className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-current opacity-70"
                     style={{ animationDelay: `${delay}ms` }}
                 />
             ))}
@@ -118,11 +118,11 @@ const getStatusDisplay = (statusValue: string): StatusDisplay => {
 // para no encender el historial. Tono decidido por getStatusTone (fuente
 // única de la semántica de estados, la misma que StatusBadge).
 const CHAT_STATUS_PILL_CLASSES: Record<StatusTone, string> = {
-    success: 'border-[#d8ebdf] bg-[#ecf6f0] text-[#0F6A3E]',
-    danger: 'border-[#f5dada] bg-[#fdf2f2] text-[#b42318]',
-    warning: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
-    info: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
-    neutral: 'border-[#e3e7ec] bg-white/85 text-[#737373]',
+    success: 'border-success-border bg-success-tint text-success',
+    danger: 'border-destructive/30 bg-destructive/10 text-destructive',
+    warning: 'border-line bg-white/85 text-ink-muted',
+    info: 'border-line bg-white/85 text-ink-muted',
+    neutral: 'border-line bg-white/85 text-ink-muted',
 };
 
 const Chat: React.FC<ChatProps> = ({
@@ -136,6 +136,7 @@ const Chat: React.FC<ChatProps> = ({
     isDetailsOpen,
     onBack,
     embedded = false,
+    hideHeaderOnLg = false,
 }) => {
     const { user } = useAuth();
     const {
@@ -191,8 +192,6 @@ const Chat: React.FC<ChatProps> = ({
     const [messageSent, setMessageSent] = useState(false);
     const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mapboxToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || '';
-    // Estilo canónico único de la app; memoizado para que react-map-gl no recargue el estilo en cada render.
-    const chatMapStyle = useMemo(() => buildNeutralCheckoutMapStyle(), []);
 
     const otherParticipantId = isClient
         ? Number(expertId ?? 0)
@@ -339,16 +338,6 @@ const Chat: React.FC<ChatProps> = ({
         }
     };
 
-    const handleMapClick = (e: MapMouseEvent) => {
-        if (e.lngLat) {
-            const newLocation = {
-                lat: e.lngLat.lat,
-                lng: e.lngLat.lng,
-            };
-            setSelectedMapLocation(newLocation);
-        }
-    };
-
     const handleSelectLocation = () => {
         setLocation({
             latitude: selectedMapLocation.lat.toString(),
@@ -458,7 +447,7 @@ const Chat: React.FC<ChatProps> = ({
 
     if (!user) {
         return (
-            <div className="flex items-center justify-center h-full text-[#737373]">
+            <div className="flex items-center justify-center h-full text-ink-muted">
                 Inicia sesión para ver el chat.
             </div>
         );
@@ -466,7 +455,7 @@ const Chat: React.FC<ChatProps> = ({
 
     if (isChatLoading) {
         return (
-            <div className="flex items-center justify-center h-full text-[#737373]">
+            <div className="flex items-center justify-center h-full text-ink-muted">
                 Cargando chat...
             </div>
         );
@@ -474,19 +463,19 @@ const Chat: React.FC<ChatProps> = ({
 
     if (error && !conversation) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-[#737373] gap-2 px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-2 px-4 text-center">
                 <p>No se pudo cargar el chat.</p>
-                <p className="text-xs text-[#a0a0a0]">{error}</p>
+                <p className="text-xs text-ink-soft">{error}</p>
             </div>
         );
     }
 
     if (!conversation || !hasAccess) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-[#737373] gap-1 px-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-1 px-4 text-center">
                 <p>No tienes acceso a este chat.</p>
                 {!hasAccess && conversation && (
-                    <p className="text-xs text-[#a0a0a0]">
+                    <p className="text-xs text-ink-soft">
                         Tu cuenta (ID {userId}) no coincide con cliente ni experto de esta contratación.
                     </p>
                 )}
@@ -526,7 +515,7 @@ const Chat: React.FC<ChatProps> = ({
     const otherAvatarSrc = otherParticipantId > 0 ? getAvatarImage(otherParticipantId) : null;
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col h-full bg-[#e8ecf1]">
+        <div className="flex min-h-0 flex-1 flex-col h-full bg-surface-tinted lg:bg-white">
             {/* Cabecera — oculta cuando el chat va incrustado (el contenedor padre
                 ya aporta la suya); solo se conserva un aviso fino de reconexión. */}
             {embedded ? (
@@ -534,22 +523,22 @@ const Chat: React.FC<ChatProps> = ({
                     <p
                         role="status"
                         aria-live="polite"
-                        className="shrink-0 border-b border-[#ebebeb] bg-white px-4 py-2 text-center text-[11px] leading-snug text-amber-800"
+                        className="shrink-0 border-b border-line bg-white px-4 py-2 text-center text-kicker leading-snug text-amber-800"
                     >
                         Reconectando…
                     </p>
                 )
             ) : (
-            <div className="shrink-0 border-b border-[#e8e8e8] bg-white px-4 py-3">
+            <div className={`shrink-0 border-b border-line bg-white px-4 py-3${hideHeaderOnLg ? ' lg:hidden' : ''}`}>
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button
                             type="button"
                             onClick={onBack}
                             aria-label="Volver y salir del chat"
-                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#e8e8e8] bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
+                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
                         >
-                            <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" />
+                            <ArrowLeft className="h-5 w-5 text-ink-strong" />
                         </button>
                     )}
                     <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
@@ -559,7 +548,7 @@ const Chat: React.FC<ChatProps> = ({
                         </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold text-[#1c1c1c]">
+                        <p className="truncate text-lead font-semibold text-ink-strong">
                             {otherParticipantName}
                         </p>
                         {peerPresenceStatus?.kind === 'typing' && (
@@ -578,15 +567,15 @@ const Chat: React.FC<ChatProps> = ({
                             </p>
                         )}
                         {peerPresenceStatus?.kind === 'lastSeen' && (
-                            <p className="mt-0.5 text-xs text-[#737373]">{peerPresenceStatus.label}</p>
+                            <p className="mt-0.5 text-xs text-ink-muted">{peerPresenceStatus.label}</p>
                         )}
                         {!peerPresenceStatus && !isReconnecting && (
-                            <p className="mt-0.5 text-xs text-[#a0a0a0]">Mensajes privados</p>
+                            <p className="mt-0.5 text-xs text-ink-soft">Mensajes privados</p>
                         )}
                     </div>
                     {isReconnecting && (
                         <span
-                            className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-800"
+                            className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-badge font-medium text-amber-800"
                             role="status"
                             aria-live="polite"
                         >
@@ -595,7 +584,7 @@ const Chat: React.FC<ChatProps> = ({
                     )}
                 </div>
                 {userIsAdmin && (
-                    <p className="mt-2.5 rounded-lg border border-amber-100 bg-amber-50/90 px-2.5 py-1.5 text-[11px] text-amber-900">
+                    <p className="mt-2.5 rounded-lg border border-amber-100 bg-amber-50/90 px-2.5 py-1.5 text-kicker text-amber-900">
                         Vista de administrador: puedes leer el chat; los mensajes no se marcarán como leídos.
                     </p>
                 )}
@@ -605,13 +594,9 @@ const Chat: React.FC<ChatProps> = ({
             {/* Mensajes */}
             <div
                 data-chat-messages
-                className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-5"
+                className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface-tinted px-3 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.04)_1px,transparent_0)] [background-size:20px_20px] sm:px-5 lg:bg-surface-tinted lg:[background-image:none]"
                 style={{
                     WebkitOverflowScrolling: 'touch',
-                    backgroundImage:
-                        'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)',
-                    backgroundSize: '20px 20px',
-                    backgroundColor: '#e8ecf1',
                 }}
                 role="log"
                 aria-live="polite"
@@ -670,7 +655,7 @@ const Chat: React.FC<ChatProps> = ({
                                                 className={`flex min-w-0 flex-col gap-0.5 ${isOwnMessage ? 'items-end' : 'items-start'}`}
                                             >
                                                 {!isOwnMessage && isFirstInGroup && (
-                                                    <span className="mb-0.5 px-1 text-[11px] font-medium text-[#737373]">
+                                                    <span className="mb-0.5 px-1 text-kicker font-medium text-ink-muted">
                                                         {message.senderName || 'Usuario'}
                                                     </span>
                                                 )}
@@ -678,8 +663,8 @@ const Chat: React.FC<ChatProps> = ({
                                                     <div
                                                         className={`px-3.5 py-2.5 text-sm transition-shadow ${
                                                             isOwnMessage
-                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)]'
-                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-[#e8e8e8] bg-white text-[#1c1c1c] shadow-[0_1px_2px_rgba(15,23,42,0.04)]'
+                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)] lg:rounded-lg lg:rounded-br-sm lg:shadow-none'
+                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-line bg-white text-ink-strong shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:rounded-lg lg:rounded-bl-sm lg:shadow-none'
                                                         }`}
                                                     >
                                                         <p className="whitespace-pre-wrap break-words leading-relaxed">
@@ -688,7 +673,7 @@ const Chat: React.FC<ChatProps> = ({
                                                     </div>
                                                 )}
                                                 {isLastInGroup && (
-                                                    <span className="px-1 text-[10px] tabular-nums text-[#a0a0a0]">
+                                                    <span className="px-1 text-badge tabular-nums text-ink-soft">
                                                         {new Date(message.sentAt).toLocaleTimeString('es-ES', {
                                                             hour: '2-digit',
                                                             minute: '2-digit',
@@ -717,12 +702,12 @@ const Chat: React.FC<ChatProps> = ({
                     ) : (
                         <div className="flex min-h-[min(280px,50vh)] flex-1 flex-col items-center justify-center px-6 py-8">
                             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md">
-                                <MessageSquare className="h-7 w-7 text-[#a0a0a0]" strokeWidth={1.5} />
+                                <MessageSquare className="h-7 w-7 text-ink-soft" strokeWidth={1.5} />
                             </div>
-                            <p className="text-center text-sm font-medium text-[#1c1c1c]">
+                            <p className="text-center text-sm font-medium text-ink-strong">
                                 Aún no hay mensajes
                             </p>
-                            <p className="mt-1 max-w-[240px] text-center text-xs leading-relaxed text-[#737373]">
+                            <p className="mt-1 max-w-[240px] text-center text-xs leading-relaxed text-ink-muted">
                                 Escribe abajo para coordinar el servicio con {otherParticipantName}.
                             </p>
                         </div>
@@ -737,9 +722,9 @@ const Chat: React.FC<ChatProps> = ({
                     role="status"
                     aria-live="polite"
                 >
-                    <TypingDots className="text-[#737373]" />
-                    <span className="text-xs text-[#6a6a6a]">
-                        <span className="font-medium text-[#1c1c1c]">{otherParticipantName}</span>
+                    <TypingDots className="text-ink-muted" />
+                    <span className="text-xs text-ink-muted">
+                        <span className="font-medium text-ink-strong">{otherParticipantName}</span>
                         {' '}
                         está escribiendo
                     </span>
@@ -747,14 +732,14 @@ const Chat: React.FC<ChatProps> = ({
             )}
 
             {/* Input — composer unificado (adjuntos · ubicación · enviar) */}
-            <div className="relative z-10 shrink-0 border-t border-[#f0f0f0] bg-white px-3 pt-2.5 shadow-[0_-1px_12px_rgba(15,23,42,0.04)] sm:px-4 sm:pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] lg:pb-3">
+            <div className="relative z-10 shrink-0 border-t border-line-soft bg-white px-3 pt-2.5 shadow-[0_-1px_12px_rgba(15,23,42,0.04)] sm:px-4 sm:pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] lg:pb-3 lg:shadow-none">
                 {/* Previsualización de adjuntos / ubicación seleccionados */}
                 {(selectedFiles.length > 0 || location) && (
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
                         {selectedFiles.map((file, idx) => (
                             <span
                                 key={`${file.name}-${idx}`}
-                                className="inline-flex max-w-[200px] items-center gap-1.5 rounded-full bg-brand/[0.08] py-1 pl-2.5 pr-1 text-[12px] font-medium text-brand"
+                                className="inline-flex max-w-[200px] items-center gap-1.5 rounded-full bg-brand/[0.08] py-1 pl-2.5 pr-1 text-caption font-medium text-brand"
                             >
                                 <Paperclip className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
                                 <span className="truncate">{file.name}</span>
@@ -771,7 +756,7 @@ const Chat: React.FC<ChatProps> = ({
                             </span>
                         ))}
                         {location && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 py-1 pl-2.5 pr-1 text-[12px] font-medium text-emerald-700">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 py-1 pl-2.5 pr-1 text-caption font-medium text-emerald-700">
                                 <MapPin className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
                                 <span>Ubicación adjunta</span>
                                 <button
@@ -789,16 +774,16 @@ const Chat: React.FC<ChatProps> = ({
 
                 <div
                     className={[
-                        'flex items-center gap-0.5 rounded-[1.6rem] border bg-[#f6f7f9] py-1 pl-1 pr-1 transition-all duration-200',
+                        'flex items-center gap-0.5 rounded-[1.6rem] border bg-surface-tinted py-1 pl-1 pr-1 transition-all duration-200 lg:rounded-lg',
                         isSending
-                            ? 'border-[#e6e8eb] opacity-70'
-                            : 'border-[#e6e8eb] focus-within:border-brand/40 focus-within:bg-white focus-within:shadow-[0_2px_12px_hsl(var(--brand)/0.10)] focus-within:ring-2 focus-within:ring-brand/12',
+                            ? 'border-line opacity-70'
+                            : 'border-line focus-within:border-brand/40 focus-within:bg-white focus-within:shadow-[0_2px_12px_hsl(var(--brand)/0.10)] focus-within:ring-2 focus-within:ring-brand/12',
                     ].join(' ')}
                 >
                     {/* Adjuntar foto o vídeo */}
                     <label
                         title="Adjuntar foto o vídeo"
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-black/[0.05] hover:text-[#1c1c1c] ${
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink-strong ${
                             isSending ? 'pointer-events-none opacity-50' : 'cursor-pointer'
                         }`}
                     >
@@ -821,7 +806,7 @@ const Chat: React.FC<ChatProps> = ({
                         disabled={isSending}
                         aria-label="Compartir ubicación"
                         title="Compartir ubicación"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-black/[0.05] hover:text-[#1c1c1c] disabled:opacity-50"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink-strong disabled:opacity-50"
                     >
                         <MapPin className="h-[19px] w-[19px]" strokeWidth={1.9} aria-hidden />
                     </button>
@@ -850,7 +835,7 @@ const Chat: React.FC<ChatProps> = ({
                         }}
                         placeholder={isSending ? 'Enviando…' : 'Escribe un mensaje…'}
                         disabled={isSending}
-                        className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-[15px] leading-relaxed text-[#1c1c1c] placeholder:text-[#9aa0a6] focus:outline-none disabled:cursor-not-allowed"
+                        className="min-w-0 flex-1 bg-transparent px-1.5 py-2 text-lead leading-relaxed text-ink-strong placeholder:text-ink-soft focus:outline-none disabled:cursor-not-allowed"
                     />
 
                     {/* Enviar */}
@@ -866,7 +851,7 @@ const Chat: React.FC<ChatProps> = ({
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1',
                             (newMessage.trim() || selectedFiles.length > 0 || location) && !isSending
                                 ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.35)] hover:bg-brand-hover hover:scale-[1.06] active:scale-95'
-                                : 'cursor-not-allowed bg-[#e3e5e8] text-[#a8adb3]',
+                                : 'cursor-not-allowed bg-line text-ink-soft',
                         ].join(' ')}
                     >
                         {isSending ? (
@@ -890,7 +875,7 @@ const Chat: React.FC<ChatProps> = ({
                             <div
                                 className={[
                                     'flex items-center gap-1.5',
-                                    'text-[#a0a0a0] transition-colors duration-200',
+                                    'text-ink-soft transition-colors duration-200',
                                     isDetailsOpen ? 'text-primary' : 'group-hover:text-primary',
                                 ].join(' ')}
                             >
@@ -924,8 +909,8 @@ const Chat: React.FC<ChatProps> = ({
                             </div>
                             <span
                                 className={[
-                                    'text-[10px] tracking-wide transition-colors duration-200',
-                                    isDetailsOpen ? 'text-primary' : 'text-[#a0a0a0] group-hover:text-primary',
+                                    'text-badge tracking-wide transition-colors duration-200',
+                                    isDetailsOpen ? 'text-primary' : 'text-ink-soft group-hover:text-primary',
                                 ].join(' ')}
                             >
                                 {isDetailsOpen ? 'Ocultar' : 'Detalles'}
@@ -937,83 +922,13 @@ const Chat: React.FC<ChatProps> = ({
 
             {/* Map Modal */}
             {isMapModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="p-6 border-b border-[#e8e8e8] shrink-0">
-                            <h3 className="text-lg font-semibold text-[#1c1c1c]">Seleccionar Ubicación</h3>
-                        </div>
-
-                        {mapboxToken ? (
-                            <div className="relative flex-1 min-h-[200px]">
-                                <Map
-                                    mapboxAccessToken={mapboxToken}
-                                    initialViewState={{
-                                        longitude: selectedMapLocation.lng,
-                                        latitude: selectedMapLocation.lat,
-                                        zoom: 14,
-                                    }}
-                                    style={{ width: '100%', height: '100%' }}
-                                    // Estilo canónico único de la app (Voyager + tratamiento
-                                    // compartido) — antes streets-v12, el único mapa distinto.
-                                    mapStyle={chatMapStyle as never}
-                                    onClick={handleMapClick}
-                                >
-                                    <NavigationControl position="top-right" />
-                                    {selectedMapLocation && (
-                                        <Marker
-                                            longitude={selectedMapLocation.lng}
-                                            latitude={selectedMapLocation.lat}
-                                            anchor="center"
-                                        >
-                                            {/* Pin tinta canónico (mismo lenguaje que el checkout). */}
-                                            <div
-                                                style={{
-                                                    width: '18px',
-                                                    height: '18px',
-                                                    backgroundColor: MAP_CANON.ink,
-                                                    border: `2px solid ${MAP_CANON.inkBorder}`,
-                                                    borderRadius: '50%',
-                                                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                                                }}
-                                            />
-                                        </Marker>
-                                    )}
-                                </Map>
-                                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                                    <span className="text-sm text-[#1c1c1c] font-medium">
-                                        Haz clic para seleccionar una ubicación
-                                    </span>
-                                </div>
-                                {selectedMapLocation && (
-                                    <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                                        <span className="text-sm text-[#1c1c1c] font-mono">
-                                            {selectedMapLocation.lat.toFixed(4)}, {selectedMapLocation.lng.toFixed(4)}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="relative flex-1 min-h-[200px] flex items-center justify-center bg-gray-50">
-                                <span className="text-red-500">Error al cargar el mapa: falta VITE_MAPBOX_PUBLIC_TOKEN</span>
-                            </div>
-                        )}
-
-                        <div className="p-6 border-t border-[#e8e8e8] flex justify-end gap-3 shrink-0">
-                            <button
-                                onClick={() => setIsMapModalOpen(false)}
-                                className="px-6 py-2 bg-[#f5f5f5] text-[#1c1c1c] rounded-xl hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleSelectLocation}
-                                className="px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
-                            >
-                                Seleccionar
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ChatLocationMapModal
+                    mapboxToken={mapboxToken}
+                    location={selectedMapLocation}
+                    onLocationChange={setSelectedMapLocation}
+                    onCancel={() => setIsMapModalOpen(false)}
+                    onConfirm={handleSelectLocation}
+                />
             )}
 
             {/* Image Modal */}
@@ -1030,21 +945,21 @@ const Chat: React.FC<ChatProps> = ({
                         />
                         <button
                             onClick={() => setSelectedImage(null)}
-                            className="absolute top-4 right-4 bg-white border border-[#e8e8e8] hover:bg-[#fafafa] text-[#1c1c1c] rounded-full p-2 shadow-lg transition-colors"
+                            className="absolute top-4 right-4 bg-white border border-line hover:bg-surface-tinted text-ink-strong rounded-full p-2 shadow-lg transition-colors"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                         <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
-                            <span className="text-sm text-[#1c1c1c] font-medium">
+                            <span className="text-sm text-ink-strong font-medium">
                                 {getFileName(selectedImage)}
                             </span>
                         </div>
                         <a
                             href={selectedImage}
                             download
-                            className="absolute bottom-4 right-4 bg-white border border-[#e8e8e8] hover:bg-[#fafafa] text-[#1c1c1c] rounded-lg px-4 py-2 shadow-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                            className="absolute bottom-4 right-4 bg-white border border-line hover:bg-surface-tinted text-ink-strong rounded-lg px-4 py-2 shadow-lg transition-colors flex items-center gap-2 text-sm font-medium"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <Download className="w-4 h-4" />

@@ -79,32 +79,32 @@ export function MobileDetailsSheet({
             onDragEnd={handleDragEnd}
           >
             <div
-              className="flex shrink-0 cursor-grab flex-col items-center border-b border-[#f0f0f0] px-4 pb-3 pt-2 active:cursor-grabbing"
+              className="flex shrink-0 cursor-grab flex-col items-center border-b border-line-soft px-4 pb-3 pt-2 active:cursor-grabbing"
               onPointerDown={(e) => dragControls.start(e)}
             >
-              <div className="mb-2 h-1 w-10 rounded-full bg-[#e0e0e0]" aria-hidden />
+              <div className="mb-2 h-1 w-10 rounded-full bg-line" aria-hidden />
               <div className="flex w-full items-start justify-between gap-3">
                 <div className="min-w-0 flex-1 text-left">
                   <h2
                     id="mobile-details-sheet-title"
-                    className="text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]"
+                    className="text-lead font-semibold tracking-[-0.01em] text-ink-strong"
                   >
                     {title}
                   </h2>
                   {subtitle && (
-                    <p className="mt-0.5 text-[12px] text-[#737373]">{subtitle}</p>
+                    <p className="mt-0.5 text-caption text-ink-muted">{subtitle}</p>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0] text-[#737373] transition-colors hover:bg-[#e8e8e8] hover:text-[#1c1c1c]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-line-soft text-ink-muted transition-colors hover:bg-line-soft hover:text-ink-strong"
                   aria-label="Cerrar"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <p className="mt-2 flex items-center gap-1 text-[11px] text-[#9a9a9a]">
+              <p className="mt-2 flex items-center gap-1 text-kicker text-ink-soft">
                 <ChevronDown className="h-3.5 w-3.5 rotate-180" aria-hidden />
                 Desliza hacia abajo para volver al chat
               </p>

@@ -360,8 +360,8 @@ export function HiresTab({
                                         <button
                                             type="button"
                                             className="expert-hire-action"
-                                            style={{ background: 'hsl(var(--brand))', color: '#fff', borderColor: 'transparent', marginTop: 6 }}
-                                            onClick={() => navigate(`/expert-panel/inspeccion/${hire.id}`)}
+                                            style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--surface))', borderColor: 'transparent', marginTop: 6 }}
+                                            onClick={() => navigate(`/expert/inspection/${hire.id}`)}
                                         >
                                             Rellenar inspección
                                         </button>

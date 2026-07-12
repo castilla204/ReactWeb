@@ -6,18 +6,18 @@ import { cn } from '../../lib/utils';
  *  grupo (o el propio underline) ya hace de contenedor, la etiqueta solo identifica la
  *  fila. #6b7280 es el gris tenue validado en el resto del checkout (≥4.5:1 de
  *  contraste; el más claro #8a9099 falla AA a este tamaño). */
-export const groupedLabelClass = 'block text-[11px] font-medium text-[#6b7280]';
+export const groupedLabelClass = 'block text-kicker font-medium text-ink-muted';
 
 /** Input SIN caja propia para usar dentro de GroupedFieldsCard: el contorno, la sombra y
  *  el anillo de foco los pinta el grupo (focus-within), no cada campo por separado. */
 export const bareGroupedInputClass =
-    'h-9 w-full bg-transparent px-0 text-[14px] text-[#101828] outline-none placeholder:text-[#9aa0aa]';
+    'h-9 w-full bg-transparent px-0 text-body text-ink-strong outline-none placeholder:text-ink-soft';
 
 /** Campo secundario/opcional, fuera de cualquier grupo obligatorio: subrayado en vez de
  *  caja propia, para demotarlo deliberadamente por debajo en peso visual (mismo recurso
  *  que usan los formularios de Stripe para campos opcionales de baja frecuencia). */
 export const underlineFieldInputClass =
-    'h-9 w-full border-b border-[#e2e5ea] bg-transparent px-0 text-[14px] text-[#101828] outline-none transition-colors duration-150 placeholder:text-[#9aa0aa] focus:border-[#0066cc]';
+    'h-9 w-full border-b border-line bg-transparent px-0 text-body text-ink-strong outline-none transition-colors duration-150 placeholder:text-ink-soft focus:border-brand';
 
 /**
  * Agrupa 2+ campos que responden a UNA sola pregunta («¿cómo contactamos al vendedor?»)
@@ -42,8 +42,8 @@ export function GroupedFieldsCard({
             className={cn(
                 'overflow-hidden rounded-lg border bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition-[border-color,box-shadow] duration-150',
                 error
-                    ? 'border-[#f04438] focus-within:shadow-[0_0_0_3px_rgba(240,68,56,0.12)]'
-                    : 'border-[#dcdfe4] focus-within:border-[#0066cc] focus-within:shadow-[0_0_0_3px_rgba(0,102,204,0.12)]',
+                    ? 'border-destructive focus-within:shadow-[0_0_0_3px_rgba(240,68,56,0.12)]'
+                    : 'border-line focus-within:border-brand focus-within:shadow-[0_0_0_3px_rgba(0,102,204,0.12)]',
             )}
         >
             {children}
@@ -58,9 +58,9 @@ export function GroupedFieldsCard({
 export function GroupedFieldsDivider({ label }: { label?: string }) {
     return (
         <div className="relative" role="separator" aria-hidden>
-            <div className="border-t border-[#eef0f3]" />
+            <div className="border-t border-line-soft" />
             {label ? (
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 bg-white pr-1.5 text-[10.5px] font-medium leading-none text-[#6b7280]">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 bg-white pr-1.5 text-[10.5px] font-medium leading-none text-ink-muted">
                     {label}
                 </span>
             ) : null}
@@ -80,7 +80,7 @@ export function GroupedFieldRow({
     first?: boolean;
 }) {
     return (
-        <div className={cn('px-3.5 py-2.5', !first && 'border-t border-[#eef0f3]')}>
+        <div className={cn('px-3.5 py-2.5', !first && 'border-t border-line-soft')}>
             <label htmlFor={htmlFor} className={groupedLabelClass}>
                 {label}
             </label>

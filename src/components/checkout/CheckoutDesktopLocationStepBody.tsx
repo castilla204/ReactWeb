@@ -51,9 +51,9 @@ export interface CheckoutDesktopLocationStepBodyProps {
 }
 
 const inputBaseClass =
-    'h-11 w-full rounded-lg border border-[#dcdfe4] bg-white px-3.5 text-[14px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.05)] placeholder:text-[#9aa0aa] outline-none transition-[border-color,box-shadow] duration-150 focus:border-[#0066cc] focus:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]';
+    'h-11 w-full rounded-lg border border-line bg-white px-3.5 text-body text-ink-strong shadow-[0_1px_2px_rgba(16,24,40,0.05)] placeholder:text-ink-soft outline-none transition-[border-color,box-shadow] duration-150 focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]';
 
-const labelBaseClass = 'mb-1 block text-[12px] font-semibold text-[#374151]';
+const labelBaseClass = 'mb-1 block text-caption font-semibold text-ink';
 
 export function CheckoutDesktopLocationStepBody({
     mode,
@@ -136,7 +136,7 @@ export function CheckoutDesktopLocationStepBody({
                             className="w-full"
                         />
                         {!chosenLocation ? (
-                            <p className="text-[12px] leading-relaxed text-[#64748b]">
+                            <p className="text-caption leading-relaxed text-ink-muted">
                                 Búscala aquí o marca un punto en el mapa, dentro del área de cobertura del experto.
                             </p>
                         ) : null}
@@ -146,7 +146,7 @@ export function CheckoutDesktopLocationStepBody({
                         <section className="space-y-2.5">
                             <div>
                                 <label htmlFor="checkout-door-desktop" className={labelBaseClass}>
-                                    Puerta / garaje <span className="font-normal text-[#6b7280]">(opc.)</span>
+                                    Puerta / garaje <span className="font-normal text-ink-muted">(opc.)</span>
                                 </label>
                                 <input
                                     id="checkout-door-desktop"
@@ -160,7 +160,7 @@ export function CheckoutDesktopLocationStepBody({
                             </div>
                             <div>
                                 <label htmlFor="checkout-details-desktop" className={labelBaseClass}>
-                                    Indicaciones <span className="font-normal text-[#6b7280]">(opc.)</span>
+                                    Indicaciones <span className="font-normal text-ink-muted">(opc.)</span>
                                 </label>
                                 <input
                                     id="checkout-details-desktop"
@@ -178,7 +178,7 @@ export function CheckoutDesktopLocationStepBody({
 
             {/* 🤝 Datos del vendedor — en AMBOS modos. Obligatorios en "Que lo coordine
                 Inspecciono" (le mandamos el enlace de reserva); opcionales en "Yo la reservo". */}
-            <section className={cn('space-y-3', mode === 'self' && 'border-t border-[#eef0f3] pt-4')}>
+            <section className={cn('space-y-3', mode === 'self' && 'border-t border-line-soft pt-4')}>
                 {/* En modo seller la página YA titula «Datos del vendedor y cobertura» y el lead
                     explica el enlace: repetirlo aquí con avatar+h3 duplicaba cabeceras (y ese
                     header interno era lo primero que se veía «suelto» en la tarjeta). Queda solo
@@ -188,11 +188,11 @@ export function CheckoutDesktopLocationStepBody({
                     <div className="flex items-start gap-3">
                         <SellerContactAvatar />
                         <div className="min-w-0 flex-1">
-                            <h3 className="text-[14px] font-semibold text-[#1c1c1c]">
+                            <h3 className="text-body font-semibold text-ink-strong">
                                 Datos del vendedor
-                                <span className="ml-1 font-normal text-[#6b7280]">(opcional)</span>
+                                <span className="ml-1 font-normal text-ink-muted">(opcional)</span>
                             </h3>
-                            <p className="mt-0.5 text-[12px] leading-relaxed text-[#64748b]">
+                            <p className="mt-0.5 text-caption leading-relaxed text-ink-muted">
                                 Si quieres, deja un contacto para que el experto pueda coordinar el acceso al vehículo.
                             </p>
                         </div>
@@ -212,7 +212,7 @@ export function CheckoutDesktopLocationStepBody({
                         label={
                             <>
                                 Teléfono
-                                {mode === 'self' ? <span className="font-normal text-[#6b7280]"> (opc.)</span> : null}
+                                {mode === 'self' ? <span className="font-normal text-ink-muted"> (opc.)</span> : null}
                             </>
                         }
                     >
@@ -235,7 +235,7 @@ export function CheckoutDesktopLocationStepBody({
                         label={
                             <>
                                 Email
-                                {mode === 'self' ? <span className="font-normal text-[#6b7280]"> (opc.)</span> : null}
+                                {mode === 'self' ? <span className="font-normal text-ink-muted"> (opc.)</span> : null}
                             </>
                         }
                     >
@@ -252,7 +252,7 @@ export function CheckoutDesktopLocationStepBody({
                     </GroupedFieldRow>
                 </GroupedFieldsCard>
                 {showContactError ? (
-                    <p role="alert" className="text-[12px] font-medium text-red-600">
+                    <p role="alert" className="text-caption font-medium text-red-600">
                         {bothEmpty
                             ? 'Añade un teléfono o un email para continuar.'
                             : 'Revisa el contacto: un móvil o un email válido.'}
@@ -265,7 +265,7 @@ export function CheckoutDesktopLocationStepBody({
                     de baja frecuencia), en vez de darle el mismo peso que un campo requerido. */}
                 <div className="pt-0.5">
                     <label htmlFor="location-seller-listing" className={groupedLabelClass}>
-                        Enlace del anuncio <span className="font-normal text-[#6b7280]">(opc.)</span>
+                        Enlace del anuncio <span className="font-normal text-ink-muted">(opc.)</span>
                     </label>
                     <input
                         id="location-seller-listing"

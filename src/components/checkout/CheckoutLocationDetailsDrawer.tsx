@@ -58,7 +58,7 @@ export function CheckoutLocationDetailsDrawer({
             >
                 <div
                     className={cn(
-                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-[1.25rem] border border-b-0 border-[#e8ecf1] bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                        'pointer-events-auto relative flex flex-col overflow-hidden rounded-t-[1.25rem] border border-b-0 border-line bg-white shadow-[0_-12px_40px_rgba(15,23,42,0.14)] transition-[max-height,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                         entered ? 'translate-y-0' : 'translate-y-full',
                         expanded ? expandedMaxHeight : 'max-h-none',
                     )}
@@ -76,7 +76,7 @@ export function CheckoutLocationDetailsDrawer({
                             aria-expanded={expanded}
                             aria-label={expanded ? 'Contraer detalles' : 'Expandir detalles'}
                         >
-                            <span className="h-1 w-9 rounded-full bg-[#d1d5db]" aria-hidden />
+                            <span className="h-1 w-9 rounded-full bg-line" aria-hidden />
                         </button>
 
                         <button
@@ -85,23 +85,23 @@ export function CheckoutLocationDetailsDrawer({
                             className="flex w-full items-center gap-2.5 text-left"
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-[15px] font-semibold leading-snug tracking-[-0.02em] text-[#14161a]">
+                                <p className="truncate text-lead font-semibold leading-snug tracking-[-0.02em] text-ink-strong">
                                     {addressLabel}
                                 </p>
                                 {!expanded ? (
-                                    <p className="mt-1 truncate text-[12px] leading-relaxed text-[#64748b]">
+                                    <p className="mt-1 truncate text-caption leading-relaxed text-ink-muted">
                                         {detailBadge ? 'Detalles añadidos' : 'Puerta y referencias (opcional)'}
                                     </p>
                                 ) : null}
                             </div>
                             {detailBadge && !expanded ? (
-                                <span className="max-w-[5.5rem] shrink-0 truncate text-[11px] font-medium text-[#64748b]">
+                                <span className="max-w-[5.5rem] shrink-0 truncate text-kicker font-medium text-ink-muted">
                                     {detailBadge}
                                 </span>
                             ) : null}
                             <ChevronDown
                                 className={cn(
-                                    'h-[18px] w-[18px] shrink-0 text-[#9ca3af] transition-transform duration-300',
+                                    'h-[18px] w-[18px] shrink-0 text-ink-soft transition-transform duration-300',
                                     expanded && 'rotate-180',
                                 )}
                                 aria-hidden

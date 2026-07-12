@@ -664,7 +664,7 @@ export const PreHireChat = ({
             <Skeleton className="h-20 w-56 rounded-2xl" />
           </div>
         </div>
-        <div className="border-t border-[#e8e8e8] p-4">
+        <div className="border-t border-line p-4">
           <Skeleton className="h-12 w-full rounded-full" />
         </div>
       </div>
@@ -687,7 +687,7 @@ export const PreHireChat = ({
             </p>
             {needsConversationId ? (
               <Button type="button" variant="default" size="sm" asChild>
-                <a href="/expert-panel?tab=messages">Ir a mis conversaciones</a>
+                <a href="/expert?tab=messages">Ir a mis conversaciones</a>
               </Button>
             ) : null}
             <Button
@@ -709,7 +709,7 @@ export const PreHireChat = ({
 
   if (!hasAccess) {
     return (
-      <div className="flex h-full items-center justify-center bg-white p-6 text-center text-[#6a6a6a]">
+      <div className="flex h-full items-center justify-center bg-white p-6 text-center text-ink-muted">
         <p>No tienes acceso a esta conversación privada.</p>
       </div>
     );
@@ -723,13 +723,13 @@ export const PreHireChat = ({
     const containerHeight = onClose ? 'h-[600px]' : 'h-full';
     
     return (
-        <div className={`flex flex-col ${containerHeight} ${onClose ? 'border border-[#e8e8e8] rounded-lg' : ''} bg-white`}>
+        <div className={`flex flex-col ${containerHeight} ${onClose ? 'border border-line rounded-lg' : ''} bg-white`}>
             {/* Header - Solo mostrar si hay onClose (para modales) */}
             {onClose && (
-                <div className="flex items-center justify-between p-4 border-b border-[#e8e8e8] bg-[#fafafa] rounded-t-lg">
+                <div className="flex items-center justify-between p-4 border-b border-line bg-surface-tinted rounded-t-lg">
                     <div className="flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-primary" />
-                        <h3 className="text-lg font-semibold text-[#1c1c1c]">Chat antes de contratar</h3>
+                        <h3 className="text-lg font-semibold text-ink-strong">Chat antes de contratar</h3>
                     </div>
                     <div className="flex items-center gap-3">
                         {/* Botón de contratar */}
@@ -762,16 +762,16 @@ export const PreHireChat = ({
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-1 hover:bg-[#fafafa] rounded-full transition-colors"
+                            className="p-1 hover:bg-surface-tinted rounded-full transition-colors"
                             aria-label="Cerrar chat"
                         >
-                            <X className="w-5 h-5 text-[#6a6a6a]" />
+                            <X className="w-5 h-5 text-ink-muted" />
                         </button>
                     </div>
                 </div>
             )}
       {userIsAdmin && (
-        <p className="mx-4 mt-2 text-[11px] text-amber-800 bg-amber-50 rounded-md px-2 py-1">
+        <p className="mx-4 mt-2 text-kicker text-amber-800 bg-amber-50 rounded-md px-2 py-1">
           Vista de administrador: los mensajes no se marcarán como leídos para el cliente ni el experto.
         </p>
       )}
@@ -781,7 +781,7 @@ export const PreHireChat = ({
           <p
             role="status"
             aria-live="polite"
-            className="shrink-0 border-b border-[#ebebeb] bg-white px-4 py-2 text-center text-[11px] leading-snug text-[#717171]"
+            className="shrink-0 border-b border-line bg-white px-4 py-2 text-center text-kicker leading-snug text-ink-muted"
           >
             {PRE_HIRE_CHAT_COPY.reconnecting}
           </p>
@@ -816,23 +816,18 @@ export const PreHireChat = ({
       <div
         ref={messageListRef}
         data-chat-messages
-        className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-4"
-        style={{
-          WebkitOverflowScrolling: 'touch',
-          backgroundColor: '#e8ecf1',
-          backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)',
-          backgroundSize: '20px 20px',
-        }}
+        className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface-tinted px-3 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.04)_1px,transparent_0)] [background-size:20px_20px] sm:px-4"
+        style={{ WebkitOverflowScrolling: 'touch' }}
         role="log"
         aria-label="Mensajes del chat antes de contratar"
       >
         {messages.length === 0 ? (
           <div className="flex h-full min-h-[12rem] items-center justify-center px-4 py-6">
             <div className="flex flex-col items-center text-center">
-              <h3 className="text-[14px] font-semibold text-[#1c1c1c]">
+              <h3 className="text-body font-semibold text-ink-strong">
                 {PRE_HIRE_CHAT_COPY.emptyTitle}
               </h3>
-              <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-[#9a9a9a]">
+              <p className="mt-1 max-w-[240px] text-caption leading-relaxed text-ink-soft">
                 {PRE_HIRE_CHAT_COPY.emptyBody}
               </p>
             </div>
@@ -856,7 +851,7 @@ export const PreHireChat = ({
                     className="my-3 flex justify-center"
                     aria-label={`Mensajes de ${formatMessageDay(message.sentAt)}`}
                   >
-                    <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium text-[#6a6a6a] shadow-sm">
+                    <span className="rounded-full bg-white/90 px-3 py-1 text-kicker font-medium text-ink-muted shadow-sm">
                       {formatMessageDay(message.sentAt)}
                     </span>
                   </div>
@@ -873,7 +868,7 @@ export const PreHireChat = ({
                             src={otherUserId ? `/api/Users/${otherUserId}/profile-picture` : undefined}
                             alt=""
                           />
-                          <AvatarFallback className="bg-[#1c1c1c] text-xs text-white">
+                          <AvatarFallback className="bg-ink-strong text-xs text-white">
                             {message.senderName?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -885,7 +880,7 @@ export const PreHireChat = ({
 
                   <div className={`flex min-w-0 flex-col gap-0.5 ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     {!isOwnMessage && isFirstInGroup && (
-                      <span className="px-1 text-xs font-semibold text-[#6a6a6a]">
+                      <span className="px-1 text-xs font-semibold text-ink-muted">
                         {message.senderName}
                       </span>
                     )}
@@ -893,7 +888,7 @@ export const PreHireChat = ({
                       className={`rounded-[1.15rem] px-3.5 py-2 shadow-sm ${
                         isOwnMessage
                           ? 'rounded-br-sm bg-primary text-primary-foreground'
-                          : 'rounded-bl-sm border border-[#e8e8e8] bg-white text-[#1c1c1c]'
+                          : 'rounded-bl-sm border border-line bg-white text-ink-strong'
                       } ${message.isOptimistic ? 'opacity-80' : ''}`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm leading-snug">
@@ -901,7 +896,7 @@ export const PreHireChat = ({
                       </p>
                     </div>
                     {isLastInGroup && (
-                      <span className="flex items-center gap-1 px-1 text-[10px] text-[#6a6a6a]">
+                      <span className="flex items-center gap-1 px-1 text-badge text-ink-muted">
                         <time dateTime={message.sentAt}>{formatMessageTime(message.sentAt)}</time>
                         {isOwnMessage && (
                           <>
@@ -911,7 +906,7 @@ export const PreHireChat = ({
                               <SileoLoader size="xs" color="muted" />
                             ) : (
                               <CheckCheck
-                                className={`h-3 w-3 ${message.isRead ? 'text-brand' : 'text-[#9a9a9a]'}`}
+                                className={`h-3 w-3 ${message.isRead ? 'text-brand' : 'text-ink-soft'}`}
                                 aria-hidden
                               />
                             )}
@@ -927,7 +922,7 @@ export const PreHireChat = ({
                             key={idx}
                             src={url}
                             alt={`Adjunto ${idx + 1}`}
-                            className="max-h-[200px] max-w-[200px] rounded-xl border border-[#e8e8e8] object-cover"
+                            className="max-h-[200px] max-w-[200px] rounded-xl border border-line object-cover"
                             loading="lazy"
                           />
                         ))}
@@ -944,25 +939,25 @@ export const PreHireChat = ({
 
       {typingUserIds.some((id) => Number(id) === Number(otherParticipantId)) && (
         <div
-          className="flex shrink-0 items-center gap-2 border-t border-[#e8e8e8] bg-white/95 px-4 py-2"
+          className="flex shrink-0 items-center gap-2 border-t border-line bg-white/95 px-4 py-2"
           role="status"
           aria-live="polite"
         >
-          <TypingDots className="text-[#6a6a6a]" />
-          <span className="text-xs text-[#6a6a6a]">
+          <TypingDots className="text-ink-muted" />
+          <span className="text-xs text-ink-muted">
             {PRE_HIRE_CHAT_COPY.typing(peerName)}
           </span>
         </div>
       )}
 
       {/* Input */}
-      <div className="relative z-10 shrink-0 border-t border-[#ececec] bg-white px-3 py-2.5 sm:px-4 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
+      <div className="relative z-10 shrink-0 border-t border-line bg-white px-3 py-2.5 sm:px-4 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
         {sendError && (
           <div className="mb-2.5 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
             {sendError}
           </div>
         )}
-        <div className="flex items-end gap-1.5 rounded-[1.5rem] border border-[#e4e4e4] bg-[#f6f7f9] py-1 pl-3.5 pr-1 transition-colors focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
+        <div className="flex items-end gap-1.5 rounded-[1.5rem] border border-line bg-surface-tinted py-1 pl-3.5 pr-1 transition-colors focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
           <Textarea
             value={inputValue}
             onChange={(e) => {
@@ -978,14 +973,14 @@ export const PreHireChat = ({
             aria-invalid={!!sendError}
             rows={1}
             maxLength={1200}
-            className="min-h-[36px] max-h-32 flex-1 resize-none border-0 bg-transparent px-1 py-[0.4rem] text-sm leading-5 shadow-none ring-offset-0 placeholder:text-[#9a9a9a] focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-[36px] max-h-32 flex-1 resize-none border-0 bg-transparent px-1 py-[0.4rem] text-sm leading-5 shadow-none ring-offset-0 placeholder:text-ink-soft focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
             style={{ pointerEvents: 'auto' }}
           />
           <Button
             type="button"
             onClick={handleSend}
             disabled={!inputValue.trim() || sendMessageMutation.isPending}
-            className="h-9 w-9 shrink-0 rounded-full bg-brand p-0 text-white shadow-sm transition-all hover:bg-brand-hover active:scale-90 disabled:bg-transparent disabled:text-[#bcbcbc] disabled:shadow-none"
+            className="h-9 w-9 shrink-0 rounded-full bg-brand p-0 text-white shadow-sm transition-all hover:bg-brand-hover active:scale-90 disabled:bg-transparent disabled:text-ink-soft disabled:shadow-none"
             aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
           >
             {sendMessageMutation.isPending ? (
@@ -995,7 +990,7 @@ export const PreHireChat = ({
             )}
           </Button>
         </div>
-        <p id="chat-input-help" className="mt-1.5 hidden px-2 text-[11px] text-[#9a9a9a] sm:block">
+        <p id="chat-input-help" className="mt-1.5 hidden px-2 text-kicker text-ink-soft sm:block">
           {PRE_HIRE_CHAT_COPY.inputHelp}
         </p>
       </div>

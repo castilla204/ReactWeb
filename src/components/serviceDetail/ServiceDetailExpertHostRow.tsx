@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
 import { Button } from '../ui/button';
-import { parseFormacion } from '../expertPanel/formacion';
+import { formatFormacionInlineSummary } from '../expertPanel/formacion';
 import {
   SD_DESKTOP_HOST_BIO_CLASS,
   SD_DESKTOP_HOST_CHAT_CLASS,
@@ -10,21 +10,26 @@ import {
   SD_DESKTOP_HOST_INNER_CLASS,
   SD_DESKTOP_HOST_NAME_CLASS,
   SD_DESKTOP_HOST_ROW_CLASS,
+  SD_DESKTOP_HOST_META_CLASS,
   SD_MOBILE_EMPHASIS_CLASS,
   SD_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
+
+const DESKTOP_BIO_CLAMP_CHARS = 140;
+const SD_HOST_INTERACTIVE_CLASS =
+  'sd-host-interactive rounded-sm border-none bg-transparent p-0 font-inherit';
 
 interface ServiceDetailExpertHostRowProps {
   expertName: string;
   expertPicture?: string;
   expertDescription?: string;
   completedSearches?: number;
-  rating?: number;
-  reviewCount?: number;
-  /** JSON de formación del experto; se muestra como chips junto al nombre (solo desktop). */
-  formacion?: string | null;
   onAvatarClick: () => void;
   onChatClick: () => void;
+  /** Abre expediente académico (móvil: sheet · desktop: dialog). */
+  onFormacionClick?: () => void;
+  /** Desktop: JSON de formación para etiqueta del enlace en meta. */
+  expertFormacion?: string | null;
   variant?: 'mobile' | 'desktop';
   className?: string;
 }
@@ -34,81 +39,140 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
   expertPicture,
   expertDescription,
   completedSearches = 0,
-  formacion,
   onAvatarClick,
   onChatClick,
+  onFormacionClick,
+  expertFormacion,
   variant = 'desktop',
   className = '',
 }) => {
   const isMobile = variant === 'mobile';
-  const formacionItems = !isMobile ? parseFormacion(formacion) : [];
+  const [bioExpanded, setBioExpanded] = useState(false);
   const trimmedExpertDescription = expertDescription?.trim() ?? '';
   const showDesktopExpertBio = !isMobile && trimmedExpertDescription.length > 0;
+  const desktopBioIsLong =
+    !isMobile && trimmedExpertDescription.length > DESKTOP_BIO_CLAMP_CHARS;
+  const formacionSummary = useMemo(
+    () => formatFormacionInlineSummary(expertFormacion),
+    [expertFormacion],
+  );
+  const showDesktopFormacionLink = Boolean(
+    !isMobile && onFormacionClick && formacionSummary.linkLabel,
+  );
+  const showMobileCredencialesLink = Boolean(isMobile && onFormacionClick);
+  const showMobileMeta = isMobile && (completedSearches > 0 || showMobileCredencialesLink);
+  const showDesktopMeta = !isMobile && (completedSearches > 0 || showDesktopFormacionLink);
+  const completedLabel =
+    completedSearches === 1 ? 'inspección completada' : 'inspecciones completadas';
 
   const avatarButton = (
     <button
       type="button"
-      className="relative shrink-0 border-none bg-transparent p-0"
+      className="sd-host-interactive relative shrink-0 rounded-full border-none bg-transparent p-0"
       onClick={onAvatarClick}
-      aria-label={isMobile ? `${expertName}, revisor verificado` : `Perfil de ${expertName}`}
+      aria-label={
+        isMobile
+          ? `${expertName}, revisor verificado`
+          : `Perfil verificado de ${expertName}`
+      }
     >
       <Avatar className={`rounded-full ${isMobile ? 'h-11 w-11' : 'h-12 w-12'}`}>
-        <AvatarImage src={expertPicture} alt={expertName} />
-        <AvatarFallback className="rounded-full bg-[#1c1c1c] text-sm font-semibold text-white">
+        <AvatarImage src={expertPicture} alt="" />
+        <AvatarFallback className="rounded-full bg-ink-strong text-sm font-semibold text-white">
           {expertName.charAt(0)}
         </AvatarFallback>
       </Avatar>
       {isMobile ? (
         <VerifiedBadge className="absolute -bottom-1 -right-1 h-[22px] w-[22px]" />
-      ) : null}
+      ) : (
+        <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-5 w-5" />
+      )}
     </button>
   );
 
   const identityBlock = (
     <div className={isMobile ? 'min-w-0 flex-1' : SD_DESKTOP_HOST_CONTENT_CLASS}>
       {isMobile ? (
-        <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>{expertName}</p>
-      ) : (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className={`max-w-full ${SD_DESKTOP_HOST_NAME_CLASS}`}>{expertName}</span>
-          {formacionItems.length > 0 ? (
-            <span className="flex flex-wrap items-center gap-1.5">
-              {formacionItems.map((it, i) => (
-                <span
-                  key={i}
-                  className="inline-flex max-w-[200px] items-center rounded-full bg-[#f4f4f5] px-2.5 py-1 text-[12px] font-medium leading-none text-[#52525b] ring-1 ring-[#e4e4e7]"
-                  title={it.titulo}
-                >
-                  <span className="truncate">{it.titulo}</span>
+        <>
+          <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>{expertName}</p>
+          {showMobileMeta ? (
+            <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 ${SD_MOBILE_META_CLASS}`}>
+              {completedSearches > 0 ? (
+                <span>
+                  {completedSearches}{' '}
+                  {completedSearches === 1 ? 'inspección' : 'inspecciones'}
                 </span>
-              ))}
-            </span>
+              ) : null}
+              {completedSearches > 0 && showMobileCredencialesLink ? (
+                <span className="text-line" aria-hidden>
+                  ·
+                </span>
+              ) : null}
+              {showMobileCredencialesLink ? (
+                <button
+                  type="button"
+                  onClick={onFormacionClick}
+                  className={`${SD_HOST_INTERACTIVE_CLASS} font-medium text-brand hover:text-brand-hover`}
+                >
+                  Credenciales
+                </button>
+              ) : null}
+            </p>
           ) : null}
-        </div>
+        </>
+      ) : (
+        <>
+          <h2 className={`m-0 ${SD_DESKTOP_HOST_NAME_CLASS}`}>{expertName}</h2>
+
+          {showDesktopExpertBio ? (
+            <div className="mt-0.5 min-w-0">
+              <p
+                className={`${SD_DESKTOP_HOST_BIO_CLASS} m-0 ${
+                  !bioExpanded && desktopBioIsLong ? 'line-clamp-2' : ''
+                }`}
+              >
+                {trimmedExpertDescription}
+              </p>
+              {desktopBioIsLong ? (
+                <button
+                  type="button"
+                  onClick={() => setBioExpanded((prev) => !prev)}
+                  className={`${SD_HOST_INTERACTIVE_CLASS} mt-0.5 text-[13px] font-normal text-ink-muted underline decoration-line underline-offset-2 hover:text-ink`}
+                >
+                  {bioExpanded ? 'Mostrar menos' : 'Leer más'}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {showDesktopMeta ? (
+            <p className={`${SD_DESKTOP_HOST_META_CLASS} mt-1`}>
+              {completedSearches > 0 ? (
+                <span>
+                  {completedSearches} {completedLabel}
+                </span>
+              ) : null}
+              {showDesktopFormacionLink ? (
+                <>
+                  {completedSearches > 0 ? (
+                    <span className="text-line" aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={onFormacionClick}
+                    className={`sd-host-expediente-link ${SD_HOST_INTERACTIVE_CLASS} text-ink-muted underline decoration-line underline-offset-2 hover:text-ink`}
+                    title={formacionSummary.fullText}
+                  >
+                    {formacionSummary.linkLabel}
+                  </button>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+        </>
       )}
-
-      {showDesktopExpertBio ? (
-        <p className={SD_DESKTOP_HOST_BIO_CLASS}>
-          {trimmedExpertDescription}
-        </p>
-      ) : null}
-
-      {isMobile ? (
-        <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${SD_MOBILE_META_CLASS}`}>
-          {/* El rating vive en el titular de la página y en la tab Reseñas; repetirlo aquí lo triplicaba */}
-          <span>Revisor verificado</span>
-          {completedSearches > 0 ? (
-            <>
-              <span className="text-[#d4d4d4]" aria-hidden>
-                ·
-              </span>
-              <span>
-                {completedSearches} {completedSearches === 1 ? 'trabajo' : 'trabajos'}
-              </span>
-            </>
-          ) : null}
-        </p>
-      ) : null}
     </div>
   );
 
@@ -118,10 +182,8 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       onClick={onChatClick}
       variant="outline"
       size="sm"
-      className={`rounded-full border-[#d5e3f5] font-semibold text-brand hover:bg-[#eef4fb] hover:text-brand ${
-        isMobile
-          ? 'h-9 shrink-0 px-3.5 text-sm'
-          : `${SD_DESKTOP_HOST_CHAT_CLASS} h-9 px-4 text-sm`
+      className={`shrink-0 rounded-full border-line px-4 text-sm font-semibold text-ink-strong hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+        isMobile ? 'h-10 min-h-[40px]' : `mt-0.5 h-9 ${SD_DESKTOP_HOST_CHAT_CLASS}`
       }`}
       aria-label={`Chat con ${expertName}`}
     >

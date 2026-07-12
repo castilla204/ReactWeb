@@ -87,7 +87,7 @@ export const ServiceDetailMobileTopBar: React.FC<ServiceDetailMobileTopBarProps>
             >
               <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={2} aria-hidden />
             </button>
-            <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-tight tracking-tight text-[#1c1c1c]">
+            <h1 className="min-w-0 flex-1 truncate text-lead font-semibold leading-tight tracking-tight text-ink-strong">
               {title}
             </h1>
             {showFavorite ? (

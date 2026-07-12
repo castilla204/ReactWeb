@@ -15,7 +15,7 @@ import {
 } from '../../constants/homepageTypography';
 
 const BADGE_BASE_CLASS =
-    'inline-flex shrink-0 items-center gap-1 rounded-full border border-[#d8dce3] bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-[#475569]';
+    'inline-flex shrink-0 items-center gap-1 rounded-full border border-line bg-white px-2 py-0.5 text-kicker font-semibold uppercase tracking-[0.05em] text-ink-muted';
 
 export function CheckoutSellerChoiceBadge({
     className,
@@ -27,7 +27,7 @@ export function CheckoutSellerChoiceBadge({
     if (inline) {
         return (
             <span className={cn(BADGE_BASE_CLASS, className)}>
-                <Lock className="h-2.5 w-2.5 shrink-0 text-[#64748b]" aria-hidden />
+                <Lock className="h-2.5 w-2.5 shrink-0 text-ink-muted" aria-hidden />
                 Lo elige el vendedor
             </span>
         );
@@ -36,7 +36,7 @@ export function CheckoutSellerChoiceBadge({
     return (
         <span className={cn(BADGE_BASE_CLASS, 'gap-1.5 py-1 pl-2 pr-2.5', className)}>
             <span
-                className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7] text-[#64748b]"
+                className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-surface-tinted text-ink-muted"
                 aria-hidden
             >
                 <Lock className="h-2.5 w-2.5" />
@@ -65,7 +65,7 @@ export function CheckoutSelfChoiceBadge({
     return (
         <span className={cn(BADGE_BASE_CLASS, 'gap-1.5 py-1 pl-2 pr-2.5', className)}>
             <span
-                className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-[#f4f5f7] text-brand"
+                className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-surface-tinted text-brand"
                 aria-hidden
             >
                 <CalendarDays className="h-2.5 w-2.5" />
@@ -86,7 +86,7 @@ export function CheckoutSelfChoiceLockedStripe({
     return (
         <div
             className={cn(
-                'relative flex items-start gap-2 border-b border-[#eceef2] bg-[#f8fafc] px-3 py-2',
+                'relative flex items-start gap-2 border-b border-line bg-surface-tinted px-3 py-2',
                 className,
             )}
             role="status"
@@ -101,12 +101,12 @@ export function CheckoutSelfChoiceLockedStripe({
                 <CalendarDays className="h-3 w-3" strokeWidth={2.25} />
             </span>
             <div className="min-w-0">
-                <p className="text-[12px] font-semibold leading-snug text-[#1c1c1c] lg:text-[13px]">
+                <p className="text-caption font-semibold leading-snug text-ink-strong lg:text-meta">
                     {COORD_SELF_CALENDAR_HEADER_LEAD}
-                    <span className="font-medium text-[#64748b]"> · tú reservas la cita</span>
+                    <span className="font-medium text-ink-muted"> · tú reservas la cita</span>
                 </p>
                 {!compactSplit ? (
-                    <p className="mt-1 text-[12px] font-medium leading-snug text-[#475569]">
+                    <p className="mt-1 text-caption font-medium leading-snug text-ink-muted">
                         {COORD_SELF_CALENDAR_HEADER_DETAIL}
                     </p>
                 ) : null}
@@ -121,15 +121,15 @@ export function CheckoutSelfChoicePreviewHeader({ className }: { className?: str
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#eceef2] bg-[#f8fafc] px-3.5 py-3 lg:block lg:px-4',
+                'relative hidden border-b border-line bg-surface-tinted px-3.5 py-3 lg:block lg:px-4',
                 className,
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-body font-semibold tracking-[-0.01em] text-ink-strong">
                 {COORD_SELF_CALENDAR_HEADER_LEAD}
             </h3>
-            <p className="mt-1.5 text-[12px] leading-[1.5] text-[#64748b]">
+            <p className="mt-1.5 text-caption leading-[1.5] text-ink-muted">
                 {COORD_SELF_CALENDAR_HEADER_DETAIL}
             </p>
         </div>
@@ -141,15 +141,15 @@ export function CheckoutSelfChoicePreviewLocationHeader({ className }: { classNa
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#eceef2] bg-[#f8fafc] px-3.5 py-3 lg:block lg:px-4',
+                'relative hidden border-b border-line bg-surface-tinted px-3.5 py-3 lg:block lg:px-4',
                 className,
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-body font-semibold tracking-[-0.01em] text-ink-strong">
                 {COORD_SELF_LOCATION_HEADER_LEAD}
             </h3>
-            <p className="mt-1.5 text-[12px] leading-[1.5] text-[#64748b]">
+            <p className="mt-1.5 text-caption leading-[1.5] text-ink-muted">
                 {COORD_SELF_LOCATION_HEADER_DETAIL}
             </p>
         </div>
@@ -161,15 +161,15 @@ export function CheckoutSelfChoicePickLocationHeader({ className }: { className?
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#eceef2] bg-[#f8fafc] px-3.5 py-3 lg:block lg:px-4',
+                'relative hidden border-b border-line bg-surface-tinted px-3.5 py-3 lg:block lg:px-4',
                 className,
             )}
             role="status"
         >
-            <h3 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <h3 className="min-w-0 text-body font-semibold tracking-[-0.01em] text-ink-strong">
                 {COORD_SELF_PICK_LOCATION_HEADER_LEAD}
             </h3>
-            <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-[#64748b]">
+            <p className="mt-1 line-clamp-1 text-kicker leading-snug text-ink-muted">
                 {COORD_SELF_PICK_LOCATION_HEADER_DETAIL}
             </p>
         </div>
@@ -227,10 +227,10 @@ export function CheckoutSelfChoicePreviewMap({
                 <CheckoutSelfChoicePreviewLocationHeader className="w-full shrink-0" />
             ) : (
                 <div className="shrink-0 px-5 pb-3 pt-1 lg:hidden">
-                    <p className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                    <p className="text-subtitle font-semibold text-ink-strong">
                         Ubicación del taller
                     </p>
-                    <p className="mt-0.5 text-[13px] leading-snug text-[#64748b]">
+                    <p className="mt-0.5 text-meta leading-snug text-ink-muted">
                         La inspección es en el punto fijo del experto.
                     </p>
                 </div>
@@ -317,7 +317,7 @@ const LOCKED_COPY = {
 } as const;
 
 const LOCKED_PANEL_CLASS =
-    'mx-auto flex max-w-[20rem] flex-col items-center rounded-xl border border-[#e5e7eb] bg-white px-4 py-3.5 text-center shadow-[0_1px_4px_rgba(15,23,42,0.05)]';
+    'mx-auto flex max-w-[20rem] flex-col items-center rounded-xl border border-line bg-white px-4 py-3.5 text-center shadow-[0_1px_4px_rgba(15,23,42,0.05)]';
 
 export function CheckoutSellerChoiceLockedPanel({
     variant,
@@ -331,8 +331,8 @@ export function CheckoutSellerChoiceLockedPanel({
     return (
         <div className={cn(LOCKED_PANEL_CLASS, className)} role="status">
             <CheckoutSellerChoiceBadge className="mb-2.5" />
-            <p className="text-[13px] font-semibold leading-snug text-[#1c1c1c]">{title}</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-[#6b7280]">{description}</p>
+            <p className="text-meta font-semibold leading-snug text-ink-strong">{title}</p>
+            <p className="mt-1 text-caption leading-relaxed text-ink-muted">{description}</p>
         </div>
     );
 }
@@ -353,7 +353,7 @@ export function CheckoutSellerChoicePreviewHeader({
     return (
         <div
             className={cn(
-                'relative hidden border-b border-[#eceef2] bg-white lg:block',
+                'relative hidden border-b border-line bg-white lg:block',
                 compact ? 'px-4 py-2.5' : 'px-4 py-3.5 lg:px-5',
                 className,
             )}
@@ -362,7 +362,7 @@ export function CheckoutSellerChoicePreviewHeader({
             <div className={cn('flex min-w-0 items-start', compact ? 'gap-2' : 'gap-2.5')}>
                 <svg
                     className={cn(
-                        'mt-0.5 shrink-0 text-[#94a3b8]',
+                        'mt-0.5 shrink-0 text-ink-soft',
                         compact ? 'h-3.5 w-3.5' : 'h-4 w-4',
                     )}
                     viewBox="0 0 20 20"
@@ -378,16 +378,16 @@ export function CheckoutSellerChoicePreviewHeader({
                 <div className="min-w-0">
                     <h3
                         className={cn(
-                            'font-semibold tracking-[-0.01em] text-[#1c1c1c]',
-                            compact ? 'text-[13px]' : 'text-[14px]',
+                            'font-semibold tracking-[-0.01em] text-ink-strong',
+                            compact ? 'text-meta' : 'text-body',
                         )}
                     >
                         {headerLead}
                     </h3>
                     <p
                         className={cn(
-                            'mt-0.5 leading-[1.5] text-[#64748b]',
-                            compact ? 'text-[11px]' : 'text-[12px]',
+                            'mt-0.5 leading-[1.5] text-ink-muted',
+                            compact ? 'text-kicker' : 'text-caption',
                         )}
                     >
                         {headerDetail}
@@ -417,7 +417,7 @@ export function CheckoutSellerChoiceMobileWarning({
             className={cn(
                 'flex items-start gap-2',
                 boxed
-                    ? 'rounded-xl border border-[#e5e7eb] bg-white px-3.5 py-2.5'
+                    ? 'rounded-xl border border-line bg-white px-3.5 py-2.5'
                     : 'px-0.5 py-0.5',
                 className,
             )}
@@ -425,14 +425,14 @@ export function CheckoutSellerChoiceMobileWarning({
         >
             <Lock
                 className={cn(
-                    'shrink-0 text-[#64748b]',
+                    'shrink-0 text-ink-muted',
                     boxed ? 'mt-px h-[15px] w-[15px]' : 'mt-[2px] h-[15px] w-[15px]',
                 )}
                 strokeWidth={2.25}
                 aria-hidden
             />
-            <p className="min-w-0 text-[13px] leading-[1.5] text-[#64748b]">
-                <span className="font-semibold text-[#475569]">Solo consulta.</span>{' '}
+            <p className="min-w-0 text-meta leading-[1.5] text-ink-muted">
+                <span className="font-semibold text-ink-muted">Solo consulta.</span>{' '}
                 {stripeMessage}
             </p>
         </div>
@@ -443,7 +443,7 @@ export function CheckoutSellerChoiceMobileWarning({
 function highlightEnlace(text: string): React.ReactNode {
     return text.split(/(enlace)/).map((part, i) =>
         part === 'enlace' ? (
-            <strong key={i} className="font-bold text-[#1c1c1c]">
+            <strong key={i} className="font-bold text-ink-strong">
                 {part}
             </strong>
         ) : (
@@ -467,18 +467,18 @@ export function CheckoutSellerChoiceLockedStripe({
     return (
         <div
             className={cn(
-                'relative flex items-start gap-2 border-b border-[#eceef2] bg-[#f8fafc] px-4 py-2.5',
+                'relative flex items-start gap-2 border-b border-line bg-surface-tinted px-4 py-2.5',
                 className,
             )}
             role="status"
         >
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#94a3b8]" strokeWidth={2} aria-hidden />
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={2} aria-hidden />
             <div className="min-w-0">
-                <p className="text-[12px] leading-snug text-[#64748b]">
-                    <span className="font-semibold text-[#475569]">{stripeLead}</span>
+                <p className="text-caption leading-snug text-ink-muted">
+                    <span className="font-semibold text-ink-muted">{stripeLead}</span>
                     {' · '}
                     {compactSplit ? (
-                        <span className="text-[#64748b]">no necesitas elegir nada aquí</span>
+                        <span className="text-ink-muted">no necesitas elegir nada aquí</span>
                     ) : (
                         highlightEnlace(stripeMessage)
                     )}
@@ -501,12 +501,12 @@ export function CheckoutSellerChoicePreviewFooter({
     return (
         <div
             className={cn(
-                'shrink-0 border-t border-[#eceef2] bg-[#f8fafc] px-5 py-3',
+                'shrink-0 border-t border-line bg-surface-tinted px-5 py-3',
                 className,
             )}
         >
-            <p className="text-[13px] font-semibold text-[#1c1c1c]">{title}</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-[#64748b]">{description}</p>
+            <p className="text-meta font-semibold text-ink-strong">{title}</p>
+            <p className="mt-1 text-caption leading-relaxed text-ink-muted">{description}</p>
         </div>
     );
 }

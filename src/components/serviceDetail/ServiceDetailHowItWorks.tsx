@@ -39,26 +39,26 @@ export const ServiceDetailHowItWorks: React.FC<ServiceDetailHowItWorksProps> = (
           <li key={step.title} className="relative flex gap-4 pb-6 last:pb-0">
             {!isLast && (
               <span
-                className="absolute left-[17px] top-10 bottom-0 w-px bg-[#e8e8e8]"
+                className="absolute left-[17px] top-10 bottom-0 w-px bg-line"
                 aria-hidden
               />
             )}
             <div
-              className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3f4f6] text-[#6a6a6a]"
+              className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-tinted text-ink-muted"
               aria-hidden
             >
               <step.Icon className="h-4 w-4" strokeWidth={2} />
             </div>
             <div className="min-w-0 pt-0.5">
-              <h3 className="text-base font-semibold leading-tight text-[#1c1c1c]">{step.title}</h3>
-              <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-[#6a6a6a]">{step.body}</p>
+              <h3 className="text-base font-semibold leading-tight text-ink-strong">{step.title}</h3>
+              <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-muted">{step.body}</p>
             </div>
           </li>
         );
       })}
     </ol>
 
-    <p className="mt-5 text-sm leading-relaxed text-[#9ca3af]">
+    <p className="mt-5 text-sm leading-relaxed text-ink-soft">
       Si cancelas antes de que empiece la revisión, reembolso completo.
     </p>
   </section>

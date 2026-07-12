@@ -1,16 +1,16 @@
 /**
- * SEO Component — Per-route meta tags + JSON-LD.
+ * SEO Component: meta tags por ruta + JSON-LD.
  *
- * ⚠️ Implementación imperativa (estilo react-helmet), NO React 19 hoisting.
+ * Implementación imperativa (estilo react-helmet), NO React 19 hoisting.
  * Motivo: React 19 hoistea <title>/<meta>/<link> renderizados en JSX al <head>,
- * pero NO deduplica contra los tags ESTÁTICOS de index.html → cada ruta acababa
+ * pero NO deduplica contra los tags ESTÁTICOS de index.html. Cada ruta acababa
  * con DOS title, DOS description y DOS canonical contradictorios (verificado en
  * el DOM 2026-07-07). Dos canonicals distintos hacen que Google ignore ambos.
  *
  * Estrategia: mutamos los tags estáticos de index.html vía upsert en useEffect.
  * - Scrapers sin JS (WhatsApp/LinkedIn/Bing): ven el estático de index.html (fallback home).
  * - Google (renderiza JS): ve UN único juego de tags, el de la ruta activa.
- * - Páginas sin <SEO> (admin, etc.): conservan el último valor aplicado — sin regresión.
+ * - Páginas sin <SEO> (admin, etc.): conservan el último valor aplicado, sin regresión.
  *
  * El JSON-LD sí se renderiza como JSX (<script> en body): React lo monta/desmonta
  * por ruta y los crawlers leen todo el HTML, no solo el head.
@@ -28,7 +28,7 @@ export interface SeoProps {
   description: string;
   /** Path relativo (ej. "/faq"). Componente lo hace absoluto. Omitir para no emitir canonical. */
   canonical?: string;
-  /** OG title (puede diferir del SEO title — más humano para WhatsApp/LinkedIn). */
+  /** OG title (puede diferir del SEO title; más humano para WhatsApp/LinkedIn). */
   ogTitle?: string;
   /** OG description (más conversacional, menos keyword-stuffed). */
   ogDescription?: string;
@@ -46,7 +46,7 @@ const SITE_URL = 'https://inspecciono.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 const DEFAULT_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1';
 
-/** Detección Capacitor — perezosa, sólo al montar. */
+/** Detección Capacitor: perezosa, sólo al montar. */
 function useIsNative(): boolean {
   const [isNative, setIsNative] = useState(false);
   useEffect(() => {
@@ -88,7 +88,7 @@ function removeMeta(attr: 'name' | 'property', key: string) {
 function upsertCanonical(href: string | undefined) {
   const all = document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]');
   if (!href) {
-    // Sin canonical deseado (rutas noindex): fuera el estático de la home —
+    // Sin canonical deseado (rutas noindex): fuera el estático de la home.
     // "canonical=/" + "noindex" en /login sería contradictorio para Google.
     all.forEach((el) => el.remove());
     return;
@@ -168,7 +168,7 @@ export const SEO: React.FC<SeoProps> = ({
 
   return (
     <>
-      {/* JSON-LD — render en body (crawlers leen todo el HTML). React lo
+      {/* JSON-LD: render en body (crawlers leen todo el HTML). React lo
           desmonta al salir de la ruta, así no se acumulan schemas. */}
       {jsonLd?.map((schema, i) => (
         <script

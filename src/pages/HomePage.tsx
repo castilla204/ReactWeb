@@ -1,46 +1,31 @@
-import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { HomepageMobileHero } from '../components/HomepageMobileHero';
-import { prefetchHomepageWall } from '../hooks/useHomepageWall';
-import { useIsMobile } from '../hooks/useIsMobile';
-import {
-  HomePageSearchBarSkeleton,
-  HomePageSearchBarDesktopSkeleton,
-} from '../components/homepage/HomePageSearchBarSkeleton';
-import { HomePageWallSkeleton } from '../components/homepage/HomePageWallSkeleton';
-import { Delayed } from '../components/ui/Delayed';
+import { HomePageShell } from '../components/homepage/HomePageShell';
+import { HomeServicesLoading } from '../components/homepage/HomePageWallSkeleton';
+import { HomeSearchBarLoading } from '../components/homepage/HomeSearchBarLoading';
+import { HomeBottomBarLoading } from '../components/homepage/HomeBottomBarLoading';
 import { SEO } from '../components/SEO';
 import { FAQ_ITEMS } from '../content/faqContent';
 import { faqPageSchema } from '../utils/jsonLd';
 
-// ⚡ Los import() arrancan en cuanto se evalúa este módulo (en paralelo entre sí),
-// no cuando React monta cada <Suspense>. Antes cada lazy() esperaba a su render
-// → cascada de peticiones secuenciales y la página aparecía "por partes".
-const airbnbSearchBarPromise = import('../components/AirbnbSearchBar');
-const homepageWallPromise = import('../components/HomepageWall');
-const mobileBottomBarPromise = import('../components/MobileBottomBar');
-const desktopLandingPromise = import('../components/DesktopLanding');
-const howItWorksPromise = import('../components/HomepageHowItWorks');
-
 const AirbnbSearchBar = lazy(() =>
-  airbnbSearchBarPromise.then((m) => ({ default: m.AirbnbSearchBar })),
+  import('../components/AirbnbSearchBar').then((m) => ({ default: m.AirbnbSearchBar })),
 );
+
 const HomepageWall = lazy(() =>
-  homepageWallPromise.then((m) => ({ default: m.HomepageWall })),
+  import('../components/HomepageWall').then((m) => ({ default: m.HomepageWall })),
 );
+
 const MobileBottomBar = lazy(() =>
-  mobileBottomBarPromise.then((m) => ({ default: m.MobileBottomBar })),
+  import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
 );
-const DesktopLanding = lazy(() => desktopLandingPromise);
-const HomepageHowItWorks = lazy(() =>
-  howItWorksPromise.then((m) => ({ default: m.HomepageHowItWorks })),
-);
+
+const DesktopLanding = lazy(() => import('../components/DesktopLanding'));
 
 const HomePage: React.FC = () => {
   const location = useLocation();
-  const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
+
   useEffect(() => {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -64,26 +49,6 @@ const HomePage: React.FC = () => {
     categoryId: 3,
     adUrl: '',
   });
-
-  const wallParams = useMemo(
-    () => ({
-      categoryId: searchFilters.categoryId,
-      latitude: null as string | null,
-      longitude: null as string | null,
-      countryCode,
-      locationRange: 50,
-      nearbyPage: 1,
-      nearbyPageSize: 20,
-      popularPage: 1,
-      popularPageSize: 20,
-      _enabled: true,
-    }),
-    [searchFilters.categoryId, countryCode],
-  );
-
-  useLayoutEffect(() => {
-    void prefetchHomepageWall(queryClient, wallParams);
-  }, [queryClient, wallParams]);
 
   const handleSearch = useCallback(
     (searchData: {
@@ -109,23 +74,7 @@ const HomePage: React.FC = () => {
     [],
   );
 
-  const searchBarFallback = isMobile ? (
-    <HomePageSearchBarSkeleton />
-  ) : (
-    <HomePageSearchBarDesktopSkeleton />
-  );
-
-  // 🛡️ SEO: 6 FAQ curadas (las de máximo intent transaccional). El JSON-LD requiere
-  // que las preguntas también aparezcan visibles en la home (Google update 08/2023).
-  // El componente <FAQ /> al final de la página renderiza las 41 — coincidencia OK.
-  const homeFaqIds = [
-    'what-is',
-    'how-it-works',
-    'price',
-    'escrow',
-    'report-time',
-    'dispute',
-  ];
+  const homeFaqIds = ['what-is', 'how-it-works', 'price', 'escrow', 'report-time', 'dispute'];
   const homeFaq = FAQ_ITEMS.filter((it) => homeFaqIds.includes(it.id)).map((it) => ({
     question: it.question,
     answer: it.answer,
@@ -141,46 +90,36 @@ const HomePage: React.FC = () => {
         ogDescription="Coches, pisos, motos. Un perito verificado va, lo inspecciona y te entrega un informe. No pagas al experto hasta dar el visto bueno."
         jsonLd={[faqPageSchema(homeFaq)]}
       />
-      <div className="min-h-screen md:min-h-0 bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))] md:pb-0">
-        <Suspense fallback={<Delayed>{searchBarFallback}</Delayed>}>
-          <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
-        </Suspense>
-
-        <HomepageMobileHero />
-
-        <div className="pt-0 md:pb-0">
-          <div
-            data-services-section
-            id="servicios-grid"
-            className="relative z-20 bg-white -mt-1.5 md:mt-0 md:rounded-t-2xl md:overflow-hidden pt-3 md:pt-8 pb-1 md:pb-10 md:shadow-[0_-2px_16px_rgba(15,23,42,0.05)]"
-          >
-            <Suspense fallback={<Delayed><HomePageWallSkeleton /></Delayed>}>
-              <HomepageWall
-                countryCode={countryCode}
-                serviceTypeId={searchFilters.serviceTypeId}
-                categoryId={searchFilters.categoryId}
-                animateOnMount={false}
-              />
+      <HomePageShell
+        searchBar={
+          <Suspense fallback={<HomeSearchBarLoading />}>
+            <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
+          </Suspense>
+        }
+        hero={<HomepageMobileHero />}
+        services={
+          <Suspense fallback={<HomeServicesLoading />}>
+            <HomepageWall
+              countryCode={countryCode}
+              serviceTypeId={searchFilters.serviceTypeId}
+              categoryId={searchFilters.categoryId}
+              animateOnMount={false}
+            />
+          </Suspense>
+        }
+        desktopFooter={
+          <div className="hidden md:block">
+            <Suspense fallback={null}>
+              <DesktopLanding />
             </Suspense>
           </div>
-        </div>
-
-        <Suspense fallback={null}>
-          <HomepageHowItWorks />
-        </Suspense>
-
-        {!isMobile && (
-          <Suspense fallback={null}>
-            <DesktopLanding />
+        }
+        bottomBar={
+          <Suspense fallback={<HomeBottomBarLoading />}>
+            <MobileBottomBar />
           </Suspense>
-        )}
-      </div>
-
-      {isMobile && (
-        <Suspense fallback={null}>
-          <MobileBottomBar />
-        </Suspense>
-      )}
+        }
+      />
     </>
   );
 };

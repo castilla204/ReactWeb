@@ -6,6 +6,7 @@ import { useSearch } from './useSearch.hooks';
 import { useErrorHandler, isNetworkError } from './useErrorHandler';
 import { mfaService } from '../services/mfaService';
 import type { SearchItem, SearchFilters, PaginationMetadata } from './useSearch.hooks';
+import { ROUTES } from '../constants/routes';
 
 export interface SearchDashboardFilters {
     search: string;
@@ -162,7 +163,7 @@ export function useSearchDashboard() {
                 } catch (err) {
                     console.error('Failed to mark search as revised:', err);
                 }
-                navigate(`/detalles/${search.id}`);
+                navigate(ROUTES.searchReport(search.id));
                 return;
             }
             // Si la búsqueda ya está contratada, abrir el chat de la contratación
@@ -170,10 +171,10 @@ export function useSearchDashboard() {
             // la página de resultados. El detalle completo (cita/estado/pagos) sigue
             // accesible desde el botón "Ver detalle" del panel de Mensajes.
             if (search.searchHire?.id) {
-                navigate(`/mis-mensajes?searchHireId=${search.searchHire.id}`);
+                navigate(`/messages?searchHireId=${search.searchHire.id}`);
                 return;
             }
-            navigate(`/detalles/${search.id}`);
+            navigate(ROUTES.searchReport(search.id));
         },
         [isAdmin, navigate, reviseSearchMutation],
     );

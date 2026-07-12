@@ -10,15 +10,14 @@ const LoginModal = lazy(() => import('./LoginModal').then((m) => ({ default: m.L
 import { AccountMenu } from './AccountMenu';
 import { CurrencySelector } from './CurrencySelector';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
-import erizoImg from '../media/erizo.png';
 import { HP_FONT, SD_PAGE_INNER_MAX_CLASS } from '../constants/homepageTypography';
 
 /**
  * Barra superior desktop unificada de TODA la app.
  *
  * Chrome único en todas las páginas: 48px de alto (min-h-12), fondo #fafafa sin
- * borde, contenedor SD_PAGE_INNER_MAX_CLASS y el mismo logo (erizo + wordmark
- * Manrope 19px). Lo único que cambia entre variantes es QUÉ acciones se muestran,
+ * borde, contenedor SD_PAGE_INNER_MAX_CLASS y el mismo wordmark Manrope 19px.
+ * Lo único que cambia entre variantes es QUÉ acciones se muestran,
  * nunca las proporciones ni la piel.
  *
  * Variants:
@@ -59,13 +58,13 @@ const TopBarNotificationsBell: React.FC = () => {
       type="button"
       aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} nuevas)` : 'Notificaciones'}
       onClick={handleClick}
-      className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
+      className="relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-strong transition-colors hover:bg-surface-tinted"
     >
       <Bell className="h-4 w-4" />
       {unreadCount > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold leading-none text-white"
+          className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-600 text-badge font-semibold leading-none text-white"
         >
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
@@ -104,7 +103,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     <button
       type="button"
       onClick={() => setIsLoginModalOpen(true)}
-      className="inline-flex items-center gap-2 rounded-full border border-[#9ca3af] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
+      className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1.5 text-meta font-semibold text-ink transition-colors hover:border-ink-strong hover:bg-surface-tinted"
       aria-label="Iniciar sesión"
     >
       <User className="h-4 w-4 shrink-0" strokeWidth={2.1} />
@@ -117,8 +116,8 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
       {!isCheckout ? (
         <button
           type="button"
-          onClick={() => navigate('/ayuda')}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
+          onClick={() => navigate('/help')}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-strong transition-colors hover:bg-surface-tinted"
           aria-label="Cómo funciona Inspecciono"
         >
           <HelpCircle className="h-4 w-4" strokeWidth={2.1} aria-hidden />
@@ -150,7 +149,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
               (window as { openAccountSettings?: () => void }).openAccountSettings!();
             }
           }}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-strong transition-colors hover:bg-surface-tinted"
         >
           <Settings className="h-4 w-4" />
         </button>
@@ -160,7 +159,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     </div>
   );
 
-  // Logo ÚNICO para todas las variantes: mismo erizo 36px + wordmark Manrope 19px.
+  // Logo ÚNICO para todas las variantes: wordmark Manrope 19px.
   // (Antes checkout tenía su propia versión a 15px y la ficha de servicio otra gris
   // a 13px → tres wordmarks distintos según la página.)
   const logoLink = (
@@ -170,26 +169,18 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
         e.preventDefault();
         navigate('/');
       }}
-      className="inline-flex h-9 min-w-0 shrink items-center gap-2 rounded-md px-1"
+      className="inline-flex h-9 min-w-0 shrink items-center rounded-md px-1"
       aria-label="Inspecciono — inicio"
     >
-      {/* Icono de marca (erizo) — el mismo que la ficha de servicio / wall.
-          Antes el logo del topbar era solo wordmark; ahora marca + wordmark. */}
-      <img
-        src={erizoImg}
-        alt=""
-        className="h-9 w-9 -scale-x-100 shrink-0 object-contain"
-        style={{ imageRendering: '-webkit-optimize-contrast' }}
-      />
       {/* Fuente fijada a Manrope (HP_FONT, la fuente de marca): la home heredaba el
           stack de sistema (SF Pro/Segoe) y se veía MÁS gruesa que la ficha de servicio,
           que sí usa Manrope. Pinnamos Manrope aquí para que el wordmark se vea igual de
           fino en TODAS las páginas. Decisión usuario 2026-06-16. */}
       <span
-        className="truncate text-[19px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
+        className="truncate text-title font-extrabold tracking-[-0.02em] text-brand"
         style={{ fontFamily: HP_FONT }}
       >
-        Inspecciono<span className="text-[#F59E0B]">.</span>
+        Inspecciono<span className="text-amber-500">.</span>
       </span>
     </a>
   );
@@ -224,7 +215,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-full border border-[#9ca3af] bg-white px-3.5 py-1.5 text-[13px] font-semibold text-[#222222] transition-colors hover:border-[#222222] hover:bg-[#f9fafb]"
+        className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1.5 text-meta font-semibold text-ink transition-colors hover:border-ink-strong hover:bg-surface-tinted"
       >
         <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.1} />
         Volver
@@ -240,7 +231,7 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
     <>
       {/* Piel única (48px, #fafafa, sin borde) y contenedor único para TODAS las
           variantes — que el chrome no salte al navegar entre páginas. */}
-      <header className="sticky top-0 z-50 hidden border-b-0 bg-[#fafafa] md:block">
+      <header className="sticky top-0 z-50 hidden border-b-0 bg-surface-tinted md:block">
         <div className={`${SD_PAGE_INNER_MAX_CLASS} flex min-h-12 items-center justify-between gap-4`}>
           {pageTitle ? <h1 className="sr-only">{pageTitle}</h1> : null}
           {leftControl}

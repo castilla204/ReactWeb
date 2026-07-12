@@ -51,7 +51,7 @@ export default function ExpertInspectionPage() {
             <div className="shrink-0 px-3 pb-2 pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
                 <button
                     type="button"
-                    onClick={() => navigate('/expert-panel')}
+                    onClick={() => navigate('/expert')}
                     className="flex items-center gap-1.5 text-sm font-medium text-gray-600"
                 >
                     <ArrowLeft size={16} /> Volver al panel

@@ -270,7 +270,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 Envía el reporte del trabajo realizado
               </h4>
               <p className="text-sm text-purple-700 mb-3">
-                Tienes 24 horas para subir los archivos requeridos y enviar el reporte. Una vez enviado, el cliente tendrá 24 horas para aprobar o rechazar el trabajo.
+                Tienes 24 horas para subir los archivos requeridos y enviar el reporte. Una vez enviado, el cliente tendrá 3 días para aprobar o rechazar el trabajo.
               </p>
               <div className="text-xs text-purple-600">
                 💡 Asegúrate de subir todos los archivos requeridos antes de enviar el reporte.
@@ -290,7 +290,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 Esperando reporte del experto
               </h4>
               <p className="text-sm text-purple-700 mb-3">
-                El experto tiene 24 horas para enviar el reporte del trabajo realizado. Una vez enviado, tendrás 24 horas para aprobar o rechazar el trabajo.
+                El experto tiene 24 horas para enviar el reporte del trabajo realizado. Una vez enviado, tendrás 3 días para aprobar o rechazar el trabajo.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
@@ -316,7 +316,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 ¡Cita completada exitosamente!
               </h4>
               <p className="text-sm text-green-700 mb-3">
-                Has completado tu trabajo y enviado el reporte. Ahora el cliente tiene 24 horas para revisar y aprobar o rechazar el trabajo.
+                Has completado tu trabajo y enviado el reporte. Ahora el cliente tiene 3 días para revisar y aprobar o rechazar el trabajo.
               </p>
               <div className="text-xs text-green-600">
                 💡 El cliente puede aprobar el trabajo, rechazarlo, o iniciar una disputa si no está conforme.
@@ -336,7 +336,7 @@ const AppointmentStatus: React.FC<AppointmentStatusProps> = ({
                 ¡El experto completó su trabajo!
               </h4>
               <p className="text-sm text-green-700">
-                El experto ha enviado el reporte del trabajo realizado. Tienes 24 horas para revisar y aprobar o rechazar el trabajo.
+                El experto ha enviado el reporte del trabajo realizado. Tienes 3 días para revisar y aprobar o rechazar el trabajo.
               </p>
             </div>
           </div>

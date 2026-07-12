@@ -1,6 +1,6 @@
 const SERVICE_RETURN_PATH_KEY = 'servicePageReturnTo';
 
-const BLOCKED_RETURN_PREFIXES = ['/checkout', '/chat-pre-contratacion'];
+const BLOCKED_RETURN_PREFIXES = ['/checkout', '/inquiry'];
 
 export function isBlockedServiceReturnPath(path: string): boolean {
   return BLOCKED_RETURN_PREFIXES.some((prefix) => path.startsWith(prefix));

@@ -173,11 +173,11 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
         
         // Navegar a crear-busqueda sin parámetros en la URL
         // Usar window.location para forzar una recarga completa si ya estamos en esa página
-        if (window.location.pathname === '/crear-busqueda' || window.location.pathname === '/') {
+        if (window.location.pathname === '/hire' || window.location.pathname === '/') {
             // Si ya estamos en la página, forzar recarga
-            window.location.href = '/crear-busqueda';
+            window.location.href = '/hire';
         } else {
-            navigate('/crear-busqueda');
+            navigate('/hire');
         }
     };
 
@@ -626,7 +626,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     {/* URL del anuncio */}
                                     <div className="flex-1 min-w-0">
                                         <div className="px-5 py-6">
-                                            <div className="text-[10px] font-medium text-gray-700 mb-0.5">URL del anuncio <span className="text-gray-400 font-normal">(opcional)</span></div>
+                                            <div className="text-badge font-medium text-gray-700 mb-0.5">URL del anuncio <span className="text-gray-400 font-normal">(opcional)</span></div>
                                             <div className="relative">
                                                 <LinkIcon className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                                                 <input
@@ -690,7 +690,7 @@ const HomePresentation = ({ onScrollToForm }: HomePresentationProps) => {
                                     <div className="flex-shrink-0 px-2">
                                     <button
                                         onClick={handleSearch}
-                                            className="bg-brand hover:bg-[#0052A3] text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
+                                            className="bg-brand hover:bg-brand-hover text-white rounded-full w-11 h-11 transition-colors shadow-md hover:shadow-lg flex items-center justify-center"
                                     >
                                             <Search className="w-4 h-4" />
                                     </button>

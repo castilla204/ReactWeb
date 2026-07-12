@@ -8,8 +8,9 @@ import {
     Image,
 } from 'lucide-react';
 import { EnhancedReviewsList } from '../components/EnhancedReviewCard';
-import ServiceDetailAvailabilityCalendar from '../components/serviceDetail/ServiceDetailAvailabilityCalendar';
-import FormacionChips from '../components/serviceDetail/FormacionChips';
+import { ServiceDetailDesktopHostPanel } from '../components/serviceDetail/ServiceDetailDesktopHostPanel';
+import { ServiceDetailExpertFormacionSheet } from '../components/serviceDetail/ServiceDetailExpertFormacionSheet';
+import { ServiceDetailExpertFormacionDialog } from '../components/serviceDetail/ServiceDetailExpertFormacionDialog';
 import { useServices, Service } from '../hooks/useServices';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,29 +24,29 @@ import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
 import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
 import { ServiceDetailDesktopBookingAside } from '../components/serviceDetail/ServiceDetailDesktopBookingAside';
-import { pickPreviewReviews } from '../utils/reviewRatingDistribution';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
+import { ServiceDetailReserveNote } from '../components/serviceDetail/ServiceDetailReserveNote';
 import {
   SD_MOBILE_FOOTER_CTA_CLASS,
-  SD_MOBILE_EMPHASIS_CLASS,
   SD_MOBILE_GUTTER_CLASS,
-  SD_MOBILE_HEADER_PB_CLASS,
+  SD_MOBILE_IDENTITY_STACK_CLASS,
   SD_MOBILE_INSET_STACK_CLASS,
-  SD_MOBILE_META_CLASS,
-  SD_MOBILE_META_SECTION_CLASS,
-  SD_MOBILE_SCROLL_PAD_CLASS,
+  SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
   SD_MOBILE_SHEET_BOTTOM_CLASS,
   SD_MOBILE_SHEET_DIVIDER_CLASS,
   SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_PANEL_PT_CLASS,
+  SD_MOBILE_TAB_PANEL_REVIEWS_CLASS,
   SD_PAGE_GRID_CLASS,
   SD_DESKTOP_PANEL_CLASS,
   SD_DESKTOP_STICKY_TOP_CLASS,
   SD_PAGE_INNER_MAX_CLASS,
+  HP_FONT,
 } from '../constants/homepageTypography';
+import { MAP_LITERAL } from '../constants/designTokens';
 import { ServiceDetailDesktopPhotoMapHero } from '../components/serviceDetail/ServiceDetailDesktopPhotoMapHero';
 import {
     ServiceDetailDeliverablesGuide,
@@ -75,6 +76,14 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 // La elección "¿Cómo se fija la cita?" ya no se decide aquí (ni en popup): se resuelve
 // como primer paso dedicado dentro del checkout. Aquí solo navegamos al checkout.
+
+/** Ciudad sola en móvil — el mapa del hero ya muestra la región/país. */
+function compactMobileLocationLabel(label?: string | null): string | undefined {
+    if (!label?.trim()) return undefined;
+    const trimmed = label.trim();
+    const comma = trimmed.indexOf(',');
+    return comma > 0 ? trimmed.slice(0, comma).trim() : trimmed;
+}
 
 interface ServiceReviewPageProps {
     serviceId: number;
@@ -157,7 +166,7 @@ export function ServiceReviewPage({
             if (result.isFavorite) {
                 toast.info('Añadido a favoritos', {
                     description: 'Lo tienes guardado en tu lista de favoritos.',
-                    action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+                    action: { label: 'Ver favoritos', onClick: () => navigate('/favorites') },
                     duration: 3000,
                 });
             } else {
@@ -375,6 +384,8 @@ export function ServiceReviewPage({
     const [reviewLightboxOpen, setReviewLightboxOpen] = useState<Record<number, boolean>>({});
     const [reviewLightboxIndex, setReviewLightboxIndex] = useState<Record<number, number>>({});
     const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
+    const [formacionSheetOpen, setFormacionSheetOpen] = useState(false);
+    const [formacionDialogOpen, setFormacionDialogOpen] = useState(false);
 
     const finalRating = finalService?.averageRating || (finalService as any)?.AverageRating || 0;
     // Manejar tanto PascalCase como camelCase para reviews
@@ -411,19 +422,6 @@ export function ServiceReviewPage({
         finalService?.categoryName ||
         (finalService as any)?.CategoryName ||
         'Servicio de inspección';
-
-    const serviceHeadlineMeta = [
-        expertLocationLabel || null,
-        finalRating > 0
-            ? `${Number(finalRating).toFixed(1).replace(/\.0$/, '')}${
-                  finalReviews.length > 0 ? ` · ${finalReviews.length} reseñas` : ''
-              }`
-            : finalReviews.length > 0
-              ? `${finalReviews.length} reseñas`
-              : null,
-    ]
-        .filter(Boolean)
-        .join(' · ');
 
     useEffect(() => {
         const hero = mobileHeroRef.current;
@@ -527,7 +525,7 @@ export function ServiceReviewPage({
         return (
             <>
                 <span>≈ {info.converted}</span>
-                <span className="ml-1 text-xs font-normal text-[#6a6a6a]">({info.sourceFormatted})</span>
+                <span className="ml-1 text-xs font-normal text-ink-muted">({info.sourceFormatted})</span>
             </>
         );
     };
@@ -538,6 +536,11 @@ export function ServiceReviewPage({
     }, [location.state]);
 
     const handleReserveClick = () => {
+        if (finalService?.expert?.isOnVacation) {
+            showToast('info', 'Este experto está de vacaciones. Prueba más adelante.');
+            return;
+        }
+
         const checkoutPath = getCheckoutPath();
         if (!checkoutPath) {
             showToast('error', 'Error: ID de servicio no válido');
@@ -612,23 +615,13 @@ export function ServiceReviewPage({
 
     return (
         <>
-        <div className="service-detail-page min-h-screen bg-[#fafafa]">
+        <div className="service-detail-page min-h-screen bg-surface-tinted">
                 
             {/* ========== VERSIÓN MÓVIL MEJORADA ========== */}
             <div className="lg:hidden">
-                <ServiceDetailMobileTopBar
-                    mode="compact"
-                    title={finalServiceTitle}
-                    onBack={onBack}
-                    showCompact={mobileTopBarCompact}
-                    showFavorite={isAuthenticated}
-                    isFavorite={isFavorite}
-                    onFavoriteToggle={handleToggleFavorite}
-                />
-
                 <div className="relative w-full" ref={mobileHeroRef}>
                     <ServiceDetailMobileTopBar
-                        mode="floating"
+                        mode="both"
                         title={finalServiceTitle}
                         onBack={onBack}
                         showCompact={mobileTopBarCompact}
@@ -652,22 +645,29 @@ export function ServiceReviewPage({
                     </div>
 
                     <div
-                        className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.06)] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS}`}
+                        className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-xl bg-white shadow-[0_-1px_0_hsl(var(--line))] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
                     >
                         <div className={SD_MOBILE_GUTTER_CLASS}>
-                            <ServiceDetailPageHeadline
-                                title={finalServiceTitle}
-                                meta={serviceHeadlineMeta || null}
-                                className="mb-4"
-                            />
-                            <header className={SD_MOBILE_HEADER_PB_CLASS}>
+                            <section
+                                className={`sd-mobile-identity-stack ${SD_MOBILE_IDENTITY_STACK_CLASS}`}
+                            >
+                                <ServiceDetailPageHeadline
+                                    variant="compact"
+                                    title={finalServiceTitle}
+                                    locationLabel={compactMobileLocationLabel(expertLocationLabel)}
+                                />
                                 <ServiceDetailExpertHostRow
                                     variant="mobile"
                                     expertName={finalExpertName}
                                     expertPicture={finalExpertPicture}
+                                    expertDescription={finalExpertDescription}
+                                    expertFormacion={finalExpertFormacion}
                                     completedSearches={finalCompletedSearches}
-                                    rating={finalRating > 0 ? finalRating : undefined}
-                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
+                                    onFormacionClick={
+                                        finalExpertFormacion
+                                            ? () => setFormacionSheetOpen(true)
+                                            : undefined
+                                    }
                                     onAvatarClick={() => {
                                         if (finalExpertPicture) {
                                             setIsExpertPhotoOpen(true);
@@ -675,13 +675,7 @@ export function ServiceReviewPage({
                                     }}
                                     onChatClick={handleChatClick}
                                 />
-                            </header>
-
-                            {finalAvailability ? (
-                                <section
-                                    aria-label="Información para reservar"
-                                    className={SD_MOBILE_META_SECTION_CLASS}
-                                >
+                                {finalAvailability ? (
                                     <ServiceDetailBookingMeta
                                         layout="minimal"
                                         embedded
@@ -692,7 +686,17 @@ export function ServiceReviewPage({
                                         rangeKm={expertRange ?? 25}
                                         mapVariant="preview"
                                     />
-                                </section>
+                                ) : null}
+                            </section>
+
+                            {finalExpertFormacion ? (
+                                <ServiceDetailExpertFormacionSheet
+                                    value={finalExpertFormacion}
+                                    expertName={finalExpertName}
+                                    expertDescription={finalExpertDescription}
+                                    open={formacionSheetOpen}
+                                    onOpenChange={setFormacionSheetOpen}
+                                />
                             ) : null}
                         </div>
 
@@ -722,11 +726,11 @@ export function ServiceReviewPage({
                                 aria-selected={activeTab === 'reviews'}
                                 data-active={activeTab === 'reviews' ? 'true' : undefined}
                                 onClick={() => setActiveTab('reviews')}
-                                className="sd-tab sd-tab--flat"
+                                className="sd-tab"
                             >
                                 Reseñas
                                 {finalReviews.length > 0 ? (
-                                    <span className="text-xs font-normal tabular-nums text-[#6a6a6a]">
+                                    <span className="text-xs font-normal tabular-nums text-ink-muted">
                                         {finalReviews.length}
                                     </span>
                                 ) : null}
@@ -745,7 +749,6 @@ export function ServiceReviewPage({
                                             {displayMainDescription}
                                         </p>
                                     ) : null}
-                                    <FormacionChips value={finalExpertFormacion} scrollable />
                                     {showInspectionReport ? (
                                         <>
                                             <h2 className="sd-section-label mb-3">Qué entregará</h2>
@@ -765,19 +768,13 @@ export function ServiceReviewPage({
                                         </>
                                     ) : visibleDeliverableTypes.length > 0 ? (
                                         <ServiceDetailDeliverablesGuide
-                                            items={finalDeliverableTypes}
+                                            items={allDeliverablesForList}
                                             variant="inline"
+                                            presentation="list"
+                                            showHeading
+                                            showUnselected
                                         />
                                     ) : null}
-                                    <ServiceDetailAvailabilityCalendar
-                                        serviceId={serviceId}
-                                        availability={finalAvailability}
-                                        timezone={finalService?.expert?.timezone}
-                                        isOnVacation={finalService?.expert?.isOnVacation}
-                                        showHeading={false}
-                                        compact
-                                        className="mt-5"
-                                    />
                                 </div>
                             )}
 
@@ -786,7 +783,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
+                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_REVIEWS_CLASS}`}
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
@@ -795,7 +792,6 @@ export function ServiceReviewPage({
                                         reviews={finalReviews}
                                         averageRating={finalRating}
                                         onShowAll={() => setReviewsModalOpen(true)}
-                                        neutral
                                     />
                                 </div>
                             )}
@@ -807,14 +803,16 @@ export function ServiceReviewPage({
                     price={getMobileFooterPriceLine(finalPrice)}
                     priceSuffix="por servicio"
                     priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
+                    trustNote={<ServiceDetailReserveNote variant="footer" />}
                 >
                             {isAuthenticated ? (
                                 <button
                                     onClick={handleReserveClick}
                                     type="button"
-                            className={`${SD_MOBILE_FOOTER_CTA_CLASS} sd-cta-dark`}
+                                    disabled={finalService?.expert?.isOnVacation}
+                            className={`${SD_MOBILE_FOOTER_CTA_CLASS} sd-cta-dark disabled:cursor-not-allowed disabled:opacity-50`}
                                 >
-                            Reservar
+                            {finalService?.expert?.isOnVacation ? 'No disponible' : 'Reservar'}
                                 </button>
                             ) : (
                                     <button
@@ -822,7 +820,7 @@ export function ServiceReviewPage({
                             onClick={openLoginForCheckout}
                             className={`${SD_MOBILE_FOOTER_CTA_CLASS} sd-cta-dark`}
                         >
-                            Inicia sesión
+                            Inicia sesión para reservar
                                     </button>
                             )}
                 </MobileReserveFooter>
@@ -866,7 +864,6 @@ export function ServiceReviewPage({
                                 <ServiceDetailPageHeadline
                                     variant="on-image"
                                     title={finalServiceTitle}
-                                    locationLabel={expertLocationLabel || undefined}
                                     rating={finalRating > 0 ? finalRating : undefined}
                                     reviewCount={
                                         finalReviews.length > 0 ? finalReviews.length : undefined
@@ -883,87 +880,34 @@ export function ServiceReviewPage({
 
                     <div className={`${SD_PAGE_GRID_CLASS} min-w-0`}>
                         <div className="min-w-0 lg:col-start-1 flex flex-col gap-5">
-                            <article className={`${SD_DESKTOP_PANEL_CLASS} pt-2 lg:pt-2`}>
-                                <ServiceDetailExpertHostRow
-                                    variant="desktop"
-                                    expertName={finalExpertName}
-                                    expertPicture={finalExpertPicture}
-                                    expertDescription={finalExpertDescription}
-                                    completedSearches={finalCompletedSearches}
-                                    rating={finalRating > 0 ? finalRating : undefined}
-                                    reviewCount={finalReviews.length > 0 ? finalReviews.length : undefined}
-                                    formacion={finalExpertFormacion}
-                                    onAvatarClick={() => {
-                                        if (finalExpertPicture) {
-                                            setIsExpertPhotoOpen(true);
-                                        }
-                                    }}
-                                    onChatClick={handleChatClick}
-                                />
-
-                                <div className="mt-5 flex flex-col gap-5">
-                                    {displayMainDescription ? (
-                                        <section className="min-w-0 overflow-hidden">
-                                            <h2 className="hp-section-title mb-2">Acerca del servicio</h2>
-                                            <div className="sd-body sd-user-text space-y-3">
-                                                {displayMainDescription
-                                                    .split(/\n\s*\n/)
-                                                    .map((paragraph) => paragraph.trim())
-                                                    .filter(Boolean)
-                                                    .map((paragraph, index) => (
-                                                        <p key={index} className="m-0 whitespace-pre-line">
-                                                            {paragraph}
-                                                        </p>
-                                                    ))}
-                                            </div>
-                                        </section>
-                                    ) : null}
-                                    <div
-                                        className={`grid grid-cols-1 gap-x-7 gap-y-5 lg:items-start ${
-                                            showInspectionReport || visibleDeliverableTypes.length > 0 ? 'lg:grid-cols-[1fr_16rem]' : ''
-                                        } ${displayMainDescription ? 'border-t border-[#ebebeb] pt-5' : ''}`}
-                                    >
-                                        {showInspectionReport ? (
-                                            <section className="min-w-0">
-                                                <h2 className="hp-section-title mb-3">Qué entregará</h2>
-                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
-                                                {inspectionExtraDeliverables.length > 0 ? (
-                                                    <div className="mt-3">
-                                                        <ServiceDetailDeliverablesGuide
-                                                            items={inspectionExtraDeliverables}
-                                                            variant="inline"
-                                                            presentation="cover"
-                                                            showHeading={false}
-                                                        />
-                                                    </div>
-                                                ) : null}
-                                            </section>
-                                        ) : visibleDeliverableTypes.length > 0 ? (
-                                            <section className="min-w-0">
-                                                <ServiceDetailDeliverablesGuide
-                                                    items={allDeliverablesForList}
-                                                    variant="inline"
-                                                    presentation="list"
-                                                    showHeading
-                                                    showUnselected
-                                                />
-                                            </section>
-                                        ) : null}
-                                        <section className="min-w-0">
-                                            <h2 className="hp-section-title mb-3">Disponibilidad</h2>
-                                            <ServiceDetailAvailabilityCalendar
-                                                serviceId={serviceId}
-                                                availability={finalAvailability}
-                                                timezone={finalService?.expert?.timezone}
-                                                isOnVacation={finalService?.expert?.isOnVacation}
-                                                showHeading={false}
-                                                compact
-                                            />
-                                        </section>
-                                    </div>
-                                </div>
-
-                            </article>
+                            <ServiceDetailDesktopHostPanel
+                                expertName={finalExpertName}
+                                expertPicture={finalExpertPicture}
+                                expertDescription={finalExpertDescription}
+                                expertFormacion={finalExpertFormacion}
+                                completedSearches={finalCompletedSearches}
+                                onFormacionClick={
+                                    finalExpertFormacion
+                                        ? () => setFormacionDialogOpen(true)
+                                        : undefined
+                                }
+                                onAvatarClick={() => {
+                                    if (finalExpertPicture) {
+                                        setIsExpertPhotoOpen(true);
+                                    }
+                                }}
+                                onChatClick={handleChatClick}
+                                description={displayMainDescription}
+                                showInspectionReport={showInspectionReport}
+                                inspectionCatalog={inspectionCatalog}
+                                inspectionConfig={inspectionConfig}
+                                inspectionExtraDeliverables={inspectionExtraDeliverables}
+                                visibleDeliverableTypes={visibleDeliverableTypes}
+                                allDeliverablesForList={allDeliverablesForList}
+                                reviews={finalReviews}
+                                averageRating={finalRating}
+                                onShowAllReviews={() => setReviewsModalOpen(true)}
+                            />
                         </div>
 
                         <aside
@@ -973,7 +917,6 @@ export function ServiceReviewPage({
                                 const desktopPriceInfo = getServicePriceInfo(finalPrice);
                                 return (
                                     <ServiceDetailDesktopBookingAside
-                                        expertName={finalExpertName}
                                         priceDisplay={
                                             desktopPriceInfo.wasConverted ? (
                                                 <>
@@ -992,11 +935,6 @@ export function ServiceReviewPage({
                                         isAuthenticated={isAuthenticated}
                                         averageRating={finalRating > 0 ? finalRating : undefined}
                                         reviewCount={finalReviews.length}
-                                        highlightReview={
-                                            finalReviews.length > 0
-                                                ? pickPreviewReviews(finalReviews, 1)[0] ?? null
-                                                : null
-                                        }
                                         onReviewsClick={
                                             finalReviews.length > 0
                                                 ? () => setReviewsModalOpen(true)
@@ -1126,14 +1064,8 @@ export function ServiceReviewPage({
                                         }}
                                     >
                                         <span
-                                            style={{
-                                                fontSize: '10px',
-                                                lineHeight: '12px',
-                                                fontWeight: 400,
-                                                color: '#222222',
-                                                fontFamily: HP_FONT,
-                                                letterSpacing: '0',
-                                            }}
+                                            className="text-badge text-ink-strong"
+                                            style={{ fontFamily: HP_FONT }}
                                         >
                                         {currentIndex + 1} / {reviewImages.length}
                                         </span>
@@ -1151,7 +1083,7 @@ export function ServiceReviewPage({
                                                     style={{
                                                         height: '3px',
                                                         width: imgIdx === currentIndex ? '12px' : '3px',
-                                                        backgroundColor: imgIdx === currentIndex ? '#222222' : 'rgba(34, 34, 34, 0.4)',
+                                                        backgroundColor: imgIdx === currentIndex ? MAP_LITERAL.inkStrong : `${MAP_LITERAL.inkStrong}66`,
                                                     }}
                                                 />
                                             ))}
@@ -1191,6 +1123,16 @@ export function ServiceReviewPage({
             />
         </div>
         
+        {/* Modal desktop — expediente académico */}
+        {finalExpertFormacion ? (
+            <ServiceDetailExpertFormacionDialog
+                value={finalExpertFormacion}
+                expertName={finalExpertName}
+                open={formacionDialogOpen}
+                onOpenChange={setFormacionDialogOpen}
+            />
+        ) : null}
+
         {/* Modal para ampliar foto del experto */}
         {finalExpertPicture && (
             <Dialog open={isExpertPhotoOpen} onOpenChange={setIsExpertPhotoOpen}>

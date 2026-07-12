@@ -60,9 +60,9 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
     const footer = (
         <div
             style={{
-                borderTop: '0.5px solid #ECEFF3',
+                borderTop: '0.5px solid hsl(var(--line))',
                 padding: '12px 16px max(12px, env(safe-area-inset-bottom, 0px))',
-                background: '#fff',
+                background: 'hsl(var(--surface))',
             }}
         >
             <button
@@ -76,8 +76,8 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                     padding: '12px 16px',
                     fontSize: 14,
                     fontWeight: 600,
-                    color: '#fff',
-                    background: '#111827',
+                    color: 'hsl(var(--surface))',
+                    background: 'hsl(var(--ink-strong))',
                     cursor: 'pointer',
                 }}
             >
@@ -98,10 +98,10 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
-                    border: '0.5px solid #DCE3EC',
+                    border: '0.5px solid hsl(var(--line))',
                     borderRadius: 12,
                     padding: '12px 14px',
-                    background: '#FCFDFE',
+                    background: 'hsl(var(--surface))',
                     cursor: 'pointer',
                     textAlign: 'left',
                 }}
@@ -113,18 +113,18 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                         height: 36,
                         flexShrink: 0,
                         borderRadius: 10,
-                        background: '#EEF2F7',
+                        background: 'hsl(var(--surface-tinted))',
                         alignItems: 'center',
                         justifyContent: 'center',
                     }}
                 >
-                    <GraduationCap size={18} color="#475569" />
+                    <GraduationCap size={18} color="hsl(var(--ink-muted))" />
                 </span>
 
                 <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: 14, color: '#1F2937' }}>Formación</strong>
-                        <span style={{ fontSize: 12, color: '#6B7280' }}>(opcional)</span>
+                        <strong style={{ fontSize: 14, color: 'hsl(var(--ink-strong))' }}>Formación</strong>
+                        <span style={{ fontSize: 12, color: 'hsl(var(--ink-muted))' }}>(opcional)</span>
                         {oficiales > 0 && (
                             <span
                                 style={{
@@ -133,8 +133,8 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                                     gap: 3,
                                     fontSize: 11,
                                     fontWeight: 600,
-                                    color: '#1C9D55',
-                                    background: 'rgba(28,157,85,.10)',
+                                    color: 'hsl(var(--success))',
+                                    background: 'hsl(var(--success-tint))',
                                     borderRadius: 999,
                                     padding: '1px 7px',
                                 }}
@@ -147,7 +147,7 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                         style={{
                             display: 'block',
                             fontSize: 12,
-                            color: '#6B7280',
+                            color: 'hsl(var(--ink-muted))',
                             marginTop: 2,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -166,7 +166,7 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                         flexShrink: 0,
                         fontSize: 13,
                         fontWeight: 600,
-                        color: '#2563EB',
+                        color: 'hsl(var(--brand))',
                     }}
                 >
                     {count === 0 ? (
@@ -186,16 +186,16 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
                 // autoFocus: deja que el foco caiga en el contenido (X de cerrar)
                 // y no quede bajo aria-hidden. Mismo patrón que el sheet de filtros.
                 <Drawer open={open} onOpenChange={setOpen} shouldScaleBackground={false} autoFocus>
-                    <DrawerContent className="flex max-h-[88dvh] flex-col rounded-t-[20px] border-t border-[#e8e8e8] bg-white">
-                        <DrawerHeader className="flex flex-row items-center justify-between space-y-0 border-b border-[#ECEFF3] px-4 py-3 text-left">
-                            <DrawerTitle className="text-[16px] font-semibold text-[#111827]">
+                    <DrawerContent className="flex max-h-[88dvh] flex-col rounded-t-[20px] border-t border-line bg-white">
+                        <DrawerHeader className="flex flex-row items-center justify-between space-y-0 border-b border-line px-4 py-3 text-left">
+                            <DrawerTitle className="text-base font-semibold text-ink-strong">
                                 Formación
                             </DrawerTitle>
                             <button
                                 type="button"
                                 aria-label="Cerrar"
                                 onClick={close}
-                                className="flex h-8 w-8 items-center justify-center rounded-full text-[#737373] hover:bg-[#f5f5f5] hover:text-[#1c1c1c]"
+                                className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-tinted hover:text-ink-strong"
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -207,7 +207,7 @@ export default function FormacionField({ value, onChange }: FormacionFieldProps)
             ) : (
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogContent className="flex max-h-[85vh] w-full max-w-lg flex-col gap-0 overflow-hidden p-0">
-                        <DialogTitle className="border-b border-[#ECEFF3] px-5 py-3.5 text-[16px] font-semibold text-[#111827]">
+                        <DialogTitle className="border-b border-line px-5 py-3.5 text-base font-semibold text-ink-strong">
                             Formación
                         </DialogTitle>
                         {renderBody()}

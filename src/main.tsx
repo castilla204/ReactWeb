@@ -23,6 +23,7 @@ import './styles/notification-center.css'
 import { setupRateLimitHandler } from './services/rateLimitHandler'
 import { setupErrorInterceptor } from './services/errorInterceptor'
 import { authService } from './services/authService'
+import { bootstrapHomeCriticalPath } from './lib/bootstrapHome'
 
 // Interceptores de fetch antes del primer render (CurrencyContext hace fetch al montar).
 if (typeof window !== 'undefined') {
@@ -162,6 +163,8 @@ const queryClient = new QueryClient({
         },
     },
 })
+
+bootstrapHomeCriticalPath(queryClient)
 
 // Componente wrapper para el hook de seguridad
 function AppWithSafety() {

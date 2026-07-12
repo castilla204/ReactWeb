@@ -1,25 +1,28 @@
 /**
  * Tipografía unificada de la homepage.
  * Manrope (display/cargada) + system — sin depender de Airbnb Cereal VF no cargada.
+ *
+ * Colores: HP_COLOR reexporta INK/LINE de designTokens.ts (fuente única DESIGN.md).
  */
+import { GRADIENT, INK, LINE } from './designTokens';
+
 export const HP_FONT =
   'Manrope, "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif';
 
 export const HP_COLOR = {
-  primary: '#1c1c1c',
-  secondary: '#222222',
-  muted: '#6a6a6a',
-  mutedSoft: '#737373',
+  primary: INK.strong,
+  secondary: INK.DEFAULT,
+  muted: INK.muted,
+  mutedSoft: INK.soft,
   brand: 'hsl(var(--brand))',
   brandDark: 'hsl(var(--brand-hover))',
-  brandDarker: '#004a99',
-  border: '#e8e8e8',
-  borderSoft: '#ebebeb',
+  brandDarker: 'hsl(var(--brand-deep))',
+  border: LINE.DEFAULT,
+  borderSoft: LINE.soft,
 } as const;
 
 /** Gradiente legacy — modales móvil / búsqueda (no usado en hero desktop ni HomepageMobileHero) */
-export const HP_PANEL_GRADIENT =
-  'linear-gradient(155deg, #dceaf8 0%, #e5f0fa 28%, #f5f9fd 52%, #fff9f2 82%, #fafafa 100%)';
+export const HP_PANEL_GRADIENT = GRADIENT.panelLegacy;
 
 /**
  * `min-[390px]` — hero + tabs de categoría un poco más grandes (XR 414, 12/13 390).
@@ -38,7 +41,7 @@ export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[1
 
 /** Botón icono flotante (hero, modal categorías) */
 export const hpIconButtonClass =
-  'flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb]/80 bg-white/80 text-[#666666] backdrop-blur-sm transition-colors active:bg-white';
+  'flex h-8 w-8 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white';
 
 /** Subrayado decorativo bajo titulares (checkout / ¿Qué revisamos?) */
 export const HP_TITLE_UNDERLINE_GRADIENT =
@@ -56,8 +59,7 @@ export const hpTitleUnderlineBarStyle = {
 };
 
 /** Subrayado checkout — azul → ámbar de marca (estilos en index.css `.checkout-page-title-underline`) */
-export const HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT =
-  'linear-gradient(to right, #0066CC 0%, #2563EB 38%, #F59E0B 100%)';
+export const HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT = GRADIENT.checkoutTitleUnderline;
 
 /** @deprecated Usar clase CSS `.checkout-page-title-underline` */
 export const hpCheckoutTitleUnderlineStyle = {
@@ -125,7 +127,7 @@ export const hpType = {
     fontSize: '10px',
     lineHeight: '12px',
     fontWeight: 500,
-    color: '#000000',
+    color: INK.strong,
   },
   tabBarLabel: {
     fontFamily: HP_FONT,
@@ -147,7 +149,7 @@ export const HP_HERO_COVERAGE = {
 
 /** Contenido + aside (título dentro de la columna izquierda, alineado con aside) */
 export const SD_PAGE_GRID_CLASS =
-  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-5 lg:gap-y-0';
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-6 lg:gap-y-0';
 
 /** Ritmo vertical secciones desktop */
 export const SD_DESKTOP_SECTION_PY_CLASS = 'py-0';
@@ -157,11 +159,11 @@ export const SD_DESKTOP_CONTENT_STACK_CLASS = 'flex flex-col gap-4';
 
 /** Tarjeta blanca columna izquierda — paridad visual con aside */
 export const SD_DESKTOP_MAIN_CARD_CLASS =
-  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white p-6 shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] lg:p-7';
+  'overflow-hidden rounded-2xl border border-line bg-white p-6 shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] lg:p-7';
 
-/** Panel desktop ficha servicio — más sobrio que la tarjeta genérica */
+/** Panel desktop ficha servicio — instrumento: esquinas rectas, sin sombra. */
 export const SD_DESKTOP_PANEL_CLASS =
-  'overflow-hidden rounded-xl border border-[#e8e8e8] bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_16px_rgba(15,23,42,0.04)] lg:p-7';
+  'overflow-hidden rounded-none border border-line bg-white p-6 lg:p-7';
 
 /** Título de página bajo el hero */
 export const SD_DESKTOP_PAGE_TITLE_BLOCK_CLASS = 'mb-0';
@@ -178,25 +180,25 @@ export const SD_DESKTOP_HEADER_STACK_CLASS = 'flex flex-col';
  * en vez de dejarlos pegados arriba; protege la bio larga de tocar el separador.
  */
 export const SD_DESKTOP_HOST_ROW_CLASS =
-  'min-h-[84px] border-b border-[#ebebeb] py-2';
+  'min-h-[84px] border-b border-line py-2';
 
 /** Nombre del experto en desktop — 15px */
 export const SD_DESKTOP_HOST_NAME_CLASS =
-  'truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-[#222222]';
+  'truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-ink';
 
 /** Bio del experto en desktop — 14px */
 export const SD_DESKTOP_HOST_BIO_CLASS =
-  'sd-user-text mt-0.5 min-w-0 w-full text-sm font-normal leading-[1.5] text-[#6a6a6a]';
+  'sd-user-text mt-0.5 min-w-0 w-full text-sm font-normal leading-[1.5] text-ink-muted';
 
 /** Meta del experto en desktop — 13px */
 export const SD_DESKTOP_HOST_META_CLASS =
-  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-normal leading-5 text-[#6a6a6a]';
+  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-normal leading-5 text-ink-muted';
 
 /** Columna nombre + bio */
 export const SD_DESKTOP_HOST_CONTENT_CLASS = 'min-w-0 flex-1 overflow-hidden pr-5';
 
-/** Layout interno fila host desktop — centrado vertical dentro de min-h-[84px] */
-export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-center gap-3';
+/** Layout interno fila host desktop — anclado arriba (avatar alineado con nombre) */
+export const SD_DESKTOP_HOST_INNER_CLASS = 'flex items-start gap-3';
 
 /** Separación extra del botón Chat en desktop */
 export const SD_DESKTOP_HOST_CHAT_CLASS = 'ml-2 shrink-0';
@@ -211,10 +213,10 @@ export const SD_DESKTOP_PHOTO_MAP_HERO_MIN_HEIGHT_PX = 260;
 
 /** Aside reserva desktop */
 export const SD_ASIDE_KICKER_CLASS =
-  'text-xs font-medium leading-4 text-[#6a6a6a]';
+  'text-xs font-medium leading-4 text-ink-muted';
 
 export const SD_ASIDE_SECTION_LABEL_CLASS =
-  'text-xs font-medium text-[#6a6a6a]';
+  'text-xs font-medium text-ink-muted';
 
 /** Sticky del aside — header ~56px + 16px de aire */
 export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3.5rem+1rem)]';
@@ -249,34 +251,34 @@ export const SD_CHECKOUT_GRID_CLASS =
   'grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-stretch lg:gap-x-7 lg:gap-y-0';
 
 /** Fondo checkout desktop — gris suave con ligero tinte cálido */
-export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-[#f3f4f6]';
+export const SD_CHECKOUT_DESKTOP_PAGE_CLASS = 'bg-surface-tinted';
 
 /** Tarjeta checkout desktop — elevación neutra sobre fondo gris claro */
 export const SD_CHECKOUT_DESKTOP_CARD_CLASS =
-  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)]';
+  'overflow-hidden rounded-2xl border border-line bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)]';
 
 /** Bloque cita+mapa desktop — una sola tarjeta */
 export const SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_CLASS =
-  'overflow-hidden rounded-2xl border border-[#ebebeb] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]';
+  'overflow-hidden rounded-2xl border border-line bg-white shadow-[0_4px_24px_rgba(15,23,42,0.05)]';
 
 /** Cabecera de sección dentro de tarjeta checkout desktop */
 export const SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS =
-  'border-b border-[#f0f0f0] bg-white px-4 py-2.5';
+  'border-b border-line-soft bg-white px-4 py-2.5';
 
 /** Cabecera compacta — bloques integrados (coordinación + calendario en la misma tarjeta) */
 export const SD_CHECKOUT_EMBEDDED_SECTION_HEADER_CLASS =
-  'border-b border-[#f0f0f0] bg-white px-5 py-2.5';
+  'border-b border-line-soft bg-white px-5 py-2.5';
 
 /** Título de sección integrado sin borde (checkout desktop) */
 export const SD_CHECKOUT_EMBEDDED_SECTION_TITLE_CLASS = 'px-5 pt-4 pb-1';
 
 /** Encabezado h3 de secciones integradas en checkout desktop */
 export const SD_CHECKOUT_EMBEDDED_SECTION_HEADING_CLASS =
-  'text-[14px] font-semibold tracking-[-0.02em] text-[#1c1c1c]';
+  'text-[14px] font-semibold tracking-[-0.02em] text-ink-strong';
 
 /** Texto explicativo bajo títulos integrados en checkout desktop */
 export const SD_CHECKOUT_EMBEDDED_SECTION_DESC_CLASS =
-  'mt-1.5 max-w-none text-[13px] font-normal leading-[1.55] text-[#374151]';
+  'mt-1.5 max-w-none text-[13px] font-normal leading-[1.55] text-ink';
 
 /** Sangrado horizontal del chrome respecto al contenido indentado del paso. */
 export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_BLEED_X_CLASS =
@@ -288,7 +290,7 @@ export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS =
 
 /** Bloque interactivo embebido (calendario, mapa, horas) — contorno unificado */
 export const SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS =
-  'overflow-hidden rounded-xl border border-[#e2e8f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
+  'overflow-hidden rounded-xl border border-line-soft bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
 
 /** Padding interior del bloque calendario embebido (compacto; más ajustado en móvil para dar aire a las celdas del día). */
 export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2 lg:p-3';
@@ -302,15 +304,23 @@ export const SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS =
   'min-w-0 flex-1 lg:min-w-[50%]';
 
 /** SearchDetails desktop — layout marketplace (misma paleta que checkout) */
-export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-[#f7f7f7]';
+export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-surface-tinted';
 
 export const SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS = SD_CHECKOUT_DESKTOP_CARD_CLASS;
+
+/** Chat SearchDetails desktop — sin sombra; comparte hairline con el sidebar (split pane). */
+export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CARD_CLASS =
+  'overflow-hidden rounded-none border border-line bg-white';
+
+/** Sidebar SearchDetails desktop — panel operativo: esquinas rectas, sin sombra (contraste con el chat). */
+export const SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CARD_CLASS =
+  'overflow-hidden rounded-none border border-line bg-white';
 
 export const SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS =
   'mx-auto flex h-full w-full max-w-[90rem] flex-1 flex-col min-h-0';
 
 export const SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS =
-  'flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:items-stretch lg:px-6 lg:pb-5';
+  'flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:items-stretch lg:gap-4 lg:p-0 lg:px-6 lg:pb-5 lg:pt-4';
 
 export const SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS =
   'hidden lg:flex lg:w-[320px] lg:shrink-0 xl:w-[360px] lg:flex-col lg:min-h-0';
@@ -330,7 +340,7 @@ export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
 // chrome sin romper el minimalismo (elección del usuario 2026-07-11). Mismo fondo en
 // todos los topbars: mapa, scroll, elección y AppointmentWizardShell.
 export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
-  'border-b border-[#e9edf2] bg-[#f8f9fb]';
+  'border-b border-line-soft bg-surface-tinted';
 
 /**
  * Cabecera de paso móvil como BANDA tipo topbar para los pasos con scroll (donde el
@@ -345,7 +355,7 @@ export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
  * - `pb-3` separa la copy de la línea; `mb-5` conserva el aire hasta el contenido.
  */
 export const SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS =
-  '-mx-5 -mt-[calc(env(safe-area-inset-top,0px)+1.5rem)] border-b border-[#e9edf2] bg-[#f8f9fb] px-5 pb-3 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] mb-5 [@media(min-height:700px)]:mb-6 [@media(min-height:700px)]:-mt-[calc(env(safe-area-inset-top,0px)+2.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2.25rem)]';
+  '-mx-5 -mt-[calc(env(safe-area-inset-top,0px)+1.5rem)] border-b border-line-soft bg-surface-tinted px-5 pb-3 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] mb-5 [@media(min-height:700px)]:mb-6 [@media(min-height:700px)]:-mt-[calc(env(safe-area-inset-top,0px)+2.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2.25rem)]';
 
 /** Cabecera checkout móvil — superficie blanca plana */
 export const SD_CHECKOUT_MOBILE_HEADER_CLASS =
@@ -362,19 +372,19 @@ export const SD_CHECKOUT_MOBILE_BACK_BTN_CLASS =
 
 /** Etiqueta de fila checkout móvil */
 export const SD_CHECKOUT_MOBILE_LABEL_CLASS =
-  'text-xs font-medium leading-4 text-[#6a6a6a]';
+  'text-xs font-medium leading-4 text-ink-muted';
 
 /** Valor principal de fila checkout móvil */
 export const SD_CHECKOUT_MOBILE_VALUE_CLASS =
-  'text-sm font-normal leading-snug text-[#222222]';
+  'text-sm font-normal leading-snug text-ink';
 
 /** Meta secundaria (rango, notas) */
 export const SD_CHECKOUT_MOBILE_META_CLASS =
-  'text-xs font-normal leading-relaxed text-[#6a6a6a]';
+  'text-xs font-normal leading-relaxed text-ink-muted';
 
 /** Gutter + ritmo vertical filas checkout móvil (legacy full-bleed) */
 export const SD_CHECKOUT_MOBILE_ROW_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-[#ebebeb] py-4`;
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-line py-4`;
 
 /** Contenedor tabla resumen — estilo Airbnb */
 export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
@@ -385,35 +395,35 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-2 pt-0`;
 
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
-  'overflow-hidden rounded-xl border border-[#ebebeb] bg-white';
+  'overflow-hidden rounded-xl border border-line bg-white';
 
 export const SD_CHECKOUT_MOBILE_TABLE_HEADER_CLASS =
   'px-4 py-3.5';
 
 export const SD_CHECKOUT_MOBILE_TABLE_TITLE_CLASS =
-  'text-base font-semibold leading-snug tracking-[-0.01em] text-[#1c1c1c]';
+  'text-base font-semibold leading-snug tracking-[-0.01em] text-ink-strong';
 
 export const SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS =
-  'mt-0.5 text-xs text-[#6a6a6a]';
+  'mt-0.5 text-xs text-ink-muted';
 
 export const SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS =
-  'flex items-start justify-between gap-4 border-t border-[#f5f5f5] px-4 py-3';
+  'flex items-start justify-between gap-4 border-t border-line-soft px-4 py-3';
 
 export const SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS =
-  'w-[30%] shrink-0 text-xs text-[#6a6a6a]';
+  'w-[30%] shrink-0 text-xs text-ink-muted';
 
 export const SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS =
-  'min-w-0 flex-1 text-end text-[13px] leading-snug text-[#1c1c1c]';
+  'min-w-0 flex-1 text-end text-[13px] leading-snug text-ink-strong';
 
 export const SD_CHECKOUT_MOBILE_TABLE_VALUE_META_CLASS =
-  'mt-0.5 block text-xs leading-snug text-[#6a6a6a]';
+  'mt-0.5 block text-xs leading-snug text-ink-muted';
 
 export const SD_CHECKOUT_MOBILE_NOTES_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-[#ebebeb] py-4`;
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-line py-4`;
 
 /** Fila de confianza checkout móvil — icono + una línea */
 export const SD_CHECKOUT_MOBILE_TRUST_ITEM_CLASS =
-  'flex items-start gap-3 text-sm font-normal leading-snug text-[#222222]';
+  'flex items-start gap-3 text-sm font-normal leading-snug text-ink';
 
 export const SD_CHECKOUT_MOBILE_TRUST_ICON_CLASS =
   'mt-0.5 h-4 w-4 shrink-0 text-brand';
@@ -461,7 +471,7 @@ export const SD_BRAND_BLUE_GRADIENT_LINE_SUBTLE =
   'linear-gradient(90deg, rgba(99,160,240,0.30) 0%, rgba(63,127,224,0.55) 100%)';
 
 /** Paso pago / resumen checkout móvil — aire superior y fondo tipo desktop */
-export const SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS = 'min-h-[100dvh] bg-[#f7f7f7]';
+export const SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS = 'min-h-[100dvh] bg-surface-tinted';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS =
   // pt suma el safe-area en vez de max(): con notch, max() dejaba el título pegado
@@ -471,7 +481,7 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS =
   'relative pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))] pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2rem)]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-[70] border-t border-[#ebebeb] bg-white';
+  'fixed bottom-0 left-0 right-0 z-[70] border-t border-line bg-white';
 
 /** Offset inferior compartido: drawer, mapa y scroll sobre el footer fijo checkout móvil. */
 export const SD_CHECKOUT_MOBILE_FOOTER_BOTTOM_OFFSET = SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR;
@@ -485,15 +495,15 @@ export const SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS =
 export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
 
 export const SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-[#d1d5db] bg-white px-4 text-[13px] font-semibold text-[#4b5563] transition-colors hover:border-[#9ca3af] hover:bg-[#f9fafb] hover:text-[#1c1c1c] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink-muted transition-colors hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-strong active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 /** Contenedor calendario checkout — contorno neutro */
 export const SD_CHECKOUT_CALENDAR_FRAME_CLASS =
-  'rounded-2xl border border-[#d8dce3] bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+  'rounded-2xl border border-line bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
 
 /** Contenedor mapa checkout — contorno neutro */
 export const SD_CHECKOUT_PICKER_FRAME_CLASS =
-  'overflow-hidden rounded-2xl border border-[#d8dce3] bg-white p-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+  'overflow-hidden rounded-2xl border border-line bg-white p-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
 
 /** @deprecated Usar SD_CHECKOUT_PICKER_FRAME_CLASS */
 export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
@@ -505,14 +515,14 @@ export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
  * `mobileStep`), así que compartir color no crea ambigüedad.
  */
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-[#171717] text-[15px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-ink-strong text-[15px] font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
 
 /** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo negro que el de pago. */
 export const SD_CHECKOUT_MOBILE_CTA_DARK_CLASS = SD_CHECKOUT_MOBILE_CTA_CLASS;
 
 /** Separador entre mapa y resumen en checkout móvil paso 2 */
 export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =
-  'mt-6 border-t border-[#ebebeb] bg-[#fafafa] pb-4 pt-5';
+  'mt-6 border-t border-line bg-surface-tinted pb-4 pt-5';
 
 /** Gutter horizontal móvil — 20px */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
@@ -528,7 +538,7 @@ export const SD_MOBILE_MAP_PREVIEW_MIN_HEIGHT_PX = 96;
 
 /** Separador interno del bloque reserva (mapa → disponibilidad) */
 export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
-  'border-t border-[#ebebeb] pt-2';
+  'border-t border-line pt-2';
 
 /** Ritmo vertical entre bloques de la sheet móvil */
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
@@ -537,39 +547,47 @@ export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
 
 /** Aire bajo fila revisor */
-export const SD_MOBILE_HEADER_PB_CLASS = 'pb-4';
+export const SD_MOBILE_HEADER_PB_CLASS = 'pb-0';
+
+/** Stack identidad móvil: título → host → horario */
+export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-3';
 
 /** Bloque disponibilidad bajo el host (sin borde; el divisor va antes de tabs) */
-export const SD_MOBILE_META_SECTION_CLASS = 'pb-4';
+export const SD_MOBILE_META_SECTION_CLASS = 'mt-3';
 
-/** Línea full-bleed entre bloque superior y tabs */
-export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'border-t border-[#ebebeb]';
+/** Línea full-bleed entre bloque superior (host + horario) y tabs */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'mt-4 border-t border-line';
 
 /** Contenedor tabs + panel (sin margen extra al final) */
 export const SD_MOBILE_SHEET_BOTTOM_CLASS = '';
 /** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
 export const SD_MOBILE_BOOKING_LABEL_CLASS =
-  'text-xs font-medium leading-4 text-[#6a6a6a]';
+  'text-xs font-medium leading-4 text-ink-muted';
+/** Hora en fila «Horario habitual» — secundaria respecto al label, no compite con los días */
+export const SD_MOBILE_AVAILABILITY_TIME_CLASS =
+  'text-caption font-medium tabular-nums leading-4 text-ink-strong';
 export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4 pb-6';
+/** Panel reseñas: menos aire inferior (el scroll pad ya reserva hueco para la barra fija). */
+export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-4 pb-2';
 
 /**
  * Escala tipográfica móvil — tokens DESIGN.md:
  * título página 20px (sd-page-title) · énfasis 14px/600 · cuerpo 14px · meta/caption 12px
  */
 export const SD_MOBILE_EYEBROW_CLASS =
-  'text-xs font-medium leading-4 normal-case text-[#6a6a6a]';
+  'text-xs font-medium leading-4 normal-case text-ink-muted';
 export const SD_MOBILE_EMPHASIS_CLASS =
-  'text-sm font-semibold leading-5 tracking-[-0.01em] text-[#1c1c1c]';
+  'text-sm font-semibold leading-5 tracking-[-0.01em] text-ink-strong';
 export const SD_MOBILE_BODY_CLASS =
-  'text-sm font-normal leading-[1.6] text-[#1c1c1c]';
+  'text-sm font-normal leading-[1.6] text-ink-strong';
 export const SD_MOBILE_META_CLASS =
-  'text-xs font-normal leading-4 text-[#6a6a6a]';
+  'text-xs font-normal leading-4 text-ink-muted';
 /** @deprecated Usar SD_MOBILE_EYEBROW_CLASS o SD_MOBILE_SUBHEAD_CLASS */
 export const SD_MOBILE_LABEL_CLASS = SD_MOBILE_EYEBROW_CLASS;
 
 /** Subsecciones: Disponibilidad, Qué incluye, Cobertura — misma jerarquía */
 export const SD_MOBILE_SUBHEAD_CLASS =
-  'text-sm font-semibold leading-5 text-[#1c1c1c]';
+  'text-sm font-semibold leading-5 text-ink-strong';
 export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
 
 /** Stack vertical dentro del panel «Acerca del servicio» */
@@ -585,8 +603,7 @@ export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
 export const SD_MOBILE_SCROLL_PAD_CLASS =
   'pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]';
 
-/** Como SD_MOBILE_SCROLL_PAD_CLASS pero para la ficha de servicio, cuya barra
- *  fija incluye la línea de escrow (≈20px más alta). */
+/** Barra fija con línea de pago encima del precio (≈20px más que SD_MOBILE_SCROLL_PAD_CLASS). */
 export const SD_MOBILE_SCROLL_PAD_TRUST_CLASS =
   'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]';
 
@@ -602,13 +619,13 @@ export const SD_MOBILE_TOPBAR_FLOATING_INNER_CLASS = `pointer-events-auto flex i
 
 /** Barra compacta al hacer scroll — back + título + favorito */
 export const SD_MOBILE_TOPBAR_COMPACT_SHELL_CLASS =
-  'fixed inset-x-0 top-0 z-40 border-b border-[#e8e8e8] bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(15,23,42,0.04)] transition-[transform,opacity] duration-300 ease-out';
+  'fixed inset-x-0 top-0 z-40 border-b border-line bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(15,23,42,0.04)] transition-[transform,opacity] duration-300 ease-out';
 
 export const SD_MOBILE_TOPBAR_COMPACT_INNER_CLASS = `flex min-h-12 items-center gap-3 ${SD_MOBILE_GUTTER_CLASS} pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top,0px))]`;
 
 /** Shell barra fija móvil */
 export const SD_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-50 border-t border-[#e8e8e8] bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.09)]';
+  'fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-white shadow-[0_-4px_24px_rgba(15,23,42,0.09)]';
 
 /** Altura footprint de MobileBottomBar (safe-area incluida via calc en el componente) */
 export const MOBILE_TAB_BAR_HEIGHT_PX = 65;
@@ -634,6 +651,13 @@ export const CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS =
 /** Esquina inferior derecha en móvil (alineado con gutter px-5) */
 export const CHATBOT_FAB_RIGHT_MOBILE_CLASS = 'right-5';
 
+/**
+ * Chip de confianza en hero desktop: alineado al contenedor 1280px,
+ * inset desde la derecha (no pegado al borde del viewport).
+ */
+export const HOMEPAGE_TRUST_CHIP_DESKTOP_RIGHT_CLASS =
+  'right-[max(2rem,calc((100vw-80rem)/2+8rem))]';
+
 /** CTA barra inferior móvil (más alto y legible que h-12 genérico) */
 export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 
@@ -649,7 +673,7 @@ export const hpCardText = {
   },
   meta: {
     ...hpType.caption,
-    color: HP_COLOR.muted,
+    color: INK.muted,
   },
 } as const;
 
@@ -683,39 +707,37 @@ export const MAP_DESKTOP_SPLIT_CLASS =
  *  inferior. Sin degradado azul→amarillo decorativo — el color de marca se reserva
  *  para donde paga (CTA, foco, pin seleccionado). */
 export const MAP_DESKTOP_PANEL_HEADER_CLASS =
-  'shrink-0 border-b border-[#ececec] bg-white px-6 py-3';
+  'shrink-0 border-b border-line bg-white px-6 py-3';
 
 /** Barra de resultados: cuenta (izq) + controles de orden/filtro (der), todo el ancho. */
 export const MAP_DESKTOP_RESULTS_BAR_CLASS =
-  'flex shrink-0 items-center justify-between gap-4 border-b border-[#ececec] bg-white px-6 py-2.5';
+  'flex shrink-0 items-center justify-between gap-4 border-b border-line bg-white px-6 py-2.5';
 
 /** Chip/botón de filtro desktop — reposo gris relleno (con peso), activo tinta. */
 export const MAP_DESKTOP_FILTER_TRIGGER_CLASS =
-  'inline-flex h-9 items-center gap-1.5 rounded-full bg-[#f0f1f3] px-3.5 font-display text-[13px] font-semibold text-[#2a2a2a] transition-colors hover:bg-[#e6e7ea] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
+  'inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-tinted px-3.5 font-display text-[13px] font-semibold text-ink-strong transition-colors hover:bg-line/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
 export const MAP_DESKTOP_FILTER_TRIGGER_ACTIVE_CLASS =
-  'inline-flex h-9 items-center gap-1.5 rounded-full bg-[#1c1c1c] px-3.5 font-display text-[13px] font-semibold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
+  'inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-strong px-3.5 font-display text-[13px] font-semibold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40';
 
 export const MAP_DESKTOP_PANEL_HEADER_TITLE_CLASS =
-  'font-display text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
+  'font-display text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink-strong';
 
 export const MAP_DESKTOP_PANEL_HEADER_META_CLASS =
-  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-display text-[12.5px] font-medium leading-[1.3] text-[#6a6a6a]';
+  'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-display text-[12.5px] font-medium leading-[1.3] text-ink-muted';
 
 export const MAP_DESKTOP_PANEL_HEADER_META_STRONG_CLASS =
-  'font-semibold text-[#1c1c1c] tabular-nums';
+  'font-semibold text-ink-strong tabular-nums';
 
-export const MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS = 'text-[#c8c8c8]';
+export const MAP_DESKTOP_PANEL_HEADER_META_SEP_CLASS = 'text-ink-soft';
 
 export const MAP_META_CHIP_CLASS =
   'inline-flex items-center rounded-full bg-brand/[0.08] ring-1 ring-brand/15 px-2.5 py-1 text-[11px] font-semibold text-brand';
 
 export const MAP_META_CHIP_MUTED_CLASS =
-  'inline-flex items-center rounded-full bg-[#f5f5f5] ring-1 ring-[#ececec] px-2.5 py-1 text-[11px] font-medium text-[#6a6a6a]';
+  'inline-flex items-center rounded-full bg-surface-tinted ring-1 ring-line-soft px-2.5 py-1 text-[11px] font-medium text-ink-muted';
 
 export const MAP_DESKTOP_LIST_CELL_CLASS =
-  // Fondo tintado sutil (#f6f7f8) → las tarjetas blancas resaltan con profundidad
-  // (antes todo blanco-sobre-blanco se veía plano y "de juguete").
-  'hidden min-h-0 overflow-hidden bg-[#f6f7f8] lg:col-start-1 lg:row-start-1 lg:block';
+  'hidden min-h-0 overflow-hidden bg-surface-tinted lg:col-start-1 lg:row-start-1 lg:block';
 
 export const MAP_PANEL_SCROLL_CLASS = 'map-panel-scroll';
 
@@ -725,24 +747,22 @@ export const MAP_DESKTOP_SCROLL_CLASS =
 /** Mapa — única fila bajo la topbar. Padding superior reducido para que el mapa
  *  arranque casi pegado a la topbar (antes pt-1.5 colaba bajo el header editorial). */
 export const MAP_DESKTOP_MAP_WRAP_CLASS =
-  'relative hidden min-h-0 flex-col bg-[#f6f7f8] pl-1.5 pr-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-6 xl:pt-4';
+  'relative hidden min-h-0 flex-col bg-surface-tinted pl-1.5 pr-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1 lg:flex xl:pr-6 xl:pb-6 xl:pt-4';
 
 export const MAP_DESKTOP_MAP_INNER_CLASS =
-  // Mapa enmarcado como tarjeta: hairline + sombra suave; fondo #dce9f2 (mismo cielo
-  // que el mapa de la ficha) visible mientras cargan los tiles.
-  'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl bg-[#dce9f2] ring-1 ring-black/[0.06] shadow-[0_6px_24px_rgba(16,24,40,0.07)]';
+  'relative min-h-0 flex-1 w-full overflow-hidden rounded-2xl bg-map-sky ring-1 ring-black/[0.06] shadow-[0_6px_24px_rgba(16,24,40,0.07)]';
 
 export const MAP_PAGE_TITLE_CLASS =
-  'relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-[#1c1c1c]';
+  'relative inline-block font-display text-[22px] font-semibold leading-[26px] tracking-[-0.01em] text-ink-strong';
 
 export const MAP_PAGE_TITLE_MOBILE_CLASS =
-  'relative inline-block font-display text-[1.125rem] font-semibold leading-[1.3] tracking-[-0.02em] text-[#1c1c1c]';
+  'relative inline-block font-display text-[1.125rem] font-semibold leading-[1.3] tracking-[-0.02em] text-ink-strong';
 
 export const MAP_PAGE_SUBTITLE_CLASS =
-  'mt-1 max-w-md text-sm font-normal leading-snug text-[#6a6a6a]';
+  'mt-1 max-w-md text-sm font-normal leading-snug text-ink-muted';
 
 export const MAP_PAGE_SUBTITLE_MOBILE_CLASS =
-  'mt-1.5 text-sm font-normal leading-[1.45] text-[#6a6a6a]';
+  'mt-1.5 text-sm font-normal leading-[1.45] text-ink-muted';
 
 /**
  * Cabecera drawer móvil — refactor:
@@ -755,26 +775,25 @@ export const MAP_MOBILE_DRAWER_HEADER_CLASS = `relative ${SD_MOBILE_GUTTER_CLASS
 
 export const MAP_MOBILE_DRAWER_HANDLE_WRAP_CLASS = 'flex w-full justify-center';
 export const MAP_MOBILE_DRAWER_HANDLE_CLASS =
-  'mt-1 mb-1.5 h-1 w-9 rounded-full bg-[#d8d8d8]';
+  'mt-1 mb-1.5 h-1 w-9 rounded-full bg-line';
 
 export const MAP_MOBILE_META_ROW_CLASS =
   // Sin pr-9: ya no hay X cierre que solape a la derecha → meta usa todo el ancho.
-  'flex items-center gap-1.5 text-[12.5px] font-medium leading-[1.3] text-[#6a6a6a] font-display';
+  'flex items-center gap-1.5 text-[12.5px] font-medium leading-[1.3] text-ink-muted font-display';
 export const MAP_MOBILE_META_STRONG_CLASS =
-  'font-semibold text-[#1c1c1c] tabular-nums';
-export const MAP_MOBILE_META_SEP_CLASS = 'mx-0.5 text-[#c8c8c8]';
+  'font-semibold text-ink-strong tabular-nums';
+export const MAP_MOBILE_META_SEP_CLASS = 'mx-0.5 text-ink-soft';
 
 export const MAP_MOBILE_FILTER_ROW_CLASS =
   // mt-3 (12px) en lugar de mt-2 (8px): aire claro entre meta y chips, ningún elemento
   //   superior puede dar la sensación de "tapar" la fila de filtros.
   'mt-3 flex items-center gap-1.5 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 export const MAP_MOBILE_FILTER_CHIP_CLASS =
-  // Reposo: blanco con hairline gris neutro, sin tintes de color. Pro y discreto.
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white ring-1 ring-[#dddddd] px-3.5 h-10 text-[13px] font-semibold text-[#3a3a3a] transition-colors hover:ring-[#b0b0b0] active:bg-[#f5f5f5] font-display';
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white ring-1 ring-line px-3.5 h-10 text-[13px] font-semibold text-ink transition-colors hover:ring-ink-soft active:bg-surface-tinted font-display';
 export const MAP_MOBILE_FILTER_CHIP_ACTIVE_CLASS =
   // Activo = relleno tinta (casi negro), estilo Airbnb. El azul se reserva para
   // selección en mapa y favorito; el filtro activo usa tinta neutra, sin glow.
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#1c1c1c] px-3.5 h-10 text-[13px] font-semibold text-white transition-colors hover:bg-black font-display';
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ink-strong px-3.5 h-10 text-[13px] font-semibold text-white transition-colors hover:bg-black font-display';
 
 export const MAP_MOBILE_LIST_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-4`;
 
@@ -789,26 +808,26 @@ export const MAP_CARD_IMAGE_CLASS = 'relative w-full overflow-hidden aspect-[16/
 export const MAP_CARD_IMAGE_TOP_CLASS = `${MAP_CARD_IMAGE_CLASS} rounded-t-2xl`;
 
 export const MAP_CARD_EYEBROW_CLASS =
-  'text-[10px] font-semibold uppercase tracking-[0.085em] text-[#717171]';
+  'text-[10px] font-semibold uppercase tracking-[0.085em] text-ink-muted';
 
 export const MAP_CARD_NAME_CLASS =
-  'truncate text-[15px] font-semibold leading-5 tracking-[-0.015em] text-[#1c1c1c]';
+  'truncate text-[15px] font-semibold leading-5 tracking-[-0.015em] text-ink-strong';
 
-export const MAP_CARD_HOOK_CLASS = 'line-clamp-1 text-[13px] font-normal leading-snug text-[#6a6a6a]';
+export const MAP_CARD_HOOK_CLASS = 'line-clamp-1 text-[13px] font-normal leading-snug text-ink-muted';
 
 /** Meta de una sola línea: "Ciudad · Disponibilidad" — gris legible (≥4.5:1), sin chips. */
 export const MAP_CARD_META_LINE_CLASS =
-  'mt-1 truncate text-[13px] font-normal leading-[18px] text-[#525252]';
+  'mt-1 truncate text-[13px] font-normal leading-[18px] text-ink';
 
 export const MAP_CARD_CHIP_CLASS =
-  'inline-flex items-center gap-1 rounded-full bg-[#f5f5f5] ring-1 ring-[#e8e8e8] px-2 py-0.5 text-[11px] font-medium text-[#5a5a5a]';
+  'inline-flex items-center gap-1 rounded-full bg-surface-tinted ring-1 ring-line-soft px-2 py-0.5 text-[11px] font-medium text-ink-muted';
 
-export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 tabular-nums tracking-tight text-[#1c1c1c]';
+export const MAP_CARD_PRICE_CLASS = 'text-[17px] font-semibold leading-5 tabular-nums tracking-tight text-ink-strong';
 
-export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-[13px] font-normal text-[#6a6a6a]';
+export const MAP_CARD_PRICE_SUFFIX_CLASS = 'text-[13px] font-normal text-ink-muted';
 
 export const MAP_CARD_BADGE_CLASS =
-  'inline-flex items-center rounded-lg bg-white/95 px-2 py-1 font-display text-[10px] font-medium leading-3 text-[#222222] shadow-sm backdrop-blur-sm';
+  'inline-flex items-center rounded-lg bg-white/95 px-2 py-1 font-display text-[10px] font-medium leading-3 text-ink shadow-sm backdrop-blur-sm';
 
 /** Sombras desktop — un poco más visibles sobre fondo blanco */
 export const MAP_CARD_DESKTOP_SHADOW =
@@ -833,17 +852,17 @@ export const MAP_CARD_DESKTOP_SHADOW_HOVERED =
 export const MAP_CARD_MOBILE_COMPACT_WRAP_CLASS =
   'relative flex items-stretch gap-3 p-2.5 font-display';
 export const MAP_CARD_MOBILE_COMPACT_IMG_CLASS =
-  'relative h-[96px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-[#f0f0f0]';
+  'relative h-[96px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-line-soft';
 export const MAP_CARD_MOBILE_COMPACT_INFO_CLASS =
   'flex min-w-0 flex-1 flex-col justify-between py-0.5';
 export const MAP_CARD_MOBILE_NAME_CLASS =
-  'truncate text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-[#1c1c1c]';
+  'truncate text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] text-ink-strong';
 export const MAP_CARD_MOBILE_META_CLASS =
-  'mt-0.5 truncate text-[12.5px] font-normal leading-[1.35] text-[#525252]';
+  'mt-0.5 truncate text-[12.5px] font-normal leading-[1.35] text-ink';
 export const MAP_CARD_MOBILE_PRICE_CLASS =
-  'text-[16px] font-semibold leading-[1.15] tabular-nums tracking-tight text-[#1c1c1c]';
+  'text-subtitle font-semibold leading-[1.15] tabular-nums tracking-tight text-ink-strong';
 export const MAP_CARD_MOBILE_FAV_BTN_CLASS =
-  'absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-[#1c1c1c] active:bg-[#f4f4f4] transition-colors';
+  'absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-full text-ink-strong active:bg-line-soft transition-colors';
 
 /**
  * Card DESKTOP en fila horizontal (rediseño 2026): foto izquierda + info derecha,
@@ -853,29 +872,29 @@ export const MAP_CARD_MOBILE_FAV_BTN_CLASS =
 export const MAP_CARD_ROW_WRAP_CLASS =
   'relative flex items-stretch gap-3.5 rounded-2xl bg-white p-2.5 font-display transition-[box-shadow,transform,border-color] duration-200';
 export const MAP_CARD_ROW_IMG_CLASS =
-  'relative h-[132px] w-[156px] shrink-0 overflow-hidden rounded-xl bg-[#eceff3]';
+  'relative h-[132px] w-[156px] shrink-0 overflow-hidden rounded-xl bg-surface-tinted';
 // Columna info: cabecera arriba (eyebrow+nombre+meta) y precio abajo → llena el alto de la foto,
 // sin el hueco muerto que dejaba el layout anterior.
 export const MAP_CARD_ROW_INFO_CLASS =
   'flex min-w-0 flex-1 flex-col justify-between py-0.5 pr-1';
 export const MAP_CARD_ROW_EYEBROW_CLASS =
-  'truncate text-[10.5px] font-semibold uppercase tracking-[0.07em] text-[#9a9a9a]';
+  'truncate text-[10.5px] font-semibold uppercase tracking-[0.07em] text-ink-soft';
 export const MAP_CARD_ROW_NAME_CLASS =
-  'truncate text-[16px] font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c]';
+  'truncate text-subtitle font-semibold leading-[1.2] tracking-[-0.015em] text-ink-strong';
 // Meta de una línea: ★ valoración (reseñas) · ciudad · distancia.
 export const MAP_CARD_ROW_META_CLASS =
-  'mt-1 flex items-center gap-1 truncate text-[12.5px] font-normal leading-[1.3] text-[#525252]';
+  'mt-1 flex items-center gap-1 truncate text-[12.5px] font-normal leading-[1.3] text-ink';
 export const MAP_CARD_ROW_PRICE_CLASS =
-  'text-[17px] font-semibold leading-none tabular-nums tracking-tight text-[#1c1c1c]';
+  'text-[17px] font-semibold leading-none tabular-nums tracking-tight text-ink-strong';
 export const MAP_CARD_ROW_PRICE_SUFFIX_CLASS =
-  'text-[12px] font-normal text-[#737373]';
+  'text-[12px] font-normal text-ink-muted';
 export const MAP_CARD_ROW_AVAIL_CLASS =
-  'inline-flex items-center gap-1 rounded-full bg-[#f4f5f6] px-2 py-0.5 text-[11.5px] font-medium text-[#525252]';
+  'inline-flex items-center gap-1 rounded-full bg-surface-tinted px-2 py-0.5 text-[11.5px] font-medium text-ink';
 
 /* Sombras de la fila — base hairline + elevación en hover, anillo de marca al seleccionar. */
 export const MAP_CARD_ROW_SHADOW =
-  'shadow-[0_1px_2px_rgba(16,24,40,0.05)] ring-1 ring-[#e8e8e8]';
+  'shadow-[0_1px_2px_rgba(16,24,40,0.05)] ring-1 ring-line-soft';
 export const MAP_CARD_ROW_SHADOW_HOVER =
-  'shadow-[0_8px_22px_rgba(16,24,40,0.13)] ring-1 ring-[#d4d4d4] -translate-y-px';
+  'shadow-[0_8px_22px_rgba(16,24,40,0.13)] ring-1 ring-line -translate-y-px';
 export const MAP_CARD_ROW_SHADOW_ACTIVE =
   'shadow-[0_8px_24px_hsl(var(--brand)/0.18)] ring-2 ring-brand';

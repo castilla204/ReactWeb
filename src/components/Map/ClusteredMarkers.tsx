@@ -6,6 +6,7 @@ import useSupercluster from 'use-supercluster';
 import { Service } from '../../hooks/useServiceLoader';
 // 🛡️ Round 28: símbolo correcto del servicio (£/CHF/kr) en lugar de € hardcoded en markers.
 import { getCurrencySymbol } from '../../utils/priceUtils';
+import { MAP_LITERAL } from '../../constants/designTokens';
 
 // Mundo entero — referencia ESTABLE (fuera del componente) para que use-supercluster no
 // recompute en cada render. Clusterizamos todos los puntos cargados sin recortar al viewport.
@@ -155,9 +156,9 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     el.style.borderRadius = '9999px';
     // Tinta sólida + borde blanco (canon de marcadores de mapa) — círculo oscuro con
     // contador, como la app de referencia de movilidad.
-    el.style.background = '#171717';
-    el.style.color = '#fff';
-    el.style.border = '2px solid #fff';
+    el.style.background = MAP_LITERAL.inkStrong;
+    el.style.color = MAP_LITERAL.coastHalo;
+    el.style.border = `2px solid ${MAP_LITERAL.coastHalo}`;
     el.style.fontWeight = '700';
     el.style.fontSize = size >= 56 ? '15px' : '13px';
     el.style.cursor = 'pointer';
@@ -190,10 +191,10 @@ export const ClusteredMarkers: React.FC<ClusteredMarkersProps> = ({
     inner.style.borderColor = isSelected
       ? 'transparent'
       : isHovered
-        ? '#8a8a8a'
-        : '#c8c8c8';
-    inner.style.background = isSelected ? '#171717' : '#fff';
-    inner.style.color = isSelected ? '#fff' : '#111111';
+        ? MAP_LITERAL.inkSoft
+        : MAP_LITERAL.lineMid;
+    inner.style.background = isSelected ? MAP_LITERAL.inkStrong : MAP_LITERAL.coastHalo;
+    inner.style.color = isSelected ? MAP_LITERAL.coastHalo : MAP_LITERAL.inkStrong;
     inner.style.boxShadow = isSelected
       ? '0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14)'
       : isHovered

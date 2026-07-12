@@ -58,14 +58,14 @@ export function ProgressBar({ currentStep, totalSteps, steps, className = '' }: 
                                             {step.icon}
                                         </div>
                                     ) : (
-                                        <span className="text-[10px] font-semibold">{stepNumber}</span>
+                                        <span className="text-badge font-semibold">{stepNumber}</span>
                                     )}
                                 </div>
                                 
                                 {/* Contenido del paso más compacto - solo título */}
                                 <div className="mt-1.5 text-center max-w-20">
                                     <h3 className={`
-                                        text-[10px] font-medium transition-colors duration-200 leading-tight
+                                        text-badge font-medium transition-colors duration-200 leading-tight
                                         ${isCompleted || isCurrent 
                                             ? 'text-slate-900' 
                                             : 'text-slate-400'

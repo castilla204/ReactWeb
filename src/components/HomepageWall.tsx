@@ -17,9 +17,11 @@ import { homepageToast, toast } from '../lib/toast';
 import { WallSkeletonContent } from './homepage/HomePageWallSkeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpCardText, hpType, HP_WALL_CARD_WIDTH_CLASS } from '../constants/homepageTypography';
+import { HP_CARD_LAYOUT_VARIANT } from '../constants/homepageCardLayout';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useCurrency } from '../contexts/CurrencyContext';
-
+import { isExpertAvailableNow } from '../utils/availability';
+import { resolveFavoriteState } from '../utils/favoriteOfflineQueue';
 const COCHES_CATEGORY_ID = 5;
 const INMOBILIARIA_CATEGORY_ID = 3;
 
@@ -33,7 +35,7 @@ interface ServiceCardProps {
       y debe cargar eager con prioridad alta, no lazy/low como el resto. */
   priority?: boolean;
   onOpenService: (serviceId: number) => void;
-  onToggleFavorite: (serviceId: number) => Promise<{ isFavorite: boolean; message: string } | null>;
+  onToggleFavorite: (serviceId: number, optimisticIsFavorite: boolean) => Promise<{ isFavorite: boolean; message: string } | null>;
 }
 
 // ✅ Memoizar ServiceCard para evitar re-renders innecesarios
@@ -44,20 +46,19 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   // ⚡ Si el redimensionador de Cloudflare falla (no habilitado aún / cuota), volver
   // a las URLs originales de Supabase para esta tarjeta.
   const [cdnFailed, setCdnFailed] = useState(false);
-  const { formatPriceWithSource, preferredCurrency } = useCurrency();
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const { formatPriceWithSource, preferredCurrency, rates, ratesFetchedAt } = useCurrency();
 
   // ✅ OPTIMIZADO: Memoizar cálculos costosos PRIMERO
   const imageUrls = useMemo(() => service.imageUrls || [], [service.imageUrls]);
   const hasMultipleImages = useMemo(() => imageUrls.length > 1, [imageUrls.length]);
   
-  // Sincronizar con el estado del servicio cuando cambia (viene del backend)
+  // Sincronizar con el estado del servicio cuando cambia (viene del backend + cola offline)
   useEffect(() => {
-    if (service.isFavorite !== undefined) {
-      setIsFavorite(service.isFavorite);
-    } else if (initialIsFavorite !== undefined) {
-      setIsFavorite(initialIsFavorite);
-    }
-  }, [service.isFavorite, initialIsFavorite]);
+    const serverFavorite = service.isFavorite ?? initialIsFavorite ?? false;
+    setIsFavorite(resolveFavoriteState(service.id, serverFavorite));
+  }, [service.id, service.isFavorite, initialIsFavorite]);
 
   const handleCardClick = useCallback(() => {
     onOpenService(service.id);
@@ -72,14 +73,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
     // El flujo de la web es azul → usamos el estado `info` (azul de marca), no
     // `success` (verde de Sileo). Sileo fuerza state:"success" en `toast.promise`,
     // por eso disparamos un toast `info` al resolver en lugar del morphing.
+    const nextFavorite = !isFavorite;
+    setIsFavorite(nextFavorite);
     try {
-      const result = await onToggleFavorite(service.id);
+      const result = await onToggleFavorite(service.id, nextFavorite);
       if (result) {
         setIsFavorite(result.isFavorite);
         if (result.isFavorite) {
           toast.info('Añadido a favoritos', {
             description: 'Lo tienes guardado en tu lista de favoritos.',
-            action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+            action: { label: 'Ver favoritos', onClick: () => navigate('/favorites') },
             duration: 3000,
           });
         } else {
@@ -87,10 +90,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
         }
       }
     } catch (error: unknown) {
+      setIsFavorite(!nextFavorite);
       console.error('Error al actualizar favorito:', error);
       toast.error('No se pudo actualizar el favorito', { duration: 3000 });
     }
-  }, [onToggleFavorite, service.id, navigate]);
+  }, [onToggleFavorite, service.id, navigate, isFavorite]);
 
   const handleImageNavigation = useCallback((e: React.MouseEvent, direction: 'prev' | 'next') => {
     e.stopPropagation();
@@ -111,29 +115,49 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   // reseñas (el backend lo deja en 0 si no hay ninguna), así que nota > 4 implica
   // siempre reseñas reales → el badge es 100% real, sin falsos positivos.
   const isTopRated = useMemo(() => service.averageRating > 4, [service.averageRating]);
+  const hasRating = service.averageRating > 0;
+  const formattedRating = hasRating
+    ? service.averageRating.toFixed(2).replace('.', ',')
+    : null;
 
   // ✅ Información real del servicio para la segunda línea: Precio · Horario
   // Precio del servicio. Round 24: usa CurrencyContext para conversión.
   // 🛡️ Round 28: símbolos derivados del helper unificado (cubre SEK/DKK/NOK/PLN/HUF/CZK/BGN/RON).
   const priceData = useMemo(() => {
-    if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '' };
+    if (!service.price) return { display: 'Consultar', wasConverted: false, sourceFormatted: '', tooltip: undefined as string | undefined };
     const source = service.priceCurrency || service.currency || 'EUR';
     const info = formatPriceWithSource(service.price, source, preferredCurrency);
     if (!info.wasConverted) {
-      // Mismo currency: redondear como antes para mantener el estilo compacto
       const symbol = getCurrencySymbol(source);
-      return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '' };
+      return { display: `${symbol}${Math.round(service.price)}`, wasConverted: false, sourceFormatted: '', tooltip: undefined };
     }
-    // Convertido: mostrar el converted redondeado y el source en paréntesis
     const targetSymbol = getCurrencySymbol(preferredCurrency);
     const sourceSymbol = getCurrencySymbol(source);
+    const compactDisplay = `≈ ${targetSymbol}${Math.round(info.convertedAmount)}`;
+    const sourcePart = `${sourceSymbol}${Math.round(service.price)} ${source}`;
+    let tooltip: string | undefined;
+    if (ratesFetchedAt) {
+      const fromRate = rates[source] ?? 0;
+      const toRate = rates[preferredCurrency] ?? 0;
+      const rateLine = fromRate > 0 && toRate > 0
+        ? `1 ${source} ≈ ${(toRate / fromRate).toFixed(4)} ${preferredCurrency}`
+        : undefined;
+      const dateLine = new Date(ratesFetchedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+      tooltip = `${info.display}\nOriginal: ${sourcePart}${rateLine ? `\n${rateLine}` : ''}\nActualizado: ${dateLine}`;
+    }
     return {
-      display: `≈ ${targetSymbol}${Math.round(info.convertedAmount)} ${preferredCurrency}`,
+      display: compactDisplay,
       wasConverted: true,
-      sourceFormatted: `(${sourceSymbol}${Math.round(service.price)} ${source})`,
+      sourceFormatted: `(${sourcePart})`,
+      tooltip,
     };
-  }, [service.price, service.priceCurrency, service.currency, formatPriceWithSource, preferredCurrency]);
+  }, [service.price, service.priceCurrency, service.currency, formatPriceWithSource, preferredCurrency, rates, ratesFetchedAt]);
   const price = priceData.display;
+
+  const isOnlineNow = useMemo(
+    () => isExpertAvailableNow(service.expert?.currentAvailability ?? null),
+    [service.expert?.currentAvailability],
+  );
   
   // Horario de disponibilidad (formato compacto para que quepa)
   const formatAvailability = useCallback(() => {
@@ -175,6 +199,100 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   
   const availabilityInfo = useMemo(() => formatAvailability(), [formatAvailability]);
 
+  const handleImageTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = null;
+  }, []);
+
+  const handleImageTouchMove = useCallback((e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleImageTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current == null || touchEndX.current == null || imageUrls.length <= 1) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (Math.abs(distance) > 48) {
+      e.stopPropagation();
+      e.preventDefault();
+      setImageIndex((prev) =>
+        distance > 0
+          ? (prev + 1) % imageUrls.length
+          : (prev - 1 + imageUrls.length) % imageUrls.length,
+      );
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  }, [imageUrls.length]);
+
+  const renderLocationMeta = () => (
+    <>
+      {service.expert?.city && (
+        <>
+          <span className="truncate">{service.expert.city}</span>
+          <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+        </>
+      )}
+      {(() => {
+        const workRadius = readWorkRadiusKm(service.expert);
+        if (workRadius === null) return null;
+        return (
+          <>
+            <span className="truncate">{formatWorkRadius(workRadius)}</span>
+            <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+          </>
+        );
+      })()}
+      <span className="truncate">{availabilityInfo}</span>
+    </>
+  );
+
+  const renderRatingPriceMeta = () => (
+    <>
+      {hasRating && formattedRating && (
+        <>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Star
+              className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
+              aria-hidden
+            />
+            <span>{formattedRating}</span>
+          </span>
+          <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+        </>
+      )}
+      <span title={priceData.tooltip}>
+        {price}
+        {priceData.wasConverted && (
+          <span className="ml-1 text-[0.85em] text-ink-muted">
+            {priceData.sourceFormatted}
+          </span>
+        )}
+      </span>
+    </>
+  );
+
+  const renderPriceOnlyMeta = () => (
+    <span title={priceData.tooltip}>
+      {price}
+      {priceData.wasConverted && (
+        <span className="ml-1 text-[0.85em] text-ink-muted">
+          {priceData.sourceFormatted}
+        </span>
+      )}
+    </span>
+  );
+
+  const renderRatingOnlyMeta = () =>
+    hasRating && formattedRating ? (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+        <Star
+          className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
+          aria-hidden
+        />
+        <span>{formattedRating}</span>
+      </span>
+    ) : null;
+
   return (
     <a
       href={`/service/${service.id}`}
@@ -194,7 +312,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
-          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl md:shadow-[0_2px_14px_rgba(15,23,42,0.07)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300 md:ring-1 md:ring-black/[0.04]"
+          className="relative w-full overflow-hidden mb-1 md:mb-1 rounded-[20px] md:rounded-xl md:shadow-[0_2px_14px_rgba(15,23,42,0.07)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300 md:ring-1 md:ring-black/[0.04]"
           style={{
             aspectRatio: isMobile ? '1' : '4 / 3',
             borderRadius: isMobile ? '20px' : '12px',
@@ -205,7 +323,12 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
           {imageUrls.length > 0 ? (
             <>
               {/* Imagen principal - Optimizada para webview */}
-              <div className="relative w-full h-full">
+              <div
+                className="relative w-full h-full"
+                onTouchStart={handleImageTouchStart}
+                onTouchMove={handleImageTouchMove}
+                onTouchEnd={handleImageTouchEnd}
+              >
                 <img
                   src={cdnFailed ? imageUrls[imageIndex] : getThumbUrl(imageUrls[imageIndex], 360)}
                   alt={service.serviceTypeName}
@@ -243,7 +366,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       paddingBottom: '4px',
                       paddingLeft: '7px',
                       paddingRight: '9px',
-                      background: '#ffffff',
+                      background: 'hsl(var(--surface))',
                       borderRadius: '9999px',
                       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.14)',
                       whiteSpace: 'nowrap',
@@ -274,22 +397,36 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       >
                         <path
                           d="M11.48 3.5a.6.6 0 0 1 1.04 0l2.28 4.13a.6.6 0 0 0 .43.31l4.64.83a.6.6 0 0 1 .32.99l-3.26 3.4a.6.6 0 0 0-.16.5l.63 4.66a.6.6 0 0 1-.85.62l-4.2-1.96a.6.6 0 0 0-.52 0l-4.2 1.96a.6.6 0 0 1-.85-.62l.63-4.66a.6.6 0 0 0-.16-.5l-3.26-3.4a.6.6 0 0 1 .32-.99l4.64-.83a.6.6 0 0 0 .43-.31z"
-                          fill="#0066CC"
+                          fill="hsl(var(--brand))"
                         />
                       </svg>
                     </div>
                     <span
-                      style={{
-                        ...hpType.badge,
-                        fontSize: '9.5px',
-                        lineHeight: '11px',
-                        color: '#0C447C',
-                      }}
+                      className="text-badge leading-[11px] text-brand-deep"
+                      style={hpType.badge}
                       aria-label="Mejor valorado"
                     >
                       Mejor valorado
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* Badge "Disponible ahora" — dot verde sobre la foto */}
+              {isOnlineNow && (
+                <div
+                  className="absolute top-3 z-10 flex items-center gap-1 rounded-full bg-white/95 px-1.5 py-0.5 shadow-[0_2px_6px_rgba(0,0,0,0.14)]"
+                  style={{ right: isAuthenticated ? '36px' : '12px' }}
+                  aria-label="Disponible ahora"
+                >
+                  <span
+                    className="rounded-full bg-emerald-500"
+                    style={{ width: '7px', height: '7px', flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                  <span className="text-badge leading-[11px] text-success" style={hpType.badge}>
+                    En línea
+                  </span>
                 </div>
               )}
 
@@ -326,7 +463,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     }}
                   >
-                    <ChevronRight className="w-4 h-4 text-[#1c1c1c] rotate-180" />
+                    <ChevronRight className="w-4 h-4 text-ink-strong rotate-180" />
                   </button>
                   <button
                     onClick={(e) => handleImageNavigation(e, 'next')}
@@ -336,7 +473,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     }}
                   >
-                    <ChevronRight className="w-4 h-4 text-[#1c1c1c]" />
+                    <ChevronRight className="w-4 h-4 text-ink-strong" />
                   </button>
                   
               {/* Indicadores de imágenes */}
@@ -373,7 +510,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                                     borderRadius: '50%',
                                     border: '2px solid white',
                                     overflow: 'hidden',
-                                    backgroundColor: '#f0f0f0',
+                                    backgroundColor: 'hsl(var(--line-soft))',
                                     boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
                                   }}
                                   onClick={(e) => {
@@ -411,8 +548,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                               )}
                             </>
                           ) : (
-                            <div className="w-full h-full bg-[#f5f5f5] flex items-center justify-center">
-                              <span className="text-[#a0a0a0] text-sm">Sin imagen</span>
+                            <div className="w-full h-full bg-surface-tinted flex items-center justify-center">
+                              <span className="text-ink-soft text-sm">Sin imagen</span>
                             </div>
                           )}
         </div>
@@ -428,75 +565,73 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               textAlign: 'left',
             }}
           >
-            <div className="truncate" style={{ textAlign: 'left' }}>{service.serviceTypeName}</div>
-          </div>
-
-          {/* Segunda fila: Ciudad · Horario */}
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              ...hpCardText.meta,
-              textAlign: 'left',
-            }}
-          >
-            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-              {service.expert?.city && (
-                <>
-                  <span className="truncate">{service.expert.city}</span>
-                  <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                </>
-              )}
-              {(() => {
-                // Rango de trabajo elegido por el experto (0 = solo en su taller).
-                const workRadius = readWorkRadiusKm(service.expert);
-                if (workRadius === null) return null;
-                return (
-                  <>
-                    <span className="truncate">{formatWorkRadius(workRadius)}</span>
-                    <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                  </>
-                );
-              })()}
-              <span className="truncate">{availabilityInfo}</span>
+            <div
+              className="line-clamp-2"
+              style={{ textAlign: 'left' }}
+              title={service.serviceTypeName}
+            >
+              {service.serviceTypeName}
             </div>
           </div>
 
-          {/* Tercera fila: Valoración · Precio */}
-          <div
-            className="flex items-center overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              ...hpCardText.meta,
-              textAlign: 'left',
-            }}
-          >
-            <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Star
-                  className="flex-shrink-0"
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    fill: '#F59E0B',
-                    color: '#F59E0B',
-                  }}
-                />
-                <span>
-                  {service.averageRating ? service.averageRating.toFixed(2).replace('.', ',') : 'N/A'}
-                </span>
-              </span>
-              <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-              <span>
-                {price}
-                {priceData.wasConverted && (
-                  <span style={{ marginLeft: '4px', fontSize: '0.85em', color: '#6B7280' }}>
-                    {priceData.sourceFormatted}
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
+          {HP_CARD_LAYOUT_VARIANT === 'price-first' ? (
+            <>
+              {/* A/B: Precio en línea 2 */}
+              <div
+                className="flex items-center overflow-hidden"
+                style={{ marginBottom: '0px', ...hpCardText.meta, textAlign: 'left' }}
+              >
+                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                  {renderPriceOnlyMeta()}
+                </div>
+              </div>
+              {/* A/B: Ciudad · Horario en línea 3 + rating */}
+              <div
+                className="flex items-center overflow-hidden"
+                style={{ marginBottom: '0px', ...hpCardText.meta, textAlign: 'left' }}
+              >
+                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                  {renderLocationMeta()}
+                  {hasRating ? (
+                    <>
+                      <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
+                      {renderRatingOnlyMeta()}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Segunda fila: Ciudad · Horario */}
+              <div
+                className="flex items-center overflow-hidden"
+                style={{
+                  marginBottom: '0px',
+                  ...hpCardText.meta,
+                  textAlign: 'left',
+                }}
+              >
+                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                  {renderLocationMeta()}
+                </div>
+              </div>
+
+              {/* Tercera fila: Valoración · Precio */}
+              <div
+                className="flex items-center overflow-hidden"
+                style={{
+                  marginBottom: '0px',
+                  ...hpCardText.meta,
+                  textAlign: 'left',
+                }}
+              >
+                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
+                  {renderRatingPriceMeta()}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
       
@@ -511,7 +646,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               onClick={() => setIsExpertPhotoOpen(false)}
             >
               <div 
-                className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-[#fafafa] border-4 border-white shadow-lg"
+                className="w-[400px] h-[400px] min-w-[250px] min-h-[250px] max-w-[80vw] max-h-[80vw] aspect-square rounded-full overflow-hidden flex items-center justify-center bg-surface-tinted border-4 border-white shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
                 <img
@@ -519,6 +654,8 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   alt={service.expert.user?.name || 'Experto'}
                   className="w-full h-full object-cover"
                   style={{ borderRadius: '50%' }}
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>
@@ -548,10 +685,12 @@ interface HorizontalScrollSectionProps {
   /** ⚡ true en la primera sección (above the fold): sus 3 primeras fotos cargan
       con prioridad alta (candidatas a LCP) y sin content-visibility diferido. */
   priorityImages?: boolean;
+  /** false en carga inicial de home: sin fade/slide en tarjetas (evita "temblor" móvil). */
+  animateOnMount?: boolean;
   isMobile: boolean;
   isAuthenticated: boolean;
   onOpenService: (serviceId: number) => void;
-  onToggleFavorite: (serviceId: number) => Promise<{ isFavorite: boolean; message: string } | null>;
+  onToggleFavorite: (serviceId: number, optimisticIsFavorite: boolean) => Promise<{ isFavorite: boolean; message: string } | null>;
 }
 
 // ✅ Memoizar HorizontalScrollSection para evitar re-renders innecesarios
@@ -562,6 +701,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
   forceGuestFavorite = false,
   isLastSection = false,
   priorityImages = false,
+  animateOnMount = true,
   isMobile,
   isAuthenticated,
   onOpenService,
@@ -646,8 +786,8 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
         ...(priorityImages ? {} : { contentVisibility: 'auto' as const }),
       }}
     >
-      {/* Header sección + flechas de navegación */}
-      <div className="mb-2 md:mb-3 md:px-0">
+      {/* Header sección + flechas de navegación (desktop) */}
+      <div className="mb-1.5 md:mb-3 md:px-0">
         <div className="flex items-center justify-between gap-3 md:gap-4">
           <div className="min-w-0 flex-1">
             <h2 className="hp-section-title truncate">
@@ -658,12 +798,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+          <div className="hidden md:flex shrink-0 items-center gap-1.5 md:gap-2">
             <button
               type="button"
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
-              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#222222] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
               aria-label="Ver revisiones anteriores"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -672,7 +812,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               type="button"
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
-              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-[#e8e8e8] bg-white text-[#222222] shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
               aria-label="Ver más revisiones"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -685,9 +825,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       <div className="relative w-full">
         <div
           ref={scrollRef}
-          className={`flex overflow-x-auto scrollbar-hide -mx-4 px-4 scroll-pl-4 md:mx-0 md:scroll-pl-0 md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3 ${
-            isLastSection ? 'pb-0 md:pb-3' : 'pb-1.5 md:pb-3'
-          }`}
+          className={`flex overflow-x-auto scrollbar-hide -mx-4 px-4 scroll-pl-4 md:mx-0 md:scroll-pl-0 pb-0 md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3`}
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollBehavior: 'auto',
@@ -699,7 +837,18 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
           }}
         >
           {services.map((service, cardIndex) => (
-            <div key={service.id} className="flex-shrink-0 scroll-smooth" style={{ scrollSnapAlign: 'start' }}>
+            <motion.div
+              key={service.id}
+              className="flex-shrink-0 scroll-smooth"
+              style={{ scrollSnapAlign: 'start' }}
+              initial={animateOnMount ? { opacity: 0, y: 6 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                animateOnMount
+                  ? { duration: 0.18, delay: cardIndex * 0.04, ease: [0.4, 0, 0.2, 1] }
+                  : { duration: 0 }
+              }
+            >
               <ServiceCard
                 service={service}
                 forceGuestFavorite={forceGuestFavorite}
@@ -710,7 +859,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
                 onOpenService={onOpenService}
                 onToggleFavorite={onToggleFavorite}
               />
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -730,6 +879,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
     prevProps.forceGuestFavorite === nextProps.forceGuestFavorite &&
     prevProps.isLastSection === nextProps.isLastSection &&
     prevProps.priorityImages === nextProps.priorityImages &&
+    prevProps.animateOnMount === nextProps.animateOnMount &&
     prevProps.isMobile === nextProps.isMobile &&
     prevProps.isAuthenticated === nextProps.isAuthenticated
   );
@@ -768,12 +918,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   );
 
   const handleToggleFavorite = useCallback(
-    async (serviceId: number) => {
+    async (serviceId: number, optimisticIsFavorite: boolean) => {
       if (!isAuthenticated) {
         homepageToast.loginRequired();
         return null;
       }
-      const result = await toggleFavoriteAsync(serviceId);
+      const result = await toggleFavoriteAsync({ searchServiceId: serviceId, optimisticIsFavorite });
       return { isFavorite: result.isFavorite, message: result.message };
     },
     [isAuthenticated, toggleFavoriteAsync],
@@ -846,10 +996,12 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           return (
             <motion.div
               key={`${keyPrefix}-section-${index}-${section.title}`}
-              variants={sectionVariants}
+              variants={animateOnMount ? sectionVariants : undefined}
+              initial={animateOnMount ? 'hidden' : false}
+              animate={animateOnMount ? 'visible' : undefined}
               className={[
                 index === 0 ? 'pt-1 min-[428px]:pt-2 md:pt-2' : '',
-                index > 0 ? 'mt-5 md:mt-8' : '',
+                index > 0 ? 'mt-2 md:mt-8' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -861,6 +1013,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
                 forceGuestFavorite={index === 1}
                 isLastSection={isLastSection}
                 priorityImages={index === 0}
+                animateOnMount={animateOnMount}
                 isMobile={isMobile}
                 isAuthenticated={isAuthenticated}
                 onOpenService={handleOpenService}
@@ -871,7 +1024,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
         })
         .filter(Boolean);
     },
-    [filterServices, sectionVariants, isMobile, isAuthenticated, handleOpenService, handleToggleFavorite]
+    [filterServices, sectionVariants, animateOnMount, isMobile, isAuthenticated, handleOpenService, handleToggleFavorite]
   );
 
   const renderedSections = useMemo(
@@ -967,7 +1120,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     console.warn('⚠️ HomepageWall - No hay secciones');
     return (
       <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
-        <p className="mb-4 md:mb-5 text-sm text-[#6a6a6a]">
+        <p className="mb-4 md:mb-5 text-sm text-ink-muted">
           Aún no hay servicios disponibles en esta categoría.
         </p>
         <WallSkeletonContent />
@@ -993,10 +1146,10 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           className="relative"
         >
           <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0">
-            <div className="rounded-2xl border border-[#ebebeb] bg-white px-5 py-3 md:py-4 mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <p className="text-sm text-[#717171]">
+            <div className="rounded-2xl border border-line bg-white px-5 py-3 md:py-4 mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <p className="text-sm text-ink-muted">
                 No hay expertos en esta categoría todavía. Mira estos de{' '}
-                <span className="text-[#222222] font-medium">
+                <span className="text-ink font-medium">
                   {fallbackCategoryId === COCHES_CATEGORY_ID ? 'Coches' : 'Inmobiliaria'}
                 </span>
                 :
@@ -1005,14 +1158,14 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
                 <button
                   type="button"
                   onClick={() => dispatchHomepagePickCategory(COCHES_CATEGORY_ID, 'Coches')}
-                  className="px-4 py-2 rounded-lg text-sm font-medium border border-[#ebebeb] bg-[#fafafa] hover:bg-white transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-line bg-surface-tinted hover:bg-white transition-colors"
                 >
                   Coches
                 </button>
                 <button
                   type="button"
                   onClick={() => dispatchHomepagePickCategory(INMOBILIARIA_CATEGORY_ID, 'Inmobiliaria')}
-                  className="px-4 py-2 rounded-lg text-sm font-medium border border-[#ebebeb] bg-[#fafafa] hover:bg-white transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-line bg-surface-tinted hover:bg-white transition-colors"
                 >
                   Inmobiliaria
                 </button>
@@ -1026,8 +1179,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
 
     return (
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 py-10 md:py-20 text-center">
-        <h3 className="text-lg font-medium text-[#222222]">Aún no hay expertos aquí</h3>
-        <p className="mt-2 text-[#717171] text-sm max-w-md mx-auto">
+        <h3 className="text-lg font-medium text-ink">Aún no hay expertos aquí</h3>
+        <p className="mt-2 text-ink-muted text-sm max-w-md mx-auto">
           Prueba Coches o Inmobiliaria, donde suele haber más revisores activos.
         </p>
         <div className="mt-4 md:mt-6 flex justify-center gap-3">
@@ -1041,7 +1194,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           <button
             type="button"
             onClick={() => dispatchHomepagePickCategory(INMOBILIARIA_CATEGORY_ID, 'Inmobiliaria')}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-[#222222] border border-[#dddddd] bg-white hover:shadow-sm"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-ink border border-line bg-white hover:shadow-sm"
           >
             Ver inmobiliaria
           </button>
@@ -1071,13 +1224,13 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     >
         {isFetching && sections && (
           <div className="hidden md:block absolute top-0 right-6 lg:right-8 z-10">
-            <span className="text-xs text-[#6a6a6a]">Actualizando…</span>
+            <span className="text-xs text-ink-muted">Actualizando…</span>
           </div>
         )}
         <div
           className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0 transition-opacity duration-200 ${
             isFetching && sections ? 'opacity-70' : 'opacity-100'
-          }`}
+          } ${!animateOnMount ? 'hp-wall-enter' : ''}`}
         >
           {renderedSections}
       </div>

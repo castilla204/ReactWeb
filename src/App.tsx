@@ -33,7 +33,8 @@ import Background from './components/Background';
 import { HomepageDesktopTopBar } from './components/HomepageDesktopTopBar';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { RouteSuspense } from './components/RouteSuspense';
-import { HomePageSkeleton } from './components/homepage/HomePageSkeleton';
+import { MapPageSkeleton } from './components/ui/map-page-skeleton';
+import HomePage from './pages/HomePage';
 import * as LazyPages from './routes/lazyPages';
 import { GoogleAuth } from './components/GoogleAuth';
 import { GoogleSignInButton } from './components/GoogleSignInButton';
@@ -47,9 +48,13 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { ApiStatusGate } from './components/feedback/ApiStatusGate';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { GoogleIdentityBootstrap } from './components/GoogleIdentityBootstrap';
+import { LegacyRedirect, LegacyExpertInspectionRedirect, LegacyHireDetailRedirect, LegacyHireReportRedirect, LegacySearchDetailRedirect, LegacyInquiryRedirect, LegacyAppointmentScheduleRedirect, LegacyAppointmentConfirmRedirect } from './components/LegacyRedirect';
 import { ScrollToTop } from './components/ScrollToTop';
+import { LEGACY_REDIRECTS, SEO_LANDING_ALIASES } from './constants/routes';
+import { CITY_LANDINGS } from './content/cityLandingContent';
 import { CookieBanner } from './components/CookieBanner';
 import { ChatbotFab } from './components/ChatbotFab';
+import { HomepageTrustFab } from './components/HomepageTrustFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import { useIsMobile } from './hooks/useIsMobile';
 import erizoImg from './media/erizo.png';
@@ -115,7 +120,7 @@ const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     // sin tocar el backend. En MÓVIL no caben las dos columnas, así que se mantiene la
     // página completa del chat (que es la versión móvil de la vista fusionada).
     if (!isMobile) {
-        return <Navigate to={`/mis-mensajes?searchHireId=${searchHireId}`} replace />;
+        return <Navigate to={`/messages?searchHireId=${searchHireId}`} replace />;
     }
 
     return (
@@ -174,7 +179,7 @@ const AppContent: React.FC = () => {
             toast.error('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
             // Solo redirigir si no estamos ya en una ruta pública sin auth
             const currentPath = window.location.pathname;
-            const publicPaths = ['/login', '/', '/privacy-policy.html', '/terms.html', '/status'];
+            const publicPaths = ['/login', '/', '/legal/privacy', '/legal/terms', '/privacy-policy.html', '/terms.html', '/status'];
             if (!publicPaths.includes(currentPath)) {
                 navigate('/login', {
                     state: { from: { pathname: detail?.returnTo ?? currentPath } },
@@ -221,23 +226,23 @@ const AppContent: React.FC = () => {
 
     // Ocultar header en móvil cuando se está en las páginas del formulario (SearchParameterForm o SearchForm)
     // Estas páginas están dentro de SearchCreationPage cuando currentStep es 1 o 2
-    const isHomePage = location.pathname === '/' || location.pathname === '/explorar';
+    const isHomePage = location.pathname === '/';
     const hideGlobalHeaderPaths = isHomePage
-        || location.pathname === '/crear-busqueda'
+        || location.pathname === '/hire'
         || location.pathname.startsWith('/service/')
         || location.pathname.startsWith('/checkout/')
         // 🤝 Enlaces de coordinación (vendedor/experto): replican el wizard del checkout
         //    y traen su propio topbar mínimo (variant="checkout") → ocultamos el global.
-        || location.pathname.startsWith('/coordinar-cita/')
-        || location.pathname.startsWith('/confirmar-cita/')
-        || location.pathname === '/expert-panel'
-        || location.pathname === '/become-expert'
-        || location.pathname.startsWith('/complete-onboarding')
-        || location.pathname.startsWith('/refresh-onboarding');
+        || location.pathname.startsWith('/appointment/schedule/')
+        || location.pathname.startsWith('/appointment/confirm/')
+        || location.pathname === '/expert'
+        || location.pathname === '/expert/join'
+        || location.pathname.startsWith('/expert/stripe/complete')
+        || location.pathname.startsWith('/expert/stripe/refresh');
     // /busquedas YA NO se oculta: en desktop muestra el topbar global de la homepage
     // (decisión usuario 2026-06-16) y su toolbar de buscar/filtros queda como fila
     // secundaria justo debajo (sticky con offset md:top-12 en SearchDashboardToolbar).
-    const isSearchCreationPage = location.pathname === '/crear-busqueda' || location.pathname === '/';
+    const isSearchCreationPage = location.pathname === '/hire' || location.pathname === '/';
     const [isInFormStep, setIsInFormStep] = useState(false);
     
     // Escuchar cambios en el paso del formulario
@@ -374,7 +379,7 @@ const AppContent: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <img src={erizoImg} alt="" className="h-6 w-6 -scale-x-100 object-contain" style={{ imageRendering: '-webkit-optimize-contrast' }} />
                                     {/* p, no h1: es el logo del drawer; un h1 global rompía la jerarquía de headings de TODAS las páginas (SEO) */}
-                                    <p className="text-sm font-medium text-foreground/90 tracking-tight bg-gradient-to-r from-foreground/90 to-foreground/70 bg-clip-text text-transparent antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
+                                    <p className="text-sm font-medium text-foreground/90 tracking-tight antialiased" style={{ fontFeatureSettings: '"kern" 1', WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' }}>
                                     inspecciono.com
                                 </p>
                                 </div>
@@ -411,7 +416,7 @@ const AppContent: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             if (isAuthenticated) {
-                                                window.location.href = '/busquedas';
+                                                window.location.href = '/hires';
                                             } else {
                                                 handleRequireAuth('Ver tus búsquedas');
                                             }
@@ -424,7 +429,7 @@ const AppContent: React.FC = () => {
                                     </button>
                                     {isAuthenticated && isExpert ? (
                                         <a
-                                            href="/expert-panel"
+                                            href="/expert"
                                             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                                             onClick={() => setSidebarOpen(false)}
                                         >
@@ -435,7 +440,7 @@ const AppContent: React.FC = () => {
                                         <button
                                             onClick={() => {
                                                 if (isAuthenticated) {
-                                                    window.location.href = '/become-expert';
+                                                    window.location.href = '/expert/join';
                                                 } else {
                                                     handleRequireAuth('Convertirte en experto');
                                                 }
@@ -452,7 +457,7 @@ const AppContent: React.FC = () => {
                                     {isAuthenticated && (
                                         <button
                                             onClick={() => {
-                                                navigate('/transacciones');
+                                                navigate('/account/transactions');
                                                 setSidebarOpen(false);
                                             }}
                                             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
@@ -475,7 +480,7 @@ const AppContent: React.FC = () => {
                                     </button>
                                     <button
                                         onClick={() => {
-                                            navigate('/ayuda');
+                                            navigate('/help');
                                             setSidebarOpen(false);
                                         }}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-accent/60 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
@@ -545,36 +550,39 @@ const AppContent: React.FC = () => {
                         <Routes>
                             {/* Verificación de teléfono desactivada temporalmente */}
                             {/* <Route path="/verify-phone" element={<PhoneVerificationPage />} /> */}
-                            <Route path="/privacy-policy.html" element={<RouteSuspense><PrivacyPolicy /></RouteSuspense>} />
-                            <Route path="/terms.html" element={<RouteSuspense><TermsPage /></RouteSuspense>} />
+
+                            {/* Legales canónicos */}
+                            <Route path="/legal/privacy" element={<RouteSuspense><PrivacyPolicy /></RouteSuspense>} />
+                            <Route path="/legal/terms" element={<RouteSuspense><TermsPage /></RouteSuspense>} />
                             <Route path="/status" element={<RouteSuspense><StatusPage /></RouteSuspense>} />
-                            {/* 🤝 Magic link del vendedor: PÚBLICO, sin login (el token es la credencial). */}
-                            <Route path="/coordinar-cita/:token" element={<RouteSuspense><LazyPages.SellerBookingPage /></RouteSuspense>} />
-                            {/* 🔧 Confirmación del experto: PÚBLICO, sin login (el token es la credencial). */}
-                            <Route path="/confirmar-cita/:token" element={<RouteSuspense><LazyPages.ExpertConfirmationPage /></RouteSuspense>} />
+
+                            {/* Citas — públicas (token = credencial) */}
+                            <Route path="/appointment/schedule/:token" element={<RouteSuspense><LazyPages.SellerBookingPage /></RouteSuspense>} />
+                            <Route path="/appointment/confirm/:token" element={<RouteSuspense><LazyPages.ExpertConfirmationPage /></RouteSuspense>} />
+
                             <Route path="/success" element={<RouteSuspense><PaymentSuccessPage /></RouteSuspense>} />
                             <Route path="/cancel" element={<RouteSuspense><PaymentCancelPage /></RouteSuspense>} />
-                            {/* 🛡️ Round 15 — R5 FIX: ruta /login real. Antes navigate('/login') iba a 404. */}
                             <Route path="/login" element={<RouteSuspense><LazyPages.LoginPage /></RouteSuspense>} />
                             <Route path="/ad/:id" element={<RouteSuspense><AdDetails onBack={() => window.history.back()} /></RouteSuspense>} />
-                            
-                            {/* Rutas de MFA */}
-                            <Route 
-                                path="/mfa/setup-required" 
+
+                            {/* MFA */}
+                            <Route
+                                path="/mfa/setup"
                                 element={
                                     <ProtectedRoute>
                                         <RouteSuspense>
                                             <LazyPages.MFASetupPage />
                                         </RouteSuspense>
                                     </ProtectedRoute>
-                                } 
+                                }
                             />
-                            
-                            {/* Rutas protegidas con MFA */}
-                            <Route path="/busquedas" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchesPage /></RouteSuspense></ProtectedRouteWithMFA>} />
-                            <Route path="/busquedas/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
-                            <Route path="/searchhire/:id" element={<ProtectedRouteWithMFA><SearchDetailsByHireWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
-                            <Route path="/detalles/:id" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchResultsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+
+                            {/* Contrataciones e informes */}
+                            <Route path="/hires" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchesPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/hires/:id" element={<ProtectedRouteWithMFA><SearchDetailsByHireWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
+                            <Route path="/searches/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
+                            <Route path="/searches/:id/report" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchResultsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+
                             <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
                                 <Route index element={<RouteSuspense><LazyPages.AdminDashboard /></RouteSuspense>} />
                                 <Route path="users" element={<RouteSuspense><LazyPages.UserManagement onBack={() => window.location.href = '/'} /></RouteSuspense>} />
@@ -582,40 +590,75 @@ const AppContent: React.FC = () => {
                                 <Route path="config/*" element={<RouteSuspense><LazyPages.AdminConfigPage /></RouteSuspense>} />
                                 <Route path="categories" element={<RouteSuspense><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
                                 <Route path="mappings" element={<RouteSuspense><LazyPages.AdminMappingsPage /></RouteSuspense>} />
-                                <Route path="email-templates" element={<RouteSuspense><LazyPages.AdminEmailTemplatesPage /></RouteSuspense>} />
+                                <Route path="templates/email" element={<RouteSuspense><LazyPages.AdminEmailTemplatesPage /></RouteSuspense>} />
                                 <Route path="notifications" element={<RouteSuspense><LazyPages.NotificationManagement /></RouteSuspense>} />
                                 <Route path="disputes" element={<RouteSuspense><LazyPages.DisputePanel /></RouteSuspense>} />
-                                <Route path="hangfire" element={<RouteSuspense><LazyPages.HangfirePanel /></RouteSuspense>} />
+                                <Route path="jobs" element={<RouteSuspense><LazyPages.HangfirePanel /></RouteSuspense>} />
                             </Route>
-                            <Route path="/become-expert" element={<ProtectedRoute><RouteSuspense><LazyPages.BecomeExpertPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/expert-panel" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
-                            <Route path="/expert-panel/inspeccion/:hireId" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertInspectionPage /></RouteSuspense></ProtectedRouteWithMFA>} />
-                            <Route path="/complete-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/refresh-onboarding" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/transacciones" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+
+                            <Route path="/expert/join" element={<ProtectedRoute><RouteSuspense><LazyPages.BecomeExpertPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/expert" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/expert/inspection/:hireId" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertInspectionPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/expert/stripe/complete" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/expert/stripe/refresh" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/account/transactions" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/service/:serviceId" element={<RouteSuspense><LazyPages.ServiceDetailPage /></RouteSuspense>} />
                             <Route path="/checkout/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.CheckoutPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/chat-pre-contratacion/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/mis-mensajes" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/crear-busqueda" element={<RouteSuspense><LazyPages.SearchCreationPage /></RouteSuspense>} />
-                            <Route path="/ayuda" element={<RouteSuspense><LazyPages.CentroAyudaPage /></RouteSuspense>} />
-                            {/* Landings de categoría (SEO long-tail): rutas estáticas con la keyword en la URL */}
+                            <Route path="/inquiry/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/messages" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
+                            {/* fallback = MapPageSkeleton (immediateFallback, sin Delayed): mismo skeleton
+                                que pinta SearchCreationPage mientras carga mapa/servicios. Antes el
+                                RouteSuspense por defecto metía un spinner "Preparando página…" totalmente
+                                distinto entre medias → doble salto visual al pulsar "Buscar". */}
+                            <Route path="/hire" element={<RouteSuspense fallback={<MapPageSkeleton />} immediateFallback><LazyPages.SearchCreationPage /></RouteSuspense>} />
+                            <Route path="/help" element={<RouteSuspense><LazyPages.CentroAyudaPage /></RouteSuspense>} />
+                            <Route path="/favorites" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
+                            <Route path="/notifications" element={<ProtectedRoute><RouteSuspense><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/" element={<HomePage />} />
+
+                            {/* Landings SEO españolas */}
                             <Route path="/inspeccion-coche-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-coche-segunda-mano" /></RouteSuspense>} />
                             <Route path="/peritaje-piso" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-piso" /></RouteSuspense>} />
                             <Route path="/inspeccion-moto-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-moto-segunda-mano" /></RouteSuspense>} />
                             <Route path="/peritaje-maquinaria-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-maquinaria-segunda-mano" /></RouteSuspense>} />
                             <Route path="/inspeccion-bici-electrica-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-bici-electrica-segunda-mano" /></RouteSuspense>} />
-                            <Route path="/quienes-somos" element={<Navigate to="/ayuda" replace />} />
-                            <Route path="/como-funciona" element={<Navigate to="/ayuda" replace />} />
-                            <Route path="/faq" element={<Navigate to="/ayuda" replace />} />
-                            <Route path="/favoritos" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
-                            {/* 🛡️ MUD-DI — `/notifications` antes daba 404 a pesar de que
-                                LoggingService.cs:1053 enviaba este link en TODOS los emails. */}
-                            <Route path="/notifications" element={<ProtectedRoute><RouteSuspense><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/explorar" element={<RouteSuspense fallback={<HomePageSkeleton />}><LazyPages.HomePage /></RouteSuspense>} />
-                            <Route path="/" element={<RouteSuspense fallback={<HomePageSkeleton />}><LazyPages.HomePage /></RouteSuspense>} />
-                            
-                            {/* Ruta 404 - debe ir al final */}
+
+                            {/* Alias SEO inglés */}
+                            {Object.entries(SEO_LANDING_ALIASES).map(([spanishSlug, englishPath]) => (
+                                <Route
+                                    key={englishPath}
+                                    path={englishPath}
+                                    element={<RouteSuspense><LazyPages.CategoryLandingPage slug={spanishSlug} /></RouteSuspense>}
+                                />
+                            ))}
+
+                            {/* SEO local: hub de cobertura + una landing por provincia */}
+                            <Route path="/inspeccion-segunda-mano-espana" element={<RouteSuspense><LazyPages.CoverageHubPage /></RouteSuspense>} />
+                            {CITY_LANDINGS.map((c) => (
+                                <Route
+                                    key={c.slug}
+                                    path={`/inspeccion-segunda-mano-${c.slug}`}
+                                    element={<RouteSuspense><LazyPages.CityLandingPage slug={c.slug} /></RouteSuspense>}
+                                />
+                            ))}
+
+                            {/* Redirects legacy — paths exactos */}
+                            {Object.entries(LEGACY_REDIRECTS).map(([from, to]) => (
+                                <Route key={from} path={from} element={<LegacyRedirect to={to} />} />
+                            ))}
+
+                            {/* Redirects legacy — paths con parámetros */}
+                            <Route path="/searchhire/:id" element={<LegacyHireDetailRedirect />} />
+                            <Route path="/busquedas/:id" element={<LegacySearchDetailRedirect />} />
+                            <Route path="/detalles/:id" element={<LegacyHireReportRedirect />} />
+                            <Route path="/chat-pre-contratacion/:serviceId" element={<LegacyInquiryRedirect />} />
+                            <Route path="/coordinar-cita/:token" element={<LegacyAppointmentScheduleRedirect />} />
+                            <Route path="/confirmar-cita/:token" element={<LegacyAppointmentConfirmRedirect />} />
+                            <Route path="/expert-panel/inspeccion/:hireId" element={<LegacyExpertInspectionRedirect />} />
+                            <Route path="/admin/email-templates" element={<LegacyRedirect to="/admin/templates/email" />} />
+                            <Route path="/admin/hangfire" element={<LegacyRedirect to="/admin/jobs" />} />
+
+                            {/* Ruta 404 — debe ir al final */}
                             <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                       </SileoTransitionProvider>
@@ -656,13 +699,14 @@ const AppContent: React.FC = () => {
                     no esenciales. El componente existía pero nunca se renderizaba (sanción hasta €91k).
                     Se monta globalmente; se auto-oculta si el usuario ya marcó preferencia en localStorage. */}
                 <CookieBanner
-                    cookiePolicyUrl="/privacy-policy.html"
+                    cookiePolicyUrl="/legal/privacy"
                     onAccept={(pref) => {
                         // Emitir evento para que otros componentes puedan reaccionar (gate analytics, maps, etc.)
                         window.dispatchEvent(new CustomEvent('cookieConsentChanged', { detail: { preference: pref } }));
                     }}
                 />
                 <ChatbotFab />
+                <HomepageTrustFab />
         </div>
     );
 };

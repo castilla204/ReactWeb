@@ -28,7 +28,7 @@ const sileoLoaderVariants = cva(
         bar: "sileo-loader-bar",
       },
       size: {
-        xs: "gap-1.5 text-[11px]",
+        xs: "gap-1.5 text-kicker",
         sm: "gap-2 text-xs",
         md: "gap-2.5 text-sm",
         lg: "gap-3 text-base",
@@ -85,7 +85,7 @@ export function SileoLoader({
     brand: "text-brand",
     current: "text-current",
     white: "text-white",
-    muted: "text-[#9ca3af]",
+    muted: "text-ink-soft",
   };
 
   const wrapper = (
@@ -120,7 +120,7 @@ export function SileoLoader({
       )}
 
       {variant === "bar" && (
-        <div className="h-1 w-full overflow-hidden rounded-full bg-[#e8e8e8]">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-line">
           <div className="sileo-loader-bar-track h-full w-1/3 rounded-full bg-brand" />
         </div>
       )}

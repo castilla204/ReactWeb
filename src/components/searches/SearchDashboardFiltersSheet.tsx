@@ -112,16 +112,16 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
      */
     const renderBody = (onClose: () => void): React.ReactNode => (
         <>
-            <div className="border-b border-[#ebebeb] px-5 pb-3 pt-2">
+            <div className="border-b border-line px-5 pb-3 pt-2">
                 <div className="flex items-center justify-between gap-3">
-                    <div className="text-[17px] font-semibold tracking-[-0.015em] text-[#1c1c1c]">
+                    <div className="text-title font-semibold tracking-[-0.015em] text-ink-strong">
                         Filtros
                     </div>
                     <button
                         type="button"
                         aria-label="Cerrar"
                         onClick={onClose}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#fafafa] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                     >
                         <X className="h-4 w-4" strokeWidth={2} aria-hidden />
                     </button>
@@ -132,13 +132,13 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                 {totalReal > 0 && (
                     <section>
                         <div className="mb-2.5 flex items-baseline justify-between gap-3">
-                            <h3 className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+                            <h3 className="text-badge font-bold uppercase tracking-[0.14em] text-ink-muted">
                                 Categorías
                             </h3>
                             <button
                                 type="button"
                                 onClick={toggleAllCategories}
-                                className="text-[12px] font-semibold text-brand transition-colors hover:text-brand-hover"
+                                className="text-caption font-semibold text-brand transition-colors hover:text-brand-hover"
                             >
                                 {allSelected ? 'Quitar todas' : 'Seleccionar todas'}
                             </button>
@@ -154,11 +154,11 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                                         aria-checked={checked}
                                         onClick={() => toggleCategory(category.id, !checked)}
                                         className={[
-                                            'inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[12.5px] font-medium transition-colors',
+                                            'inline-flex h-8 items-center gap-1 rounded-full border px-3 text-caption font-medium transition-colors',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                                             checked
                                                 ? 'border-brand bg-brand/[0.08] text-brand'
-                                                : 'border-[#e8e8e8] bg-white text-[#1c1c1c] hover:bg-[#fafafa]',
+                                                : 'border-line bg-white text-ink-strong hover:bg-surface-tinted',
                                         ].join(' ')}
                                     >
                                         <span className="max-w-[140px] truncate">{category.name}</span>
@@ -173,15 +173,15 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                 )}
 
                 <section>
-                    <h3 className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+                    <h3 className="mb-2.5 text-badge font-bold uppercase tracking-[0.14em] text-ink-muted">
                         Visibilidad
                     </h3>
-                    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-[#e8e8e8] bg-white px-4 py-3">
+                    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-line bg-white px-4 py-3">
                         <div className="min-w-0">
-                            <div className="text-[14px] font-semibold leading-tight text-[#1c1c1c]">
+                            <div className="text-body font-semibold leading-tight text-ink-strong">
                                 Inspecciones inactivas
                             </div>
-                            <div className="mt-0.5 text-[12px] leading-snug text-[#6a6a6a]">
+                            <div className="mt-0.5 text-caption leading-snug text-ink-muted">
                                 Incluye las que cancelaste o están sin movimiento.
                             </div>
                         </div>
@@ -195,7 +195,7 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                             className={[
                                 'relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
-                                filters.showInactives ? 'bg-brand' : 'bg-[#e0e0e0]',
+                                filters.showInactives ? 'bg-brand' : 'bg-line',
                             ].join(' ')}
                         >
                             <span
@@ -209,7 +209,7 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                 </section>
 
                 <section>
-                    <h3 className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+                    <h3 className="mb-2.5 text-badge font-bold uppercase tracking-[0.14em] text-ink-muted">
                         Estado del servicio
                     </h3>
                     <div className="flex flex-wrap gap-1.5">
@@ -226,11 +226,11 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                                         setFilters((prev) => ({ ...prev, searchHireStatus: value }))
                                     }
                                     className={[
-                                        'inline-flex h-8 items-center rounded-full border px-3 text-[12.5px] font-medium transition-colors',
+                                        'inline-flex h-8 items-center rounded-full border px-3 text-caption font-medium transition-colors',
                                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                                         checked
                                             ? 'border-brand bg-brand text-white'
-                                            : 'border-[#e8e8e8] bg-white text-[#1c1c1c] hover:bg-[#fafafa]',
+                                            : 'border-line bg-white text-ink-strong hover:bg-surface-tinted',
                                     ].join(' ')}
                                 >
                                     {status.label}
@@ -241,19 +241,19 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                 </section>
             </div>
 
-            <div className="sticky bottom-0 border-t border-[#ebebeb] bg-white px-5 py-3">
+            <div className="sticky bottom-0 border-t border-line bg-white px-5 py-3">
                 <div className="flex gap-3 pb-[max(0.25rem,env(safe-area-inset-bottom,0px))]">
                     <button
                         type="button"
                         onClick={resetFilters}
-                        className="flex-1 rounded-full border border-[#e8e8e8] bg-white py-2.5 text-[13.5px] font-semibold text-[#1c1c1c] transition-colors hover:bg-[#fafafa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                        className="flex-1 rounded-full border border-line bg-white py-2.5 text-meta font-semibold text-ink-strong transition-colors hover:bg-surface-tinted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                     >
                         Restablecer
                     </button>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 rounded-full bg-brand py-2.5 text-[13.5px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                        className="flex-1 rounded-full bg-brand py-2.5 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                     >
                         Aplicar
                     </button>
@@ -284,7 +284,7 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
                 autoFocus
             >
                 <DrawerContent
-                    className="flex max-h-[86dvh] flex-col rounded-t-[20px] border-t border-[#e8e8e8] bg-white"
+                    className="flex max-h-[86dvh] flex-col rounded-t-[20px] border-t border-line bg-white"
                     style={{ fontFamily: HP_FONT }}
                 >
                     {/* Vaul exige Title/Description para a11y; ocultos visualmente */}
@@ -307,7 +307,7 @@ export const SearchDashboardFiltersSheet: React.FC<SearchDashboardFiltersSheetPr
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="flex h-full w-full max-w-[420px] flex-col gap-0 border-l border-[#e8e8e8] bg-white p-0 sm:max-w-[420px]"
+                className="flex h-full w-full max-w-[420px] flex-col gap-0 border-l border-line bg-white p-0 sm:max-w-[420px]"
                 style={{ fontFamily: HP_FONT }}
             >
                 {/* Radix Dialog exige Title/Description para a11y; ocultos visualmente */}

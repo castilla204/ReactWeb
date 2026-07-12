@@ -40,7 +40,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'c
                 className={
                     isMap
                         ? 'sd-icon-btn relative'
-                        : 'relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#9ca3af] bg-white text-[#222] transition-colors hover:bg-[#f9fafb]'
+                        : 'relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink-strong transition-colors hover:bg-surface-tinted'
                 }
             >
                 <Globe className="pointer-events-none h-4 w-4" aria-hidden />
@@ -62,14 +62,14 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({ variant = 'c
 
     const sizeClasses =
         variant === 'full'
-            ? 'pl-8 pr-9 py-2 text-sm rounded-lg border border-[#e8e8e8] bg-white font-medium text-[#1c1c1c] hover:bg-[#f9fafb]'
-            : 'pl-7 pr-8 py-1.5 text-[13px] font-semibold text-[#222222] rounded-full border border-[#d1d5db] bg-white hover:border-[#222222] hover:bg-[#f9fafb]';
+            ? 'pl-8 pr-9 py-2 text-sm rounded-lg border border-line bg-white font-medium text-ink-strong hover:bg-surface-tinted'
+            : 'pl-7 pr-8 py-1.5 text-meta font-semibold text-ink rounded-full border border-line bg-white hover:border-ink-strong hover:bg-surface-tinted';
 
     return (
         <div className="relative inline-flex items-center">
             <Globe
                 className={`pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 ${
-                    variant === 'full' ? 'text-[#6a6a6a]' : 'text-[#222222]'
+                    variant === 'full' ? 'text-ink-muted' : 'text-ink'
                 }`}
                 aria-hidden
             />

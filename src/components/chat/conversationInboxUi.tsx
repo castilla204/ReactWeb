@@ -32,31 +32,28 @@ export function formatRelative(iso: string): string {
     }
 }
 
+export type StatusChipTone = 'brand' | 'green' | 'amber' | 'red' | 'neutral';
+
 export interface StatusChipProps {
     label: string;
-    tone: 'brand' | 'green' | 'amber' | 'red' | 'neutral';
+    tone: StatusChipTone;
     /** Icono opcional al inicio del chip (p. ej. escudo para contratación). */
     icon?: 'shield';
 }
 
+export const STATUS_CHIP_PALETTE: Record<StatusChipTone, string> = {
+    brand: 'bg-brand/[0.08] ring-brand/25 text-brand',
+    green: 'bg-success-tint ring-success-border text-success',
+    amber: 'bg-warning-tint ring-warning-border text-warning',
+    red: 'bg-destructive/10 ring-destructive/30 text-destructive',
+    neutral: 'bg-surface-tinted ring-line text-ink-muted',
+};
+
 export const StatusChip: React.FC<StatusChipProps> = ({ label, tone, icon }) => {
-    const palette = (() => {
-        switch (tone) {
-            case 'brand':
-                return 'bg-brand/[0.08] ring-brand/25 text-brand';
-            case 'green':
-                return 'bg-[#F0F9F4] ring-[#BBE5C9] text-[#0F6A3E]';
-            case 'amber':
-                return 'bg-[#FFFBEB] ring-[#FED7AA] text-[#D97706]';
-            case 'red':
-                return 'bg-[#FEF2F2] ring-[#FECACA] text-[#DC2626]';
-            default:
-                return 'bg-[#fafafa] ring-[#e8e8e8] text-[#6a6a6a]';
-        }
-    })();
+    const palette = STATUS_CHIP_PALETTE[tone];
     return (
         <span
-            className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[10.5px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
+            className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-badge font-semibold leading-none tracking-tight ring-1 ${palette}`}
         >
             {icon === 'shield' && (
                 <ShieldCheck className="h-[11px] w-[11px]" strokeWidth={2.25} aria-hidden />

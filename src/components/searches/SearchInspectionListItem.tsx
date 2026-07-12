@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { HP_FONT } from '../../constants/homepageTypography';
+import { STATUS_CHIP_PALETTE, type StatusChipTone } from '../chat/conversationInboxUi';
 import type { SearchItem } from '../../hooks/useSearch.hooks';
 
 // Assets reales del proyecto. Si el backend no envía serviceImageUrl,
@@ -148,34 +149,62 @@ function fallbackImage(categoryName: string): string {
     return imgCoche;
 }
 
-const StatusChip: React.FC<{
+function progressChipTone(progress: FlowStep | Terminal): StatusChipTone {
+    if (progress === 'cancelled') return 'red';
+    if (progress === 'disputed') return 'amber';
+    if (progress === 3) return 'green';
+    return 'brand';
+}
+
+function progressChipLabel(progress: FlowStep | Terminal): string {
+    if (progress === 'cancelled') return 'Cancelada';
+    if (progress === 'disputed') return 'En disputa';
+    if (progress === 3) return 'Entregada';
+    return STEPS[progress].label;
+}
+
+const TIMELINE_PALETTE = {
+    cancelled: {
+        active: 'bg-destructive',
+        past: 'bg-destructive',
+        line: 'bg-destructive',
+        ring: 'ring-destructive/20',
+    },
+    disputed: {
+        active: 'bg-warning',
+        past: 'bg-warning',
+        line: 'bg-warning',
+        ring: 'ring-warning/20',
+    },
+    default: {
+        active: 'bg-brand',
+        past: 'bg-brand',
+        line: 'bg-brand',
+        ring: 'ring-brand/20',
+    },
+} as const;
+
+const SearchInspectionListItemStatusChip: React.FC<{
     progress: FlowStep | Terminal;
     unread: number;
 }> = ({ progress, unread }) => {
     const hasUnread = unread > 0;
-    const palette = (() => {
-        if (progress === 'cancelled')
-            return { bg: 'bg-[#FEF2F2]', ring: 'ring-[#FECACA]', text: 'text-[#DC2626]', label: 'Cancelada' };
-        if (progress === 'disputed')
-            return { bg: 'bg-[#FFFBEB]', ring: 'ring-[#FED7AA]', text: 'text-[#D97706]', label: 'En disputa' };
-        if (progress === 3)
-            return { bg: 'bg-[#F0F9F4]', ring: 'ring-[#BBE5C9]', text: 'text-[#0F6A3E]', label: 'Entregada' };
-        return { bg: 'bg-brand/[0.08]', ring: 'ring-brand/25', text: 'text-brand', label: STEPS[progress].label };
-    })();
+    const paletteClasses = STATUS_CHIP_PALETTE[progressChipTone(progress)];
+    const label = progressChipLabel(progress);
     return (
         <div className="flex items-center gap-1.5">
             {hasUnread && (
                 <span
-                    className="inline-flex items-center rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                    className="inline-flex items-center rounded-full bg-brand px-1.5 py-0.5 text-badge font-bold leading-none text-white"
                     aria-label={`${unread} ${unread === 1 ? 'mensaje nuevo' : 'mensajes nuevos'}`}
                 >
                     {unread}
                 </span>
             )}
             <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-tight ring-1 ${palette.bg} ${palette.ring} ${palette.text}`}
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-kicker font-semibold tracking-tight ring-1 ${paletteClasses}`}
             >
-                {palette.label}
+                {label}
             </span>
         </div>
     );
@@ -196,13 +225,12 @@ const CompactTimeline: React.FC<{
     step: FlowStep;
     terminal?: Terminal | null;
 }> = ({ step, terminal }) => {
-    const palette = (() => {
-        if (terminal === 'cancelled')
-            return { active: 'bg-[#DC2626]', past: 'bg-[#DC2626]', line: 'bg-[#DC2626]', ring: 'ring-[#DC2626]/20' };
-        if (terminal === 'disputed')
-            return { active: 'bg-[#D97706]', past: 'bg-[#D97706]', line: 'bg-[#D97706]', ring: 'ring-[#D97706]/20' };
-        return { active: 'bg-brand', past: 'bg-brand', line: 'bg-brand', ring: 'ring-brand/20' };
-    })();
+    const palette =
+        terminal === 'cancelled'
+            ? TIMELINE_PALETTE.cancelled
+            : terminal === 'disputed'
+              ? TIMELINE_PALETTE.disputed
+              : TIMELINE_PALETTE.default;
     return (
         <div
             className="flex items-center gap-1"
@@ -215,7 +243,7 @@ const CompactTimeline: React.FC<{
                     <React.Fragment key={idx}>
                         {idx > 0 && (
                             <span
-                                className={`block h-px w-3 ${idx <= step ? palette.line : 'bg-[#d4d4d4]'}`}
+                                className={`block h-px w-3 ${idx <= step ? palette.line : 'bg-line'}`}
                                 aria-hidden
                             />
                         )}
@@ -226,7 +254,7 @@ const CompactTimeline: React.FC<{
                                     ? `${palette.active} ring-[3px] ${palette.ring}`
                                     : isPast
                                       ? palette.past
-                                      : 'border border-[#d4d4d4] bg-white',
+                                      : 'border border-line bg-white',
                             ].join(' ')}
                             aria-hidden
                         />
@@ -239,10 +267,10 @@ const CompactTimeline: React.FC<{
 
 const DataCell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="min-w-0">
-        <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+        <div className="text-badge font-bold uppercase tracking-[0.14em] text-ink-muted">
             {label}
         </div>
-        <div className="mt-0.5 truncate text-[13.5px] font-semibold leading-snug text-[#1c1c1c]">
+        <div className="mt-0.5 truncate text-meta font-semibold leading-snug text-ink-strong">
             {value}
         </div>
     </div>
@@ -306,10 +334,22 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
     // Pestaña manila: brand para activas, terminal-color para cerradas.
     const tabStyle = (() => {
         if (progress === 'cancelled')
-            return { bg: '#DC2626', text: '#FFFFFF', shadow: 'rgba(220, 38, 38, 0.25)' };
+            return {
+                bg: 'hsl(var(--destructive))',
+                text: 'hsl(var(--destructive-foreground))',
+                shadow: 'hsl(var(--destructive) / 0.25)',
+            };
         if (progress === 'disputed')
-            return { bg: '#D97706', text: '#FFFFFF', shadow: 'rgba(217, 119, 6, 0.25)' };
-        return { bg: 'hsl(var(--brand))', text: '#FFFFFF', shadow: 'hsl(var(--brand) / 0.28)' };
+            return {
+                bg: 'hsl(var(--warning))',
+                text: 'hsl(var(--surface))',
+                shadow: 'hsl(var(--warning) / 0.25)',
+            };
+        return {
+            bg: 'hsl(var(--brand))',
+            text: 'hsl(var(--brand-foreground))',
+            shadow: 'hsl(var(--brand) / 0.28)',
+        };
     })();
 
     return (
@@ -328,16 +368,16 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                 // z-index alto para que la pestaña no quede tapada por el card adyacente.
                 // El hover sube aún más para asegurar foco visual.
                 'z-[1] hover:z-[2]',
-                'rounded-[14px] bg-white border border-[#e8e8e8]',
+                'rounded-[14px] bg-white border border-line',
                 // motion: solo transform + shadow + border-color (no layout)
                 'transition-[transform,box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                'hover:-translate-y-0.5 hover:border-[#d4d4d4]',
+                'hover:-translate-y-0.5 hover:border-line',
                 // Sombra simple + mayor profundidad en hover, sin invadir el card adyacente
                 'shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
                 'hover:shadow-[0_12px_28px_-12px_rgba(15,23,42,0.18)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                 'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
-                highlightUnreviewed ? '!bg-[#FFFBEB]/40' : '',
+                highlightUnreviewed ? '!bg-warning-tint/40' : '',
             ].join(' ')}
             style={{ fontFamily: HP_FONT }}
         >
@@ -357,7 +397,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                     borderRadius: '6px 6px 0 0',
                 }}
             >
-                <span className="font-mono text-[12.5px] font-semibold tracking-[0.06em] leading-none">
+                <span className="font-mono text-caption font-semibold tracking-[0.06em] leading-none">
                     {ref}
                 </span>
             </div>
@@ -367,7 +407,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                 quiere ver MÁS cards en una pantalla, no menos. */}
             <div className="grid grid-cols-1 overflow-hidden rounded-[14px] sm:grid-cols-[180px_1fr]">
                 {/* LADO IMAGEN */}
-                <div className="relative h-[92px] overflow-hidden bg-[#f5f5f5] sm:h-auto sm:min-h-[180px]">
+                <div className="relative h-[92px] overflow-hidden bg-surface-tinted sm:h-auto sm:min-h-[180px]">
                     <img
                         src={imgSrc}
                         alt={search.title || categoryValue}
@@ -386,20 +426,20 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                     {/* Header: título + chip de estado + chevron */}
                     <div className="relative z-[2] flex items-start gap-3">
                         <div className="min-w-0 flex-1">
-                            <h3 className="line-clamp-1 text-[14px] font-medium leading-tight text-[#1c1c1c] sm:text-[14.5px]">
+                            <h3 className="line-clamp-1 text-body font-medium leading-tight text-ink-strong">
                                 {search.title}
                             </h3>
                             {isRealCategory && (
-                                <p className="mt-0.5 truncate text-[12px] leading-snug text-[#737373]">
+                                <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
                                     {categoryLabel}
                                     {locationValue ? ` · ${locationValue}` : ''}
                                 </p>
                             )}
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
-                            <StatusChip progress={progress} unread={search.unreadMessagesCount} />
+                            <SearchInspectionListItemStatusChip progress={progress} unread={search.unreadMessagesCount} />
                             <ChevronRight
-                                className="h-4 w-4 text-[#cccccc] transition-colors group-hover:text-brand"
+                                className="h-4 w-4 text-line transition-colors group-hover:text-brand"
                                 strokeWidth={2}
                                 aria-hidden
                             />
@@ -410,7 +450,7 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                         un dato. Sin nested card, sin slots vacíos. */}
                     {useGrid ? (
                         <div
-                            className="relative z-[2] grid gap-x-5 gap-y-2.5 border-t border-[#ebebeb] pt-3"
+                            className="relative z-[2] grid gap-x-5 gap-y-2.5 border-t border-line pt-3"
                             style={{
                                 gridTemplateColumns: `repeat(${Math.min(cells.length, 3)}, minmax(0, 1fr))`,
                             }}
@@ -420,11 +460,11 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                             ))}
                         </div>
                     ) : (
-                        <div className="relative z-[2] flex items-center gap-2 border-t border-[#ebebeb] pt-3 text-[12.5px] leading-snug text-[#6a6a6a]">
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#737373]">
+                        <div className="relative z-[2] flex items-center gap-2 border-t border-line pt-3 text-caption leading-snug text-ink-muted">
+                            <span className="text-badge font-bold uppercase tracking-[0.14em] text-ink-muted">
                                 Solicitada
                             </span>
-                            <span className="font-semibold text-[#1c1c1c]">{dateValue}</span>
+                            <span className="font-semibold text-ink-strong">{dateValue}</span>
                         </div>
                     )}
 
@@ -433,25 +473,23 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
                         Para terminales: "Cancelada" / "En disputa" en su color
                         + timeline coloreada del mismo tono (firma del estado). */}
                     <div className="relative z-[2] flex items-center justify-between gap-3">
-                        <div className="min-w-0 truncate text-[11.5px] font-semibold tracking-tight">
+                        <div className="min-w-0 truncate text-kicker font-semibold tracking-tight">
                             {isTerminal ? (
                                 <span
                                     className={
-                                        progress === 'cancelled'
-                                            ? 'text-[#DC2626]'
-                                            : 'text-[#D97706]'
+                                        progress === 'cancelled' ? 'text-destructive' : 'text-warning'
                                     }
                                 >
                                     {progress === 'cancelled' ? 'Cerrada sin emitir informe' : 'Disputa abierta'}
                                 </span>
                             ) : (
                                 <>
-                                    <span className="text-[#737373]">Paso </span>
+                                    <span className="text-ink-muted">Paso </span>
                                     <span className="text-brand">
                                         {(progress as FlowStep) + 1} de 4
                                     </span>
-                                    <span className="text-[#737373]"> · </span>
-                                    <span className="text-[#1c1c1c]">
+                                    <span className="text-ink-muted"> · </span>
+                                    <span className="text-ink-strong">
                                         {STEPS[progress as FlowStep].label}
                                     </span>
                                 </>
@@ -465,8 +503,8 @@ export const SearchInspectionListItem: React.FC<SearchInspectionListItemProps> =
 
                     {/* Cita pendiente como meta extra al pie (solo activos) */}
                     {search.hasPendingAppointment && !isTerminal && (
-                        <div className="relative z-[2] flex items-center gap-1.5 text-[11px] font-semibold tracking-tight text-[#D97706]">
-                            <span className="h-1 w-1 rounded-full bg-[#D97706]" aria-hidden />
+                        <div className="relative z-[2] flex items-center gap-1.5 text-kicker font-semibold tracking-tight text-warning">
+                            <span className="h-1 w-1 rounded-full bg-warning" aria-hidden />
                             Cita pendiente de confirmar
                         </div>
                     )}

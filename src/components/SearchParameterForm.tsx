@@ -38,7 +38,7 @@ import { getCountryCoordinates } from '../utils/countryCoordinates';
 import { getCountryName } from '../utils/countries';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { reverseGeocodeMapbox, extractCountryCodeFromMapbox, MapboxFeature } from '../utils/mapboxGeocoding';
-import { persistHireSearchLocation, readHireSearchLocation, snapshotHireSearchLocation } from '../utils/hireSearchContext';
+import { persistHireSearchLocation, readHireSearchLocation, snapshotHireSearchLocation, parseHireSearchLocationFromRouteState } from '../utils/hireSearchContext';
 import {
     clampTutorialDrawerSnap,
     getTutorialDrawerBottomBuffer,
@@ -66,6 +66,7 @@ import {
     MAP_CARD_ROW_SHADOW_HOVER,
     MAP_CARD_ROW_SHADOW_ACTIVE,
 } from '../constants/homepageTypography';
+import { GRADIENT, MAP_LITERAL } from '../constants/designTokens';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 import { MapResultsSheet } from './MapResultsSheet';
 import { getStripPriceFrom, getStripThumbnails, buildStripSummary } from '../utils/mapStripSummary';
@@ -96,7 +97,7 @@ const MapCardGradientOutline: React.FC = () => (
         aria-hidden
         className="pointer-events-none absolute inset-0 z-20 rounded-2xl"
         style={{
-            border: '2.5px solid #0066CC',
+            border: '2.5px solid hsl(var(--brand))',
         }}
     />
 );
@@ -215,7 +216,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
             if (result.isFavorite) {
                 toast.info('Añadido a favoritos', {
                     description: 'Lo tienes guardado en tu lista de favoritos.',
-                    action: { label: 'Ver favoritos', onClick: () => navigate('/favoritos') },
+                    action: { label: 'Ver favoritos', onClick: () => navigate('/favorites') },
                     duration: 3000,
                 });
             } else {
@@ -331,7 +332,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                     {/* Contorno de selección: mismo degradado azul→ámbar que la card grande. */}
                     {isSelected && <MapCardGradientOutline />}
                     {/* Imagen */}
-                    <div className={`relative ${isMobile ? 'h-[88px]' : 'h-[118px]'} w-full overflow-hidden bg-[#eceff3]`}>
+                    <div className={`relative ${isMobile ? 'h-[88px]' : 'h-[118px]'} w-full overflow-hidden bg-surface-tinted`}>
                         {imageUrls.length > 0 ? (
                             <>
                                 <img
@@ -341,8 +342,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                     style={{ display: 'block' }}
                                 />
                                 {isGuestFavorite && (
-                                    <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-[#1c1c1c] shadow-sm backdrop-blur-sm">
-                                        <Star className="h-2.5 w-2.5 fill-[#F59E0B] text-[#F59E0B]" /> Mejor valorado
+                                    <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-badge font-semibold text-ink-strong shadow-sm backdrop-blur-sm">
+                                        <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" /> Mejor valorado
                                     </span>
                                 )}
                                 {hasMultipleImages && (
@@ -358,8 +359,8 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                 )}
                             </>
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-[#eceff3]">
-                                <span className="text-[12px] text-[#9aa0a6]">Sin imagen</span>
+                            <div className="flex h-full w-full items-center justify-center bg-surface-tinted">
+                                <span className="text-caption text-ink-soft">Sin imagen</span>
                             </div>
                         )}
                         {isAuthenticated && (
@@ -376,37 +377,37 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                     {/* Info */}
                     <div className={`${isMobile ? 'p-2' : 'p-2.5'} font-display`}>
                         <div className={`flex items-center ${isMobile ? 'gap-1.5' : 'gap-2'}`}>
-                            <div className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7'} shrink-0 overflow-hidden rounded-full bg-[#f0f0f0] ring-1 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]`}>
+                            <div className={`${isMobile ? 'h-6 w-6' : 'h-7 w-7'} shrink-0 overflow-hidden rounded-full bg-line-soft ring-1 ring-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]`}>
                                 {service.expert?.profilePictureUrl ? (
                                     <img src={service.expert.profilePictureUrl} alt={expertName} className="h-full w-full object-cover" />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-[#5b6b7e] text-[11px] font-semibold text-white">
+                                    <div className="flex h-full w-full items-center justify-center bg-ink-muted text-kicker font-semibold text-white">
                                         {expertName.charAt(0).toUpperCase()}
                                     </div>
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-[9.5px] font-semibold uppercase tracking-[0.06em] text-[#8a8a8a]">{serviceTypeLabel}</p>
-                                <h3 className={`truncate ${isMobile ? 'text-[12.5px]' : 'text-[14px]'} font-semibold leading-[1.2] tracking-[-0.015em] text-[#1c1c1c]`}>{expertName}</h3>
+                                <p className="truncate text-[9.5px] font-semibold uppercase tracking-[0.06em] text-ink-muted">{serviceTypeLabel}</p>
+                                <h3 className={`truncate ${isMobile ? 'text-caption' : 'text-body'} font-semibold leading-[1.2] tracking-[-0.015em] text-ink-strong`}>{expertName}</h3>
                             </div>
                         </div>
 
                         <div className={`${isMobile ? 'mt-1.5' : 'mt-2'} flex items-center justify-between gap-2`}>
-                            <span className={`flex min-w-0 items-center gap-1 ${isMobile ? 'text-[11px]' : 'text-[12px]'} leading-none text-[#525252]`}>
+                            <span className={`flex min-w-0 items-center gap-1 ${isMobile ? 'text-kicker' : 'text-caption'} leading-none text-ink-muted`}>
                                 {ratingNum > 0 ? (
                                     <>
-                                        <Star className="h-3.5 w-3.5 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
-                                        <span className="font-semibold tabular-nums text-[#1c1c1c]">{ratingNum.toFixed(1).replace('.', ',')}</span>
-                                        {totalReviews > 0 && <span className="tabular-nums text-[#737373]">({totalReviews})</span>}
+                                        <Star className="h-3.5 w-3.5 shrink-0 fill-amber-500 text-amber-500" />
+                                        <span className="font-semibold tabular-nums text-ink-strong">{ratingNum.toFixed(1).replace('.', ',')}</span>
+                                        {totalReviews > 0 && <span className="tabular-nums text-ink-muted">({totalReviews})</span>}
                                     </>
                                 ) : (
-                                    <span className="font-medium text-[#737373]">Nuevo</span>
+                                    <span className="font-medium text-ink-muted">Nuevo</span>
                                 )}
-                                {(distLabel || cityLabel) && <span className="truncate text-[#737373]">· {distLabel ? `a ${distLabel}` : cityLabel}</span>}
+                                {(distLabel || cityLabel) && <span className="truncate text-ink-muted">· {distLabel ? `a ${distLabel}` : cityLabel}</span>}
                             </span>
                             <span className="flex shrink-0 items-baseline gap-0.5">
-                                <span className={`${isMobile ? 'text-[13.5px]' : 'text-[15px]'} font-semibold leading-none tabular-nums tracking-tight text-[#1c1c1c]`}>{price}</span>
-                                <span className="text-[11px] font-normal text-[#737373]">/ serv.</span>
+                                <span className={`${isMobile ? 'text-meta' : 'text-lead'} font-semibold leading-none tabular-nums tracking-tight text-ink-strong`}>{price}</span>
+                                <span className="text-kicker font-normal text-ink-muted">/ serv.</span>
                             </span>
                         </div>
                     </div>
@@ -431,7 +432,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                 }`}
             >
                 {isSelected && <MapCardGradientOutline />}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#eceff3]">
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-tinted">
                     {imageUrls.length > 0 ? (
                         <>
                             {/* Imagen principal — sin scale en móvil */}
@@ -449,7 +450,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                             {isGuestFavorite && (
                                 <div className="absolute left-3 top-3 z-10">
                                     <span className={`${MAP_CARD_BADGE_CLASS} gap-1`} aria-label="Mejor valorado">
-                                        <Star className="h-3 w-3 shrink-0 fill-[#F59E0B] text-[#F59E0B]" />
+                                        <Star className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" />
                                         Mejor valorado
                                     </span>
                                 </div>
@@ -508,7 +509,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         borderRadius: '50%',
                                         border: '2px solid white',
                                         overflow: 'hidden',
-                                        backgroundColor: '#f0f0f0',
+                                        backgroundColor: 'hsl(var(--line-soft))',
                                         boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
                                     }}
                                 >
@@ -522,7 +523,7 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
                                         <div
                                             className="flex h-full w-full items-center justify-center"
                                             style={{
-                                                backgroundColor: '#5b6b7e',
+                                                backgroundColor: 'hsl(var(--ink-muted))',
                                                 color: 'white',
                                                 fontSize: '14px',
                                                 fontWeight: 600,
@@ -689,26 +690,26 @@ function MapMobileDrawerHeader({
             className={`relative px-5 ${awaitingSelection ? 'pt-2 pb-2' : 'pt-2.5 pb-3'}`}
             style={{
                 background:
-                    'linear-gradient(to right, rgba(0,102,204,0.08) 0%, rgba(245,158,11,0.08) 100%), #ffffff',
+                    'linear-gradient(to right, rgba(0,102,204,0.08) 0%, rgba(245,158,11,0.08) 100%), hsl(var(--surface))',
             }}
         >
             {/* Handle — afordancia de arrastre */}
             <div className={`flex justify-center ${awaitingSelection ? 'mb-1.5' : 'mb-2.5'}`} aria-hidden>
-                <span className="h-1.5 w-11 rounded-full bg-[#b8b8b8]" />
+                <span className="h-1.5 w-11 rounded-full bg-line" />
             </div>
 
             {/* Titular de resultados — mismo tono que desktop */}
             <h2
-                className={`font-display font-semibold leading-tight tracking-[-0.01em] text-[#222222] ${
-                    awaitingSelection ? 'text-[15px]' : 'text-[16px]'
+                className={`font-display font-semibold leading-tight tracking-[-0.01em] text-ink ${
+                    awaitingSelection ? 'text-lead' : 'text-subtitle'
                 }`}
             >
                 {count} {count === 1 ? 'experto disponible' : 'expertos disponibles'}
                 {locationLabel ? (
-                    <span className="font-normal text-[#717171]"> en {locationLabel}</span>
+                    <span className="font-normal text-ink-muted"> en {locationLabel}</span>
                 ) : null}
             </h2>
-            <p className="mt-0.5 font-display text-[12px] font-normal leading-snug text-[#8a8a8a]">
+            <p className="mt-0.5 font-display text-caption font-normal leading-snug text-ink-muted">
                 {awaitingSelection
                     ? 'Toca una etiqueta de precio en el mapa'
                     : `En un radio de ~${rangeKm} km · desliza para ver la lista`}
@@ -722,23 +723,20 @@ function MapMobileSelectTutorial() {
     return (
         <div className="flex flex-col items-center px-1 pb-0.5 pt-0 text-center">
             <div
-                className="relative mx-auto mb-2 h-[96px] w-full max-w-[240px] overflow-hidden rounded-xl bg-white ring-1 ring-[#d4d4d4] shadow-[0_2px_10px_rgba(15,23,42,0.10)]"
+                className="relative mx-auto mb-2 h-[96px] w-full max-w-[240px] overflow-hidden rounded-xl bg-white ring-1 ring-line shadow-[0_2px_10px_rgba(15,23,42,0.10)]"
                 aria-hidden
             >
                 <div
                     className="absolute inset-0 opacity-95"
-                    style={{
-                        background:
-                            'radial-gradient(ellipse 85% 70% at 58% 42%, #ebe8e3 0%, #e8e4dc 38%, transparent 72%), radial-gradient(ellipse 55% 45% at 22% 68%, #d4e8c8 0%, transparent 62%), linear-gradient(180deg, #e8f0f6 0%, #dde8f0 100%)',
-                    }}
+                    style={{ background: GRADIENT.mapTutorialBg }}
                 />
                 <div className="absolute left-[18%] top-[22%] h-2 w-2 rounded-full bg-brand/25" />
-                <div className="absolute right-[24%] top-[34%] h-1.5 w-1.5 rounded-full bg-[#F59E0B]/35" />
+                <div className="absolute right-[24%] top-[34%] h-1.5 w-1.5 rounded-full bg-warning/35" />
                 <div className="absolute bottom-[28%] left-[32%] h-1.5 w-1.5 rounded-full bg-brand/20" />
 
                 <div className="absolute left-1/2 top-[36%] -translate-x-1/2">
                     <div className="relative inline-flex">
-                        <span className="map-tutorial-price-label inline-flex items-center justify-center rounded-full border border-[#d9d9d9] bg-white px-3 py-1 font-display text-[12px] font-bold tabular-nums text-[#1c1c1c] shadow-[0_1px_2px_rgba(0,0,0,0.12),0_2px_5px_rgba(0,0,0,0.08)]">
+                        <span className="map-tutorial-price-label inline-flex items-center justify-center rounded-full border border-line bg-white px-3 py-1 font-display text-caption font-bold tabular-nums text-ink-strong shadow-[0_1px_2px_rgba(0,0,0,0.12),0_2px_5px_rgba(0,0,0,0.08)]">
                             €69
                         </span>
 
@@ -751,8 +749,8 @@ function MapMobileSelectTutorial() {
                             <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden className="block h-6 w-6">
                                 <path
                                     d="M6.5 3.5L6.5 22.5L11.2 17.8L15.2 24.5L18.5 22.8L14.5 16.1L21.5 15.5L6.5 3.5Z"
-                                    fill="#ffffff"
-                                    stroke="#1c1c1c"
+                                    fill={MAP_LITERAL.coastHalo}
+                                    stroke={MAP_LITERAL.inkStrong}
                                     strokeWidth="1.25"
                                     strokeLinejoin="round"
                                 />
@@ -762,10 +760,10 @@ function MapMobileSelectTutorial() {
                 </div>
             </div>
 
-            <p className="font-display text-[14px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <p className="font-display text-body font-semibold tracking-[-0.01em] text-ink-strong">
                 Elige un experto en el mapa
             </p>
-            <p className="mt-1 max-w-[15rem] text-xs leading-snug text-[#6a6a6a]">
+            <p className="mt-1 max-w-[15rem] text-xs leading-snug text-ink-muted">
                 Pulsa una etiqueta de precio para ver su ficha.
             </p>
 
@@ -778,15 +776,15 @@ function MapMobileSelectTutorial() {
                 }
                 @keyframes map-tutorial-label-select {
                     0%, 24%, 100% {
-                        background: #ffffff;
-                        color: #1c1c1c;
-                        border-color: #d9d9d9;
+                        background: hsl(var(--surface));
+                        color: hsl(var(--ink-strong));
+                        border-color: hsl(var(--line));
                         box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.08);
                         transform: scale(1);
                     }
                     32%, 44% {
                         background: hsl(var(--brand));
-                        color: #ffffff;
+                        color: hsl(var(--brand-foreground));
                         border-color: transparent;
                         box-shadow: 0 3px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.14);
                         transform: scale(1.04);
@@ -826,26 +824,26 @@ function MapDesktopStepper({ currentStep = 1 }: { currentStep?: 1 | 2 | 3 }) {
                 return (
                     <li key={s.n} className="flex items-center gap-2.5">
                         <span
-                            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums leading-none transition-colors ${
+                            className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-kicker font-semibold tabular-nums leading-none transition-colors ${
                                 isActive
                                     ? 'bg-brand text-white shadow-[0_2px_6px_hsl(var(--brand)/0.35)]'
                                     : isDone
                                       ? 'bg-brand/15 text-brand'
-                                      : 'bg-[#f4f4f4] text-[#9aa0a6]'
+                                      : 'bg-line-soft text-ink-soft'
                             }`}
                             aria-current={isActive ? 'step' : undefined}
                         >
                             {s.n}
                         </span>
                         <span
-                            className={`text-[12px] font-medium tracking-tight ${
-                                isActive ? 'text-[#1c1c1c]' : 'text-[#6a6a6a]'
+                            className={`text-caption font-medium tracking-tight ${
+                                isActive ? 'text-ink-strong' : 'text-ink-muted'
                             }`}
                         >
                             {s.label}
                         </span>
                         {idx < steps.length - 1 && (
-                            <span className="ml-1 h-px w-6 bg-[#e0e0e0]" aria-hidden />
+                            <span className="ml-1 h-px w-6 bg-line" aria-hidden />
                         )}
                     </li>
                 );
@@ -891,18 +889,18 @@ function getNextSearchRadiusKm(current: number): number {
 }
 
 const MAP_STRIP_FILTER_CLASS =
-    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-white/80 bg-white px-3 font-display text-[12px] font-semibold text-[#1c1c1c] shadow-[0_2px_10px_rgba(0,0,0,0.28),0_1px_3px_rgba(0,0,0,0.14)] transition-[box-shadow,background] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-[13px]';
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-white/80 bg-white px-3 font-display text-caption font-semibold text-ink-strong shadow-[0_2px_10px_rgba(0,0,0,0.28),0_1px_3px_rgba(0,0,0,0.14)] transition-[box-shadow,background] hover:bg-white hover:shadow-[0_4px_14px_rgba(0,0,0,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-meta';
 const MAP_STRIP_FILTER_ACTIVE_CLASS =
-    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#1c1c1c] bg-[#1c1c1c] px-3 font-display text-[12px] font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.38),0_1px_4px_rgba(0,0,0,0.2)] transition-[box-shadow,background] hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-[13px]';
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-ink-strong bg-ink-strong px-3 font-display text-caption font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.38),0_1px_4px_rgba(0,0,0,0.2)] transition-[box-shadow,background] hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:h-9 md:px-3.5 md:text-meta';
 // Variante para superficie clara (hoja blanca del panel plegable móvil): sin sombra oscura flotante.
 const MAP_STRIP_FILTER_CLASS_LIGHT =
-    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#dddddd] bg-[#f7f7f7] px-3 font-display text-[12px] font-semibold text-[#1c1c1c] transition-[background] hover:bg-[#efefef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 md:h-9 md:px-3.5 md:text-[13px]';
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface-tinted px-3 font-display text-caption font-semibold text-ink-strong transition-[background] hover:bg-line/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 md:h-9 md:px-3.5 md:text-meta';
 
 const MAP_STRIP_OVERLAY_GRADIENT_CLASS =
     'pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 via-black/28 to-transparent pt-24';
 
 const MAP_STRIP_ARROW_BTN_CLASS =
-    'pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/90 bg-white text-[#222222] shadow-[0_2px_10px_rgba(0,0,0,0.28),0_1px_3px_rgba(0,0,0,0.14)] transition-all hover:shadow-[0_4px_14px_rgba(0,0,0,0.34)] disabled:cursor-not-allowed disabled:opacity-35 md:h-9 md:w-9';
+    'pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/90 bg-white text-ink shadow-[0_2px_10px_rgba(0,0,0,0.28),0_1px_3px_rgba(0,0,0,0.14)] transition-all hover:shadow-[0_4px_14px_rgba(0,0,0,0.34)] disabled:cursor-not-allowed disabled:opacity-35 md:h-9 md:w-9';
 
 /** Filtros de orden/valoración/precio — píldoras sólidas (mismo contraste que homepage). */
 function MapStripFilterControls({
@@ -939,20 +937,19 @@ function MapStripFilterControls({
     if (isMobile && lightSurface) {
         const activeFilterCount = (priceActive ? 1 : 0) + (ratingActive ? 1 : 0);
         // Colores del segmentado por estilo inline (determinista): `bg-brand` dinámico no se generaba fiable.
-        const BRAND = '#0066cc';
-        const segBase =
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-[12.5px] font-semibold transition-colors';
         const segStyle = (active: boolean) => ({
-            backgroundColor: active ? BRAND : 'transparent',
-            color: active ? '#ffffff' : '#5f5e5a',
+            backgroundColor: active ? 'hsl(var(--brand))' : 'transparent',
+            color: active ? 'hsl(var(--brand-foreground))' : 'hsl(var(--ink-muted))',
         });
+        const segBase =
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-display text-caption font-semibold transition-colors';
         const filtrosCls =
             activeFilterCount > 0
-                ? 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-brand/40 bg-brand/5 px-3 font-display text-[12px] font-semibold text-brand md:h-9 md:px-3.5 md:text-[13px]'
+                ? 'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-brand/40 bg-brand/5 px-3 font-display text-caption font-semibold text-brand md:h-9 md:px-3.5 md:text-meta'
                 : idleClass;
         return (
             <div className="flex items-center justify-between gap-2">
-                <div className="inline-flex shrink-0 items-center rounded-full bg-[#eef0f2] p-0.5">
+                <div className="inline-flex shrink-0 items-center rounded-full bg-line/50 p-0.5">
                     <button
                         type="button"
                         onClick={() => onSort('relevance')}
@@ -977,7 +974,7 @@ function MapStripFilterControls({
                             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
                             Filtros
                             {activeFilterCount > 0 && (
-                                <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[11px] font-semibold text-white">
+                                <span className="ml-0.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-kicker font-semibold text-white">
                                     {activeFilterCount}
                                 </span>
                             )}
@@ -988,7 +985,7 @@ function MapStripFilterControls({
                         style={{ zIndex: 10001 }}
                     >
                         <div className="max-h-[68vh] overflow-y-auto px-5">
-                            <h3 className="pb-1 pt-1 font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <h3 className="pb-1 pt-1 font-display text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                                 Ordenar por
                             </h3>
                             <div className="-mx-1 pb-2">
@@ -997,7 +994,7 @@ function MapStripFilterControls({
                                         key={o.key}
                                         type="button"
                                         onClick={() => onSort(o.key)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-ink-strong active:bg-surface-tinted"
                                     >
                                         {o.label}
                                         {sortBy === o.key && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
@@ -1005,7 +1002,7 @@ function MapStripFilterControls({
                                 ))}
                             </div>
 
-                            <h3 className="border-t border-[#eee] pb-1 pt-3 font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <h3 className="border-t border-line pb-1 pt-3 font-display text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                                 Valoración mínima
                             </h3>
                             <div className="-mx-1 pb-2">
@@ -1014,7 +1011,7 @@ function MapStripFilterControls({
                                         key={o.value}
                                         type="button"
                                         onClick={() => onMinRating(o.value)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left font-display text-[14.5px] font-medium text-ink-strong active:bg-surface-tinted"
                                     >
                                         {o.label}
                                         {minRating === o.value && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
@@ -1022,15 +1019,15 @@ function MapStripFilterControls({
                                 ))}
                             </div>
 
-                            <div className="flex items-center justify-between border-t border-[#eee] pb-1 pt-3">
-                                <h3 className="font-display text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <div className="flex items-center justify-between border-t border-line pb-1 pt-3">
+                                <h3 className="font-display text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                                     Precio por servicio
                                 </h3>
                                 {priceActive && (
                                     <button
                                         type="button"
                                         onClick={() => onPriceRange([0, priceMax])}
-                                        className="font-display text-[13px] font-semibold text-brand"
+                                        className="font-display text-meta font-semibold text-brand"
                                     >
                                         Quitar
                                     </button>
@@ -1044,7 +1041,7 @@ function MapStripFilterControls({
                                 onValueChange={(v: number[]) => onPriceRange([v[0], v[1]] as [number, number])}
                                 className="my-4"
                             />
-                            <div className="flex items-center justify-between font-display text-[14px] font-medium tabular-nums text-[#525252]">
+                            <div className="flex items-center justify-between font-display text-body font-medium tabular-nums text-ink-muted">
                                 <span>{priceRange[0]} €</span>
                                 <span>{priceRange[1] >= priceMax ? `${priceMax}+ €` : `${priceRange[1]} €`}</span>
                             </div>
@@ -1053,7 +1050,7 @@ function MapStripFilterControls({
                             <DrawerClose asChild>
                                 <button
                                     type="button"
-                                    className="w-full rounded-full bg-brand py-3 font-display text-[15px] font-semibold text-white active:bg-brand-hover"
+                                    className="w-full rounded-full bg-brand py-3 font-display text-lead font-semibold text-white active:bg-brand-hover"
                                 >
                                     Ver resultados
                                 </button>
@@ -1086,7 +1083,7 @@ function MapStripFilterControls({
                         style={{ zIndex: 10001 }}
                     >
                         <div className="px-5 pb-1 pt-1">
-                            <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <h3 className="font-display text-subtitle font-semibold text-ink-strong">
                                 Ordenar por
                             </h3>
                         </div>
@@ -1096,7 +1093,7 @@ function MapStripFilterControls({
                                     <button
                                         type="button"
                                         onClick={() => onSort(o.key)}
-                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3.5 text-left font-display text-[15px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                        className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3.5 text-left font-display text-lead font-medium text-ink-strong active:bg-surface-tinted"
                                     >
                                         {o.label}
                                         {sortBy === o.key && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
@@ -1111,7 +1108,7 @@ function MapStripFilterControls({
                     <Drawer shouldScaleBackground={false}>
                         <DrawerTrigger asChild>
                             <button type="button" className={trig(ratingActive)}>
-                                <Star className={`h-3.5 w-3.5 ${ratingActive ? 'fill-current' : 'fill-[#F59E0B] text-[#F59E0B]'}`} aria-hidden />
+                                <Star className={`h-3.5 w-3.5 ${ratingActive ? 'fill-current' : 'fill-amber-500 text-amber-500'}`} aria-hidden />
                                 {ratingActive ? `${minRating.toFixed(1).replace('.', ',')}+` : 'Valoración'}
                                 <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
                             </button>
@@ -1121,7 +1118,7 @@ function MapStripFilterControls({
                             style={{ zIndex: 10001 }}
                         >
                             <div className="px-5 pb-1 pt-1">
-                                <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                                <h3 className="font-display text-subtitle font-semibold text-ink-strong">
                                     Valoración mínima
                                 </h3>
                             </div>
@@ -1131,7 +1128,7 @@ function MapStripFilterControls({
                                         <button
                                             type="button"
                                             onClick={() => onMinRating(o.value)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3.5 text-left font-display text-[15px] font-medium text-[#1c1c1c] active:bg-[#f5f5f5]"
+                                            className="flex w-full items-center justify-between gap-2 rounded-xl px-4 py-3.5 text-left font-display text-lead font-medium text-ink-strong active:bg-surface-tinted"
                                         >
                                             {o.label}
                                             {minRating === o.value && <Check className="h-5 w-5 shrink-0 text-brand" aria-hidden />}
@@ -1156,14 +1153,14 @@ function MapStripFilterControls({
                         style={{ zIndex: 10001 }}
                     >
                         <div className="flex items-center justify-between pb-1 pt-1">
-                            <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <h3 className="font-display text-subtitle font-semibold text-ink-strong">
                                 Precio por servicio
                             </h3>
                             {priceActive && (
                                 <button
                                     type="button"
                                     onClick={() => onPriceRange([0, priceMax])}
-                                    className="font-display text-[13px] font-semibold text-brand"
+                                    className="font-display text-meta font-semibold text-brand"
                                 >
                                     Quitar
                                 </button>
@@ -1177,14 +1174,14 @@ function MapStripFilterControls({
                             onValueChange={(v: number[]) => onPriceRange([v[0], v[1]] as [number, number])}
                             className="my-4"
                         />
-                        <div className="flex items-center justify-between font-display text-[14px] font-medium tabular-nums text-[#525252]">
+                        <div className="flex items-center justify-between font-display text-body font-medium tabular-nums text-ink-muted">
                             <span>{priceRange[0]} €</span>
                             <span>{priceRange[1] >= priceMax ? `${priceMax}+ €` : `${priceRange[1]} €`}</span>
                         </div>
                         <DrawerClose asChild>
                             <button
                                 type="button"
-                                className="mt-5 w-full rounded-full bg-brand py-3 font-display text-[15px] font-semibold text-white active:bg-brand-hover"
+                                className="mt-5 w-full rounded-full bg-brand py-3 font-display text-lead font-semibold text-white active:bg-brand-hover"
                             >
                                 Ver resultados
                             </button>
@@ -1211,7 +1208,7 @@ function MapStripFilterControls({
                                 key={o.key}
                                 type="button"
                                 onClick={() => onSort(o.key)}
-                                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[#1c1c1c] transition-colors hover:bg-[#f5f5f5]"
+                                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-meta font-medium text-ink-strong transition-colors hover:bg-surface-tinted"
                             >
                                 {o.label}
                                 {sortBy === o.key && <Check className="h-4 w-4 shrink-0 text-brand" aria-hidden />}
@@ -1224,7 +1221,7 @@ function MapStripFilterControls({
                 <Popover>
                     <PopoverTrigger asChild>
                         <button type="button" className={trig(ratingActive)}>
-                            <Star className={`h-3.5 w-3.5 ${ratingActive ? 'fill-current' : 'fill-[#F59E0B] text-[#F59E0B]'}`} aria-hidden />
+                            <Star className={`h-3.5 w-3.5 ${ratingActive ? 'fill-current' : 'fill-amber-500 text-amber-500'}`} aria-hidden />
                             {ratingActive ? `${minRating.toFixed(1).replace('.', ',')}+` : 'Valoración'}
                             <ChevronDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
                         </button>
@@ -1235,7 +1232,7 @@ function MapStripFilterControls({
                                 key={o.value}
                                 type="button"
                                 onClick={() => onMinRating(o.value)}
-                                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[#1c1c1c] transition-colors hover:bg-[#f5f5f5]"
+                                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-meta font-medium text-ink-strong transition-colors hover:bg-surface-tinted"
                             >
                                 {o.label}
                                 {minRating === o.value && <Check className="h-4 w-4 shrink-0 text-brand" aria-hidden />}
@@ -1255,9 +1252,9 @@ function MapStripFilterControls({
                     </PopoverTrigger>
                     <PopoverContent align="end" className="w-72 p-4 font-display">
                         <div className="mb-3 flex items-center justify-between">
-                            <span className="text-[13px] font-semibold text-[#1c1c1c]">Precio por servicio</span>
+                            <span className="text-meta font-semibold text-ink-strong">Precio por servicio</span>
                             {priceActive && (
-                                <button type="button" onClick={() => onPriceRange([0, priceMax])} className="text-[12px] font-semibold text-brand hover:underline">
+                                <button type="button" onClick={() => onPriceRange([0, priceMax])} className="text-caption font-semibold text-brand hover:underline">
                                     Quitar
                                 </button>
                             )}
@@ -1270,7 +1267,7 @@ function MapStripFilterControls({
                             onValueChange={(v: number[]) => onPriceRange([v[0], v[1]] as [number, number])}
                             className="my-2"
                         />
-                        <div className="mt-3 flex items-center justify-between text-[13px] font-medium tabular-nums text-[#525252]">
+                        <div className="mt-3 flex items-center justify-between text-meta font-medium tabular-nums text-ink-muted">
                             <span>{priceRange[0]} €</span>
                             <span>{priceRange[1] >= priceMax ? `${priceMax}+ €` : `${priceRange[1]} €`}</span>
                         </div>
@@ -1389,14 +1386,14 @@ function MapStripOverlayChrome({
             />
             {isEmpty && (
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <p className={`text-[13px] font-medium leading-snug ${lightSurface ? 'text-[#444444]' : 'text-white/90'}`}>
+                    <p className={`text-meta font-medium leading-snug ${lightSurface ? 'text-ink' : 'text-white/90'}`}>
                         Prueba ampliando el radio de búsqueda.
                     </p>
                     {canExpandRadius && onExpandRadius ? (
                         <button
                             type="button"
                             onClick={onExpandRadius}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 font-display text-[12.5px] font-semibold text-white shadow-[0_2px_10px_rgba(0,102,204,0.35)] transition-colors hover:bg-brand-hover md:text-[13px]"
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 font-display text-caption font-semibold text-white shadow-[0_2px_10px_rgba(0,102,204,0.35)] transition-colors hover:bg-brand-hover md:text-meta"
                         >
                             <Search className="h-3.5 w-3.5" aria-hidden />
                             Ampliar a ~{nextRadiusKm} km
@@ -1485,7 +1482,7 @@ function MapDesktopPanelHeader({
     if (!hasLocation) {
         return (
             <header className={MAP_DESKTOP_PANEL_HEADER_CLASS}>
-                <p className="text-[13px] font-medium text-[#6a6a6a] font-display">
+                <p className="text-meta font-medium text-ink-muted font-display">
                     Selecciona una zona en el mapa para ver expertos con cobertura cerca de ti.
                 </p>
             </header>
@@ -1494,16 +1491,16 @@ function MapDesktopPanelHeader({
 
     return (
         <header className={MAP_DESKTOP_PANEL_HEADER_CLASS}>
-            <h2 className="font-display text-[17px] font-semibold leading-tight tracking-[-0.015em] text-[#222222]">
+            <h2 className="font-display text-title font-semibold leading-tight tracking-[-0.015em] text-ink">
                 {typeof expertCount === 'number'
                     ? `${expertCount} ${expertCount === 1 ? 'experto disponible' : 'expertos disponibles'}`
                     : 'Expertos disponibles'}
                 {locationLabel ? (
-                    <span className="font-normal text-[#717171]"> en {locationLabel}</span>
+                    <span className="font-normal text-ink-muted"> en {locationLabel}</span>
                 ) : null}
             </h2>
             {rangeKm ? (
-                <p className="mt-1 font-display text-[13px] font-normal leading-snug text-[#717171]">
+                <p className="mt-1 font-display text-meta font-normal leading-snug text-ink-muted">
                     En un radio de ~{rangeKm} km · toca un experto para verlo en el mapa
                 </p>
             ) : null}
@@ -1539,24 +1536,24 @@ function MapServiceCardInfo({
             <div className="flex items-baseline justify-between gap-2">
                 <h3 className={MAP_CARD_NAME_CLASS}>{expertName}</h3>
                 {averageRating > 0 ? (
-                    <span className="flex shrink-0 items-center gap-1 text-[13px] leading-5 text-[#222222]">
-                        <Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
+                    <span className="flex shrink-0 items-center gap-1 text-meta leading-5 text-ink">
+                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                         <span className="font-semibold tabular-nums">
                             {averageRating.toFixed(1).replace('.', ',')}
                         </span>
                         {totalReviews > 0 && (
-                            <span className="font-normal text-[#717171] tabular-nums">({totalReviews})</span>
+                            <span className="font-normal text-ink-muted tabular-nums">({totalReviews})</span>
                         )}
                     </span>
                 ) : (
-                    <span className="shrink-0 text-[12px] font-medium text-[#717171]">Nuevo</span>
+                    <span className="shrink-0 text-caption font-medium text-ink-muted">Nuevo</span>
                 )}
             </div>
             {metaLine && <p className={MAP_CARD_META_LINE_CLASS}>{metaLine}</p>}
             <div className="mt-2 flex items-baseline gap-1">
                 <span className={MAP_CARD_PRICE_CLASS}>{price}</span>
                 {priceWasConverted && priceSourceFormatted && (
-                    <span className="text-xs font-normal text-[#717171]">{priceSourceFormatted}</span>
+                    <span className="text-xs font-normal text-ink-muted">{priceSourceFormatted}</span>
                 )}
                 <span className={MAP_CARD_PRICE_SUFFIX_CLASS}>/ servicio</span>
             </div>
@@ -1580,6 +1577,8 @@ interface SearchParameterFormProps {
 export function SearchParameterForm({ onComplete, setCurrentStep, selectedCategory, initialKeywords, initialUserSearch, serviceTypeId, onMapReady, onServicesReady }: SearchParameterFormProps) {
     const { width } = useWindowSize();
     const navigate = useNavigate();
+    // Router state para prefill de ubicación al llegar desde una landing de ciudad.
+    const location = useLocation();
     const isMobileDevice = width > 0 ? width < 1024 : (typeof window !== 'undefined' && window.innerWidth < 1024);
     
     // Calcular tamaños basados en el ancho real de la pantalla
@@ -1617,9 +1616,31 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
     const [formData, setFormData] = useState(initialFormState);
     const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
    
-    // Inicializar coordenadas con el país por defecto al cargar
+    // Inicializar coordenadas al cargar. PRIORIDAD: ubicación traída desde una
+    // landing de ciudad (router state) → centra el mapa en esa provincia. Si no,
+    // cae al país por defecto (comportamiento previo).
     useEffect(() => {
-        if (selectedCountry && !formData.latitude && !formData.longitude) {
+        if (formData.latitude || formData.longitude) return;
+
+        const fromCity = parseHireSearchLocationFromRouteState(location.state);
+        if (fromCity?.latitude && fromCity?.longitude) {
+            const lat = parseFloat(fromCity.latitude);
+            const lng = parseFloat(fromCity.longitude);
+            if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: fromCity.latitude!,
+                    longitude: fromCity.longitude!,
+                    locationName: fromCity.locationName,
+                }));
+                setSelectedLocation({ lat, lng });
+                setSearchAddress(fromCity.locationName);
+                persistHireSearchLocation(fromCity);
+                return;
+            }
+        }
+
+        if (selectedCountry) {
             const countryCoords = getCountryCoordinates(selectedCountry);
             if (countryCoords) {
                 setFormData(prev => ({
@@ -1636,7 +1657,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 });
             }
         }
-    }, [selectedCountry]);
+    }, [selectedCountry, location.state]);
 
     // El mapa se inicializa automáticamente con MapContainer
    
@@ -2362,26 +2383,26 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                 z-index: 99999 !important;
                 border-radius: 8px !important;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-                border: 1px solid #e5e7eb !important;
+                border: 1px solid hsl(var(--line)) !important;
                 margin-top: 4px !important;
             }
             .pac-item {
                 padding: 12px 16px !important;
                 cursor: pointer !important;
-                border-bottom: 1px solid #f3f4f6 !important;
+                border-bottom: 1px solid hsl(var(--line-soft)) !important;
             }
             .pac-item:hover {
-                background-color: #f9fafb !important;
+                background-color: hsl(var(--surface-tinted)) !important;
             }
             .pac-item-selected {
-                background-color: #f3f4f6 !important;
+                background-color: hsl(var(--line-soft)) !important;
             }
             .pac-icon {
                 display: none !important;
             }
             .pac-item-query {
                 font-size: 14px !important;
-                color: #111827 !important;
+                color: hsl(var(--ink-strong)) !important;
                 font-weight: 500 !important;
             }
             .pac-matched {
@@ -2586,21 +2607,21 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
         onComplete(searchParameterData);
     };
     return (
-        <div className="fixed inset-0 z-[100] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#f6f7f8] lg:relative lg:inset-auto lg:z-auto lg:h-[100dvh] lg:max-h-[100dvh] lg:min-h-0">
+        <div className="fixed inset-0 z-[100] flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-surface-tinted lg:relative lg:inset-auto lg:z-auto lg:h-[100dvh] lg:max-h-[100dvh] lg:min-h-0">
             <HomepageDesktopTopBar variant="plain" showLogo />
 
             <div className="relative flex min-h-0 w-full flex-1 overflow-hidden">
                 {/* Desktop: mapa a TODO el ancho + barra inferior horizontal de cards (estilo Google Maps) */}
                 {!isMobileDevice && (
                     <div className="relative hidden min-h-0 w-full flex-1 flex-col lg:flex">
-                        <div className="relative min-h-0 w-full flex-1 overflow-hidden bg-[#dce9f2]">
+                        <div className="relative min-h-0 w-full flex-1 overflow-hidden bg-brand/[0.08]">
                             <button
                                 type="button"
                                 onClick={() => navigate('/')}
                                 className="absolute left-5 top-4 z-[15] inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md transition-[transform,background] duration-150 hover:bg-white active:scale-95 xl:left-6"
                                 aria-label="Volver"
                             >
-                                <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
+                                <ArrowLeft className="h-5 w-5 text-ink-strong" strokeWidth={2.1} />
                             </button>
                             {/* Barra de direcciones flotante junto a "Volver" (estilo Google Maps). */}
                             <div className="absolute left-[4.75rem] top-4 z-[16] w-[min(380px,calc(100%-7rem))] xl:left-[5.25rem]">
@@ -2735,7 +2756,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     className="h-11 w-11 shrink-0 inline-flex items-center justify-center rounded-full bg-white/95 backdrop-blur-md shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] hover:bg-white active:scale-95 transition-[transform,background] duration-150"
                                     aria-label="Volver"
                                 >
-                                    <ArrowLeft className="h-5 w-5 text-[#1c1c1c]" strokeWidth={2.1} />
+                                    <ArrowLeft className="h-5 w-5 text-ink-strong" strokeWidth={2.1} />
                                 </button>
                                 {/* Barra = BOTÓN que abre la búsqueda a pantalla completa.
                                     Muestra la dirección elegida o el placeholder. */}
@@ -2745,10 +2766,10 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     aria-label="Buscar dirección"
                                     className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/95 px-4 text-left shadow-[0_4px_14px_rgba(14,20,36,0.12),0_1px_3px_rgba(14,20,36,0.08)] ring-1 ring-black/[0.04] backdrop-blur-md transition-transform duration-150 active:scale-[0.99]"
                                 >
-                                    <Search className="h-[18px] w-[18px] shrink-0 text-[#0066cc]" strokeWidth={2.2} aria-hidden />
+                                    <Search className="h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={2.2} aria-hidden />
                                     <span
-                                        className={`min-w-0 flex-1 truncate font-display text-[14px] ${
-                                            searchAddress ? 'font-medium text-[#222222]' : 'font-medium text-[#5f5e5a]'
+                                        className={`min-w-0 flex-1 truncate font-display text-body ${
+                                            searchAddress ? 'font-medium text-ink' : 'font-medium text-ink-muted'
                                         }`}
                                     >
                                         {searchAddress || 'Buscar dirección'}
@@ -2768,7 +2789,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         type="button"
                                         onClick={() => setSearchOverlayOpen(false)}
                                         aria-label="Cerrar búsqueda"
-                                        className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors active:bg-black/[0.06]"
+                                        className="-ml-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-strong transition-colors active:bg-black/[0.06]"
                                     >
                                         <ArrowLeft className="h-5 w-5" strokeWidth={2.1} aria-hidden />
                                     </button>
@@ -2787,7 +2808,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                         proximity={selectedLocation}
                                     />
                                 </div>
-                                <p className={`${SD_MOBILE_GUTTER_CLASS} pt-1 text-[12.5px] text-[#8a8a8a]`}>
+                                <p className={`${SD_MOBILE_GUTTER_CLASS} pt-1 text-caption text-ink-muted`}>
                                     Escribe una dirección, ciudad o código postal.
                                 </p>
                             </div>
@@ -2795,7 +2816,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
 
                         {/* Map - ocupa todo el espacio restante */}
                                 {isMobileDevice && (
-                                <div className="relative flex-1 w-full overflow-visible bg-[#dce9f2]">
+                                <div className="relative flex-1 w-full overflow-visible bg-brand/[0.08]">
                                     <MapContainer
                                         categoryId={selectedCategory}
                                         serviceTypeId={serviceTypeId}
@@ -2839,7 +2860,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             era bg-white → cards blancas sobre panel blanco = sin separación, y la
                                             sombra (16%) la recortaba el overflow del carrusel → se veía una "barra
                                             blanca" plana bajo las tarjetas. El gris lo resuelve; el padding no podía. */}
-                                        <div className="bg-[#f6f7f8]">
+                                        <div className="bg-surface-tinted">
                                             <div className={`pointer-events-auto ${SD_MOBILE_GUTTER_CLASS} pt-1 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]`}>
                                                 <MapStripOverlayChrome
                                                     resultCount={displayedServices.length}
@@ -3009,7 +3030,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             {isFetchingNextPage && (
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                                                    <p className="font-display text-sm text-[#6a6a6a]">Cargando más opciones…</p>
+                                                    <p className="font-display text-sm text-ink-muted">Cargando más opciones…</p>
                                                 </div>
                                             )}
                                         </div>
@@ -3018,7 +3039,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     {/* ✅ Indicador de fin de lista */}
                                     {!hasNextPage && allServices.length > 0 && (
                                         <div className="py-8 text-center">
-                                            <p className="font-display text-sm text-[#6a6a6a]">
+                                            <p className="font-display text-sm text-ink-muted">
                                                 Has visto todas las opciones en esta zona
                                             </p>
                                         </div>
@@ -3035,8 +3056,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/10">
                                         <MapPin className="h-7 w-7 text-brand" />
                                     </div>
-                                    <p className="text-base font-semibold text-[#1c1c1c]">Sin opciones aquí</p>
-                                    <p className="max-w-[16rem] text-sm leading-relaxed text-[#6a6a6a]">
+                                    <p className="text-base font-semibold text-ink-strong">Sin opciones aquí</p>
+                                    <p className="max-w-[16rem] text-sm leading-relaxed text-ink-muted">
                                         Mueve el mapa o elige otra zona para ver más expertos.
                                     </p>
                                 </div>
@@ -3231,7 +3252,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             {isFetchingNextPage && (
                                                 <div className="flex flex-col items-center gap-2">
                                                     <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                                                    <p className="font-display text-sm text-[#6a6a6a]">Cargando más opciones…</p>
+                                                    <p className="font-display text-sm text-ink-muted">Cargando más opciones…</p>
                                                 </div>
                                             )}
                                         </div>
@@ -3239,7 +3260,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     
                                     {!hasNextPage && allServices.length > 0 && (
                                         <div className="py-8 text-center">
-                                            <p className="font-display text-sm text-[#6a6a6a]">
+                                            <p className="font-display text-sm text-ink-muted">
                                                 Has visto todas las opciones en esta zona
                                             </p>
                                         </div>

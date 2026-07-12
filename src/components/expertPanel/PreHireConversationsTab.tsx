@@ -140,7 +140,7 @@ export function PreHireConversationsTab({ token, userId }: PreHireConversationsT
     );
 
     const handleOpenChat = (conversationId: number, searchServiceId: number) => {
-        navigate(`/chat-pre-contratacion/${searchServiceId}?conversationId=${conversationId}`);
+        navigate(`/inquiry/${searchServiceId}?conversationId=${conversationId}`);
     };
 
     if (!token || !userId) {

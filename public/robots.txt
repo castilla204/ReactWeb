@@ -12,19 +12,25 @@ Allow: /
 
 # Auth / onboarding (no aporta SEO, gasta crawl budget)
 Disallow: /login
-Disallow: /complete-onboarding
-Disallow: /refresh-onboarding
+Disallow: /expert/stripe/
 Disallow: /mfa/
 
-# Área privada del usuario
+# Área privada del usuario (canónico + legacy durante transición)
+Disallow: /hires
+Disallow: /hires/
+Disallow: /searches/
 Disallow: /busquedas
 Disallow: /busquedas/
 Disallow: /searchhire/
 Disallow: /detalles/
+Disallow: /account/
 Disallow: /transacciones
+Disallow: /messages
 Disallow: /mis-mensajes
 Disallow: /notifications
+Disallow: /favorites
 Disallow: /favoritos
+Disallow: /inquiry/
 Disallow: /chat-pre-contratacion/
 
 # Flujo de pago y resultados de Stripe
@@ -33,6 +39,8 @@ Disallow: /success
 Disallow: /cancel
 
 # Enlaces de coordinación con token (privados, un solo uso)
+Disallow: /appointment/schedule/
+Disallow: /appointment/confirm/
 Disallow: /coordinar-cita/
 Disallow: /confirmar-cita/
 
@@ -40,7 +48,10 @@ Disallow: /confirmar-cita/
 Disallow: /status
 
 # Panel del experto y onboarding de experto
+Disallow: /expert
+Disallow: /expert/
 Disallow: /expert-panel
+Disallow: /become-expert
 
 # Back-office admin
 Disallow: /admin

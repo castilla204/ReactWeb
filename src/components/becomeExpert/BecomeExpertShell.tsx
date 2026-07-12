@@ -25,7 +25,7 @@ const FOCUS_RING =
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
 
 /** Una tarjeta por paso — mismo patrón que checkout. */
-export const BE_CARD_CLASS = 'overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-sm';
+export const BE_CARD_CLASS = 'overflow-hidden rounded-xl border border-line bg-white shadow-sm';
 
 export function BecomeExpertProgress({
     steps,
@@ -45,22 +45,22 @@ export function BecomeExpertProgress({
     return (
         <nav className="space-y-2" aria-label="Progreso del registro">
             <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-semibold text-[#1c1c1c]">
+                <p className="text-sm font-semibold text-ink-strong">
                     {phaseLabel ? (
                         phaseLabel
                     ) : (
                         <>
                             Paso {currentStep} de {steps.length}
-                            <span className="font-normal text-[#6a6a6a]"> · {currentLabel}</span>
+                            <span className="font-normal text-ink-muted"> · {currentLabel}</span>
                         </>
                     )}
                 </p>
                 {!phaseLabel && (
-                    <span className="text-xs tabular-nums text-[#6a6a6a]">{progress}%</span>
+                    <span className="text-xs tabular-nums text-ink-muted">{progress}%</span>
                 )}
             </div>
             <div
-                className="h-1 overflow-hidden rounded-full bg-[#e8e8e8]"
+                className="h-1 overflow-hidden rounded-full bg-line"
                 role="progressbar"
                 aria-valuenow={phaseLabel ? 100 : progress}
                 aria-valuemin={0}
@@ -92,13 +92,13 @@ export function BecomeExpertStepHeader({
     return (
         <header className={`hidden space-y-1.5 lg:block ${compact ? 'lg:space-y-1' : ''}`}>
             <h2
-                className={`font-display font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] ${
+                className={`font-display font-semibold leading-snug tracking-[-0.02em] text-ink-strong ${
                     compact ? 'text-lg' : 'text-base sm:text-lg'
                 }`}
             >
                 {title}
             </h2>
-            <p className="text-sm leading-relaxed text-[#6a6a6a]">{description}</p>
+            <p className="text-sm leading-relaxed text-ink-muted">{description}</p>
         </header>
     );
 }
@@ -143,7 +143,7 @@ export function BecomeExpertWizardShell({
     const footer = (
         <div className="flex flex-col gap-2">
             {footerHint && (
-                <p className="text-center text-xs leading-relaxed text-[#6a6a6a] lg:text-left" role="status">
+                <p className="text-center text-xs leading-relaxed text-ink-muted lg:text-left" role="status">
                     {footerHint}
                 </p>
             )}
@@ -155,8 +155,8 @@ export function BecomeExpertWizardShell({
                     aria-disabled={navBackDisabled}
                     className={`inline-flex h-11 min-w-[88px] items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors ${FOCUS_RING} ${
                         navBackDisabled
-                            ? 'pointer-events-none text-[#9ca3af] opacity-50'
-                            : 'text-[#6a6a6a] hover:bg-[#f5f5f5] hover:text-[#1c1c1c]'
+                            ? 'pointer-events-none text-ink-soft opacity-50'
+                            : 'text-ink-muted hover:bg-surface-tinted hover:text-ink-strong'
                     }`}
                 >
                     <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -200,9 +200,9 @@ export function BecomeExpertWizardShell({
         : SD_MOBILE_SCROLL_PAD_CLASS;
 
     return (
-        <div className="become-expert-wizard flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#fafafa] font-display text-[#1c1c1c] lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(420px,640px)] xl:grid-cols-[minmax(320px,1fr)_680px]">
+        <div className="become-expert-wizard flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-surface-tinted font-display text-ink-strong lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(420px,640px)] xl:grid-cols-[minmax(320px,1fr)_680px]">
             <aside
-                className="relative hidden min-h-0 flex-col justify-between overflow-y-auto border-r border-[#e8e8e8] lg:flex lg:p-10 xl:p-12"
+                className="relative hidden min-h-0 flex-col justify-between overflow-y-auto border-r border-line lg:flex lg:p-10 xl:p-12"
                 style={{ background: HP_PANEL_GRADIENT }}
             >
                 <div>
@@ -217,28 +217,28 @@ export function BecomeExpertWizardShell({
                     <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em] text-brand">
                         Programa de expertos
                     </p>
-                    <h1 className="mt-3 max-w-md font-display text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#1c1c1c] xl:text-[2rem]">
+                    <h1 className="mt-3 max-w-md font-display text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-ink-strong xl:text-[2rem]">
                         Publica tu perfil y recibe encargos
                     </h1>
-                    <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#6a6a6a]">
+                    <p className="mt-3 max-w-md text-lead leading-relaxed text-ink-muted">
                         Completa tu perfil, define tu zona de cobertura y conecta Stripe para cobrar con seguridad.
                     </p>
                     <ul className="mt-8 space-y-3">
                         {TRUST_ITEMS.map((item, i) => (
-                            <li key={item} className="flex gap-2 text-sm leading-relaxed text-[#444]">
-                                <span className="font-semibold tabular-nums text-[#1c1c1c]">{i + 1}.</span>
+                            <li key={item} className="flex gap-2 text-sm leading-relaxed text-ink">
+                                <span className="font-semibold tabular-nums text-ink-strong">{i + 1}.</span>
                                 <span>{item}</span>
                             </li>
                         ))}
                     </ul>
                 </div>
-                <p className="mt-8 shrink-0 text-xs leading-relaxed text-[#6a6a6a]">
+                <p className="mt-8 shrink-0 text-xs leading-relaxed text-ink-muted">
                     Pagos seguros con Stripe. Tus datos solo se usan para verificar tu perfil.
                 </p>
             </aside>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white lg:h-full">
-                <header className="sticky top-0 z-30 flex min-h-12 shrink-0 items-center gap-2 border-b border-[#e8e8e8] bg-white/95 px-4 pt-[max(0px,env(safe-area-inset-top,0px))] backdrop-blur-sm lg:hidden">
+                <header className="sticky top-0 z-30 flex min-h-12 shrink-0 items-center gap-2 border-b border-line bg-white/95 px-4 pt-[max(0px,env(safe-area-inset-top,0px))] backdrop-blur-sm lg:hidden">
                     <button
                         type="button"
                         onClick={onBack}
@@ -248,10 +248,10 @@ export function BecomeExpertWizardShell({
                         <ArrowLeft className="h-5 w-5" />
                     </button>
                     <div className="min-w-0 flex-1">
-                        <p className="text-[15px] font-semibold tracking-[-0.02em] text-[#1c1c1c]">
+                        <p className="text-lead font-semibold tracking-[-0.02em] text-ink-strong">
                             Registro de experto
                         </p>
-                        <p className="text-xs text-[#6a6a6a]">Encargos verificados en tu zona</p>
+                        <p className="text-xs text-ink-muted">Encargos verificados en tu zona</p>
                     </div>
                 </header>
 
@@ -292,10 +292,10 @@ export function BecomeExpertWizardShell({
 }
 
 export const BE_INPUT_CLASS =
-    'w-full rounded-lg border border-[#e8e8e8] bg-white px-3.5 py-3 text-[15px] leading-snug text-[#1c1c1c] placeholder:text-[#9ca3af] transition-[border-color,box-shadow] focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/25';
+    'w-full rounded-lg border border-line bg-white px-3.5 py-3 text-lead leading-snug text-ink-strong placeholder:text-ink-soft transition-[border-color,box-shadow] focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/25';
 
 export const BE_DAY_ACTIVE = 'bg-brand/[0.1] text-brand font-semibold';
-export const BE_DAY_IDLE = 'bg-[#f5f5f5] text-[#444] hover:bg-[#ebebeb]';
+export const BE_DAY_IDLE = 'bg-surface-tinted text-ink hover:bg-line/50';
 
 /**
  * Controles del alta rápida (país + CTA). Deliberadamente NO usan el CTA global
@@ -313,15 +313,15 @@ const BE_FAST_CONTROL_RADIUS = 'rounded-[10px]';
 // en index.css) en vez de en variantes `focus:` de Tailwind: es un requisito de
 // accesibilidad y así no depende de la generación de variantes.
 export const BE_FAST_SELECT_CLASS =
-    `be-fast-control h-12 w-full cursor-pointer appearance-none border border-slate-300 bg-white ${BE_FAST_CONTROL_RADIUS} text-[15px] font-medium text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)] transition-[border-color,box-shadow] hover:border-slate-400`;
+    `be-fast-control h-12 w-full cursor-pointer appearance-none border border-slate-300 bg-white ${BE_FAST_CONTROL_RADIUS} text-lead font-medium text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)] transition-[border-color,box-shadow] hover:border-slate-400`;
 
 export const BE_FAST_PRIMARY_BTN_CLASS =
-    `be-fast-cta inline-flex h-12 w-full items-center justify-center ${BE_FAST_CONTROL_RADIUS} bg-slate-900 text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors duration-150 hover:bg-slate-800 active:bg-slate-950 disabled:cursor-wait disabled:opacity-60`;
+    `be-fast-cta inline-flex h-12 w-full items-center justify-center ${BE_FAST_CONTROL_RADIUS} bg-slate-900 text-lead font-semibold tracking-[-0.01em] text-white transition-colors duration-150 hover:bg-slate-800 active:bg-slate-950 disabled:cursor-wait disabled:opacity-60`;
 
 const FAST_PATH_SUBLINE_NODE = (
     <>
         Recibe encargos de inspección en tu zona: coches, motos y viviendas.{' '}
-        <strong className="font-semibold text-[#1c1c1c]">Tú pones el precio</strong>, eliges tus horarios y cobras con cada uno.
+        <strong className="font-semibold text-ink-strong">Tú pones el precio</strong>, eliges tus horarios y cobras con cada uno.
     </>
 );
 
@@ -350,7 +350,7 @@ function FastPathHeadline({ className = '' }: { className?: string }) {
             Tus inspecciones,
             <span className="block text-brand">
                 tus{' '}
-                <span className="underline decoration-[#F59E0B] decoration-[3px] underline-offset-[6px] [text-decoration-skip-ink:none]">
+                <span className="underline decoration-amber-500 decoration-[3px] underline-offset-[6px] [text-decoration-skip-ink:none]">
                     ingresos
                 </span>
             </span>
@@ -364,7 +364,7 @@ function FastPathBack({ onBack, label }: { onBack: () => void; label: string }) 
         <button
             type="button"
             onClick={onBack}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-full border border-[#e2e5ea] bg-white/90 px-3.5 text-[13px] font-semibold text-[#1c1c1c] shadow-sm backdrop-blur-sm transition-colors hover:border-[#cbd0d8] hover:bg-white ${FOCUS_RING}`}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-white/90 px-3.5 text-meta font-semibold text-ink-strong shadow-sm backdrop-blur-sm transition-colors hover:border-line-soft hover:bg-white ${FOCUS_RING}`}
         >
             <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.2} />
             {label}
@@ -377,7 +377,7 @@ export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
     return (
         <div className="-mx-5 lg:hidden">
             {/* Foto banner brillante a sangre, con fundido inferior a blanco */}
-            <div className="relative aspect-[16/10] overflow-hidden bg-[#fafafa]">
+            <div className="relative aspect-[16/10] overflow-hidden bg-surface-tinted">
                 <div className="absolute inset-0">
                     <FastPathHeroPhoto objectClass="object-[60%_32%]" />
                 </div>
@@ -393,8 +393,8 @@ export function BecomeExpertFastPathIntro({ onBack }: { onBack: () => void }) {
             {/* Texto centrado en la parte superior */}
             <div className="px-5 pt-6 text-center">
                 <FastPathEyebrow />
-                <FastPathHeadline className="mt-2.5 font-display text-[1.75rem] font-extrabold leading-[1.04] tracking-[-0.03em] text-[#111827]" />
-                <p className="mx-auto mt-3 max-w-[20rem] text-[14px] leading-relaxed text-[#3a3a3a]">
+                <FastPathHeadline className="mt-2.5 font-display text-headline font-extrabold leading-[1.04] tracking-[-0.03em] text-ink-strong" />
+                <p className="mx-auto mt-3 max-w-[20rem] text-body leading-relaxed text-ink">
                     {FAST_PATH_SUBLINE_NODE}
                 </p>
             </div>
@@ -438,7 +438,7 @@ export function BecomeExpertFastPathShell({
         : 'pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:pb-12';
 
     return (
-        <div className="become-expert-wizard be-fast-shell relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-[#1c1c1c] lg:h-auto lg:max-h-none lg:min-h-screen lg:overflow-visible lg:bg-[#f2f5f9]">
+        <div className="become-expert-wizard be-fast-shell relative flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white font-display text-ink-strong lg:h-auto lg:max-h-none lg:min-h-screen lg:overflow-visible lg:bg-surface-tinted">
             {/* Botón volver — desktop, arriba a la izquierda de la página */}
             <div className="absolute left-6 top-6 z-20 hidden lg:block">
                 <FastPathBack onBack={onBack} label="Volver" />
@@ -477,10 +477,10 @@ export function BecomeExpertFastPathShell({
                                 <br />
                                 tus ingresos
                             </h2>
-                            <p className="mt-2.5 max-w-[22rem] text-[14px] leading-relaxed text-white/80">
+                            <p className="mt-2.5 max-w-[22rem] text-body leading-relaxed text-white/80">
                                 Recibe encargos de inspección en tu zona y cobra con cada trabajo. Tú pones el precio.
                             </p>
-                            <div className="mt-5 flex items-center gap-2 text-[12.5px] font-medium text-white/70">
+                            <div className="mt-5 flex items-center gap-2 text-caption font-medium text-white/70">
                                 <ShieldCheck className="h-4 w-4 shrink-0 text-white/60" strokeWidth={2.2} />
                                 Pagos seguros con Stripe · 500+ expertos
                             </div>

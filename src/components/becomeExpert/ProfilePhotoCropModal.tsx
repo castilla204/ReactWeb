@@ -3,6 +3,7 @@ import { Loader2, Minus, Plus } from 'lucide-react';
 import { ResponsiveModal } from '../ui/responsive-modal';
 import { Slider } from '../ui/slider';
 import { SD_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
+import { MAP_LITERAL } from '../../constants/designTokens';
 import { useWindowSize } from '../../hooks/useWindowSize';
 import {
     cropProfilePhotoToBlob,
@@ -43,13 +44,13 @@ function CropViewportChrome({ size }: { size: number }) {
                 </clipPath>
             </defs>
             <rect width={size} height={size} fill="rgba(0, 0, 0, 0.45)" mask={`url(#${maskId})`} />
-            <g clipPath={`url(#${clipId})`} stroke="#fff" strokeOpacity={0.55} strokeWidth={0.65}>
+            <g clipPath={`url(#${clipId})`} stroke={MAP_LITERAL.coastHalo} strokeOpacity={0.55} strokeWidth={0.65}>
                 <line x1={t} y1={0} x2={t} y2={size} />
                 <line x1={t * 2} y1={0} x2={t * 2} y2={size} />
                 <line x1={0} y1={t} x2={size} y2={t} />
                 <line x1={0} y1={t * 2} x2={size} y2={t * 2} />
             </g>
-            <circle cx={c} cy={c} r={r} fill="none" stroke="#fff" strokeWidth={1} strokeOpacity={0.85} />
+            <circle cx={c} cy={c} r={r} fill="none" stroke={MAP_LITERAL.coastHalo} strokeWidth={1} strokeOpacity={0.85} />
         </svg>
     );
 }
@@ -242,7 +243,7 @@ export function ProfilePhotoCropModal({
     const cropStage = (
         <div
             ref={stageRef}
-            className="relative shrink-0 touch-none select-none overflow-hidden rounded-full bg-[#e5e7eb] md:rounded-full"
+            className="relative shrink-0 touch-none select-none overflow-hidden rounded-full bg-line md:rounded-full"
             style={{ width: stageSize, height: stageSize }}
             aria-label="Arrastra para mover la foto"
             onPointerDown={handlePointerDown}
@@ -251,8 +252,8 @@ export function ProfilePhotoCropModal({
             onPointerCancel={handlePointerUp}
         >
             {loading && (
-                <div className="absolute inset-0 z-[1] flex items-center justify-center bg-[#e5e7eb]">
-                    <Loader2 className="h-7 w-7 animate-spin text-[#9ca3af]" />
+                <div className="absolute inset-0 z-[1] flex items-center justify-center bg-line">
+                    <Loader2 className="h-7 w-7 animate-spin text-ink-soft" />
                 </div>
             )}
             {image && !loading && (
@@ -275,15 +276,15 @@ export function ProfilePhotoCropModal({
     const zoomBlock = (
         <div className="w-full">
             <div className="mb-2 flex items-baseline justify-between text-sm">
-                <span className="font-medium text-[#1c1c1c]">Zoom</span>
-                <span className="tabular-nums text-[#6a6a6a]">{zoomPercent}%</span>
+                <span className="font-medium text-ink-strong">Zoom</span>
+                <span className="tabular-nums text-ink-muted">{zoomPercent}%</span>
             </div>
             <div className="flex items-center gap-2">
                 <button
                     type="button"
                     onClick={() => nudgeScale(-0.1)}
                     disabled={!image || loading || scale <= MIN_SCALE}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-[#f5f5f5] disabled:opacity-35"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-strong hover:bg-surface-tinted disabled:opacity-35"
                     aria-label="Alejar"
                 >
                     <Minus className="h-4 w-4" strokeWidth={2} />
@@ -295,13 +296,13 @@ export function ProfilePhotoCropModal({
                     value={[scale]}
                     onValueChange={handleScaleChange}
                     disabled={!image || loading}
-                    className="flex-1 [&_.bg-secondary]:bg-[#ebebeb] [&_.bg-primary]:bg-brand [&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
+                    className="flex-1 [&_.bg-secondary]:bg-line [&_.bg-primary]:bg-brand [&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                 />
                 <button
                     type="button"
                     onClick={() => nudgeScale(0.1)}
                     disabled={!image || loading || scale >= MAX_SCALE}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] hover:bg-[#f5f5f5] disabled:opacity-35"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-strong hover:bg-surface-tinted disabled:opacity-35"
                     aria-label="Acercar"
                 >
                     <Plus className="h-4 w-4" strokeWidth={2} />
@@ -315,7 +316,7 @@ export function ProfilePhotoCropModal({
             <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="order-2 inline-flex h-11 items-center justify-center text-sm font-medium text-[#6a6a6a] hover:text-[#1c1c1c] md:order-1 md:h-12 md:px-4"
+                className="order-2 inline-flex h-11 items-center justify-center text-sm font-medium text-ink-muted hover:text-ink-strong md:order-1 md:h-12 md:px-4"
             >
                 Cancelar
             </button>
@@ -348,7 +349,7 @@ export function ProfilePhotoCropModal({
             dialogStyle={{ maxHeight: 'none' }}
             hideDialogHeader
         >
-            <div className="flex flex-col bg-white font-display text-[#1c1c1c]">
+            <div className="flex flex-col bg-white font-display text-ink-strong">
                 <div className="md:flex md:min-h-0 md:items-stretch md:gap-6 md:px-5 md:pt-5 md:pb-5">
                     <div
                         className={`flex justify-center pt-5 pb-4 md:shrink-0 md:py-0 ${SD_MOBILE_GUTTER_CLASS} md:px-0`}
@@ -364,7 +365,7 @@ export function ProfilePhotoCropModal({
                     <div
                         className={`flex flex-1 flex-col md:min-w-[200px] md:justify-between md:py-0 ${SD_MOBILE_GUTTER_CLASS} pb-4 md:px-0 md:pb-0`}
                     >
-                        <p className="mb-4 text-sm leading-relaxed text-[#6a6a6a]">
+                        <p className="mb-4 text-sm leading-relaxed text-ink-muted">
                             Arrastra la imagen para moverla y ajusta el zoom.
                         </p>
                         {zoomBlock}
@@ -373,7 +374,7 @@ export function ProfilePhotoCropModal({
                 </div>
 
                 <footer
-                    className={`border-t border-[#ebebeb] pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden ${SD_MOBILE_GUTTER_CLASS} pt-3`}
+                    className={`border-t border-line pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden ${SD_MOBILE_GUTTER_CLASS} pt-3`}
                 >
                     {actionsBlock}
                 </footer>

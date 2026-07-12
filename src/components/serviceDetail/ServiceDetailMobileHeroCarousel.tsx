@@ -61,13 +61,13 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
   if (images.length === 0) {
     return (
       <div
-        className={`sd-gallery-hero-empty w-full bg-[#f5f5f5] ${
+        className={`sd-gallery-hero-empty w-full bg-surface-tinted ${
           isSplit ? 'h-full' : 'aspect-[4/3]'
         }`}
       >
         <div className={`flex h-full flex-col items-center justify-center text-center ${SD_MOBILE_GUTTER_CLASS}`}>
-          <Image className="mb-2 h-10 w-10 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
-          <p className="text-sm font-medium text-[#484848]">Sin imágenes disponibles</p>
+          <Image className="mb-2 h-10 w-10 text-ink-soft" strokeWidth={1.5} aria-hidden />
+          <p className="text-sm font-medium text-ink-muted">Sin imágenes disponibles</p>
         </div>
       </div>
     );
@@ -78,7 +78,7 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
 
   return (
     <div
-      className={`sd-gallery-hero group/hero relative overflow-hidden bg-[#1c1c1c] ${
+      className={`sd-gallery-hero group/hero relative overflow-hidden bg-ink-strong ${
         isSplit ? 'h-full w-full' : 'w-full'
       }`}
     >
@@ -94,7 +94,7 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
           <button
             type="button"
             key={`${img}-${idx}`}
-            className={`sd-gallery-hero-slide relative shrink-0 snap-start snap-always overflow-hidden border-0 bg-[#1c1c1c] p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97] ${
+            className={`sd-gallery-hero-slide relative shrink-0 snap-start snap-always overflow-hidden border-0 bg-ink-strong p-0 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97] ${
               isSplit ? 'h-full w-full' : 'aspect-[4/3] w-full'
             }`}
             onClick={() => onOpenImage(idx)}
@@ -118,10 +118,10 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
               draggable={false}
             />
             {failedImages.has(img) ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#f0f0f0]">
+              <div className="absolute inset-0 flex items-center justify-center bg-line-soft">
                 <div className="px-4 text-center">
-                  <Image className="mx-auto mb-2 h-10 w-10 text-[#b0b0b0]" strokeWidth={1.5} aria-hidden />
-                  <p className="text-xs text-[#717171]">Imagen no disponible</p>
+                  <Image className="mx-auto mb-2 h-10 w-10 text-ink-soft" strokeWidth={1.5} aria-hidden />
+                  <p className="text-xs text-ink-muted">Imagen no disponible</p>
                 </div>
               </div>
             ) : null}
@@ -157,7 +157,7 @@ export const ServiceDetailMobileHeroCarousel: React.FC<ServiceDetailMobileHeroCa
               className="pointer-events-none absolute bottom-2.5 left-1/2 z-20 -translate-x-1/2"
               aria-live="polite"
             >
-              <span className="inline-flex rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium tabular-nums tracking-wide text-white/95 backdrop-blur-[3px]">
+              <span className="inline-flex rounded-full bg-black/40 px-2 py-0.5 text-badge font-medium tabular-nums tracking-wide text-white/95 backdrop-blur-[3px]">
                 {activeIndex + 1} / {images.length}
               </span>
             </div>

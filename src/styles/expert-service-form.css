@@ -215,10 +215,18 @@
 }
 
 .sf-progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 2px;
   background: hsl(var(--brand));
-  transition: width 0.25s ease;
+  transform-origin: left center;
+  transition: transform 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-progress-fill {
+    transition: none;
+  }
 }
 
 .sf-progress-status {

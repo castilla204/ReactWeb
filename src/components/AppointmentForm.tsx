@@ -5,7 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fromZonedTime } from 'date-fns-tz';
 import { ProposeAppointmentDto } from '../types/appointment';
-import AppointmentMap from './AppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from './map/LazyAppointmentMap';
 import {
     Drawer,
     DrawerContent,
@@ -440,7 +440,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               minDate={new Date()}
                               disabled={isLoading}
                               autoComplete="off"
-                              className="w-full h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
+                              className="w-full h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
                               wrapperClassName="w-full"
                             />
                           </FormControl>
@@ -519,7 +519,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                   </div>
                   
                   {/* ✅ INTERNACIONALIZACIÓN: Info de zona horaria y país (el backend lo maneja automáticamente) */}
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 p-2 bg-green-50/50 rounded-md border border-green-100">
+                  <div className="flex items-center gap-2 text-xs text-green-800 mt-3 p-2 bg-green-50/50 rounded-md border border-green-100">
                     <Globe className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                     <div className="flex items-center gap-2 flex-wrap">
                       {expertCountry && (
@@ -674,7 +674,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                               }}
                       placeholder="Entrada por el garaje, timbre roto, código de acceso..."
                               rows={4}
-                              className="flex w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm resize-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
+                              className="flex w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm resize-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50"
                       disabled={isLoading}
                               autoComplete="off"
                             />
@@ -773,7 +773,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                         Este experto trabaja solo en su punto fijo, así que la ubicación ya está
                         fijada en el mapa y no es necesario elegirla. Te desplazarás tú a su taller.
                         {(expertWorkLocationDoor || expertWorkLocationFloor || expertWorkLocationDetails) && (
-                          <div className="mt-2 space-y-0.5 text-[13px]">
+                          <div className="mt-2 space-y-0.5 text-meta">
                             {expertWorkLocationDoor && (
                               <div><span className="font-medium">Puerta/garaje:</span> {expertWorkLocationDoor}</div>
                             )}

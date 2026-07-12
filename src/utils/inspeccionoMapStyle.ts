@@ -1,4 +1,5 @@
 import type maplibregl from 'maplibre-gl';
+import { MAP_LITERAL } from '../constants/designTokens';
 import {
   getCartoVoyagerNoLabelsTiles,
   getCartoVoyagerTiles,
@@ -6,11 +7,11 @@ import {
 
 /** Paleta compartida — tierra cálida, agua suave, costas en azul marca (ExpertsAreaMap). */
 export const INSPECCIONO_MAP_THEME = {
-  sky: '#dce9f2',
-  land: '#ebe8e3',
-  coastLine: '#0066CC',
-  coastHalo: '#ffffff',
-  border: '#d1c4c6',
+  sky: MAP_LITERAL.sky,
+  land: MAP_LITERAL.land,
+  coastLine: MAP_LITERAL.brand,
+  coastHalo: MAP_LITERAL.coastHalo,
+  border: MAP_LITERAL.border,
 } as const;
 
 /**
@@ -23,15 +24,15 @@ export const INSPECCIONO_MAP_THEME = {
  *  · mask       → atenuación de la zona NO elegible (flujos donde se elige punto).
  */
 export const MAP_CANON = {
-  ink: '#171717',
-  inkBorder: '#ffffff',
+  ink: MAP_LITERAL.inkStrong,
+  inkBorder: MAP_LITERAL.coastHalo,
   ring: 'rgba(23, 23, 23, 0.42)',
   ringStrong: 'rgba(23, 23, 23, 0.55)',
   ringDash: [3, 3] as [number, number],
   ringWidth: 2,
-  ringFill: '#171717',
+  ringFill: MAP_LITERAL.inkStrong,
   ringFillOpacity: 0.05,
-  maskFill: '#171717',
+  maskFill: MAP_LITERAL.inkStrong,
   maskFillOpacity: 0.06,
 } as const;
 

@@ -187,7 +187,7 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
     if (isLoading) {
         return (
             <div className="flex h-full min-h-[24rem] items-center justify-center">
-                <MessageCircle className="h-6 w-6 animate-pulse text-[#d4d4d4]" aria-hidden />
+                <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
             </div>
         );
     }
@@ -195,11 +195,11 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
     if (error) {
         return (
             <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 p-6 text-center">
-                <p className="text-[14px] text-[#DC2626]">No pudimos cargar tus conversaciones.</p>
+                <p className="text-body text-destructive">No pudimos cargar tus conversaciones.</p>
                 <button
                     type="button"
                     onClick={() => refetch()}
-                    className="rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover"
+                    className="rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white transition-colors hover:bg-brand-hover"
                 >
                     Reintentar
                 </button>
@@ -210,11 +210,11 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
     if (sorted.length === 0) {
         return (
             <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-2 p-6 text-center">
-                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f5]">
-                    <MessageCircle className="h-6 w-6 text-[#737373]" strokeWidth={1.5} aria-hidden />
+                <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-surface-tinted">
+                    <MessageCircle className="h-6 w-6 text-ink-muted" strokeWidth={1.5} aria-hidden />
                 </div>
-                <h2 className="text-[16px] font-semibold text-[#1c1c1c]">Aún no tienes conversaciones</h2>
-                <p className="max-w-sm text-[13px] leading-snug text-[#6a6a6a]">
+                <h2 className="text-subtitle font-semibold text-ink-strong">Aún no tienes conversaciones</h2>
+                <p className="max-w-sm text-meta leading-snug text-ink-muted">
                     Cuando un cliente te escriba o contrate, los mensajes aparecerán aquí.
                 </p>
             </div>
@@ -225,11 +225,11 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
         <div className="expert-messages-inbox grid h-full min-h-0 flex-1 grid-cols-1 overflow-hidden bg-white md:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
             {/* ----- Lista ----- */}
             {showListColumn && (
-                <section className="flex min-h-0 min-w-0 flex-col md:bg-[#fafafa]">
-                    <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-3 pb-3 pt-3 md:px-3.5 md:pt-3">
+                <section className="flex min-h-0 min-w-0 flex-col md:bg-surface-tinted">
+                    <div className="shrink-0 space-y-3 border-b border-line-soft bg-white px-3 pb-3 pt-3 md:px-3.5 md:pt-3">
                         <div className="relative flex w-full items-center">
                             <SearchIcon
-                                className="pointer-events-none absolute left-3.5 h-4 w-4 text-[#737373]"
+                                className="pointer-events-none absolute left-3.5 h-4 w-4 text-ink-muted"
                                 strokeWidth={2}
                                 aria-hidden
                             />
@@ -238,14 +238,14 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 placeholder="Buscar conversaciones…"
-                                className="h-10 w-full rounded-full border border-[#e8e8e8] bg-white pl-10 pr-9 text-[14px] text-[#1c1c1c] placeholder:text-[#737373] transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
+                                className="h-10 w-full rounded-full border border-line bg-white pl-10 pr-9 text-body text-ink-strong placeholder:text-ink-muted transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
                             />
                             {searchInput && (
                                 <button
                                     type="button"
                                     onClick={() => setSearchInput('')}
                                     aria-label="Borrar búsqueda"
-                                    className="absolute right-1 flex h-8 w-8 items-center justify-center rounded-full text-[#737373] hover:bg-[#fafafa] hover:text-[#1c1c1c]"
+                                    className="absolute right-1 flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-tinted hover:text-ink-strong"
                                 >
                                     <X className="h-4 w-4" strokeWidth={2} />
                                 </button>
@@ -263,11 +263,11 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
                                         aria-checked={active}
                                         onClick={() => setFilter(tab)}
                                         className={[
-                                            'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition-colors',
+                                            'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-caption font-medium transition-colors',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                                             active
                                                 ? 'border-brand bg-brand text-white'
-                                                : 'border-[#e8e8e8] bg-white text-[#1c1c1c] hover:bg-[#fafafa]',
+                                                : 'border-line bg-white text-ink-strong hover:bg-surface-tinted',
                                         ].join(' ')}
                                     >
                                         {FILTER_LABELS[tab]}
@@ -275,7 +275,7 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
                                             <span
                                                 className={[
                                                     'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold leading-none tabular-nums',
-                                                    active ? 'bg-white/25 text-white' : 'bg-[#e9e9e9] text-[#5a5a5a]',
+                                                    active ? 'bg-white/25 text-white' : 'bg-line text-ink-muted',
                                                 ].join(' ')}
                                                 aria-hidden
                                             >
@@ -290,7 +290,7 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
 
                     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                         {visible.length === 0 ? (
-                            <div className="p-6 text-center text-[13px] text-[#6a6a6a]">
+                            <div className="p-6 text-center text-meta text-ink-muted">
                                 Sin conversaciones con ese filtro.
                             </div>
                         ) : (
@@ -330,15 +330,15 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
                         onReload={() => void refetch()}
                     />
                 ) : (
-                    <section className="hidden items-center justify-center bg-[#fbfbfb] px-8 md:flex">
+                    <section className="hidden items-center justify-center bg-surface-tinted px-8 md:flex">
                         <div className="max-w-xs text-center">
                             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand/[0.08]">
                                 <MessageCircle className="h-7 w-7 text-brand" strokeWidth={1.5} aria-hidden />
                             </div>
-                            <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                            <h2 className="text-subtitle font-semibold text-ink-strong">
                                 Selecciona una conversación
                             </h2>
-                            <p className="mx-auto mt-1.5 text-[13px] leading-relaxed text-[#737373]">
+                            <p className="mx-auto mt-1.5 text-meta leading-relaxed text-ink-muted">
                                 Elige una conversación de la lista para ver los mensajes con tu cliente.
                             </p>
                         </div>
@@ -398,21 +398,21 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
             aria-current={isActive ? 'true' : undefined}
             className={[
                 'group relative flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-150 md:px-3.5',
-                isActive ? 'bg-brand/[0.06] hover:bg-brand/[0.06]' : 'hover:bg-[#f6f6f6] active:bg-[#efefef]',
+                isActive ? 'bg-brand/[0.06] hover:bg-brand/[0.06]' : 'hover:bg-surface-tinted active:bg-line-soft',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand',
             ].join(' ')}
         >
             <div className="relative shrink-0">
-                <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-[#f0f0f0]">
+                <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-line-soft">
                     <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[18px] font-semibold text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-title font-semibold text-white">
                         {(client || title || '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
                 <span
                     className={[
                         'absolute -bottom-0.5 -right-0.5 flex h-[19px] w-[19px] items-center justify-center rounded-full ring-2 ring-white',
-                        isPreHire ? 'bg-[#eef4fb] text-brand' : 'bg-[#0F6A3E] text-white',
+                        isPreHire ? 'bg-brand/10 text-brand' : 'bg-success text-white',
                     ].join(' ')}
                     aria-hidden
                 >
@@ -430,7 +430,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
                 <div className="flex items-baseline justify-between gap-2">
                     <h3
                         className={[
-                            'line-clamp-1 min-w-0 text-[15px] leading-tight tracking-[-0.01em] text-[#1c1c1c]',
+                            'line-clamp-1 min-w-0 text-lead leading-tight tracking-[-0.01em] text-ink-strong',
                             isUnread ? 'font-bold' : 'font-semibold',
                         ].join(' ')}
                     >
@@ -439,8 +439,8 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
                     {stamp && (
                         <time
                             className={[
-                                'shrink-0 text-[12px] leading-none tabular-nums',
-                                isUnread ? 'font-semibold text-brand' : 'font-medium text-[#8a8a8a]',
+                                'shrink-0 text-caption leading-none tabular-nums',
+                                isUnread ? 'font-semibold text-brand' : 'font-medium text-ink-muted',
                             ].join(' ')}
                             aria-hidden
                         >
@@ -451,26 +451,26 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
                 <div className="flex items-center gap-2">
                     <p
                         className={[
-                            'flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px] leading-snug',
-                            isUnread ? 'font-medium text-[#3a3a3a]' : 'text-[#737373]',
+                            'flex min-w-0 flex-1 items-center gap-1.5 text-meta leading-snug',
+                            isUnread ? 'font-medium text-ink' : 'text-ink-muted',
                         ].join(' ')}
                     >
                         {chip && <StatusChip label={chip.label} tone={chip.tone} icon={chip.icon} />}
                         <span className="truncate">
-                            {isOwnLastMessage && <span className="text-[#a0a0a0]">Tú: </span>}
+                            {isOwnLastMessage && <span className="text-ink-soft">Tú: </span>}
                             {snippet}
                         </span>
                     </p>
                     {isUnread ? (
                         <span
-                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold leading-none text-white"
+                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-kicker font-bold leading-none text-white"
                             aria-label={`${unread} mensajes sin leer`}
                         >
                             {unread > 99 ? '99+' : unread}
                         </span>
                     ) : (
                         amount && (
-                            <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#9a9a9a]">
+                            <span className="shrink-0 text-caption font-semibold tabular-nums text-ink-soft">
                                 {amount}
                             </span>
                         )
@@ -480,7 +480,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
 
             {!isLast && (
                 <span
-                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f0f0f0]"
+                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-line-soft"
                     aria-hidden
                 />
             )}
@@ -531,32 +531,32 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
 
     return (
         <section className="flex min-h-0 min-w-0 flex-col bg-white">
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
-                <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+            <div className="flex shrink-0 items-center gap-3 border-b border-line-soft px-3 py-2.5 md:px-3.5">
+                <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-line-soft">
                     <AvatarImage
                         src={conversation.clientProfilePictureUrl || undefined}
                         alt=""
                         className="h-full w-full object-cover"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[15px] font-semibold text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-lead font-semibold text-white">
                         {client.charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1 leading-tight">
                     <div className="flex items-center gap-2">
-                        <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                        <p className="truncate text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                             {client}
                         </p>
                         <StatusChip label={chip.label} tone={chip.tone} icon={chip.icon} />
                     </div>
-                    <p className="mt-0.5 truncate text-[12px] text-[#737373]">{subtitle}</p>
+                    <p className="mt-0.5 truncate text-caption text-ink-muted">{subtitle}</p>
                 </div>
                 {canFillInspection && (
                     <button
                         type="button"
-                        onClick={() => navigate(`/expert-panel/inspeccion/${conversation.searchHireId}`)}
+                        onClick={() => navigate(`/expert/inspection/${conversation.searchHireId}`)}
                         aria-label="Rellenar inspección"
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand px-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:px-3.5"
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand px-2.5 text-meta font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:px-3.5"
                     >
                         <ClipboardList className="h-4 w-4" strokeWidth={2} aria-hidden />
                         <span className="hidden sm:inline">Rellenar inspección</span>
@@ -566,7 +566,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                     type="button"
                     onClick={onClose}
                     aria-label="Cerrar conversación"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
                     <X className="h-[18px] w-[18px]" strokeWidth={2} />
                 </button>
@@ -575,7 +575,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                 <Suspense
                     fallback={
                         <div className="flex h-full items-center justify-center bg-white">
-                            <MessageCircle className="h-6 w-6 animate-pulse text-[#d4d4d4]" aria-hidden />
+                            <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
                         </div>
                     }
                 >

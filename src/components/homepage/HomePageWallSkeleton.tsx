@@ -1,77 +1,73 @@
 import React from 'react';
-import { SileoSkeleton } from '../ui/sileo-skeleton';
-import { HP_WALL_CARD_WIDTH_CLASS } from '../../constants/homepageTypography';
+import { HP_LOADING_DIMS, HP_LOADING_LAYOUT } from './homeLoadingLayout';
 
-/**
- * Una fila del muro: cabecera de sección (título + flechas) + carril horizontal
- * de tarjetas. La geometría de cada tarjeta replica EXACTAMENTE la real
- * (HomepageWall.ServiceCard): mismo ancho responsive, imagen aspect-square en
- * móvil / 4·3 en desktop y 3 líneas de texto (título · meta · meta). Así el
- * contenido entra sin salto (CLS ≈ 0).
- */
-const WallSkeletonRow: React.FC = () => (
-  <div>
-    {/* Cabecera: título + flechas de navegación (solo desktop, como la real) */}
-    <div className="mb-2 md:mb-3 flex items-center justify-between gap-3">
-      <SileoSkeleton className="h-7 w-44 max-w-[60%] rounded-lg" />
-      <div className="hidden md:flex shrink-0 items-center gap-2">
-        <SileoSkeleton className="h-9 w-9" rounded="full" />
-        <SileoSkeleton className="h-9 w-9" rounded="full" />
-      </div>
+const LoadingCard: React.FC = () => (
+  <div className={`shrink-0 ${HP_LOADING_LAYOUT.cardWidth}`}>
+    <div className="relative mb-1 w-full">
+      <div
+        className="aspect-square md:aspect-[4/3] w-full rounded-[20px] bg-surface-tinted md:rounded-xl motion-safe:animate-pulse"
+        aria-hidden
+      />
+      <div
+        className="absolute z-[1] h-7 w-7 md:h-8 md:w-8 rounded-full border-2 border-white bg-line left-3 bottom-2 md:bottom-3"
+        aria-hidden
+      />
     </div>
+    <div className="space-y-1" style={{ marginTop: 0 }} aria-hidden>
+      <div
+        className="rounded-sm bg-line-soft"
+        style={{ height: HP_LOADING_DIMS.cardTitleH, marginBottom: 0 }}
+      />
+      <div
+        className="rounded-sm bg-surface-tinted w-[88%]"
+        style={{ height: HP_LOADING_DIMS.cardMetaH, marginTop: 0 }}
+      />
+      <div
+        className="rounded-sm bg-surface-tinted w-[74%]"
+        style={{ height: HP_LOADING_DIMS.cardMetaH, marginTop: 0 }}
+      />
+    </div>
+  </div>
+);
 
-    {/* Carril horizontal — overflow oculto: la última tarjeta "asoma" igual que
-        en el muro real. 6 tarjetas cubren tanto móvil (asoman ~2,5) como desktop. */}
-    <div className="flex gap-4 min-[428px]:gap-[18px] md:gap-3 overflow-hidden -mx-4 px-4 md:mx-0 md:px-0">
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        // Onda diagonal: cada tarjeta arranca el barrido 90ms después que la
-        // anterior → el ojo lee un avance izq→dcha en lugar de un destello único.
-        const delay = i * 90;
-        return (
-          <div key={i} className={`shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}>
-            <SileoSkeleton shimmerDelayMs={delay} className="aspect-square md:aspect-[4/3] w-full rounded-[20px] md:rounded-xl mb-1.5 md:mb-1" />
-            <SileoSkeleton shimmerDelayMs={delay} className="h-3.5 w-full rounded mb-1" />
-            <SileoSkeleton shimmerDelayMs={delay} className="h-3 w-[85%] rounded mb-1" />
-            <SileoSkeleton shimmerDelayMs={delay} className="h-3 w-3/5 rounded" />
-          </div>
-        );
-      })}
+const LoadingSection: React.FC<{ cardCount?: number }> = ({ cardCount = 6 }) => (
+  <div className={HP_LOADING_LAYOUT.sectionBleed}>
+    <div className={HP_LOADING_LAYOUT.sectionHeader}>
+      <div
+        className="max-w-[58%] rounded-md bg-line"
+        style={{ height: HP_LOADING_DIMS.sectionTitleH }}
+        aria-hidden
+      />
+      <div
+        className="mt-0.5 max-w-[52%] rounded-sm bg-line-soft"
+        style={{ height: HP_LOADING_DIMS.sectionSubtitleH }}
+        aria-hidden
+      />
+    </div>
+    <div className={HP_LOADING_LAYOUT.cardsRow}>
+      {Array.from({ length: cardCount }).map((_, i) => (
+        <LoadingCard key={i} />
+      ))}
     </div>
   </div>
 );
 
 /**
- * Contenido del skeleton del muro SIN contenedor de ancho. Refleja el layout
- * real: 2 secciones apiladas. Se usa dentro de HomepageWall (estados
- * loading/error/vacío), donde el contenedor `max-w-[1280px]` ya lo aporta el
- * caller. Los márgenes verticales (pt/mt) imitan los de `buildRenderedSections`.
+ * Muro — misma caja que HomepageWall (2 secciones, cards 148px, header 1.125rem + subtitle).
  */
-export const WallSkeletonContent: React.FC = () => (
-  <>
-    <div className="pt-1 min-[428px]:pt-2 md:pt-2">
-      <WallSkeletonRow />
-    </div>
-    <div className="mt-5 md:mt-8">
-      <WallSkeletonRow />
-    </div>
-  </>
-);
-
-/**
- * Skeleton del muro CON contenedor de ancho. Fallback del <Suspense> de
- * HomePage mientras baja el chunk de HomepageWall. Comparte exactamente la
- * misma estructura que el estado de carga interno → el cambio de un skeleton al
- * otro es imperceptible (sin parpadeo ni reflow).
- */
-export const HomePageWallSkeleton: React.FC = () => (
-  <div
-    className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-3"
-    role="status"
-    aria-busy="true"
-  >
-    {/* Los bloques del skeleton son aria-hidden → sin este anuncio el lector de
-        pantalla se quedaba mudo (regresión vs. el spinner que sí decía "Cargando"). */}
+export const HomeServicesLoading: React.FC = () => (
+  <div className={HP_LOADING_LAYOUT.wallOuter} role="status" aria-busy="true">
     <span className="sr-only">Cargando servicios…</span>
-    <WallSkeletonContent />
+    <div className={HP_LOADING_LAYOUT.sectionFirst}>
+      <LoadingSection cardCount={6} />
+    </div>
+    <div className={HP_LOADING_LAYOUT.sectionNext}>
+      <LoadingSection cardCount={6} />
+    </div>
   </div>
 );
+
+/** @deprecated alias */
+export const WallSkeletonContent = HomeServicesLoading;
+
+export const HomePageWallSkeleton = HomeServicesLoading;

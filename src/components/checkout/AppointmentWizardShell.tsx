@@ -51,7 +51,7 @@ export interface AppointmentWizardShellProps {
 // (coordinación del vendedor / confirmación del experto) no hay pago, así que el primario
 // va oscuro, coherente con la jerarquía negro-avanza del checkout.
 const DESKTOP_PRIMARY_BTN =
-    'inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#171717] px-7 text-[14px] font-semibold text-white transition-colors hover:bg-[#2a2d33] disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink disabled:cursor-not-allowed disabled:opacity-50';
 
 export function AppointmentWizardShell({
     steps,
@@ -87,7 +87,7 @@ export function AppointmentWizardShell({
                     <div className={cn('flex flex-col', desktopTallRight && SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS)}>
                         <div className={cn('flex flex-1 items-stretch gap-5 overflow-hidden xl:gap-6', desktopTallRight && 'min-h-0')}>
                             <div className={cn(
-                                'flex min-w-0 flex-[0_0_45%] flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]',
+                                'flex min-w-0 flex-[0_0_45%] flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]',
                                 desktopTallRight ? 'h-full min-h-0' : 'min-h-0 self-stretch',
                             )}>
                                 <div className={cn('px-6 pb-5 pt-5 xl:px-7', desktopTallRight ? 'flex min-h-0 flex-1 flex-col overflow-y-auto' : 'flex min-h-0 flex-col justify-start')}>
@@ -95,7 +95,7 @@ export function AppointmentWizardShell({
                                 </div>
                             </div>
                             <aside className={cn(
-                                'relative flex min-w-0 flex-1 flex-col rounded-2xl border border-[#ebebeb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+                                'relative flex min-w-0 flex-1 flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
                                 desktopTallRight ? 'h-full min-h-0' : 'min-h-0 items-stretch self-start',
                             )}>
                                 {desktopTallRight ? desktopRight : (
@@ -139,7 +139,7 @@ export function AppointmentWizardShell({
                             type="button"
                             onClick={onPrimary}
                             disabled={primaryDisabled}
-                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-[#171717] text-[15px] font-semibold text-white transition-colors hover:bg-[#2a2d33] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-ink-strong text-lead font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
                         >
                             {primaryLabel}
                             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />

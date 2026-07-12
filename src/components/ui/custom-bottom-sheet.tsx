@@ -310,7 +310,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
             <div
               className={cn(
                 "relative shrink-0 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.07)]",
-                !headerLoading && "border-b border-[#cfcfcf]",
+                !headerLoading && "border-b border-line",
               )}
             >
               {headerContent}
@@ -321,9 +321,9 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
                   aria-live="polite"
                   aria-label="Buscando expertos"
                 >
-                  <div className="absolute inset-0 bg-[#d4d4d4]" aria-hidden />
+                  <div className="absolute inset-0 bg-line" aria-hidden />
                   <div
-                    className="map-sheet-header-load-bar absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-brand via-[#3d9ae8] to-[#F59E0B]"
+                    className="map-sheet-header-load-bar absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-brand via-brand/70 to-warning"
                     aria-hidden
                   />
                 </div>
@@ -336,7 +336,7 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
                   type="button"
                   data-no-drag
                   onClick={handleDismiss}
-                  className="absolute right-1.5 top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[#888] active:bg-[#f4f4f4] transition-colors"
+                  className="absolute right-1.5 top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-ink-muted active:bg-line-soft transition-colors"
                   aria-label="Minimizar lista"
                 >
                   <X className="h-4 w-4" strokeWidth={2.2} />
@@ -344,13 +344,13 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
               )}
             </div>
           ) : title ? (
-            <div className="flex shrink-0 items-center justify-between border-b border-[#e8e8e8] px-4 py-2">
-              <h2 className="font-display text-base font-semibold text-[#1c1c1c]">{title}</h2>
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2">
+              <h2 className="font-display text-base font-semibold text-ink-strong">{title}</h2>
               <button
                 type="button"
                 data-no-drag
                 onClick={handleDismiss}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#666] hover:bg-[#f5f5f5]"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-tinted"
                 aria-label="Minimizar"
               >
                 <X className="h-5 w-5" />
@@ -358,13 +358,13 @@ export const CustomBottomSheet: React.FC<CustomBottomSheetProps> = ({
             </div>
           ) : (
             <div className="flex shrink-0 justify-center py-2" aria-hidden>
-              <div className="h-1 w-10 rounded-full bg-[#d8d8d8]" />
+              <div className="h-1 w-10 rounded-full bg-line" />
             </div>
           )}
 
           <div
             ref={scrollRef}
-            className={`map-panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#fafafa] font-display text-[#1c1c1c]`}
+            className={`map-panel-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-tinted font-display text-ink-strong`}
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             {children}

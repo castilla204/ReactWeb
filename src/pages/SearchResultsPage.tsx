@@ -1,10 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
-import SearchDetails from '../components/SearchDetails';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NotFoundPage } from './NotFoundPage';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
 import { isAdmin as isAdminUser } from '../utils/admin';
+import { SileoSkeleton } from '../components/ui/sileo-skeleton';
+
+const SearchDetails = lazy(() => import('../components/SearchDetails'));
 
 export function SearchResultsPage() {
     const { id } = useParams<{ id: string }>();
@@ -18,10 +21,18 @@ export function SearchResultsPage() {
     }
 
     return (
-        <SearchDetails
-            searchId={searchId}
-            onBack={() => navigate('/busquedas')}
-            isAdmin={isAdmin}
-        />
+        <Suspense
+            fallback={
+                <div className="flex min-h-[50vh] items-center justify-center p-8">
+                    <SileoSkeleton className="h-8 w-48" />
+                </div>
+            }
+        >
+            <SearchDetails
+                searchId={searchId}
+                onBack={() => navigate('/hires')}
+                isAdmin={isAdmin}
+            />
+        </Suspense>
     );
 }

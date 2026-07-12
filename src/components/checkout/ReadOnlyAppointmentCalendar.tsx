@@ -18,7 +18,7 @@ const CAL_CLASS_NAMES = {
     month_caption: 'hidden',
     month: 'flex w-full flex-col gap-2',
     weekdays: 'flex w-full',
-    weekday: 'flex-1 text-center text-[11px] font-medium uppercase tracking-wide text-[#9ca3af] lg:text-xs',
+    weekday: 'flex-1 text-center text-kicker font-medium uppercase tracking-wide text-ink-soft lg:text-xs',
     week: 'mt-1.5 flex w-full',
     day: 'flex-1 p-[3px]',
 } as const;
@@ -48,7 +48,7 @@ export function ReadOnlyAppointmentCalendar({ startUtc, timeLabel, className }: 
     return (
         <div className={cn(SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS, 'p-3 lg:p-4', className)}>
             <div className="mb-3 select-none">
-                <h3 className="text-[1.125rem] font-bold capitalize tracking-[-0.02em] text-[#1c1c1c]">{monthLabel}</h3>
+                <h3 className="text-[1.125rem] font-bold capitalize tracking-[-0.02em] text-ink-strong">{monthLabel}</h3>
             </div>
             <div className="pointer-events-none select-none [&_td_button]:cursor-default">
                 <Calendar
@@ -61,8 +61,8 @@ export function ReadOnlyAppointmentCalendar({ startUtc, timeLabel, className }: 
                     className="w-full p-0 max-lg:[--cell-size:3rem] lg:[--cell-size:3.125rem]"
                 />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e8ecf1] pt-3">
-                <p className="text-[13px] font-semibold capitalize text-[#1c1c1c]">{dayLong}</p>
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
+                <p className="text-meta font-semibold capitalize text-ink-strong">{dayLong}</p>
                 <span className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3.5 text-sm font-bold text-white shadow-[0_4px_12px_hsl(var(--brand)/0.45)]">
                     {hour}
                 </span>

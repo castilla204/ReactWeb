@@ -35,7 +35,7 @@ export const MapLoadingIndicator: React.FC<MapLoadingIndicatorProps> = ({
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand/40 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
         </span>
-        <span className="font-display text-xs font-medium text-[#484848]">Buscando expertos…</span>
+        <span className="font-display text-xs font-medium text-ink">Buscando expertos…</span>
       </div>
     </div>
   );

@@ -863,7 +863,7 @@ export const handleStripeServiceError = (error: any) => {
                 onAction: () => {
                     if (error.requiresStripeSetup || error.canRetry) {
                         // Redirigir a configuración de Stripe
-                        window.location.href = '/become-expert';
+                        window.location.href = '/expert/join';
                     }
                 }
             }

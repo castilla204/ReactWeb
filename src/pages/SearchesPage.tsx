@@ -30,7 +30,7 @@ const SearchesPage: React.FC = () => {
     }, [location.pathname]);
 
     if (!userIsAdmin) {
-        return <Navigate to="/mis-mensajes?filtro=contrataciones" replace />;
+        return <Navigate to="/messages?filter=contracts" replace />;
     }
 
     return (

@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { showToast } from '../lib/toast';
 import type { DisputeFilters, DisputeDto } from '../types/dispute';
+import { ROUTES } from '../constants/routes';
 import { Pagination } from './Pagination';
 import { getPriceDisplay } from '../utils/priceUtils';
 import {
@@ -65,9 +66,9 @@ interface DisputePanelProps {
 
 const inputClass =
   'w-full px-3 py-2 rounded-lg border border-[hsl(var(--ap-border))] bg-[hsl(var(--ap-surface))] ' +
-  'text-[13px] text-[hsl(var(--ap-ink))] focus:outline-none focus-visible:ring-2 ' +
+  'text-meta text-[hsl(var(--ap-ink))] focus:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-[hsl(var(--ap-brand))] focus:border-[hsl(var(--ap-brand))]';
-const labelClass = 'block text-[12px] font-medium text-[hsl(var(--ap-muted))] mb-1.5';
+const labelClass = 'block text-caption font-medium text-[hsl(var(--ap-muted))] mb-1.5';
 
 export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
   const { user } = useAuth();
@@ -230,7 +231,7 @@ export const DisputePanel: React.FC<DisputePanelProps> = ({ onBack }) => {
               Volver
             </AdminButton>
           )}
-          <p className="text-[13px] text-[hsl(var(--ap-muted))]">
+          <p className="text-meta text-[hsl(var(--ap-muted))]">
             Gestiona y resuelve disputas entre clientes y expertos
           </p>
         </div>
@@ -414,7 +415,7 @@ const StatCard: React.FC<{
     <AdminCard>
       <AdminCardBody className="flex items-center justify-between">
         <div>
-          <p className="text-[12px] font-medium text-[hsl(var(--ap-muted))]">{title}</p>
+          <p className="text-caption font-medium text-[hsl(var(--ap-muted))]">{title}</p>
           <p className="text-2xl font-bold text-[hsl(var(--ap-ink))]">{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${toneClasses[tone]}`}>
@@ -441,14 +442,14 @@ const DisputeCard: React.FC<{
           <div className="flex items-center gap-2 mb-2">
             <StatusBadge dispute={dispute} />
             <AdminBadge tone="neutral">Disputa</AdminBadge>
-            <span className="text-[12px] text-[hsl(var(--ap-muted))]">#{dispute.id}</span>
+            <span className="text-caption text-[hsl(var(--ap-muted))]">#{dispute.id}</span>
           </div>
 
           <h3 className="text-base font-semibold text-[hsl(var(--ap-ink))] mb-1">
             {dispute.search.title}
           </h3>
 
-          <p className="text-[13px] text-[hsl(var(--ap-muted))] mb-3 line-clamp-2">
+          <p className="text-meta text-[hsl(var(--ap-muted))] mb-3 line-clamp-2">
             {dispute.reason}
           </p>
 
@@ -484,7 +485,7 @@ const DisputeCard: React.FC<{
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-[hsl(var(--ap-muted))]">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-meta text-[hsl(var(--ap-muted))]">
             {dispute.client ? (
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
@@ -512,7 +513,7 @@ const DisputeCard: React.FC<{
               <div className="flex flex-col">
                 <span>{getPriceDisplay(dispute.searchHire).formattedTotal}</span>
                 {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
-                  <span className="text-[11px] opacity-70">IVA incluido</span>
+                  <span className="text-kicker opacity-70">IVA incluido</span>
                 )}
               </div>
             </div>
@@ -596,7 +597,7 @@ const DisputeDetails: React.FC<{
   };
 
   const handleGoToSearchDetails = () => {
-    navigate(`/detalles/${dispute.search.id}`);
+    navigate(ROUTES.searchReport(dispute.search.id));
   };
 
   // Debug: Ver qué datos están llegando
@@ -615,7 +616,7 @@ const DisputeDetails: React.FC<{
           <AdminButton variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} onClick={onBack}>
             Volver
           </AdminButton>
-          <span className="text-[13px] text-[hsl(var(--ap-muted))]">Detalles de la disputa #{dispute.id}</span>
+          <span className="text-meta text-[hsl(var(--ap-muted))]">Detalles de la disputa #{dispute.id}</span>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
@@ -643,7 +644,7 @@ const DisputeDetails: React.FC<{
                     <div className="mt-3">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ap-info))]" />
-                        <p className="text-[12px] font-medium text-[hsl(var(--ap-muted))]">Archivos del Cliente</p>
+                        <p className="text-caption font-medium text-[hsl(var(--ap-muted))]">Archivos del Cliente</p>
                         <AdminBadge tone="info">
                           {dispute.files.filter(file => file.fileCategory === 'client' || !file.fileCategory).length}
                         </AdminBadge>
@@ -660,13 +661,13 @@ const DisputeDetails: React.FC<{
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download=""
-                                className="text-[12px] text-[hsl(var(--ap-brand-strong))] hover:underline font-medium truncate block"
+                                className="text-caption text-[hsl(var(--ap-brand-strong))] hover:underline font-medium truncate block"
                                 title={file.fileName}
                               >
                                 {file.fileName}
                               </a>
                               {file.uploadedByUserName && (
-                                <p className="text-[11px] text-[hsl(var(--ap-muted))]">
+                                <p className="text-kicker text-[hsl(var(--ap-muted))]">
                                   por {file.uploadedByUserName}
                                 </p>
                               )}
@@ -698,7 +699,7 @@ const DisputeDetails: React.FC<{
                       <div className="mt-3">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--ap-success))]" />
-                          <p className="text-[12px] font-medium text-[hsl(var(--ap-muted))]">Archivos del Experto</p>
+                          <p className="text-caption font-medium text-[hsl(var(--ap-muted))]">Archivos del Experto</p>
                           <AdminBadge tone="success">
                             {(dispute.expertResponseFiles?.length || 0) + (dispute.files?.filter(f => f.fileCategory === 'expert').length || 0)}
                           </AdminBadge>
@@ -714,13 +715,13 @@ const DisputeDetails: React.FC<{
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download=""
-                                  className="text-[12px] text-[hsl(var(--ap-success))] hover:underline font-medium truncate block"
+                                  className="text-caption text-[hsl(var(--ap-success))] hover:underline font-medium truncate block"
                                   title={file.fileName}
                                 >
                                   {file.fileName}
                                 </a>
                                 {file.uploadedByUserName && (
-                                  <p className="text-[11px] text-[hsl(var(--ap-muted))]">
+                                  <p className="text-kicker text-[hsl(var(--ap-muted))]">
                                     por {file.uploadedByUserName}
                                   </p>
                                 )}
@@ -742,13 +743,13 @@ const DisputeDetails: React.FC<{
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download=""
-                                  className="text-[12px] text-[hsl(var(--ap-success))] hover:underline font-medium truncate block"
+                                  className="text-caption text-[hsl(var(--ap-success))] hover:underline font-medium truncate block"
                                   title={file.fileName}
                                 >
                                   {file.fileName}
                                 </a>
                                 {file.uploadedByUserName && (
-                                  <p className="text-[11px] text-[hsl(var(--ap-muted))]">
+                                  <p className="text-kicker text-[hsl(var(--ap-muted))]">
                                     por {file.uploadedByUserName}
                                   </p>
                                 )}
@@ -763,7 +764,7 @@ const DisputeDetails: React.FC<{
                     ) : null}
 
                     {dispute.expertResponseAt && (
-                      <p className="text-[11px] text-[hsl(var(--ap-muted))] mt-2">
+                      <p className="text-kicker text-[hsl(var(--ap-muted))] mt-2">
                         Respondido el {formatDate(dispute.expertResponseAt)}
                       </p>
                     )}
@@ -790,11 +791,11 @@ const DisputeDetails: React.FC<{
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-[hsl(var(--ap-border))] p-3">
-                    <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Fecha de Creación</label>
-                    <p className="text-[13px] text-[hsl(var(--ap-ink))]">{formatDate(dispute.createdAt)}</p>
+                    <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Fecha de Creación</label>
+                    <p className="text-meta text-[hsl(var(--ap-ink))]">{formatDate(dispute.createdAt)}</p>
                   </div>
                   <div className="rounded-lg border border-[hsl(var(--ap-border))] p-3">
-                    <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1.5">Estado</label>
+                    <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1.5">Estado</label>
                     <StatusBadge dispute={dispute} />
                   </div>
                 </div>
@@ -814,10 +815,10 @@ const DisputeDetails: React.FC<{
                 {/* Archivos adjuntos: resumen */}
                 {(dispute.files && dispute.files.length > 0) || (dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0) ? (
                   <div className="rounded-lg border border-[hsl(var(--ap-border))] p-3">
-                    <h4 className="text-[12px] font-semibold text-[hsl(var(--ap-ink))] mb-2">Archivos disponibles</h4>
+                    <h4 className="text-caption font-semibold text-[hsl(var(--ap-ink))] mb-2">Archivos disponibles</h4>
                     {dispute.files && dispute.files.length > 0 && (
                       <div className="mb-2">
-                        <p className="text-[11px] text-[hsl(var(--ap-muted))] mb-1">Archivos principales ({dispute.files.length}):</p>
+                        <p className="text-kicker text-[hsl(var(--ap-muted))] mb-1">Archivos principales ({dispute.files.length}):</p>
                         <div className="flex flex-wrap gap-1.5">
                           {dispute.files.map((file, index) => (
                             <AdminBadge key={index} tone="neutral">
@@ -830,7 +831,7 @@ const DisputeDetails: React.FC<{
                     )}
                     {dispute.expertResponseFiles && dispute.expertResponseFiles.length > 0 && (
                       <div>
-                        <p className="text-[11px] text-[hsl(var(--ap-muted))] mb-1">Archivos específicos del experto ({dispute.expertResponseFiles.length}):</p>
+                        <p className="text-kicker text-[hsl(var(--ap-muted))] mb-1">Archivos específicos del experto ({dispute.expertResponseFiles.length}):</p>
                         <div className="flex flex-wrap gap-1.5">
                           {dispute.expertResponseFiles.map((file, index) => (
                             <AdminBadge key={index} tone="neutral">
@@ -844,7 +845,7 @@ const DisputeDetails: React.FC<{
                   </div>
                 ) : (
                   <div className="rounded-lg border border-[hsl(var(--ap-border))] p-3">
-                    <p className="text-[13px] text-[hsl(var(--ap-muted))]">No hay archivos adjuntos en esta disputa.</p>
+                    <p className="text-meta text-[hsl(var(--ap-muted))]">No hay archivos adjuntos en esta disputa.</p>
                   </div>
                 )}
               </AdminCardBody>
@@ -867,16 +868,16 @@ const DisputeDetails: React.FC<{
               />
               <AdminCardBody className="space-y-4">
                 <div>
-                  <label className="block text-[12px] font-medium text-[hsl(var(--ap-muted))] mb-1">Título</label>
-                  <p className="text-[13px] text-[hsl(var(--ap-ink))]">{dispute.search.title}</p>
+                  <label className="block text-caption font-medium text-[hsl(var(--ap-muted))] mb-1">Título</label>
+                  <p className="text-meta text-[hsl(var(--ap-ink))]">{dispute.search.title}</p>
                 </div>
                 <div>
-                  <label className="block text-[12px] font-medium text-[hsl(var(--ap-muted))] mb-1">Descripción</label>
-                  <p className="text-[13px] text-[hsl(var(--ap-ink))]">{dispute.search.description || 'Sin descripción'}</p>
+                  <label className="block text-caption font-medium text-[hsl(var(--ap-muted))] mb-1">Descripción</label>
+                  <p className="text-meta text-[hsl(var(--ap-ink))]">{dispute.search.description || 'Sin descripción'}</p>
                 </div>
                 <div>
-                  <label className="block text-[12px] font-medium text-[hsl(var(--ap-muted))] mb-1">Fecha de Creación</label>
-                  <p className="text-[13px] text-[hsl(var(--ap-ink))]">{formatDate(dispute.search.createdAt)}</p>
+                  <label className="block text-caption font-medium text-[hsl(var(--ap-muted))] mb-1">Fecha de Creación</label>
+                  <p className="text-meta text-[hsl(var(--ap-ink))]">{formatDate(dispute.search.createdAt)}</p>
                 </div>
               </AdminCardBody>
             </AdminCard>
@@ -890,7 +891,7 @@ const DisputeDetails: React.FC<{
               <AdminCardBody className="space-y-3">
                 {dispute.client ? (
                   <div>
-                    <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Cliente</label>
+                    <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Cliente</label>
                     <div className="flex items-center gap-2">
                       {dispute.client.profilePictureUrl && (
                         <img
@@ -900,24 +901,24 @@ const DisputeDetails: React.FC<{
                         />
                       )}
                       <div>
-                        <p className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{dispute.client.name}</p>
-                        <p className="text-[11px] text-[hsl(var(--ap-muted))]">{dispute.client.email}</p>
+                        <p className="text-meta font-medium text-[hsl(var(--ap-ink))]">{dispute.client.name}</p>
+                        <p className="text-kicker text-[hsl(var(--ap-muted))]">{dispute.client.email}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Cliente</label>
+                    <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Cliente</label>
                     <div>
-                      <p className="text-[13px] font-medium text-[hsl(var(--ap-muted))]">Cliente no disponible</p>
-                      <p className="text-[11px] text-[hsl(var(--ap-muted))] opacity-70">Usuario eliminado o no asignado</p>
+                      <p className="text-meta font-medium text-[hsl(var(--ap-muted))]">Cliente no disponible</p>
+                      <p className="text-kicker text-[hsl(var(--ap-muted))] opacity-70">Usuario eliminado o no asignado</p>
                     </div>
                   </div>
                 )}
 
                 {dispute.expert && (
                   <div>
-                    <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Experto</label>
+                    <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Experto</label>
                     <div className="flex items-center gap-2">
                       {dispute.expert.profilePictureUrl && (
                         <img
@@ -927,8 +928,8 @@ const DisputeDetails: React.FC<{
                         />
                       )}
                       <div>
-                        <p className="text-[13px] font-medium text-[hsl(var(--ap-ink))]">{dispute.expert.name}</p>
-                        <p className="text-[11px] text-[hsl(var(--ap-muted))]">{dispute.expert.email}</p>
+                        <p className="text-meta font-medium text-[hsl(var(--ap-ink))]">{dispute.expert.name}</p>
+                        <p className="text-kicker text-[hsl(var(--ap-muted))]">{dispute.expert.email}</p>
                       </div>
                     </div>
                   </div>
@@ -941,15 +942,15 @@ const DisputeDetails: React.FC<{
               <AdminCardHeader title="Información Financiera" />
               <AdminCardBody className="space-y-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Monto</label>
+                  <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Monto</label>
                   <p className="text-xl font-bold text-[hsl(var(--ap-ink))]">{getPriceDisplay(dispute.searchHire).formattedTotal}</p>
                   {getPriceDisplay(dispute.searchHire).hasTaxInfo && (
-                    <p className="text-[11px] text-[hsl(var(--ap-muted))] mt-1">IVA incluido</p>
+                    <p className="text-kicker text-[hsl(var(--ap-muted))] mt-1">IVA incluido</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-[hsl(var(--ap-muted))] mb-1">Estado del Pago</label>
-                  <p className="text-[13px] text-[hsl(var(--ap-ink))]">{dispute.searchHire.statusTranslated}</p>
+                  <label className="block text-kicker font-medium text-[hsl(var(--ap-muted))] mb-1">Estado del Pago</label>
+                  <p className="text-meta text-[hsl(var(--ap-ink))]">{dispute.searchHire.statusTranslated}</p>
                 </div>
               </AdminCardBody>
             </AdminCard>
@@ -1026,7 +1027,7 @@ const DisputeDetails: React.FC<{
               rows={3}
             />
             {!resolutionComments.trim() && (
-              <p className="text-[11px] text-[hsl(var(--ap-muted))] mt-1">
+              <p className="text-kicker text-[hsl(var(--ap-muted))] mt-1">
                 Escribe un comentario antes de elegir una acción.
               </p>
             )}

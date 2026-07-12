@@ -43,7 +43,7 @@ export function SileoSkeleton({
   return (
     <div
       className={cn(
-        "bg-[#f0f0f0]",
+        "bg-surface-tinted",
         !plain &&
           "sk-shimmer relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:bg-gradient-to-r before:from-transparent before:via-white/55 before:to-transparent",
         roundedClasses[rounded],

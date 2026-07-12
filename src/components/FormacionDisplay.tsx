@@ -2,51 +2,166 @@ import { useState } from 'react';
 import { Award, BadgeCheck, Expand, X } from 'lucide-react';
 import { parseFormacion, type FormacionItem } from './expertPanel/formacion';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
+import { cn } from '../lib/utils';
 
 interface FormacionDisplayProps {
     /** JSON de la formación del experto (campo `formacion` del perfil). */
     value?: string | null;
+    /** ficha = bloque de credenciales en la ficha de servicio (desktop/móvil) */
+    variant?: 'default' | 'ficha';
+    /** Título visible (p. ej. pestaña Acerca del servicio en móvil) */
+    showHeading?: boolean;
     className?: string;
 }
 
+function FormacionLightbox({
+    item,
+    onClose,
+}: {
+    item: FormacionItem | null;
+    onClose: () => void;
+}) {
+    return (
+        <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent
+                className="!fixed !inset-0 !left-0 !top-0 z-[100] flex h-[100dvh] max-h-[100dvh] w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 rounded-none border-0 bg-ink-strong p-0 shadow-none duration-200"
+                overlayClassName="bg-black/90"
+                hideCloseButton
+                onEscapeKeyDown={onClose}
+            >
+                <DialogTitle className="sr-only">{item?.titulo ?? 'Título'}</DialogTitle>
+                <DialogDescription className="sr-only">
+                    Imagen del título o certificación del experto
+                </DialogDescription>
+
+                <header className="flex shrink-0 items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+                    <span className="min-w-0 truncate text-sm font-medium">{item?.titulo}</span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Cerrar"
+                        className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                        <X className="h-5 w-5" strokeWidth={2} />
+                    </button>
+                </header>
+
+                <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-8">
+                    {item?.imagen ? (
+                        <img
+                            src={item.imagen}
+                            alt={item.titulo}
+                            className="max-h-full max-w-full rounded-lg object-contain"
+                            draggable={false}
+                        />
+                    ) : null}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 /**
- * Badge "Oficial" — mismo pill que los títulos junto al nombre del experto y los
- * chips de "Qué entregará" (tinte azul sutil + ring), para no introducir un color
- * nuevo. Ver ServiceDetailExpertHostRow / InspectionReportPreview.
+ * Badge "Oficial" — variante legacy (default). En ficha se usa texto inline.
  */
 function OficialBadge() {
     return (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#f4f7fb] px-2.5 py-1 text-[12px] font-medium leading-none text-[#1C63B4] ring-1 ring-[#1C63B4]/10">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2.5 py-1 text-caption font-medium leading-none text-brand ring-1 ring-brand/10">
             <BadgeCheck size={12} strokeWidth={2.2} />
             Oficial
         </span>
     );
 }
 
-/** Línea de metadatos "Centro · Año", sin iconos repetidos por fila. */
-function MetaLine({ centro, anio }: { centro?: string; anio?: string }) {
+function MetaLine({
+    centro,
+    anio,
+    className,
+}: {
+    centro?: string;
+    anio?: string;
+    className?: string;
+}) {
     const parts = [centro, anio].filter(Boolean);
     if (parts.length === 0) return null;
     return (
-        <div className="mt-1 truncate text-[13px] leading-snug text-[#717171]">
+        <p className={cn('mt-0.5 text-meta leading-snug text-ink-muted', className)}>
             {parts.join(' · ')}
-        </div>
+        </p>
+    );
+}
+
+function FichaCredentialRow({
+    item,
+    onOpenImage,
+}: {
+    item: FormacionItem;
+    onOpenImage: (item: FormacionItem) => void;
+}) {
+    const metaParts = [item.centro, item.esOficial ? 'Titulación oficial' : null].filter(Boolean);
+
+    return (
+        <li className="sd-formacion-ficha-item py-3 first:pt-0 last:pb-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6">
+                <p className="text-sm font-medium leading-snug text-ink">{item.titulo}</p>
+                {item.anio ? (
+                    <span className="shrink-0 text-meta tabular-nums leading-snug text-ink-muted">
+                        {item.anio}
+                    </span>
+                ) : null}
+            </div>
+            {metaParts.length > 0 ? (
+                <p className="mt-0.5 text-meta leading-snug text-ink-muted">{metaParts.join(' · ')}</p>
+            ) : null}
+            {item.imagen ? (
+                <button
+                    type="button"
+                    onClick={() => onOpenImage(item)}
+                    className="sd-formacion-ficha-doc-link mt-1 text-meta text-ink-muted underline-offset-2 hover:text-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                >
+                    Ver acreditación
+                </button>
+            ) : null}
+        </li>
     );
 }
 
 /**
  * Muestra la formación del experto en la ficha de servicio como señal de confianza.
- *
- * Aprovecha las dos señales que el experto ya rellena pero que antes se ignoraban:
- * la foto del título/diploma (miniatura → lightbox) y el badge de título oficial.
- * Layout adaptativo: con imágenes usa un rail de miniaturas; sin ninguna imagen
- * cae a una lista de texto limpia (sin una columna de iconos idénticos repetidos).
  */
-export default function FormacionDisplay({ value, className }: FormacionDisplayProps) {
+export default function FormacionDisplay({
+    value,
+    variant = 'default',
+    showHeading = false,
+    className,
+}: FormacionDisplayProps) {
     const items = parseFormacion(value);
     const [zoom, setZoom] = useState<FormacionItem | null>(null);
+    const isFicha = variant === 'ficha';
 
     if (items.length === 0) return null;
+
+    if (isFicha) {
+        return (
+            <section
+                className={cn('sd-formacion-ficha', className)}
+                aria-label={showHeading ? undefined : 'Formación acreditada'}
+                aria-labelledby={showHeading ? 'sd-formacion-heading' : undefined}
+            >
+                {showHeading ? (
+                    <h2 id="sd-formacion-heading" className="sd-section-label mb-3">
+                        Formación acreditada
+                    </h2>
+                ) : null}
+                <ul className="m-0 list-none space-y-0 divide-y divide-line p-0">
+                    {items.map((it, i) => (
+                        <FichaCredentialRow key={i} item={it} onOpenImage={setZoom} />
+                    ))}
+                </ul>
+                <FormacionLightbox item={zoom} onClose={() => setZoom(null)} />
+            </section>
+        );
+    }
 
     return (
         <section className={className} aria-labelledby="sd-formacion-heading">
@@ -54,7 +169,7 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                 Formación y certificaciones
             </p>
 
-            <ul className="m-0 list-none divide-y divide-[#ededed] border-y border-[#ededed] p-0">
+            <ul className="m-0 list-none divide-y divide-line border-y border-line p-0">
                 {items.map((it, i) => (
                     <li
                         key={i}
@@ -65,7 +180,7 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                                 type="button"
                                 onClick={() => setZoom(it)}
                                 aria-label={`Ver título: ${it.titulo}`}
-                                className="group relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[10px] border border-[#e6e6e6] bg-[#f2f2f2] outline-none transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-2 focus-visible:ring-[#1C63B4]/40"
+                                className="group relative h-[54px] w-[54px] shrink-0 overflow-hidden rounded-[10px] border border-line bg-surface-tinted outline-none transition-shadow duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.12)] focus-visible:ring-2 focus-visible:ring-brand/40"
                             >
                                 <img
                                     src={it.imagen}
@@ -80,17 +195,17 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                         ) : (
                             <span
                                 aria-hidden
-                                className="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-[10px] border border-[#e6e6e6] bg-[#eef2f7]"
+                                className="flex h-[54px] w-[54px] shrink-0 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-[10px] border border-line bg-surface-tinted"
                             >
-                                <span className="h-1 w-[30px] rounded-full bg-[#c2cfdd]" />
-                                <span className="h-[3px] w-[22px] rounded-full bg-[#d3dce6]" />
-                                <Award size={15} strokeWidth={2} className="mt-0.5 text-[#b08a3e]" />
+                                <span className="h-1 w-[30px] rounded-full bg-line" />
+                                <span className="h-[3px] w-[22px] rounded-full bg-line-soft" />
+                                <Award size={15} strokeWidth={2} className="mt-0.5 text-warning" />
                             </span>
                         )}
 
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <span className="text-sm font-medium leading-snug text-[#1c1c1c]">
+                                <span className="text-sm font-medium leading-snug text-ink-strong">
                                     {it.titulo}
                                 </span>
                                 {it.esOficial && <OficialBadge />}
@@ -101,42 +216,7 @@ export default function FormacionDisplay({ value, className }: FormacionDisplayP
                 ))}
             </ul>
 
-            <Dialog open={!!zoom} onOpenChange={(open) => !open && setZoom(null)}>
-                <DialogContent
-                    className="!fixed !inset-0 !left-0 !top-0 z-[100] flex h-[100dvh] max-h-[100dvh] w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 rounded-none border-0 bg-[#0a0a0a] p-0 shadow-none duration-200"
-                    overlayClassName="bg-black/90"
-                    hideCloseButton
-                    onEscapeKeyDown={() => setZoom(null)}
-                >
-                    <DialogTitle className="sr-only">{zoom?.titulo ?? 'Título'}</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Imagen del título o certificación del experto
-                    </DialogDescription>
-
-                    <header className="flex shrink-0 items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
-                        <span className="min-w-0 truncate text-sm font-medium">{zoom?.titulo}</span>
-                        <button
-                            type="button"
-                            onClick={() => setZoom(null)}
-                            aria-label="Cerrar"
-                            className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                        >
-                            <X className="h-5 w-5" strokeWidth={2} />
-                        </button>
-                    </header>
-
-                    <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-8">
-                        {zoom?.imagen ? (
-                            <img
-                                src={zoom.imagen}
-                                alt={zoom.titulo}
-                                className="max-h-full max-w-full rounded-lg object-contain"
-                                draggable={false}
-                            />
-                        ) : null}
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <FormacionLightbox item={zoom} onClose={() => setZoom(null)} />
         </section>
     );
 }

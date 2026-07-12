@@ -149,14 +149,14 @@ export function CheckoutSellerEnlaceInfoNote({
         // numeración). La caja con Send encima del grupo de campos eran dos recuadros
         // apilados compitiendo antes de llegar al formulario.
         return (
-            <p role="note" className={cn('text-[12.5px] leading-relaxed text-[#565d6b]', className)}>
+            <p role="note" className={cn('text-caption leading-relaxed text-ink-muted', className)}>
                 {SELLER_COORD_ENLACE_DETAILED}
             </p>
         );
     }
 
     return (
-        <p className={cn('text-[12px] leading-relaxed text-[#565d6b]', className)}>
+        <p className={cn('text-caption leading-relaxed text-ink-muted', className)}>
             {SELLER_COORD_CARD_NOTE}
         </p>
     );
@@ -165,7 +165,7 @@ export function CheckoutSellerEnlaceInfoNote({
 /** Aviso modo tú eliges la fecha (tarjeta de coordinación). */
 export function CheckoutSelfCoordinationInfoNote({ className }: { className?: string }) {
     return (
-        <p className={cn('text-[12px] leading-relaxed text-[#475569]', className)}>
+        <p className={cn('text-caption leading-relaxed text-ink-muted', className)}>
             Al pagar, la cita queda reservada al instante con el día y la hora que elijas. El experto la
             confirma después.
         </p>
@@ -177,12 +177,12 @@ export function CheckoutSellerPlazoNotice({ className }: { className?: string })
     return (
         <div
             className={cn(
-                'rounded-xl border border-[#e8e8e8] bg-[#fafafa] px-3.5 py-2.5',
+                'rounded-xl border border-line bg-surface-tinted px-3.5 py-2.5',
                 className,
             )}
             role="note"
         >
-            <p className="text-[13px] leading-[1.55] text-[#565d6b]">{CHECKOUT_SELLER_PLAZO_SUMMARY}</p>
+            <p className="text-meta leading-[1.55] text-ink-muted">{CHECKOUT_SELLER_PLAZO_SUMMARY}</p>
         </div>
     );
 }
@@ -257,12 +257,12 @@ export function CheckoutSellerCoordinationFields({
                         </GroupedFieldRow>
                     </GroupedFieldsCard>
                     {variant !== 'contact' ? (
-                        <p className="text-[12px] leading-relaxed text-[#6b7280]">
+                        <p className="text-caption leading-relaxed text-ink-muted">
                             Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
                         </p>
                     ) : null}
                     {showContactError ? (
-                        <p role="alert" className="text-[12px] font-medium text-red-600">
+                        <p role="alert" className="text-caption font-medium text-red-600">
                             {bothEmpty
                                 ? 'Añade un teléfono o un email para continuar.'
                                 : 'Revisa el contacto: un móvil o un email válido.'}
@@ -273,7 +273,7 @@ export function CheckoutSellerCoordinationFields({
                         contacto en peso visual. */}
                     <div>
                         <label htmlFor="seller-listing" className={groupedLabelClass}>
-                            Enlace del anuncio <span className="font-normal text-[#6b7280]">(opcional)</span>
+                            Enlace del anuncio <span className="font-normal text-ink-muted">(opcional)</span>
                         </label>
                         <input
                             id="seller-listing"
@@ -293,14 +293,14 @@ export function CheckoutSellerCoordinationFields({
                     <CheckoutSellerPlazoNotice />
                 ) : (
                 <div className="space-y-1.5">
-                    <p className="text-[15px] leading-snug text-[#1c1c1c]">
+                    <p className="text-lead leading-snug text-ink-strong">
                         El vendedor reserva entre los huecos del experto, habitualmente de{' '}
                         <span className="font-semibold">
                             {SELLER_BOOKING_MIN_LEAD_DAYS} a {SELLER_BOOKING_TARGET_WINDOW_DAYS} días
                         </span>{' '}
                         tras tu pago (hasta {SELLER_BOOKING_MAX_DAYS} si la agenda está llena).
                     </p>
-                    <p className="text-[11px] leading-relaxed text-[#6b7280]">
+                    <p className="text-kicker leading-relaxed text-ink-muted">
                         Solo podrá elegir días y horas que el experto tenga libres en su calendario.
                     </p>
                 </div>

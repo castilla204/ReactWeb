@@ -13,6 +13,11 @@ import { HP_FONT } from '../constants/homepageTypography';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
 import { isAdmin as isAdminUser } from '../utils/admin';
 import { getStatusTone, type StatusTone } from '../utils/statusUtils';
+import {
+    formatRelative,
+    StatusChip,
+    type StatusChipProps,
+} from '../components/chat/conversationInboxUi';
 
 type PendingPreHireOpen = { serviceId: number; conversationId?: number };
 
@@ -108,62 +113,10 @@ const FILTER_LABELS: Record<FilterTab, string> = {
  * por la misma puerta con distinto filtro inicial vía ?filtro=.
  */
 function filterFromParam(value: string | null): FilterTab {
-    if (value === 'contrataciones' || value === 'contratadas' || value === 'post-hire') return 'post-hire';
-    if (value === 'consultas' || value === 'precontratacion' || value === 'pre-hire') return 'pre-hire';
+    if (value === 'contrataciones' || value === 'contratadas' || value === 'post-hire' || value === 'contracts') return 'post-hire';
+    if (value === 'consultas' || value === 'precontratacion' || value === 'pre-hire' || value === 'inquiries') return 'pre-hire';
     return 'all';
 }
-
-function formatRelative(iso: string): string {
-    try {
-        const date = new Date(iso);
-        const diff = Date.now() - date.getTime();
-        const min = Math.floor(diff / 60_000);
-        if (min < 1) return 'ahora';
-        if (min < 60) return `${min} min`;
-        const hr = Math.floor(min / 60);
-        if (hr < 24) return `${hr} h`;
-        const d = Math.floor(hr / 24);
-        if (d === 1) return 'ayer';
-        if (d < 7) return `${d} d`;
-        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-    } catch {
-        return '';
-    }
-}
-
-interface StatusChipProps {
-    label: string;
-    tone: 'brand' | 'green' | 'amber' | 'red' | 'neutral';
-    /** Icono opcional al inicio del chip (p. ej. escudo para contratación). */
-    icon?: 'shield';
-}
-
-const StatusChip: React.FC<StatusChipProps> = ({ label, tone, icon }) => {
-    const palette = (() => {
-        switch (tone) {
-            case 'brand':
-                return 'bg-brand/[0.08] ring-brand/25 text-brand';
-            case 'green':
-                return 'bg-[#F0F9F4] ring-[#BBE5C9] text-[#0F6A3E]';
-            case 'amber':
-                return 'bg-[#FFFBEB] ring-[#FED7AA] text-[#D97706]';
-            case 'red':
-                return 'bg-[#FEF2F2] ring-[#FECACA] text-[#DC2626]';
-            default:
-                return 'bg-[#fafafa] ring-[#e8e8e8] text-[#6a6a6a]';
-        }
-    })();
-    return (
-        <span
-            className={`inline-flex h-[18px] shrink-0 items-center gap-1 rounded-full px-2 text-[10.5px] font-semibold leading-none tracking-tight ring-1 ${palette}`}
-        >
-            {icon === 'shield' && (
-                <ShieldCheck className="h-[11px] w-[11px]" strokeWidth={2.25} aria-hidden />
-            )}
-            {label}
-        </span>
-    );
-};
 
 /**
  * Tono del chip desde el statusValue CRUDO del backend (hireStatus), vía el
@@ -195,7 +148,7 @@ export function MessagesPage() {
     const token = authService.getAccessToken() || '';
 
     const [searchInput, setSearchInput] = useState('');
-    const [filter, setFilter] = useState<FilterTab>(() => filterFromParam(searchParams.get('filtro')));
+    const [filter, setFilter] = useState<FilterTab>(() => filterFromParam(searchParams.get('filter') ?? searchParams.get('filtro')));
     // Conversación abierta en el panel derecho (solo desktop). En móvil se navega.
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [pendingPreHire, setPendingPreHire] = useState<PendingPreHireOpen | null>(null);
@@ -347,7 +300,7 @@ export function MessagesPage() {
             // como una conversación más de la bandeja. Móvil: navegar a la página completa
             // del hire (ya optimizada para móvil con su propia cabecera y detalles).
             if (isMobile) {
-                navigate(`/searchhire/${conversation.searchHireId}`);
+                navigate(`/hires/${conversation.searchHireId}`);
             } else {
                 setPendingPreHire(null);
                 setSelectedId(conversation.conversationId);
@@ -409,7 +362,7 @@ export function MessagesPage() {
         const hireId = hireIdParam ? Number.parseInt(hireIdParam, 10) : null;
         if (hireId && hireId > 0) {
             if (isMobile) {
-                navigate(`/searchhire/${hireId}`, { replace: true });
+                navigate(`/hires/${hireId}`, { replace: true });
                 return;
             }
             const byHire = sortedConversations.find(
@@ -512,13 +465,13 @@ export function MessagesPage() {
                 <Header onBack={() => navigate(-1)} title="Mis mensajes" counter={null} />
                 <div className="flex flex-1 items-center justify-center p-4">
                     <div className="text-center">
-                        <p className="mb-4 text-[14px] text-[#DC2626]">
+                        <p className="mb-4 text-body text-destructive">
                             No pudimos cargar tus conversaciones.
                         </p>
                         <button
                             type="button"
                             onClick={() => refetch()}
-                            className="rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover"
+                            className="rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover"
                         >
                             Reintentar
                         </button>
@@ -547,7 +500,7 @@ export function MessagesPage() {
         return (
             <div className="flex min-h-screen flex-col bg-white" style={{ fontFamily: HP_FONT }}>
                 <Header onBack={() => navigate(-1)} title="Mis mensajes" counter={null} />
-                <EmptyState onCreate={() => navigate('/crear-busqueda')} />
+                <EmptyState onCreate={() => navigate('/hire')} />
                 {isMobile && (
                     <Suspense fallback={null}>
                         <MobileBottomBar />
@@ -567,9 +520,9 @@ export function MessagesPage() {
             {/* Cuerpo: una columna en móvil · dos paneles (lista + conversación) en desktop */}
             <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(330px,380px)_minmax(0,1fr)]">
                 {/* ----- Panel lista ----- */}
-                <section className="flex min-h-0 min-w-0 flex-col md:bg-[#fafafa]">
+                <section className="flex min-h-0 min-w-0 flex-col md:bg-surface-tinted">
                     {(showSearch || showFilters) && (
-                        <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] bg-white px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:px-3.5 md:pt-3">
+                        <div className="shrink-0 space-y-3 border-b border-line-soft bg-white px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] md:px-3.5 md:pt-3">
                             {showSearch && (
                                 <div className="flex items-center gap-2">
                                     {/* Volver — solo móvil (en desktop el botón vive en la cabecera del panel) */}
@@ -577,7 +530,7 @@ export function MessagesPage() {
                                         type="button"
                                         onClick={() => navigate(-1)}
                                         aria-label="Volver"
-                                        className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors hover:bg-[#f2f2f2] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden"
+                                        className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-strong transition-colors hover:bg-surface-tinted active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden"
                                     >
                                         <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
                                     </button>
@@ -638,8 +591,8 @@ export function MessagesPage() {
                                     <div className="px-3 pt-5 text-center md:px-3.5">
                                         <button
                                             type="button"
-                                            onClick={() => navigate('/crear-busqueda')}
-                                            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand transition-colors hover:text-brand-hover"
+                                            onClick={() => navigate('/hire')}
+                                            className="inline-flex items-center gap-1.5 text-meta font-semibold text-brand transition-colors hover:text-brand-hover"
                                         >
                                             Pedir una revisión nueva
                                             <svg
@@ -721,15 +674,15 @@ export function MessagesPage() {
  * vista de chat completa.
  */
 const ConversationPlaceholder: React.FC = () => (
-    <section className="hidden items-center justify-center bg-[#fbfbfb] px-8 md:flex">
+    <section className="hidden items-center justify-center bg-surface-tinted px-8 md:flex">
         <div className="max-w-xs text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand/[0.08]">
                 <MessageCircle className="h-7 w-7 text-brand" strokeWidth={1.5} aria-hidden />
             </div>
-            <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+            <h2 className="text-body font-semibold tracking-[-0.01em] text-ink-strong">
                 Selecciona una conversación
             </h2>
-            <p className="mx-auto mt-1.5 text-[13px] leading-relaxed text-[#737373]">
+            <p className="mx-auto mt-1.5 text-meta leading-relaxed text-ink-muted">
                 Elige una conversación de la lista para ver los mensajes y seguir con tu inspección.
             </p>
         </div>
@@ -762,29 +715,29 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
     onConversationLoaded,
 }) => (
     <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
-        <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
-            <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line-soft px-3 py-2.5 md:px-3.5">
+            <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-line-soft">
                 <AvatarImage
                     src={conversation.expertProfilePictureUrl || undefined}
                     alt=""
                     className="h-full w-full object-cover"
                 />
-                <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[15px] font-semibold text-white">
+                <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-lead font-semibold text-white">
                     {(conversation.expertName || '?').charAt(0).toUpperCase()}
                 </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1 leading-tight">
-                <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                <p className="truncate text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                     {conversation.expertName}
                 </p>
-                <p className="truncate text-[12px] text-[#737373]">
+                <p className="truncate text-caption text-ink-muted">
                     {conversation.serviceName || 'Pregunta antes de contratar'}
                 </p>
             </div>
             <button
                 type="button"
                 onClick={onHire}
-                className="hidden shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover lg:inline-flex"
+                className="hidden shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover lg:inline-flex"
             >
                 Contratar{amountLabel ? ` · ${amountLabel}` : ''}
             </button>
@@ -792,7 +745,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
                 type="button"
                 onClick={onClose}
                 aria-label="Cerrar conversación"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             >
                 <X className="h-[18px] w-[18px]" strokeWidth={2} />
             </button>
@@ -802,7 +755,7 @@ const ConversationPanel: React.FC<ConversationPanelProps> = ({
                 fallback={
                     <div className="flex h-full items-center justify-center bg-white">
                         <MessageCircle
-                            className="h-6 w-6 animate-pulse text-[#d4d4d4]"
+                            className="h-6 w-6 animate-pulse text-line"
                             aria-hidden
                         />
                     </div>
@@ -854,25 +807,25 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
 
     return (
         <section className="hidden min-h-0 min-w-0 flex-col bg-white md:flex">
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-3 py-2.5 md:px-3.5">
-                <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f0f0f0]">
+            <div className="flex shrink-0 items-center gap-3 border-b border-line-soft px-3 py-2.5 md:px-3.5">
+                <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-line-soft">
                     <AvatarImage
                         src={conversation.expertProfilePictureUrl || undefined}
                         alt=""
                         className="h-full w-full object-cover"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[15px] font-semibold text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-lead font-semibold text-white">
                         {(conversation.expertName || '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1 leading-tight">
                     <div className="flex items-center gap-2">
-                        <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[#1c1c1c]">
+                        <p className="truncate text-lead font-semibold tracking-[-0.01em] text-ink-strong">
                             {conversation.expertName}
                         </p>
                         <StatusChip label={chip.label} tone={chip.tone} icon="shield" />
                     </div>
-                    <p className="mt-0.5 truncate text-[12px] text-[#737373]">
+                    <p className="mt-0.5 truncate text-caption text-ink-muted">
                         {conversation.searchTitle || conversation.serviceName || 'Contratación'}
                         {amountLabel ? ` · ${amountLabel}` : ''}
                     </p>
@@ -881,7 +834,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                     type="button"
                     onClick={onClose}
                     aria-label="Cerrar conversación"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#737373] transition-colors hover:bg-[#f2f2f2] hover:text-[#1c1c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
                 >
                     <X className="h-[18px] w-[18px]" strokeWidth={2} />
                 </button>
@@ -891,7 +844,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                     fallback={
                         <div className="flex h-full items-center justify-center bg-white">
                             <MessageCircle
-                                className="h-6 w-6 animate-pulse text-[#d4d4d4]"
+                                className="h-6 w-6 animate-pulse text-line"
                                 aria-hidden
                             />
                         </div>
@@ -918,22 +871,22 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onBack, title, counter }) => (
-    <header className="hidden shrink-0 border-b border-[#f0f0f0] bg-white md:block">
+    <header className="hidden shrink-0 border-b border-line-soft bg-white md:block">
         <div className="flex items-center gap-3 px-3.5 py-3">
             <button
                 type="button"
                 onClick={onBack}
                 aria-label="Volver"
-                className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#1c1c1c] transition-colors hover:bg-[#f2f2f2] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-strong transition-colors hover:bg-surface-tinted active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             >
                 <ArrowLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             <div className="min-w-0 flex-1">
-                <h1 className="truncate text-[19px] font-bold tracking-[-0.02em] text-[#1c1c1c]">
+                <h1 className="truncate text-title font-bold tracking-[-0.02em] text-ink-strong">
                     {title}
                 </h1>
                 {counter && (
-                    <p className="truncate text-[12.5px] leading-snug text-[#8a8a8a]">{counter}</p>
+                    <p className="truncate text-caption leading-snug text-ink-muted">{counter}</p>
                 )}
             </div>
         </div>
@@ -949,7 +902,7 @@ interface SearchInputProps {
 const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, onClear }) => (
     <div className="relative flex w-full items-center">
         <SearchIcon
-            className="pointer-events-none absolute left-3.5 h-4 w-4 text-[#737373]"
+            className="pointer-events-none absolute left-3.5 h-4 w-4 text-ink-muted"
             strokeWidth={2}
             aria-hidden
         />
@@ -958,14 +911,14 @@ const SearchInput: React.FC<SearchInputProps> = ({ value, onChange, onClear }) =
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Buscar conversaciones…"
-            className="h-10 w-full rounded-full border border-[#e8e8e8] bg-white pl-10 pr-9 text-[14px] text-[#1c1c1c] placeholder:text-[#737373] transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
+            className="h-10 w-full rounded-full border border-line bg-white pl-10 pr-9 text-body text-ink-strong placeholder:text-ink-muted transition-colors focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15"
         />
         {value && (
             <button
                 type="button"
                 onClick={onClear}
                 aria-label="Borrar búsqueda"
-                className="absolute right-1 flex h-8 w-8 items-center justify-center rounded-full text-[#737373] hover:bg-[#fafafa] hover:text-[#1c1c1c]"
+                className="absolute right-1 flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-surface-tinted hover:text-ink-strong"
             >
                 <X className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -996,19 +949,19 @@ const FilterPills: React.FC<FilterPillsProps> = ({ value, onChange, counts }) =>
                     aria-checked={active}
                     onClick={() => onChange(tab)}
                     className={[
-                        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium transition-colors',
+                        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-caption font-medium transition-colors',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
                         active
                             ? 'border-brand bg-brand text-white'
-                            : 'border-[#e8e8e8] bg-white text-[#1c1c1c] hover:bg-[#fafafa]',
+                            : 'border-line bg-white text-ink-strong hover:bg-surface-tinted',
                     ].join(' ')}
                 >
                     {FILTER_LABELS[tab]}
                     {count > 0 && (
                         <span
                             className={[
-                                'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold leading-none tabular-nums',
-                                active ? 'bg-white/25 text-white' : 'bg-[#e9e9e9] text-[#5a5a5a]',
+                                'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-badge font-semibold leading-none tabular-nums',
+                                active ? 'bg-white/25 text-white' : 'bg-line text-ink-muted',
                             ].join(' ')}
                             aria-hidden
                         >
@@ -1028,16 +981,16 @@ const SkeletonRow: React.FC<{ index: number; isLast: boolean }> = ({ index, isLa
         className="relative flex w-full items-center gap-3 px-3 py-3 animate-fade-in motion-reduce:animate-none md:px-3.5"
         style={{ animationDelay: `${index * 55}ms` }}
     >
-        <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-[#f0f0f0]" />
+        <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-line-soft" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
-                <div className="h-3.5 w-40 animate-pulse rounded-full bg-[#f0f0f0]" />
-                <div className="h-3 w-10 animate-pulse rounded-full bg-[#f4f4f4]" />
+                <div className="h-3.5 w-40 animate-pulse rounded-full bg-line-soft" />
+                <div className="h-3 w-10 animate-pulse rounded-full bg-line-soft" />
             </div>
-            <div className="h-3 w-3/4 animate-pulse rounded-full bg-[#f4f4f4]" />
+            <div className="h-3 w-3/4 animate-pulse rounded-full bg-line-soft" />
         </div>
         {!isLast && (
-            <span className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f1f1f1]" />
+            <span className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-line-soft" />
         )}
     </div>
 );
@@ -1135,22 +1088,22 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                 'transition-colors duration-150',
                 isActive
                     ? 'md:bg-brand/[0.06] md:hover:bg-brand/[0.06]'
-                    : 'hover:bg-[#f6f6f6] active:bg-[#efefef]',
+                    : 'hover:bg-surface-tinted active:bg-line-soft',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand',
             ].join(' ')}
         >
             {/* Avatar 52px con insignia de tipo (escudo = contratada · burbuja = pregunta) */}
             <div className="relative shrink-0">
-                <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-[#f0f0f0]">
+                <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-line-soft">
                     <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-[18px] font-semibold text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-title font-semibold text-white">
                         {(expert || title || '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
                 <span
                     className={[
                         'absolute -bottom-0.5 -right-0.5 flex h-[19px] w-[19px] items-center justify-center rounded-full ring-2 ring-white',
-                        isPreHire ? 'bg-[#eef4fb] text-brand' : 'bg-[#0F6A3E] text-white',
+                        isPreHire ? 'bg-brand/10 text-brand' : 'bg-success text-white',
                     ].join(' ')}
                     aria-hidden
                 >
@@ -1168,7 +1121,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                 <div className="flex items-baseline justify-between gap-2">
                     <h3
                         className={[
-                            'line-clamp-1 min-w-0 text-[15px] leading-tight tracking-[-0.01em] text-[#1c1c1c]',
+                            'line-clamp-1 min-w-0 text-lead leading-tight tracking-[-0.01em] text-ink-strong',
                             isUnread ? 'font-bold' : 'font-semibold',
                         ].join(' ')}
                     >
@@ -1177,8 +1130,8 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                     {stamp && (
                         <time
                             className={[
-                                'shrink-0 text-[12px] leading-none tabular-nums',
-                                isUnread ? 'font-semibold text-brand' : 'font-medium text-[#8a8a8a]',
+                                'shrink-0 text-caption leading-none tabular-nums',
+                                isUnread ? 'font-semibold text-brand' : 'font-medium text-ink-muted',
                             ].join(' ')}
                             aria-hidden
                         >
@@ -1191,26 +1144,26 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
                 <div className="flex items-center gap-2">
                     <p
                         className={[
-                            'flex min-w-0 flex-1 items-center gap-1.5 text-[13.5px] leading-snug',
-                            isUnread ? 'font-medium text-[#3a3a3a]' : 'text-[#737373]',
+                            'flex min-w-0 flex-1 items-center gap-1.5 text-meta leading-snug',
+                            isUnread ? 'font-medium text-ink' : 'text-ink-muted',
                         ].join(' ')}
                     >
                         {chip && <StatusChip label={chip.label} tone={chip.tone} icon={chip.icon} />}
                         <span className="truncate">
-                            {isOwnLastMessage && <span className="text-[#a0a0a0]">Tú: </span>}
+                            {isOwnLastMessage && <span className="text-ink-soft">Tú: </span>}
                             {snippet}
                         </span>
                     </p>
                     {isUnread ? (
                         <span
-                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold leading-none text-white"
+                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-kicker font-bold leading-none text-white"
                             aria-label={`${unread} mensajes sin leer`}
                         >
                             {unread > 99 ? '99+' : unread}
                         </span>
                     ) : (
                         amount && (
-                            <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#9a9a9a]">
+                            <span className="shrink-0 text-caption font-semibold tabular-nums text-ink-soft">
                                 {amount}
                             </span>
                         )
@@ -1221,7 +1174,7 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
             {/* Separador inset (alineado con el texto), estilo iMessage */}
             {!isLast && (
                 <span
-                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-[#f0f0f0]"
+                    className="pointer-events-none absolute bottom-0 left-[72px] right-0 h-px bg-line-soft"
                     aria-hidden
                 />
             )}
@@ -1234,20 +1187,20 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
 const EmptyState: React.FC<{ onCreate: () => void }> = ({ onCreate }) => (
     <div className="mx-auto flex w-full max-w-3xl flex-1 items-center justify-center p-6 md:max-w-4xl">
         <div className="w-full px-6 py-12 text-center md:py-16">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f5]">
-                <MessageCircle className="h-6 w-6 text-[#737373]" strokeWidth={1.5} aria-hidden />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-tinted">
+                <MessageCircle className="h-6 w-6 text-ink-muted" strokeWidth={1.5} aria-hidden />
             </div>
-            <h2 className="text-[18px] font-semibold tracking-[-0.015em] text-[#1c1c1c]">
+            <h2 className="text-title font-semibold tracking-[-0.015em] text-ink-strong">
                 Aún no tienes conversaciones
             </h2>
-            <p className="mx-auto mt-2 max-w-md text-[13px] leading-snug text-[#6a6a6a]">
+            <p className="mx-auto mt-2 max-w-md text-meta leading-snug text-ink-muted">
                 Cuando contrates o consultes a un experto, los mensajes aparecerán aquí con el
                 último envío y el estado de la inspección.
             </p>
             <button
                 type="button"
                 onClick={onCreate}
-                className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover"
+                className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover"
             >
                 Pedir una revisión
             </button>
@@ -1260,11 +1213,11 @@ const NoResultsState: React.FC<{ query: string; onClearFilters: () => void }> = 
     onClearFilters,
 }) => (
     <div className="mx-auto flex w-full max-w-3xl flex-1 items-center justify-center p-6 md:max-w-4xl">
-        <div className="w-full rounded-2xl border border-dashed border-[#e8e8e8] bg-white px-6 py-12 text-center">
-            <h2 className="text-[15px] font-semibold text-[#1c1c1c]">
+        <div className="w-full rounded-2xl border border-dashed border-line bg-white px-6 py-12 text-center">
+            <h2 className="text-lead font-semibold text-ink-strong">
                 {query ? 'Sin coincidencias' : 'Sin conversaciones con ese filtro'}
             </h2>
-            <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-snug text-[#6a6a6a]">
+            <p className="mx-auto mt-1.5 max-w-md text-meta leading-snug text-ink-muted">
                 {query
                     ? `No encontramos conversaciones que contengan "${query}".`
                     : 'Prueba con otro filtro o quita la búsqueda activa.'}
@@ -1272,7 +1225,7 @@ const NoResultsState: React.FC<{ query: string; onClearFilters: () => void }> = 
             <button
                 type="button"
                 onClick={onClearFilters}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-[#e8e8e8] bg-white px-4 py-2 text-[13px] font-semibold text-[#1c1c1c] transition-colors hover:bg-[#fafafa]"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-4 py-2 text-meta font-semibold text-ink-strong transition-colors hover:bg-surface-tinted"
             >
                 Quitar filtros
             </button>

@@ -22,7 +22,7 @@ const sileoButtonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-brand underline-offset-4 hover:underline",
-        white: "bg-white text-[#1c1c1c] hover:bg-gray-50 border border-[#e8e8e8]",
+        white: "bg-white text-ink-strong hover:bg-gray-50 border border-line",
       },
       size: {
         default: "h-10 px-4 py-2",

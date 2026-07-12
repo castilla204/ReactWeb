@@ -49,8 +49,8 @@ export default function EnhancedReviewCard({
                 key={index}
                 className={`w-3.5 h-3.5 ${
                     index < score 
-                        ? 'fill-[#222222] text-[#222222]' 
-                        : 'text-[#DDDDDD]'
+                        ? 'fill-ink-strong text-ink' 
+                        : 'text-line'
                 }`}
             />
         ));
@@ -61,7 +61,7 @@ export default function EnhancedReviewCard({
     const remainingImages = imageUrls.length - maxImages;
 
     return (
-        <div className="pb-6 border-b border-[#EBEBEB] last:border-b-0 w-full">
+        <div className="pb-6 border-b border-line last:border-b-0 w-full">
             <div className="flex items-start gap-4">
                 {/* Contenido principal */}
                 <div className="flex-1 min-w-0">
@@ -80,16 +80,16 @@ export default function EnhancedReviewCard({
                                         }}
                                     />
                                 ) : null}
-                                <div className={`w-8 h-8 bg-[#717171] rounded-full flex items-center justify-center text-white text-xs font-medium ${review.reviewer?.profilePictureUrl ? 'hidden' : ''}`}>
+                                <div className={`w-8 h-8 bg-ink-muted rounded-full flex items-center justify-center text-white text-xs font-medium ${review.reviewer?.profilePictureUrl ? 'hidden' : ''}`}>
                                     {review.reviewer?.name?.charAt(0).toUpperCase() || 'U'}
                                 </div>
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="mb-1">
-                                    <h4 className="font-semibold text-[#222222] text-sm mb-0.5">
+                                    <h4 className="font-semibold text-ink text-sm mb-0.5">
                                         {review.reviewer?.name || 'Usuario Anónimo'}
                                     </h4>
-                                    <div className="flex items-center gap-1.5 text-xs text-[#717171]">
+                                    <div className="flex items-center gap-1.5 text-xs text-ink-muted">
                                         <span>{formatDate(review.createdAt)}</span>
                                     </div>
                                 </div>
@@ -102,13 +102,13 @@ export default function EnhancedReviewCard({
 
                     {/* Descripción de la reseña */}
                     <div className="mb-3">
-                        <p className="text-[#222222] text-sm leading-[20px] whitespace-pre-line">
+                        <p className="text-ink text-sm leading-[20px] whitespace-pre-line">
                             {displayText}
                         </p>
                         {shouldTruncate && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className="text-[#222222] text-sm font-semibold underline decoration-1 mt-1 hover:no-underline"
+                                className="text-ink text-sm font-semibold underline decoration-1 mt-1 hover:no-underline"
                             >
                                 {isExpanded ? 'Mostrar menos' : 'Mostrar más'}
                             </button>
@@ -137,7 +137,7 @@ export default function EnhancedReviewCard({
                                     />
                                     {index === maxImages - 1 && remainingImages > 0 && (
                                         <div className="absolute inset-0 bg-black/60 rounded flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
-                                            <span className="text-white text-[10px] font-medium">
+                                            <span className="text-white text-badge font-medium">
                                                 +{remainingImages}
                                             </span>
                                         </div>
@@ -203,7 +203,7 @@ export function EnhancedReviewsList({
 
             {remainingReviews > 0 && (
                 <div className="pt-4">
-                    <button className="text-[#222222] hover:underline text-sm font-semibold underline decoration-1">
+                    <button className="text-ink hover:underline text-sm font-semibold underline decoration-1">
                         Mostrar todas las {reviews.length} reseñas
                     </button>
                 </div>

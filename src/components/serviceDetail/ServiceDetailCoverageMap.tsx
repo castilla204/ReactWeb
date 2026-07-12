@@ -195,13 +195,13 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
     <div
       ref={wrapperRef}
       className={`relative overflow-hidden ${
-        isPreview ? 'bg-[#f5f5f5]' : 'bg-[#eef2f2]'
+        isPreview ? 'bg-surface-tinted' : 'bg-surface-tinted'
       } ${
         isFlush
           ? isPreview
             ? 'border-0'
-            : 'border-[#ebebeb]'
-          : 'rounded-lg border border-[#e8e8e8]'
+            : 'border-line'
+          : 'rounded-lg border border-line'
       } ${fillsParent ? 'min-h-0' : ''} ${className}`.trim()}
     >
       <div
@@ -309,7 +309,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             e.stopPropagation();
             openFullscreen();
           }}
-          className={`absolute right-2 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#e5e7eb] bg-white/95 text-[#334155] shadow-sm transition-colors hover:bg-white active:scale-95 ${
+          className={`absolute right-2 z-[2] inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-white/95 text-ink shadow-sm transition-colors hover:bg-white active:scale-95 ${
             expandButtonPosition === 'bottom'
               ? 'bottom-2'
               : expandButtonPosition === 'bottom-raised'
@@ -334,17 +334,17 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             Mapa interactivo con el radio de cobertura del experto en kilómetros
           </DialogDescription>
 
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#e8e8e8] px-4 py-3">
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#1c1c1c]">Zona de cobertura</p>
-              <p className="text-xs text-[#6a6a6a]">
+              <p className="text-sm font-semibold text-ink-strong">Zona de cobertura</p>
+              <p className="text-xs text-ink-muted">
                 {rangeKm === 0 ? 'El experto atiende solo en su taller (punto fijo)' : `Radio de ${radius} km desde el experto`}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#444] hover:bg-[#f9fafb]"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-white text-ink hover:bg-surface-tinted"
               aria-label="Cerrar mapa"
             >
               <X className="h-4 w-4" />
@@ -362,7 +362,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             )}
           </div>
 
-          <p className="shrink-0 border-t border-[#e8e8e8] bg-[#fafafa] px-4 py-2.5 text-center text-[11px] text-[#6a6a6a]">
+          <p className="shrink-0 border-t border-line bg-surface-tinted px-4 py-2.5 text-center text-kicker text-ink-muted">
             {rangeKm === 0
               ? 'El marcador indica el taller del experto: las inspecciones se realizan en ese punto fijo.'
               : 'La zona delimitada es donde el experto puede atender. Puedes mover y hacer zoom en el mapa.'}

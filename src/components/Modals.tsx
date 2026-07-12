@@ -972,7 +972,7 @@ export function ReportModal({ isOpen, onClose, appointment, onSuccess, setNotifi
                                         Al enviar el reporte, confirmas que has completado el trabajo y que todos los archivos requeridos están subidos.
                                     </p>
                                     <p className="text-xs text-blue-600">
-                                        💡 Una vez enviado, el cliente tendrá 24 horas para aprobar o rechazar el trabajo.
+                                        💡 Una vez enviado, el cliente tendrá 3 días para aprobar o rechazar el trabajo.
                                     </p>
                                 </div>
                             </div>

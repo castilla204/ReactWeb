@@ -26,7 +26,7 @@ export function StripeOnboardingReturnPage() {
                     return;
                 } catch {
                     showToast('error', 'No se pudo reanudar la configuración de pagos. Inténtalo desde tu panel.');
-                    navigate('/expert-panel', { replace: true });
+                    navigate('/expert', { replace: true });
                 }
             } else {
                 try {
@@ -34,7 +34,7 @@ export function StripeOnboardingReturnPage() {
                 } catch {
                     // best-effort; el panel volverá a consultar el estado por su cuenta
                 }
-                navigate('/expert-panel', { replace: true });
+                navigate('/expert', { replace: true });
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps

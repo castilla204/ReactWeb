@@ -17,6 +17,7 @@
  * externas más allá de React.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { MAP_LITERAL } from '../constants/designTokens';
 
 interface SpainCoverageMapProps {
   className?: string;
@@ -179,8 +180,8 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
         {/* Península */}
         <path
           d={outlinePath}
-          fill="rgba(0, 102, 204, 0.06)"
-          stroke="#0066CC"
+          fill={MAP_LITERAL.brandFill}
+          stroke={MAP_LITERAL.brand}
           strokeWidth="1.5"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -191,8 +192,8 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
           <path
             key={`bal-${i}`}
             d={d}
-            fill="rgba(0, 102, 204, 0.06)"
-            stroke="#0066CC"
+            fill={MAP_LITERAL.brandFill}
+            stroke={MAP_LITERAL.brand}
             strokeWidth="1.25"
             strokeLinejoin="round"
           />
@@ -200,15 +201,15 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
 
         {/* Marca de norte tenue, esquina superior derecha */}
         <g transform="translate(670 110)" opacity="0.5" aria-hidden="true">
-          <polygon points="0,-14 -4,-4 4,-4" fill="#1c1c1c" />
-          <line x1="0" y1="-4" x2="0" y2="8" stroke="#1c1c1c" strokeWidth="1.25" />
+          <polygon points="0,-14 -4,-4 4,-4" fill={MAP_LITERAL.inkStrong} />
+          <line x1="0" y1="-4" x2="0" y2="8" stroke={MAP_LITERAL.inkStrong} strokeWidth="1.25" />
           <text
             x="0"
             y="-18"
             textAnchor="middle"
             fontSize="9"
             fontWeight="600"
-            fill="#1c1c1c"
+            fill={MAP_LITERAL.inkStrong}
             letterSpacing="0.5"
           >
             N
@@ -224,8 +225,8 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
             width="252"
             height="110"
             rx="6"
-            fill="#ffffff"
-            stroke="#e8e8e8"
+            fill={MAP_LITERAL.coastHalo}
+            stroke={MAP_LITERAL.lineSoft}
             strokeWidth="1"
           />
           {/* Etiqueta del inset (único uppercase del componente) */}
@@ -235,7 +236,7 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
             fontSize="9"
             fontWeight="600"
             letterSpacing="1.2"
-            fill="#6a6a6a"
+            fill={MAP_LITERAL.inkMid}
             style={{ textTransform: 'uppercase' }}
           >
             Canarias
@@ -246,20 +247,20 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
               key={`can-${i}`}
               d={d}
               fill="rgba(0, 102, 204, 0.06)"
-              stroke="#0066CC"
+              stroke={MAP_LITERAL.brand}
               strokeWidth="1"
               strokeLinejoin="round"
             />
           ))}
           {/* Dot de Las Palmas sobre Gran Canaria */}
-          <circle cx={LAS_PALMAS.cx} cy={LAS_PALMAS.cy} r="3.5" fill="#0066CC" />
-          <circle cx={LAS_PALMAS.cx} cy={LAS_PALMAS.cy} r="1.25" fill="#ffffff" />
+          <circle cx={LAS_PALMAS.cx} cy={LAS_PALMAS.cy} r="3.5" fill={MAP_LITERAL.brand} />
+          <circle cx={LAS_PALMAS.cx} cy={LAS_PALMAS.cy} r="1.25" fill={MAP_LITERAL.coastHalo} />
           <text
             x={LAS_PALMAS.cx + 7}
             y={LAS_PALMAS.cy + 3}
             fontSize="10"
             fontWeight="500"
-            fill="#1c1c1c"
+            fill={MAP_LITERAL.inkStrong}
           >
             Las Palmas
           </text>
@@ -293,7 +294,7 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
 
                 {/* Halo expansivo, sólo si reducedMotion no está activo */}
                 {isActive && !reducedMotion && (
-                  <circle cx={city.cx} cy={city.cy} fill="#0066CC" opacity="0">
+                  <circle cx={city.cx} cy={city.cy} fill={MAP_LITERAL.brand} opacity="0">
                     <animate
                       attributeName="r"
                       from="5"
@@ -316,12 +317,12 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
                   cx={city.cx}
                   cy={city.cy}
                   r={isActive ? 5 : 4}
-                  fill="#0066CC"
+                  fill={MAP_LITERAL.brand}
                   style={{
                     transition: 'r 200ms cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
                 />
-                <circle cx={city.cx} cy={city.cy} r="1.5" fill="#ffffff" />
+                <circle cx={city.cx} cy={city.cy} r="1.5" fill={MAP_LITERAL.coastHalo} />
 
                 {/* Nombre de la ciudad */}
                 <text
@@ -329,7 +330,7 @@ export default function SpainCoverageMap({ className }: SpainCoverageMapProps) {
                   y={textY}
                   fontSize="12"
                   fontWeight={isActive ? 600 : 500}
-                  fill={isActive ? '#0066CC' : '#1c1c1c'}
+                  fill={isActive ? MAP_LITERAL.brand : MAP_LITERAL.inkStrong}
                   textAnchor={textAnchor}
                   style={{
                     transition:

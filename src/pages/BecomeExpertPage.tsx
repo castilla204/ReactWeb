@@ -143,7 +143,7 @@ function BecomeExpertPage() {
     // Aplicar derivedStep cuando cambie, salvo que el usuario haya navegado manualmente.
     useEffect(() => {
         if (derivedStep === -1) {
-            navigate('/expert-panel', { replace: true });
+            navigate('/expert', { replace: true });
             return;
         }
         if (derivedStep === 0) return; // aún loading, no tocar
@@ -496,7 +496,7 @@ function BecomeExpertPage() {
                             'Unos 5 minutos; solo se hace una vez.',
                             'Sin coste para ti; los pagos llegan a tu cuenta.',
                         ].map((label) => (
-                            <li key={label} className="flex items-start gap-2.5 text-sm leading-relaxed text-[#444]">
+                            <li key={label} className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
                                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={2.5} />
                                 {label}
                             </li>
@@ -538,15 +538,15 @@ function BecomeExpertPage() {
 
                     <button
                         type="button"
-                        onClick={() => navigate('/expert-panel')}
-                        className="block w-full text-center text-sm font-semibold text-[#6a6a6a] hover:text-[#1c1c1c]"
+                        onClick={() => navigate('/expert')}
+                        className="block w-full text-center text-sm font-semibold text-ink-muted hover:text-ink-strong"
                     >
                         Configurar más tarde
                     </button>
                 </div>
             </div>
 
-            <p className="text-center text-xs leading-relaxed text-[#9ca3af]">
+            <p className="text-center text-xs leading-relaxed text-ink-soft">
                 Necesitas conectar Stripe antes de poder aceptar encargos.
             </p>
         </div>
@@ -562,7 +562,7 @@ function BecomeExpertPage() {
             <div className={BE_CARD_CLASS}>
                 <div className="space-y-3 p-4 sm:p-5">
                     <div className="flex items-baseline justify-between gap-3">
-                        <label htmlFor="be-address-search" className="text-sm font-semibold text-[#1c1c1c]">
+                        <label htmlFor="be-address-search" className="text-sm font-semibold text-ink-strong">
                             Zona de cobertura
                         </label>
                         <span className="rounded-md bg-brand/[0.08] px-2 py-0.5 text-xs font-medium text-brand">
@@ -571,7 +571,7 @@ function BecomeExpertPage() {
                     </div>
                     <div className="relative">
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
                             <input
                                 id="be-address-search"
                                 ref={searchInputRef}
@@ -592,7 +592,7 @@ function BecomeExpertPage() {
                                 className={`${BE_INPUT_CLASS} pl-10 pr-10`}
                             />
                             {isSearching && (
-                                <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#9ca3af]" />
+                                <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ink-soft" />
                             )}
                         </div>
                         {showAutocomplete && autocompleteResults.length > 0 && (
@@ -609,13 +609,13 @@ function BecomeExpertPage() {
                                                 e.preventDefault();
                                                 handleSelectAutocomplete(item);
                                             }}
-                                            className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-[#f0f6fc]"
+                                            className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-brand/5"
                                         >
                                             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium text-[#1c1c1c]">{item.address}</p>
+                                                <p className="truncate text-sm font-medium text-ink-strong">{item.address}</p>
                                                 {item.locationName && item.locationName !== 'Ubicación' && (
-                                                    <p className="truncate text-xs text-[#6a6a6a]">{item.locationName}</p>
+                                                    <p className="truncate text-xs text-ink-muted">{item.locationName}</p>
                                                 )}
                                             </div>
                                         </button>
@@ -627,7 +627,7 @@ function BecomeExpertPage() {
                             searchAddress.trim().length >= 3 &&
                             autocompleteStatus === 'empty' &&
                             !isSearching && (
-                                <p className="mt-2 text-xs text-[#6a6a6a]" role="status">
+                                <p className="mt-2 text-xs text-ink-muted" role="status">
                                     No hay resultados. Prueba con otra ciudad o mueve el marcador en el mapa.
                                 </p>
                             )}
@@ -639,14 +639,14 @@ function BecomeExpertPage() {
                     </div>
 
                     {detectingCountry ? (
-                        <p className="flex items-center gap-2 text-xs text-[#6a6a6a]">
+                        <p className="flex items-center gap-2 text-xs text-ink-muted">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             Detectando país para pagos…
                         </p>
                     ) : detectedCountry ? (
                         <p
                             className={`text-xs leading-relaxed ${
-                                detectedCountry.supported ? 'text-[#444]' : 'text-amber-900'
+                                detectedCountry.supported ? 'text-ink' : 'text-amber-900'
                             }`}
                             role="status"
                         >
@@ -670,7 +670,7 @@ function BecomeExpertPage() {
                     ) : null}
 
                     {!MAPBOX_TOKEN && (
-                        <p className="text-xs text-[#6a6a6a]">
+                        <p className="text-xs text-ink-muted">
                             Sin búsqueda por dirección: haz clic en el mapa o arrastra el marcador.
                         </p>
                     )}
@@ -688,12 +688,12 @@ function BecomeExpertPage() {
                 </LazyMount>
 
                 {/* Rango de trabajo del experto (0 = solo en su taller) */}
-                <div className="space-y-2 border-t border-[#ececec] p-4 sm:p-5">
+                <div className="space-y-2 border-t border-line p-4 sm:p-5">
                     <div className="flex items-baseline justify-between gap-3">
-                        <label htmlFor="be-work-radius" className="text-sm font-semibold text-[#1c1c1c]">
+                        <label htmlFor="be-work-radius" className="text-sm font-semibold text-ink-strong">
                             Rango de trabajo
                         </label>
-                        <span className="text-sm font-medium text-[#1c1c1c]">
+                        <span className="text-sm font-medium text-ink-strong">
                             {workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} km`}
                         </span>
                     </div>
@@ -708,20 +708,20 @@ function BecomeExpertPage() {
                         className="w-full h-2 rounded-lg accent-blue-700 cursor-pointer"
                         aria-valuetext={workRadiusKm === 0 ? 'Solo en mi taller' : `${workRadiusKm} kilómetros`}
                     />
-                    <div className="flex justify-between text-[11px] text-[#9ca3af]">
+                    <div className="flex justify-between text-kicker text-ink-soft">
                         <span>Solo en mi taller</span>
                         <span>200 km</span>
                     </div>
-                    <p className="text-xs leading-relaxed text-[#6a6a6a]">
+                    <p className="text-xs leading-relaxed text-ink-muted">
                         Distancia máxima a la que te desplazas desde tu punto fijo. Elige 0 km si solo atiendes
                         en tu taller. Podrás cambiarlo después desde tu perfil.
                     </p>
                 </div>
 
-                <div className="space-y-4 border-t border-[#ececec] p-4 sm:p-5">
+                <div className="space-y-4 border-t border-line p-4 sm:p-5">
                     <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-sm font-semibold text-[#1c1c1c]">Disponibilidad horaria</span>
-                        <span className="text-xs text-[#9ca3af]">Mín. 1 día</span>
+                        <span className="text-sm font-semibold text-ink-strong">Disponibilidad horaria</span>
+                        <span className="text-xs text-ink-soft">Mín. 1 día</span>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -746,7 +746,7 @@ function BecomeExpertPage() {
                     {availability.daysOfWeek.length > 0 && (
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label htmlFor="be-start-time" className="mb-2 block text-xs font-medium text-[#6a6a6a]">
+                                <label htmlFor="be-start-time" className="mb-2 block text-xs font-medium text-ink-muted">
                                     Hora de inicio
                                 </label>
                                 <input
@@ -760,7 +760,7 @@ function BecomeExpertPage() {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="be-end-time" className="mb-2 block text-xs font-medium text-[#6a6a6a]">
+                                <label htmlFor="be-end-time" className="mb-2 block text-xs font-medium text-ink-muted">
                                     Hora de fin
                                 </label>
                                 <input
@@ -806,11 +806,11 @@ function BecomeExpertPage() {
                                     previewUrl={previewUrl}
                                     onPhotoReady={applyProfilePhoto}
                                 />
-                                <div className="mt-5 border-t border-[#ececec] pt-5 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                                    <label htmlFor="be-description" className="block text-sm font-semibold text-[#1c1c1c]">
+                                <div className="mt-5 border-t border-line pt-5 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                                    <label htmlFor="be-description" className="block text-sm font-semibold text-ink-strong">
                                         Experiencia profesional
                                     </label>
-                                    <p className="mt-1 text-xs text-[#6a6a6a]">
+                                    <p className="mt-1 text-xs text-ink-muted">
                                         Años de experiencia, especialidad y qué incluye tu servicio.
                                     </p>
                                     <textarea
@@ -828,10 +828,10 @@ function BecomeExpertPage() {
                                         aria-invalid={stepAttempted[1] && (descriptionTrimLen < 30 || descriptionTrimLen > 60)}
                                     />
                                     <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-                                        <span className="text-[#6a6a6a]">Entre 30 y 60 caracteres (sin espacios al inicio o final)</span>
+                                        <span className="text-ink-muted">Entre 30 y 60 caracteres (sin espacios al inicio o final)</span>
                                         <span
                                             className={`font-semibold tabular-nums ${
-                                                descriptionTrimLen >= 30 && descriptionTrimLen <= 60 ? 'text-brand' : 'text-[#9ca3af]'
+                                                descriptionTrimLen >= 30 && descriptionTrimLen <= 60 ? 'text-brand' : 'text-ink-soft'
                                             }`}
                                         >
                                             {descriptionTrimLen}/60
@@ -861,7 +861,7 @@ function BecomeExpertPage() {
                             description="Confirma que todo está correcto. Después conectarás Stripe para recibir pagos."
                         />
 
-                        <ul className={`${BE_CARD_CLASS} divide-y divide-[#ececec] p-0`}>
+                        <ul className={`${BE_CARD_CLASS} divide-y divide-line p-0`}>
                             {[
                                 { ok: !!formData.profilePicture || !!existingProfilePictureUrl, label: 'Foto de perfil' },
                                 {
@@ -881,11 +881,11 @@ function BecomeExpertPage() {
                             ].map((item) => (
                                 <li key={item.label} className="flex items-center gap-3 px-4 py-3 text-sm">
                                     <Check
-                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-brand' : 'text-[#d1d5db]'}`}
+                                        className={`h-4 w-4 shrink-0 ${item.ok ? 'text-brand' : 'text-ink-soft'}`}
                                         strokeWidth={2.5}
                                         aria-hidden
                                     />
-                                    <span className={item.ok ? 'text-[#1c1c1c]' : 'text-[#9ca3af]'}>{item.label}</span>
+                                    <span className={item.ok ? 'text-ink-strong' : 'text-ink-soft'}>{item.label}</span>
                                 </li>
                             ))}
                         </ul>
@@ -900,10 +900,10 @@ function BecomeExpertPage() {
                                     className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded text-brand focus:ring-brand/30"
                                     required
                                 />
-                                <span className="text-[15px] leading-relaxed text-[#1c1c1c]">
+                                <span className="text-lead leading-relaxed text-ink-strong">
                                     Acepto los{' '}
                                     <a
-                                        href="/terms.html"
+                                        href="/legal/terms"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={`font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
@@ -913,7 +913,7 @@ function BecomeExpertPage() {
                                     </a>{' '}
                                     y la{' '}
                                     <a
-                                        href="/privacy-policy.html"
+                                        href="/legal/privacy"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={`font-semibold text-brand ${HP_LINK_UNDERLINE_CLASS}`}
@@ -1059,7 +1059,7 @@ function BecomeExpertPage() {
             <SEO
                 title="Hazte experto en Inspecciono · Cobra inspecciones pre-compra | Inspecciono"
                 description="Mecánico, perito o técnico: revisiones presenciales y online antes de comprar. Conecta Stripe y completa tu perfil."
-                canonical="/become-expert"
+                canonical="/expert/join"
             />
             <BecomeExpertFastPathShell
                 onBack={() => navigate(-1)}
@@ -1187,13 +1187,13 @@ function BecomeExpertPage() {
         <SEO
             title="Hazte experto en Inspecciono · Cobra inspecciones pre-compra | Inspecciono"
             description="Mecánico, perito o técnico: monta tu ficha en Inspecciono y empieza a cobrar inspecciones pre-compra con Stripe. Verificación rápida, sin coste de alta."
-            canonical="/become-expert"
+            canonical="/expert/join"
             ogTitle="Hazte experto verificado en Inspecciono"
             ogDescription="Inspecciones pre-compra para clientes que pagan en escrow. Tú fijas precio y zona. Comisión transparente, sin alta."
             jsonLd={[
                 breadcrumbSchema([
                     { name: 'Inicio', url: '/' },
-                    { name: 'Hazte experto', url: '/become-expert' },
+                    { name: 'Hazte experto', url: '/expert/join' },
                 ]),
             ]}
         />

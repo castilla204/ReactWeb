@@ -174,7 +174,7 @@ const RejectAppointmentModal: React.FC<RejectAppointmentModalProps> = ({
                         )}
                       </AccordionTrigger>
                       <AccordionContent className="pt-1 pb-0">
-                        <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-200">
+                        <p className="text-kicker leading-relaxed text-amber-800 dark:text-amber-200">
                           {actionType === 'cancel' ? (
                             userRole === 'client' ? (
                               appointment && (appointment.clientCancellationCount || 0) >= 1 ? (

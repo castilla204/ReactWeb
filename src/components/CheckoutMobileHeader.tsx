@@ -13,14 +13,14 @@ export const CheckoutMobileHeader: React.FC = () => {
         <header
             className={cn(
                 SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                'flex items-center justify-between border-b border-[#ebebeb] bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]'
+                'flex items-center justify-between border-b border-line bg-white px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))]'
             )}
         >
             <span
-                className="text-[16px] font-extrabold tracking-[-0.02em] text-[#2563EB]"
+                className="text-subtitle font-extrabold tracking-[-0.02em] text-brand"
                 style={{ fontFamily: HP_FONT }}
             >
-                Inspecciono<span className="text-[#F59E0B]">.</span>
+                Inspecciono<span className="text-amber-500">.</span>
             </span>
             <a
                 href="/"

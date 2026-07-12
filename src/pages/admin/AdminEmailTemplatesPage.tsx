@@ -24,24 +24,24 @@ const AdminEmailTemplatesPage: React.FC = () => {
       <AdminCard>
         <div className="p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <span className="text-sm font-semibold text-ink flex items-center gap-2">
               <Mail className="w-4 h-4" /> Plantillas
             </span>
-            <button onClick={() => void reload()} className="text-gray-400 hover:text-gray-600" title="Recargar">
+            <button onClick={() => void reload()} className="text-ink-muted hover:text-ink" title="Recargar">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
-          {isLoading && <div className="text-sm text-gray-500 py-4">Cargando…</div>}
-          {error && <div className="text-sm text-red-600 py-4">{error}</div>}
+          {isLoading && <div className="text-sm text-ink-muted py-4">Cargando…</div>}
+          {error && <div className="text-sm text-destructive py-4">{error}</div>}
           {!isLoading && !error && groups.map((g) => (
             <div key={g.group} className="mb-3">
-              <div className="text-[11px] uppercase tracking-wide text-gray-400 px-2 mb-1">{g.group}</div>
+              <div className="text-kicker uppercase tracking-wide text-ink-muted px-2 mb-1">{g.group}</div>
               {g.items.map((item) => (
                 <button
                   key={item.key}
                   onClick={() => setSelectedKey(item.key)}
                   className={`w-full text-left px-2 py-1.5 rounded-md text-sm transition-colors ${
-                    item.key === selectedKey ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                    item.key === selectedKey ? 'bg-brand/10 text-brand font-medium' : 'text-ink-strong hover:bg-surface-tinted'
                   }`}
                 >
                   {item.label}
@@ -58,20 +58,20 @@ const AdminEmailTemplatesPage: React.FC = () => {
             <>
               <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <div>
-                  <div className="text-xs text-gray-400">Asunto</div>
-                  <div className="text-sm font-semibold text-gray-800">{selected.subject}</div>
+                  <div className="text-xs text-ink-muted">Asunto</div>
+                  <div className="text-sm font-semibold text-ink-strong">{selected.subject}</div>
                 </div>
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <div className="flex items-center gap-1 bg-surface-tinted rounded-lg p-1">
                   <button
                     onClick={() => setMobile(false)}
-                    className={`p-1.5 rounded-md ${!mobile ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                    className={`p-1.5 rounded-md ${!mobile ? 'bg-white shadow-sm text-brand' : 'text-ink-muted'}`}
                     title="Escritorio"
                   >
                     <Monitor className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setMobile(true)}
-                    className={`p-1.5 rounded-md ${mobile ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                    className={`p-1.5 rounded-md ${mobile ? 'bg-white shadow-sm text-brand' : 'text-ink-muted'}`}
                     title="Móvil"
                   >
                     <Smartphone className="w-4 h-4" />
@@ -79,28 +79,26 @@ const AdminEmailTemplatesPage: React.FC = () => {
                 </div>
               </div>
               {selected.key === 'invoice' && (
-                <div className="text-xs text-amber-700 bg-amber-50 rounded-md px-3 py-2 mb-3">
+                <div className="text-xs text-warning bg-warning-tint rounded-md px-3 py-2 mb-3">
                   El email real incluye además la factura en PDF adjunta (no se muestra aquí).
                 </div>
               )}
-              <div className="flex justify-center bg-gray-100 rounded-lg p-4 overflow-auto">
+              <div className="flex justify-center bg-surface-tinted rounded-lg p-4 overflow-auto">
                 <iframe
                   title={`preview-${selected.key}`}
                   srcDoc={selected.html}
                   sandbox=""
+                  className="rounded-lg border-0 bg-white"
                   style={{
                     width: mobile ? 390 : '100%',
                     maxWidth: '100%',
                     height: 'clamp(560px, calc(100dvh - 230px), 720px)',
-                    border: 'none',
-                    background: '#fff',
-                    borderRadius: 8,
                   }}
                 />
               </div>
             </>
           ) : (
-            <div className="text-sm text-gray-500 py-8 text-center">Selecciona una plantilla para ver su diseño.</div>
+            <div className="text-sm text-ink-muted py-8 text-center">Selecciona una plantilla para ver su diseño.</div>
           )}
         </div>
       </AdminCard>

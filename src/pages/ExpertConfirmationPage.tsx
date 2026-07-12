@@ -7,7 +7,7 @@ import { SileoButton } from '../components/ui/sileo-button';
 import { AppointmentWizardShell } from '../components/checkout/AppointmentWizardShell';
 import { ReadOnlyAppointmentCalendar } from '../components/checkout/ReadOnlyAppointmentCalendar';
 import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
-import AppointmentMap from '../components/AppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from '../components/map/LazyAppointmentMap';
 import { CheckoutSelfChoicePreviewMap } from '../components/checkout/CheckoutSellerChoiceLocked';
 import SEO from '../components/SEO';
 
@@ -168,8 +168,12 @@ export default function ExpertConfirmationPage() {
     const isLastStep = !hasMapPoint || wizardStep === 2;
 
     const card: React.CSSProperties = {
-        background: '#fff', border: '0.5px solid #DCE3EC', borderRadius: 16,
-        maxWidth: 560, width: '100%', padding: 24,
+        background: 'hsl(var(--surface))',
+        border: '0.5px solid hsl(var(--line))',
+        borderRadius: 16,
+        maxWidth: 560,
+        width: '100%',
+        padding: 24,
     };
 
     const pending = status === 'ok' && ctx && !done && !ctx.expired;
@@ -223,13 +227,13 @@ export default function ExpertConfirmationPage() {
             type="button"
             onClick={() => { setError(null); setRejectConfirming(true); }}
             disabled={submitting || rejecting}
-            className="w-full py-2 text-center text-[13px] text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
+            className="w-full py-2 text-center text-meta text-muted-foreground underline transition hover:text-foreground disabled:opacity-50"
         >
             No podré atender la cita
         </button>
     ) : (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-3">
-            <p className="mb-2.5 text-[13px] text-red-800">
+            <p className="mb-2.5 text-meta text-red-800">
                 Se cancelará la cita y el comprador recibirá el 100%. ¿Confirmar?
             </p>
             <div className="flex gap-2">
@@ -246,7 +250,7 @@ export default function ExpertConfirmationPage() {
                     type="button"
                     onClick={() => setRejectConfirming(false)}
                     disabled={rejecting}
-                    className="flex-1 rounded-lg border border-[#dce3ec] bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-gray-50"
+                    className="flex-1 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface-tinted"
                 >
                     Volver
                 </button>
@@ -257,7 +261,7 @@ export default function ExpertConfirmationPage() {
     // Estado pendiente: wizard a ancho completo
     if (pending && ctx) {
         return (
-            <div className="min-h-[100dvh] bg-[#f3f4f6]">
+            <div className="min-h-[100dvh] bg-surface-tinted">
                 <SEO title="Confirma la cita | Inspecciono" description="Revisa y confirma la cita de inspección." noindex />
                 <AppointmentWizardShell
                     steps={expertSteps}
@@ -272,9 +276,9 @@ export default function ExpertConfirmationPage() {
                     desktopTallRight={hasMapPoint && wizardStep === 2}
                     desktopLeft={wizardStep === 1 ? lockedCards : (
                         <div className="space-y-2">
-                            <p className="text-[15px] font-semibold text-[#1c1c1c]">Dirección</p>
-                            <p className="text-[13px] leading-[1.5] text-[#1c1c1c]">{prettyPlace || 'Por determinar'}</p>
-                            <p className="text-[12px] text-[#64748b]">{prettyDate}</p>
+                            <p className="text-lead font-semibold text-ink-strong">Dirección</p>
+                            <p className="text-meta leading-[1.5] text-ink-strong">{prettyPlace || 'Por determinar'}</p>
+                            <p className="text-caption text-ink-muted">{prettyDate}</p>
                         </div>
                     )}
                     desktopRight={wizardStep === 1 ? calendarNode : mapNode}
@@ -304,14 +308,14 @@ export default function ExpertConfirmationPage() {
                         className="fixed inset-x-0 z-[71] px-5 lg:hidden"
                         style={{ bottom: 'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)) + 0.5rem)' }}
                     >
-                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800 shadow-lg">
+                        <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-meta text-red-800 shadow-lg">
                             {error}
                         </p>
                     </div>
                 )}
                 {/* Pie desktop: error + rechazo (en móvil viven en el cuerpo / tira fija). */}
                 <div className="mx-auto hidden w-full px-5 pb-6 lg:block lg:max-w-[75rem] lg:px-8">
-                    {error && <p className="mb-2 text-[13px] text-red-600">{error}</p>}
+                    {error && <p className="mb-2 text-meta text-red-600">{error}</p>}
                     {rejectNode}
                 </div>
             </div>
@@ -320,28 +324,28 @@ export default function ExpertConfirmationPage() {
 
     // Estados resueltos / cargando / inválido / caducado: tarjeta centrada actual sin cambios.
     return (
-        <div style={{ minHeight: '100dvh', background: '#F3F6FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <div className="flex min-h-[100dvh] items-center justify-center bg-surface-tinted p-4">
             <SEO title="Confirma la cita | Inspecciono" description="Revisa y confirma la cita de inspección." noindex />
             <div style={card}>
-                <strong style={{ fontSize: 18, color: '#1C63B4', display: 'block', marginBottom: 12 }}>Inspecciono</strong>
+                <strong className="mb-3 block text-lead font-semibold text-brand">Inspecciono</strong>
 
                 {status === 'loading' && (
                     <SileoLoader message="Comprobando el enlace…" color="muted" />
                 )}
 
                 {status === 'invalid' && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: 14 }}>Este enlace no es válido o la cita ya se ha resuelto.</p>
+                    <div className="flex items-start gap-2.5">
+                        <AlertTriangle size={20} className="shrink-0 text-destructive" />
+                        <p className="m-0 text-body">Este enlace no es válido o la cita ya se ha resuelto.</p>
                     </div>
                 )}
 
                 {status === 'ok' && done === 'approved' && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
+                    <div className="flex items-start gap-2.5">
+                        <CheckCircle2 size={20} className="shrink-0 text-success" />
                         <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Cita confirmada</p>
-                            <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>
+                            <p className="mb-1 text-body font-semibold">Cita confirmada</p>
+                            <p className="m-0 text-body text-ink-muted">
                                 Te esperamos el {prettyDate}. ¡Gracias!
                             </p>
                         </div>
@@ -349,11 +353,11 @@ export default function ExpertConfirmationPage() {
                 )}
 
                 {status === 'ok' && done === 'rejected' && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <CheckCircle2 size={20} style={{ color: '#1F9D55', flexShrink: 0 }} />
+                    <div className="flex items-start gap-2.5">
+                        <CheckCircle2 size={20} className="shrink-0 text-success" />
                         <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600 }}>Cita rechazada</p>
-                            <p style={{ margin: 0, fontSize: 14, color: '#6B7280' }}>
+                            <p className="mb-1 text-body font-semibold">Cita rechazada</p>
+                            <p className="m-0 text-body text-ink-muted">
                                 Has rechazado la cita. Se ha devuelto el importe al comprador.
                             </p>
                         </div>
@@ -361,9 +365,9 @@ export default function ExpertConfirmationPage() {
                 )}
 
                 {status === 'ok' && !done && ctx?.expired && (
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <AlertTriangle size={20} style={{ color: '#D32F2F', flexShrink: 0 }} />
-                        <p style={{ margin: 0, fontSize: 14 }}>El plazo para confirmar ha caducado.</p>
+                    <div className="flex items-start gap-2.5">
+                        <AlertTriangle size={20} className="shrink-0 text-destructive" />
+                        <p className="m-0 text-body">El plazo para confirmar ha caducado.</p>
                     </div>
                 )}
             </div>

@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
-import { LoginModal } from './LoginModal';
 import { Search, HelpCircle, Bell, MessageSquare, CircleUserRound } from 'lucide-react';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
 import {
@@ -17,6 +16,9 @@ const MOBILE_GOOGLE_BUTTON_ID = 'mobile-bottom-bar-google-btn';
 
 const ICON_SIZE = 22;
 const ICON_STROKE = 2;
+const LoginModalLazy = lazy(() =>
+  import('./LoginModal').then((m) => ({ default: m.LoginModal })),
+);
 
 /**
  * Tab individual de la barra inferior. Ancho fijo 56px + gap 4px, centrados en
@@ -75,22 +77,7 @@ const TabButton: React.FC<TabButtonProps> = ({
         {badgeCount > 0 && (
           <span
             aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: '-6px',
-              right: '-8px',
-              minWidth: '16px',
-              height: '16px',
-              padding: '0 4px',
-              borderRadius: '999px',
-              background: '#dc2626',
-              color: '#ffffff',
-              fontSize: '10px',
-              fontWeight: 700,
-              lineHeight: '16px',
-              textAlign: 'center',
-              boxShadow: '0 0 0 2px #ffffff',
-            }}
+            className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-badge font-bold leading-4 text-white shadow-[0_0_0_2px_hsl(var(--surface))]"
           >
             {badgeCount > 99 ? '99+' : badgeCount}
           </span>
@@ -176,21 +163,21 @@ export const MobileBottomBar: React.FC = () => {
 
   const isActive = (path: string) => {
     if (path === '/') {
-      return location.pathname === '/' || location.pathname === '/explorar';
+      return location.pathname === '/';
     }
     return location.pathname === path;
   };
 
   const exploreActive = isActive('/');
-  const messagesActive = isActive('/mis-mensajes');
-  const howItWorksActive = isActive('/ayuda');
+  const messagesActive = isActive('/messages');
+  const howItWorksActive = isActive('/help');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
 
   const handleHowItWorksClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/ayuda');
+    navigate('/help');
   };
 
   const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
@@ -205,7 +192,7 @@ export const MobileBottomBar: React.FC = () => {
     if (isAuthenticated) {
       // Bandeja unificada: la entrada "Mensajes" abre con el filtro de consultas
       // precontratación; "Mis contrataciones" (menú) entra con el filtro contrataciones.
-      navigate('/mis-mensajes?filtro=consultas');
+      navigate('/messages?filter=inquiries');
     }
   };
 
@@ -252,7 +239,7 @@ export const MobileBottomBar: React.FC = () => {
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <span style={{ color: '#ffffff', fontSize: '12px', fontWeight: 600 }}>
+          <span className="text-caption font-semibold text-white">
             {(user.name || user.email || 'U').charAt(0).toUpperCase()}
           </span>
         )}
@@ -271,7 +258,7 @@ export const MobileBottomBar: React.FC = () => {
         height: 'calc(65px + env(safe-area-inset-bottom, 0px))',
         paddingTop: '11px',
         paddingBottom: 'max(11px, env(safe-area-inset-bottom))',
-        background: '#ffffff',
+        background: 'hsl(var(--surface))',
         borderTop: `1px solid ${HP_COLOR.border}`,
         boxShadow: '0 -1px 2px rgba(15,23,42,0.04), 0 -10px 28px -16px rgba(15,23,42,0.18)',
       }}
@@ -303,7 +290,7 @@ export const MobileBottomBar: React.FC = () => {
           icon={<HelpCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
           active={howItWorksActive}
           onClick={handleHowItWorksClick}
-          ariaLabel="Cómo funciona"
+          ariaLabel="Ayuda"
         />
 
         {/* 🛡️ MUD-DH — Bell de notificaciones mobile.
@@ -390,12 +377,14 @@ export const MobileBottomBar: React.FC = () => {
       )}
 
       {/* ✅ Modal de login unificado */}
-      <LoginModal
-        open={isLoginModalOpen}
-        onOpenChange={setIsLoginModalOpen}
-        initialTab="login"
-        onSuccess={() => setIsLoginModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <LoginModalLazy
+          open={isLoginModalOpen}
+          onOpenChange={setIsLoginModalOpen}
+          initialTab="login"
+          onSuccess={() => setIsLoginModalOpen(false)}
+        />
+      </Suspense>
     </nav>
   );
 };

@@ -28,7 +28,7 @@ interface ServiceDetailReviewsModalProps {
 }
 
 const DESKTOP_REVIEWS_PANEL_CLASS =
-  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(480px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-[#ebebeb] bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[480px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none';
+  'fixed right-0 top-0 z-50 flex h-full max-h-[100dvh] w-full max-w-[min(480px,100vw)] flex-col gap-0 overflow-hidden border-0 border-l border-line bg-white p-0 shadow-[-16px_0_48px_rgba(15,23,42,0.12)] duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-[480px] !left-auto !right-0 !top-0 !h-full !max-h-[100dvh] !w-full !translate-x-0 !translate-y-0 !rounded-none';
 
 function ReviewsDrawerHeader({
   expertName,
@@ -48,18 +48,18 @@ function ReviewsDrawerHeader({
 
   return (
     <header
-      className={`sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-[#ebebeb] bg-white ${
+      className={`sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-line bg-white ${
         isDesktop ? 'px-6 py-4' : 'px-5 py-3'
       }`}
     >
       <div className="min-w-0 pr-3">
-        <p className="truncate text-lg font-semibold leading-tight text-[#222222]">Reseñas</p>
-        <p className="mt-0.5 truncate text-sm text-[#717171]">{subtitle}</p>
+        <p className="truncate text-lg font-semibold leading-tight text-ink">Reseñas</p>
+        <p className="mt-0.5 truncate text-sm text-ink-muted">{subtitle}</p>
       </div>
       <button
         type="button"
         onClick={onClose}
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#717171] transition-colors hover:bg-[#f5f5f5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#222222]"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-strong"
         aria-label="Cerrar reseñas"
       >
         <X className="h-5 w-5" aria-hidden />
@@ -81,7 +81,7 @@ function ReviewsDrawerSummary({
   const showBars = reviewCount >= 3;
 
   return (
-    <div className="sd-reviews-drawer-summary shrink-0 border-b border-[#ebebeb] bg-white px-5 py-4 lg:px-6">
+    <div className="sd-reviews-drawer-summary shrink-0 border-b border-line bg-white px-5 py-4 lg:px-6">
       <ServiceDetailReviewsMobileStatsRow
         averageRating={averageRating}
         reviewCount={reviewCount}

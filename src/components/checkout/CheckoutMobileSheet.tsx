@@ -40,12 +40,12 @@ export function CheckoutMobileSheet({
   }
 
   const sectionCls = compact
-    ? 'checkout-mobile-sheet mt-4 border-t border-[#f0f0f0] bg-white pb-2 pt-4'
+    ? 'checkout-mobile-sheet mt-4 border-t border-line-soft bg-white pb-2 pt-4'
     : `checkout-mobile-sheet ${SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS}`;
 
   const titleCls = compact
-    ? `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#999]`
-    : `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3 text-sm font-semibold tracking-[-0.01em] text-[#1c1c1c]`;
+    ? `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-2 text-kicker font-semibold uppercase tracking-wide text-ink-soft`
+    : `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3 text-sm font-semibold tracking-[-0.01em] text-ink-strong`;
 
   return (
     <section className={sectionCls}>
