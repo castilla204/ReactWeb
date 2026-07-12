@@ -78,8 +78,9 @@ export function CheckoutDesktopAppointmentHeader({
     onStepSelect,
     className,
 }: {
-    title: string;
-    description: ReactNode;
+    /** Si falta, no se pinta título ni lead (paso de pago: la miga ya dice "Pago"). */
+    title?: string;
+    description?: ReactNode;
     onBack?: () => void;
     /** Nombra el destino («Volver al servicio», «Volver a la cita»…), no un «Volver» huérfano. */
     backLabel?: string;
@@ -118,12 +119,16 @@ export function CheckoutDesktopAppointmentHeader({
                     ) : null}
                 </div>
             ) : null}
-            <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] lg:text-[19px]">
-                {title}
-            </h2>
-            <p className="mt-1.5 max-w-2xl text-[13px] leading-[1.5] text-[#565d6b] lg:text-[14px]">
-                {description}
-            </p>
+            {title ? (
+                <>
+                    <h2 className="text-[17px] font-semibold leading-snug tracking-[-0.02em] text-[#1c1c1c] lg:text-[19px]">
+                        {title}
+                    </h2>
+                    <p className="mt-1.5 max-w-2xl text-[13px] leading-[1.5] text-[#565d6b] lg:text-[14px]">
+                        {description}
+                    </p>
+                </>
+            ) : null}
         </header>
     );
 }

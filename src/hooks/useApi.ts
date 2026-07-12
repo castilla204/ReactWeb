@@ -188,6 +188,15 @@ export const useApi = () => {
                 if (!error.message && typeof error.Message === 'string' && error.Message) {
                     error.message = error.Message;
                 }
+                // W13 FIX (auditoría 2026-07-12): algunos endpoints devuelven el motivo en
+                // `{ error: "..." }` (ej. validación seller de CreateSearchWithHire). Mapearlo
+                // también para no degradar a "Request failed with status N".
+                if (!error.message && typeof error.error === 'string' && error.error) {
+                    error.message = error.error;
+                }
+                if (!error.message && typeof error.Error === 'string' && error.Error) {
+                    error.message = error.Error;
+                }
                 if (!error.message) {
                     error.message = `Request failed with status ${response.status}`;
                 }

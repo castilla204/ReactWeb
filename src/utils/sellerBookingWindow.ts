@@ -24,7 +24,7 @@ export const COORD_OPTION_SELLER_DESC =
 
 /** Popover «más info» en la tarjeta Inspecciono lo coordina. */
 export const SELLER_COORD_CARD_NOTE =
-    `Necesitamos móvil o email del vendedor. Le mandamos un enlace para que elija un hueco libre del experto entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago. Si no reserva a tiempo, te reembolsamos el importe.`;
+    `Necesitamos móvil o email del vendedor. Le mandamos un enlace para que elija un hueco libre del experto, normalmente entre ${SELLER_BOOKING_MIN_LEAD_DAYS} y ${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago (hasta ${SELLER_BOOKING_MAX_DAYS} si tiene poca agenda). Si no reserva a tiempo, te reembolsamos el importe.`;
 
 /** Calendario solo consulta (preview) en checkout modo vendedor. */
 export const SELLER_COORD_CALENDAR_PREVIEW_NOTE =

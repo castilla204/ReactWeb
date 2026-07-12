@@ -581,9 +581,14 @@ const SlotPicker: React.FC<Props> = ({
                 <div
                     className={cn(
                         'w-full',
-                        embeddedSplitColumn
-                            ? 'mx-auto w-full max-w-[24rem] lg:max-w-[27rem]'
-                            : cn('lg:flex lg:h-full lg:flex-col', EMBEDDED_CALENDAR_MAX_WIDTH_CLASS),
+                        // embeddedSplitColumn: nada de max-w propio — el ancho real ya lo fija
+                        // la pista minmax(0,1fr) del grid (gridClass); un tope aparte aquí solo
+                        // puede dejar la columna por debajo de lo disponible y, con mx-auto,
+                        // centrarla dejando aire a los lados en tarjetas anchas (feedback
+                        // 2026-07-12). Las celdas del día ya son fluidas (flex-1 basis-0), así
+                        // que llenar la pista entera es seguro.
+                        !embeddedSplitColumn &&
+                            cn('lg:flex lg:h-full lg:flex-col', EMBEDDED_CALENDAR_MAX_WIDTH_CLASS),
                     )}
                 >
                     <CalendarToolbar />
