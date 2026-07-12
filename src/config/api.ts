@@ -1,6 +1,10 @@
 // ✅ API: localhost en desarrollo, producción en render
 const PRODUCTION_API = 'https://newapi-yn9v.onrender.com';
 
+function isLocalhostApiUrl(url: string): boolean {
+    return /localhost|127\.0\.0\.1/i.test(url);
+}
+
 /** v0 preview y sandboxes remotos no tienen backend en localhost:7124. */
 function isRemotePreviewHost(): boolean {
     if (typeof window === 'undefined') return false;
@@ -8,17 +12,28 @@ function isRemotePreviewHost(): boolean {
     return host.endsWith('.vusercontent.net') || host.endsWith('.vercel.app');
 }
 
+/** Página HTTPS remota (v0): http://localhost está bloqueado por el navegador (PNA). */
+function isSecureRemotePreview(): boolean {
+    return typeof window !== 'undefined'
+        && window.location.protocol === 'https:'
+        && isRemotePreviewHost();
+}
+
 const getApiBaseUrl = (): string => {
+    const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
+
     if (import.meta.env.DEV) {
-        if (import.meta.env.VITE_API_URL) {
-            return import.meta.env.VITE_API_URL;
+        // v0/Vercel preview: same-origin '' → proxy Vite → Render (sin CORS ni localhost).
+        if (isSecureRemotePreview()) {
+            if (envUrl && !isLocalhostApiUrl(envUrl)) return envUrl;
+            return '';
         }
-        if (isRemotePreviewHost()) {
-            return PRODUCTION_API;
-        }
+        if (envUrl) return envUrl;
         return 'http://localhost:7124';
     }
-    return import.meta.env.VITE_API_URL || PRODUCTION_API;
+
+    if (envUrl && !isLocalhostApiUrl(envUrl)) return envUrl;
+    return PRODUCTION_API;
 };
 
 const API_PATH = '/api';

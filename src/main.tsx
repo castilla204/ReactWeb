@@ -20,6 +20,16 @@ import './i18n'
 import './index.css'
 import 'flag-icons/css/flag-icons.min.css'
 import './styles/notification-center.css'
+import { setupRateLimitHandler } from './services/rateLimitHandler'
+import { setupErrorInterceptor } from './services/errorInterceptor'
+import { authService } from './services/authService'
+
+// Interceptores de fetch antes del primer render (CurrencyContext hace fetch al montar).
+if (typeof window !== 'undefined') {
+    void authService
+    setupRateLimitHandler()
+    setupErrorInterceptor()
+}
 
 function logUnhandledError(label: string, error: unknown) {
     console.error(label, {
