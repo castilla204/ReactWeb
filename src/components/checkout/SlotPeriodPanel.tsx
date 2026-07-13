@@ -19,6 +19,10 @@ interface SlotPeriodPanelProps {
     compact?: boolean;
     /** Checkout desktop integrado: layout optimizado para columna estrecha. */
     embedded?: boolean;
+    /** Checkout desktop 50/50: columna de horas estrecha junto al calendario. */
+    splitColumn?: boolean;
+    /** Drawer lateral desktop: chips apilados a ancho completo. */
+    splitColumnDrawer?: boolean;
     showPeriodFilter?: boolean;
     /** Drawer móvil: Mañana/Tarde en lugar de rejilla plana. */
     splitPeriodsOnMobile?: boolean;
@@ -33,12 +37,12 @@ const SLOT_PERIOD_LABEL_CLASS =
 
 const slotButtonClass = (active: boolean, embedded?: boolean) =>
     cn(
-        'inline-flex w-full select-none items-center justify-center rounded-md border font-semibold tabular-nums transition-colors',
+        'inline-flex w-full select-none items-center justify-center rounded-full border font-semibold tabular-nums transition-[background-color,border-color,box-shadow,transform] duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
         embedded ? 'h-9 text-caption' : 'h-9 min-w-[3.75rem] px-2.5 text-meta sm:min-w-[4.25rem]',
         active
-            ? 'border-brand bg-brand text-white shadow-sm'
-            : 'border-line bg-white text-ink-strong hover:border-brand/45 hover:bg-brand/[0.04]',
+            ? 'border-brand bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.25)]'
+            : 'border-brand/15 bg-brand/[0.05] text-ink-strong hover:border-brand/30 hover:bg-brand/10 motion-safe:active:scale-[0.97]',
     );
 
 function PeriodFilterChips({
@@ -105,8 +109,80 @@ function PreviewPeriodBlock({ period, count }: { period: SlotDayPeriod; count: n
     );
 }
 
+/** Chip horario desktop split: en móvil columna; en desktop fila bajo el calendario. */
+const splitColumnSlotChipClass = (active: boolean) =>
+    cn(
+        'inline-flex h-10 w-full select-none items-center justify-center rounded-full border font-semibold tabular-nums text-body transition-[background-color,border-color,box-shadow,transform] duration-150',
+        'lg:w-auto lg:min-w-[4.75rem] lg:px-5',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
+        active
+            ? 'border-brand bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.28)]'
+            : 'border-brand/15 bg-brand/[0.06] text-ink-strong hover:border-brand/30 hover:bg-brand/10 motion-safe:active:scale-[0.98]',
+    );
+
+function SplitColumnSlotGrid({
+    slots,
+    selected,
+    onSelectSlot,
+    previewMode = false,
+    stacked = false,
+}: {
+    slots: ChosenSlot[];
+    selected: ChosenSlot | null;
+    onSelectSlot: (slot: ChosenSlot | null) => void;
+    previewMode?: boolean;
+    stacked?: boolean;
+}) {
+    const notifyCoordinated = () =>
+        toast.info('Es solo una previsualización', {
+            id: 'coord-seller-slot-info',
+            description:
+                'No tienes que elegir hora ni lugar. Inspecciono enviará un enlace al vendedor para que coordine la cita con el experto. Tú no te mueves del sofá.',
+            duration: 6500,
+        });
+
+    return (
+        <div
+            className={cn('flex gap-2', stacked ? 'flex-col' : 'flex-col lg:flex-row lg:flex-wrap lg:gap-2.5')}
+            role="listbox"
+            aria-label="Horarios disponibles"
+        >
+            {sortSlotsByTime(slots).map((s, i) => {
+                const active = selected?.startUtc === s.startUtc;
+                return (
+                    <button
+                        key={s.startUtc}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => {
+                            if (previewMode) {
+                                notifyCoordinated();
+                                return;
+                            }
+                            onSelectSlot(active ? null : s);
+                        }}
+                        style={{ ['--ci' as string]: Math.min(i, 12) } as React.CSSProperties}
+                        className={cn('slot-chip-enter', splitColumnSlotChipClass(active), stacked && 'lg:w-full')}
+                    >
+                        {s.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 /** Solo consulta (Coordínalo Inspecciono): chips informativos en desktop; texto compacto en móvil. */
-function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
+function BrowseOnlySlotHours({
+    slots,
+    splitColumn = false,
+    splitColumnDrawer = false,
+}: {
+    slots: ChosenSlot[];
+    splitColumn?: boolean;
+    splitColumnDrawer?: boolean;
+}) {
     const { morning, afternoon } = splitSlotsByPeriod(slots);
     const sorted = sortSlotsByTime(slots);
 
@@ -120,16 +196,16 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
             duration: 6500,
         });
 
-    // Chip de solo consulta: aspecto atenuado a trazas (el cliente no elige la hora aquí),
-    // pero pulsable para explicar el modo «lo coordina Inspecciono».
+    // Chip de solo consulta: pill con tinte de marca (modo vendedor), pulsable para explicar el flujo.
     const browseChipClass =
-        'inline-flex cursor-pointer select-none items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-line bg-surface-tinted px-2.5 py-1.5 text-meta font-semibold tabular-nums text-ink-muted transition-colors hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 active:scale-[0.98]';
+        'inline-flex cursor-pointer select-none items-center justify-center rounded-full border border-brand/20 bg-brand/[0.07] px-3 py-1.5 text-meta font-semibold tabular-nums text-ink-strong transition-[background-color,border-color,transform,box-shadow] hover:border-brand/35 hover:bg-brand/12 hover:shadow-[0_2px_8px_hsl(var(--brand)/0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 motion-safe:active:scale-[0.97]';
 
-    const renderBrowseChip = (s: ChosenSlot) => (
+    const renderBrowseChip = (s: ChosenSlot, i: number) => (
         <button
             key={s.startUtc}
             type="button"
-            className={browseChipClass}
+            className={cn('slot-chip-enter', browseChipClass)}
+            style={{ ['--ci' as string]: Math.min(i, 12) } as React.CSSProperties}
             title="La cita la coordina Inspecciono"
             onClick={notifyCoordinated}
         >
@@ -153,6 +229,29 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
 
     const hasBoth = morning.length > 0 && afternoon.length > 0;
 
+    if (splitColumnDrawer) {
+        return (
+            <SplitColumnSlotGrid
+                slots={slots}
+                selected={null}
+                onSelectSlot={() => undefined}
+                previewMode
+                stacked
+            />
+        );
+    }
+
+    if (splitColumn) {
+        return (
+            <SplitColumnSlotGrid
+                slots={slots}
+                selected={null}
+                onSelectSlot={() => undefined}
+                previewMode
+            />
+        );
+    }
+
     // Mismo aspecto en móvil y desktop: chips a trazas atenuados (no texto plano).
     return !hasBoth ? (
         <div className="flex flex-wrap gap-1.5">
@@ -169,13 +268,13 @@ function BrowseOnlySlotHours({ slots }: { slots: ChosenSlot[] }) {
 /** Yo me encargo: mini chips horarios, claros y fáciles de pulsar. */
 const embeddedMiniSlotChipClass = (active: boolean) =>
     cn(
-        'inline-flex min-w-[3.25rem] select-none items-center justify-center rounded-lg px-2 py-1.5',
+        'inline-flex min-w-[3.25rem] select-none items-center justify-center rounded-full px-2.5 py-1.5',
         'text-meta font-semibold tabular-nums transition-all duration-150',
         'max-lg:min-w-[2.75rem] max-lg:px-2 max-lg:py-1 max-lg:text-caption',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
         active
-            ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.22)]'
-            : 'bg-surface-tinted text-ink-strong hover:bg-brand/[0.08] hover:text-brand active:scale-[0.98]',
+            ? 'bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.28)] ring-2 ring-brand/20 ring-offset-1 ring-offset-white'
+            : 'border border-brand/15 bg-brand/[0.06] text-ink-strong hover:border-brand/30 hover:bg-brand/10 motion-safe:active:scale-[0.97]',
     );
 
 function FlatEmbeddedSlotGrid({
@@ -189,7 +288,7 @@ function FlatEmbeddedSlotGrid({
     onSelectSlot: (slot: ChosenSlot | null) => void;
     wrap?: boolean;
 }) {
-    const chip = (s: ChosenSlot) => {
+    const chip = (s: ChosenSlot, i: number) => {
         const active = selected?.startUtc === s.startUtc;
         return (
             <button
@@ -198,7 +297,9 @@ function FlatEmbeddedSlotGrid({
                 role="option"
                 aria-selected={active}
                 onClick={() => onSelectSlot(active ? null : s)}
+                style={{ ['--ci' as string]: Math.min(i, 12) } as React.CSSProperties}
                 className={cn(
+                    'slot-chip-enter',
                     embeddedMiniSlotChipClass(active),
                     wrap && 'h-10 min-w-[3.25rem] shrink-0 px-2 py-0 text-meta',
                 )}
@@ -240,15 +341,19 @@ function SelectableEmbeddedSlotHours({
     selected,
     onSelectSlot,
     splitPeriodsOnMobile = false,
+    splitColumn = false,
+    splitColumnDrawer = false,
 }: {
     slots: ChosenSlot[];
     selected: ChosenSlot | null;
     onSelectSlot: (slot: ChosenSlot | null) => void;
     splitPeriodsOnMobile?: boolean;
+    splitColumn?: boolean;
+    splitColumnDrawer?: boolean;
 }) {
     const { morning, afternoon } = splitSlotsByPeriod(slots);
 
-    const renderChip = (s: ChosenSlot) => {
+    const renderChip = (s: ChosenSlot, i: number) => {
         const active = selected?.startUtc === s.startUtc;
         return (
             <button
@@ -257,7 +362,9 @@ function SelectableEmbeddedSlotHours({
                 role="option"
                 aria-selected={active}
                 onClick={() => onSelectSlot(active ? null : s)}
+                style={{ ['--ci' as string]: Math.min(i, 12) } as React.CSSProperties}
                 className={cn(
+                    'slot-chip-enter',
                     embeddedMiniSlotChipClass(active),
                     splitPeriodsOnMobile && 'h-10 min-w-[3.25rem] shrink-0 px-2 py-0 text-meta',
                 )}
@@ -312,6 +419,23 @@ function SelectableEmbeddedSlotHours({
                 {renderPeriod('afternoon', afternoon)}
             </div>
         );
+
+    if (splitColumnDrawer) {
+        return (
+            <SplitColumnSlotGrid
+                slots={slots}
+                selected={selected}
+                onSelectSlot={onSelectSlot}
+                stacked
+            />
+        );
+    }
+
+    if (splitColumn) {
+        return (
+            <SplitColumnSlotGrid slots={slots} selected={selected} onSelectSlot={onSelectSlot} />
+        );
+    }
 
     if (splitPeriodsOnMobile) {
         return periodSplitLayout;
@@ -393,6 +517,8 @@ export function SlotPeriodPanel({
     previewMode = false,
     compact = false,
     embedded = false,
+    splitColumn = false,
+    splitColumnDrawer = false,
     showPeriodFilter = true,
     splitPeriodsOnMobile = false,
     periodFilter,
@@ -403,7 +529,7 @@ export function SlotPeriodPanel({
     const effectiveFilter = showPeriodFilter ? periodFilter : 'all';
 
     if (previewMode && embedded) {
-        return <BrowseOnlySlotHours slots={slots} />;
+        return <BrowseOnlySlotHours slots={slots} splitColumn={splitColumn} splitColumnDrawer={splitColumnDrawer} />;
     }
 
     if (previewMode) {
@@ -446,6 +572,8 @@ export function SlotPeriodPanel({
                 selected={selected}
                 onSelectSlot={onSelectSlot}
                 splitPeriodsOnMobile={splitPeriodsOnMobile}
+                splitColumn={splitColumn}
+                splitColumnDrawer={splitColumnDrawer}
             />
         );
     }

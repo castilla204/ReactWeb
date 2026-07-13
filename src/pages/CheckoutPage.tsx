@@ -16,11 +16,11 @@ import { CheckoutSummaryTable } from '../components/checkout/CheckoutSummaryTabl
 import { CheckoutPaymentAside } from '../components/checkout/CheckoutPaymentAside';
 import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet';
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
+import { CheckoutMobileWizardShell } from '../components/checkout/CheckoutMobileWizardShell';
 import { CheckoutMobileStepHeader, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepHeader';
 import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, getCoordDesktopStep1Lead } from '../components/checkout/CheckoutCoordinationStep';
 import { getInspectionSubject, getInspectionSubjectOf, getInspectionSubjectCapitalized } from '../utils/inspectionSubject';
 import { CheckoutDesktopAppointmentHeader, type DesktopCrumbStep } from '../components/checkout/CheckoutDesktopAppointmentHeader';
-import { CheckoutCalendarSideInfo } from '../components/checkout/CheckoutCalendarSideInfo';
 import {
     sellerCoordinationCanContinue,
     CheckoutSellerCoordinationFields,
@@ -54,18 +54,14 @@ import {
     SD_CHECKOUT_MOBILE_CTA_DARK_CLASS,
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
-    SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
-    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS,
-    SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
-    SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
-    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
-    SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS,
     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS,
     SD_DESKTOP_STICKY_TOP_CLASS,
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
+    SD_CHECKOUT_DESKTOP_CARD_CLASS,
 } from '../constants/homepageTypography';
 
 // El flujo "Que la elija el vendedor" tiene 4 paradas en móvil (agenda · zona ·
@@ -90,20 +86,8 @@ const MOBILE_SELF_STEPS = [
     { id: 5, label: 'Pago' },
 ] as const;
 
-// Paso 2 desktop, flujo vendedor: tarjeta de confianza gemela de «Pago protegido» (paso
-// 1). Mismo componente CheckoutCalendarSideInfo, puntos propios — 2 puntos A PROPÓSITO
-// para no desbordar el hueco bajo la tarjeta de contacto (ver nota de InfoPoint por
-// defecto en el propio componente).
-const SELLER_NEXT_STEPS_POINTS = [
-    {
-        title: 'El vendedor reserva',
-        body: 'Recibe un enlace y elige día y hora entre los huecos libres del experto.',
-    },
-    {
-        title: 'Tú no haces nada más',
-        body: 'Te avisamos con la cita y la dirección exacta ya confirmadas.',
-    },
-];
+// Paso 2 desktop, flujo vendedor: la confianza va en una línea bajo el formulario
+// (CheckoutDesktopLocationStepBody), no en un bloque aparte.
 
 interface CheckoutPageProps {}
 
@@ -909,29 +893,37 @@ export function CheckoutPage({}: CheckoutPageProps) {
         stripedRows: true,
     };
 
-    // Resumen final "Revisa y reserva": mismo bloque en el flujo self (paso 4) y
-    // en el flujo coordinado/seller, que va directo al pago. El scroll contenedor
-    // ya aporta el aire superior; aquí solo un respiro antes de la tarjeta (pb-5).
+    const mobileContentWidthClass = cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'w-full md:mx-auto md:max-w-[32rem]');
+
     const mobilePaymentSummaryNode = (
-        <>
-            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'pb-5 pt-1')}>
-                <CheckoutMobileStepHeader
-                    step={5}
-                    steps={MOBILE_SELF_STEPS}
-                    hideStepper
-                    title="Revisa y reserva"
-                    description="Comprueba que todo está bien antes de pagar."
-                />
-            </div>
-            <CheckoutMobileSheet
-                {...summaryTableProps}
-                includePrice
-                showFooterNotes
-                showDeliverables
-                expertHeroPosition="bottom"
-                paymentStep
-            />
-        </>
+        <CheckoutMobileSheet
+            key="checkout-payment-summary"
+            {...summaryTableProps}
+            includePrice={false}
+            showFooterNotes
+            showDeliverables
+            expertHeroPosition="bottom"
+            hideExpertHeader
+            paymentStep
+        />
+    );
+
+    const mobilePaymentHeaderNode = (
+        <CheckoutMobileStepHeader
+            step={5}
+            steps={MOBILE_SELF_STEPS}
+            hideStepper
+            title="Revisa y reserva"
+            description="Comprueba que todo está bien antes de pagar."
+            trailing={
+                <div className="text-right">
+                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS}>
+                        {priceDisplayNode}
+                    </p>
+                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS}>Impuestos incluidos</p>
+                </div>
+            }
+        />
     );
 
     const exitCheckout = () => {
@@ -1034,10 +1026,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // 🤝 Fase de coordinación: mientras no haya modo elegido, es el PRIMER paso del
     // wizard (mismo chrome: stepper arriba + footer Atrás/Continuar), no un modal.
     const inCoordinationChoice = requiresAppointment && coordinationMode === null;
-    const mobileOnPaymentSummary =
-        !inCoordinationChoice && (!mobileThreeStep || mobileStep === 4);
-    const mobileInSellerPreview =
-        coordView === 'seller-plazos' || coordView === 'seller-map';
+    const mobileOnPaymentStep = !inCoordinationChoice && (!mobileThreeStep || mobileStep === 4);
+    const mobileFooterScrollPad = mobileFooterHeight > 0 ? mobileFooterHeight : undefined;
     const isCoordOptionPickView =
         coordView === 'choose' || (coordView === 'seller' && coordinationMode === null);
     const coordCanContinue =
@@ -1107,8 +1097,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
             // en contacto móvil y en el paso de elección (ahora banda fija fuera del scroll),
             // se oculta el header propio para no duplicar.
             hideHeader={(coordView === 'seller-contact' && !isWorkshopOnly) || coordView === 'choose'}
-            // Paso de elección: llena la pantalla y centra los botones verticalmente.
-            fillHeight={coordView === 'choose'}
+            // Paso de elección: el shell móvil ya es el scroll container; fillHeight
+            // en el paso de coordinación quedaría como doble scroll.
+            fillHeight={false}
             view={coordinationMode === 'seller' ? 'seller' : coordView}
             selection={coordSelection}
             onSelect={handleCoordinationSelect}
@@ -1145,13 +1136,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
         requiresAppointment && isDesktop && desktopStep === 1 ? coordinationStepDesktopNode : null;
     const desktopCalendarColumnNode = desktopShowCalendar ? slotPickerDesktopNode : null;
 
+
     // Ambos pasos comparten ahora la MISMA altura de fila (SD_CHECKOUT_DESKTOP_APPOINTMENT
     // _SHELL_HEIGHT_CLASS en el wrapper), así que los paneles llenan el alto en los dos y el
     // scroll interior protege los viewports bajos.
     const desktopSplitLeftClass =
         'min-w-0 flex-[0_0_45%] xl:flex-[0_0_42%] flex flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
     const desktopSplitRightClass =
-        'relative min-w-0 flex-1 flex flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0';
+        'relative min-w-0 flex-1 flex flex-col rounded-2xl border border-line bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.04)] h-full min-h-0 overflow-hidden';
     const desktopSplitPanelScrollClass =
         'px-6 pb-5 pt-5 xl:px-7 flex min-h-0 flex-1 flex-col overflow-y-auto';
 
@@ -1181,8 +1173,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                   title: 'Datos del vendedor y cobertura',
                   description: (
                       <>
-                          Déjanos el teléfono o el email del vendedor: le enviaremos un enlace para que
-                          reserve la cita. En el mapa puedes consultar la zona de actuación del experto.
+                          Un móvil o un email bastan: le enviamos un enlace para que reserve la cita.
+                          A la derecha puedes revisar la zona donde actúa el experto.
                       </>
                   ),
               }
@@ -1235,6 +1227,20 @@ export function CheckoutPage({}: CheckoutPageProps) {
         : desktopOnMapDetailsStep
           ? 'Volver a la cita'
           : 'Volver al servicio';
+
+    const desktopSellerStepFooter = (
+        <div className="shrink-0 border-t border-line-soft bg-surface-tinted/60 px-6 py-4 xl:px-7">
+            <button
+                type="button"
+                onClick={handleDesktopContinue}
+                disabled={!desktopContinueReady}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand px-7 text-body font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-[colors,box-shadow,transform] duration-200 hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+            >
+                Continuar
+                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+            </button>
+        </div>
+    );
 
     const desktopAppointmentFooter = (
         <div className="relative z-10 flex shrink-0 items-center justify-between gap-4 py-1">
@@ -1331,60 +1337,55 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         ) : null}
                         <div
                             className={cn(
-                                // 🗺️ Altura FIJA e IGUAL en los pasos 1 y 2: al navegar entre ellos la
-                                // fila no salta de alto (feedback 2026-07-10). Debe ser flex flex-col:
-                                // con display:block el `flex-1` de la fila interior no surte efecto y la
-                                // altura no se propaga al mapa (h-full → 0 → mapa invisible). El footer
-                                // queda pinchado abajo como hermano shrink-0.
+                                // 🗺️ El paso MAPA sí necesita altura fija (el mapa llena una lámina alta
+                                // con scroll interior). El paso CITA (tarjetas + calendario) va a altura
+                                // NATURAL: nada scrollea, las dos columnas se igualan solas con
+                                // items-stretch y el contenido nunca queda pegado ni cortado
+                                // (feedback 2026-07-13). Debe seguir siendo flex flex-col para que el
+                                // flex-1 de la fila del mapa propague altura (h-full → mapa visible).
                                 'flex flex-col',
-                                SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
+                                desktopOnMapDetailsStep && SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
                             )}
                         >
-                            <div className="flex min-h-0 flex-1 items-stretch gap-5 overflow-hidden xl:gap-6">
+                            <div
+                                className={cn(
+                                    'flex items-stretch gap-5 xl:gap-6',
+                                    desktopOnMapDetailsStep && 'min-h-0 flex-1 overflow-hidden',
+                                )}
+                            >
                                     {desktopOnCoordCalendarStep ? (
                                         <>
-                                            {/* Sin tarjeta de relleno ni centrado forzado (el justify-center
-                                                repartía el sobrante de forma asimétrica, feedback 2026-07-12):
-                                                alineado simple arriba, apoyado en que SD_CHECKOUT_DESKTOP_
-                                                APPOINTMENT_SHELL_HEIGHT_CLASS ya está calibrada al alto del
-                                                calendario, así que el hueco restante es pequeño y predecible.
-                                                pb-2 en vez del pb-5 compartido: compensa el pb-3 propio del
-                                                wrapper embebido de CheckoutCoordinationStep (sin cabecera
-                                                encima no hay mt-4 que lo equilibre desde arriba) para que el
-                                                margen quede simétrico con el pt-5 de arriba (feedback
-                                                2026-07-12: mucho más margen arriba que abajo). */}
-                                            <div className={desktopSplitLeftClass}>
-                                                <div className={cn(desktopSplitPanelScrollClass, 'pb-2')}>
+                                            {/* Altura NATURAL: ninguna columna scrollea. Con items-stretch
+                                                en la fila, la columna más baja se estira hasta la más alta,
+                                                así los dos paneles quedan igual de altos sin recortes ni
+                                                cards pegadas (feedback 2026-07-13). */}
+                                            <div className="flex min-w-0 flex-[0_0_45%] flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]">
+                                                <div className="px-6 pb-5 pt-5 xl:px-7">
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden rounded-xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-                                                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 xl:p-5">
-                                                    {desktopCalendarColumnNode}
-                                                </div>
+                                            <aside className="relative flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] lg:w-[20rem] lg:shrink-0 xl:w-[22rem]">
+                                                {desktopCalendarColumnNode}
                                             </aside>
                                         </>
                                     ) : null}
                                 {desktopOnMapDetailsStep ? (
                                     <>
                                         {coordinationMode === 'seller' ? (
-                                            // 🤝 Flujo vendedor: la columna izquierda son DOS tarjetas
-                                            // (contacto + confianza), espejo EXACTO del paso 1 (calendario
-                                            // + «Pago protegido»): mismo componente CheckoutCalendarSideInfo
-                                            // con puntos propios, no un widget de pasos numerados con icono
-                                            // (lenguaje visual distinto al resto del checkout, feedback
-                                            // 2026-07-10). Una sola tarjeta a la altura del mapa dejaba
-                                            // ~250px de vacío bajo los campos.
-                                            <div className="flex h-full min-h-0 min-w-0 flex-[0_0_45%] flex-col gap-4 xl:flex-[0_0_42%]">
-                                                <div className="flex min-h-0 flex-col rounded-xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-                                                    <div className="flex min-h-0 flex-col overflow-y-auto px-6 pb-5 pt-5 xl:px-7">
-                                                        {desktopMapDetailsBody}
-                                                    </div>
+                                            // 🤝 Flujo vendedor: un solo panel izquierdo (formulario +
+                                            // pasos del proceso + CTA anclado). Antes eran dos tarjetas
+                                            // apiladas con flex-1 en la de confianza → hueco muerto y CTA
+                                            // flotando lejos del formulario (feedback 2026-07-13).
+                                            <div
+                                                className={cn(
+                                                    SD_CHECKOUT_DESKTOP_CARD_CLASS,
+                                                    'flex h-full min-h-0 min-w-0 flex-[0_0_45%] flex-col xl:flex-[0_0_42%]',
+                                                )}
+                                            >
+                                                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-5 pt-5 xl:px-7">
+                                                    {desktopMapDetailsBody}
                                                 </div>
-                                                <CheckoutCalendarSideInfo
-                                                    className="min-h-0 flex-1"
-                                                    points={SELLER_NEXT_STEPS_POINTS}
-                                                />
+                                                {desktopSellerStepFooter}
                                             </div>
                                         ) : (
                                             <div className={desktopSplitLeftClass}>
@@ -1413,208 +1414,170 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                     </>
                                 ) : null}
                             </div>
-                            <div className="mt-5">{desktopAppointmentFooter}</div>
+                            {!(desktopOnMapDetailsStep && coordinationMode === 'seller') ? (
+                                <div className="mt-5">{desktopAppointmentFooter}</div>
+                            ) : null}
                         </div>
                     </div>
                 )}
             </div>
             )}
 
-            {/* Versión Móvil — wizard de 3 pasos cuando hay ubicación que elegir */}
+            {/* Versión Móvil — shell unificado en todos los pasos */}
             {!isDesktop && (
-            <div
-                className={cn(
-                    'checkout-page lg:hidden',
-                    !inCoordinationChoice && mobileThreeStep && mobileStep === 2
-                        ? 'relative h-[100dvh] max-h-[100dvh] overflow-hidden'
-                        : inCoordinationChoice && coordView === 'seller-map'
-                          ? 'relative h-[100dvh] max-h-[100dvh] overflow-hidden'
-                          : mobileOnPaymentSummary
-                            ? SD_CHECKOUT_MOBILE_PAYMENT_PAGE_CLASS
-                            : 'min-h-[100dvh] bg-white',
-                )}
-            >
+            <div className="checkout-page lg:hidden">
                 {inCoordinationChoice ? (
                     coordView === 'seller-map' && requiresAppointment && !isWorkshopOnly ? (
-                        <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
-                            <header
-                                className={cn(
-                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
-                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
-                                    'shrink-0 pb-3',
-                                )}
-                            >
+                        <CheckoutMobileWizardShell
+                            fullBleed
+                            header={
                                 <CheckoutMobileStepHeader
                                     step={3}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Zona del experto"
                                     description={`Aquí solo ves su área de trabajo, para comprobar que cubre tu zona. El vendedor indicará la dirección exacta ${getInspectionSubjectOf(service?.categoryName)} al reservar.`}
                                 />
-                            </header>
-                            <div className="relative min-h-0 flex-1 overflow-hidden">
-                                <div className={cn('absolute inset-x-0 top-0', SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS)}>
-                                    <CheckoutLocationPicker
-                                        {...locationPickerProps}
-                                        variant="wizard"
-                                        referenceMode
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                            }
+                        >
+                            <CheckoutLocationPicker
+                                {...locationPickerProps}
+                                variant="wizard"
+                                referenceMode
+                            />
+                        </CheckoutMobileWizardShell>
                     ) : coordView === 'choose' ? (
-                        // Paso de elección: cabecera FIJA como banda topbar (igual que los
-                        // pasos de mapa) + tarjetas scrollables debajo. Antes era el único
-                        // paso sin banda: su contenedor scroll (fillHeight) no admitía el
-                        // `-mx-5` full-bleed sin disparar scroll horizontal; al sacar la
-                        // cabecera FUERA del scroll se resuelve y queda coherente con el resto.
-                        <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
-                            <header
-                                className={cn(
-                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
-                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
-                                    'shrink-0 pb-3',
-                                )}
-                            >
+                        <CheckoutMobileWizardShell
+                            footerInsetPx={mobileFooterScrollPad}
+                            trustFooterFallback
+                            header={
                                 <CheckoutMobileStepHeader
                                     step={1}
                                     steps={MOBILE_SELF_STEPS}
                                     title="¿Quién elige la fecha?"
                                     description={`${getInspectionSubjectCapitalized(service?.categoryName)} lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su disponibilidad.`}
                                 />
-                            </header>
-                            <div
-                                className={cn(
-                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    'flex min-h-0 flex-1 flex-col',
-                                )}
-                                // Reserva EXACTA del footer fijo (medido): el footer lleva la
-                                // línea de confianza además de la fila de botones. Las tarjetas
-                                // ya traen su propio `mt-4`, así que no añadimos pt aquí.
-                                style={{ paddingBottom: mobileFooterHeight || undefined }}
-                            >
-                                {coordinationStepMobileNode}
-                            </div>
-                        </div>
-                    ) : (
-                    <div className={SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS}>
-                        <div
-                            className={`${SD_CHECKOUT_MOBILE_GUTTER_CLASS} ${SD_CHECKOUT_MOBILE_TOP_PAD_CLASS} md:mx-auto md:max-w-[32rem]`}
+                            }
+                            bodyClassName={SD_CHECKOUT_MOBILE_GUTTER_CLASS}
                         >
-                            {coordView === 'seller-contact' && !isWorkshopOnly ? (
+                            {coordinationStepMobileNode}
+                        </CheckoutMobileWizardShell>
+                    ) : coordView === 'seller-plazos' && requiresAppointment ? (
+                        <CheckoutMobileWizardShell
+                            header={
+                                <CheckoutMobileStepHeader
+                                    step={2}
+                                    steps={MOBILE_SELLER_PREVIEW_STEPS}
+                                    title="Agenda del experto"
+                                    description={
+                                        isWorkshopOnly
+                                            ? 'Consulta los huecos libres del experto antes de continuar.'
+                                            : 'Aquí solo consultas su agenda, para ver que tiene huecos libres. Tras el pago, el vendedor elegirá el día y la hora con el enlace que le enviamos.'
+                                    }
+                                />
+                            }
+                        >
+                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                                {isWorkshopOnly ? (
+                                    <CheckoutSellerChoiceMobileWarning
+                                        variant="calendar"
+                                        className="mb-3"
+                                    />
+                                ) : null}
+                                <SlotPicker
+                                    {...slotPickerProps}
+                                    embedded
+                                    previewMode
+                                    windowDays={SELLER_BOOKING_MAX_DAYS}
+                                    sectionTitle="Disponibilidad del experto"
+                                    minLeadDays={SELLER_BOOKING_MIN_LEAD_DAYS}
+                                />
+                            </div>
+                        </CheckoutMobileWizardShell>
+                    ) : coordView === 'seller-contact' ? (
+                        <CheckoutMobileWizardShell
+                            header={
                                 <CheckoutMobileStepHeader
                                     step={4}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Datos del vendedor"
                                     description="Le enviaremos un enlace para elegir la cita. Móvil o email; el anuncio es opcional."
-                                    className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
                                 />
-                            ) : null}
-                            {!mobileInSellerPreview && coordinationStepMobileNode}
-                            {coordView === 'seller-plazos' && requiresAppointment ? (
-                                <div>
-                                    {!isWorkshopOnly ? (
-                                        <CheckoutMobileStepHeader
-                                            step={2}
-                                            steps={MOBILE_SELLER_PREVIEW_STEPS}
-                                            title="Agenda del experto"
-                                            description="Aquí solo consultas su agenda, para ver que tiene huecos libres. Tras el pago, el vendedor elegirá el día y la hora con el enlace que le enviamos."
-                                            className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
-                                        />
-                                    ) : (
-                                        <CheckoutSellerChoiceMobileWarning
-                                            variant="calendar"
-                                            className="mb-2.5"
-                                        />
-                                    )}
-                                    <SlotPicker
-                                        {...slotPickerProps}
-                                        embedded
-                                        previewMode
-                                        windowDays={SELLER_BOOKING_MAX_DAYS}
-                                        sectionTitle="Disponibilidad del experto"
-                                        minLeadDays={SELLER_BOOKING_MIN_LEAD_DAYS}
-                                    />
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
+                            }
+                        >
+                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                                {coordinationStepMobileNode}
+                            </div>
+                        </CheckoutMobileWizardShell>
+                    ) : (
+                        <CheckoutMobileWizardShell
+                            header={
+                                <CheckoutMobileStepHeader
+                                    step={1}
+                                    steps={MOBILE_SELF_STEPS}
+                                    title="¿Quién elige la fecha?"
+                                    description={`${getInspectionSubjectCapitalized(service?.categoryName)} lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su disponibilidad.`}
+                                />
+                            }
+                        >
+                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                                {coordinationStepMobileNode}
+                            </div>
+                        </CheckoutMobileWizardShell>
                     )
                 ) : mobileThreeStep && mobileStep === 2 ? (
-                    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-white">
-                        <header
-                            className={cn(
-                                SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS,
-                                SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
-                                'shrink-0 pb-3',
-                            )}
-                        >
+                    <CheckoutMobileWizardShell
+                        fullBleed
+                        header={
                             <CheckoutMobileStepHeader
                                 step={3}
                                 steps={MOBILE_SELF_STEPS}
                                 title={`¿Dónde está ${getInspectionSubject(service?.categoryName)}?`}
                                 description="Marca la dirección donde el experto hará la revisión."
                             />
-                        </header>
-                        <div
-                            className={cn(
-                                'flex min-h-0 flex-1 flex-col overflow-hidden',
-                                SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
-                            )}
-                        >
-                            {locationPickerWizardNode}
+                        }
+                    >
+                        {locationPickerWizardNode}
+                    </CheckoutMobileWizardShell>
+                ) : mobileThreeStep && mobileStep === 1 ? (
+                    <CheckoutMobileWizardShell
+                        header={
+                            <CheckoutMobileStepHeader
+                                step={mobileStep + 1}
+                                steps={MOBILE_SELF_STEPS}
+                                title="Elige día y hora"
+                                description="Estos son los huecos libres del experto. Elige el que os venga bien a ti y al vendedor."
+                            />
+                        }
+                    >
+                        <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                            {slotPickerMobileNode}
                         </div>
-                    </div>
+                    </CheckoutMobileWizardShell>
+                ) : mobileThreeStep && mobileStep === 3 ? (
+                    <CheckoutMobileWizardShell
+                        header={
+                            <CheckoutMobileStepHeader
+                                step={mobileStep + 1}
+                                steps={MOBILE_SELF_STEPS}
+                                title="Datos del vendedor"
+                                description="Opcional: deja un contacto del vendedor para coordinar el acceso al vehículo. Puedes continuar sin rellenarlo."
+                            />
+                        }
+                    >
+                        <div className="pt-1 md:mx-auto md:max-w-[32rem]">{sellerDataSelfMobileNode}</div>
+                    </CheckoutMobileWizardShell>
                 ) : (
-                <div
-                    className={cn(
-                        mobileOnPaymentSummary
-                            ? SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS
-                            : SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS,
-                    )}
-                >
-                    {mobileThreeStep && mobileStep < 4 ? (
-                        <>
-                            <header
-                                className={cn(
-                                    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                                    SD_CHECKOUT_MOBILE_TOP_PAD_CLASS,
-                                    'md:mx-auto md:max-w-[32rem]',
-                                )}
-                            >
-                                <CheckoutMobileStepHeader
-                                    // +1: la elección es el tramo 1; el flujo self empieza en el 2
-                                    // (mobileStep 1 "Elige día y hora" = tramo 2, mobileStep 3 = tramo 4).
-                                    step={mobileStep + 1}
-                                    steps={MOBILE_SELF_STEPS}
-                                    title={mobileStep === 1 ? 'Elige día y hora' : 'Datos del vendedor'}
-                                    description={
-                                        mobileStep === 1
-                                            ? 'Estos son los huecos libres del experto. Elige el que os venga bien a ti y al vendedor.'
-                                            : 'Opcional: deja un contacto del vendedor para coordinar el acceso al vehículo. Puedes continuar sin rellenarlo.'
-                                    }
-                                    className={SD_CHECKOUT_MOBILE_STEP_HEADER_BAND_CLASS}
-                                />
-                            </header>
-                        </>
-                    ) : null}
-
-                    {mobileThreeStep ? (
-                        mobileStep === 1 ? (
-                            <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'mb-4 w-full md:mx-auto md:max-w-[32rem]')}>
-                                {slotPickerMobileNode}
-                            </div>
-                        ) : mobileStep === 3 ? (
-                            <div className="md:mx-auto md:max-w-[32rem]">{sellerDataSelfMobileNode}</div>
-                        ) : mobileStep === 4 ? (
-                            <div className="md:mx-auto md:max-w-[32rem]">{mobilePaymentSummaryNode}</div>
-                        ) : null
-                    ) : (
-                        <div className="md:mx-auto md:max-w-[32rem]">{mobilePaymentSummaryNode}</div>
-                    )}
-                </div>
+                    <CheckoutMobileWizardShell
+                        key="checkout-mobile-payment"
+                        header={mobilePaymentHeaderNode}
+                        headerClassName="pb-4"
+                        bodyClassName={SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS}
+                        footerInsetPx={mobileFooterScrollPad}
+                        scrollEndCushionPx={28}
+                        trustFooterFallback
+                    >
+                        {mobilePaymentSummaryNode}
+                    </CheckoutMobileWizardShell>
                 )}
 
                 <CheckoutMobileStickyFooter shellRef={attachMobileFooter}>
@@ -1625,6 +1588,14 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             <ShieldCheck className="mt-[1px] h-[15px] w-[15px] shrink-0 text-brand" strokeWidth={2} aria-hidden />
                             <p className="text-caption leading-[1.4] text-ink-muted">
                                 Elijas lo que elijas, tu pago queda protegido: no cobramos al experto hasta que apruebes el informe.
+                            </p>
+                        </div>
+                    ) : mobileOnPaymentStep ? (
+                        <div className="checkout-payment-trust-enter mb-2.5 flex items-start gap-2.5 rounded-xl border border-brand/10 bg-brand/[0.05] px-3 py-2.5">
+                            <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
+                            <p className="text-meta leading-[1.4] text-ink-muted">
+                                <span className="font-semibold text-ink-strong">Hoy no se te cobra</span>: solo
+                                reservamos el importe en tu tarjeta. Pago seguro con Stripe.
                             </p>
                         </div>
                     ) : null}
@@ -1680,7 +1651,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 {isProcessing ? 'Procesando…' : (
                                     <>
                                         Reservar y pagar
-                                        <svg className="ml-1.5 h-3.5 w-3.5 shrink-0 translate-y-[1px] opacity-70" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <svg className="ml-1.5 h-3.5 w-3.5 shrink-0 translate-y-[1px] opacity-70" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                                             <rect x="3.5" y="8" width="13" height="8.5" rx="1.5" />
                                             <path d="M6.5 8V5.5a3.5 3.5 0 117 0V8" />
                                         </svg>

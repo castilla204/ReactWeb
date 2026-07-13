@@ -13,6 +13,7 @@ import {
 } from './checkout/CheckoutSellerChoiceLocked';
 import { COORD_SELF_SLOT_STEP_DESC, SELLER_COORD_CALENDAR_PREVIEW_NOTE } from './checkout/CheckoutSellerCoordinationFields';
 import { CheckoutSlotHoursDrawer } from './checkout/CheckoutSlotHoursDrawer';
+import { CheckoutSlotHoursSideDrawer } from './checkout/CheckoutSlotHoursSideDrawer';
 import { CheckoutEmbeddedStepHeader } from './checkout/CheckoutEmbeddedStepHeader';
 import { computeSlotDateRange, startOfDay } from '../utils/slotDateRange';
 import {
@@ -70,36 +71,47 @@ const BOOKING_WINDOW_DAYS = 14;
 
 /** Calendario checkout desktop embebido — legible en lg; ancho completo en móvil. */
 const embeddedCalendarClass = () => 'w-full p-0';
+
+/** Módulo calendario desktop: cabe en panel estrecho. */
+const SPLIT_DESKTOP_CALENDAR_SHELL_CLASS = 'mx-auto flex w-full max-w-full flex-col';
 const EMBEDDED_CALENDAR_MAX_WIDTH_CLASS = 'w-full max-lg:max-w-none lg:max-w-[24rem]';
 const EMBEDDED_CALENDAR_CLASS_NAMES = {
     root: 'w-full',
     nav: 'hidden',
     month_caption: 'hidden',
-    month: 'flex w-full flex-col gap-2',
-    weekdays: 'mb-1 flex w-full sm:mb-1.5',
-    weekday: 'flex-1 text-center text-kicker font-medium uppercase tracking-wide text-ink-muted lg:text-xs',
-    week: 'flex w-full',
-    // Padding más ajustado por debajo de 640px: en un móvil estrecho (390px) el botón del
-    // día cae a ~40.9px con 3px de aire; a 2px sube a ~43.4px, más cerca del objetivo táctil
-    // de 44px sin sacrificar legibilidad en tablet/desktop (que ya sobra ancho).
-    day: 'flex-1 p-[2px] sm:p-[3px]',
+    month: 'flex w-full flex-col gap-1.5',
+    weekdays: 'mb-1 flex w-full gap-0.5',
+    weekday: 'flex-1 text-center text-kicker font-semibold uppercase tracking-wide text-ink-muted/90 lg:text-xs',
+    week: 'flex w-full gap-0.5 min-h-10',
+    // Disco centrado de tamaño fijo → círculo perfecto en SE, XR y desktop.
+    day: 'flex min-h-10 min-w-0 flex-1 basis-0 items-center justify-center p-0',
 } as const;
 
 const SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES = {
     ...EMBEDDED_CALENDAR_CLASS_NAMES,
-    month: 'flex w-full flex-col gap-1.5 lg:gap-2',
+    month: 'flex w-full flex-col gap-1',
+    week: 'flex w-full gap-0.5 min-h-10',
+    weekdays: 'mb-1 flex w-full gap-0.5',
 } as const;
+
+/** Disco de día: tamaño fijo + rounded-full = círculo en todos los viewports. */
+function dayButtonSizeClass(splitColumn: boolean) {
+    return cn(
+        'shrink-0 text-meta',
+        splitColumn ? 'size-10 lg:size-11' : 'size-10',
+    );
+}
 /** Mismo patrón visual que el panel del experto cuando aún no hay día elegido. */
 function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
     return (
         <div
             className={cn(
                 'flex w-full flex-col items-center justify-center text-center',
-                compactSplit ? 'px-2 py-2' : 'px-3 py-3 lg:py-2.5',
+                compactSplit ? 'px-2 py-2 lg:flex-row lg:items-center lg:gap-4 lg:px-0 lg:py-0 lg:text-left' : 'px-3 py-3 lg:py-2.5',
             )}
             role="status"
         >
-            <div className={cn('grid w-[52px] grid-cols-3 gap-1', compactSplit ? 'mb-2' : 'mb-3 lg:mb-2.5')} aria-hidden>
+            <div className={cn('grid w-[52px] grid-cols-3 gap-1', compactSplit ? 'mb-2 lg:mb-0' : 'mb-3 lg:mb-2.5')} aria-hidden>
                 {Array.from({ length: 9 }).map((_, i) => (
                     <span
                         key={i}
@@ -118,16 +130,15 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
             {!compactSplit ? (
                 <>
             <p className="mt-1.5 max-w-[32ch] text-meta leading-relaxed text-ink-muted max-lg:hidden">
-                Los días en verde tienen más huecos libres. Al pulsar uno verás las franjas de mañana
-                y tarde con las horas concretas del experto.
+                Los días con punto azul tienen huecos libres. Al pulsar uno verás las horas del experto.
             </p>
             <p className="mt-1.5 max-w-[32ch] text-meta leading-relaxed text-ink-muted lg:hidden">
-                Los días en verde tienen más huecos libres. Al pulsar uno se abrirá el selector de hora.
+                Los días con punto azul tienen huecos libres. Al pulsar uno se abrirá el selector de hora.
             </p>
                 </>
             ) : (
                 <p className="mt-1 max-w-[18ch] text-kicker leading-snug text-ink-muted">
-                    Pulsa un día en verde para ver las horas.
+                    Pulsa un día disponible para ver las horas.
                 </p>
             )}
         </div>
@@ -137,9 +148,9 @@ function PickDayEmptyState({ compactSplit }: { compactSplit?: boolean }) {
 // Misma viveza que los -200 originales (no la versión pálida de success-tint/warning-tint):
 // AA ≥4.5:1 con y sin el brightness(0.96) del hover.
 const AVAILABILITY_LEGEND_ITEMS = [
-    { label: 'Libre', swatch: 'bg-avail-free' },
-    { label: 'Pocos', swatch: 'bg-avail-low' },
-    { label: 'Lleno', swatch: 'bg-avail-full' },
+    { label: 'Libre', dot: 'bg-brand/55' },
+    { label: 'Pocos', dot: 'bg-warning' },
+    { label: 'Lleno', dot: 'bg-line' },
 ] as const;
 
 /** Leyenda de disponibilidad bajo el calendario (colores = celdas del mes). */
@@ -163,7 +174,7 @@ function AvailabilityLegend({
             aria-label="Leyenda de disponibilidad del calendario"
         >
             <div className="inline-flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
-                {AVAILABILITY_LEGEND_ITEMS.map(({ label, swatch }) => (
+                {AVAILABILITY_LEGEND_ITEMS.map(({ label, dot }) => (
                     <span
                         key={label}
                         className={cn(
@@ -172,7 +183,7 @@ function AvailabilityLegend({
                         )}
                     >
                         <span
-                            className={cn('h-3.5 w-3.5 shrink-0 rounded-[4px]', swatch)}
+                            className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)}
                             aria-hidden
                         />
                         {label}
@@ -363,15 +374,16 @@ const SlotPicker: React.FC<Props> = ({
                 if (modifiers?.focused) ref.current?.focus();
             }, [modifiers?.focused]);
 
-            let tint = '';
-            if (!selected && !disabled) {
-                if (hasSummary && free !== undefined) {
-                    tint =
-                        free === 0
-                            ? 'bg-avail-full text-ink'
-                            : free <= 2
-                              ? 'bg-avail-low text-warning'
-                              : 'bg-avail-free text-success';
+            let availDot = '';
+            let availMuted = false;
+            if (!selected && !disabled && hasSummary && free !== undefined) {
+                if (free === 0) {
+                    availMuted = true;
+                } else if (free <= 2) {
+                    availDot = 'after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-warning';
+                } else {
+                    availDot =
+                        'after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-brand/55';
                 }
             }
 
@@ -389,31 +401,39 @@ const SlotPicker: React.FC<Props> = ({
                         props.onClick?.(e);
                     }}
                     className={cn(
-                        'relative flex aspect-square w-full select-none items-center justify-center overflow-hidden rounded-lg font-semibold tabular-nums transition-[translate,scale,background-color,box-shadow] duration-150 motion-reduce:transition-[background-color,box-shadow]',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/55',
-                        embedded ? 'text-meta lg:text-body' : 'text-sm',
-                        !disabled && !selected && !blockDayPick && 'cursor-pointer motion-safe:hover:-translate-y-px active:translate-y-0 active:scale-[0.97]',
-                        selected && !blockDayPick && 'bg-brand text-white font-bold scale-[1.06] z-10 shadow-[0_3px_10px_hsl(var(--brand)/0.35)] ring-2 ring-inset ring-white/70',
-                        !selected && tint,
-                        !selected && tint && !blockDayPick && 'hover:brightness-[0.96]',
-                        !selected && !tint && !blockDayPick && 'text-ink-strong hover:bg-surface-tinted',
-                        !selected && isToday && !blockDayPick && 'ring-2 ring-inset ring-brand/70',
+                        'relative mx-auto flex select-none items-center justify-center rounded-full font-semibold tabular-nums transition-[transform,background-color,box-shadow,color] duration-150 motion-reduce:transition-[background-color,box-shadow,color]',
+                        dayButtonSizeClass(embeddedSplitColumn),
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-1',
+                        !disabled && !selected && !blockDayPick && 'cursor-pointer motion-safe:hover:bg-brand/[0.07] active:scale-[0.96]',
+                        selected &&
+                            !blockDayPick &&
+                            'bg-brand text-white font-bold shadow-[0_2px_10px_hsl(var(--brand)/0.35)]',
+                        !selected && availMuted && 'text-ink-soft',
+                        !selected && !availMuted && availDot && 'text-ink-strong',
+                        !selected && !availMuted && !availDot && !blockDayPick && 'text-ink-strong hover:bg-surface-tinted',
+                        !selected && isToday && !blockDayPick && 'font-bold text-brand ring-2 ring-inset ring-brand/35',
+                        availDot,
                         blockDayPick && 'cursor-not-allowed',
-                        disabled && 'opacity-35',
+                        disabled && 'opacity-30',
                         className,
                     )}
                 >
-                    <span className="relative z-10">{day.date.getDate()}</span>
+                    <span className="relative z-10 leading-none">{day.date.getDate()}</span>
                 </button>
             );
         };
         return Btn;
-    }, [availByDate, embedded, blockDayPick]);
+    }, [availByDate, embedded, embeddedSplitColumn, blockDayPick]);
 
     const handleDateSelect = (date: Date | undefined) => {
         if (blockDayPick) return;
         if (!date || isDateDisabled(date)) return;
-        setSelectedDate(startOfDay(date));
+        const next = startOfDay(date);
+        if (selectedDate?.getTime() === next.getTime()) {
+            setHoursDrawerExpanded(true);
+            return;
+        }
+        setSelectedDate(next);
         if (!previewMode) onSelect(null);
         setHoursDrawerExpanded(true);
     };
@@ -422,7 +442,7 @@ const SlotPicker: React.FC<Props> = ({
         ? previewMode && !embeddedSplitColumn
             ? 'grid-cols-1'
             : embeddedSplitColumn
-              ? 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,11.5rem)] lg:items-stretch lg:gap-x-0 lg:gap-y-0'
+              ? 'grid-cols-1 gap-3 lg:grid-cols-1 lg:gap-0'
               : 'grid-cols-1 gap-2.5 lg:grid-cols-[minmax(14rem,15.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-3 lg:gap-y-0'
         : 'grid-cols-1 lg:grid-cols-2';
 
@@ -430,9 +450,10 @@ const SlotPicker: React.FC<Props> = ({
         'flex flex-col',
         embedded
             ? cn(
-                  'pt-0 pb-0 lg:items-start lg:border-r lg:border-line',
-                  embeddedSplitColumn ? 'lg:px-3' : 'lg:pr-4',
-                  embeddedSplitColumn && embeddedSplitLayout && 'lg:flex lg:flex-col lg:self-start',
+                  'min-w-0 pt-0 pb-0',
+                  embeddedSplitColumn
+                      ? 'lg:flex lg:flex-1 lg:flex-col lg:items-stretch lg:justify-center lg:px-5 lg:py-6'
+                      : 'lg:items-start lg:border-r lg:border-line lg:pr-4',
                   !embeddedSplitColumn && 'lg:self-stretch',
               )
             : 'max-lg:border-b max-lg:border-line max-lg:px-4 max-lg:py-3.5 lg:border-r lg:border-line lg:p-3 lg:py-3',
@@ -442,13 +463,12 @@ const SlotPicker: React.FC<Props> = ({
         'flex min-h-0 flex-col',
         embedded
             ? cn(
-                  'pb-0 pt-0 lg:min-w-0',
-                  embeddedSplitColumn ? 'lg:px-3' : 'lg:pl-4',
+                  'min-w-0 pb-0 pt-0',
                   embeddedSplitColumn
-                      ? cn(
-                            'lg:py-1',
-                            selectedDate ? 'lg:justify-start' : 'lg:justify-center',
-                        )
+                      ? 'lg:border-t lg:border-line lg:px-6 lg:pb-6 lg:pt-5'
+                      : 'lg:min-w-0 lg:pl-4',
+                  embeddedSplitColumn
+                      ? cn(selectedDate ? 'lg:justify-start' : 'lg:justify-center')
                       : cn(
                             'lg:min-h-full',
                             previewMode
@@ -461,38 +481,49 @@ const SlotPicker: React.FC<Props> = ({
             : 'max-lg:p-4 max-lg:pt-3 lg:justify-center lg:p-3 lg:pl-4',
     );
 
-    function CalendarToolbar() {
+    function CalendarToolbar({ compactSplit }: { compactSplit?: boolean }) {
         return (
-            <div className="mb-3 flex select-none items-center justify-between gap-3 px-[2px] sm:px-[3px]">
-                <div>
-                    <h3 className="text-subtitle font-semibold text-ink-strong">{calMonthLabel}</h3>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
+            <div
+                className={cn(
+                    'flex select-none items-center justify-between gap-3 px-[2px] sm:px-[3px]',
+                    compactSplit ? 'mb-2' : 'mb-3',
+                )}
+            >
+                <h3
+                    key={calMonthLabel}
+                    className={cn(
+                        'slot-month-fade font-semibold capitalize tracking-[-0.02em] text-ink-strong',
+                        compactSplit ? 'text-body lg:text-subtitle' : 'text-body lg:text-subtitle',
+                    )}
+                >
+                    {calMonthLabel}
+                </h3>
+                <div className="flex shrink-0 items-center gap-1.5">
                     <button
                         type="button"
                         onClick={goCalToday}
-                        className="h-8 rounded-lg border border-line bg-white px-3 text-xs font-semibold text-ink-strong transition-colors hover:bg-surface-tinted hover:border-line-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1"
+                        className="h-8 rounded-full border border-line bg-white px-3 text-kicker font-semibold text-ink-muted transition-[background-color,border-color,color,transform] hover:border-brand/25 hover:bg-brand/[0.04] hover:text-brand motion-safe:active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1"
                     >
                         Hoy
                     </button>
-                    <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface-tinted p-0.5">
+                    <div className="flex items-center gap-0.5 rounded-full border border-line bg-white p-0.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                         <button
                             type="button"
                             onClick={() => goCalMonth(-1)}
                             disabled={atCurrentMonth}
                             aria-label="Mes anterior"
-                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-white hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-[background-color,color,transform] hover:bg-brand/[0.06] hover:text-brand motion-safe:active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-35"
                         >
-                            <ChevronLeft className="h-[18px] w-[18px]" />
+                            <ChevronLeft className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                         <button
                             type="button"
                             onClick={() => goCalMonth(1)}
                             disabled={atMaxMonth}
                             aria-label="Mes siguiente"
-                            className="inline-flex h-[26px] w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-white hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:opacity-35 disabled:cursor-not-allowed"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-[background-color,color,transform] hover:bg-brand/[0.06] hover:text-brand motion-safe:active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-35"
                         >
-                            <ChevronRight className="h-[18px] w-[18px]" />
+                            <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
                         </button>
                     </div>
                 </div>
@@ -501,16 +532,18 @@ const SlotPicker: React.FC<Props> = ({
     }
 
     const useMobileHoursDrawer = !previewMode || mobilePreviewDrawer;
+    const useDesktopSideHoursDrawer = embeddedSplitColumn;
 
     const inlineSlotsColumnClass = cn(
         slotsColClass,
-        useMobileHoursDrawer && 'hidden lg:flex',
+        (useMobileHoursDrawer || useDesktopSideHoursDrawer) && 'hidden',
     );
 
     const renderSelectableHoursBody = (opts?: {
         embeddedSlots?: boolean;
         splitPeriodsOnMobile?: boolean;
         browseOnly?: boolean;
+        drawerStacked?: boolean;
     }) => {
         const slotEmbedded = opts?.embeddedSlots ?? !!embedded;
         const browseOnly = opts?.browseOnly ?? previewMode;
@@ -557,6 +590,8 @@ const SlotPicker: React.FC<Props> = ({
                 previewMode={browseOnly}
                 compact={slotEmbedded}
                 embedded={slotEmbedded}
+                splitColumn={embeddedSplitColumn && !opts?.drawerStacked}
+                splitColumnDrawer={!!opts?.drawerStacked}
                 showPeriodFilter={false}
                 splitPeriodsOnMobile={opts?.splitPeriodsOnMobile}
                 periodFilter={periodFilter}
@@ -569,56 +604,71 @@ const SlotPicker: React.FC<Props> = ({
     const embeddedCalendarGrid = (
         <div
             className={cn(
-                'grid lg:min-h-0',
-                gridClass,
-                embeddedSplitColumn && 'mx-auto w-full',
+                embeddedSplitColumn ? 'flex w-full flex-col gap-3 lg:min-h-0 lg:flex-1 lg:gap-0' : 'grid lg:min-h-0',
+                !embeddedSplitColumn && gridClass,
+                bare && embeddedSplitColumn && 'max-lg:px-4 max-lg:py-4',
             )}
         >
             <div className={calendarColClass}>
                 <div
                     className={cn(
-                        'w-full',
-                        // embeddedSplitColumn: nada de max-w propio — el ancho real ya lo fija
-                        // la pista minmax(0,1fr) del grid (gridClass); un tope aparte aquí solo
-                        // puede dejar la columna por debajo de lo disponible y, con mx-auto,
-                        // centrarla dejando aire a los lados en tarjetas anchas (feedback
-                        // 2026-07-12). Las celdas del día ya son fluidas (flex-1 basis-0), así
-                        // que llenar la pista entera es seguro.
-                        !embeddedSplitColumn &&
-                            cn('lg:flex lg:h-full lg:flex-col', EMBEDDED_CALENDAR_MAX_WIDTH_CLASS),
+                        embeddedSplitColumn
+                            ? SPLIT_DESKTOP_CALENDAR_SHELL_CLASS
+                            : cn(
+                                  'w-full',
+                                  'lg:flex lg:h-full lg:flex-col',
+                                  EMBEDDED_CALENDAR_MAX_WIDTH_CLASS,
+                              ),
                     )}
                 >
-                    <CalendarToolbar />
-                    <Calendar
-                        mode="single"
-                        locale={es}
-                        month={calMonth}
-                        onMonthChange={setCalMonth}
-                        selected={selectedDate ?? undefined}
-                        onSelect={handleDateSelect}
-                        defaultMonth={selectedDate ?? defaultDate}
-                        disabled={isDateDisabled}
-                        showOutsideDays={false}
-                        components={{ DayButton: AvailabilityDayButton }}
-                        classNames={{
-                            ...(embeddedSplitColumn
-                                ? SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES
-                                : EMBEDDED_CALENDAR_CLASS_NAMES),
-                        }}
-                        className={embeddedCalendarClass()}
-                    />
+                    <CalendarToolbar compactSplit={embeddedSplitColumn} />
+                    <div
+                        className={cn(
+                            'w-full',
+                            embeddedSplitColumn && 'flex min-h-0 flex-1 flex-col justify-center',
+                        )}
+                    >
+                        <Calendar
+                            mode="single"
+                            locale={es}
+                            fixedWeeks
+                            month={calMonth}
+                            onMonthChange={setCalMonth}
+                            selected={selectedDate ?? undefined}
+                            onSelect={handleDateSelect}
+                            defaultMonth={selectedDate ?? defaultDate}
+                            disabled={isDateDisabled}
+                            showOutsideDays={false}
+                            components={{ DayButton: AvailabilityDayButton }}
+                            classNames={{
+                                ...(embeddedSplitColumn
+                                    ? SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES
+                                    : EMBEDDED_CALENDAR_CLASS_NAMES),
+                            }}
+                            className={embeddedCalendarClass()}
+                        />
+                    </div>
                     <AvailabilityLegend align="between" compact />
                 </div>
             </div>
+            {!embeddedSplitColumn ? (
             <div className={inlineSlotsColumnClass}>
                 {!selectedDate ? (
                     <PickDayEmptyState compactSplit={embeddedSplitColumn} />
                 ) : (
-                    <>
+                    <div
+                        className={cn(
+                            'flex flex-col',
+                            embeddedSplitColumn && selectedDate && 'lg:flex-row lg:items-center lg:gap-6',
+                        )}
+                    >
                         <p
                             className={cn(
-                                'mb-2 font-semibold leading-snug text-ink-strong',
-                                previewBrowseHours ? 'text-center text-sm lg:text-body' : 'text-meta lg:text-body',
+                                'mb-3 border-b border-line-soft pb-2.5 font-semibold capitalize leading-snug tracking-[-0.01em] text-ink-strong',
+                                previewBrowseHours ? 'text-center text-meta lg:text-body' : 'text-meta lg:text-body',
+                                embeddedSplitColumn &&
+                                    selectedDate &&
+                                    'lg:mb-0 lg:shrink-0 lg:border-0 lg:pb-0 lg:whitespace-nowrap',
                             )}
                         >
                             {capitalize(dayLong(selectedDate))}
@@ -626,11 +676,29 @@ const SlotPicker: React.FC<Props> = ({
                         <div className="flex flex-1 flex-col justify-start">
                             {renderSelectableHoursBody({ browseOnly: previewBrowseHours })}
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
+            ) : null}
         </div>
     );
+
+    const desktopHoursDrawer =
+        useDesktopSideHoursDrawer && selectedDate && hoursDrawerExpanded ? (
+            <CheckoutSlotHoursSideDrawer
+                open
+                dateLabel={capitalize(dayLong(selectedDate))}
+                selectedLabel={selected?.label ?? null}
+                onOpenChange={(open) => {
+                    if (!open) setHoursDrawerExpanded(false);
+                }}
+            >
+                {renderSelectableHoursBody({
+                    browseOnly: previewBrowseHours,
+                    drawerStacked: true,
+                })}
+            </CheckoutSlotHoursSideDrawer>
+        ) : null;
 
     const mobileHoursDrawer =
         useMobileHoursDrawer && selectedDate ? (
@@ -651,7 +719,7 @@ const SlotPicker: React.FC<Props> = ({
                 !embedded && 'max-lg:shadow-sm',
                 !embedded && SD_CHECKOUT_DESKTOP_CARD_CLASS,
                 embedded && embeddedSplitColumn && !bare && 'flex h-full min-h-0 w-full flex-col',
-                bareLayout && 'flex h-full min-h-0 w-full flex-col',
+                bareLayout && 'flex h-full min-h-0 w-full flex-col lg:flex-1',
             )}
         >
             {sectionTitle && showSectionHeader ? (
@@ -686,7 +754,13 @@ const SlotPicker: React.FC<Props> = ({
                 ) : null
             ) : null}
 
-            {embedded && previewMode && !mobilePreviewDrawer && !embeddedSplitColumn ? (
+            {embedded && bare && embeddedSplitColumn ? (
+                <>
+                    {embeddedCalendarGrid}
+                    {desktopHoursDrawer}
+                    {mobileHoursDrawer}
+                </>
+            ) : embedded && previewMode && !mobilePreviewDrawer && !embeddedSplitColumn ? (
                 <CheckoutSellerChoicePreviewCalendar
                     splitColumn={embeddedSplitColumn}
                     showInnerHeader={!embeddedSplitColumn}
@@ -702,6 +776,7 @@ const SlotPicker: React.FC<Props> = ({
                         <Calendar
                             mode="single"
                             locale={es}
+                            fixedWeeks
                             month={calMonth}
                             onMonthChange={setCalMonth}
                             selected={undefined}
@@ -717,14 +792,6 @@ const SlotPicker: React.FC<Props> = ({
                         />
                         <AvailabilityLegend align="between" compact />
                     </div>
-                </CheckoutSellerChoicePreviewCalendar>
-            ) : embedded && previewMode && !mobilePreviewDrawer && embeddedSplitColumn ? (
-                <CheckoutSellerChoicePreviewCalendar
-                    splitColumn={embeddedSplitColumn}
-                    showInnerHeader={!embeddedSplitColumn}
-                    bare={bare}
-                >
-                    {embeddedCalendarGrid}
                 </CheckoutSellerChoicePreviewCalendar>
             ) : embedded ? (
                 <>
@@ -762,6 +829,7 @@ const SlotPicker: React.FC<Props> = ({
                 <Calendar
                     mode="single"
                     locale={es}
+                    fixedWeeks
                     month={calMonth}
                     onMonthChange={setCalMonth}
                     selected={selectedDate ?? undefined}

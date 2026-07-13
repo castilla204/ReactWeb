@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarDays, Lock } from 'lucide-react';
+import { CalendarDays, Lock, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
     COORD_SELF_CALENDAR_HEADER_DETAIL,
@@ -349,32 +349,27 @@ export function CheckoutSellerChoicePreviewHeader({
     compact?: boolean;
 }) {
     const { headerLead, headerDetail } = LOCKED_COPY[variant];
+    const HeaderIcon = variant === 'location' ? MapPin : CalendarDays;
 
     return (
         <div
             className={cn(
                 'relative hidden border-b border-line bg-white lg:block',
-                compact ? 'px-4 py-2.5' : 'px-4 py-3.5 lg:px-5',
+                compact ? 'px-4 py-3' : 'px-5 py-3.5',
                 className,
             )}
             role="status"
         >
-            <div className={cn('flex min-w-0 items-start', compact ? 'gap-2' : 'gap-2.5')}>
-                <svg
+            <div className={cn('flex min-w-0 items-start', compact ? 'gap-2.5' : 'gap-3')}>
+                <span
                     className={cn(
-                        'mt-0.5 shrink-0 text-ink-soft',
-                        compact ? 'h-3.5 w-3.5' : 'h-4 w-4',
+                        'mt-0.5 flex shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand',
+                        compact ? 'h-7 w-7' : 'h-8 w-8',
                     )}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
                     aria-hidden
                 >
-                    <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
-                        clipRule="evenodd"
-                    />
-                </svg>
+                    <HeaderIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={2} />
+                </span>
                 <div className="min-w-0">
                     <h3
                         className={cn(
@@ -511,21 +506,61 @@ export function CheckoutSellerChoicePreviewFooter({
     );
 }
 
+/** Leyenda flotante sobre el mapa de cobertura (desktop sidebar, modo referencia).
+ *  Sustituye la franja blanca de cabecera que competía con el mapa y duplicaba el
+ *  título de la página — el mapa queda a pantalla completa y el contexto va en un
+ *  chip sobre la imagen (patrón permitido: chip sobre foto). */
+export function CheckoutMapCoverageOverlayLegend({ className }: { className?: string }) {
+    return (
+        <div
+            className={cn(
+                'pointer-events-none absolute left-4 top-4 z-[10] max-w-[min(100%-2rem,18rem)]',
+                className,
+            )}
+            role="note"
+        >
+            <div className="flex items-start gap-2.5 rounded-xl border border-white/70 bg-white/90 px-3 py-2.5 shadow-[0_2px_10px_rgba(15,23,42,0.1)] backdrop-blur-[6px]">
+                <span
+                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center"
+                    aria-hidden
+                >
+                    <span className="relative flex h-4 w-4 items-center justify-center rounded-full border border-dashed border-ink-soft/60 bg-ink-soft/10">
+                        <span className="h-1 w-1 rounded-full bg-ink-strong" />
+                    </span>
+                </span>
+                <p className="text-kicker leading-[1.45] text-ink-muted">
+                    <span className="font-semibold text-ink-strong">Zona de cobertura</span>
+                    {' · '}
+                    solo consulta. El vendedor fija la dirección al reservar.
+                </p>
+            </div>
+        </div>
+    );
+}
+
 /** Mapa explorables (pan/zoom): aviso superior a ancho completo, sin caja contorneada. */
 export function CheckoutSellerChoicePreviewMap({
     children,
     className,
     showFooter = false,
+    /** Leyenda flotante en vez de franja de cabecera (desktop sidebar vendedor). */
+    overlayLegend = false,
 }: {
     children: React.ReactNode;
     className?: string;
     /** Pie desactivado en referencia: el aviso superior basta. */
     showFooter?: boolean;
+    overlayLegend?: boolean;
 }) {
     return (
         <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
-            <CheckoutSellerChoicePreviewHeader variant="location" compact className="w-full shrink-0" />
-            <div className="relative min-h-0 w-full flex-1">{children}</div>
+            {!overlayLegend ? (
+                <CheckoutSellerChoicePreviewHeader variant="location" compact className="w-full shrink-0" />
+            ) : null}
+            <div className="relative min-h-0 w-full flex-1">
+                {overlayLegend ? <CheckoutMapCoverageOverlayLegend /> : null}
+                {children}
+            </div>
             {showFooter ? <CheckoutSellerChoicePreviewFooter variant="location" /> : null}
         </div>
     );

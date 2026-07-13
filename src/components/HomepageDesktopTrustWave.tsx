@@ -66,6 +66,16 @@ export const HomepageDesktopTrustWave: React.FC = () => {
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
+          <path
+            className="hp-trust-wave__pulse"
+            d="M0 108 C300 108 590 108 760 102 C830 99 854 66 900 34 C952 -2 1054 -4 1118 20 C1182 44 1200 86 1268 101 C1324 112 1382 108 1440 108"
+            pathLength="1000"
+            fill="none"
+            stroke="hsl(var(--brand))"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
         </svg>
 
         <button

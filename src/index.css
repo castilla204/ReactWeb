@@ -127,8 +127,7 @@
   .support-chat-fab-pulse,
   .chat-typing-dot,
   .expert-sparkle-marker,
-  .expert-sparkle-marker *,
-  .checkout-mobile-title-underline {
+  .expert-sparkle-marker * {
     animation: none !important;
   }
 }
@@ -475,10 +474,10 @@
         --warning: 32 95% 44%;
         --warning-tint: 40 90% 96%;
         --warning-border: 40 70% 88%;
-        /* Calendario de citas — celdas por ocupación (SlotPicker, checkout) */
-        --avail-free: 152 55% 82%;
-        --avail-low: 40 92% 76%;
-        --avail-full: 0 0% 87%;
+        /* Calendario de citas — tintes alineados al azul de marca (210°), no semáforo verde/naranja */
+        --avail-free: 210 55% 93%;
+        --avail-low: 210 38% 86%;
+        --avail-full: 0 0% 91%;
         /* Mapas — agua/tierra (ExpertsAreaMap, skeletons). Literales en MAP_LITERAL. */
         --map-sky: 206 45% 88%;
         --map-sky-muted: 206 35% 92%;
@@ -528,9 +527,9 @@
         --warning: 32 80% 55%;
         --warning-tint: 32 30% 18%;
         --warning-border: 32 25% 28%;
-        --avail-free: 152 35% 28%;
-        --avail-low: 32 45% 32%;
-        --avail-full: 217 33% 24%;
+        --avail-free: 210 42% 24%;
+        --avail-low: 210 32% 20%;
+        --avail-full: 217 33% 18%;
         --map-sky: 217 33% 22%;
         --map-sky-muted: 217 33% 18%;
         --map-land: 217 25% 20%;
@@ -733,69 +732,6 @@
     /* Barra fija móvil: ficha servicio + checkout */
     .sd-mobile-footer-inner {
         @apply py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
-    }
-
-    /* Subrayado título checkout — degradado azul→ámbar (móvil / énfasis) */
-    .checkout-page-title-underline,
-    .checkout-mobile-title-underline {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 5px;
-        border-radius: 9999px;
-        background: linear-gradient(to right, hsl(var(--brand)) 0%, hsl(var(--brand-deep)) 32%, hsl(38 92% 50%) 100%);
-        box-shadow:
-            0 2px 10px rgba(0, 102, 204, 0.45),
-            0 1px 8px rgba(245, 158, 11, 0.4);
-    }
-
-    /* Desktop checkout — acento mínimo bajo el título */
-    .checkout-page-title-underline-subtle {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 2.75rem;
-        height: 2px;
-        border-radius: 9999px;
-        background: hsl(var(--brand));
-        opacity: 0.55;
-    }
-
-    /* Segunda capa suave para más presencia sin ensuciar */
-    .checkout-page-title-underline::after,
-    .checkout-mobile-title-underline::after {
-        content: '';
-        position: absolute;
-        inset: -1px -2px;
-        border-radius: inherit;
-        background: inherit;
-        filter: blur(3px);
-        opacity: 0.55;
-        z-index: -1;
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-        .checkout-page-title-underline,
-        .checkout-mobile-title-underline {
-            animation: checkout-title-underline-glow 2.8s ease-in-out infinite;
-        }
-    }
-
-    @keyframes checkout-title-underline-glow {
-        0%,
-        100% {
-            opacity: 0.92;
-            box-shadow:
-                0 2px 10px rgba(0, 102, 204, 0.38),
-                0 1px 6px rgba(245, 158, 11, 0.3);
-        }
-        50% {
-            opacity: 1;
-            box-shadow:
-                0 3px 14px rgba(0, 102, 204, 0.52),
-                0 2px 10px rgba(245, 158, 11, 0.45);
-        }
     }
 
     .sd-mobile-footer-row {
@@ -1691,6 +1627,430 @@ input, textarea {
     .coordination-step-from-left {
         animation: coordination-step-from-left 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+
+    /* Entrada de las tarjetas de elección "¿Quién elige la fecha?": aparecen como
+       un par, con un stagger corto (2 tarjetas × 70ms) para que se lean juntas sin
+       coreografía de carga. Sube 8px y aclara; easing del sistema (ease-out-quint). */
+    @keyframes coordination-card-enter {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .coordination-card-enter {
+        /* `backwards` (no `both`): aplica el estado inicial durante el delay del stagger,
+           pero NO retiene el estado final, para que el `hover:-translate-y-px` de la
+           tarjeta no quede anulado por el transform:translateY(0) de la animación. El
+           estado final coincide con el natural, así que no hay salto al terminar. */
+        animation: coordination-card-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: calc(var(--i, 0) * 70ms);
+    }
+
+    /* Feedback de selección: el check se DIBUJA (trazo del bolígrafo firmando) en vez
+       de saltar de golpe. Se dispara al montar el icono (solo existe cuando la opción
+       está activa), así que se re-dibuja cada vez que eliges esa tarjeta. */
+    @keyframes coordination-check-draw {
+        from {
+            stroke-dashoffset: 24;
+        }
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+    .coordination-check-draw {
+        stroke-dasharray: 24;
+        animation: coordination-check-draw 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    /* El disco del radio "asienta" con un micro-scale al pasar a seleccionado. */
+    @keyframes coordination-radio-settle {
+        from {
+            transform: scale(0.7);
+        }
+        to {
+            transform: scale(1);
+        }
+    }
+    .coordination-radio-settle {
+        animation: coordination-radio-settle 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Agenda del experto: los chips de hora "entran" en cascada corta al cargar un
+       día (ritmo de lista, no coreografía de carga). `backwards` para no pisar el
+       hover/active del chip; el índice va capado en el JSX (~12) para acotar el
+       stagger total (~340ms). */
+    @keyframes slot-chip-enter {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .slot-chip-enter {
+        animation: slot-chip-enter 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: calc(var(--ci, 0) * 26ms);
+    }
+
+    /* Rótulo del mes: microcross-fade al navegar entre meses (el <h3> se re-monta
+       vía key), para que el cambio de mes no sea un salto seco. */
+    @keyframes slot-month-fade {
+        from {
+            opacity: 0;
+            transform: translateY(-2px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .slot-month-fade {
+        animation: slot-month-fade 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* Paso «Revisa y reserva»: avance del wizard → resumen de pago. */
+    @keyframes checkout-payment-step-enter {
+        from {
+            opacity: 0;
+            transform: translateX(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    .checkout-payment-step-enter {
+        animation: checkout-payment-step-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes checkout-payment-card-enter {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .checkout-payment-card-enter {
+        animation: checkout-payment-card-enter 0.36s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: 70ms;
+    }
+
+    @keyframes checkout-payment-trust-enter {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .checkout-payment-trust-enter {
+        animation: checkout-payment-trust-enter 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation-delay: 220ms;
+    }
+
+    @keyframes checkout-payment-deliverable-enter {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .checkout-payment-deliverable-enter {
+        animation: checkout-payment-deliverable-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: calc(180ms + var(--di, 0) * 40ms);
+    }
+
+    /* Wizard móvil — frontera con chispas (contenidas en el tramo; gap-3 deja el salto visible). */
+    @keyframes checkout-stepper-ignite {
+        from {
+            transform: scaleX(0);
+            opacity: 0.55;
+        }
+        to {
+            transform: scaleX(1);
+            opacity: 1;
+        }
+    }
+    @keyframes checkout-stepper-shimmer {
+        0% {
+            transform: translateX(-120%);
+            opacity: 0;
+        }
+        18% {
+            opacity: 0.9;
+        }
+        100% {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+    }
+    @keyframes checkout-stepper-frontier-pulse {
+        0%, 100% {
+            transform: translate(-100%, -50%) scale(1);
+            opacity: 0.92;
+            box-shadow:
+                0 0 0 0 hsl(var(--brand) / 0.4),
+                0 0 8px 2px hsl(var(--brand) / 0.4);
+        }
+        50% {
+            transform: translate(-100%, -50%) scale(1.2);
+            opacity: 1;
+            box-shadow:
+                0 0 0 3px hsl(var(--brand) / 0.12),
+                0 0 14px 4px hsl(var(--brand) / 0.48);
+        }
+    }
+    @keyframes checkout-stepper-halo-ring {
+        0% {
+            transform: translate(-100%, -50%) scale(0.5);
+            opacity: 0.65;
+        }
+        100% {
+            transform: translate(-100%, -50%) scale(2.1);
+            opacity: 0;
+        }
+    }
+    @keyframes checkout-stepper-burst-flare {
+        0% {
+            transform: translate(-100%, -50%) scale(0.45);
+            opacity: 0.9;
+        }
+        100% {
+            transform: translate(-100%, -50%) scale(2.4);
+            opacity: 0;
+        }
+    }
+    @keyframes checkout-stepper-spark-pop {
+        0% {
+            transform: translate(-100%, -50%) scale(0.2);
+            opacity: 0;
+        }
+        14% {
+            opacity: 1;
+        }
+        38% {
+            transform: translate(
+                    calc(-100% + var(--spark-x, 0px) * 0.5),
+                    calc(-50% + var(--spark-y, 0px) * 0.5)
+                )
+                scale(1.1);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(
+                    calc(-100% + var(--spark-x, 0px)),
+                    calc(-50% + var(--spark-y, 0px))
+                )
+                scale(0.1);
+            opacity: 0;
+        }
+    }
+    @keyframes checkout-stepper-ember-drift {
+        0% {
+            transform: translate(-100%, -50%) scale(0.45);
+            opacity: 0;
+        }
+        18% {
+            opacity: 0.85;
+        }
+        100% {
+            transform: translate(
+                    calc(-100% + var(--ember-x, 0px)),
+                    calc(-50% + var(--ember-y, 0px))
+                )
+                scale(0.06);
+            opacity: 0;
+        }
+    }
+
+    .checkout-stepper-segment {
+        overflow: hidden;
+    }
+    .checkout-stepper-segment--active {
+        clip-path: inset(-7px 0 -7px 0 round 9999px);
+        filter: drop-shadow(0 0 4px hsl(var(--brand) / 0.22));
+    }
+    .checkout-stepper-fill {
+        transform-origin: left center;
+    }
+    .checkout-stepper-fill--active {
+        overflow: hidden;
+        box-shadow: 0 0 8px hsl(var(--brand) / 0.28);
+    }
+    .checkout-stepper-fill--ignite {
+        animation: checkout-stepper-ignite 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .checkout-stepper-fill--active::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            hsl(0 0% 100% / 0.5) 48%,
+            transparent 100%
+        );
+        animation: checkout-stepper-shimmer 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        pointer-events: none;
+    }
+    .checkout-stepper-frontier {
+        position: absolute;
+        top: 50%;
+        right: 0;
+        z-index: 1;
+        width: 0;
+        height: 0;
+    }
+    .checkout-stepper-frontier-halo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        border: 1.5px solid hsl(var(--brand) / 0.5);
+        transform: translate(-100%, -50%);
+        animation: checkout-stepper-halo-ring 1.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .checkout-stepper-frontier-halo--b {
+        animation-delay: 0.75s;
+    }
+    .checkout-stepper-frontier-core {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: radial-gradient(
+            circle at 35% 35%,
+            hsl(0 0% 100% / 0.95) 0%,
+            hsl(var(--brand)) 45%,
+            hsl(var(--brand-deep)) 100%
+        );
+        transform: translate(-100%, -50%);
+        animation: checkout-stepper-frontier-pulse 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .checkout-stepper-frontier-flare {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 9999px;
+        background: radial-gradient(
+            circle,
+            hsl(0 0% 100% / 0.85) 0%,
+            hsl(var(--brand) / 0.5) 38%,
+            transparent 72%
+        );
+        transform: translate(-100%, -50%) scale(0);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .checkout-stepper-frontier--burst .checkout-stepper-frontier-flare {
+        animation: checkout-stepper-burst-flare 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .checkout-stepper-spark {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 3px;
+        height: 3px;
+        border-radius: 9999px;
+        background: radial-gradient(circle, hsl(0 0% 100%) 0%, hsl(var(--brand)) 72%);
+        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.62);
+        transform: translate(-100%, -50%);
+        animation: checkout-stepper-spark-pop 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .checkout-stepper-spark--1 {
+        --spark-x: -2px;
+        --spark-y: -7px;
+        animation-delay: 0s;
+    }
+    .checkout-stepper-spark--2 {
+        --spark-x: -3px;
+        --spark-y: -3px;
+        animation-delay: 0.2s;
+    }
+    .checkout-stepper-spark--3 {
+        --spark-x: -4px;
+        --spark-y: 5px;
+        animation-delay: 0.4s;
+    }
+    .checkout-stepper-spark--4 {
+        --spark-x: -2px;
+        --spark-y: 7px;
+        animation-delay: 0.6s;
+    }
+    .checkout-stepper-spark--5 {
+        --spark-x: -5px;
+        --spark-y: -5px;
+        animation-delay: 0.8s;
+    }
+    .checkout-stepper-ember {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 2px;
+        height: 2px;
+        border-radius: 9999px;
+        background: hsl(var(--brand));
+        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.6);
+        transform: translate(-100%, -50%);
+        animation: checkout-stepper-ember-drift 1.7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .checkout-stepper-ember--1 {
+        --ember-x: -2px;
+        --ember-y: -11px;
+        animation-delay: 0.3s;
+    }
+    .checkout-stepper-ember--2 {
+        --ember-x: -4px;
+        --ember-y: -13px;
+        animation-delay: 0.9s;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .checkout-stepper-segment--active {
+        clip-path: none;
+        filter: none;
+    }
+    .checkout-stepper-fill--active {
+        box-shadow: none;
+    }
+    .checkout-stepper-fill--ignite {
+        animation: none;
+    }
+    .checkout-stepper-fill--active::after,
+    .checkout-stepper-frontier-core,
+    .checkout-stepper-frontier-halo,
+    .checkout-stepper-frontier-flare,
+    .checkout-stepper-spark,
+    .checkout-stepper-ember {
+        animation: none !important;
+    }
+    .checkout-stepper-spark,
+    .checkout-stepper-ember,
+    .checkout-stepper-frontier-halo,
+    .checkout-stepper-frontier-flare {
+        display: none;
+    }
 }
 
 /* ✅ Efecto de onda para selección de categoría */
@@ -2349,4 +2709,40 @@ img[alt*="country"],
 .become-expert-map .maplibregl-ctrl-group {
     border: none !important;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Pulso de luz que recorre la cresta de confianza.
+   No deforma la geometría ni mueve contenido: solo anima el trazo SVG. */
+@keyframes hp-trust-wave-pulse {
+    0%,
+    12% {
+        stroke-dashoffset: 1000;
+        opacity: 0;
+    }
+    16% {
+        stroke-dashoffset: 1000;
+        opacity: 0.52;
+    }
+    72% {
+        stroke-dashoffset: 0;
+        opacity: 0.56;
+    }
+    84%,
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+    }
+}
+
+.hp-trust-wave__pulse {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: hp-trust-wave-pulse 8.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hp-trust-wave__pulse {
+        animation: none;
+        opacity: 0;
+    }
 }

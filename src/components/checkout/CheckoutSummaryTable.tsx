@@ -2,13 +2,23 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import {
   SD_CHECKOUT_MOBILE_TABLE_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_CARD_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_CARD_HEADER_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_CARD_TITLE_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_CARD_SERVICE_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_CARD_META_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_ROW_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_ROW_LABEL_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_ROW_VALUE_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS,
   SD_CHECKOUT_MOBILE_META_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import { CheckoutExpertHero } from './CheckoutExpertHero';
+import { CheckoutPaymentExpertCard } from './CheckoutPaymentExpertCard';
 import {
   ServiceDetailDeliverablesGuide,
   type ServiceDeliverableType,
@@ -22,6 +32,7 @@ export interface CheckoutSummaryTableProps {
   expertPicture?: string;
   expertRating?: number;
   expertReviewCount?: number;
+  expertCompletedSearches?: number;
   coordinationLabel?: string | null;
   appointmentLabel?: string | null;
   locationLabel?: string | null;
@@ -67,21 +78,40 @@ function CheckoutSummaryTableRow({
   compact = false,
   firstInGroup = false,
   striped = false,
+  payment = false,
+  noTopBorder = false,
 }: {
   label: string;
   children: React.ReactNode;
   compact?: boolean;
-  /** Primera fila tras una etiqueta de grupo: sin línea propia, la etiqueta ya separa. */
   firstInGroup?: boolean;
-  /** Zebra muy sutil (paso final de pago): fondo gris casi imperceptible en filas alternas. */
   striped?: boolean;
+  payment?: boolean;
+  noTopBorder?: boolean;
 }) {
+  if (payment) {
+    return (
+      <div
+        className={cn(
+          SD_CHECKOUT_MOBILE_PAYMENT_ROW_CLASS,
+          firstInGroup && 'border-t-0',
+          noTopBorder && 'border-t-0',
+          striped && 'bg-surface-tinted/60',
+        )}
+      >
+        <dt className={SD_CHECKOUT_MOBILE_PAYMENT_ROW_LABEL_CLASS}>{label}</dt>
+        <dd className={cn('m-0', SD_CHECKOUT_MOBILE_PAYMENT_ROW_VALUE_CLASS)}>{children}</dd>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
         SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
         compact ? 'py-1.5' : 'px-6 py-3.5',
         firstInGroup && 'border-t-0',
+        noTopBorder && 'border-t-0',
         striped && 'bg-surface-tinted',
       )}
     >
@@ -92,10 +122,26 @@ function CheckoutSummaryTableRow({
 }
 
 /** Micro-cabecera de grupo dentro del resumen — junta filas relacionadas (chunking ≤4). */
-function CheckoutSummaryGroupLabel({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
+function CheckoutSummaryGroupLabel({
+  children,
+  compact = false,
+  payment = false,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+  payment?: boolean;
+}) {
   return (
-    <div className={cn('border-t border-line-soft pb-1 pt-4', compact ? 'px-4' : 'px-6')}>
-      <p className="text-kicker font-semibold uppercase tracking-[0.06em] text-ink-soft">{children}</p>
+    <div className={cn('border-t border-line-soft', payment ? 'px-5 pb-2 pt-5' : compact ? 'px-4 pb-1 pt-4' : 'px-6 pb-1 pt-4')}>
+      <p
+        className={cn(
+          payment
+            ? SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS
+            : 'text-kicker font-semibold uppercase tracking-[0.06em] text-ink-soft',
+        )}
+      >
+        {children}
+      </p>
     </div>
   );
 }
@@ -103,14 +149,25 @@ function CheckoutSummaryGroupLabel({ children, compact = false }: { children: Re
 function SummaryValue({
   children,
   hint,
+  payment = false,
 }: {
   children: React.ReactNode;
   hint?: string | null;
+  payment?: boolean;
 }) {
   return (
     <>
       <span>{children}</span>
-      {hint ? <span className="mt-0.5 block text-kicker font-normal leading-snug text-ink-muted">{hint}</span> : null}
+      {hint ? (
+        <span
+          className={cn(
+            'mt-0.5 block font-normal leading-snug text-ink-muted',
+            payment ? 'text-meta' : 'text-kicker',
+          )}
+        >
+          {hint}
+        </span>
+      ) : null}
     </>
   );
 }
@@ -124,6 +181,7 @@ export function CheckoutSummaryTable({
   expertPicture,
   expertRating,
   expertReviewCount,
+  expertCompletedSearches,
   coordinationLabel,
   appointmentLabel,
   locationLabel,
@@ -145,8 +203,7 @@ export function CheckoutSummaryTable({
   stripedRows = false,
   className = '',
 }: CheckoutSummaryTableProps) {
-  // Chunking del resumen (no-compacto): agrupa las filas relacionadas bajo una
-  // micro-cabecera en vez de una lista plana de 9-10 filas sin jerarquía.
+  const payment = brandAccent && !compact;
   const hasLogisticsGroup = !compact && Boolean(coordinationLabel || appointmentLabel || locationLabel || locationHint);
   const coordinationIsFirst = hasLogisticsGroup && Boolean(coordinationLabel);
   const appointmentIsFirst = hasLogisticsGroup && !coordinationLabel && Boolean(appointmentLabel);
@@ -154,18 +211,41 @@ export function CheckoutSummaryTable({
     hasLogisticsGroup && !coordinationLabel && !appointmentLabel && Boolean(locationLabel || locationHint);
   const hasSellerGroup = !compact && Boolean(sellerContactLabel);
 
-  // Zebra sutil: cuenta solo las filas de datos reales (no las etiquetas de
-  // grupo, que no son filas) para que la alternancia no se rompa cuando una
-  // fila condicional falta.
   let rowIndex = 0;
   const nextRowStriped = () => stripedRows && rowIndex++ % 2 === 1;
+  let isFirstDataRow = true;
+  const consumeFirstRow = () => {
+    const current = isFirstDataRow;
+    isFirstDataRow = false;
+    return current;
+  };
+
+  const rowProps = (extra?: { firstInGroup?: boolean }) => ({
+    compact,
+    payment,
+    striped: payment ? false : nextRowStriped(),
+    noTopBorder: payment && showServiceDetailRows && consumeFirstRow(),
+    ...extra,
+  });
+
+  const paymentTrustExpert =
+    payment && !compact && expertName && expertHeroPosition === 'bottom';
+  const paymentTrustDeliverables = payment && showDeliverables && deliverables.length > 0;
+  const paymentTrustBlock = paymentTrustExpert || paymentTrustDeliverables;
+  const paymentServiceMeta = [categoryName, durationLabel].filter(Boolean).join(' · ');
+  const showServiceDetailRows =
+    !compact &&
+    ((!hideExpertHeader && serviceName) ||
+      (!(payment && hideExpertHeader) && categoryName) ||
+      (!(payment && hideExpertHeader) && durationLabel));
 
   return (
     <div className={className}>
       <article
         className={cn(
-          SD_CHECKOUT_MOBILE_TABLE_CLASS,
-          brandAccent && 'relative overflow-hidden',
+          payment ? SD_CHECKOUT_MOBILE_PAYMENT_CARD_CLASS : SD_CHECKOUT_MOBILE_TABLE_CLASS,
+          payment && 'checkout-payment-card-enter',
+          brandAccent && !payment && 'relative overflow-hidden',
           compact && 'rounded-xl border border-line shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
         )}
       >
@@ -189,74 +269,101 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {!compact && hideExpertHeader ? (
-          <div className="px-6 py-5 border-b border-line-soft">
-            <h2 className="text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">Detalles del servicio</h2>
-            {/* La duración ya sale en su fila («Duración») — aquí duplicaba el dato. */}
-            <p className="mt-1 text-subtitle font-semibold text-ink-strong">{serviceName}</p>
-          </div>
+          payment ? (
+            <div className={SD_CHECKOUT_MOBILE_PAYMENT_CARD_HEADER_CLASS}>
+              <p className={SD_CHECKOUT_MOBILE_PAYMENT_CARD_TITLE_CLASS}>Tu reserva</p>
+              <p className={SD_CHECKOUT_MOBILE_PAYMENT_CARD_SERVICE_CLASS}>{serviceName}</p>
+              {paymentServiceMeta ? (
+                <p className={SD_CHECKOUT_MOBILE_PAYMENT_CARD_META_CLASS}>{paymentServiceMeta}</p>
+              ) : null}
+            </div>
+          ) : (
+            <div className="border-b border-line-soft px-6 py-5">
+              <h2 className="text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                Detalles del servicio
+              </h2>
+              <p className="mt-1 text-subtitle font-semibold text-ink-strong">{serviceName}</p>
+            </div>
+          )
         ) : null}
 
-        <dl aria-label="Detalles del servicio">
-          {!compact && !hideExpertHeader && serviceName ? (
-            <CheckoutSummaryTableRow label="Servicio" compact={compact} striped={nextRowStriped()}>
-              {serviceName}
-            </CheckoutSummaryTableRow>
-          ) : null}
+        <section className={cn(payment && !hideExpertHeader && 'pt-4')}>
+          {showServiceDetailRows ? (
+          <dl aria-label="Detalles del servicio">
+            {!compact && !hideExpertHeader && serviceName ? (
+              <CheckoutSummaryTableRow label="Servicio" {...rowProps()}>
+                {serviceName}
+              </CheckoutSummaryTableRow>
+            ) : null}
 
-          {categoryName ? (
-            <CheckoutSummaryTableRow label="Categoría" compact={compact} striped={nextRowStriped()}>
-              {categoryName}
-            </CheckoutSummaryTableRow>
-          ) : null}
+            {categoryName && !(payment && hideExpertHeader) ? (
+              <CheckoutSummaryTableRow label="Categoría" {...rowProps()}>
+                {categoryName}
+              </CheckoutSummaryTableRow>
+            ) : null}
 
-          {durationLabel ? (
-            <CheckoutSummaryTableRow label="Duración" compact={compact} striped={nextRowStriped()}>
-              {durationLabel}
-            </CheckoutSummaryTableRow>
+            {durationLabel && !(payment && hideExpertHeader) ? (
+              <CheckoutSummaryTableRow label="Duración" {...rowProps()}>
+                {durationLabel}
+              </CheckoutSummaryTableRow>
+            ) : null}
+          </dl>
           ) : null}
 
           {hasLogisticsGroup ? (
-            <CheckoutSummaryGroupLabel compact={compact}>Cita y ubicación</CheckoutSummaryGroupLabel>
-          ) : null}
+            <>
+              <CheckoutSummaryGroupLabel compact={compact} payment={payment}>
+                Cita y ubicación
+              </CheckoutSummaryGroupLabel>
+              <dl aria-label="Cita y ubicación">
+                {coordinationLabel ? (
+                  <CheckoutSummaryTableRow label="Coordinación" {...rowProps({ firstInGroup: coordinationIsFirst })}>
+                    {coordinationLabel}
+                  </CheckoutSummaryTableRow>
+                ) : null}
 
-          {coordinationLabel ? (
-            <CheckoutSummaryTableRow label="Coordinación" compact={compact} firstInGroup={coordinationIsFirst} striped={nextRowStriped()}>
-              {coordinationLabel}
-            </CheckoutSummaryTableRow>
-          ) : null}
+                {appointmentLabel ? (
+                  <CheckoutSummaryTableRow label="Cita" {...rowProps({ firstInGroup: appointmentIsFirst })}>
+                    {appointmentLabel}
+                  </CheckoutSummaryTableRow>
+                ) : null}
 
-          {appointmentLabel ? (
-            <CheckoutSummaryTableRow label="Cita" compact={compact} firstInGroup={appointmentIsFirst} striped={nextRowStriped()}>
-              {appointmentLabel}
-            </CheckoutSummaryTableRow>
-          ) : null}
-
-          {locationLabel || locationHint ? (
-            <CheckoutSummaryTableRow label="Ubicación" compact={compact} firstInGroup={locationIsFirst} striped={nextRowStriped()}>
-              <SummaryValue hint={locationHint}>{locationLabel ?? '—'}</SummaryValue>
-            </CheckoutSummaryTableRow>
+                {locationLabel || locationHint ? (
+                  <CheckoutSummaryTableRow label="Ubicación" {...rowProps({ firstInGroup: locationIsFirst })}>
+                    <SummaryValue hint={locationHint} payment={payment}>
+                      {locationLabel ?? '—'}
+                    </SummaryValue>
+                  </CheckoutSummaryTableRow>
+                ) : null}
+              </dl>
+            </>
           ) : null}
 
           {hasSellerGroup ? (
-            <CheckoutSummaryGroupLabel compact={compact}>Contacto del vendedor</CheckoutSummaryGroupLabel>
-          ) : null}
+            <>
+              <CheckoutSummaryGroupLabel compact={compact} payment={payment}>
+                Contacto del vendedor
+              </CheckoutSummaryGroupLabel>
+              <dl aria-label="Contacto del vendedor">
+                {sellerContactLabel ? (
+                  <CheckoutSummaryTableRow label="Vendedor" {...rowProps({ firstInGroup: hasSellerGroup })}>
+                    {sellerContactLabel}
+                  </CheckoutSummaryTableRow>
+                ) : null}
 
-          {sellerContactLabel ? (
-            <CheckoutSummaryTableRow label="Vendedor" compact={compact} firstInGroup={hasSellerGroup} striped={nextRowStriped()}>
-              {sellerContactLabel}
-            </CheckoutSummaryTableRow>
-          ) : null}
-
-          {sellerListingLabel ? (
-            <CheckoutSummaryTableRow label="Anuncio" compact={compact} striped={nextRowStriped()}>
-              <span className="break-all">{sellerListingLabel}</span>
-            </CheckoutSummaryTableRow>
+                {sellerListingLabel ? (
+                  <CheckoutSummaryTableRow label="Anuncio" {...rowProps()}>
+                    <span className="break-all">{sellerListingLabel}</span>
+                  </CheckoutSummaryTableRow>
+                ) : null}
+              </dl>
+            </>
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className={cn('border-t border-line-soft', compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
+            <div className={cn('border-t border-line-soft', payment ? 'px-5 py-4' : compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-xs text-ink-muted font-medium">Total a pagar</p>
+                <p className="text-xs font-medium text-ink-muted">Total a pagar</p>
                 <p
                   className={cn(
                     'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong',
@@ -273,13 +380,54 @@ export function CheckoutSummaryTable({
               )}
             </div>
           ) : null}
-        </dl>
+        </section>
 
-        {showDeliverables && deliverables.length > 0 ? (
-          <div className={cn('border-t border-line-soft', compact ? 'px-4 py-3' : 'px-6 py-4')}>
-            <h2 className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
+        {paymentTrustBlock ? (
+          <div className="border-t border-line-soft px-5 pb-5 pt-5">
+            {paymentTrustExpert ? (
+              <div className={paymentTrustDeliverables ? 'mb-6' : undefined}>
+                <p className={cn('mb-3', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
+                  Tu experto
+                </p>
+                <CheckoutPaymentExpertCard
+                  expertName={expertName!}
+                  expertPicture={expertPicture}
+                  rating={expertRating}
+                  reviewCount={expertReviewCount}
+                  completedSearches={expertCompletedSearches}
+                  embedded
+                />
+              </div>
+            ) : null}
+
+            {paymentTrustDeliverables ? (
+              <div>
+                <p className={cn('mb-3', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
+                  Incluido en tu reserva
+                </p>
+                <ServiceDetailDeliverablesGuide
+                  items={deliverables}
+                  variant="inline"
+                  presentation="checkout"
+                  showHeading={false}
+                  coverColumns={deliverablesColumns}
+                  embedded
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!payment && showDeliverables && deliverables.length > 0 ? (
+          <div
+            className={cn(
+              'border-t border-line-soft',
+              compact ? 'px-4 py-3' : 'px-6 py-4',
+            )}
+          >
+            <p className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
               Qué incluye
-            </h2>
+            </p>
             <ServiceDetailDeliverablesGuide
               items={deliverables}
               variant="inline"
@@ -290,8 +438,8 @@ export function CheckoutSummaryTable({
           </div>
         ) : null}
 
-        {!compact && !hideExpertHeader && expertName && expertHeroPosition === 'bottom' ? (
-          <div className="border-t border-line-soft px-6 py-4">
+        {!payment && !compact && !hideExpertHeader && expertName && expertHeroPosition === 'bottom' ? (
+          <div className={cn('border-t border-line-soft', 'px-6 py-4')}>
             <p className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
               Experto asignado
             </p>
@@ -300,21 +448,31 @@ export function CheckoutSummaryTable({
               expertPicture={expertPicture}
               rating={expertRating}
               reviewCount={expertReviewCount}
+              completedSearches={expertCompletedSearches}
               size="sm"
             />
           </div>
         ) : null}
 
         {showFooterNotes ? (
-          <footer className="space-y-2.5 border-t border-line-soft px-6 py-3.5">
-            <CheckoutReserveHint coordinationMode={coordinationMode} />
+          <footer
+            className={cn(
+              'border-t border-line-soft',
+              payment ? 'space-y-3 px-5 py-4' : 'space-y-2.5 px-6 py-3.5',
+            )}
+          >
+            <CheckoutReserveHint
+              coordinationMode={coordinationMode}
+              compact={payment}
+              omitLeadBullet={payment}
+            />
             <a
               href="/legal/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className={`${SD_CHECKOUT_MOBILE_META_CLASS} underline decoration-line underline-offset-2 hover:no-underline`}
+              className={`${SD_CHECKOUT_MOBILE_META_CLASS} inline-flex min-h-11 items-center py-2 underline decoration-line underline-offset-2 hover:no-underline`}
             >
-              Condiciones
+              Condiciones de contratación
             </a>
           </footer>
         ) : null}

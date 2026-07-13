@@ -139,7 +139,7 @@ export function AppointmentWizardShell({
                             type="button"
                             onClick={onPrimary}
                             disabled={primaryDisabled}
-                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-ink-strong text-lead font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45"
+                            className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-ink-strong text-lead font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {primaryLabel}
                             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
