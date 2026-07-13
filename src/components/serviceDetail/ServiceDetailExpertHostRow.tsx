@@ -101,10 +101,13 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
               type="button"
               onClick={onFormacionClick}
               className={`${SD_HOST_INTERACTIVE_CLASS} mt-1 block text-left text-xs font-medium text-brand hover:text-brand-hover`}
+              aria-label={`Ver credenciales de ${expertName}`}
             >
               Credenciales
             </button>
-          ) : null}
+          ) : (
+            <p className={`mt-1 ${SD_MOBILE_META_CLASS}`}>Revisor verificado</p>
+          )}
           {completedSearches > 0 ? (
             <p className={`mt-1 ${SD_MOBILE_META_CLASS}`}>
               {completedSearches}{' '}
