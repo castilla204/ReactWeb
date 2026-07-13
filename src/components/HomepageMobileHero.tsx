@@ -1,89 +1,51 @@
 import React from 'react';
 
 import { HeroBannerPhoto } from './HeroBannerPhoto';
-
+import { ESCROW_HERO_MOBILE_LEAD } from '../constants/escrowCopy';
 import {
-
   HomepageMobileHeroCopyPlaceholder,
-
   HomepageMobileHeroLqip,
-
   HomepageMobileHeroShell,
-
 } from './homepage/HomepageMobileHeroShell';
 
-
-
 /**
-
- * Hero móvil — mensaje de confianza al entrar. Forma parte del scroll natural
-
- * de la página (no fijo): al explorar expertos se desplaza hacia arriba y
-
- * deja espacio al catálogo, como en marketplaces tipo Airbnb.
-
+ * Hero móvil — mensaje de confianza al entrar. Titular + línea de entrega en
+ * UNA sola columna a la izquierda (mismo ancho), centrada verticalmente. La
+ * foto (perito + coche real a la derecha) se recorta en vertical: a esta
+ * proporción `object-cover` muestra todo el ancho, así que el foco vertical
+ * (Y) es la palanca real de encuadre.
+ *
+ * Al montar, el subrayado ámbar de "un experto" se dibuja como un trazo de
+ * bolígrafo (el perito "firma" la palabra clave). El copy es siempre visible;
+ * con reduced-motion el subrayado queda estático y completo.
  */
-
 export const HomepageMobileHero: React.FC = () => (
-
-  <HomepageMobileHeroShell photoLayer={<HeroBannerPhoto imgClassName="object-[62%_42%]" />}>
-
-    <div className="absolute inset-x-0 bottom-3 top-0 flex items-center px-4 min-[390px]:bottom-4">
-
-      <div className="relative max-w-[14.25rem] min-[390px]:max-w-[15rem]">
-
-        <h1 className="hp-hero-title leading-[1.0]">
-
-          <span className="block whitespace-nowrap text-[0.95rem] min-[390px]:text-[1.05rem] font-semibold tracking-[-0.02em] text-ink-strong/70">
-
+  <HomepageMobileHeroShell photoLayer={<HeroBannerPhoto imgClassName="object-[65%_37%]" />}>
+    <div className="absolute inset-0 flex flex-col justify-center px-4">
+      <div className="relative min-w-0 max-w-[14.5rem] min-[390px]:max-w-[15rem]">
+        <h1 className="hp-hero-title leading-[1.02]">
+          <span className="block whitespace-nowrap text-caption min-[390px]:text-meta font-semibold tracking-[-0.02em] text-ink-muted">
             Antes de comprar,
-
           </span>
-
-          <span className="block whitespace-nowrap text-[1.15rem] min-[390px]:text-[1.25rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-ink-strong">
-
+          <span className="block whitespace-nowrap text-[1.18rem] font-extrabold leading-[1.04] tracking-[-0.03em] text-ink-strong min-[390px]:text-[1.24rem]">
             que lo revise{' '}
-
-            <span className="text-brand underline decoration-amber-500 decoration-[3px] underline-offset-[2px] [text-decoration-skip-ink:none]">
-
+            <span className="hp-hero-underline-ink inline-block text-brand">
               un experto
-
             </span>
-
           </span>
-
         </h1>
 
-        <p className="mt-1 text-caption leading-snug text-ink min-[390px]:mt-1.5 min-[390px]:text-meta min-[390px]:text-sm text-pretty">
-
-          Informe con fotos y vídeo.{' '}
-
-          <span className="font-semibold text-ink-strong">Precio cerrado</span> y{' '}
-
-          <span className="font-semibold text-ink-strong">pago retenido</span>.
-
+        <p className="m-0 mt-1.5 text-balance text-caption min-[390px]:text-meta leading-snug text-ink-muted">
+          {ESCROW_HERO_MOBILE_LEAD}
         </p>
-
       </div>
-
     </div>
-
   </HomepageMobileHeroShell>
-
 );
-
-
 
 /** Variante skeleton — gradiente + copy placeholder (sin foto blur). */
-
 export const HomepageMobileHeroPlaceholder: React.FC = () => (
-
   <HomepageMobileHeroShell photoLayer={<HomepageMobileHeroLqip />} photoBacked={false}>
-
     <HomepageMobileHeroCopyPlaceholder />
-
   </HomepageMobileHeroShell>
-
 );
-
-

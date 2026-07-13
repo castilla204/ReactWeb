@@ -16,11 +16,10 @@ import { FavoriteHeart } from './FavoriteHeart';
 import { homepageToast, toast } from '../lib/toast';
 import { WallSkeletonContent } from './homepage/HomePageWallSkeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { hpCardText, hpType, HP_WALL_CARD_WIDTH_CLASS } from '../constants/homepageTypography';
+import { hpType, HP_WALL_CARD_WIDTH_CLASS, HP_CARD_META_CLASS, HP_CARD_TITLE_CLASS } from '../constants/homepageTypography';
 import { HP_CARD_LAYOUT_VARIANT } from '../constants/homepageCardLayout';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { isExpertAvailableNow } from '../utils/availability';
 import { resolveFavoriteState } from '../utils/favoriteOfflineQueue';
 const COCHES_CATEGORY_ID = 5;
 const INMOBILIARIA_CATEGORY_ID = 3;
@@ -154,11 +153,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   }, [service.price, service.priceCurrency, service.currency, formatPriceWithSource, preferredCurrency, rates, ratesFetchedAt]);
   const price = priceData.display;
 
-  const isOnlineNow = useMemo(
-    () => isExpertAvailableNow(service.expert?.currentAvailability ?? null),
-    [service.expert?.currentAvailability],
-  );
-  
   // Horario de disponibilidad (formato compacto para que quepa)
   const formatAvailability = useCallback(() => {
     const availability = service.expert?.currentAvailability;
@@ -199,6 +193,31 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   
   const availabilityInfo = useMemo(() => formatAvailability(), [formatAvailability]);
 
+  const locationLine = useMemo(() => {
+    const parts: string[] = [];
+    if (service.expert?.city) parts.push(service.expert.city);
+    if (!isMobile) {
+      const workRadius = readWorkRadiusKm(service.expert);
+      if (workRadius !== null) parts.push(formatWorkRadius(workRadius));
+    }
+    if (availabilityInfo) parts.push(availabilityInfo);
+    return parts.join(' · ');
+  }, [service.expert, availabilityInfo, isMobile]);
+
+  const ratingForCard = useMemo(() => {
+    if (!hasRating) return null;
+    return isMobile
+      ? service.averageRating.toFixed(1).replace('.', ',')
+      : formattedRating;
+  }, [hasRating, isMobile, service.averageRating, formattedRating]);
+
+  const priceRatingLine = useMemo(() => {
+    const parts: string[] = [];
+    if (ratingForCard) parts.push(`★ ${ratingForCard}`);
+    parts.push(price);
+    return parts.join(' · ');
+  }, [ratingForCard, price]);
+
   const handleImageTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchEndX.current = null;
@@ -224,75 +243,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
     touchEndX.current = null;
   }, [imageUrls.length]);
 
-  const renderLocationMeta = () => (
-    <>
-      {service.expert?.city && (
-        <>
-          <span className="truncate">{service.expert.city}</span>
-          <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-        </>
-      )}
-      {(() => {
-        const workRadius = readWorkRadiusKm(service.expert);
-        if (workRadius === null) return null;
-        return (
-          <>
-            <span className="truncate">{formatWorkRadius(workRadius)}</span>
-            <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-          </>
-        );
-      })()}
-      <span className="truncate">{availabilityInfo}</span>
-    </>
-  );
-
-  const renderRatingPriceMeta = () => (
-    <>
-      {hasRating && formattedRating && (
-        <>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Star
-              className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
-              aria-hidden
-            />
-            <span>{formattedRating}</span>
-          </span>
-          <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-        </>
-      )}
-      <span title={priceData.tooltip}>
-        {price}
-        {priceData.wasConverted && (
-          <span className="ml-1 text-[0.85em] text-ink-muted">
-            {priceData.sourceFormatted}
-          </span>
-        )}
-      </span>
-    </>
-  );
-
-  const renderPriceOnlyMeta = () => (
-    <span title={priceData.tooltip}>
-      {price}
-      {priceData.wasConverted && (
-        <span className="ml-1 text-[0.85em] text-ink-muted">
-          {priceData.sourceFormatted}
-        </span>
-      )}
-    </span>
-  );
-
-  const renderRatingOnlyMeta = () =>
-    hasRating && formattedRating ? (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-        <Star
-          className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500"
-          aria-hidden
-        />
-        <span>{formattedRating}</span>
-      </span>
-    ) : null;
-
   return (
     <a
       href={`/service/${service.id}`}
@@ -306,16 +256,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       <motion.div
         className={`relative cursor-pointer group w-full${isMobile ? ' active:scale-[0.98]' : ''}`}
         style={{ contain: 'layout style paint' }}
-        whileHover={isMobile ? undefined : { y: -3 }}
+        whileHover={isMobile ? undefined : { y: -2 }}
         whileTap={isMobile ? undefined : { scale: 0.98 }}
         transition={isMobile ? undefined : { type: 'spring', stiffness: 400, damping: 25 }}
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
-          className="relative w-full overflow-hidden mb-1 md:mb-1 rounded-[20px] md:rounded-xl md:shadow-[0_2px_14px_rgba(15,23,42,0.07)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300 md:ring-1 md:ring-black/[0.04]"
+          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl md:border md:border-line md:shadow-[0_4px_24px_rgba(15,23,42,0.06)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300"
           style={{
             aspectRatio: isMobile ? '1' : '4 / 3',
-            borderRadius: isMobile ? '20px' : '12px',
+            borderRadius: isMobile ? '20px' : '16px',
             width: '100%',
             contain: 'layout style paint',
           }}
@@ -346,111 +296,47 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                 />
               </div>
               
-              {/* Badge "Mejor valorado" (nota > 4). Pill 100% redondeado y compacto:
-                  en tarjetas móviles de ~148px debe terminar antes del corazón de
-                  favorito (top-right) para no solaparse → fuente 9,5px + paddings
-                  ajustados mantienen el ancho ≲106px. */}
-              {isTopRated && (
-                <div
-                  className="absolute top-3 left-3 z-10"
-                  style={{
-                    padding: '0',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '3px',
-                      paddingTop: '4px',
-                      paddingBottom: '4px',
-                      paddingLeft: '7px',
-                      paddingRight: '9px',
-                      background: 'hsl(var(--surface))',
-                      borderRadius: '9999px',
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.14)',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '12px',
-                        height: '12px',
-                        flexShrink: 0,
-                      }}
-                      role="presentation"
-                      aria-hidden="true"
-                    >
-                      {/* Estrella de 5 puntas con uniones redondeadas, azul de marca
-                          (#0066CC), sin trazo de contraste → más limpia que la ámbar. */}
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        style={{ display: 'block' }}
-                        aria-hidden="true"
+              {/* Barra superior: badge izquierda, favorito derecha — sin solapamientos.
+                  Sin pill «En línea»: isExpertAvailableNow refleja horario habitual, no presencia. */}
+              {(isTopRated || isAuthenticated) && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-1.5 p-3">
+                  <div className="min-w-0 flex-1 pointer-events-auto">
+                    {isTopRated && (
+                      <span
+                        className="inline-flex max-w-[calc(100%-2rem)] items-center gap-1 rounded-full bg-surface px-1.5 py-1 shadow-[0_2px_6px_rgba(0,0,0,0.14)] md:gap-1.5 md:px-2 md:py-1"
+                        aria-label="Mejor valorado"
                       >
-                        <path
-                          d="M11.48 3.5a.6.6 0 0 1 1.04 0l2.28 4.13a.6.6 0 0 0 .43.31l4.64.83a.6.6 0 0 1 .32.99l-3.26 3.4a.6.6 0 0 0-.16.5l.63 4.66a.6.6 0 0 1-.85.62l-4.2-1.96a.6.6 0 0 0-.52 0l-4.2 1.96a.6.6 0 0 1-.85-.62l.63-4.66a.6.6 0 0 0-.16-.5l-3.26-3.4a.6.6 0 0 1 .32-.99l4.64-.83a.6.6 0 0 0 .43-.31z"
-                          fill="hsl(var(--brand))"
+                        <Star
+                          className="h-3 w-3 shrink-0 fill-brand text-brand"
+                          aria-hidden
                         />
-                      </svg>
-                    </div>
-                    <span
-                      className="text-badge leading-[11px] text-brand-deep"
-                      style={hpType.badge}
-                      aria-label="Mejor valorado"
-                    >
-                      Mejor valorado
-                    </span>
+                        <span
+                          className="hidden truncate text-badge leading-3 text-brand-deep md:inline"
+                          style={hpType.badge}
+                        >
+                          Mejor valorado
+                        </span>
+                        <span
+                          className="inline truncate text-badge leading-3 text-brand-deep md:hidden"
+                          style={hpType.badge}
+                        >
+                          Top
+                        </span>
+                      </span>
+                    )}
                   </div>
+                  {isAuthenticated ? (
+                    <button
+                      type="button"
+                      onClick={handleFavoriteClick}
+                      className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center"
+                      aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                    >
+                      <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />
+                    </button>
+                  ) : null}
                 </div>
               )}
-
-              {/* Badge "Disponible ahora" — dot verde sobre la foto */}
-              {isOnlineNow && (
-                <div
-                  className="absolute top-3 z-10 flex items-center gap-1 rounded-full bg-white/95 px-1.5 py-0.5 shadow-[0_2px_6px_rgba(0,0,0,0.14)]"
-                  style={{ right: isAuthenticated ? '36px' : '12px' }}
-                  aria-label="Disponible ahora"
-                >
-                  <span
-                    className="rounded-full bg-emerald-500"
-                    style={{ width: '7px', height: '7px', flexShrink: 0 }}
-                    aria-hidden="true"
-                  />
-                  <span className="text-badge leading-[11px] text-success" style={hpType.badge}>
-                    En línea
-                  </span>
-                </div>
-              )}
-
-              {/* Botón de favorito — solo con sesión iniciada */}
-              {isAuthenticated ? (
-              <button
-                onClick={handleFavoriteClick}
-                className="absolute top-3 right-3 z-10"
-                style={{
-                  padding: '0',
-                  margin: '0',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                }}
-              >
-                <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />
-              </button>
-              ) : null}
 
               {/* Navegación de imágenes - Solo en desktop */}
               {hasMultipleImages && (
@@ -554,82 +440,40 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                           )}
         </div>
 
-        {/* Información del servicio - Estructura exacta como Airbnb */}
-        <div style={{ marginTop: isMobile ? '0px' : '4px' }}>
-          {/* Primera fila: Título */}
-          <div
-            className="overflow-hidden"
-            style={{
-              marginBottom: '0px',
-              ...hpCardText.title,
-              textAlign: 'left',
-            }}
-          >
-            <div
-              className="line-clamp-2"
-              style={{ textAlign: 'left' }}
-              title={service.serviceTypeName}
-            >
-              {service.serviceTypeName}
-            </div>
-          </div>
+        {/* Información del servicio */}
+        <div className="mt-0.5 space-y-0 md:mt-1">
+          <p className={HP_CARD_TITLE_CLASS} title={service.serviceTypeName}>
+            {service.serviceTypeName}
+          </p>
 
           {HP_CARD_LAYOUT_VARIANT === 'price-first' ? (
             <>
-              {/* A/B: Precio en línea 2 */}
-              <div
-                className="flex items-center overflow-hidden"
-                style={{ marginBottom: '0px', ...hpCardText.meta, textAlign: 'left' }}
-              >
-                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                  {renderPriceOnlyMeta()}
-                </div>
-              </div>
-              {/* A/B: Ciudad · Horario en línea 3 + rating */}
-              <div
-                className="flex items-center overflow-hidden"
-                style={{ marginBottom: '0px', ...hpCardText.meta, textAlign: 'left' }}
-              >
-                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                  {renderLocationMeta()}
-                  {hasRating ? (
-                    <>
-                      <span style={{ marginLeft: '4px', marginRight: '4px' }} aria-hidden="true">·</span>
-                      {renderRatingOnlyMeta()}
-                    </>
-                  ) : null}
-                </div>
-              </div>
+              <p className={`${HP_CARD_META_CLASS} font-medium text-ink`} title={priceData.tooltip}>
+                {price}
+                {priceData.wasConverted && (
+                  <span className="ml-1 hidden min-[428px]:inline text-[0.85em] font-normal text-ink-muted">
+                    {priceData.sourceFormatted}
+                  </span>
+                )}
+              </p>
+              <p className={HP_CARD_META_CLASS} title={`${locationLine}${ratingForCard ? ` · ★ ${ratingForCard}` : ''}`}>
+                {locationLine}
+                {ratingForCard ? ` · ★ ${ratingForCard}` : ''}
+              </p>
             </>
           ) : (
             <>
-              {/* Segunda fila: Ciudad · Horario */}
-              <div
-                className="flex items-center overflow-hidden"
-                style={{
-                  marginBottom: '0px',
-                  ...hpCardText.meta,
-                  textAlign: 'left',
-                }}
-              >
-                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                  {renderLocationMeta()}
-                </div>
-              </div>
-
-              {/* Tercera fila: Valoración · Precio */}
-              <div
-                className="flex items-center overflow-hidden"
-                style={{
-                  marginBottom: '0px',
-                  ...hpCardText.meta,
-                  textAlign: 'left',
-                }}
-              >
-                <div className="flex items-center flex-wrap" style={{ textAlign: 'left' }}>
-                  {renderRatingPriceMeta()}
-                </div>
-              </div>
+              <p className={HP_CARD_META_CLASS} title={locationLine}>
+                {locationLine}
+              </p>
+              <p className={`${HP_CARD_META_CLASS} font-medium text-ink`} title={priceData.tooltip ?? priceRatingLine}>
+                {priceRatingLine}
+                {priceData.wasConverted && (
+                  <span className="ml-1 hidden min-[428px]:inline text-[0.85em] font-normal text-ink-muted">
+                    {priceData.sourceFormatted}
+                  </span>
+                )}
+              </p>
             </>
           )}
         </div>
@@ -787,23 +631,25 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header sección + flechas de navegación (desktop) */}
-      <div className="mb-1.5 md:mb-3 md:px-0">
+      <div className="mb-2.5 md:mb-4 md:px-0">
         <div className="flex items-center justify-between gap-3 md:gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <h2 className="hp-section-title truncate">
               {title.replace(' >', '')}
             </h2>
             {subtitle && (
-              <p className="hp-section-subtitle truncate">{subtitle}</p>
+              <p className="hp-section-subtitle mt-0 truncate text-[13px] leading-snug md:text-sm">
+                {subtitle}
+              </p>
             )}
           </div>
 
-          <div className="hidden md:flex shrink-0 items-center gap-1.5 md:gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
             <button
               type="button"
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
-              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
               aria-label="Ver revisiones anteriores"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -812,7 +658,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
               type="button"
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
-              className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-ink shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-all hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-[0_2px_4px_rgba(0,0,0,0.18)]"
               aria-label="Ver más revisiones"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -825,7 +671,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       <div className="relative w-full">
         <div
           ref={scrollRef}
-          className={`flex overflow-x-auto scrollbar-hide -mx-4 px-4 scroll-pl-4 md:mx-0 md:scroll-pl-0 pb-0 md:pb-3 md:px-0 md:pr-0 gap-4 min-[428px]:gap-[18px] md:gap-3`}
+          className="flex overflow-x-auto scrollbar-hide -mx-4 scroll-pl-4 gap-3 px-4 pb-0 min-[390px]:gap-3.5 min-[428px]:gap-4 md:mx-0 md:scroll-pl-0 md:gap-4 md:px-0 md:pb-3 md:pr-0"
           style={{
             WebkitOverflowScrolling: 'touch',
             scrollBehavior: 'auto',
@@ -1000,8 +846,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               initial={animateOnMount ? 'hidden' : false}
               animate={animateOnMount ? 'visible' : undefined}
               className={[
-                index === 0 ? 'pt-1 min-[428px]:pt-2 md:pt-2' : '',
-                index > 0 ? 'mt-2 md:mt-8' : '',
+                index === 0 ? 'pt-1.5 min-[390px]:pt-2 md:pt-4' : '',
+                index > 0 ? 'mt-3 min-[390px]:mt-4 md:mt-10' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}

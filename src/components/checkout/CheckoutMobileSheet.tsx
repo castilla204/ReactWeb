@@ -5,6 +5,7 @@ import {
   SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS,
   SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS,
   SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS,
+  SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutSummaryTable, type CheckoutSummaryTableProps } from './CheckoutSummaryTable';
 
@@ -50,8 +51,8 @@ export function CheckoutMobileSheet({
     : `checkout-mobile-sheet ${SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS}`;
 
   const titleCls = compact
-    ? `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-2 text-kicker font-semibold uppercase tracking-wide text-ink-soft`
-    : `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3 text-sm font-semibold tracking-[-0.01em] text-ink-strong`;
+    ? `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-2 ${SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS}`
+    : `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} mb-3 ${SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS}`;
 
   return (
     <section className={sectionCls}>

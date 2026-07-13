@@ -2,7 +2,12 @@ import React from 'react';
 import { Lock } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
-import { ESCROW_TRUST_TAGLINE } from '../constants/escrowCopy';
+import {
+  ESCROW_TRUST_TAGLINE,
+  ESCROW_TRUST_CHIP_HEADLINE,
+  ESCROW_TRUST_DESKTOP_PANEL_HEADLINE,
+  ESCROW_TRUST_PILL_SUBLINE,
+} from '../constants/escrowCopy';
 import {
   TRUST_EASE,
   TrustDesktopPopover,
@@ -47,7 +52,11 @@ export const HomepageTrustChip: React.FC<HomepageTrustChipProps> = ({
         isOpen && 'ring-2 ring-success/20 ring-offset-2',
         isHeroDesktop && 'w-full max-w-[22rem]',
       )}
-      aria-label={`Pago retenido. ${ESCROW_TRUST_TAGLINE}`}
+      aria-label={
+        isHeroDesktop
+          ? `${ESCROW_TRUST_CHIP_HEADLINE}. ${ESCROW_TRUST_DESKTOP_PANEL_HEADLINE}. ${ESCROW_TRUST_TAGLINE}`
+          : `${ESCROW_TRUST_CHIP_HEADLINE}. ${ESCROW_TRUST_PILL_SUBLINE}`
+      }
       aria-expanded={isOpen}
       aria-haspopup="dialog"
       aria-controls={panelId}
@@ -105,11 +114,11 @@ export const HomepageTrustChip: React.FC<HomepageTrustChipProps> = ({
           </span>
         ) : (
           <span className="min-w-0">
-            <span className="block truncate font-display text-caption font-semibold leading-tight text-ink-strong">
-              Pago retenido
+            <span className="block truncate font-display text-caption font-semibold leading-tight text-success">
+              {ESCROW_TRUST_CHIP_HEADLINE}
             </span>
             <span className="mt-0.5 block truncate text-kicker leading-tight text-ink-muted">
-              Hasta que tú confirmes
+              {ESCROW_TRUST_PILL_SUBLINE}
             </span>
           </span>
         )}
@@ -137,7 +146,7 @@ export const HomepageTrustChip: React.FC<HomepageTrustChipProps> = ({
           <SheetDescription className="sr-only">
             Información sobre el pago retenido en Inspecciono
           </SheetDescription>
-          <TrustPanelBody onClose={close} />
+          <TrustPanelBody onClose={close} variant="mobile" />
         </SheetContent>
       </Sheet>
 

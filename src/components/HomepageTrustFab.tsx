@@ -10,7 +10,7 @@ function hasCookieConsent(): boolean {
   return Boolean(localStorage.getItem('cookie-consent'));
 }
 
-/** FAB móvil de confianza — desktop usa el chip anclado al hero. */
+/** FAB móvil de confianza — solo home móvil. Desktop usa ola + popover. */
 export const HomepageTrustFab: React.FC = () => {
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
   const [mobileSearchOverlay, setMobileSearchOverlay] = useState(false);
@@ -38,19 +38,10 @@ export const HomepageTrustFab: React.FC = () => {
     setMobileSearchOverlay(false);
   }, [location.pathname]);
 
+  // Móvil: pill en hero (`HomepageMobileHeroTrustPill`). FAB desactivado para no estorbar.
   if (!isHome || !isMobile || mobileSearchOverlay || !cookiesAccepted) return null;
 
-  return (
-    <div
-      className={cn(
-        'fixed z-40 left-4 max-w-[calc(100vw-5.5rem)] font-display',
-        CHATBOT_FAB_BOTTOM_WITH_TAB_BAR_CLASS,
-        'animate-in fade-in slide-in-from-bottom-2 duration-300 motion-reduce:animate-none',
-      )}
-    >
-      <HomepageTrustChip variant="mobile-fab" />
-    </div>
-  );
+  return null;
 };
 
 export default HomepageTrustFab;

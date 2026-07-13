@@ -2,7 +2,16 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { ESCROW_TRUST_TAGLINE } from '../constants/escrowCopy';
+import {
+  ESCROW_TRUST_CHIP_HEADLINE,
+  ESCROW_TRUST_DESKTOP_PANEL_BODY,
+  ESCROW_TRUST_DESKTOP_PANEL_HEADLINE,
+  ESCROW_TRUST_PANEL_BODY,
+  ESCROW_TRUST_PANEL_CTA,
+  ESCROW_TRUST_PANEL_HEADLINE,
+  ESCROW_TRUST_PANEL_PROOF,
+  ESCROW_TRUST_TAGLINE,
+} from '../constants/escrowCopy';
 
 export function hasCookieConsent(): boolean {
   if (typeof window === 'undefined') return true;
@@ -11,23 +20,51 @@ export function hasCookieConsent(): boolean {
 
 export const TRUST_EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]';
 
-export function TrustPanelBody({ onClose }: { onClose: () => void }) {
+export type TrustPanelVariant = 'mobile' | 'desktop';
+
+export function TrustPanelBody({
+  onClose,
+  variant = 'mobile',
+}: {
+  onClose: () => void;
+  variant?: TrustPanelVariant;
+}) {
+  const isDesktop = variant === 'desktop';
+
   return (
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 pt-0.5">
-          <p className="font-display text-lead font-semibold leading-tight tracking-[-0.015em] text-ink-strong">
-            Pago retenido
-          </p>
-          <p className="mt-1.5 text-meta leading-relaxed text-pretty text-ink-muted">
-            {ESCROW_TRUST_TAGLINE}. Peritos verificados e informe con fotos y vídeo antes de
-            liberar el pago.
-          </p>
+          {isDesktop ? (
+            <>
+              <p className="font-display text-lead font-semibold leading-tight tracking-[-0.015em] text-ink-strong">
+                {ESCROW_TRUST_DESKTOP_PANEL_HEADLINE}
+              </p>
+              <p className="mt-1.5 text-meta leading-relaxed text-pretty text-ink-muted">
+                {ESCROW_TRUST_TAGLINE}. {ESCROW_TRUST_DESKTOP_PANEL_BODY}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-caption font-semibold text-success">
+                {ESCROW_TRUST_CHIP_HEADLINE}
+              </p>
+              <p className="mt-1 text-lead font-semibold leading-tight tracking-[-0.015em] text-ink-strong text-pretty">
+                {ESCROW_TRUST_PANEL_HEADLINE}
+              </p>
+              <p className="mt-1.5 text-meta leading-relaxed text-pretty text-ink-muted">
+                {ESCROW_TRUST_PANEL_BODY}
+              </p>
+              <p className="mt-1 text-meta leading-relaxed text-pretty text-ink-muted">
+                {ESCROW_TRUST_PANEL_PROOF}
+              </p>
+            </>
+          )}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           aria-label="Cerrar"
         >
           <X className="h-4 w-4" strokeWidth={2.1} aria-hidden />
@@ -39,7 +76,7 @@ export function TrustPanelBody({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         className="mt-4 inline-flex text-meta font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
       >
-        Cómo funciona el pago seguro
+        {ESCROW_TRUST_PANEL_CTA}
       </Link>
     </>
   );
@@ -137,7 +174,7 @@ export function TrustDesktopPopover({
           <p id={`${panelId}-title`} className="sr-only">
             Pago retenido
           </p>
-          <TrustPanelBody onClose={onClose} />
+          <TrustPanelBody onClose={onClose} variant="desktop" />
         </div>
       )}
 

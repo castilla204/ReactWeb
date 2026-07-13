@@ -27,7 +27,6 @@ import { ServiceDetailDesktopBookingAside } from '../components/serviceDetail/Se
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { PreHireChat } from '../components/PreHireChat';
-import { ServiceDetailReserveNote } from '../components/serviceDetail/ServiceDetailReserveNote';
 import {
   SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_GUTTER_CLASS,
@@ -803,7 +802,6 @@ export function ServiceReviewPage({
                     price={getMobileFooterPriceLine(finalPrice)}
                     priceSuffix="por servicio"
                     priceAriaLabel={`${getMobileFooterPriceLine(finalPrice)} por servicio`}
-                    trustNote={<ServiceDetailReserveNote variant="footer" />}
                 >
                             {isAuthenticated ? (
                                 <button

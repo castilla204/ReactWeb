@@ -17,6 +17,13 @@ import {
   SD_CHECKOUT_MOBILE_PAYMENT_GROUP_CLASS,
   SD_CHECKOUT_MOBILE_PAYMENT_TRUST_BLOCK_CLASS,
   SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS,
+  SD_CHECKOUT_SUMMARY_HEADER_CLASS,
+  SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS,
+  SD_CHECKOUT_SUMMARY_GROUP_CLASS,
+  SD_CHECKOUT_SUMMARY_ROW_CLASS,
+  SD_CHECKOUT_SUMMARY_ROW_LABEL_CLASS,
+  SD_CHECKOUT_SUMMARY_ROW_VALUE_CLASS,
+  SD_CHECKOUT_SUMMARY_BLOCK_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import { CheckoutExpertHero } from './CheckoutExpertHero';
@@ -110,15 +117,19 @@ function CheckoutSummaryTableRow({
   return (
     <div
       className={cn(
-        SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS,
-        compact ? 'py-1.5' : 'px-6 py-3.5',
+        compact ? SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS : SD_CHECKOUT_SUMMARY_ROW_CLASS,
+        compact && 'py-1.5',
         firstInGroup && 'border-t-0',
         noTopBorder && 'border-t-0',
         striped && 'bg-surface-tinted',
       )}
     >
-      <dt className={cn(SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS, !compact && 'text-meta w-[28%]')}>{label}</dt>
-      <dd className={cn('m-0', SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS, !compact && 'text-body')}>{children}</dd>
+      <dt className={cn(compact ? SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS : SD_CHECKOUT_SUMMARY_ROW_LABEL_CLASS)}>
+        {label}
+      </dt>
+      <dd className={cn('m-0', compact ? SD_CHECKOUT_MOBILE_TABLE_VALUE_CLASS : SD_CHECKOUT_SUMMARY_ROW_VALUE_CLASS)}>
+        {children}
+      </dd>
     </div>
   );
 }
@@ -138,14 +149,14 @@ function CheckoutSummaryGroupLabel({
       className={cn(
         payment
           ? SD_CHECKOUT_MOBILE_PAYMENT_GROUP_CLASS
-          : cn('border-t border-line-soft', compact ? 'px-4 pb-1 pt-4' : 'px-6 pb-1 pt-4'),
+          : cn(compact ? 'border-t border-line-soft px-4 pb-1 pt-4' : SD_CHECKOUT_SUMMARY_GROUP_CLASS),
       )}
     >
       <p
         className={cn(
-          payment
+          payment || compact
             ? SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS
-            : 'text-kicker font-semibold uppercase tracking-[0.06em] text-ink-soft',
+            : SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS,
         )}
       >
         {children}
@@ -170,7 +181,7 @@ function SummaryValue({
         <span
           className={cn(
             'mt-0.5 block font-normal leading-snug text-ink-muted',
-            payment ? 'text-meta' : 'text-kicker',
+            payment ? 'text-meta' : 'text-caption',
           )}
         >
           {hint}
@@ -259,9 +270,7 @@ export function CheckoutSummaryTable({
       >
         {!compact ? null : (
           <header className="border-b border-line-soft px-4 py-2.5">
-            <p className="text-kicker font-semibold uppercase tracking-[0.06em] text-ink-muted">
-              Resumen
-            </p>
+            <p className={SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS}>Resumen</p>
             <p className="mt-0.5 truncate text-meta font-semibold text-ink-strong">{serviceName}</p>
           </header>
         )}
@@ -272,7 +281,7 @@ export function CheckoutSummaryTable({
             expertPicture={expertPicture}
             rating={expertRating}
             reviewCount={expertReviewCount}
-            className="px-6 py-4"
+            className="px-5 py-4"
           />
         ) : null}
 
@@ -286,11 +295,11 @@ export function CheckoutSummaryTable({
               ) : null}
             </div>
           ) : (
-            <div className="border-b border-line-soft px-6 py-5">
-              <h2 className="text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
-                Detalles del servicio
-              </h2>
-              <p className="mt-1 text-subtitle font-semibold text-ink-strong">{serviceName}</p>
+            <div className={SD_CHECKOUT_SUMMARY_HEADER_CLASS}>
+              <h2 className={SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS}>Detalles del servicio</h2>
+              <p className="mt-1 text-subtitle font-semibold text-ink-strong [text-wrap:balance]">
+                {serviceName}
+              </p>
             </div>
           )
         ) : null}
@@ -369,9 +378,13 @@ export function CheckoutSummaryTable({
           ) : null}
 
           {includePrice && priceDisplay != null ? (
-            <div className={cn('border-t border-line-soft', payment ? 'px-5 py-4' : compact ? 'px-4 py-2.5' : 'px-6 py-3')}>
+            <div
+              className={cn(
+                payment ? 'border-t border-line-soft px-5 py-4' : compact ? 'border-t border-line-soft px-4 py-2.5' : SD_CHECKOUT_SUMMARY_BLOCK_CLASS,
+              )}
+            >
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-xs font-medium text-ink-muted">Total a pagar</p>
+                <p className="text-meta font-medium text-ink-muted">Total a pagar</p>
                 <p
                   className={cn(
                     'font-display font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong',
@@ -382,9 +395,9 @@ export function CheckoutSummaryTable({
                 </p>
               </div>
               {priceSubline ? (
-                <p className="mt-1 text-xs text-ink-muted">{priceSubline}</p>
+                <p className="mt-1 text-caption text-ink-muted">{priceSubline}</p>
               ) : (
-                <p className="mt-1 text-xs text-ink-muted">Impuestos incluidos</p>
+                <p className="mt-1 text-caption text-ink-muted">Impuestos incluidos</p>
               )}
             </div>
           ) : null}
@@ -427,13 +440,8 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {!payment && showDeliverables && deliverables.length > 0 ? (
-          <div
-            className={cn(
-              'border-t border-line-soft',
-              compact ? 'px-4 py-3' : 'px-6 py-4',
-            )}
-          >
-            <p className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
+          <div className={cn(compact ? 'border-t border-line-soft px-4 py-3' : SD_CHECKOUT_SUMMARY_BLOCK_CLASS)}>
+            <p className={cn('mb-3', SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS)}>
               Qué incluye
             </p>
             <ServiceDetailDeliverablesGuide
@@ -447,8 +455,8 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {!payment && !compact && !hideExpertHeader && expertName && expertHeroPosition === 'bottom' ? (
-          <div className={cn('border-t border-line-soft', 'px-6 py-4')}>
-            <p className="mb-3 text-kicker font-semibold uppercase tracking-[0.08em] text-ink-muted">
+          <div className={SD_CHECKOUT_SUMMARY_BLOCK_CLASS}>
+            <p className={cn('mb-3', SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS)}>
               Experto asignado
             </p>
             <CheckoutExpertHero
@@ -463,7 +471,7 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {showFooterNotes ? (
-          <footer className={cn(payment ? SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS : 'space-y-2.5 border-t border-line-soft px-6 py-3.5')}>
+          <footer className={cn(payment ? SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS : cn(SD_CHECKOUT_SUMMARY_BLOCK_CLASS, 'space-y-2.5 py-3.5'))}>
             <CheckoutReserveHint
               coordinationMode={coordinationMode}
               compact={payment}

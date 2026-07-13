@@ -3,7 +3,7 @@ import { MOBILE_HERO_PHOTO_SCRIM, MOBILE_HERO_SIDE_FADE } from '../../constants/
 import { HP_SK } from './homePageSkeletonTokens';
 
 /** Altura compartida hero móvil — compacta para asomar la 1ª card al entrar. */
-export const MOBILE_HERO_MIN_H_CLASS = 'min-h-[132px] min-[390px]:min-h-[144px]';
+export const MOBILE_HERO_MIN_H_CLASS = 'min-h-[112px] min-[390px]:min-h-[120px]';
 
 const HERO_PHOTO_SCRIMS = (
   <>
@@ -23,23 +23,22 @@ const HERO_PHOTO_SCRIMS = (
 const HERO_BOTTOM_FADE = (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-7 bg-gradient-to-t from-white via-white/70 to-transparent"
+    className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-6 bg-gradient-to-t from-white via-white/70 to-transparent"
   />
 );
 
 /** Placeholder de copy — líneas alineadas al h1 real (Manrope, izquierda). */
 export const HomepageMobileHeroCopyPlaceholder: React.FC = () => (
-  <div className="absolute inset-x-0 bottom-3 top-0 flex items-center px-4 min-[390px]:bottom-4" aria-hidden>
-    <div className="max-w-[14.25rem] min-[390px]:max-w-[15rem] space-y-2.5">
+  <div className="absolute inset-0 flex flex-col justify-center px-4" aria-hidden>
+    <div className="max-w-[13.5rem] min-[390px]:max-w-[14rem] space-y-2">
       <div className="h-3 w-24 rounded-full" style={{ background: HP_SK.line }} />
       <div className="space-y-1.5">
         <div className="h-4 w-full rounded-lg" style={{ background: HP_SK.inkGhost }} />
         <div className="h-4 w-[88%] rounded-lg" style={{ background: HP_SK.inkGhost }} />
       </div>
-      <div className="space-y-1 pt-0.5">
-        <div className="h-3 w-full rounded-sm" style={{ background: HP_SK.mutedLine }} />
-        <div className="h-3 w-[72%] rounded-sm" style={{ background: HP_SK.fill }} />
-      </div>
+    </div>
+    <div className="mt-2 max-w-[17rem] min-[390px]:max-w-[18rem]">
+      <div className="h-2.5 w-[72%] rounded-sm" style={{ background: HP_SK.mutedLine }} />
     </div>
   </div>
 );
