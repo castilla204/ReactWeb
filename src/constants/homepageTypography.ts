@@ -58,19 +58,8 @@ export const hpTitleUnderlineBarStyle = {
   opacity: 0.85,
 };
 
-/** Subrayado checkout — azul → ámbar de marca (estilos en index.css `.checkout-page-title-underline`) */
+/** Subrayado degradado de marca — usado como `background` inline (p. ej. FavoritesPage). */
 export const HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT = GRADIENT.checkoutTitleUnderline;
-
-/** @deprecated Usar clase CSS `.checkout-page-title-underline` */
-export const hpCheckoutTitleUnderlineStyle = {
-  position: 'absolute' as const,
-  bottom: 0,
-  left: 0,
-  width: '100%',
-  height: '4px',
-  background: HP_CHECKOUT_TITLE_UNDERLINE_GRADIENT,
-  borderRadius: '9999px',
-};
 
 /** Clase Tailwind para enlaces subrayados de marca */
 export const HP_LINK_UNDERLINE_CLASS =
@@ -218,8 +207,8 @@ export const SD_ASIDE_KICKER_CLASS =
 export const SD_ASIDE_SECTION_LABEL_CLASS =
   'text-xs font-medium text-ink-muted';
 
-/** Sticky del aside — header ~56px + 16px de aire */
-export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3.5rem+1rem)]';
+/** Sticky del aside — topbar 48px (min-h-12) + 16px de aire */
+export const SD_DESKTOP_STICKY_TOP_CLASS = 'lg:top-[calc(3rem+1rem)]';
 
 /** Altura máx. aside reserva en desktop */
 export const SD_DESKTOP_ASIDE_MAX_H_CLASS =
@@ -390,9 +379,47 @@ export const SD_CHECKOUT_MOBILE_ROW_CLASS =
 export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-3 pt-1`;
 
-/** Resumen paso pago — el scroll ya aporta padding superior */
+/** Resumen paso pago — aire claro entre la banda fija y la tarjeta */
+export const SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS = 'bg-surface-tinted';
+
 export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-2 pt-0`;
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-8 pt-4`;
+
+/** Fallback scroll pad cuando el footer incluye línea de confianza (antes de medir con ResizeObserver). */
+export const SD_CHECKOUT_MOBILE_FOOTER_WITH_TRUST_PAD_CLASS =
+  'pb-[calc(1.25rem+2.75rem+2.75rem+1.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
+
+/** Tarjeta de resumen en el paso de pago móvil */
+export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_CLASS =
+  'relative rounded-2xl border border-line bg-white shadow-[0_4px_24px_rgba(15,23,42,0.06)]';
+
+/** Cabecera de servicio dentro de la tarjeta de pago móvil */
+export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_HEADER_CLASS =
+  'border-b border-line-soft px-5 py-4';
+
+/** Título de sección en el resumen de pago móvil (Tu reserva, Cita y ubicación, Tu experto…) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS =
+  'text-body font-semibold text-ink-strong';
+
+/** Contenido principal bajo un título de sección (nombre de servicio, valores de fila) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_CONTENT_CLASS =
+  'text-body font-medium leading-snug text-ink-strong';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_TITLE_CLASS =
+  SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS;
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_SERVICE_CLASS =
+  'mt-1 ' + SD_CHECKOUT_MOBILE_PAYMENT_CONTENT_CLASS + ' [text-wrap:balance]';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_META_CLASS =
+  'mt-0.5 text-meta text-ink-muted';
+
+/** Precio anclado en la cabecera del paso de pago móvil */
+export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS =
+  'font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS =
+  'mt-1 text-meta text-ink-muted';
 
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
   'overflow-hidden rounded-xl border border-line bg-white';
@@ -408,6 +435,16 @@ export const SD_CHECKOUT_MOBILE_TABLE_SUBTITLE_CLASS =
 
 export const SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS =
   'flex items-start justify-between gap-4 border-t border-line-soft px-4 py-3';
+
+/** Fila apilada del resumen en paso pago móvil (etiqueta arriba, valor abajo). */
+export const SD_CHECKOUT_MOBILE_PAYMENT_ROW_CLASS =
+  'border-t border-line-soft px-5 py-3.5';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_ROW_LABEL_CLASS =
+  'text-meta font-medium text-ink-muted';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_ROW_VALUE_CLASS =
+  'mt-0.5 text-body font-normal leading-snug text-ink-strong';
 
 export const SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS =
   'w-[30%] shrink-0 text-xs text-ink-muted';
@@ -495,7 +532,7 @@ export const SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS =
 export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
 
 export const SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink-muted transition-colors hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-strong active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink-muted transition-[colors,transform,border-color] duration-200 ease-out hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-strong motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100';
 
 /** Contenedor calendario checkout — contorno neutro */
 export const SD_CHECKOUT_CALENDAR_FRAME_CLASS =
@@ -515,7 +552,7 @@ export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
  * `mobileStep`), así que compartir color no crea ambigüedad.
  */
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-ink-strong text-[15px] font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-ink-strong text-[15px] font-semibold text-white shadow-[0_2px_10px_rgba(15,23,42,0.12)] transition-[colors,transform,box-shadow] duration-200 ease-out hover:bg-ink hover:shadow-[0_4px_16px_rgba(15,23,42,0.18)] motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100';
 
 /** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo negro que el de pago. */
 export const SD_CHECKOUT_MOBILE_CTA_DARK_CLASS = SD_CHECKOUT_MOBILE_CTA_CLASS;

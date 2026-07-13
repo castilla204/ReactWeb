@@ -9,7 +9,39 @@ import React from 'react';
 export const CheckoutReserveHint: React.FC<{
   className?: string;
   coordinationMode?: 'self' | 'seller';
-}> = ({ className = '', coordinationMode = 'self' }) => (
+  /** Versión corta para el paso de pago móvil (menos scroll antes del CTA). */
+  compact?: boolean;
+  /** Omite el bullet principal cuando ya aparece en el footer sticky. */
+  omitLeadBullet?: boolean;
+}> = ({ className = '', coordinationMode = 'self', compact = false, omitLeadBullet = false }) => {
+  if (compact) {
+    return (
+      <ul
+        className={`m-0 list-none space-y-2 p-0 text-meta leading-relaxed text-ink-muted ${className}`.trim()}
+        aria-label="Cómo funciona el cobro"
+      >
+        {!omitLeadBullet ? (
+          <li>
+            <span className="font-semibold text-ink-strong">Hoy no se te cobra</span>: solo reservamos el
+            importe en tu tarjeta.
+          </li>
+        ) : null}
+        <li>
+          {coordinationMode === 'seller'
+            ? 'El vendedor elige la cita con el enlace que le enviamos. Si no reserva a tiempo, te devolvemos el importe.'
+            : 'El cargo se hace cuando el experto confirme la cita. Si no la confirma, se libera solo.'}
+        </li>
+        {!omitLeadBullet ? (
+          <li>
+            <span className="font-semibold text-ink-strong">Pago seguro</span> con Stripe. Cancelación
+            gratuita antes de que empiece la revisión.
+          </li>
+        ) : null}
+      </ul>
+    );
+  }
+
+  return (
   <div
     className={`space-y-2 text-xs leading-relaxed text-ink-muted ${className}`.trim()}
     aria-label="Cómo funciona el cobro"
@@ -41,4 +73,5 @@ export const CheckoutReserveHint: React.FC<{
       realiza la revisión, te devolvemos el importe al instante.
     </p>
   </div>
-);
+  );
+};

@@ -116,7 +116,7 @@ export function CheckoutDesktopLocationStepBody({
     const emailFieldError = showContactError && (emailBad || bothEmpty);
 
     return (
-        <div className="flex h-full flex-col gap-4">
+        <div className={cn('flex h-full flex-col', mode === 'seller' ? 'gap-5' : 'gap-4')}>
             {/* Dirección + detalles SOLO en "Yo la reservo": el cliente marca el punto en el
                 mapa de la derecha (que ya no lleva formulario superpuesto) y rellena aquí los
                 datos. En "Que lo coordine Inspecciono" la dirección la fija el vendedor al
@@ -178,12 +178,11 @@ export function CheckoutDesktopLocationStepBody({
 
             {/* 🤝 Datos del vendedor — en AMBOS modos. Obligatorios en "Que lo coordine
                 Inspecciono" (le mandamos el enlace de reserva); opcionales en "Yo la reservo". */}
-            <section className={cn('space-y-3', mode === 'self' && 'border-t border-line-soft pt-4')}>
-                {/* En modo seller la página YA titula «Datos del vendedor y cobertura» y el lead
-                    explica el enlace: repetirlo aquí con avatar+h3 duplicaba cabeceras (y ese
-                    header interno era lo primero que se veía «suelto» en la tarjeta). Queda solo
-                    la instrucción operativa. En self la sección sí necesita su propio título:
-                    la página va de la ubicación y esto es un bloque secundario opcional. */}
+            <section className={cn('space-y-3.5', mode === 'self' && 'border-t border-line-soft pt-4')}>
+                {/* En modo seller el título y el lead viven SOLO en la cabecera del paso
+                    (CheckoutDesktopAppointmentHeader): nada de repetir «¿Cómo contactamos…?»
+                    dentro de la tarjeta. En self la sección sí necesita su propio título
+                    porque la página va de la ubicación y esto es un bloque secundario opcional. */}
                 {mode === 'self' ? (
                     <div className="flex items-start gap-3">
                         <SellerContactAvatar />
@@ -199,15 +198,11 @@ export function CheckoutDesktopLocationStepBody({
                     </div>
                 ) : null}
 
-                {/* Grupo de contacto: teléfono + email responden a UNA sola pregunta (cómo
-                    llegamos al vendedor), así que van en UN contenedor con filete interno en
-                    vez de dos cajas independientes con su propio borde y sombra — eso era lo
-                    que leía a formulario genérico. El foco/error se pinta en el contenedor
-                    entero (focus-within): las dos filas se sienten una única obligación con
-                    dos vías, no dos campos que compiten por atención. */}
+                {/* Grupo de contacto: teléfono + email en un solo contenedor. */}
                 <GroupedFieldsCard error={showContactError}>
                     <GroupedFieldRow
                         first
+                        comfortable={mode === 'seller'}
                         htmlFor="location-seller-phone"
                         label={
                             <>
@@ -231,6 +226,7 @@ export function CheckoutDesktopLocationStepBody({
                     <GroupedFieldsDivider label="o" />
                     <GroupedFieldRow
                         first
+                        comfortable={mode === 'seller'}
                         htmlFor="location-seller-email"
                         label={
                             <>
@@ -277,6 +273,13 @@ export function CheckoutDesktopLocationStepBody({
                         inputMode="url"
                     />
                 </div>
+
+                {mode === 'seller' ? (
+                    <p className="text-caption leading-[1.55] text-ink-muted">
+                        Tras pagar, el vendedor recibe un enlace para reservar. Tú recibirás la cita y la
+                        dirección confirmadas.
+                    </p>
+                ) : null}
             </section>
         </div>
     );

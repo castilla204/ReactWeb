@@ -15,6 +15,8 @@ interface CheckoutMobileStepHeaderProps {
     description?: ReactNode;
     /** Oculta la barra de avance (paso final de resumen: ya no hay que orientar). */
     hideStepper?: boolean;
+    /** Acción o dato anclado a la derecha (p. ej. total en el paso de pago). */
+    trailing?: ReactNode;
     className?: string;
 }
 
@@ -29,41 +31,31 @@ export function CheckoutMobileStepHeader({
     title,
     description,
     hideStepper = false,
+    trailing,
     className,
 }: CheckoutMobileStepHeaderProps) {
     return (
         <header className={cn('min-w-0', className)}>
             {hideStepper ? null : <CheckoutMobileStepper currentStep={step} steps={steps} />}
-            {/* Sin barra de progreso en este paso (ya se llegó al final), pero perder el
-                hilo azul de marca de golpe se notaba. Un subrayado (no una barra suelta
-                centrada en el contenedor, que caía bajo una palabra al azar) lo mantiene:
-                sigue el ancho real del texto porque es una decoración del propio texto. */}
-            <h2
-                className={cn(
-                    !hideStepper && 'mt-4',
-                    'text-center text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]',
-                    hideStepper &&
-                        'underline decoration-brand decoration-[3px] underline-offset-[7px]',
-                )}
-            >
-                {title}
-            </h2>
-            {description ? (
-                // min-h-[3lh] reserva 3 líneas de descripción (el máximo actual entre los
-                // pasos) para que TODAS las bandas midan igual y la línea inferior del topbar
-                // quede a la misma cota al navegar entre pasos (2 vs 3 líneas ya no descuadra).
-                // Solo en los pasos con barra (banda): el paso final de resumen (hideStepper)
-                // no lleva banda ni necesita igualar altura, y reservar 3 líneas ahí dejaría
-                // hueco muerto antes del resumen.
-                <p
-                    className={cn(
-                        'mx-auto mt-1.5 max-w-[42ch] text-center text-meta leading-relaxed text-ink-muted',
-                        !hideStepper && 'min-h-[3lh]',
-                    )}
-                >
-                    {description}
-                </p>
-            ) : null}
+            <div className={cn('flex items-start justify-between gap-3', !hideStepper && 'mt-3.5')}>
+                <div className="min-w-0 flex-1">
+                    <h2
+                        className={cn(
+                            'text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]',
+                            hideStepper &&
+                                'underline decoration-brand decoration-[3px] underline-offset-[7px]',
+                        )}
+                    >
+                        {title}
+                    </h2>
+                    {description ? (
+                        <p className="mt-1.5 max-w-[46ch] text-meta leading-relaxed text-ink-muted">
+                            {description}
+                        </p>
+                    ) : null}
+                </div>
+                {trailing ? <div className="shrink-0 pt-0.5">{trailing}</div> : null}
+            </div>
         </header>
     );
 }

@@ -35,7 +35,13 @@ export function CheckoutMobileSheet({
 
   if (!separated) {
     return (
-      <div className={cn('checkout-mobile-sheet', paymentStep && 'relative z-[1]')}>{inner}</div>
+      <div
+        className={cn('checkout-mobile-sheet', paymentStep && 'checkout-payment-step-enter relative z-[1]')}
+        role="region"
+        aria-label="Resumen de la reserva"
+      >
+        {inner}
+      </div>
     );
   }
 

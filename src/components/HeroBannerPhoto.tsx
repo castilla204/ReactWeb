@@ -33,4 +33,4 @@ export const HeroBannerPhoto: React.FC<HeroBannerPhotoProps> = ({
     </picture>
   );
 };
-
+

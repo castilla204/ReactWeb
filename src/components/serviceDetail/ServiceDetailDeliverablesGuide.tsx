@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import { cn } from '../../lib/utils';
 import { DeliverableTypeIcon } from './DeliverableTypeIcon';
 import { ServiceDetailDeliverableCover } from './ServiceDetailDeliverableCover';
 import { ResponsiveModal } from '../ui/responsive-modal';
@@ -62,8 +63,8 @@ export function normalizeDeliverableTypes(
 interface ServiceDetailDeliverablesGuideProps {
   items: ServiceDeliverableType[] | unknown[];
   variant?: 'overlay' | 'inline';
-  /** chips = pills (móvil/checkout); list = filas editoriales; card = tarjeta con descripción; cover = portada tipo documento (boceto D) */
-  presentation?: 'chips' | 'list' | 'card' | 'cover';
+  /** chips = pills (móvil/checkout); list = filas editoriales; card = tarjeta con descripción; cover = portada tipo documento (boceto D); checkout = filas compactas paso pago móvil */
+  presentation?: 'chips' | 'list' | 'card' | 'cover' | 'checkout';
   showHeading?: boolean;
   /** Oculta el icono/badge de tipo en las filas (lista limpia solo con texto). */
   hideIcon?: boolean;
@@ -77,6 +78,8 @@ interface ServiceDetailDeliverablesGuideProps {
   className?: string;
   /** presentation="cover": nº de columnas en pantallas anchas (checkout desktop apila solo 1 por defecto). */
   coverColumns?: 1 | 2;
+  /** presentation="checkout": lista plana sin caja tinted (dentro de tarjeta de pago). */
+  embedded?: boolean;
 }
 
 function DeliverableDetailContent({
@@ -135,6 +138,7 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
   showUnselected = false,
   className = '',
   coverColumns = 1,
+  embedded = false,
 }) => {
   const visible = showUnselected
     ? (items as ServiceDeliverableType[]).filter(Boolean)
@@ -198,6 +202,72 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
             >
               <DeliverableTypeIcon deliverable={dt} variant="chip" />
               <span>{label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const surfaceCheckoutList = (
+    <ul
+      className={cn(
+        'm-0 flex list-none flex-col p-0',
+        embedded
+          ? 'divide-y divide-line-soft'
+          : 'overflow-hidden rounded-xl border border-line-soft bg-surface-tinted',
+      )}
+    >
+      {visible.map((dt, index) => {
+        const label = getDeliverableLabel(dt);
+        const selected = dt.isSelected !== false;
+        const rowPad = embedded ? 'px-0 py-4 min-h-11' : 'px-4 py-3.5';
+        if (!selected) {
+          return (
+            <li
+              key={dt.id ?? `${label}-${index}`}
+              className={embedded ? undefined : index > 0 ? 'border-t border-line-soft' : undefined}
+            >
+              <div
+                className={cn('flex w-full items-center gap-3 opacity-70', rowPad)}
+                aria-disabled="true"
+              >
+                <DeliverableTypeIcon deliverable={dt} variant="chip" />
+                <span className="min-w-0 flex-1 text-body font-medium leading-snug text-ink-muted">
+                  {label}
+                </span>
+                <span className="shrink-0 text-caption font-medium text-ink-muted">No incluido</span>
+              </div>
+            </li>
+          );
+        }
+        return (
+          <li
+            key={dt.id ?? `${label}-${index}`}
+            className={cn(
+              embedded ? 'checkout-payment-deliverable-enter' : index > 0 ? 'border-t border-line-soft' : undefined,
+            )}
+            style={embedded ? ({ ['--di' as string]: Math.min(index, 4) } as React.CSSProperties) : undefined}
+          >
+            <button
+              type="button"
+              className={cn(
+                'flex w-full items-center gap-3 text-left transition-[background-color,color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-inset',
+                rowPad,
+                embedded
+                  ? 'hover:bg-surface-tinted/80 active:bg-surface-tinted motion-safe:active:scale-[0.995]'
+                  : 'hover:bg-white/70 active:bg-white/80',
+              )}
+              onClick={(e) => openDetail(dt, e)}
+              aria-haspopup="dialog"
+              aria-expanded={open && active?.id === dt.id}
+              aria-label={`Ver qué incluye: ${label}`}
+            >
+              <DeliverableTypeIcon deliverable={dt} variant="chip" />
+              <span className="min-w-0 flex-1 text-body font-medium leading-snug text-ink-strong">
+                {label}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden />
             </button>
           </li>
         );
@@ -394,9 +464,11 @@ export const ServiceDetailDeliverablesGuide: React.FC<ServiceDetailDeliverablesG
           ? surfaceCovers
           : presentation === 'card'
             ? surfaceCards
-            : presentation === 'list'
-              ? surfaceList
-              : surfaceChipList}
+            : presentation === 'checkout'
+              ? surfaceCheckoutList
+              : presentation === 'list'
+                ? surfaceList
+                : surfaceChipList}
       </section>
       {detailModal}
     </>

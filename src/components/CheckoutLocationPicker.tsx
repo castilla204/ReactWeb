@@ -725,7 +725,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                 ) : null}
                 <div className="relative min-h-0 w-full flex-1">
                     {referenceMode ? (
-                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0 w-full flex-1">
+                        <CheckoutSellerChoicePreviewMap
+                            className="h-full min-h-0 w-full flex-1"
+                            overlayLegend
+                        >
                             <AppointmentMap
                                 {...mapProps}
                                 className="h-full w-full"

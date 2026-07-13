@@ -1,5 +1,5 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { CalendarDays, Check, Info, Lock, Send } from 'lucide-react';
+import { CalendarDays, Info, Lock, Send } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -175,7 +175,7 @@ function OptionCard({
             <div
                 className={cn(
                     'flex flex-1 flex-col px-3.5 pb-3.5 pt-3.5',
-                    compact ? 'lg:px-4 lg:pb-3.5 lg:pt-3' : 'lg:px-4.5 lg:pb-4.5 lg:pt-4',
+                    compact ? 'lg:px-4 lg:pb-3.5 lg:pt-3' : 'lg:px-4 lg:pb-4 lg:pt-4',
                 )}
             >
                 {icon ? (
@@ -195,8 +195,8 @@ function OptionCard({
                 <div className="flex items-start justify-between gap-3">
                     <h3
                         className={cn(
-                            'min-w-0 flex-1 text-[16px] font-bold leading-snug tracking-[-0.02em]',
-                            compact ? 'lg:text-[16px]' : 'lg:text-title',
+                            'min-w-0 flex-1 text-subtitle font-bold leading-snug tracking-[-0.02em]',
+                            compact ? 'lg:text-subtitle' : 'lg:text-title',
                             selected ? 'text-white' : 'text-ink-strong',
                         )}
                         style={{ fontFamily: HP_FONT }}
@@ -254,6 +254,9 @@ const COORD_CHOOSE_LEAD = '¿Quién elige la fecha de la inspección?';
 // la tinta principal (#1c1c1c) sobre el gris de la descripción para destacar sin cambiar de color.
 // El sujeto sale de la categoría: antes decía «coche» aunque inspeccionaras una casa.
 export function getCoordDesktopStep1Lead(categoryName?: string | null): ReactNode {
+    // El lead enmarca las dos tarjetas de la izquierda: abre con la pregunta (en negrita)
+    // y cierra con la promesa de protección del pago. La columna del calendario lleva su
+    // propia guía, así que aquí no se repite «elige día y hora».
     return (
         <>
             <strong className="font-semibold text-ink-strong">¿Quién elige la fecha?</strong>{' '}
@@ -489,13 +492,13 @@ function CoordinationOptionCompare({
     ];
 
     return (
-        <div className={cn(!embedded && 'mt-4')}>
+        <div className={cn(!embedded && 'mt-1')}>
             <div
                 role="radiogroup"
                 aria-label="Quién elige la fecha de la cita"
-                className="flex flex-col gap-3"
+                className="flex flex-col gap-2.5"
             >
-                {columns.map((col) => {
+                {columns.map((col, idx) => {
                     const active = sel === col.value;
                     return (
                         <div
@@ -512,41 +515,67 @@ function CoordinationOptionCompare({
                                     onSelect(col.value);
                                 }
                             }}
+                            style={{ ['--i' as string]: idx } as CSSProperties}
                             className={cn(
-                                'cursor-pointer overflow-hidden rounded-xl border bg-white text-left',
-                                'transition-[border-color,box-shadow] duration-200 ease-out',
+                                // Silueta asimétrica (esquinas en diagonal) para que la card no sea
+                                // un rectángulo plano: TL/BR más redondeadas, TR/BL más marcadas.
+                                'coordination-card-enter group/card cursor-pointer overflow-hidden rounded-[1.35rem_0.5rem_1.35rem_0.5rem] border bg-white text-left',
+                                'transition-[border-color,box-shadow,transform] duration-200 ease-out motion-safe:active:scale-[0.995]',
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
                                 active
-                                    ? 'border-ink-strong shadow-sm'
-                                    : 'border-line hover:border-line',
+                                    ? 'border-brand ring-1 ring-inset ring-brand/35 shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(15,23,42,0.06)]'
+                                    : 'border-line hover:border-ink-soft/60 motion-safe:hover:-translate-y-px motion-safe:hover:shadow-[0_4px_14px_rgba(15,23,42,0.07)]',
                                 col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
                             )}
                         >
-                            {/* Cabecera clara: check + respuesta, sin banda de color ni chip. La
-                                selección la marcan el borde ink de la tarjeta y el check sólido;
-                                la recomendación, el orden + la preselección. */}
-                            <div className="flex items-start gap-2.5 px-3.5 pb-2 pt-3">
+                            {/* Cabecera como "etiqueta" (tab) que ABRAZA el texto (w-fit): el
+                                check + la respuesta viven en una píldora redondeada que se rellena
+                                en azul de bolígrafo al elegir — el sello donde se firma. Al no
+                                ocupar todo el ancho, la card gana una silueta irregular (una
+                                pestaña asomando arriba a la izquierda) en vez de un rectángulo
+                                plano. La recomendación: el orden + la preselección. */}
+                            <div className="px-3.5 pb-2 pt-3.5">
                                 <span
-                                    aria-hidden
                                     className={cn(
-                                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
+                                        'inline-flex w-fit items-center gap-2 rounded-full py-1 pl-1 pr-3.5 transition-[background-color,box-shadow,color] duration-200 ease-out',
                                         active
-                                            ? 'bg-ink-strong text-white'
-                                            : 'border-2 border-line bg-white',
+                                            ? 'bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.22)]'
+                                            : 'bg-surface-tinted text-ink-strong ring-1 ring-inset ring-line group-hover/card:ring-ink-soft/40',
                                     )}
                                 >
-                                    {active ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block text-lead font-bold leading-tight tracking-[-0.01em] text-ink-strong">
+                                    <span
+                                        aria-hidden
+                                        className={cn(
+                                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ease-out',
+                                            active
+                                                ? 'bg-white text-brand coordination-radio-settle'
+                                                : 'border-2 border-line bg-white group-hover/card:border-ink-soft/60',
+                                        )}
+                                    >
+                                        {active ? (
+                                            <svg
+                                                className="coordination-check-draw h-3.5 w-3.5"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth={4}
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                aria-hidden
+                                            >
+                                                <path d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : null}
+                                    </span>
+                                    <span className="text-lead font-bold leading-tight tracking-[-0.01em]">
                                         {col.label}
                                     </span>
-                                    {col.note && !col.disabled ? (
-                                        <span className="mt-0.5 block text-caption leading-snug text-ink-muted">
-                                            {col.note}
-                                        </span>
-                                    ) : null}
                                 </span>
+                                {col.note && !col.disabled ? (
+                                    <span className="mt-1.5 block pl-1 text-caption leading-snug text-ink-muted">
+                                        {col.note}
+                                    </span>
+                                ) : null}
                             </div>
                             {/* Tabla interior: filetes etiqueta/valor DENTRO de cada tarjeta, con
                                 banda alterna (zebra) — la fila impar lleva fondo gris muy sutil en
@@ -564,13 +593,16 @@ function CoordinationOptionCompare({
                                         <div
                                             key={fact.label}
                                             className={cn(
-                                                'flex items-baseline justify-between gap-4 -mx-3.5 px-3.5 py-2',
+                                                // Desktop un pelín más compacto (lg:py-1.5) para que las
+                                                // dos tarjetas + su aire quepan en la altura fija del panel
+                                                // sin scroll ni quedar pegadas abajo (feedback 2026-07-13).
+                                                'flex items-baseline justify-between gap-4 -mx-3.5 px-3.5 py-2 lg:py-1.5',
                                                 idx === 0 && 'border-t border-line-soft',
                                                 idx % 2 === 1 && 'bg-surface-tinted',
-                                                isLast && 'pb-3',
+                                                isLast && 'pb-3 lg:pb-2.5',
                                             )}
                                         >
-                                            <dt className="shrink-0 text-[11.5px] text-ink-muted">{fact.label}</dt>
+                                            <dt className="shrink-0 text-kicker text-ink-muted">{fact.label}</dt>
                                             <dd className="text-right text-caption font-semibold leading-[1.4] text-ink-strong">
                                                 {col.value === 'seller' ? fact.seller : fact.self}
                                             </dd>
@@ -700,7 +732,7 @@ export function CheckoutCoordinationStep({
                     <h2
                         className={cn(
                             'font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]',
-                            isSubStep ? 'text-title sm:text-lg' : 'text-xl sm:text-[22px] lg:text-[24px]',
+                            isSubStep ? 'text-title sm:text-lg' : 'text-xl sm:text-2xl lg:text-2xl',
                             headingClassName,
                         )}
                         style={{ fontFamily: HP_FONT }}
