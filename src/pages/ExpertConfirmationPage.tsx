@@ -7,7 +7,7 @@ import { SileoButton } from '../components/ui/sileo-button';
 import { AppointmentWizardShell } from '../components/checkout/AppointmentWizardShell';
 import { ReadOnlyAppointmentCalendar } from '../components/checkout/ReadOnlyAppointmentCalendar';
 import { CheckoutCoordinationStep } from '../components/checkout/CheckoutCoordinationStep';
-import { LazyAppointmentMap as AppointmentMap } from '../components/map/LazyAppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from '../components/Map/LazyAppointmentMap';
 import { CheckoutSelfChoicePreviewMap } from '../components/checkout/CheckoutSellerChoiceLocked';
 import SEO from '../components/SEO';
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Check, Maximize2, X } from 'lucide-react';
-import { LazyAppointmentMap as AppointmentMap } from './map/LazyAppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from './Map/LazyAppointmentMap';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { cn } from '../lib/utils';
 import {
