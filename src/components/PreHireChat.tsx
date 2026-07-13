@@ -370,22 +370,30 @@ export const PreHireChat = ({
       const channel = client
         .channel(channelName)
         .on('broadcast', { event: 'new_message' }, ({ payload }) => {
+          // 🛡️ W35: el canal `conversation:{id}` es público → el backend deja de enviar el contenido
+          // en el payload. Refetch por el endpoint autenticado (fuente de verdad). Compat con backend
+          // antiguo: si el payload aún trae contenido, se aplica optimista para no perder inmediatez.
           const messageDto = normalizeBroadcastMessage(
             payload as Record<string, unknown>,
             convId
           );
-          if (!messageDto) return;
-          setMessages((prev) => mergeIncomingMessage(prev, messageDto));
+          if (messageDto) {
+            setMessages((prev) => mergeIncomingMessage(prev, messageDto));
+          }
+          void refetchRef.current();
         })
         .on('broadcast', { event: 'message_updated' }, ({ payload }) => {
+          // 🛡️ W35: igual que new_message — refetch autenticado; compat con payload completo.
           const messageDto = normalizeBroadcastMessage(
             payload as Record<string, unknown>,
             convId
           );
-          if (!messageDto) return;
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === messageDto.id ? { ...msg, ...messageDto } : msg))
-          );
+          if (messageDto) {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === messageDto.id ? { ...msg, ...messageDto } : msg))
+            );
+          }
+          void refetchRef.current();
         })
         .on('broadcast', { event: 'message_read' }, ({ payload }) => {
           const p = payload as { messageId?: number; MessageId?: number };
