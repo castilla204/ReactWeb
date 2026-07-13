@@ -5,6 +5,9 @@ import { HP_SK } from './homePageSkeletonTokens';
 /** Altura compartida hero móvil — compacta para asomar la 1ª card al entrar. */
 export const MOBILE_HERO_MIN_H_CLASS = 'min-h-[112px] min-[390px]:min-h-[120px]';
 
+/** Proporción del banner SVG móvil (viewBox 1150×470). */
+export const MOBILE_HERO_SVG_ASPECT_CLASS = 'aspect-[1150/470] w-full';
+
 const HERO_PHOTO_SCRIMS = (
   <>
     <div
@@ -48,23 +51,31 @@ interface HomepageMobileHeroShellProps {
   children: ReactNode;
   /** true cuando hay foto real detrás (aplica scrim de legibilidad). */
   photoBacked?: boolean;
+  /** 'svg' usa la proporción del banner vectorial; 'photo' mantiene el hero compacto con foto. */
+  variant?: 'photo' | 'svg';
 }
 
 export const HomepageMobileHeroShell: React.FC<HomepageMobileHeroShellProps> = ({
   photoLayer,
   children,
   photoBacked = true,
-}) => (
-  <section
-    data-homepage-hero
-    className={`relative md:hidden overflow-hidden ${MOBILE_HERO_MIN_H_CLASS}`}
-  >
-    <div className="absolute inset-0 z-0">{photoLayer}</div>
-    {photoBacked ? HERO_PHOTO_SCRIMS : null}
-    {HERO_BOTTOM_FADE}
-    <div className={`relative z-10 ${MOBILE_HERO_MIN_H_CLASS}`}>{children}</div>
-  </section>
-);
+  variant = 'photo',
+}) => {
+  const sectionSizeClass =
+    variant === 'svg' ? MOBILE_HERO_SVG_ASPECT_CLASS : MOBILE_HERO_MIN_H_CLASS;
+
+  return (
+    <section
+      data-homepage-hero
+      className={`relative md:hidden overflow-hidden ${sectionSizeClass}`}
+    >
+      <div className="absolute inset-0 z-0">{photoLayer}</div>
+      {photoBacked ? HERO_PHOTO_SCRIMS : null}
+      {HERO_BOTTOM_FADE}
+      <div className={`relative z-10 ${sectionSizeClass}`}>{children}</div>
+    </section>
+  );
+};
 
 /** Fondo skeleton — gradiente de marca (sin foto blur). */
 export const HomepageMobileHeroLqip: React.FC = () => (

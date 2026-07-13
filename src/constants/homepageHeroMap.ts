@@ -1,6 +1,7 @@
 import heroBannerAvif from '../media/imagenbanner.avif';
 import heroBannerWebp from '../media/imagenbanner.webp';
-import { MAP_LITERAL } from './designTokens';
+import mobileHeroBannerSvg from '../media/banner_inspeccion_movil.svg';
+import { HERO_DESKTOP_MAP_LITERAL, MAP_LITERAL } from './designTokens';
 
 /** Foto hero homepage — peritos a la derecha, zona clara a la izquierda para el copy */
 export const HERO_BANNER_AVIF = heroBannerAvif;
@@ -9,12 +10,21 @@ export const HERO_BANNER_WEBP = heroBannerWebp;
 /** @deprecated Usar HERO_BANNER_WEBP — alias móvil */
 export const MOBILE_HERO_PHOTO_PATH = HERO_BANNER_WEBP;
 
+/** Banner hero móvil — SVG con copy y gráfico integrados */
+export const MOBILE_HERO_BANNER_SVG = mobileHeroBannerSvg;
+
 /** Fracción del ancho cubierta por el panel de copy (desktop). Legacy map hero. */
 export const DESKTOP_HERO_MAP_OVERLAY_PADDING = 0.26;
 
-/** Viñeta suave bajo el copy desktop — legibilidad sobre el mapa */
+/** Viñeta suave bajo el copy desktop — legibilidad sin tapar el mapa derecho */
 export const DESKTOP_HERO_SOFT_OVAL =
-  `radial-gradient(ellipse 72% 100% at 20% 48%, ${MAP_LITERAL.coastHalo} 0%, ${MAP_LITERAL.coastHalo} 36%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.55) 58%, transparent 78%)`;
+  `radial-gradient(ellipse 78% 105% at 18% 50%, ${HERO_DESKTOP_MAP_LITERAL.skyMuted} 0%, rgba(255,255,255,0.92) 32%, rgba(255,255,255,0.45) 48%, rgba(255,255,255,0.12) 62%, transparent 76%)`;
+
+/** Lavado lateral muy suave — solo funde copy+foto con el mapa, no apaga el canvas */
+export const DESKTOP_HERO_MAP_INTEGRATION_WASH = [
+  `linear-gradient(90deg, rgba(250,250,250,0.5) 0%, rgba(250,250,250,0.16) 26%, transparent 44%)`,
+  'linear-gradient(to top, rgba(255,255,255,0.08) 0%, transparent 14%)',
+].join(', ');
 
 /** Máscara columna foto desktop — foto más transparente, fade largo hacia el mapa */
 export const DESKTOP_HERO_BANNER_MASK =

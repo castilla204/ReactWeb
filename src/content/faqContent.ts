@@ -269,3 +269,16 @@ export const CHATBOT_SUGGESTED_QUESTIONS = [
   '¿Puedo cancelar si cambio de opinión?',
   '¿Cómo me hago experto?',
 ] as const;
+
+export const CHATBOT_FAB_LABEL = 'Asistente';
+
+export const CHATBOT_FAB_SUBLABEL = 'Ayuda con la plataforma';
+
+export const CHATBOT_FAB_HINT_TITLE = '¿Dudas sobre Inspecciono?';
+
+export const CHATBOT_FAB_HINT_BODY =
+  'Respondo sobre reservas, pagos retenidos, cancelaciones y uso de la plataforma.';
+
+export const CHATBOT_FAB_HINT_CTA = 'Abrir asistente';
+
+export const CHATBOT_FAB_MOBILE_TEASER = '¿Te ayudo?';
