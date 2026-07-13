@@ -669,11 +669,117 @@
     }
 
     .service-detail-page .sd-mobile-identity-stack {
-        @apply gap-3;
+        @apply gap-2;
     }
 
     .service-detail-page .sd-tablist {
         @apply mt-0;
+    }
+
+    .service-detail-page .sd-tab {
+        @apply py-3;
+    }
+
+    /* Hero móvil: carrusel mapa → fotos, altura fija ≤220px */
+    .sd-mobile-hero {
+        height: var(--sd-mobile-hero-height);
+        max-height: 13.75rem;
+    }
+
+    .sd-mobile-hero-track {
+        @apply flex w-full snap-x snap-mandatory overflow-x-auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sd-mobile-hero-slide {
+        scroll-snap-stop: always;
+        @apply shrink-0 snap-start snap-always;
+        width: 100%;
+    }
+
+    .sd-mobile-hero-indicator-scrim {
+        @apply pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-black/30 via-black/8 to-transparent transition-[height] duration-300 ease-out;
+    }
+
+    .sd-mobile-hero-indicator-scrim--with-hint {
+        @apply h-[3.25rem] from-black/38 via-black/12;
+    }
+
+    .sd-mobile-hero-indicator-dots {
+        @apply pointer-events-none absolute bottom-2.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5;
+    }
+
+    .sd-mobile-hero-indicator-dot {
+        @apply rounded-full bg-white transition-[width,height,opacity] duration-300 ease-out;
+    }
+
+    .sd-mobile-hero-indicator-dot--active {
+        @apply h-[3px] w-[18px] opacity-100;
+    }
+
+    .sd-mobile-hero-indicator-dot--inactive {
+        @apply h-[3px] w-[3px] opacity-45;
+    }
+
+    /* Botón ampliar mapa en hero móvil: por encima del solape -mt-5 y dots bottom-2.5 */
+    .sd-coverage-map-expand-btn--raised {
+        bottom: var(--sd-mobile-hero-map-expand-bottom, 3.5rem);
+    }
+
+    .sd-mobile-hero-swipe-hint {
+        @apply pointer-events-none absolute bottom-[1.875rem] left-1/2 z-20 -translate-x-1/2;
+        animation: sd-mobile-hero-swipe-hint-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .sd-mobile-hero-swipe-hint-pill {
+        @apply inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-caption font-semibold leading-none text-white shadow-[0_1px_8px_rgba(0,0,0,0.28)] backdrop-blur-[4px];
+    }
+
+    .sd-mobile-hero-swipe-hint-arrow {
+        @apply inline-block;
+        animation: sd-mobile-hero-swipe-nudge 2.25s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+
+    @keyframes sd-mobile-hero-swipe-hint-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes sd-mobile-hero-swipe-nudge {
+        0%,
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        50% {
+            opacity: 0.75;
+            transform: translateX(3px);
+        }
+    }
+
+    .sd-mobile-hero-indicator-counter {
+        @apply pointer-events-none absolute bottom-2.5 left-1/2 z-20 -translate-x-1/2;
+    }
+
+    .sd-mobile-hero-indicator-counter-text {
+        @apply inline-flex rounded-full bg-black/40 px-2 py-0.5 text-badge font-medium tabular-nums tracking-wide text-white backdrop-blur-[3px];
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sd-mobile-hero-indicator-dot,
+        .sd-mobile-hero-indicator-scrim {
+            transition: none;
+        }
+
+        .sd-mobile-hero-swipe-hint,
+        .sd-mobile-hero-swipe-hint-arrow {
+            animation: none;
+        }
     }
 
 
@@ -682,7 +788,7 @@
     }
 
     .sd-body {
-        @apply max-w-[72ch] text-sm font-normal leading-[1.6] text-ink-strong;
+        @apply max-w-[72ch] text-sm font-normal leading-[1.55] text-ink-strong;
         text-wrap: pretty;
         /* Rompe cadenas larguísimas sin espacios (texto pegado, URLs, etc.) */
         overflow-wrap: anywhere;
@@ -731,7 +837,7 @@
 
     /* Barra fija móvil: ficha servicio + checkout */
     .sd-mobile-footer-inner {
-        @apply py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
+        @apply py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))];
     }
 
     .sd-mobile-footer-row {
@@ -750,27 +856,29 @@
         @apply text-meta font-normal leading-snug text-ink-muted;
     }
 
-    /* Días de la semana — ficha móvil (22px = token calendario desktop) */
+    /* Días de la semana — ficha móvil: barra segmentada full-width */
     .service-detail-page {
-        --sd-avail-day-mobile: 1.375rem;
+        --sd-mobile-hero-height: 13.75rem;
+        /* 56px: solape sheet (20px) + fila dots (~14px) + respiro */
+        --sd-mobile-hero-map-expand-bottom: 3.5rem;
+        --sd-avail-day-mobile: 1.75rem;
     }
 
     .service-detail-page .sd-availability-mobile-days {
-        @apply inline-flex max-w-full flex-wrap items-center gap-1;
+        @apply flex w-full items-stretch gap-0.5 rounded-md border border-line bg-surface p-0.5;
     }
 
     .service-detail-page .sd-availability-mobile-day {
-        @apply inline-flex shrink-0 items-center justify-center rounded-full text-badge leading-none;
-        width: var(--sd-avail-day-mobile);
+        @apply inline-flex min-w-0 flex-1 items-center justify-center rounded text-kicker font-semibold leading-none;
         height: var(--sd-avail-day-mobile);
     }
 
     .service-detail-page .sd-availability-mobile-day--active {
-        @apply bg-white font-semibold text-brand ring-1 ring-inset ring-brand/30;
+        @apply bg-brand/[0.09] font-semibold text-brand;
     }
 
     .service-detail-page .sd-availability-mobile-day--inactive {
-        @apply bg-surface-tinted font-medium text-ink-muted;
+        @apply bg-transparent font-medium text-ink-muted;
     }
 
     .sd-mobile-footer-cta {
@@ -1205,7 +1313,7 @@
     }
 
     .service-detail-page .sd-mobile-footer-cta.sd-cta-dark {
-        @apply rounded-md shadow-none;
+        @apply rounded-full shadow-none;
     }
 
     .service-detail-desktop .sd-deliverable-list-item-btn {
@@ -1344,7 +1452,12 @@
     }
 
     .sd-tab {
-        @apply relative flex min-w-0 flex-1 basis-0 items-center justify-center gap-1 border-b-2 border-transparent py-4 text-center text-sm leading-5 text-ink-muted font-normal transition-colors;
+        @apply relative flex min-h-11 min-w-0 flex-1 basis-0 touch-manipulation items-center justify-center gap-1.5 border-b-2 border-transparent px-1.5 py-3 text-center text-sm leading-5 text-ink-muted font-normal transition-[color,border-color] duration-150;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sd-tab:focus-visible {
+        @apply outline-none ring-2 ring-inset ring-brand/35;
     }
 
     .sd-tab[data-active='true'] {
@@ -1353,6 +1466,18 @@
 
     .sd-tab--flat[data-active='true'] {
         @apply border-transparent font-semibold text-ink-strong;
+    }
+
+    .sd-tab__label {
+        @apply min-w-0 text-pretty;
+    }
+
+    .sd-tab__badge {
+        @apply inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-line px-1.5 text-badge font-semibold leading-none tabular-nums text-ink-muted;
+    }
+
+    .sd-tab[data-active='true'] .sd-tab__badge {
+        @apply bg-brand/12 text-brand;
     }
 
     .sd-tablist {

@@ -236,7 +236,8 @@ export interface ServiceDetailCoverageMapProps extends CoverageMapCanvasProps {
   /** Miniatura clicable + modal pantalla completa */
   expandable?: boolean;
   /** Evita solaparse con controles flotantes del hero móvil; 'bottom-raised'
-   *  queda por encima del solape de la card blanca (SD_MOBILE_SHEET_OVERLAP_CLASS = -mt-10). */
+   *  queda por encima del solape de la card blanca (SD_MOBILE_SHEET_OVERLAP_CLASS = -mt-5)
+   *  y de la fila de dots del carrusel. */
   expandButtonPosition?: 'top' | 'bottom' | 'bottom-raised';
 }
 
@@ -313,7 +314,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             expandButtonPosition === 'bottom'
               ? 'bottom-2'
               : expandButtonPosition === 'bottom-raised'
-                ? 'bottom-12'
+                ? 'sd-coverage-map-expand-btn--raised'
                 : 'top-2'
           }`}
           aria-label="Ampliar mapa a pantalla completa"

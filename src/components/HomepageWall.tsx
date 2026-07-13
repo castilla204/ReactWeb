@@ -17,7 +17,13 @@ import { homepageToast, toast } from '../lib/toast';
 import { WallSkeletonContent } from './homepage/HomePageWallSkeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpType, HP_WALL_CARD_WIDTH_CLASS, HP_CARD_META_CLASS, HP_CARD_TITLE_CLASS } from '../constants/homepageTypography';
-import { HP_CARD_LAYOUT_VARIANT } from '../constants/homepageCardLayout';
+import {
+  HP_CARD_FAVORITE_BTN_CLASS,
+  HP_CARD_IMAGE_OVERLAY_CLASS,
+  HP_CARD_LAYOUT_VARIANT,
+  HP_CARD_OVERLAY_CONTROL_H_CLASS,
+  HP_CARD_TOP_BADGE_CLASS,
+} from '../constants/homepageCardLayout';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { resolveFavoriteState } from '../utils/favoriteOfflineQueue';
@@ -299,11 +305,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               {/* Barra superior: badge izquierda, favorito derecha — sin solapamientos.
                   Sin pill «En línea»: isExpertAvailableNow refleja horario habitual, no presencia. */}
               {(isTopRated || isAuthenticated) && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-1.5 p-3">
-                  <div className="min-w-0 flex-1 pointer-events-auto">
+                <div className={HP_CARD_IMAGE_OVERLAY_CLASS}>
+                  <div className={`min-w-0 flex-1 pointer-events-auto ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}>
                     {isTopRated && (
                       <span
-                        className="inline-flex max-w-[calc(100%-2rem)] items-center gap-1 rounded-full bg-surface px-1.5 py-1 shadow-[0_2px_6px_rgba(0,0,0,0.14)] md:gap-1.5 md:px-2 md:py-1"
+                        className={`${HP_CARD_TOP_BADGE_CLASS} ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}
                         aria-label="Mejor valorado"
                       >
                         <Star
@@ -329,7 +335,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                     <button
                       type="button"
                       onClick={handleFavoriteClick}
-                      className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center"
+                      className={`${HP_CARD_FAVORITE_BTN_CLASS} ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}
                       aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                     >
                       <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />

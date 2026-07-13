@@ -636,8 +636,8 @@ export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =
 /** Gutter horizontal móvil — 20px */
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
 
-/** Solape de la card blanca sobre el hero */
-export const SD_MOBILE_SHEET_OVERLAP_CLASS = '-mt-10';
+/** Solape de la card blanca sobre el hero (compacto: hero unificado ~180px) */
+export const SD_MOBILE_SHEET_OVERLAP_CLASS = '-mt-5';
 
 /** Mapa preview en ficha móvil (cobertura) */
 export const SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS = 'h-24';
@@ -653,19 +653,19 @@ export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 
 /** Padding superior de la sheet tras el solape del hero */
-export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-3';
 
 /** Aire bajo fila revisor */
 export const SD_MOBILE_HEADER_PB_CLASS = 'pb-0';
 
-/** Stack identidad móvil: título → host → horario */
-export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-3';
+/** Stack identidad móvil: título → host */
+export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-2';
 
-/** Bloque disponibilidad bajo el host (sin borde; el divisor va antes de tabs) */
+/** Bloque meta bajo el host (sin borde; el divisor va antes de tabs) */
 export const SD_MOBILE_META_SECTION_CLASS = 'mt-3';
 
-/** Línea full-bleed entre bloque superior (host + horario) y tabs */
-export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'mt-4 border-t border-line';
+/** Línea full-bleed entre host y tabs */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'mt-2 border-t border-line';
 
 /** Contenedor tabs + panel (sin margen extra al final) */
 export const SD_MOBILE_SHEET_BOTTOM_CLASS = '';
@@ -675,9 +675,9 @@ export const SD_MOBILE_BOOKING_LABEL_CLASS =
 /** Hora en fila «Horario habitual» — secundaria respecto al label, no compite con los días */
 export const SD_MOBILE_AVAILABILITY_TIME_CLASS =
   'text-caption font-medium tabular-nums leading-4 text-ink-strong';
-export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4 pb-6';
+export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-3 pb-4';
 /** Panel reseñas: menos aire inferior (el scroll pad ya reserva hueco para la barra fija). */
-export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-4 pb-2';
+export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-3 pb-2';
 
 /**
  * Escala tipográfica móvil — tokens DESIGN.md:
@@ -700,7 +700,7 @@ export const SD_MOBILE_SUBHEAD_CLASS =
 export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
 
 /** Stack vertical dentro del panel «Acerca del servicio» */
-export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-4';
+export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-3';
 
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
