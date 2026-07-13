@@ -90,3 +90,14 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// 📲 Capacitor + vite-plugin-compression2: el build web emite copias .gz/.br de cada
+// asset. Al copiarlas a assets/public, AGP desempaqueta los .gz y colisionan con el
+// fichero original ("Error: Duplicate resources"). Esas copias comprimidas NO sirven en
+// la app nativa (el WebView carga ficheros locales, sin compresión HTTP), así que se
+// eliminan antes de empaquetar. Se re-generan en cada `cap sync`, por eso va como tarea
+// de la que depende preBuild (corre en cada build, incluido `npx cap run android`).
+tasks.register('stripCompressedWebAssets', Delete) {
+    delete fileTree(dir: "src/main/assets/public", includes: ["**/*.gz", "**/*.br"])
+}
+preBuild.dependsOn stripCompressedWebAssets
