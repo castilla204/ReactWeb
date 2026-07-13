@@ -23,6 +23,7 @@ interface CheckoutMobileStepperProps {
     steps?: readonly StepDef[];
 }
 
+/** Chispas en la frontera del paso activo (solo con motion permitido). */
 function StepperFrontierSpark({ burst = false }: { burst?: boolean }) {
     return (
         <span
@@ -41,6 +42,7 @@ function StepperFrontierSpark({ burst = false }: { burst?: boolean }) {
             <span className="checkout-stepper-spark checkout-stepper-spark--3" />
             <span className="checkout-stepper-spark checkout-stepper-spark--4" />
             <span className="checkout-stepper-spark checkout-stepper-spark--5" />
+            <span className="checkout-stepper-spark checkout-stepper-spark--6" />
             <span className="checkout-stepper-ember checkout-stepper-ember--1" />
             <span className="checkout-stepper-ember checkout-stepper-ember--2" />
         </span>
@@ -48,8 +50,10 @@ function StepperFrontierSpark({ burst = false }: { burst?: boolean }) {
 }
 
 /**
- * Progreso del wizard móvil: línea segmentada con avance en azul de marca.
- * La frontera del paso activo lleva pulso y chispas contenidas en el tramo.
+ * Progreso del wizard móvil: una línea fina partida en tantos segmentos como
+ * pasos. Los tramos ya recorridos (incluido el actual) van en azul de marca; los
+ * pendientes, en gris. La frontera del paso actual lleva un pulso de marca y
+ * micro-chispas que comunican "aquí estás avanzando".
  */
 export function CheckoutMobileStepper({
     currentStep,

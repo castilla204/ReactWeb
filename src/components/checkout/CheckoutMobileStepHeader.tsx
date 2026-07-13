@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
+import {
+    SD_CHECKOUT_MOBILE_STEP_DESC_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
+} from '../../constants/homepageTypography';
 import { CheckoutMobileStepper, type StepDef } from './CheckoutMobileStepper';
 
 export type { CheckoutMobileWizardStep } from './CheckoutMobileStepper';
@@ -37,24 +42,23 @@ export function CheckoutMobileStepHeader({
     return (
         <header className={cn('min-w-0', className)}>
             {hideStepper ? null : <CheckoutMobileStepper currentStep={step} steps={steps} />}
-            <div className={cn('flex items-start justify-between gap-3', !hideStepper && 'mt-3.5')}>
+            <div className={cn('flex items-start justify-between gap-4', !hideStepper && 'mt-3.5')}>
                 <div className="min-w-0 flex-1">
                     <h2
                         className={cn(
-                            'text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]',
-                            hideStepper &&
-                                'underline decoration-brand decoration-[3px] underline-offset-[7px]',
+                            SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
+                            hideStepper && SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
                         )}
                     >
                         {title}
                     </h2>
                     {description ? (
-                        <p className="mt-1.5 max-w-[46ch] text-meta leading-relaxed text-ink-muted">
+                        <p className={SD_CHECKOUT_MOBILE_STEP_DESC_CLASS}>
                             {description}
                         </p>
                     ) : null}
                 </div>
-                {trailing ? <div className="shrink-0 pt-0.5">{trailing}</div> : null}
+                {trailing ? <div className="shrink-0 pt-1">{trailing}</div> : null}
             </div>
         </header>
     );

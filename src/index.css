@@ -1773,7 +1773,7 @@ input, textarea {
         animation-delay: calc(180ms + var(--di, 0) * 40ms);
     }
 
-    /* Wizard móvil — frontera con chispas (contenidas en el tramo; gap-3 deja el salto visible). */
+    /* Wizard móvil — barra de pasos: frontera viva + chispas en el paso activo. */
     @keyframes checkout-stepper-ignite {
         from {
             transform: scaleX(0);
@@ -1790,7 +1790,7 @@ input, textarea {
             opacity: 0;
         }
         18% {
-            opacity: 0.9;
+            opacity: 0.95;
         }
         100% {
             transform: translateX(120%);
@@ -1799,96 +1799,93 @@ input, textarea {
     }
     @keyframes checkout-stepper-frontier-pulse {
         0%, 100% {
-            transform: translate(-100%, -50%) scale(1);
-            opacity: 0.92;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.95;
             box-shadow:
-                0 0 0 0 hsl(var(--brand) / 0.4),
-                0 0 8px 2px hsl(var(--brand) / 0.4);
+                0 0 0 0 hsl(var(--brand) / 0.5),
+                0 0 10px 2px hsl(var(--brand) / 0.45),
+                0 0 0 1px hsl(0 0% 100% / 0.55);
         }
         50% {
-            transform: translate(-100%, -50%) scale(1.2);
+            transform: translate(-50%, -50%) scale(1.28);
             opacity: 1;
             box-shadow:
-                0 0 0 3px hsl(var(--brand) / 0.12),
-                0 0 14px 4px hsl(var(--brand) / 0.48);
+                0 0 0 4px hsl(var(--brand) / 0.14),
+                0 0 16px 5px hsl(var(--brand) / 0.55),
+                0 0 0 2px hsl(0 0% 100% / 0.75);
         }
     }
     @keyframes checkout-stepper-halo-ring {
         0% {
-            transform: translate(-100%, -50%) scale(0.5);
-            opacity: 0.65;
+            transform: translate(-50%, -50%) scale(0.55);
+            opacity: 0.7;
         }
         100% {
-            transform: translate(-100%, -50%) scale(2.1);
+            transform: translate(-50%, -50%) scale(2.6);
             opacity: 0;
         }
     }
     @keyframes checkout-stepper-burst-flare {
         0% {
-            transform: translate(-100%, -50%) scale(0.45);
-            opacity: 0.9;
+            transform: translate(-50%, -50%) scale(0.4);
+            opacity: 0.95;
         }
         100% {
-            transform: translate(-100%, -50%) scale(2.4);
+            transform: translate(-50%, -50%) scale(3.2);
             opacity: 0;
         }
     }
     @keyframes checkout-stepper-spark-pop {
         0% {
-            transform: translate(-100%, -50%) scale(0.2);
+            transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
             opacity: 0;
         }
-        14% {
+        12% {
             opacity: 1;
         }
-        38% {
+        35% {
             transform: translate(
-                    calc(-100% + var(--spark-x, 0px) * 0.5),
-                    calc(-50% + var(--spark-y, 0px) * 0.5)
+                    calc(-50% + var(--spark-x, 0px) * 0.45),
+                    calc(-50% + var(--spark-y, 0px) * 0.45)
                 )
-                scale(1.1);
+                scale(1.15)
+                rotate(var(--spark-rot, 0deg));
             opacity: 1;
         }
         100% {
-            transform: translate(
-                    calc(-100% + var(--spark-x, 0px)),
-                    calc(-50% + var(--spark-y, 0px))
-                )
-                scale(0.1);
+            transform: translate(calc(-50% + var(--spark-x, 0px)), calc(-50% + var(--spark-y, 0px)))
+                scale(0.1)
+                rotate(calc(var(--spark-rot, 0deg) + 18deg));
             opacity: 0;
         }
     }
     @keyframes checkout-stepper-ember-drift {
         0% {
-            transform: translate(-100%, -50%) scale(0.45);
+            transform: translate(-50%, -50%) scale(0.5);
             opacity: 0;
         }
-        18% {
-            opacity: 0.85;
+        20% {
+            opacity: 0.9;
         }
         100% {
-            transform: translate(
-                    calc(-100% + var(--ember-x, 0px)),
-                    calc(-50% + var(--ember-y, 0px))
-                )
-                scale(0.06);
+            transform: translate(calc(-50% + var(--ember-x, 0px)), calc(-50% + var(--ember-y, 0px)))
+                scale(0.05);
             opacity: 0;
         }
     }
 
     .checkout-stepper-segment {
-        overflow: hidden;
+        overflow: visible;
     }
     .checkout-stepper-segment--active {
-        clip-path: inset(-7px 0 -7px 0 round 9999px);
-        filter: drop-shadow(0 0 4px hsl(var(--brand) / 0.22));
+        filter: drop-shadow(0 0 5px hsl(var(--brand) / 0.28));
     }
     .checkout-stepper-fill {
         transform-origin: left center;
     }
     .checkout-stepper-fill--active {
         overflow: hidden;
-        box-shadow: 0 0 8px hsl(var(--brand) / 0.28);
+        box-shadow: 0 0 10px hsl(var(--brand) / 0.35);
     }
     .checkout-stepper-fill--ignite {
         animation: checkout-stepper-ignite 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1901,134 +1898,143 @@ input, textarea {
         background: linear-gradient(
             90deg,
             transparent 0%,
-            hsl(0 0% 100% / 0.5) 48%,
+            hsl(0 0% 100% / 0.55) 48%,
             transparent 100%
         );
-        animation: checkout-stepper-shimmer 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        animation: checkout-stepper-shimmer 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
         pointer-events: none;
     }
     .checkout-stepper-frontier {
         position: absolute;
         top: 50%;
         right: 0;
-        z-index: 1;
+        z-index: 2;
         width: 0;
         height: 0;
     }
     .checkout-stepper-frontier-halo {
         position: absolute;
         top: 0;
-        right: 0;
-        width: 8px;
-        height: 8px;
+        left: 0;
+        width: 10px;
+        height: 10px;
         border-radius: 9999px;
-        border: 1.5px solid hsl(var(--brand) / 0.5);
-        transform: translate(-100%, -50%);
-        animation: checkout-stepper-halo-ring 1.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        border: 1.5px solid hsl(var(--brand) / 0.55);
+        animation: checkout-stepper-halo-ring 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
     .checkout-stepper-frontier-halo--b {
-        animation-delay: 0.75s;
+        animation-delay: 0.8s;
     }
     .checkout-stepper-frontier-core {
         position: absolute;
         top: 0;
-        right: 0;
-        width: 6px;
-        height: 6px;
+        left: 0;
+        width: 7px;
+        height: 7px;
         border-radius: 9999px;
         background: radial-gradient(
             circle at 35% 35%,
             hsl(0 0% 100% / 0.95) 0%,
-            hsl(var(--brand)) 45%,
+            hsl(var(--brand)) 42%,
             hsl(var(--brand-deep)) 100%
         );
-        transform: translate(-100%, -50%);
-        animation: checkout-stepper-frontier-pulse 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        transform: translate(-50%, -50%);
+        animation: checkout-stepper-frontier-pulse 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
     .checkout-stepper-frontier-flare {
         position: absolute;
         top: 0;
-        right: 0;
-        width: 12px;
-        height: 12px;
+        left: 0;
+        width: 14px;
+        height: 14px;
         border-radius: 9999px;
         background: radial-gradient(
             circle,
-            hsl(0 0% 100% / 0.85) 0%,
-            hsl(var(--brand) / 0.5) 38%,
+            hsl(0 0% 100% / 0.9) 0%,
+            hsl(var(--brand) / 0.55) 35%,
             transparent 72%
         );
-        transform: translate(-100%, -50%) scale(0);
+        transform: translate(-50%, -50%) scale(0);
         opacity: 0;
         pointer-events: none;
     }
     .checkout-stepper-frontier--burst .checkout-stepper-frontier-flare {
-        animation: checkout-stepper-burst-flare 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation: checkout-stepper-burst-flare 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .checkout-stepper-spark {
         position: absolute;
         top: 0;
-        right: 0;
-        width: 3px;
-        height: 3px;
+        left: 0;
+        width: 4px;
+        height: 4px;
         border-radius: 9999px;
-        background: radial-gradient(circle, hsl(0 0% 100%) 0%, hsl(var(--brand)) 72%);
-        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.62);
-        transform: translate(-100%, -50%);
-        animation: checkout-stepper-spark-pop 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        background: radial-gradient(circle, hsl(0 0% 100%) 0%, hsl(var(--brand)) 70%);
+        box-shadow:
+            0 0 5px 1px hsl(var(--brand) / 0.7),
+            0 0 0 1px hsl(0 0% 100% / 0.4);
+        transform: translate(-50%, -50%);
+        animation: checkout-stepper-spark-pop 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
     .checkout-stepper-spark--1 {
-        --spark-x: -2px;
+        --spark-x: 9px;
         --spark-y: -7px;
+        --spark-rot: -12deg;
         animation-delay: 0s;
     }
     .checkout-stepper-spark--2 {
-        --spark-x: -3px;
-        --spark-y: -3px;
-        animation-delay: 0.2s;
+        --spark-x: 12px;
+        --spark-y: -2px;
+        --spark-rot: 8deg;
+        animation-delay: 0.18s;
     }
     .checkout-stepper-spark--3 {
-        --spark-x: -4px;
-        --spark-y: 5px;
-        animation-delay: 0.4s;
+        --spark-x: 10px;
+        --spark-y: 6px;
+        --spark-rot: 22deg;
+        animation-delay: 0.36s;
     }
     .checkout-stepper-spark--4 {
-        --spark-x: -2px;
-        --spark-y: 7px;
-        animation-delay: 0.6s;
+        --spark-x: 7px;
+        --spark-y: -9px;
+        --spark-rot: -28deg;
+        animation-delay: 0.54s;
     }
     .checkout-stepper-spark--5 {
-        --spark-x: -5px;
-        --spark-y: -5px;
-        animation-delay: 0.8s;
+        --spark-x: 13px;
+        --spark-y: 4px;
+        --spark-rot: 14deg;
+        animation-delay: 0.72s;
+    }
+    .checkout-stepper-spark--6 {
+        --spark-x: 6px;
+        --spark-y: 8px;
+        --spark-rot: 32deg;
+        animation-delay: 0.9s;
     }
     .checkout-stepper-ember {
         position: absolute;
         top: 0;
-        right: 0;
+        left: 0;
         width: 2px;
         height: 2px;
         border-radius: 9999px;
         background: hsl(var(--brand));
-        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.6);
-        transform: translate(-100%, -50%);
-        animation: checkout-stepper-ember-drift 1.7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.65);
+        transform: translate(-50%, -50%);
+        animation: checkout-stepper-ember-drift 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
     }
     .checkout-stepper-ember--1 {
-        --ember-x: -2px;
-        --ember-y: -11px;
-        animation-delay: 0.3s;
+        --ember-x: 4px;
+        --ember-y: -12px;
+        animation-delay: 0.25s;
     }
     .checkout-stepper-ember--2 {
-        --ember-x: -4px;
-        --ember-y: -13px;
-        animation-delay: 0.9s;
+        --ember-x: 8px;
+        --ember-y: -14px;
+        animation-delay: 0.85s;
     }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .checkout-stepper-segment--active {
-        clip-path: none;
         filter: none;
     }
     .checkout-stepper-fill--active {

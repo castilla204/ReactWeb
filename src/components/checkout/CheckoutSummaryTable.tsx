@@ -14,7 +14,9 @@ import {
   SD_CHECKOUT_MOBILE_PAYMENT_ROW_LABEL_CLASS,
   SD_CHECKOUT_MOBILE_PAYMENT_ROW_VALUE_CLASS,
   SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS,
-  SD_CHECKOUT_MOBILE_META_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_GROUP_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_TRUST_BLOCK_CLASS,
+  SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import { CheckoutExpertHero } from './CheckoutExpertHero';
@@ -132,7 +134,13 @@ function CheckoutSummaryGroupLabel({
   payment?: boolean;
 }) {
   return (
-    <div className={cn('border-t border-line-soft', payment ? 'px-5 pb-2 pt-5' : compact ? 'px-4 pb-1 pt-4' : 'px-6 pb-1 pt-4')}>
+    <div
+      className={cn(
+        payment
+          ? SD_CHECKOUT_MOBILE_PAYMENT_GROUP_CLASS
+          : cn('border-t border-line-soft', compact ? 'px-4 pb-1 pt-4' : 'px-6 pb-1 pt-4'),
+      )}
+    >
       <p
         className={cn(
           payment
@@ -383,10 +391,10 @@ export function CheckoutSummaryTable({
         </section>
 
         {paymentTrustBlock ? (
-          <div className="border-t border-line-soft px-5 pb-5 pt-5">
+          <div className={SD_CHECKOUT_MOBILE_PAYMENT_TRUST_BLOCK_CLASS}>
             {paymentTrustExpert ? (
-              <div className={paymentTrustDeliverables ? 'mb-6' : undefined}>
-                <p className={cn('mb-3', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
+              <div>
+                <p className={cn('mb-2', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
                   Tu experto
                 </p>
                 <CheckoutPaymentExpertCard
@@ -402,7 +410,7 @@ export function CheckoutSummaryTable({
 
             {paymentTrustDeliverables ? (
               <div>
-                <p className={cn('mb-3', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
+                <p className={cn('mb-2', SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS)}>
                   Incluido en tu reserva
                 </p>
                 <ServiceDetailDeliverablesGuide
@@ -455,12 +463,7 @@ export function CheckoutSummaryTable({
         ) : null}
 
         {showFooterNotes ? (
-          <footer
-            className={cn(
-              'border-t border-line-soft',
-              payment ? 'space-y-3 px-5 py-4' : 'space-y-2.5 px-6 py-3.5',
-            )}
-          >
+          <footer className={cn(payment ? SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS : 'space-y-2.5 border-t border-line-soft px-6 py-3.5')}>
             <CheckoutReserveHint
               coordinationMode={coordinationMode}
               compact={payment}
@@ -470,7 +473,7 @@ export function CheckoutSummaryTable({
               href="/legal/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className={`${SD_CHECKOUT_MOBILE_META_CLASS} inline-flex min-h-11 items-center py-2 underline decoration-line underline-offset-2 hover:no-underline`}
+              className="text-caption inline-flex min-h-11 items-center py-2 underline decoration-line underline-offset-2 hover:no-underline text-ink-muted"
             >
               Condiciones de contratación
             </a>
