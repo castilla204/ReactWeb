@@ -245,7 +245,8 @@ class NativeAuthService {
             console.log('📡 [NativeAuth] Response status:', response.status);
             console.log('📡 [NativeAuth] Response ok?:', response.ok);
             console.log('📡 [NativeAuth] Response statusText:', response.statusText);
-            console.log('📡 [NativeAuth] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+            // 🛡️ W38: las cabeceras pueden incluir Set-Cookie (refresh) → solo DEV.
+            if (import.meta.env.DEV) console.log('📡 [NativeAuth] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
 
             if (!response.ok) {
                 console.error('❌ [NativeAuth] La respuesta no es OK, leyendo error...');
@@ -267,7 +268,10 @@ class NativeAuthService {
 
             console.log('📡 [NativeAuth] Parseando respuesta JSON...');
             const data = await response.json();
-            console.log('✅ [NativeAuth] Respuesta del backend (completa):', JSON.stringify(data, null, 2));
+            // 🛡️ W38 (completado): `data` contiene `data.token` = accessToken|refreshToken (tokens de
+            // sesión REALES) → NUNCA volcarlo a logcat en producción. Solo DEV. Los booleanos de abajo
+            // (¿tiene token/user?) no exponen valores y se dejan.
+            if (import.meta.env.DEV) console.log('✅ [NativeAuth] Respuesta del backend (completa):', JSON.stringify(data, null, 2));
             console.log('✅ [NativeAuth] Respuesta tiene token?:', !!data.token);
             console.log('✅ [NativeAuth] Respuesta tiene user?:', !!data.user);
             console.log('✅ [NativeAuth] Respuesta tiene requiresMFA?:', data.hasOwnProperty('requiresMFA'));
@@ -289,7 +293,8 @@ class NativeAuthService {
             
             const totalDuration = Date.now() - startTime;
             console.log(`✅ [NativeAuth] Autenticación completada exitosamente (${totalDuration}ms total)`);
-            console.log('✅ [NativeAuth] Usuario autenticado:', JSON.stringify(data.user, null, 2));
+            // 🛡️ W38 (completado): objeto user completo = PII (email/nombre) → solo DEV.
+            if (import.meta.env.DEV) console.log('✅ [NativeAuth] Usuario autenticado:', JSON.stringify(data.user, null, 2));
             console.log('✅ [NativeAuth] Requiere MFA?:', data.requiresMFA || false);
             console.log('🚀 [NativeAuth] ========== FIN GOOGLE SIGN-IN EXITOSO ==========');
 
