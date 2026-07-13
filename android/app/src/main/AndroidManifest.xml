@@ -33,9 +33,19 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- 📲 Push (FCM): icono y color por defecto de la notificación -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 📲 Android 13+ (API 33): permiso runtime para mostrar notificaciones push -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
