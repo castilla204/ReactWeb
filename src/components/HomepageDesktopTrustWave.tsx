@@ -1,4 +1,5 @@
 import React from 'react';
+import { Vault } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ESCROW_TRUST_TAGLINE } from '../constants/escrowCopy';
 import {
@@ -97,7 +98,12 @@ export const HomepageDesktopTrustWave: React.FC = () => {
             )}
           >
               <span className="min-w-0 text-pretty">
-                <span className="inline-flex items-center justify-center font-display text-[14px] font-semibold leading-[18px] text-ink-strong">
+                <span className="inline-flex items-center justify-center gap-1.5 font-display text-[14px] font-semibold leading-[18px] text-ink-strong">
+                  <Vault
+                    className="h-4 w-4 shrink-0 text-brand"
+                    strokeWidth={1.9}
+                    aria-hidden
+                  />
                   Compra protegida · Pago retenido
                 </span>
                 <span className="mt-0.5 block text-[11px] font-medium leading-[15px] text-ink">
