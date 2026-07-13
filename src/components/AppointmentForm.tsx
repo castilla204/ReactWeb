@@ -5,7 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { fromZonedTime } from 'date-fns-tz';
 import { ProposeAppointmentDto } from '../types/appointment';
-import { LazyAppointmentMap as AppointmentMap } from './map/LazyAppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from './Map/LazyAppointmentMap';
 import {
     Drawer,
     DrawerContent,

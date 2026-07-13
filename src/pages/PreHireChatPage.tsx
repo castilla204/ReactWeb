@@ -22,7 +22,7 @@ import CountryFlag from '../components/CountryFlag';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
-import { LazyAppointmentMap as AppointmentMap } from '../components/map/LazyAppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from '../components/Map/LazyAppointmentMap';
 import { LoginModal } from '../components/LoginModal';
 
 import { useIsMobile } from '../hooks/useIsMobile';
