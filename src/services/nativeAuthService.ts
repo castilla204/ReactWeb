@@ -161,7 +161,9 @@ class NativeAuthService {
                 throw new Error('No se recibió idToken de Google');
             }
 
-            console.log('🔑 [NativeAuth] idToken recibido (primeros 50 chars):', result.idToken.substring(0, 50) + '...');
+            // 🛡️ W38: no volcar el idToken (ni su prefijo) a logcat en producción; Capacitor canaliza
+            // console.* al log del sistema, legible por adb. Solo en DEV.
+            if (import.meta.env.DEV) console.log('🔑 [NativeAuth] idToken recibido (primeros 50 chars):', result.idToken.substring(0, 50) + '...');
             console.log('🔑 [NativeAuth] idToken longitud:', result.idToken.length);
             console.log('🔑 [NativeAuth] idToken tiene formato JWT?:', result.idToken.split('.').length === 3);
 
@@ -173,16 +175,19 @@ class NativeAuthService {
                 decoded = jwtDecode(result.idToken);
                 const decodeDuration = Date.now() - decodeStartTime;
                 console.log(`✅ [NativeAuth] Token decodificado exitosamente (${decodeDuration}ms)`);
-                console.log('✅ [NativeAuth] Token decodificado completo:', JSON.stringify(decoded, null, 2));
-                console.log('✅ [NativeAuth] Token decodificado resumen:', {
-                    email: decoded.email,
-                    name: decoded.name,
-                    sub: decoded.sub,
-                    aud: decoded.aud,
-                    exp: decoded.exp,
-                    iat: decoded.iat,
-                    iss: decoded.iss,
-                });
+                // 🛡️ W38: el payload del JWT (email/name/sub) es PII → solo a consola en DEV.
+                if (import.meta.env.DEV) {
+                    console.log('✅ [NativeAuth] Token decodificado completo:', JSON.stringify(decoded, null, 2));
+                    console.log('✅ [NativeAuth] Token decodificado resumen:', {
+                        email: decoded.email,
+                        name: decoded.name,
+                        sub: decoded.sub,
+                        aud: decoded.aud,
+                        exp: decoded.exp,
+                        iat: decoded.iat,
+                        iss: decoded.iss,
+                    });
+                }
                 console.log('✅ [NativeAuth] Token expira en:', decoded.exp ? new Date(decoded.exp * 1000).toISOString() : 'N/A');
             } catch (error: any) {
                 console.error('❌ [NativeAuth] Error decodificando token:', error);
@@ -204,7 +209,8 @@ class NativeAuthService {
             };
             
             // ✅ Log para verificar exactamente qué se envía
-            console.log('📤 [NativeAuth] Body que se envía al backend:', JSON.stringify(requestBody, null, 2));
+            // 🛡️ W38: el body lleva email/name/googleId (PII) → solo en DEV.
+            if (import.meta.env.DEV) console.log('📤 [NativeAuth] Body que se envía al backend:', JSON.stringify(requestBody, null, 2));
             console.log('📤 [NativeAuth] Verificando que NO hay campo "credential":', !requestBody.hasOwnProperty('credential'));
             
             // ✅ USAR capacitorFetch para control total del formato en Capacitor
