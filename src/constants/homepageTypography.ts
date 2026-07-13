@@ -320,6 +320,18 @@ export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS =
 /** Gutter checkout móvil */
 export const SD_CHECKOUT_MOBILE_GUTTER_CLASS = 'px-5';
 
+/** Título de paso del wizard móvil (rampa DESIGN.md: text-title) */
+export const SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS =
+  'text-title font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]';
+
+/** Subrayado de marca en el paso final (Revisa y reserva) */
+export const SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS =
+  'underline decoration-brand decoration-2 underline-offset-[6px]';
+
+/** Descripción bajo el título de paso */
+export const SD_CHECKOUT_MOBILE_STEP_DESC_CLASS =
+  'mt-2.5 max-w-[46ch] text-meta leading-relaxed text-ink-muted';
+
 /**
  * Superficie del header móvil de checkout — blanca y plana con una línea fina de
  * separación. Sin el degradado azul del diseño antiguo (competía con la cabecera
@@ -382,8 +394,11 @@ export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
 /** Resumen paso pago — aire claro entre la banda fija y la tarjeta */
 export const SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS = 'bg-surface-tinted';
 
+/** Cabecera fija del paso de pago (ritmo 16px hasta el borde inferior) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS = 'pb-4';
+
 export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-8 pt-4`;
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-8 pt-3`;
 
 /** Fallback scroll pad cuando el footer incluye línea de confianza (antes de medir con ResizeObserver). */
 export const SD_CHECKOUT_MOBILE_FOOTER_WITH_TRUST_PAD_CLASS =
@@ -403,7 +418,7 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS =
 
 /** Contenido principal bajo un título de sección (nombre de servicio, valores de fila) */
 export const SD_CHECKOUT_MOBILE_PAYMENT_CONTENT_CLASS =
-  'text-body font-medium leading-snug text-ink-strong';
+  'text-body font-normal leading-snug text-ink-strong';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_TITLE_CLASS =
   SD_CHECKOUT_MOBILE_PAYMENT_SECTION_TITLE_CLASS;
@@ -416,10 +431,22 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_META_CLASS =
 
 /** Precio anclado en la cabecera del paso de pago móvil */
 export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS =
-  'font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong';
+  'text-subtitle font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS =
-  'mt-1 text-meta text-ink-muted';
+  'mt-1 text-caption text-ink-muted';
+
+/** Cabecera de grupo dentro de la tarjeta de pago (Cita y ubicación, etc.) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_GROUP_CLASS =
+  'border-t border-line-soft px-5 pb-1 pt-4';
+
+/** Bloque experto + entregables en la tarjeta de pago */
+export const SD_CHECKOUT_MOBILE_PAYMENT_TRUST_BLOCK_CLASS =
+  'flex flex-col gap-4 border-t border-line-soft px-5 py-4';
+
+/** Pie de la tarjeta de pago (notas legales) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS =
+  'space-y-3 border-t border-line-soft px-5 py-4';
 
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
   'overflow-hidden rounded-xl border border-line bg-white';
@@ -438,7 +465,7 @@ export const SD_CHECKOUT_MOBILE_TABLE_ROW_CLASS =
 
 /** Fila apilada del resumen en paso pago móvil (etiqueta arriba, valor abajo). */
 export const SD_CHECKOUT_MOBILE_PAYMENT_ROW_CLASS =
-  'border-t border-line-soft px-5 py-3.5';
+  'border-t border-line-soft px-5 py-3';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_ROW_LABEL_CLASS =
   'text-meta font-medium text-ink-muted';

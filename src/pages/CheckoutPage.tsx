@@ -56,6 +56,7 @@ import {
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_GUTTER_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS,
     SD_DESKTOP_STICKY_TOP_CLASS,
@@ -1243,8 +1244,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     );
 
     const desktopAppointmentFooter = (
-        <div className="relative z-10 flex shrink-0 items-center justify-between gap-4 py-1">
-            <span />
+        <div className="flex w-full shrink-0 items-center justify-end gap-4 py-1">
             <button
                 type="button"
                 onClick={handleDesktopContinue}
@@ -1349,22 +1349,20 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         >
                             <div
                                 className={cn(
-                                    'flex items-stretch gap-5 xl:gap-6',
+                                    desktopOnCoordCalendarStep
+                                        ? 'grid w-full grid-cols-1 items-stretch gap-5 lg:grid-cols-2 xl:gap-6'
+                                        : 'flex items-stretch gap-5 xl:gap-6',
                                     desktopOnMapDetailsStep && 'min-h-0 flex-1 overflow-hidden',
                                 )}
                             >
                                     {desktopOnCoordCalendarStep ? (
                                         <>
-                                            {/* Altura NATURAL: ninguna columna scrollea. Con items-stretch
-                                                en la fila, la columna más baja se estira hasta la más alta,
-                                                así los dos paneles quedan igual de altos sin recortes ni
-                                                cards pegadas (feedback 2026-07-13). */}
-                                            <div className="flex min-w-0 flex-[0_0_45%] flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] xl:flex-[0_0_42%]">
+                                            <div className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                                 <div className="px-6 pb-5 pt-5 xl:px-7">
                                                     {desktopCoordColumnNode}
                                                 </div>
                                             </div>
-                                            <aside className="relative flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] lg:w-[20rem] lg:shrink-0 xl:w-[22rem]">
+                                            <aside className="relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
                                                 {desktopCalendarColumnNode}
                                             </aside>
                                         </>
@@ -1570,7 +1568,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     <CheckoutMobileWizardShell
                         key="checkout-mobile-payment"
                         header={mobilePaymentHeaderNode}
-                        headerClassName="pb-4"
+                        headerClassName={SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS}
                         bodyClassName={SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS}
                         footerInsetPx={mobileFooterScrollPad}
                         scrollEndCushionPx={28}
@@ -1593,7 +1591,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     ) : mobileOnPaymentStep ? (
                         <div className="checkout-payment-trust-enter mb-2.5 flex items-start gap-2.5 rounded-xl border border-brand/10 bg-brand/[0.05] px-3 py-2.5">
                             <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
-                            <p className="text-meta leading-[1.4] text-ink-muted">
+                            <p className="text-caption leading-[1.45] text-ink-muted">
                                 <span className="font-semibold text-ink-strong">Hoy no se te cobra</span>: solo
                                 reservamos el importe en tu tarjeta. Pago seguro con Stripe.
                             </p>

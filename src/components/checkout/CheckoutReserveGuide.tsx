@@ -17,7 +17,7 @@ export const CheckoutReserveHint: React.FC<{
   if (compact) {
     return (
       <ul
-        className={`m-0 list-none space-y-2 p-0 text-meta leading-relaxed text-ink-muted ${className}`.trim()}
+        className={`m-0 list-none space-y-2 p-0 text-caption leading-relaxed text-ink-muted ${className}`.trim()}
         aria-label="Cómo funciona el cobro"
       >
         {!omitLeadBullet ? (

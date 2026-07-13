@@ -72,8 +72,9 @@ const BOOKING_WINDOW_DAYS = 14;
 /** Calendario checkout desktop embebido — legible en lg; ancho completo en móvil. */
 const embeddedCalendarClass = () => 'w-full p-0';
 
-/** Módulo calendario desktop: cabe en panel estrecho. */
-const SPLIT_DESKTOP_CALENDAR_SHELL_CLASS = 'mx-auto flex w-full max-w-full flex-col';
+/** Módulo calendario desktop: centrado en su mitad del grid 50/50. */
+const SPLIT_DESKTOP_CALENDAR_SHELL_CLASS =
+    'mx-auto flex w-full max-w-[21rem] flex-col xl:max-w-[23rem]';
 const EMBEDDED_CALENDAR_MAX_WIDTH_CLASS = 'w-full max-lg:max-w-none lg:max-w-[24rem]';
 const EMBEDDED_CALENDAR_CLASS_NAMES = {
     root: 'w-full',
@@ -452,7 +453,7 @@ const SlotPicker: React.FC<Props> = ({
             ? cn(
                   'min-w-0 pt-0 pb-0',
                   embeddedSplitColumn
-                      ? 'lg:flex lg:flex-1 lg:flex-col lg:items-stretch lg:justify-center lg:px-5 lg:py-6'
+                      ? 'lg:flex lg:flex-1 lg:flex-col lg:items-center lg:justify-center lg:px-6 lg:py-6 xl:px-8'
                       : 'lg:items-start lg:border-r lg:border-line lg:pr-4',
                   !embeddedSplitColumn && 'lg:self-stretch',
               )

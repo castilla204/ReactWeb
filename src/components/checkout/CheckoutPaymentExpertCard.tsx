@@ -51,7 +51,7 @@ export function CheckoutPaymentExpertCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-body font-medium tracking-[-0.01em] text-ink-strong">
+        <p className="truncate text-body font-normal tracking-[-0.01em] text-ink-strong">
           {expertName}
         </p>
         <p className="mt-0.5 text-meta leading-snug text-ink-muted">
