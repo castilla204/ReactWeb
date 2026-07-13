@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useDetectedCountryFromIp } from '../hooks/useDetectedCountryFromIp';
-import { HP_SERVICE_CTA_CLASS } from '../constants/homepageTypography';
+import { HP_SERVICE_CTA_CLASS, HP_DESKTOP_CATEGORY_TAB_ACTIVE_CLASS, HP_DESKTOP_CATEGORY_TAB_BASE_CLASS, HP_DESKTOP_CATEGORY_TAB_INACTIVE_CLASS } from '../constants/homepageTypography';
 import {
   DESKTOP_HERO_BANNER_MASK,
   DESKTOP_HERO_MAP_OVERLAY_PADDING,
@@ -19,7 +19,7 @@ export interface KayakCategoryTab {
   icon: string | null;
   onClick: () => void;
   isActive: boolean;
-  /** Contorno con degradado azul→ámbar de marca (igual que el botón "Chat"). */
+  /** Reservado para futuras variantes visuales (p. ej. contorno en "Más"). */
   highlight?: boolean;
 }
 
@@ -125,17 +125,10 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                   role="tab"
                   aria-selected={cat.isActive}
                   onClick={cat.onClick}
-                  // Contorno con degradado azul→ámbar (doble fondo padding-box/border-box)
-                  // para que respete el rounded-full — mismo recurso que el botón "Chat".
-                  // Si la pestaña está activa, el relleno interior pasa a oscuro.
-                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
-                    cat.highlight
-                      ? cat.isActive
-                        ? 'bg-brand font-semibold text-white'
-                        : 'border border-line bg-white text-ink-strong hover:bg-surface-tinted'
-                      : cat.isActive
-                        ? 'bg-brand font-semibold text-white'
-                        : 'border border-line bg-white text-ink-strong hover:bg-surface-tinted'
+                  className={`${HP_DESKTOP_CATEGORY_TAB_BASE_CLASS} ${
+                    cat.isActive
+                      ? HP_DESKTOP_CATEGORY_TAB_ACTIVE_CLASS
+                      : HP_DESKTOP_CATEGORY_TAB_INACTIVE_CLASS
                   }`}
                 >
                   {cat.icon && (

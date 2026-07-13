@@ -774,6 +774,16 @@ export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 export const HP_SERVICE_CTA_CLASS =
   'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
 
+/** Pills de categoría — hero desktop. Activo en tinta (no brand): reserva azul para titular y CTA. */
+export const HP_DESKTOP_CATEGORY_TAB_BASE_CLASS =
+  'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+
+export const HP_DESKTOP_CATEGORY_TAB_ACTIVE_CLASS =
+  'bg-ink-strong font-semibold text-white hover:bg-ink-strong';
+
+export const HP_DESKTOP_CATEGORY_TAB_INACTIVE_CLASS =
+  'border border-line bg-white text-ink-strong hover:bg-surface-tinted';
+
 export const hpCardText = {
   title: {
     ...hpType.bodyMedium,
