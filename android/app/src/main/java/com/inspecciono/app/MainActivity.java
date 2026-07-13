@@ -1,9 +1,14 @@
 package com.inspecciono.app;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.Build;
+import android.os.Bundle;
 import android.util.Log;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
@@ -17,6 +22,34 @@ import java.security.NoSuchAlgorithmException;
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
 
     private static final String TAG = "MainActivity";
+
+    /** ID del canal de notificaciones por defecto (referenciado en AndroidManifest como
+     *  com.google.firebase.messaging.default_notification_channel_id). */
+    public static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "inspecciono_default";
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // 📲 Canal de push de ALTA importancia → el sistema muestra popup (heads-up) + sonido.
+        // Sin un canal propio, FCM usa "fcm_fallback_notification_channel" (importancia media,
+        // silencioso). Los canales son persistentes: se crea una vez y queda.
+        createDefaultNotificationChannel();
+    }
+
+    private void createDefaultNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return; // canales solo Android 8+
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        NotificationChannel channel = new NotificationChannel(
+            DEFAULT_NOTIFICATION_CHANNEL_ID,
+            "Notificaciones",
+            NotificationManager.IMPORTANCE_HIGH
+        );
+        channel.setDescription("Avisos de contrataciones, pagos, citas y mensajes.");
+        channel.enableVibration(true);
+        channel.setShowBadge(true);
+        nm.createNotificationChannel(channel);
+    }
 
     @Override
     public void onStart() {
