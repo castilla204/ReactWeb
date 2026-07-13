@@ -551,11 +551,11 @@
     }
 
     .hp-section-title {
-        @apply font-display text-[1.125rem] leading-[1.25] md:text-[1.25rem] md:leading-[1.3] font-semibold text-ink-strong m-0 tracking-[-0.01em];
+        @apply font-display text-[1.1875rem] leading-[1.25] md:text-[1.25rem] md:leading-[1.3] font-semibold text-ink-strong m-0 tracking-[-0.01em];
     }
 
     .hp-section-subtitle {
-        @apply mt-0.5 text-sm text-ink-muted;
+        @apply mt-1 text-sm leading-snug text-ink-muted;
     }
 
     .hp-eyebrow {
@@ -731,35 +731,23 @@
 
     /* Barra fija móvil: ficha servicio + checkout */
     .sd-mobile-footer-inner {
-        @apply py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
+        @apply py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))];
     }
 
     .sd-mobile-footer-row {
-        @apply flex min-h-[44px] items-center justify-between gap-2;
+        @apply flex min-h-[44px] items-center justify-between gap-3;
     }
 
-    .sd-mobile-footer-price-line {
-        @apply flex min-w-0 items-baseline overflow-hidden whitespace-nowrap;
+    .sd-mobile-footer-price-block {
+        @apply flex min-w-0 flex-wrap items-baseline gap-x-1.5;
     }
 
     .sd-mobile-footer-price {
-        @apply shrink-0 text-lg font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink-strong;
-    }
-
-    .sd-mobile-footer-price-sep {
-        @apply mx-1 shrink-0 text-sm font-normal text-line;
+        @apply shrink-0 text-xl font-semibold leading-none tracking-[-0.02em] tabular-nums text-ink-strong;
     }
 
     .sd-mobile-footer-price-suffix {
-        @apply min-w-0 truncate text-xs font-normal text-ink-muted;
-    }
-
-    .sd-mobile-footer-trust {
-        @apply mb-2;
-    }
-
-    .sd-mobile-footer-note {
-        @apply max-w-none;
+        @apply text-meta font-normal leading-snug text-ink-muted;
     }
 
     /* Días de la semana — ficha móvil (22px = token calendario desktop) */
@@ -783,10 +771,6 @@
 
     .service-detail-page .sd-availability-mobile-day--inactive {
         @apply bg-surface-tinted font-medium text-ink-muted;
-    }
-
-    .service-detail-page .sd-aside-card .sd-escrow-trust-line {
-        @apply mt-3 text-center;
     }
 
     .sd-mobile-footer-cta {
@@ -2033,6 +2017,8 @@ input, textarea {
         --ember-y: -14px;
         animation-delay: 0.85s;
     }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .checkout-stepper-segment--active {
         filter: none;
@@ -2750,5 +2736,44 @@ img[alt*="country"],
     .hp-trust-wave__pulse {
         animation: none;
         opacity: 0;
+    }
+}
+
+/* ── Hero móvil ──────────────────────────────────────────────────────────────
+   Subrayado ámbar bajo "un experto" que se dibuja como trazo de bolígrafo al
+   montar (misma gramática que coordination-check-draw: el perito "firma" la
+   palabra clave). Robustez ante renderers que congelan animaciones: el copy es
+   SIEMPRE visible (no animamos opacidad) y el subrayado por defecto está
+   COMPLETO (scaleX(1)); la animación solo lo redibuja, nunca lo esconde. Con
+   reduced-motion o si la animación no corre, la palabra queda subrayada igual. */
+.hp-hero-underline-ink {
+    position: relative;
+}
+.hp-hero-underline-ink::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 2px;
+    background: #f59e0b; /* amber-500 (= decoration-amber-500 previo) */
+    transform: scaleX(1);
+    transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes hp-hero-underline-draw {
+        from {
+            transform: scaleX(0);
+        }
+        to {
+            transform: scaleX(1);
+        }
+    }
+    /* Sin delay ni fill-mode: al montar dibuja 0→100% y al terminar vuelve al
+       estado base (scaleX(1)), idéntico al 100%, así que no hay salto. */
+    .hp-hero-underline-ink::after {
+        animation: hp-hero-underline-draw 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
 }

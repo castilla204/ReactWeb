@@ -36,6 +36,14 @@ export const HP_MOBILE_MEDIUM = 'min-[390px]:' as const;
  */
 export const HP_MOBILE_WIDE = 'min-[428px]:' as const;
 
+/** Meta de card en muro — una línea con ellipsis */
+export const HP_CARD_META_CLASS =
+  'm-0 line-clamp-1 min-w-0 text-[11px] min-[428px]:text-xs leading-snug text-ink-muted tabular-nums';
+
+/** Título de card en muro — sin min-height: reservar 2 líneas forzaba hueco muerto en títulos de 1 línea */
+export const HP_CARD_TITLE_CLASS =
+  'm-0 line-clamp-2 text-[13px] min-[428px]:text-sm leading-[1.25] font-medium tracking-[-0.01em] text-ink';
+
 /** Carrusel de servicios en homepage — solo afecta a móvil (< md). */
 export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[184px]';
 
@@ -447,6 +455,43 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_TRUST_BLOCK_CLASS =
 /** Pie de la tarjeta de pago (notas legales) */
 export const SD_CHECKOUT_MOBILE_PAYMENT_FOOTER_CLASS =
   'space-y-3 border-t border-line-soft px-5 py-4';
+
+/** Inset horizontal compartido en tarjetas de resumen checkout (desktop + móvil) */
+export const SD_CHECKOUT_SUMMARY_INSET_X_CLASS = 'px-5';
+
+/** Título de sección del resumen — sentence case, sin eyebrow en mayúsculas */
+export const SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS =
+  'text-body font-semibold text-ink-strong';
+
+/** Cabecera principal del bloque de resumen */
+export const SD_CHECKOUT_SUMMARY_HEADER_CLASS =
+  'border-b border-line-soft px-5 py-4';
+
+/** Separador de grupo dentro del resumen (Cita y ubicación, Contacto…) */
+export const SD_CHECKOUT_SUMMARY_GROUP_CLASS =
+  'border-t border-line-soft px-5 pb-1 pt-4';
+
+/** Fila label–valor del resumen desktop (columnas alineadas) */
+export const SD_CHECKOUT_SUMMARY_ROW_CLASS =
+  'flex items-start justify-between gap-6 border-t border-line-soft px-5 py-3';
+
+export const SD_CHECKOUT_SUMMARY_ROW_LABEL_CLASS =
+  'w-[34%] max-w-[8.75rem] shrink-0 text-meta font-medium text-ink-muted';
+
+export const SD_CHECKOUT_SUMMARY_ROW_VALUE_CLASS =
+  'min-w-0 flex-1 text-end text-body font-normal leading-snug text-ink-strong';
+
+/** Bloque con borde superior (entregables, experto, total) */
+export const SD_CHECKOUT_SUMMARY_BLOCK_CLASS =
+  'border-t border-line-soft px-5 py-4';
+
+/** Grid paso pago desktop — columna resumen + panel lateral */
+export const SD_CHECKOUT_DESKTOP_PAYMENT_GRID_CLASS =
+  'grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8';
+
+/** Shell de página paso pago desktop (mismo gutter que pasos 1–2) */
+export const SD_CHECKOUT_DESKTOP_PAYMENT_SHELL_CLASS =
+  'mx-auto w-full max-w-[75rem] px-4 pb-12 pt-8 sm:px-5 lg:px-8';
 
 export const SD_CHECKOUT_MOBILE_TABLE_CLASS =
   'overflow-hidden rounded-xl border border-line bg-white';

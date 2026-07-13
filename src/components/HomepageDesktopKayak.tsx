@@ -128,24 +128,14 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
                   // Contorno con degradado azul→ámbar (doble fondo padding-box/border-box)
                   // para que respete el rounded-full — mismo recurso que el botón "Chat".
                   // Si la pestaña está activa, el relleno interior pasa a oscuro.
-                  style={
-                    cat.highlight
-                      ? {
-                          border: '2px solid transparent',
-                          background: cat.isActive
-                            ? 'linear-gradient(hsl(var(--ink-strong)), hsl(var(--ink-strong))) padding-box, linear-gradient(to right, hsl(var(--brand)), hsl(var(--warning))) border-box'
-                            : 'linear-gradient(hsl(var(--surface)), hsl(var(--surface))) padding-box, linear-gradient(to right, hsl(var(--brand)), hsl(var(--warning))) border-box',
-                        }
-                      : undefined
-                  }
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition-colors ${
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
                     cat.highlight
                       ? cat.isActive
-                        ? 'font-medium text-white shadow-sm'
-                        : 'font-medium text-ink hover:shadow-sm'
+                        ? 'bg-brand font-semibold text-white'
+                        : 'border border-line bg-white text-ink-strong hover:bg-surface-tinted'
                       : cat.isActive
-                        ? 'bg-ink-strong font-medium text-white shadow-sm'
-                        : 'border border-line bg-white font-medium text-ink shadow-sm hover:border-line hover:text-ink-strong hover:shadow-md'
+                        ? 'bg-brand font-semibold text-white'
+                        : 'border border-line bg-white text-ink-strong hover:bg-surface-tinted'
                   }`}
                 >
                   {cat.icon && (

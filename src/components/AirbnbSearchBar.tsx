@@ -883,7 +883,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         }`}
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="px-4 pt-3.5 pb-1">
+        <div className="px-4 pt-3.5 pb-1.5">
           <div className="relative">
             {/* Halo/sombra con degradado azul→ámbar de marca, rodeando todo el botón */}
             <div
@@ -961,7 +961,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
         {/* Tabs Mobile — fila compacta centrada (estilo Airbnb) */}
         <div className="w-full" role="tablist" aria-label="Categorías principales">
-          <div className="flex justify-center gap-4 min-[390px]:gap-5 px-2 pt-0 pb-0.5">
+          <div className="flex justify-center gap-3 min-[390px]:gap-4 px-2 pt-0 pb-1">
             {(
               [
                 {
@@ -970,6 +970,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   label: 'Coches',
                   image: 'cochepng.png',
                   alt: 'Coche',
+                  imgClass: '',
                 },
                 {
                   id: 'motos' as const,
@@ -977,6 +978,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   label: 'Motos',
                   image: 'motopng.png',
                   alt: 'Moto',
+                  // El PNG de moto es apaisado (512×317); con object-contain en la
+                  // caja cuadrada 56×56 renderiza ~35px de alto y "flota" más
+                  // pequeño que coche/casa. Un scale óptico lo iguala visualmente.
+                  imgClass: 'scale-[1.28]',
                 },
                 {
                   id: 'inmobiliaria' as const,
@@ -984,6 +989,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   label: 'Inmobiliaria',
                   image: 'casapng.png',
                   alt: 'Casa',
+                  imgClass: '',
                 },
               ] as const
             ).map((tab) => {
@@ -995,19 +1001,19 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => handleTabClick(tab.id, tab.categoryId)}
-                  className={`flex w-[4.75rem] min-[390px]:w-[5.25rem] shrink-0 flex-col items-center border-b-2 bg-transparent py-0 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
+                  className={`flex w-[5.5rem] min-[390px]:w-[6rem] shrink-0 flex-col items-center border-b-2 bg-transparent py-0.5 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
                     isActive ? 'border-brand' : 'border-transparent'
                   }`}
                 >
                   <img
                     src={getImageWithCache(tab.image, imageCacheKey)}
                     alt={tab.alt}
-                    className="mb-0 h-12 w-12 min-[390px]:h-14 min-[390px]:w-14 object-contain"
-                    width={48}
-                    height={48}
+                    className={`mb-0.5 h-14 w-14 min-[390px]:h-[3.75rem] min-[390px]:w-[3.75rem] object-contain ${tab.imgClass}`}
+                    width={56}
+                    height={56}
                   />
                   <span
-                    className="-mt-0.5 max-w-full truncate text-center text-caption min-[390px]:text-meta leading-tight"
+                    className={`max-w-full truncate text-center text-meta min-[390px]:text-body leading-tight`}
                     style={{
                       fontWeight: isActive ? 600 : 400,
                       fontFamily: HP_FONT,

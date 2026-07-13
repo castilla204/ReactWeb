@@ -83,11 +83,11 @@ export function ServiceDetailDesktopBookingAside({
         </AsideSection>
       ) : (
         <AsideSection label="Reserva">
-          <ServiceDetailReserveNote variant="aside" />
+          <ServiceDetailReserveNote />
         </AsideSection>
       )}
 
-      <footer className="mt-auto space-y-3 border-t border-line px-5 py-5">
+      <footer className="mt-auto border-t border-line px-5 py-5">
         {isAuthenticated ? (
           <button
             type="button"

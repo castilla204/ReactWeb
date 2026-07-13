@@ -54,7 +54,6 @@ import { LEGACY_REDIRECTS, SEO_LANDING_ALIASES } from './constants/routes';
 import { CITY_LANDINGS } from './content/cityLandingContent';
 import { CookieBanner } from './components/CookieBanner';
 import { ChatbotFab } from './components/ChatbotFab';
-import { HomepageTrustFab } from './components/HomepageTrustFab';
 import { parsePositiveIntegerParam } from './utils/routeParams';
 import { useIsMobile } from './hooks/useIsMobile';
 import erizoImg from './media/erizo.png';
@@ -706,7 +705,6 @@ const AppContent: React.FC = () => {
                     }}
                 />
                 <ChatbotFab />
-                <HomepageTrustFab />
         </div>
     );
 };

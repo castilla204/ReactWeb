@@ -63,6 +63,8 @@ import {
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
     SD_CHECKOUT_DESKTOP_CARD_CLASS,
+    SD_CHECKOUT_DESKTOP_PAYMENT_GRID_CLASS,
+    SD_CHECKOUT_DESKTOP_PAYMENT_SHELL_CLASS,
 } from '../constants/homepageTypography';
 
 // El flujo "Que la elija el vendedor" tiene 4 paradas en móvil (agenda · zona ·
@@ -1266,21 +1268,16 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     variant="checkout"
                 />
                 {desktopOnPaymentStep ? (
-                    <div className="mx-auto w-full max-w-[75rem] px-4 pb-12 pt-8 sm:px-5 lg:px-8">
-                        {/* Sin título ni lead: la miga ya marca "Pago" como paso actual y el
-                            resumen de abajo es autoexplicativo — repetirlo aquí era redundante. */}
+                    <div className={SD_CHECKOUT_DESKTOP_PAYMENT_SHELL_CLASS}>
                         <CheckoutDesktopAppointmentHeader
                             onBack={handleDesktopBack}
                             backLabel={desktopBackLabel}
                             steps={desktopCrumbSteps}
                             currentStepId={desktopCurrentCrumbId}
                             onStepSelect={handleDesktopCrumbSelect}
-                            className="mb-5"
+                            className="mb-6"
                         />
-                        {/* items-start: el panel de pago mide lo que mide su contenido y se queda
-                            sticky bajo el topbar; estirado a la altura de la columna izquierda
-                            dejaba ~300px de blanco muerto entre el Total y el botón. */}
-                        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_360px]">
+                        <div className={SD_CHECKOUT_DESKTOP_PAYMENT_GRID_CLASS}>
                             <section className="min-w-0">
                                 <CheckoutSummaryTable
                                     {...summaryTableProps}

@@ -51,7 +51,7 @@ export const HomePageShell: React.FC<HomePageShellProps> = ({
         <div
           data-services-section
           id="servicios-grid"
-          className="relative z-20 pt-0 pb-1 md:-mt-32 md:pb-10"
+          className="relative z-20 pt-0 pb-0 md:-mt-32 md:pb-10"
         >
           <HomepageDesktopTrustWave />
           <div className="bg-white">{services}</div>

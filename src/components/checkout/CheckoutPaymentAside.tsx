@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star } from 'lucide-react';
-import { SD_DESKTOP_STICKY_TOP_CLASS } from '../../constants/homepageTypography';
+import { cn } from '../../lib/utils';
+import { SD_DESKTOP_STICKY_TOP_CLASS, SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS, SD_CHECKOUT_SUMMARY_BLOCK_CLASS } from '../../constants/homepageTypography';
 import { CheckoutReserveHint } from './CheckoutReserveGuide';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
@@ -51,21 +52,21 @@ export function CheckoutPaymentAside({
 
   const content = (
     <>
-      <section className={embedded ? 'px-5 py-5 bg-white' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
-        <h2 className={`text-meta font-medium text-ink-muted mb-3`}>Resumen del pago</h2>
+      <section className={embedded ? 'px-5 py-5' : 'px-3.5 py-3 bg-white rounded-lg shadow-sm'}>
+        <h2 className={cn(SD_CHECKOUT_SUMMARY_SECTION_TITLE_CLASS, 'mb-3')}>Resumen del pago</h2>
         <div className="flex items-center gap-3 mb-4">
           <div className="relative shrink-0">
             <Avatar className="h-10 w-10 rounded-full">
               <AvatarImage src={expertPicture} alt={expertName} />
-              <AvatarFallback className="rounded-full bg-ink-strong text-kicker font-semibold text-white">
+              <AvatarFallback className="rounded-full bg-ink-strong text-caption font-semibold text-white">
                 {expertName.charAt(0) || 'E'}
               </AvatarFallback>
             </Avatar>
             <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-meta font-semibold text-ink-strong truncate">{serviceName}</p>
-            <p className="flex items-center gap-1.5 text-kicker text-ink-muted">
+            <p className="text-body font-semibold text-ink-strong truncate">{serviceName}</p>
+            <p className="flex items-center gap-1.5 text-meta text-ink-muted">
               <span className="truncate">{expertName}</span>
               {ratingLabel ? (
                 <>
@@ -83,18 +84,18 @@ export function CheckoutPaymentAside({
           </div>
         </div>
         <div className="flex items-baseline justify-between gap-4 border-t border-line pt-4">
-          <p className="text-meta text-ink-muted">Total a pagar</p>
-          <p className="font-display text-xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong">
+          <p className="text-meta font-medium text-ink-muted">Total a pagar</p>
+          <p className="font-display text-2xl font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong">
             {priceDisplay}
           </p>
         </div>
-        <p className="mt-1 text-kicker text-ink-muted">Impuestos incluidos</p>
+        <p className="mt-1 text-caption text-ink-muted">Impuestos incluidos</p>
         {priceSubline ? (
-          <p className="mt-0.5 text-kicker text-ink-muted">{priceSubline}</p>
+          <p className="mt-0.5 text-caption text-ink-muted">{priceSubline}</p>
         ) : null}
       </section>
 
-      <footer className={embedded ? 'space-y-4 border-t border-line px-5 py-5' : 'space-y-3 border-t border-line-soft px-3.5 py-3'}>
+      <footer className={embedded ? cn(SD_CHECKOUT_SUMMARY_BLOCK_CLASS, 'space-y-4') : 'space-y-3 border-t border-line-soft px-3.5 py-3'}>
         {!canPay ? (
           <p className="text-xs text-amber-800 bg-amber-50 p-2 rounded-md">
             Este experto no puede recibir contrataciones ahora.
@@ -129,7 +130,7 @@ export function CheckoutPaymentAside({
 
         <CheckoutReserveHint coordinationMode={coordinationMode} />
 
-        <p className="text-center text-kicker text-ink-muted">
+        <p className="text-center text-caption text-ink-muted">
           Al reservar, aceptas los{' '}
           <a
             href="/legal/terms"

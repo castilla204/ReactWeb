@@ -124,7 +124,7 @@ export function CheckoutDesktopAppointmentHeader({
                     <h2 className="text-title font-semibold leading-snug tracking-[-0.02em] text-ink-strong lg:text-title">
                         {title}
                     </h2>
-                    <p className="mt-1.5 max-w-2xl text-meta leading-[1.5] text-ink-muted lg:text-body">
+                    <p className="mt-1.5 max-w-2xl text-body leading-[1.5] text-ink-muted">
                         {description}
                     </p>
                 </>
