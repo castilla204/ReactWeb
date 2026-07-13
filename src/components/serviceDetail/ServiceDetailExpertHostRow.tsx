@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
 import { Button } from '../ui/button';
-import { formatFormacionInlineSummary } from '../expertPanel/formacion';
+import { formatFormacionInlineSummary, parseFormacion } from '../expertPanel/formacion';
 import {
   SD_DESKTOP_HOST_BIO_CLASS,
   SD_DESKTOP_HOST_CHAT_CLASS,
@@ -52,6 +52,10 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
   const showDesktopExpertBio = !isMobile && trimmedExpertDescription.length > 0;
   const desktopBioIsLong =
     !isMobile && trimmedExpertDescription.length > DESKTOP_BIO_CLAMP_CHARS;
+  const hasExpertFormacion = useMemo(
+    () => parseFormacion(expertFormacion).length > 0,
+    [expertFormacion],
+  );
   const formacionSummary = useMemo(
     () => formatFormacionInlineSummary(expertFormacion),
     [expertFormacion],
@@ -59,8 +63,9 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
   const showDesktopFormacionLink = Boolean(
     !isMobile && onFormacionClick && formacionSummary.linkLabel,
   );
-  const showMobileCredencialesLink = Boolean(isMobile && onFormacionClick);
-  const showMobileMeta = isMobile && (completedSearches > 0 || showMobileCredencialesLink);
+  const showMobileCredencialesLink = Boolean(
+    isMobile && hasExpertFormacion && onFormacionClick,
+  );
   const showDesktopMeta = !isMobile && (completedSearches > 0 || showDesktopFormacionLink);
   const completedLabel =
     completedSearches === 1 ? 'inspección completada' : 'inspecciones completadas';
@@ -76,17 +81,13 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
           : `Perfil verificado de ${expertName}`
       }
     >
-      <Avatar className={`rounded-full ${isMobile ? 'h-11 w-11' : 'h-12 w-12'}`}>
+      <Avatar className={`rounded-full ${isMobile ? 'h-10 w-10' : 'h-12 w-12'}`}>
         <AvatarImage src={expertPicture} alt="" />
         <AvatarFallback className="rounded-full bg-ink-strong text-sm font-semibold text-white">
           {expertName.charAt(0)}
         </AvatarFallback>
       </Avatar>
-      {isMobile ? (
-        <VerifiedBadge className="absolute -bottom-1 -right-1 h-[22px] w-[22px]" />
-      ) : (
-        <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-5 w-5" />
-      )}
+      <VerifiedBadge className="absolute -bottom-0.5 -right-0.5 h-5 w-5" />
     </button>
   );
 
@@ -95,28 +96,19 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       {isMobile ? (
         <>
           <p className={`truncate ${SD_MOBILE_EMPHASIS_CLASS}`}>{expertName}</p>
-          {showMobileMeta ? (
-            <p className={`mt-0.5 flex flex-wrap items-center gap-x-1.5 ${SD_MOBILE_META_CLASS}`}>
-              {completedSearches > 0 ? (
-                <span>
-                  {completedSearches}{' '}
-                  {completedSearches === 1 ? 'inspección' : 'inspecciones'}
-                </span>
-              ) : null}
-              {completedSearches > 0 && showMobileCredencialesLink ? (
-                <span className="text-line" aria-hidden>
-                  ·
-                </span>
-              ) : null}
-              {showMobileCredencialesLink ? (
-                <button
-                  type="button"
-                  onClick={onFormacionClick}
-                  className={`${SD_HOST_INTERACTIVE_CLASS} font-medium text-brand hover:text-brand-hover`}
-                >
-                  Credenciales
-                </button>
-              ) : null}
+          {showMobileCredencialesLink ? (
+            <button
+              type="button"
+              onClick={onFormacionClick}
+              className={`${SD_HOST_INTERACTIVE_CLASS} mt-1 block text-left text-xs font-medium text-brand hover:text-brand-hover`}
+            >
+              Credenciales
+            </button>
+          ) : null}
+          {completedSearches > 0 ? (
+            <p className={`mt-1 ${SD_MOBILE_META_CLASS}`}>
+              {completedSearches}{' '}
+              {completedSearches === 1 ? 'inspección' : 'inspecciones'}
             </p>
           ) : null}
         </>
@@ -182,8 +174,8 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
       onClick={onChatClick}
       variant="outline"
       size="sm"
-      className={`shrink-0 rounded-full border-line px-4 text-sm font-semibold text-ink-strong hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-        isMobile ? 'h-10 min-h-[40px]' : `mt-0.5 h-9 ${SD_DESKTOP_HOST_CHAT_CLASS}`
+      className={`shrink-0 rounded-full border-line px-3.5 text-sm font-semibold text-ink-strong hover:bg-surface-tinted hover:text-ink-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+        isMobile ? 'h-9 min-h-[36px]' : `mt-0.5 h-9 ${SD_DESKTOP_HOST_CHAT_CLASS}`
       }`}
       aria-label={`Chat con ${expertName}`}
     >
@@ -193,10 +185,12 @@ export const ServiceDetailExpertHostRow: React.FC<ServiceDetailExpertHostRowProp
 
   if (isMobile) {
     return (
-      <div className={`flex items-center gap-3 ${className}`.trim()}>
-        {avatarButton}
-        {identityBlock}
-        {chatButton}
+      <div className={className.trim()}>
+        <div className="flex items-start gap-3">
+          {avatarButton}
+          <div className="min-w-0 flex-1">{identityBlock}</div>
+          <div className="shrink-0 self-start">{chatButton}</div>
+        </div>
       </div>
     );
   }

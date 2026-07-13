@@ -213,7 +213,7 @@ export const ServiceDetailBookingMeta: React.FC<ServiceDetailBookingMetaProps> =
           variant="mobile"
           showHeading={false}
           hideScheduleRow
-          className="mt-1.5 w-fit"
+          className="mt-1 w-full"
         />
       </div>
     ) : (

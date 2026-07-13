@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { SileoPageLoader } from '../components/ui/sileo-loader';
 import {
     ArrowLeft,
@@ -22,7 +22,6 @@ import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { authService } from '../services/authService';
 import { formatPriceNumber } from '../utils/priceUtils';
 import { formatTimezoneFriendly } from '../utils/timezoneFormat';
-import { ServiceDetailBookingMeta } from '../components/serviceDetail/ServiceDetailBookingMeta';
 import { ServiceDetailDesktopBookingAside } from '../components/serviceDetail/ServiceDetailDesktopBookingAside';
 import { MobileReserveFooter } from '../components/serviceDetail/MobileReserveFooter';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -73,6 +72,7 @@ import { FavoriteHeart } from '../components/FavoriteHeart';
 import { LoginModal } from '../components/LoginModal';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
+import { parseFormacion } from '../components/expertPanel/formacion';
 // La elección "¿Cómo se fija la cita?" ya no se decide aquí (ni en popup): se resuelve
 // como primer paso dedicado dentro del checkout. Aquí solo navegamos al checkout.
 
@@ -303,7 +303,15 @@ export function ServiceReviewPage({
     // ✅ CORRECTO: Usar profilePictureUrl del nivel superior del experto, NO de user (que siempre es null)
     const finalExpertPicture = finalService?.expert?.profilePictureUrl || expertProfilePicture;
     const finalExpertDescription = (finalService?.expert?.description || '').trim();
-    const finalExpertFormacion = (finalService?.expert as { formacion?: string } | null | undefined)?.formacion ?? '';
+    const finalExpertFormacion =
+        (finalService?.expert as { formacion?: string | null; Formacion?: string | null } | null | undefined)
+            ?.formacion
+        ?? (finalService?.expert as { Formacion?: string | null } | null | undefined)?.Formacion
+        ?? '';
+    const hasExpertFormacion = useMemo(
+        () => parseFormacion(finalExpertFormacion).length > 0,
+        [finalExpertFormacion],
+    );
     const finalPrice = finalService?.price || servicePrice || 0;
     
     const expertCity = finalService?.expert?.city || null;
@@ -319,8 +327,6 @@ export function ServiceReviewPage({
       expertCity,
     );
 
-    // ✅ DISPONIBILIDAD
-    const finalAvailability = finalService?.expert?.currentAvailability;
     // ✅ INFORMACIÓN DE UBICACIÓN DEL EXPERTO PARA EL MAPA
     // Intentar múltiples fuentes para obtener las coordenadas
     const expertLat = finalService?.expertLatitude 
@@ -663,7 +669,7 @@ export function ServiceReviewPage({
                                     expertFormacion={finalExpertFormacion}
                                     completedSearches={finalCompletedSearches}
                                     onFormacionClick={
-                                        finalExpertFormacion
+                                        hasExpertFormacion
                                             ? () => setFormacionSheetOpen(true)
                                             : undefined
                                     }
@@ -674,21 +680,9 @@ export function ServiceReviewPage({
                                     }}
                                     onChatClick={handleChatClick}
                                 />
-                                {finalAvailability ? (
-                                    <ServiceDetailBookingMeta
-                                        layout="minimal"
-                                        embedded
-                                        showCoverage={false}
-                                        availability={finalAvailability}
-                                        timezone={finalService?.expert?.timezone}
-                                        isOnVacation={finalService?.expert?.isOnVacation}
-                                        rangeKm={expertRange ?? 25}
-                                        mapVariant="preview"
-                                    />
-                                ) : null}
                             </section>
 
-                            {finalExpertFormacion ? (
+                            {hasExpertFormacion ? (
                                 <ServiceDetailExpertFormacionSheet
                                     value={finalExpertFormacion}
                                     expertName={finalExpertName}
@@ -715,7 +709,7 @@ export function ServiceReviewPage({
                                 onClick={() => setActiveTab('about')}
                                 className="sd-tab"
                             >
-                                Acerca del servicio
+                                <span className="sd-tab__label">Acerca del servicio</span>
                             </button>
                             <button
                                 type="button"
@@ -723,13 +717,18 @@ export function ServiceReviewPage({
                                 id="sd-tab-reviews"
                                 aria-controls="sd-panel-reviews"
                                 aria-selected={activeTab === 'reviews'}
+                                aria-label={
+                                    finalReviews.length > 0
+                                        ? `Reseñas, ${finalReviews.length}`
+                                        : 'Reseñas'
+                                }
                                 data-active={activeTab === 'reviews' ? 'true' : undefined}
                                 onClick={() => setActiveTab('reviews')}
                                 className="sd-tab"
                             >
-                                Reseñas
+                                <span className="sd-tab__label">Reseñas</span>
                                 {finalReviews.length > 0 ? (
-                                    <span className="text-xs font-normal tabular-nums text-ink-muted">
+                                    <span className="sd-tab__badge" aria-hidden>
                                         {finalReviews.length}
                                     </span>
                                 ) : null}
@@ -750,12 +749,12 @@ export function ServiceReviewPage({
                                     ) : null}
                                     {showInspectionReport ? (
                                         <>
-                                            <h2 className="sd-section-label mb-3">Qué entregará</h2>
-                                            <div className="mt-3">
+                                            <h2 className="sd-section-label mb-2">Qué entregará</h2>
+                                            <div className="mt-2">
                                                 <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
                                             </div>
                                             {inspectionExtraDeliverables.length > 0 ? (
-                                                <div className="mt-3">
+                                                <div className="mt-2">
                                                     <ServiceDetailDeliverablesGuide
                                                         items={inspectionExtraDeliverables}
                                                         variant="inline"
@@ -885,7 +884,7 @@ export function ServiceReviewPage({
                                 expertFormacion={finalExpertFormacion}
                                 completedSearches={finalCompletedSearches}
                                 onFormacionClick={
-                                    finalExpertFormacion
+                                    hasExpertFormacion
                                         ? () => setFormacionDialogOpen(true)
                                         : undefined
                                 }
@@ -1122,7 +1121,7 @@ export function ServiceReviewPage({
         </div>
         
         {/* Modal desktop — expediente académico */}
-        {finalExpertFormacion ? (
+        {hasExpertFormacion ? (
             <ServiceDetailExpertFormacionDialog
                 value={finalExpertFormacion}
                 expertName={finalExpertName}
