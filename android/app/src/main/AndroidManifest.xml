@@ -41,6 +41,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />
+        <!-- 📲 Canal por defecto (alta importancia, creado en MainActivity) → popup + sonido -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="inspecciono_default" />
     </application>
 
     <!-- Permissions -->
