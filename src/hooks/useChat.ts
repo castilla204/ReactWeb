@@ -340,6 +340,9 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
     applyMessageToCacheRef.current = applyMessageToCache;
     const applyMessageReadToCacheRef = useRef(applyMessageReadToCache);
     applyMessageReadToCacheRef.current = applyMessageReadToCache;
+    // 🛡️ W35: los handlers de mensaje usan el `refetchConversationRef` ya existente (declarado arriba,
+    // cableado a `refetch` de la query de conversación) como fuente de verdad autenticada, ya que el
+    // canal Realtime es público y el backend dejará de enviar el contenido en el payload.
 
     // Realtime: broadcast con anon key del proyecto Supabase activo (sin JWT .NET)
     useEffect(() => {
@@ -424,7 +427,14 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     });
                 })
                 .on('broadcast', { event: 'new_message' }, ({ payload }) => {
-                    applyMessageToCacheRef.current(payload, 'add');
+                    // 🛡️ W35: el canal es público → el backend deja de mandar el contenido. Refetch
+                    // por el endpoint autenticado (valida pertenencia). Compat con backend antiguo: si
+                    // el payload aún trae Content, se aplica optimista para no perder inmediatez.
+                    const p = payload as { Content?: unknown; content?: unknown } | undefined;
+                    if (p && (p.Content ?? p.content) !== undefined) {
+                        applyMessageToCacheRef.current(payload, 'add');
+                    }
+                    void refetchConversationRef.current();
                 })
                 .on('broadcast', { event: 'message_read' }, ({ payload }) => {
                     applyMessageReadToCacheRef.current(
@@ -432,7 +442,12 @@ export const useChat = (searchId: number | null = null, searchHireId?: number) =
                     );
                 })
                 .on('broadcast', { event: 'message_updated' }, ({ payload }) => {
-                    applyMessageToCacheRef.current(payload, 'update');
+                    // 🛡️ W35: igual que new_message — refetch autenticado; compat con payload completo.
+                    const p = payload as { Content?: unknown; content?: unknown } | undefined;
+                    if (p && (p.Content ?? p.content) !== undefined) {
+                        applyMessageToCacheRef.current(payload, 'update');
+                    }
+                    void refetchConversationRef.current();
                 })
                 .on('broadcast', { event: 'deliverable_uploaded' }, () => {
                     void refetchDeliverablesRef.current();
