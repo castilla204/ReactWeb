@@ -975,7 +975,7 @@ export function ServiceReviewPage({
                                         <div
                                             ref={mobileDeliverablesRef}
                                             id="sd-section-deliverables"
-                                            className={`${SD_MOBILE_INSET_STACK_CLASS} scroll-mt-24`}
+                                            className="flex flex-col gap-3 scroll-mt-24"
                                         >
                                             {showInspectionReport ? (
                                                 <>
@@ -996,13 +996,18 @@ export function ServiceReviewPage({
                                                     ) : null}
                                                 </>
                                             ) : (
-                                                <ServiceDetailDeliverablesGuide
-                                                    items={allDeliverablesForList}
-                                                    variant="inline"
-                                                    presentation="list"
-                                                    showHeading
-                                                    showUnselected
-                                                />
+                                                <>
+                                                    <h2 className="sd-section-label m-0">
+                                                        Qué entregará
+                                                    </h2>
+                                                    <ServiceDetailDeliverablesGuide
+                                                        items={allDeliverablesForList}
+                                                        variant="inline"
+                                                        presentation="cover"
+                                                        showHeading={false}
+                                                        showUnselected
+                                                    />
+                                                </>
                                             )}
                                         </div>
                                     ) : null}
@@ -1040,8 +1045,7 @@ export function ServiceReviewPage({
                                         timezone={finalService?.expert?.timezone}
                                         isOnVacation={finalService?.expert?.isOnVacation}
                                         showHeading={false}
-                                        compact
-                                        embedded
+                                        mobileTab
                                         showFootnote
                                     />
                                 </div>

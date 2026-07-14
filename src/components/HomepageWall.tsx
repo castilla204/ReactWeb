@@ -22,8 +22,10 @@ import {
   HP_MOBILE_WALL_OUTER_CLASS,
   HP_MOBILE_WALL_SECTION_GAP_CLASS,
   HP_MOBILE_WALL_SECTION_HEADER_CLASS,
+  HP_MOBILE_WALL_SECTION_TITLE_STACK_CLASS,
   HP_MOBILE_WALL_CARD_IMAGE_MB_CLASS,
 } from '../constants/homepageMobileRhythm';
+import { getHomepageSectionSubtitle } from '../constants/homepageSectionCopy';
 import {
   HP_CARD_FAVORITE_BTN_CLASS,
   HP_CARD_IMAGE_OVERLAY_CLASS,
@@ -326,7 +328,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                   <div className={`min-w-0 flex-1 pointer-events-auto ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}>
                     {isTopRated && (
                       <span
-                        className={`${HP_CARD_TOP_BADGE_CLASS} ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}
+                        className={HP_CARD_TOP_BADGE_CLASS}
                         aria-label="Mejor valorado"
                       >
                         <Star
@@ -334,13 +336,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                           aria-hidden
                         />
                         <span
-                          className="hidden truncate text-badge leading-3 text-brand-deep md:inline"
+                          className="hidden min-w-0 truncate text-badge leading-3 text-brand-deep md:inline"
                           style={hpType.badge}
                         >
                           Mejor valorado
                         </span>
                         <span
-                          className="inline truncate text-badge leading-3 text-brand-deep md:hidden"
+                          className="inline shrink-0 whitespace-nowrap text-badge leading-3 text-brand-deep md:hidden"
                           style={hpType.badge}
                         >
                           Top
@@ -656,12 +658,12 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       {/* Header sección + flechas de navegación (desktop) */}
       <div className={HP_MOBILE_WALL_SECTION_HEADER_CLASS}>
         <div className="flex items-center justify-between gap-3 md:gap-4">
-          <div className="min-w-0 flex-1 space-y-1">
+          <div className={`min-w-0 flex-1 ${HP_MOBILE_WALL_SECTION_TITLE_STACK_CLASS}`}>
             <h2 className="hp-section-title truncate">
               {title.replace(' >', '')}
             </h2>
             {subtitle && (
-              <p className="hp-section-subtitle mt-0 truncate text-[13px] leading-snug md:text-sm">
+              <p className="hp-section-subtitle truncate text-[13px] leading-snug md:text-sm">
                 {subtitle}
               </p>
             )}
@@ -858,10 +860,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           const filteredServices = filterServices(section.services);
           if (filteredServices.length === 0) return null;
           const isLastSection = index === data.length - 1;
-          const subtitle =
-            section.categoryName && section.country
-              ? `${section.pagination.totalCount} servicios en ${section.country}`
-              : undefined;
+          const subtitle = getHomepageSectionSubtitle(section);
           return (
             <motion.div
               key={`${keyPrefix}-section-${index}-${section.title}`}

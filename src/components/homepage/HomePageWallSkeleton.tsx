@@ -39,7 +39,7 @@ const LoadingSection: React.FC<{ cardCount?: number }> = ({ cardCount = 6 }) => 
         aria-hidden
       />
       <div
-        className="mt-1 max-w-[52%] rounded-sm bg-line-soft"
+        className="mt-0.5 max-w-[52%] rounded-sm bg-line-soft"
         style={{ height: HP_LOADING_DIMS.sectionSubtitleH }}
         aria-hidden
       />

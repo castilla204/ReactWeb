@@ -15,7 +15,7 @@ export const HP_CARD_OVERLAY_CONTROL_H_CLASS = 'h-6';
 
 /** Pill «Mejor valorado» / «Top» sobre la imagen. */
 export const HP_CARD_TOP_BADGE_CLASS =
-  'inline-flex max-w-[calc(100%-2rem)] items-center gap-1 rounded-full bg-surface px-1.5 shadow-[0_2px_6px_rgba(0,0,0,0.14)] md:gap-1.5 md:px-2';
+  'inline-flex h-6 w-max max-w-full items-center gap-1 overflow-hidden rounded-full bg-surface px-2 shadow-[0_2px_6px_rgba(0,0,0,0.14)] md:gap-1.5 md:px-2.5';
 
 /** Botón de favorito sobre la imagen — hit area 44px, icono 24px centrado. */
 export const HP_CARD_FAVORITE_BTN_CLASS =

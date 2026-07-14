@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+import { MOBILE_CONTENT_PADDING_BOTTOM_CLASS } from '../../constants/homepageTypography';
 import { HomepageDesktopTrustWave } from '../HomepageDesktopTrustWave';
 
 interface HomePageShellProps {
@@ -39,7 +40,8 @@ export const HomePageShell: React.FC<HomePageShellProps> = ({
       <div
         {...restRootProps}
         className={[
-          'bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))]',
+          MOBILE_CONTENT_PADDING_BOTTOM_CLASS,
+          'bg-white',
           'md:min-h-screen md:pb-0',
           rootClassName,
         ]

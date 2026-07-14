@@ -15,6 +15,7 @@ import {
   Camera,
   Wrench,
   Check,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -112,8 +113,19 @@ import {
 } from '../constants/homepageHeroMap';
 import {
   HP_MOBILE_HEADER_INSET_CLASS,
+  HP_MOBILE_SEARCH_MODAL_BODY_CLASS,
+  HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS,
+  HP_MOBILE_SEARCH_MODAL_HEADER_CLASS,
   HP_MOBILE_SEARCH_PILL_HEIGHT_PX,
 } from '../constants/homepageMobileRhythm';
+import {
+  getMobileSearchPillAriaLabel,
+  getMobileSearchPillSubtitle,
+  MOBILE_SEARCH_MODAL_SUBTITLE,
+  MOBILE_SEARCH_MODAL_TITLE,
+  MOBILE_SEARCH_PILL_TITLE,
+} from '../constants/homepageSearchCopy';
+import { cn } from '../lib/utils';
 
 const CATEGORIES = {
   VEHICULOS: 2,
@@ -574,10 +586,15 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
   selectedCategory = normalizedCategories.find(c => c.id === categoryId);
 
-  const mobilePillSubtitle = useMemo(() => {
-    if (adUrl.trim()) return adUrl.trim();
-    return 'Zona o enlace del anuncio';
-  }, [adUrl]);
+  const mobilePillCategoryLabel = useMemo(() => {
+    if (drawerCategoryReplacement?.name) return drawerCategoryReplacement.name;
+    return selectedCategory?.name ?? 'Inmobiliaria';
+  }, [drawerCategoryReplacement, selectedCategory]);
+
+  const mobilePillSubtitle = useMemo(
+    () => getMobileSearchPillSubtitle(mobilePillCategoryLabel),
+    [mobilePillCategoryLabel],
+  );
 
   // ✅ Leer parámetros de retorno desde SearchParameterForm y abrir modal automáticamente
   useEffect(() => {
@@ -744,15 +761,31 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     setIsDrawerOpen(true);
   }, []);
 
-  // En modo mapa: al elegir categoría navegamos al mapa de esa categoría.
-  // serviceTypeId || 2 iguala el comportamiento del antiguo goToMap (fijaba 2).
+  const navigateToCategoryMap = useCallback(
+    (mapCategoryId: number) => {
+      const stId = serviceTypeId || 2;
+      setIsMobileSearchOpen(false);
+      setIsDrawerOpen(false);
+      setDrawerIntent('filter');
+      setCategorySearchQuery('');
+
+      if (onSearch) {
+        onSearch({ serviceTypeId: stId, categoryId: mapCategoryId, adUrl });
+      }
+
+      const params = new URLSearchParams({
+        categoryId: mapCategoryId.toString(),
+        serviceTypeId: stId.toString(),
+        step: 'map',
+      });
+      if (adUrl) params.append('adUrl', adUrl);
+      navigate(`/hire?${params.toString()}`);
+    },
+    [serviceTypeId, adUrl, navigate, onSearch],
+  );
+
   const goToCategoryMap = (mapCategoryId: number) => {
-    const stId = serviceTypeId || 2;
-    setIsDrawerOpen(false);
-    // Reset explícito por si onOpenChange no se dispara al navegar/desmontar.
-    setDrawerIntent('filter');
-    setCategorySearchQuery('');
-    navigate(`/hire?categoryId=${mapCategoryId}&serviceTypeId=${stId}&step=map`);
+    navigateToCategoryMap(mapCategoryId);
   };
 
   useEffect(() => {
@@ -882,7 +915,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             ? 'border-line shadow-[0_1px_0_rgba(0,0,0,0.04),0_4px_16px_rgba(15,23,42,0.08)]'
             : 'border-transparent'
         }`}
-        style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className={HP_MOBILE_HEADER_INSET_CLASS}>
           <div
@@ -895,28 +927,27 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 openMobileSearch();
               }
             }}
-            aria-label={
-              adUrl.trim()
-                ? `Abrir búsqueda. Anuncio: ${mobilePillSubtitle}`
-                : 'Abrir búsqueda. Indica zona o enlace del anuncio'
-            }
-            className="relative flex w-full cursor-pointer items-center gap-3 rounded-full border border-line bg-white px-4 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            aria-label={getMobileSearchPillAriaLabel(mobilePillCategoryLabel)}
+            className={cn(
+              'relative flex w-full cursor-pointer items-center gap-3 rounded-full border bg-white px-4 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+              categoryId != null ? 'border-brand/25' : 'border-line',
+            )}
             style={{
               height: `${HP_MOBILE_SEARCH_PILL_HEIGHT_PX}px`,
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
             }}
           >
-            <Search
-              className="h-5 w-5 shrink-0 text-ink-muted"
+            <MapPin
+              className="h-5 w-5 shrink-0 text-brand"
               strokeWidth={2}
               aria-hidden
             />
             <div className="min-w-0 flex-1 text-left">
               <span
-                className="block max-w-full truncate text-sm font-medium leading-[18px] text-ink-strong"
+                className="block max-w-full truncate text-sm font-semibold leading-[18px] text-ink-strong"
                 style={{ fontFamily: HP_FONT }}
               >
-                ¿Qué revisamos?
+                {MOBILE_SEARCH_PILL_TITLE}
               </span>
               <span
                 className="block max-w-full truncate text-xs leading-4 text-ink-muted"
@@ -925,6 +956,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {mobilePillSubtitle}
               </span>
             </div>
+            <ChevronRight
+              className="h-4 w-4 shrink-0 text-ink-muted"
+              strokeWidth={2.25}
+              aria-hidden
+            />
           </div>
         </div>
       </header>
@@ -998,10 +1034,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 {(expandedAccordion === 'where' || isMobile) ? (
                   <>
                     {isMobile && (
-                      <div
-                        className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between"
-                        style={{ top: 'max(1rem, env(safe-area-inset-top, 0px))' }}
-                      >
+                      <div className={HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS}>
                         <button
                           type="button"
                           onClick={() => {
@@ -1035,7 +1068,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     )}
 
                     <div
-                      className={`px-5 ${isMobile ? 'pb-4 pt-[calc(max(1rem,env(safe-area-inset-top,0px))+3.25rem)]' : 'border-b border-line pb-4 pt-6'}`}
+                      className={
+                        isMobile
+                          ? HP_MOBILE_SEARCH_MODAL_HEADER_CLASS
+                          : 'border-b border-line px-5 pb-4 pt-6'
+                      }
                     >
                       <div className={`flex items-start justify-between gap-3 ${isMobile ? '' : 'mb-4'}`}>
                         <div className="min-w-0 flex-1">
@@ -1048,14 +1085,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                             }
                             style={isMobile ? { fontFamily: HP_FONT } : undefined}
                           >
-                            ¿Qué revisamos?
+                            {isMobile ? MOBILE_SEARCH_MODAL_TITLE : '¿Qué revisamos?'}
                           </h2>
                           {isMobile && (
                             <p
                               className="mt-1 text-meta leading-snug text-ink-muted"
                               style={{ fontFamily: HP_FONT }}
                             >
-                              Elige qué bien quieres que revise el experto.
+                              {MOBILE_SEARCH_MODAL_SUBTITLE}
                             </p>
                           )}
                         </div>
@@ -1125,12 +1162,9 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
                     {/* Contenido expandido al 100% */}
                     <div
-                      className={`flex-1 overflow-y-auto ${isMobile ? 'px-5 pt-2 pb-6' : 'px-4 py-6'}`}
-                      style={{
-                        paddingBottom: isMobile
-                          ? 'max(1.5rem, env(safe-area-inset-bottom, 0px))'
-                          : undefined,
-                      }}
+                      className={
+                        isMobile ? HP_MOBILE_SEARCH_MODAL_BODY_CLASS : 'flex-1 overflow-y-auto px-4 py-6'
+                      }
                     >
                       <div className={isMobile ? 'mx-auto max-w-md' : undefined}>
                         {categoriesLoading ? (
@@ -1163,26 +1197,17 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                       type="button"
                                       aria-pressed={selected}
                                       onClick={() => {
-                                        setCategoryId(category.id);
                                         setCategorySearchQuery('');
 
-                                        const defaultServiceTypeId = serviceTypeId || 2;
-                                        const params = new URLSearchParams();
-                                        params.append('categoryId', category.id.toString());
-                                        params.append('serviceTypeId', defaultServiceTypeId.toString());
-                                        if (adUrl) {
-                                          params.append('adUrl', adUrl);
+                                        if (category.id === CATEGORIES.COCHES) {
+                                          handleTabClick('coches', category.id);
+                                        } else if (category.id === CATEGORIES.MOTOS) {
+                                          handleTabClick('motos', category.id);
+                                        } else {
+                                          handleTabClick('inmobiliaria', category.id);
                                         }
 
-                                        window.location.href = `/hire?${params.toString()}`;
-
-                                        if (onSearch) {
-                                          onSearch({
-                                            serviceTypeId: defaultServiceTypeId,
-                                            categoryId: category.id,
-                                            adUrl,
-                                          });
-                                        }
+                                        navigateToCategoryMap(category.id);
                                       }}
                                       className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
                                         selected ? 'bg-brand/[0.06]' : 'active:bg-surface-tinted'

@@ -3,52 +3,56 @@ import { ChevronRight } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
 
-/** Capa clara del doble fondo — asoma por debajo de la tarjeta (referencia delivery). */
-export const LAYERED_CARD_BACK_LAYER = '#C5E0F7';
-export const LAYERED_CARD_BACK_PEEK_PX = 16;
+/** Superficie frontal — brand un poco más claro que bg-brand (44% L vs 40%). */
+export const LAYERED_CARD_SURFACE = 'hsl(210 96% 44%)';
+/** Capa clara del doble fondo — mismo matiz, estilo menta delivery. */
+export const LAYERED_CARD_BACK_LAYER = 'hsl(210 85% 88%)';
+export const LAYERED_CARD_BACK_PEEK_PX = 10;
 export const LAYERED_CARD_BACK_INSET_X = '0.75rem';
 /** Reserva en flujo para que la capa clara no invada el contenido siguiente. */
-export const LAYERED_CARD_PEEK_RESERVE_CLASS = 'h-4 shrink-0';
+export const LAYERED_CARD_PEEK_RESERVE_CLASS = 'h-2.5 shrink-0';
 
-/** Arco claro — más luminoso que bg-brand (hsl 210 100% 40%). */
-const HOOK_TOP_STROKE = 'rgba(255, 255, 255, 0.20)';
-/** Gancho oscuro — más profundo que bg-brand. */
-const HOOK_BOTTOM_STROKE = 'rgba(0, 28, 68, 0.30)';
+/** Ganchitos tone-on-tone — trazo más claro que la superficie (ref. delivery). */
+const LAYERED_CARD_HOOK_STROKE = 'hsl(210 72% 74% / 0.55)';
 
 /**
- * Ganchitos decorativos como la referencia delivery:
- * - Sup. izq.: arco claro que ENTRA por arriba y SALE por la izquierda (recortado).
- * - Inf. dcha.: gancho en U más oscuro, anidado con margen sin tocar bordes.
+ * Ganchitos decorativos — ref. tarjeta verde delivery:
+ * Arco circular 90° por esquina; extremos fuera del cuadrado → entra/sale por dos bordes.
+ * SVG cuadrado evita que el arco se aplaste al estirar la tarjeta.
  */
 const LayeredHookCardDecor: React.FC = () => (
   <>
     <svg
       aria-hidden
-      className="pointer-events-none absolute -left-2.5 -top-2.5 h-[56%] w-[64%]"
-      viewBox="0 0 220 150"
-      preserveAspectRatio="xMinYMin meet"
+      overflow="visible"
+      className="pointer-events-none absolute left-0 top-0 aspect-square w-[56%] min-w-[7.5rem]"
+      viewBox="0 0 200 200"
+      preserveAspectRatio="xMinYMin slice"
     >
       <path
-        d="M 158 -18 C 96 10, 40 36, -36 76"
+        d="M 72 -24 A 96 96 0 0 1 -24 72"
         fill="none"
-        stroke={HOOK_TOP_STROKE}
-        strokeWidth="33"
+        stroke={LAYERED_CARD_HOOK_STROKE}
+        strokeWidth="42"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
 
     <svg
       aria-hidden
-      className="pointer-events-none absolute bottom-4 right-4 h-[40%] w-[36%] max-h-[3.5rem] max-w-[5.25rem]"
-      viewBox="0 0 120 84"
-      preserveAspectRatio="xMaxYMax meet"
+      overflow="visible"
+      className="pointer-events-none absolute bottom-0 right-0 aspect-square w-[60%] min-w-[8rem]"
+      viewBox="0 0 200 200"
+      preserveAspectRatio="xMaxYMax slice"
     >
       <path
-        d="M 18 70 C 34 44, 72 36, 104 58"
+        d="M 224 128 A 96 96 0 0 0 128 224"
         fill="none"
-        stroke={HOOK_BOTTOM_STROKE}
-        strokeWidth="28"
+        stroke={LAYERED_CARD_HOOK_STROKE}
+        strokeWidth="42"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   </>
@@ -154,17 +158,18 @@ export const LayeredHookCard: React.FC<LayeredHookCardProps> = ({
           onClick={onClick}
           aria-label={interactive ? ariaLabel : undefined}
           className={cn(
-            'relative z-[1] w-full overflow-hidden bg-brand text-left shadow-[0_4px_24px_rgba(15,23,42,0.06)]',
+            'relative z-[1] w-full overflow-hidden text-left shadow-[0_4px_24px_rgba(15,23,42,0.06)]',
             isCompact
-              ? 'rounded-2xl px-3 py-2.5'
+              ? 'rounded-2xl bg-brand px-3 py-2.5'
               : 'rounded-[18px] px-4 py-3.5 min-[390px]:rounded-[20px] min-[390px]:px-5 min-[390px]:py-4',
             interactive &&
               'cursor-pointer border-none transition-opacity hover:opacity-[0.97] active:opacity-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
           )}
+          style={isCompact ? undefined : { background: LAYERED_CARD_SURFACE }}
         >
           {!isCompact ? <LayeredHookCardDecor /> : null}
 
-          <div className="relative flex items-start gap-2.5">
+          <div className="relative z-[1] flex items-start gap-2.5">
             {leading ? <div className="shrink-0">{leading}</div> : null}
             <div className="min-w-0 flex-1">
               <p
@@ -180,10 +185,10 @@ export const LayeredHookCard: React.FC<LayeredHookCardProps> = ({
               {subtitle ? (
                 <div
                   className={cn(
-                    'mt-0.5 text-white/90',
+                    'mt-0.5 text-white',
                     isCompact
                       ? 'text-[11px] leading-snug'
-                      : 'text-[0.8125rem] font-normal leading-snug text-white/95',
+                      : 'text-[0.8125rem] font-normal leading-snug',
                   )}
                 >
                   {subtitle}
