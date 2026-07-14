@@ -1,6 +1,5 @@
 import heroBannerAvif from '../media/imagenbanner.avif';
 import heroBannerWebp from '../media/imagenbanner.webp';
-import mobileHeroBannerSvg from '../media/banner_inspeccion_movil.svg';
 import { HERO_DESKTOP_MAP_LITERAL, MAP_LITERAL } from './designTokens';
 
 /** Foto hero homepage — peritos a la derecha, zona clara a la izquierda para el copy */
@@ -9,9 +8,6 @@ export const HERO_BANNER_WEBP = heroBannerWebp;
 
 /** @deprecated Usar HERO_BANNER_WEBP — alias móvil */
 export const MOBILE_HERO_PHOTO_PATH = HERO_BANNER_WEBP;
-
-/** Banner hero móvil — SVG con copy y gráfico integrados */
-export const MOBILE_HERO_BANNER_SVG = mobileHeroBannerSvg;
 
 /** Fracción del ancho cubierta por el panel de copy (desktop). Legacy map hero. */
 export const DESKTOP_HERO_MAP_OVERLAY_PADDING = 0.26;
@@ -25,6 +21,16 @@ export const DESKTOP_HERO_MAP_INTEGRATION_WASH = [
   `linear-gradient(90deg, rgba(250,250,250,0.5) 0%, rgba(250,250,250,0.16) 26%, transparent 44%)`,
   'linear-gradient(to top, rgba(255,255,255,0.08) 0%, transparent 14%)',
 ].join(', ');
+
+/** Poster estático mientras carga MapLibre — misma paleta que el mapa vivo */
+export const DESKTOP_HERO_MAP_POSTER = [
+  `radial-gradient(ellipse 56% 50% at 74% 46%, ${HERO_DESKTOP_MAP_LITERAL.land} 0%, ${HERO_DESKTOP_MAP_LITERAL.sky} 42%, ${HERO_DESKTOP_MAP_LITERAL.skyMuted} 72%, transparent 86%)`,
+  DESKTOP_HERO_MAP_INTEGRATION_WASH,
+].join(', ');
+
+/** Alturas mínimas del hero desktop — crece si el copy escala (zoom / i18n) */
+export const DESKTOP_HERO_MIN_HEIGHT_CLASS =
+  'min-h-[400px] lg:min-h-[500px] xl:min-h-[520px]';
 
 /** Máscara columna foto desktop — foto más transparente, fade largo hacia el mapa */
 export const DESKTOP_HERO_BANNER_MASK =

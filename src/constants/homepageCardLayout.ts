@@ -17,6 +17,6 @@ export const HP_CARD_OVERLAY_CONTROL_H_CLASS = 'h-6';
 export const HP_CARD_TOP_BADGE_CLASS =
   'inline-flex max-w-[calc(100%-2rem)] items-center gap-1 rounded-full bg-surface px-1.5 shadow-[0_2px_6px_rgba(0,0,0,0.14)] md:gap-1.5 md:px-2';
 
-/** Botón de favorito sobre la imagen — mismo alto que el badge. */
+/** Botón de favorito sobre la imagen — hit area 44px, icono 24px centrado. */
 export const HP_CARD_FAVORITE_BTN_CLASS =
-  'pointer-events-auto flex w-6 shrink-0 items-center justify-center';
+  'pointer-events-auto flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';

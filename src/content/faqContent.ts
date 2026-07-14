@@ -280,5 +280,3 @@ export const CHATBOT_FAB_HINT_BODY =
   'Respondo sobre reservas, pagos retenidos, cancelaciones y uso de la plataforma.';
 
 export const CHATBOT_FAB_HINT_CTA = 'Abrir asistente';
-
-export const CHATBOT_FAB_MOBILE_TEASER = '¿Te ayudo?';

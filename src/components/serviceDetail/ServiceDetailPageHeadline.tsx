@@ -296,7 +296,7 @@ export const ServiceDetailPageHeadline: React.FC<ServiceDetailPageHeadlineProps>
 
         <>
 
-          <h1 className="sd-page-title-compact m-0 text-base font-semibold leading-snug tracking-[-0.01em] text-ink-strong">
+          <h1 className="sd-page-title-compact m-0 text-xl font-semibold leading-[1.15] tracking-[-0.02em] text-ink-strong">
             {title}
 
             {locationLabel ? (

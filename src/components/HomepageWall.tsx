@@ -18,6 +18,13 @@ import { WallSkeletonContent } from './homepage/HomePageWallSkeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { hpType, HP_WALL_CARD_WIDTH_CLASS, HP_CARD_META_CLASS, HP_CARD_TITLE_CLASS } from '../constants/homepageTypography';
 import {
+  HP_MOBILE_WALL_FIRST_SECTION_CLASS,
+  HP_MOBILE_WALL_OUTER_CLASS,
+  HP_MOBILE_WALL_SECTION_GAP_CLASS,
+  HP_MOBILE_WALL_SECTION_HEADER_CLASS,
+  HP_MOBILE_WALL_CARD_IMAGE_MB_CLASS,
+} from '../constants/homepageMobileRhythm';
+import {
   HP_CARD_FAVORITE_BTN_CLASS,
   HP_CARD_IMAGE_OVERLAY_CLASS,
   HP_CARD_LAYOUT_VARIANT,
@@ -68,6 +75,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   const handleCardClick = useCallback(() => {
     onOpenService(service.id);
   }, [onOpenService, service.id]);
+
+  const handleCardKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleCardClick();
+      }
+    },
+    [handleCardClick],
+  );
 
   const navigate = useNavigate();
 
@@ -250,13 +267,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
   }, [imageUrls.length]);
 
   return (
-    <a
-      href={`/service/${service.id}`}
-      onClick={(e) => {
-        e.preventDefault();
-        handleCardClick();
-      }}
-      className={`block flex-shrink-0 ${HP_WALL_CARD_WIDTH_CLASS}`}
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      aria-label={`Ver servicio: ${service.serviceTypeName}`}
+      className={`block flex-shrink-0 cursor-pointer ${HP_WALL_CARD_WIDTH_CLASS}`}
     >
       {/* Contenedor principal - Estructura exacta de Airbnb */}
       <motion.div
@@ -268,7 +285,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       >
         {/* Contenedor de imagen con todos los subdivs */}
         <div 
-          className="relative w-full overflow-hidden mb-1.5 md:mb-1 rounded-[20px] md:rounded-xl md:border md:border-line md:shadow-[0_4px_24px_rgba(15,23,42,0.06)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300"
+          className={`relative w-full overflow-hidden ${HP_MOBILE_WALL_CARD_IMAGE_MB_CLASS} rounded-[20px] md:rounded-xl md:border md:border-line md:shadow-[0_4px_24px_rgba(15,23,42,0.06)] md:group-hover:shadow-[0_10px_28px_rgba(15,23,42,0.13)] md:transition-shadow md:duration-300`}
           style={{
             aspectRatio: isMobile ? '1' : '4 / 3',
             borderRadius: isMobile ? '20px' : '16px',
@@ -335,7 +352,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                     <button
                       type="button"
                       onClick={handleFavoriteClick}
-                      className={`${HP_CARD_FAVORITE_BTN_CLASS} ${HP_CARD_OVERLAY_CONTROL_H_CLASS}`}
+                      className={HP_CARD_FAVORITE_BTN_CLASS}
                       aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                     >
                       <FavoriteHeart filled={isFavorite} size={24} variant="on-image" />
@@ -348,8 +365,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
               {hasMultipleImages && (
                 <>
                   <button
+                    type="button"
                     onClick={(e) => handleImageNavigation(e, 'prev')}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block"
+                    aria-label="Imagen anterior"
+                    className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:block"
                     style={{
                       padding: '6px',
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -358,8 +377,10 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                     <ChevronRight className="w-4 h-4 text-ink-strong rotate-180" />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => handleImageNavigation(e, 'next')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:block"
+                    aria-label="Imagen siguiente"
+                    className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:block"
                     style={{
                       padding: '6px',
                       backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -392,52 +413,48 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                               )}
 
                               {/* Avatar del experto - Esquina inferior izquierda */}
-                              {service.expert && (
-                                <div
-                                  className="absolute left-3 z-10 cursor-pointer"
-                                  style={{
-                                    width: isMobile ? '28px' : '32px',
-                                    height: isMobile ? '28px' : '32px',
-                                    bottom: isMobile ? '8px' : '12px',
-                                    borderRadius: '50%',
-                                    border: '2px solid white',
-                                    overflow: 'hidden',
-                                    backgroundColor: 'hsl(var(--line-soft))',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                                  }}
+                              {service.expert ? (
+                                <button
+                                  type="button"
+                                  className="absolute left-1.5 z-10 flex min-h-11 min-w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                                  style={{ bottom: isMobile ? '4px' : '8px' }}
+                                  aria-label={
+                                    service.expert.profilePictureUrl
+                                      ? `Ver foto de ${service.expert.user?.name || 'experto'}`
+                                      : `Experto: ${service.expert.user?.name || 'Sin nombre'}`
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    e.preventDefault();
                                     if (service.expert?.profilePictureUrl) {
                                       setIsExpertPhotoOpen(true);
                                     }
                                   }}
-                                  onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                  }}
                                 >
-                                  {service.expert.profilePictureUrl ? (
-                                    <img
-                                      src={service.expert.profilePictureUrl}
-                                      alt={service.expert.user?.name || 'Experto'}
-                                      className="w-full h-full object-cover"
-                                      loading="lazy"
-                                      decoding="async"
-                                    />
-                                  ) : (
-                                    <div
-                                      className="w-full h-full flex items-center justify-center bg-brand"
-                                      style={{
-                                        color: 'white',
-                                        fontSize: '14px',
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                                  <span
+                                    className="block overflow-hidden rounded-full border-2 border-white bg-line-soft shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+                                    style={{
+                                      width: isMobile ? '28px' : '32px',
+                                      height: isMobile ? '28px' : '32px',
+                                    }}
+                                  >
+                                    {service.expert.profilePictureUrl ? (
+                                      <img
+                                        src={service.expert.profilePictureUrl}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                      />
+                                    ) : (
+                                      <span
+                                        className="flex h-full w-full items-center justify-center bg-brand text-sm font-semibold text-white"
+                                      >
+                                        {service.expert.user?.name?.charAt(0)?.toUpperCase() || 'E'}
+                                      </span>
+                                    )}
+                                  </span>
+                                </button>
+                              ) : null}
                             </>
                           ) : (
                             <div className="w-full h-full bg-surface-tinted flex items-center justify-center">
@@ -512,7 +529,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
           </DialogContent>
         </Dialog>
       )}
-    </a>
+    </div>
   );
 }, (prevProps, nextProps) => {
   // ✅ Comparación personalizada: solo re-renderizar si cambian props relevantes
@@ -637,7 +654,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
       }}
     >
       {/* Header sección + flechas de navegación (desktop) */}
-      <div className="mb-2.5 md:mb-4 md:px-0">
+      <div className={HP_MOBILE_WALL_SECTION_HEADER_CLASS}>
         <div className="flex items-center justify-between gap-3 md:gap-4">
           <div className="min-w-0 flex-1 space-y-1">
             <h2 className="hp-section-title truncate">
@@ -650,7 +667,7 @@ const HorizontalScrollSection: React.FC<HorizontalScrollSectionProps> = React.me
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+          <div className="hidden shrink-0 items-center gap-1.5 md:flex md:gap-2">
             <button
               type="button"
               onClick={() => scroll('left')}
@@ -852,8 +869,8 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
               initial={animateOnMount ? 'hidden' : false}
               animate={animateOnMount ? 'visible' : undefined}
               className={[
-                index === 0 ? 'pt-1.5 min-[390px]:pt-2 md:pt-4' : '',
-                index > 0 ? 'mt-3 min-[390px]:mt-4 md:mt-10' : '',
+                index === 0 ? HP_MOBILE_WALL_FIRST_SECTION_CLASS : '',
+                index > 0 ? HP_MOBILE_WALL_SECTION_GAP_CLASS : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -927,7 +944,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
 
   if (showFullSkeleton) {
     return (
-      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+      <div className={HP_MOBILE_WALL_OUTER_CLASS}>
         <WallSkeletonContent />
       </div>
     );
@@ -941,7 +958,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     // el layout no colapse.
     console.error('❌ HomepageWall - Error:', error);
     return (
-      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+      <div className={HP_MOBILE_WALL_OUTER_CLASS}>
         <div
           role="alert"
           aria-live="polite"
@@ -971,7 +988,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
     // amable sin tono de error, encima del skeleton, para no romper el layout.
     console.warn('⚠️ HomepageWall - No hay secciones');
     return (
-      <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0">
+      <div className={HP_MOBILE_WALL_OUTER_CLASS}>
         <p className="mb-4 md:mb-5 text-sm text-ink-muted">
           Aún no hay servicios disponibles en esta categoría.
         </p>
@@ -983,7 +1000,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
   if (!hasVisibleServices) {
     if (fallbackLoading) {
       return (
-        <div className="w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1">
+        <div className={HP_MOBILE_WALL_OUTER_CLASS}>
           <WallSkeletonContent />
         </div>
       );
@@ -997,7 +1014,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           animate={{ opacity: 1 }}
           className="relative"
         >
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0">
+          <div className={HP_MOBILE_WALL_OUTER_CLASS}>
             <div className="rounded-2xl border border-line bg-white px-5 py-3 md:py-4 mb-5 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-sm text-ink-muted">
                 No hay expertos en esta categoría todavía. Mira estos de{' '}
@@ -1080,7 +1097,7 @@ export const HomepageWall: React.FC<HomepageWallProps> = React.memo(({
           </div>
         )}
         <div
-          className={`w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-1 md:pb-0 transition-opacity duration-200 ${
+          className={`${HP_MOBILE_WALL_OUTER_CLASS} transition-opacity duration-200 ${
             isFetching && sections ? 'opacity-70' : 'opacity-100'
           } ${!animateOnMount ? 'hp-wall-enter' : ''}`}
         >
