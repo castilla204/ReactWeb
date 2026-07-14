@@ -21,7 +21,6 @@ import {
   CHATBOT_FAB_HINT_CTA,
   CHATBOT_FAB_HINT_TITLE,
   CHATBOT_FAB_LABEL,
-  CHATBOT_FAB_MOBILE_TEASER,
   CHATBOT_FAB_SUBLABEL,
 } from '../content/faqContent';
 import { CHATBOT_HIDDEN_PREFIXES, ROUTES, TAB_BAR_PATHS } from '../constants/routes';
@@ -106,25 +105,6 @@ function SupportChatFabHintDesktop({ hintId, onOpen, onDismiss }: SupportChatFab
           <X className="h-4 w-4" strokeWidth={2.1} aria-hidden />
         </button>
       </div>
-    </div>
-  );
-}
-
-/** Móvil: teaser horizontal junto al FAB (patrón Intercom/Crisp — no card apilada). */
-function SupportChatFabMobileTeaser({ onOpen, onDismiss }: Pick<SupportChatFabHintProps, 'onOpen' | 'onDismiss'>) {
-  return (
-    <div className="support-chat-fab-hint support-chat-fab-mobile-teaser md:hidden">
-      <button type="button" onClick={onOpen} className="support-chat-fab-mobile-teaser__cta">
-        {CHATBOT_FAB_MOBILE_TEASER}
-      </button>
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="support-chat-fab-mobile-teaser__dismiss"
-        aria-label="Cerrar aviso del asistente"
-      >
-        <X className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-      </button>
     </div>
   );
 }
@@ -269,44 +249,38 @@ export const ChatbotFab: React.FC = () => {
           <SupportChatFabHintDesktop hintId={hintId} onOpen={openAssistant} onDismiss={dismissHint} />
         )}
 
-        <div className={cn(showHint && isMobile && 'support-chat-fab-mobile-group')}>
-          {showHint && isMobile && (
-            <SupportChatFabMobileTeaser onOpen={openAssistant} onDismiss={dismissHint} />
+        <button
+          ref={fabRef}
+          type="button"
+          onClick={toggleOpen}
+          tabIndex={isOpen ? -1 : 0}
+          className={cn(
+            'support-chat-fab-btn',
+            isMobile ? 'support-chat-fab-btn--mobile' : 'support-chat-fab-btn--dock',
+            !seen && 'support-chat-fab-pulse',
+          )}
+          aria-label="Abrir asistente de Inspecciono"
+          aria-expanded={isOpen}
+          aria-controls={PANEL_ID}
+        >
+          <span className="support-chat-fab-btn__icon">
+            <SupportChatAssistantIcon className="h-[22px] w-[22px] md:h-[17px] md:w-[17px]" />
+          </span>
+
+          {!isMobile && (
+            <span className="support-chat-fab-btn__copy">
+              <span className="support-chat-fab-btn__label">{CHATBOT_FAB_LABEL}</span>
+              <span className="support-chat-fab-btn__sublabel">{CHATBOT_FAB_SUBLABEL}</span>
+            </span>
           )}
 
-          <button
-            ref={fabRef}
-            type="button"
-            onClick={toggleOpen}
-            tabIndex={isOpen ? -1 : 0}
-            className={cn(
-              'support-chat-fab-btn',
-              isMobile ? 'support-chat-fab-btn--mobile' : 'support-chat-fab-btn--dock',
-              !seen && 'support-chat-fab-pulse',
-            )}
-            aria-label="Abrir asistente de Inspecciono"
-            aria-expanded={isOpen}
-            aria-controls={PANEL_ID}
-          >
-            <span className="support-chat-fab-btn__icon">
-              <SupportChatAssistantIcon className="h-[22px] w-[22px] md:h-[17px] md:w-[17px]" />
-            </span>
-
-            {!isMobile && (
-              <span className="support-chat-fab-btn__copy">
-                <span className="support-chat-fab-btn__label">{CHATBOT_FAB_LABEL}</span>
-                <span className="support-chat-fab-btn__sublabel">{CHATBOT_FAB_SUBLABEL}</span>
-              </span>
-            )}
-
-            {hasConversation && !isOpen && (
-              <>
-                <span className="support-chat-fab-conversation-dot" aria-hidden />
-                <span className="sr-only">Conversación en curso</span>
-              </>
-            )}
-          </button>
-        </div>
+          {hasConversation && !isOpen && (
+            <>
+              <span className="support-chat-fab-conversation-dot" aria-hidden />
+              <span className="sr-only">Conversación en curso</span>
+            </>
+          )}
+        </button>
       </div>
     </>
   );

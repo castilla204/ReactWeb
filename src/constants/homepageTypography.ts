@@ -47,9 +47,9 @@ export const HP_CARD_TITLE_CLASS =
 /** Carrusel de servicios en homepage — solo afecta a móvil (< md). */
 export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[184px]';
 
-/** Botón icono flotante (hero, modal categorías) */
+/** Botón icono flotante (hero, modal categorías) — touch target 44px */
 export const hpIconButtonClass =
-  'flex h-8 w-8 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white';
+  'flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 /** Subrayado decorativo bajo titulares (checkout / ¿Qué revisamos?) */
 export const HP_TITLE_UNDERLINE_GRADIENT =
@@ -653,7 +653,7 @@ export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 
 /** Padding superior de la sheet tras el solape del hero */
-export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-3';
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
 
 /** Aire bajo fila revisor */
 export const SD_MOBILE_HEADER_PB_CLASS = 'pb-0';
@@ -661,23 +661,45 @@ export const SD_MOBILE_HEADER_PB_CLASS = 'pb-0';
 /** Stack identidad móvil: título → host */
 export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-2';
 
-/** Bloque meta bajo el host (sin borde; el divisor va antes de tabs) */
+/** Fila host móvil: avatar + identidad + chat */
+export const SD_MOBILE_HOST_ROW_CLASS = 'flex items-start gap-2';
+
+/** Chat inline en fila host móvil */
+export const SD_MOBILE_HOST_CHAT_CLASS =
+  'h-9 shrink-0 self-start rounded-full px-3.5';
+
+/** Línea de confianza bajo nombre (revisor verificado) */
+export const SD_MOBILE_HOST_TRUST_CLASS =
+  'mt-1 truncate text-xs font-medium leading-4 text-brand';
+
+/** Bloque meta bajo el host (sin borde; la separación es espaciado + tarjeta credenciales) */
 export const SD_MOBILE_META_SECTION_CLASS = 'mt-3';
 
-/** Línea full-bleed entre host y tabs */
-export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'mt-2 border-t border-line';
+/** Bloque identidad (título + host) — gutter; border-t del carril tabs cierra el bloque */
+export const SD_MOBILE_IDENTITY_GUTTER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-4`;
+
+/** Zona tabs + panel — carril con border-t en CSS (.service-detail-page .sd-tablist-shell) */
+export const SD_MOBILE_TAB_REGION_CLASS = '';
+
+/** @deprecated Sin divisor horizontal — usar SD_MOBILE_TAB_REGION_CLASS */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = SD_MOBILE_TAB_REGION_CLASS;
 
 /** Contenedor tabs + panel (sin margen extra al final) */
 export const SD_MOBILE_SHEET_BOTTOM_CLASS = '';
+
+/** Carril scroll tabs móvil — borde superior full-bleed + padding vertical */
+export const SD_MOBILE_TABLIST_SHELL_CLASS =
+  'sd-tablist-shell border-t border-line pt-4 pb-2';
+export const SD_MOBILE_TABLIST_CLASS = 'sd-tablist';
 /** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
 export const SD_MOBILE_BOOKING_LABEL_CLASS =
   'text-xs font-medium leading-4 text-ink-muted';
 /** Hora en fila «Horario habitual» — secundaria respecto al label, no compite con los días */
 export const SD_MOBILE_AVAILABILITY_TIME_CLASS =
   'text-caption font-medium tabular-nums leading-4 text-ink-strong';
-export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-3 pb-4';
+export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-2 pb-4';
 /** Panel reseñas: menos aire inferior (el scroll pad ya reserva hueco para la barra fija). */
-export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-3 pb-2';
+export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-2 pb-2';
 
 /**
  * Escala tipográfica móvil — tokens DESIGN.md:
@@ -699,8 +721,12 @@ export const SD_MOBILE_SUBHEAD_CLASS =
   'text-sm font-semibold leading-5 text-ink-strong';
 export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
 
-/** Stack vertical dentro del panel «Acerca del servicio» */
-export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-3';
+/**
+ * Stack vertical del panel «Acerca del servicio».
+ * Usar gap (no space-y): en TW v4 space-y aplica margin con :where(0)
+ * y m-0 en hijos lo anula por completo.
+ */
+export const SD_MOBILE_INSET_STACK_CLASS = 'flex flex-col gap-4';
 
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
@@ -776,13 +802,17 @@ export const HP_SERVICE_CTA_CLASS =
 
 /** Pills de categoría — hero desktop. Activo en tinta (no brand): reserva azul para titular y CTA. */
 export const HP_DESKTOP_CATEGORY_TAB_BASE_CLASS =
-  'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+  'inline-flex h-10 min-h-10 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 export const HP_DESKTOP_CATEGORY_TAB_ACTIVE_CLASS =
   'bg-ink-strong font-semibold text-white hover:bg-ink-strong';
 
 export const HP_DESKTOP_CATEGORY_TAB_INACTIVE_CLASS =
   'border border-line bg-white text-ink-strong hover:bg-surface-tinted';
+
+/** Variante "Más" — borde discontinuo, sin confundir con selección activa */
+export const HP_DESKTOP_CATEGORY_TAB_HIGHLIGHT_CLASS =
+  'border border-dashed border-line bg-white text-ink-strong hover:bg-surface-tinted';
 
 export const hpCardText = {
   title: {

@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { HERO_BANNER_AVIF, HERO_BANNER_WEBP, MOBILE_HERO_BANNER_SVG } from '../constants/homepageHeroMap';
+import { HERO_BANNER_AVIF, HERO_BANNER_WEBP } from '../constants/homepageHeroMap';
 import { prefetchHomepageWall } from '../hooks/useHomepageWall';
 
 function isHomePathname(): boolean {
@@ -23,10 +23,6 @@ function preloadHeroImages(): void {
 
   addPreload(HERO_BANNER_AVIF, 'image/avif');
   addPreload(HERO_BANNER_WEBP, 'image/webp');
-
-  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
-    addPreload(MOBILE_HERO_BANNER_SVG, 'image/svg+xml');
-  }
 }
 
 function resolveBootstrapCountryCode(): string {

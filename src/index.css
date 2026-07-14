@@ -471,6 +471,51 @@
   display: none;
 }
 
+/* Homepage móvil — fade lateral en barra de categorías (más tabs a la derecha) */
+.hp-mobile-category-shell {
+  position: relative;
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+}
+
+.hp-mobile-category-shell::before,
+.hp-mobile-category-shell::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset-block: 0;
+  z-index: 1;
+  width: 1.5rem;
+  transition: opacity 0.2s ease-out;
+}
+
+.hp-mobile-category-shell::before {
+  left: 0;
+  background: linear-gradient(to right, hsl(var(--surface)) 45%, transparent);
+  opacity: 0;
+}
+
+.hp-mobile-category-shell::after {
+  right: 0;
+  background: linear-gradient(to left, hsl(var(--surface)) 45%, transparent);
+  opacity: 0.85;
+}
+
+.hp-mobile-category-shell[data-scroll-start='true']::before {
+  opacity: 0.75;
+}
+
+.hp-mobile-category-shell[data-scroll-end='true']::after {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-mobile-category-shell::before,
+  .hp-mobile-category-shell::after {
+    transition: none;
+  }
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -712,16 +757,8 @@
         @apply mb-0;
     }
 
-    .service-detail-page .sd-mobile-identity-stack {
-        @apply gap-2;
-    }
-
     .service-detail-page .sd-tablist {
         @apply mt-0;
-    }
-
-    .service-detail-page .sd-tab {
-        @apply py-3;
     }
 
     /* Hero móvil: carrusel mapa → fotos, altura fija ≤220px */
@@ -921,22 +958,6 @@
 
     .support-chat-fab-btn--mobile .support-chat-fab-btn__icon {
         @apply h-auto w-auto bg-transparent shadow-none;
-    }
-
-    .support-chat-fab-mobile-group {
-        @apply flex flex-row-reverse items-center gap-2.5;
-    }
-
-    .support-chat-fab-mobile-teaser {
-        @apply flex max-w-[calc(100vw-5.75rem)] items-center overflow-hidden rounded-full border border-line bg-surface pl-3.5 pr-1 shadow-[0_4px_20px_rgba(15,23,42,0.1)];
-    }
-
-    .support-chat-fab-mobile-teaser__cta {
-        @apply min-h-[44px] truncate py-2.5 text-left text-meta font-semibold leading-none text-ink-strong transition-colors active:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2;
-    }
-
-    .support-chat-fab-mobile-teaser__dismiss {
-        @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors active:bg-surface-tinted active:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2;
     }
 
     .support-chat-fab-btn--mobile .support-chat-fab-conversation-dot {
@@ -1587,37 +1608,112 @@
         @apply h-4 w-4 shrink-0 text-ink-soft;
     }
 
-    .sd-tab {
-        @apply relative flex min-h-11 min-w-0 flex-1 basis-0 touch-manipulation items-center justify-center gap-1.5 border-b-2 border-transparent px-1.5 py-3 text-center text-sm leading-5 text-ink-muted font-normal transition-[color,border-color] duration-150;
-        -webkit-tap-highlight-color: transparent;
+    /* Tabs móvil ficha — carril scroll alineado al gutter px-5 (1.25rem) del sheet */
+    .sd-tablist-shell {
+        @apply relative;
     }
 
-    .sd-tab:focus-visible {
-        @apply outline-none ring-2 ring-inset ring-brand/35;
+    .service-detail-page .sd-tablist-shell::before,
+    .service-detail-page .sd-tablist-shell::after {
+        content: '';
+        @apply pointer-events-none absolute inset-y-0 z-[1] w-5;
+        transition: opacity 0.25s ease;
     }
 
-    .sd-tab[data-active='true'] {
-        @apply border-brand font-semibold text-ink-strong;
+    .service-detail-page .sd-tablist-shell::before {
+        left: 0;
+        background: linear-gradient(to right, hsl(var(--background)) 30%, transparent);
+        opacity: 0;
     }
 
-    .sd-tab--flat[data-active='true'] {
-        @apply border-transparent font-semibold text-ink-strong;
+    .service-detail-page .sd-tablist-shell::after {
+        right: 0;
+        background: linear-gradient(to left, hsl(var(--background)) 30%, transparent);
+        opacity: 0.75;
     }
 
-    .sd-tab__label {
-        @apply min-w-0 text-pretty;
+    .service-detail-page .sd-tablist-shell[data-scroll-start='true']::before {
+        opacity: 0.75;
     }
 
-    .sd-tab__badge {
-        @apply inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-line px-1.5 text-badge font-semibold leading-none tabular-nums text-ink-muted;
-    }
-
-    .sd-tab[data-active='true'] .sd-tab__badge {
-        @apply bg-brand/12 text-brand;
+    .service-detail-page .sd-tablist-shell[data-scroll-end='true']::after {
+        opacity: 0;
     }
 
     .sd-tablist {
-        @apply flex w-full border-b border-line;
+        @apply flex w-full min-w-0 snap-x snap-mandatory items-center gap-2 overflow-x-auto border-b-0 py-0;
+        padding-inline: 1.25rem;
+        scrollbar-width: none;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scroll-padding-inline: 1.25rem;
+    }
+
+    .sd-tablist::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sd-tablist__spacer {
+        @apply h-px w-5 shrink-0 snap-none;
+    }
+
+    /* Tabs móvil ficha — pills solo texto, scroll horizontal */
+    .sd-tab {
+        @apply relative inline-flex h-8 shrink-0 snap-start touch-manipulation items-center gap-1 rounded-full border border-line bg-white px-4 text-caption font-normal leading-4 text-ink-muted transition-[background-color,border-color,color,box-shadow] duration-200 ease-out;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sd-tab:active {
+        @apply bg-surface-tinted;
+    }
+
+    .sd-tab:focus-visible {
+        @apply outline-none ring-2 ring-brand/25 ring-offset-2;
+    }
+
+    .sd-tab[data-active='true']:focus-visible {
+        @apply ring-2 ring-white ring-offset-2 ring-offset-brand;
+    }
+
+    .sd-tab[data-active='true'] {
+        @apply border-transparent bg-brand font-semibold text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)];
+    }
+
+    .sd-tab[data-active='true']:active {
+        @apply bg-brand-hover;
+    }
+
+    .sd-tab__label {
+        @apply min-w-0 whitespace-nowrap;
+    }
+
+    .sd-tab__badge {
+        @apply inline-flex min-w-4 shrink-0 items-center justify-center text-badge font-medium leading-none tabular-nums text-ink-muted;
+    }
+
+    .sd-tab[data-active='true'] .sd-tab__badge {
+        @apply font-semibold text-white;
+    }
+
+    .sd-tab-panel {
+        animation: sd-tab-panel-in 0.22s ease-out;
+    }
+
+    @keyframes sd-tab-panel-in {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sd-tab-panel {
+            animation: none;
+        }
     }
 
 }

@@ -50,7 +50,11 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({
 
     return (
         <div
-            className="fixed z-[60] inset-x-0 bottom-0 sm:inset-x-auto sm:left-6 sm:right-auto sm:bottom-6 sm:max-w-md"
+            className={[
+                    'fixed z-[60] inset-x-0',
+                    'bottom-[calc(65px+env(safe-area-inset-bottom,0px))]',
+                    'sm:inset-x-auto sm:left-6 sm:right-auto sm:bottom-6 sm:max-w-md',
+                ].join(' ')}
             data-testid="main-cookies-banner-container"
         >
             <section

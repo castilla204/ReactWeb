@@ -3,7 +3,7 @@ import { HP_LOADING_DIMS, HP_LOADING_LAYOUT } from './homeLoadingLayout';
 
 const LoadingCard: React.FC = () => (
   <div className={`shrink-0 ${HP_LOADING_LAYOUT.cardWidth}`}>
-    <div className="relative mb-1 w-full">
+    <div className={`relative ${HP_LOADING_LAYOUT.cardImageMb} w-full`}>
       <div
         className="aspect-square md:aspect-[4/3] w-full rounded-[20px] bg-surface-tinted md:rounded-xl motion-safe:animate-pulse"
         aria-hidden
@@ -13,10 +13,10 @@ const LoadingCard: React.FC = () => (
         aria-hidden
       />
     </div>
-    <div className="space-y-1" style={{ marginTop: 0 }} aria-hidden>
+    <div className="mt-0.5 space-y-0" aria-hidden>
       <div
         className="rounded-sm bg-line-soft"
-        style={{ height: HP_LOADING_DIMS.cardTitleH, marginBottom: 0 }}
+        style={{ minHeight: HP_LOADING_DIMS.cardTitleH, marginBottom: 0 }}
       />
       <div
         className="rounded-sm bg-surface-tinted w-[88%]"
@@ -39,7 +39,7 @@ const LoadingSection: React.FC<{ cardCount?: number }> = ({ cardCount = 6 }) => 
         aria-hidden
       />
       <div
-        className="mt-0.5 max-w-[52%] rounded-sm bg-line-soft"
+        className="mt-1 max-w-[52%] rounded-sm bg-line-soft"
         style={{ height: HP_LOADING_DIMS.sectionSubtitleH }}
         aria-hidden
       />
@@ -52,22 +52,30 @@ const LoadingSection: React.FC<{ cardCount?: number }> = ({ cardCount = 6 }) => 
   </div>
 );
 
-/**
- * Muro — misma caja que HomepageWall (2 secciones, cards 148px, header 1.125rem + subtitle).
- */
-export const HomeServicesLoading: React.FC = () => (
-  <div className={HP_LOADING_LAYOUT.wallOuter} role="status" aria-busy="true">
-    <span className="sr-only">Cargando servicios…</span>
+/** Contenido del muro sin wrapper outer — para uso dentro de HomepageWall (evita doble px-4). */
+export const WallSkeletonInner: React.FC = () => (
+  <>
     <div className={HP_LOADING_LAYOUT.sectionFirst}>
       <LoadingSection cardCount={6} />
     </div>
     <div className={HP_LOADING_LAYOUT.sectionNext}>
       <LoadingSection cardCount={6} />
     </div>
+  </>
+);
+
+/**
+ * Muro — misma caja que HomepageWall (2 secciones, cards 148px, header 1.125rem + subtitle).
+ * Incluye `wallOuter` para el fallback de Suspense en HomePage.
+ */
+export const HomeServicesLoading: React.FC = () => (
+  <div className={HP_LOADING_LAYOUT.wallOuter} role="status" aria-busy="true">
+    <span className="sr-only">Cargando servicios…</span>
+    <WallSkeletonInner />
   </div>
 );
 
-/** @deprecated alias */
-export const WallSkeletonContent = HomeServicesLoading;
+/** Skeleton interno del muro (sin padding outer duplicado). */
+export const WallSkeletonContent = WallSkeletonInner;
 
 export const HomePageWallSkeleton = HomeServicesLoading;

@@ -5,8 +5,8 @@ import { HP_SK } from './homePageSkeletonTokens';
 /** Altura compartida hero móvil — compacta para asomar la 1ª card al entrar. */
 export const MOBILE_HERO_MIN_H_CLASS = 'min-h-[112px] min-[390px]:min-h-[120px]';
 
-/** Proporción del banner SVG móvil (viewBox 1150×470). */
-export const MOBILE_HERO_SVG_ASPECT_CLASS = 'aspect-[1150/470] w-full';
+/** Proporción del banner móvil (2160×680). */
+export const MOBILE_HERO_SVG_ASPECT_CLASS = 'aspect-[2160/680] w-full';
 
 const HERO_PHOTO_SCRIMS = (
   <>

@@ -984,11 +984,12 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           cursor: grabbing !important;
         }
         .maplibregl-ctrl-attribution {
-          font-size: 9px !important;
+          font-size: 10px !important;
+          line-height: 12px !important;
           background: rgba(255,255,255,0.82) !important;
-          color: hsl(0 0% 65%) !important;
+          color: hsl(var(--ink-muted)) !important;
         }
-        .maplibregl-ctrl-attribution a { color: hsl(0 0% 42%) !important; }
+        .maplibregl-ctrl-attribution a { color: hsl(var(--ink)) !important; }
         .maplibregl-ctrl-group {
           border: none !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;

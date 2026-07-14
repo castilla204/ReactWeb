@@ -6,7 +6,6 @@ import {
   ChevronDown,
   ChevronRight,
   FolderTree,
-  Map,
   ChevronUp,
   Heart,
   User,
@@ -107,6 +106,14 @@ import {
   hpTitleUnderlineBarStyle,
   hpIconButtonClass,
 } from '../constants/homepageTypography';
+import {
+  DESKTOP_HERO_MAP_POSTER,
+  DESKTOP_HERO_MIN_HEIGHT_CLASS,
+} from '../constants/homepageHeroMap';
+import {
+  HP_MOBILE_HEADER_INSET_CLASS,
+  HP_MOBILE_SEARCH_PILL_HEIGHT_PX,
+} from '../constants/homepageMobileRhythm';
 
 const CATEGORIES = {
   VEHICULOS: 2,
@@ -567,19 +574,10 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   selectedServiceType = normalizedServiceTypes.find(st => st.id === serviceTypeId);
   selectedCategory = normalizedCategories.find(c => c.id === categoryId);
 
-  const mobilePillMeta = useMemo(() => {
-    const categoryByTab: Record<'coches' | 'motos' | 'inmobiliaria', string> = {
-      coches: 'Coches',
-      motos: 'Motos',
-      inmobiliaria: 'Inmobiliaria',
-    };
-    const categoryLabel =
-      (activeTab && activeTab !== 'drawer' ? categoryByTab[activeTab] : undefined) ||
-      selectedCategory?.name ||
-      'Todas las categorías';
-    const locationLabel = adUrl.trim() ? adUrl.trim() : 'Cualquier zona';
-    return { categoryLabel, locationLabel };
-  }, [activeTab, selectedCategory?.name, adUrl]);
+  const mobilePillSubtitle = useMemo(() => {
+    if (adUrl.trim()) return adUrl.trim();
+    return 'Zona o enlace del anuncio';
+  }, [adUrl]);
 
   // ✅ Leer parámetros de retorno desde SearchParameterForm y abrir modal automáticamente
   useEffect(() => {
@@ -863,7 +861,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         <Suspense
           fallback={
             <div
-              className="hidden md:block h-[400px] lg:h-[500px] xl:h-[520px] bg-surface-tinted animate-pulse"
+              className={`hidden md:block ${DESKTOP_HERO_MIN_HEIGHT_CLASS} bg-surface-tinted`}
+              style={{ background: DESKTOP_HERO_MAP_POSTER }}
               aria-hidden
             />
           }
@@ -878,19 +877,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
       {/* Mobile */}
       <header
-        className={`sticky top-0 z-50 md:hidden border-b border-line bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 transition-shadow duration-200 ${
-          mobileHeaderScrolled ? 'shadow-[0_1px_0_rgba(0,0,0,0.04),0_4px_16px_rgba(15,23,42,0.08)]' : ''
+        className={`sticky top-0 z-50 md:hidden border-b bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 transition-[border-color,box-shadow] duration-200 ${
+          mobileHeaderScrolled
+            ? 'border-line shadow-[0_1px_0_rgba(0,0,0,0.04),0_4px_16px_rgba(15,23,42,0.08)]'
+            : 'border-transparent'
         }`}
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="px-4 pt-3.5 pb-1.5">
-          <div className="relative">
-            {/* Halo/sombra con degradado azul→ámbar de marca, rodeando todo el botón */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-brand to-amber-500 opacity-50 blur-[12px]"
-              style={{ transform: 'translateY(2px)' }}
-            />
+        <div className={HP_MOBILE_HEADER_INSET_CLASS}>
           <div
             onClick={openMobileSearch}
             role="button"
@@ -901,130 +895,36 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                 openMobileSearch();
               }
             }}
-            aria-label={`Buscar revisión de ${mobilePillMeta.categoryLabel.toLowerCase()} en ${mobilePillMeta.locationLabel}`}
-            className="relative w-full bg-white border border-line rounded-full transition-all grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 cursor-pointer"
+            aria-label={
+              adUrl.trim()
+                ? `Abrir búsqueda. Anuncio: ${mobilePillSubtitle}`
+                : 'Abrir búsqueda. Indica zona o enlace del anuncio'
+            }
+            className="relative flex w-full cursor-pointer items-center gap-3 rounded-full border border-line bg-white px-4 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             style={{
-              height: '56px',
+              height: `${HP_MOBILE_SEARCH_PILL_HEIGHT_PX}px`,
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
             }}
           >
-            {/* Espaciador izquierdo — equilibra el botón mapa para centrar el texto */}
-            <div aria-hidden className="h-11 w-11 shrink-0" />
-
-            {/* Texto centrado ópticamente en la pill */}
-            <div className="flex min-w-0 flex-col items-center justify-center text-center">
+            <Search
+              className="h-5 w-5 shrink-0 text-ink-muted"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <div className="min-w-0 flex-1 text-left">
               <span
-                className="mb-0.5 max-w-[13.5rem] truncate min-[390px]:max-w-[15rem]"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  fontWeight: 500,
-                  fontFamily: HP_FONT,
-                  color: 'rgb(34, 34, 34)',
-                }}
+                className="block max-w-full truncate text-sm font-medium leading-[18px] text-ink-strong"
+                style={{ fontFamily: HP_FONT }}
               >
                 ¿Qué revisamos?
               </span>
-              <div
-                className="flex max-w-[13.5rem] min-[390px]:max-w-[15rem] items-center justify-center gap-1"
-                style={{
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  fontWeight: 400,
-                  fontFamily: HP_FONT,
-                  color: HP_COLOR.muted,
-                }}
+              <span
+                className="block max-w-full truncate text-xs leading-4 text-ink-muted"
+                style={{ fontFamily: HP_FONT }}
               >
-                <span className="truncate">{mobilePillMeta.categoryLabel}</span>
-                <span aria-hidden="true" className="shrink-0">·</span>
-                <span className="truncate">{mobilePillMeta.locationLabel}</span>
-              </div>
+                {mobilePillSubtitle}
+              </span>
             </div>
-
-            {/* Botón circular con ícono de mapa */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openMobileSearch();
-                }}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand transition-colors hover:bg-brand-hover cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                aria-label="Abrir búsqueda en mapa"
-              >
-                <Map className="h-5 w-5 text-white" strokeWidth={2.1} aria-hidden />
-              </button>
-            </div>
-          </div>
-          </div>
-        </div>
-
-        {/* Tabs Mobile — fila compacta centrada (estilo Airbnb) */}
-        <div className="w-full" role="tablist" aria-label="Categorías principales">
-          <div className="flex justify-center gap-3 min-[390px]:gap-4 px-2 pt-0 pb-1">
-            {(
-              [
-                {
-                  id: 'coches' as const,
-                  categoryId: CATEGORIES.COCHES,
-                  label: 'Coches',
-                  image: 'cochepng.png',
-                  alt: 'Coche',
-                  imgClass: '',
-                },
-                {
-                  id: 'motos' as const,
-                  categoryId: CATEGORIES.MOTOS,
-                  label: 'Motos',
-                  image: 'motopng.png',
-                  alt: 'Moto',
-                  // El PNG de moto es apaisado (512×317); con object-contain en la
-                  // caja cuadrada 56×56 renderiza ~35px de alto y "flota" más
-                  // pequeño que coche/casa. Un scale óptico lo iguala visualmente.
-                  imgClass: 'scale-[1.28]',
-                },
-                {
-                  id: 'inmobiliaria' as const,
-                  categoryId: CATEGORIES.INMOBILIARIA,
-                  label: 'Inmobiliaria',
-                  image: 'casapng.png',
-                  alt: 'Casa',
-                  imgClass: '',
-                },
-              ] as const
-            ).map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => handleTabClick(tab.id, tab.categoryId)}
-                  className={`flex w-[5.5rem] min-[390px]:w-[6rem] shrink-0 flex-col items-center border-b-2 bg-transparent py-0.5 cursor-pointer transition-[border-color,color,transform] active:scale-95 ${
-                    isActive ? 'border-brand' : 'border-transparent'
-                  }`}
-                >
-                  <img
-                    src={getImageWithCache(tab.image, imageCacheKey)}
-                    alt={tab.alt}
-                    className={`mb-0.5 h-14 w-14 min-[390px]:h-[3.75rem] min-[390px]:w-[3.75rem] object-contain ${tab.imgClass}`}
-                    width={56}
-                    height={56}
-                  />
-                  <span
-                    className={`max-w-full truncate text-center text-meta min-[390px]:text-body leading-tight`}
-                    style={{
-                      fontWeight: isActive ? 600 : 400,
-                      fontFamily: HP_FONT,
-                      color: isActive ? 'rgb(34, 34, 34)' : HP_COLOR.muted,
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </header>
@@ -1234,7 +1134,12 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     >
                       <div className={isMobile ? 'mx-auto max-w-md' : undefined}>
                         {categoriesLoading ? (
-                          <div className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}>
+                          <div
+                            role="status"
+                            aria-busy="true"
+                            className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}
+                          >
+                            <span className="sr-only">Cargando categorías…</span>
                             {[...Array(isMobile ? 6 : 4)].map((_, index) => (
                               <SileoSkeleton
                                 key={index}
@@ -1298,7 +1203,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                                         )}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <h3 className="text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
+                                        <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
                                           {category.name}
                                         </h3>
                                         {meta ? (
@@ -1447,7 +1352,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                         <div className="flex-1 overflow-y-auto px-4 py-4">
                           <div>
                             {categoriesLoading ? (
-                              <div className="space-y-2">
+                              <div role="status" aria-busy="true" className="space-y-2">
+                                <span className="sr-only">Cargando categorías…</span>
                                 {[...Array(4)].map((_, index) => (
                                   <SileoSkeleton key={index} className="h-20 w-20 rounded-xl" />
                                 ))}
@@ -1738,7 +1644,8 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
             }}
           >
             {categoriesLoading ? (
-              <div className="flex flex-col gap-2.5 py-2">
+              <div role="status" aria-busy="true" className="flex flex-col gap-2.5 py-2">
+                <span className="sr-only">Cargando categorías…</span>
                 {[...Array(4)].map((_, index) => (
                   <SileoSkeleton key={index} className="h-[100px] w-full rounded-[14px]" />
                 ))}
@@ -1808,7 +1715,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
+                              <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
                                 {category.name}
                               </h3>
                               {meta ? (

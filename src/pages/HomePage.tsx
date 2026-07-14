@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useLocation } from 'react-router-dom';
 import { HomepageMobileHero } from '../components/HomepageMobileHero';
+import { HomepageMobileCategoryTabs } from '../components/homepage/HomepageMobileCategoryTabs';
 import { HomePageShell } from '../components/homepage/HomePageShell';
 import { HomeServicesLoading } from '../components/homepage/HomePageWallSkeleton';
 import { HomeSearchBarLoading } from '../components/homepage/HomeSearchBarLoading';
@@ -96,7 +97,12 @@ const HomePage: React.FC = () => {
             <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
           </Suspense>
         }
-        hero={<HomepageMobileHero />}
+        hero={
+          <>
+            <HomepageMobileHero />
+            <HomepageMobileCategoryTabs activeCategoryId={searchFilters.categoryId} />
+          </>
+        }
         services={
           <Suspense fallback={<HomeServicesLoading />}>
             <HomepageWall

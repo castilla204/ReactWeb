@@ -16,9 +16,10 @@ interface HomePageShellProps {
 /**
  * Layout compartido home móvil + desktop.
  *
- * Móvil: scroll natural de página (patrón marketplace). Search/tabs sticky en
- * AirbnbSearchBar; hero scrollea away; solo las cards se desplazan con el gesto
- * vertical del documento — sin scroll anidado ni "cajón" interno.
+ * Móvil: scroll natural de página (patrón marketplace). Search sticky en
+ * AirbnbSearchBar; hero + tabs de categoría scrollean; cards en el muro.
+ * Sin min-h en móvil: evita hueco muerto sobre la tab bar cuando el contenido
+ * no llena el viewport.
  *
  * Desktop: flujo en bloque con sombra del panel de servicios.
  */
@@ -38,7 +39,7 @@ export const HomePageShell: React.FC<HomePageShellProps> = ({
       <div
         {...restRootProps}
         className={[
-          'min-h-[100dvh] bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))]',
+          'bg-white pb-[calc(65px+env(safe-area-inset-bottom,0px))]',
           'md:min-h-screen md:pb-0',
           rootClassName,
         ]

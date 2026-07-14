@@ -29,13 +29,15 @@ import { PreHireChat } from '../components/PreHireChat';
 import {
   SD_MOBILE_FOOTER_CTA_CLASS,
   SD_MOBILE_GUTTER_CLASS,
+  SD_MOBILE_IDENTITY_GUTTER_CLASS,
   SD_MOBILE_IDENTITY_STACK_CLASS,
   SD_MOBILE_INSET_STACK_CLASS,
   SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
-  SD_MOBILE_SHEET_BOTTOM_CLASS,
-  SD_MOBILE_SHEET_DIVIDER_CLASS,
   SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
+  SD_MOBILE_TAB_REGION_CLASS,
+  SD_MOBILE_TABLIST_CLASS,
+  SD_MOBILE_TABLIST_SHELL_CLASS,
   SD_MOBILE_TAB_PANEL_PT_CLASS,
   SD_MOBILE_TAB_PANEL_REVIEWS_CLASS,
   SD_PAGE_GRID_CLASS,
@@ -65,6 +67,7 @@ import { ServiceDetailExpertHostRow } from '../components/serviceDetail/ServiceD
 import InspectionReportPreview from '../components/serviceDetail/InspectionReportPreview';
 import { type InspectionConfig } from '../lib/inspectionTemplateConfig';
 import { getInspectionCatalog } from '../lib/inspectionCatalog';
+import ServiceDetailAvailabilityCalendar from '../components/serviceDetail/ServiceDetailAvailabilityCalendar';
 import { ServiceDetailMobilePhotoMapHero } from '../components/serviceDetail/ServiceDetailMobilePhotoMapHero';
 import { ServiceDetailMobileTopBar } from '../components/serviceDetail/ServiceDetailMobileTopBar';
 import { ServiceDetailPhotoLightbox } from '../components/serviceDetail/ServiceDetailPhotoLightbox';
@@ -381,7 +384,19 @@ export function ServiceReviewPage({
         return dayMap[day] || day.charAt(0);
     };
     
-    const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
+    const finalAvailability = finalService?.expert?.currentAvailability;
+
+    const [activeTab, setActiveTab] = useState<
+        'about' | 'deliverables' | 'reviews' | 'availability'
+    >('about');
+
+    const mobileTablistRef = useRef<HTMLDivElement>(null);
+    const mobileTablistShellRef = useRef<HTMLDivElement>(null);
+    const mobileAboutIntroRef = useRef<HTMLDivElement>(null);
+    const mobileDeliverablesRef = useRef<HTMLDivElement>(null);
+    const suppressMobileScrollSpyRef = useRef(false);
+    const activeMobileTabRef = useRef(activeTab);
+    activeMobileTabRef.current = activeTab;
 
     // Estado para "Mostrar más" en reviews
     const [expandedReviews, setExpandedReviews] = useState<Record<number, boolean>>({});
@@ -427,6 +442,37 @@ export function ServiceReviewPage({
         finalService?.categoryName ||
         (finalService as any)?.CategoryName ||
         'Servicio de inspección';
+
+    useEffect(() => {
+        const tablist = mobileTablistRef.current;
+        const shell = mobileTablistShellRef.current;
+        if (!tablist || !shell) return;
+
+        const syncScrollHints = () => {
+            const maxScroll = tablist.scrollWidth - tablist.clientWidth;
+            const atStart = tablist.scrollLeft <= 2;
+            const atEnd = maxScroll <= 2 || tablist.scrollLeft >= maxScroll - 2;
+            shell.dataset.scrollStart = atStart ? 'false' : 'true';
+            shell.dataset.scrollEnd = atEnd ? 'true' : 'false';
+        };
+
+        syncScrollHints();
+        const activeEl = tablist.querySelector<HTMLElement>('[data-active="true"]');
+        activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+        tablist.addEventListener('scroll', syncScrollHints, { passive: true });
+        const observer = typeof ResizeObserver !== 'undefined'
+            ? new ResizeObserver(syncScrollHints)
+            : null;
+        observer?.observe(tablist);
+        window.addEventListener('resize', syncScrollHints);
+
+        return () => {
+            tablist.removeEventListener('scroll', syncScrollHints);
+            observer?.disconnect();
+            window.removeEventListener('resize', syncScrollHints);
+        };
+    }, [activeTab]);
 
     useEffect(() => {
         const hero = mobileHeroRef.current;
@@ -503,6 +549,138 @@ export function ServiceReviewPage({
     const inspectionExtraDeliverables = buildDeliverableCatalogCards(true);
     // Categorías sin informe: lista completa con su estado de selección.
     const allDeliverablesForList = buildDeliverableCatalogCards(false);
+    const hasMobileDeliverablesSection =
+        showInspectionReport || visibleDeliverableTypes.length > 0;
+
+    const mobileTabOrder = useMemo(
+        () =>
+            hasMobileDeliverablesSection
+                ? (['about', 'deliverables', 'reviews', 'availability'] as const)
+                : (['about', 'reviews', 'availability'] as const),
+        [hasMobileDeliverablesSection],
+    );
+
+    const MOBILE_TAB_DOM_IDS = {
+        about: 'sd-tab-about',
+        deliverables: 'sd-tab-deliverables',
+        reviews: 'sd-tab-reviews',
+        availability: 'sd-tab-availability',
+    } as const;
+
+    const runWithScrollSpySuppressed = useCallback((action: () => void, ms = 700) => {
+        suppressMobileScrollSpyRef.current = true;
+        action();
+        window.setTimeout(() => {
+            suppressMobileScrollSpyRef.current = false;
+        }, ms);
+    }, []);
+
+    const focusMobileTab = useCallback((tabId: keyof typeof MOBILE_TAB_DOM_IDS) => {
+        requestAnimationFrame(() => {
+            document.getElementById(MOBILE_TAB_DOM_IDS[tabId])?.focus();
+        });
+    }, []);
+
+    const handleMobileAboutTabClick = useCallback(() => {
+        runWithScrollSpySuppressed(() => {
+            setActiveTab('about');
+            mobileAboutIntroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusMobileTab('about');
+        });
+    }, [focusMobileTab, runWithScrollSpySuppressed]);
+
+    const handleMobileDeliverablesTabClick = useCallback(() => {
+        runWithScrollSpySuppressed(() => {
+            setActiveTab('deliverables');
+            mobileDeliverablesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusMobileTab('deliverables');
+        });
+    }, [focusMobileTab, runWithScrollSpySuppressed]);
+
+    const handleMobileTabKeyDown = useCallback(
+        (event: React.KeyboardEvent<HTMLDivElement>) => {
+            const currentIndex = mobileTabOrder.indexOf(
+                activeTab as (typeof mobileTabOrder)[number],
+            );
+            if (currentIndex === -1) return;
+
+            let nextIndex = currentIndex;
+            switch (event.key) {
+                case 'ArrowRight':
+                    nextIndex = (currentIndex + 1) % mobileTabOrder.length;
+                    break;
+                case 'ArrowLeft':
+                    nextIndex =
+                        (currentIndex - 1 + mobileTabOrder.length) % mobileTabOrder.length;
+                    break;
+                case 'Home':
+                    nextIndex = 0;
+                    break;
+                case 'End':
+                    nextIndex = mobileTabOrder.length - 1;
+                    break;
+                default:
+                    return;
+            }
+
+            event.preventDefault();
+            const nextTab = mobileTabOrder[nextIndex];
+            if (nextTab === 'about') {
+                handleMobileAboutTabClick();
+            } else if (nextTab === 'deliverables') {
+                handleMobileDeliverablesTabClick();
+            } else {
+                setActiveTab(nextTab);
+                focusMobileTab(nextTab);
+            }
+        },
+        [
+            activeTab,
+            focusMobileTab,
+            handleMobileAboutTabClick,
+            handleMobileDeliverablesTabClick,
+            mobileTabOrder,
+        ],
+    );
+
+    useEffect(() => {
+        if (!hasMobileDeliverablesSection) return;
+        if (activeTab !== 'about' && activeTab !== 'deliverables') return;
+
+        const section = mobileDeliverablesRef.current;
+        if (!section) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (suppressMobileScrollSpyRef.current) return;
+                const tab = activeMobileTabRef.current;
+                if (tab === 'reviews' || tab === 'availability') return;
+
+                if (entry.isIntersecting) {
+                    setActiveTab((current) =>
+                        current === 'reviews' || current === 'availability'
+                            ? current
+                            : 'deliverables',
+                    );
+                } else if (entry.boundingClientRect.top > 0) {
+                    setActiveTab((current) =>
+                        current === 'reviews' || current === 'availability' ? current : 'about',
+                    );
+                }
+            },
+            {
+                root: null,
+                threshold: [0, 0.12],
+                rootMargin: '-96px 0px -55% 0px',
+            },
+        );
+
+        observer.observe(section);
+        return () => observer.disconnect();
+    }, [hasMobileDeliverablesSection, activeTab]);
+
+    const isMobileAboutPanelVisible =
+        activeTab === 'about' || activeTab === 'deliverables';
 
     // 🛡️ Round 10 — P-B FIX: delegado a helper central NaN-safe (formatPriceNumber).
     // Antes: inline con minFractionDigits=0 inconsistente con CheckoutPage (2). Ahora ambas
@@ -652,7 +830,7 @@ export function ServiceReviewPage({
                     <div
                         className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-xl bg-white shadow-[0_-1px_0_hsl(var(--line))] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
                     >
-                        <div className={SD_MOBILE_GUTTER_CLASS}>
+                        <div className={SD_MOBILE_IDENTITY_GUTTER_CLASS}>
                             <section
                                 className={`sd-mobile-identity-stack ${SD_MOBILE_IDENTITY_STACK_CLASS}`}
                             >
@@ -693,85 +871,140 @@ export function ServiceReviewPage({
                             ) : null}
                         </div>
 
-                        <div className={`${SD_MOBILE_SHEET_BOTTOM_CLASS} ${SD_MOBILE_SHEET_DIVIDER_CLASS}`}>
-                            <div
-                                className={`sd-tablist w-full ${SD_MOBILE_GUTTER_CLASS}`}
-                                role="tablist"
-                                aria-label="Información del servicio"
-                            >
-                            <button
-                                type="button"
-                                role="tab"
-                                id="sd-tab-about"
-                                aria-controls="sd-panel-about"
-                                aria-selected={activeTab === 'about'}
-                                data-active={activeTab === 'about' ? 'true' : undefined}
-                                onClick={() => setActiveTab('about')}
-                                className="sd-tab"
-                            >
-                                <span className="sd-tab__label">Acerca del servicio</span>
-                            </button>
-                            <button
-                                type="button"
-                                role="tab"
-                                id="sd-tab-reviews"
-                                aria-controls="sd-panel-reviews"
-                                aria-selected={activeTab === 'reviews'}
-                                aria-label={
-                                    finalReviews.length > 0
-                                        ? `Reseñas, ${finalReviews.length}`
-                                        : 'Reseñas'
-                                }
-                                data-active={activeTab === 'reviews' ? 'true' : undefined}
-                                onClick={() => setActiveTab('reviews')}
-                                className="sd-tab"
-                            >
-                                <span className="sd-tab__label">Reseñas</span>
-                                {finalReviews.length > 0 ? (
-                                    <span className="sd-tab__badge" aria-hidden>
-                                        {finalReviews.length}
-                                    </span>
-                                ) : null}
-                            </button>
+                        <section className={SD_MOBILE_TAB_REGION_CLASS} aria-label="Detalle del servicio">
+                            <div ref={mobileTablistShellRef} className={SD_MOBILE_TABLIST_SHELL_CLASS}>
+                                <div
+                                    ref={mobileTablistRef}
+                                    className={SD_MOBILE_TABLIST_CLASS}
+                                    role="tablist"
+                                    aria-label="Información del servicio"
+                                    onKeyDown={handleMobileTabKeyDown}
+                                >
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        id="sd-tab-about"
+                                        aria-controls="sd-panel-about"
+                                        aria-selected={activeTab === 'about'}
+                                        aria-label="Acerca del servicio"
+                                        tabIndex={activeTab === 'about' ? 0 : -1}
+                                        data-active={activeTab === 'about' ? 'true' : undefined}
+                                        onClick={handleMobileAboutTabClick}
+                                        className="sd-tab"
+                                    >
+                                        <span className="sd-tab__label">Servicio</span>
+                                    </button>
+                                    {hasMobileDeliverablesSection ? (
+                                        <button
+                                            type="button"
+                                            role="tab"
+                                            id="sd-tab-deliverables"
+                                            aria-controls="sd-panel-about"
+                                            aria-selected={activeTab === 'deliverables'}
+                                            aria-label="Qué entregará"
+                                            tabIndex={activeTab === 'deliverables' ? 0 : -1}
+                                            data-active={
+                                                activeTab === 'deliverables' ? 'true' : undefined
+                                            }
+                                            onClick={handleMobileDeliverablesTabClick}
+                                            className="sd-tab"
+                                        >
+                                            <span className="sd-tab__label">Entregables</span>
+                                        </button>
+                                    ) : null}
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        id="sd-tab-reviews"
+                                        aria-controls="sd-panel-reviews"
+                                        aria-selected={activeTab === 'reviews'}
+                                        aria-label={
+                                            finalReviews.length > 0
+                                                ? `Reseñas, ${finalReviews.length}`
+                                                : 'Reseñas'
+                                        }
+                                        tabIndex={activeTab === 'reviews' ? 0 : -1}
+                                        data-active={activeTab === 'reviews' ? 'true' : undefined}
+                                        onClick={() => setActiveTab('reviews')}
+                                        className="sd-tab"
+                                    >
+                                        <span className="sd-tab__label">Reseñas</span>
+                                        {finalReviews.length > 0 ? (
+                                            <span className="sd-tab__badge" aria-hidden>
+                                                {finalReviews.length}
+                                            </span>
+                                        ) : null}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        id="sd-tab-availability"
+                                        aria-controls="sd-panel-availability"
+                                        aria-selected={activeTab === 'availability'}
+                                        aria-label="Disponibilidad"
+                                        tabIndex={activeTab === 'availability' ? 0 : -1}
+                                        data-active={activeTab === 'availability' ? 'true' : undefined}
+                                        onClick={() => setActiveTab('availability')}
+                                        className="sd-tab"
+                                    >
+                                        <span className="sd-tab__label">Agenda</span>
+                                    </button>
+                                    <span className="sd-tablist__spacer" aria-hidden />
+                                </div>
                             </div>
 
-                            {activeTab === 'about' && (
+                            {isMobileAboutPanelVisible && (
                                 <div
                                     id="sd-panel-about"
                                     role="tabpanel"
-                                    aria-labelledby="sd-tab-about"
-                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_INSET_STACK_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
+                                    aria-labelledby={
+                                        activeTab === 'deliverables'
+                                            ? 'sd-tab-deliverables'
+                                            : 'sd-tab-about'
+                                    }
+                                    className={`sd-tab-panel ${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_INSET_STACK_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
                                 >
-                                    {displayMainDescription ? (
-                                        <p className="sd-body whitespace-pre-line">
-                                            {displayMainDescription}
-                                        </p>
-                                    ) : null}
-                                    {showInspectionReport ? (
-                                        <>
-                                            <h2 className="sd-section-label mb-2">Qué entregará</h2>
-                                            <div className="mt-2">
-                                                <InspectionReportPreview catalog={inspectionCatalog!} config={inspectionConfig} />
-                                            </div>
-                                            {inspectionExtraDeliverables.length > 0 ? (
-                                                <div className="mt-2">
-                                                    <ServiceDetailDeliverablesGuide
-                                                        items={inspectionExtraDeliverables}
-                                                        variant="inline"
-                                                        presentation="cover"
-                                                        showHeading={false}
+                                    <div ref={mobileAboutIntroRef}>
+                                        {displayMainDescription ? (
+                                            <p className="sd-body m-0 whitespace-pre-line">
+                                                {displayMainDescription}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    {hasMobileDeliverablesSection ? (
+                                        <div
+                                            ref={mobileDeliverablesRef}
+                                            id="sd-section-deliverables"
+                                            className={`${SD_MOBILE_INSET_STACK_CLASS} scroll-mt-24`}
+                                        >
+                                            {showInspectionReport ? (
+                                                <>
+                                                    <h2 className="sd-section-label m-0">
+                                                        Qué entregará
+                                                    </h2>
+                                                    <InspectionReportPreview
+                                                        catalog={inspectionCatalog!}
+                                                        config={inspectionConfig}
                                                     />
-                                                </div>
-                                            ) : null}
-                                        </>
-                                    ) : visibleDeliverableTypes.length > 0 ? (
-                                        <ServiceDetailDeliverablesGuide
-                                            items={allDeliverablesForList}
-                                            variant="inline"
-                                            presentation="list"
-                                            showHeading
-                                            showUnselected
-                                        />
+                                                    {inspectionExtraDeliverables.length > 0 ? (
+                                                        <ServiceDetailDeliverablesGuide
+                                                            items={inspectionExtraDeliverables}
+                                                            variant="inline"
+                                                            presentation="cover"
+                                                            showHeading={false}
+                                                        />
+                                                    ) : null}
+                                                </>
+                                            ) : (
+                                                <ServiceDetailDeliverablesGuide
+                                                    items={allDeliverablesForList}
+                                                    variant="inline"
+                                                    presentation="list"
+                                                    showHeading
+                                                    showUnselected
+                                                />
+                                            )}
+                                        </div>
                                     ) : null}
                                 </div>
                             )}
@@ -781,7 +1014,7 @@ export function ServiceReviewPage({
                                     id="sd-panel-reviews"
                                     role="tabpanel"
                                     aria-labelledby="sd-tab-reviews"
-                                    className={`${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_REVIEWS_CLASS}`}
+                                    className={`sd-tab-panel ${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_REVIEWS_CLASS}`}
                                 >
                                     <ServiceDetailReviewsPreview
                                         variant="mobile"
@@ -793,7 +1026,27 @@ export function ServiceReviewPage({
                                     />
                                 </div>
                             )}
-                        </div>
+
+                            {activeTab === 'availability' && (
+                                <div
+                                    id="sd-panel-availability"
+                                    role="tabpanel"
+                                    aria-labelledby="sd-tab-availability"
+                                    className={`sd-tab-panel ${SD_MOBILE_GUTTER_CLASS} ${SD_MOBILE_TAB_PANEL_PT_CLASS}`}
+                                >
+                                    <ServiceDetailAvailabilityCalendar
+                                        serviceId={serviceId}
+                                        availability={finalAvailability}
+                                        timezone={finalService?.expert?.timezone}
+                                        isOnVacation={finalService?.expert?.isOnVacation}
+                                        showHeading={false}
+                                        compact
+                                        embedded
+                                        showFootnote
+                                    />
+                                </div>
+                            )}
+                        </section>
                     </div>
             </div>
 

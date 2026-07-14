@@ -1,8 +1,14 @@
 /** Línea de confianza escrow — homepage y componentes de confianza. */
 export const ESCROW_TRUST_TAGLINE = 'No pagamos al experto hasta que tú confirmes';
 
-/** Primera línea del hero móvil — entregable + precio. */
+/** Primera línea del hero móvil — entregable + precio (SEO / lectores de pantalla). */
 export const ESCROW_HERO_MOBILE_LEAD = 'Informe con fotos y vídeo · Precio fijo, sin sorpresas';
+
+/** Subtítulo visible en la tarjeta hero móvil — una línea corta. */
+export const MOBILE_HERO_CARD_SUBLINE = 'Informe con fotos · Precio fijo';
+
+/** Pill del hero móvil — proximidad / búsqueda local (complementa la barra de mapa). */
+export const MOBILE_HERO_LOCATION_BADGE = 'Expertos cerca de ti';
 
 /** Chip / pill — titular corto (cabecera del chupachups). */
 export const ESCROW_TRUST_CHIP_HEADLINE = 'Compra protegida';
