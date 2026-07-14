@@ -81,6 +81,37 @@
   animation: chat-message-in 0.28s ease-out both;
 }
 
+@keyframes chat-empty-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chat-empty-enter {
+  animation: chat-empty-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chat-suggestion-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chat-suggestion-enter {
+  animation: chat-suggestion-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 80ms);
+}
+
 
 /*
  * Asistente — entrada del panel. Radix trae `data-[state=open]:animate-in
@@ -117,6 +148,19 @@
   animation: support-chat-in-right 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes support-chat-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
+  animation: support-chat-overlay-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chat-message-enter {
     animation: none;
@@ -124,10 +168,13 @@
 
   .support-chat-in-up,
   .support-chat-in-right,
+  body[data-drawer-open='chatbot'] [data-radix-dialog-overlay],
   .support-chat-fab-enter,
   .support-chat-fab-hint,
   .support-chat-fab-pulse.support-chat-fab-btn--dock,
   .support-chat-fab-pulse.support-chat-fab-btn--mobile,
+  .chat-suggestion-enter,
+  .chat-empty-enter,
   .chat-typing-dot,
   .expert-sparkle-marker,
   .expert-sparkle-marker * {
@@ -164,7 +211,7 @@
 
 .support-chat-fab-hint {
   animation: support-chat-fab-hint-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: 720ms;
+  animation-delay: 280ms;
 }
 
 @keyframes support-chat-fab-pulse {
@@ -801,7 +848,8 @@
     }
 
     .sd-mobile-hero-indicator-dots {
-        @apply pointer-events-none absolute bottom-2.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5;
+        @apply pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5;
+        bottom: var(--sd-mobile-hero-map-expand-bottom, 3.5rem);
     }
 
     .sd-mobile-hero-indicator-dot {
@@ -964,7 +1012,7 @@
         @apply h-11 w-11;
     }
 
-    /* Móvil: FAB circular brand (Material / Intercom) — alcance del pulgar, 56px */
+    /* Móvil: FAB circular brand — alcance del pulgar, 56px */
     .support-chat-fab-btn--mobile {
         @apply h-14 w-14 shrink-0 items-center justify-center gap-0 rounded-full border-0 bg-brand p-0 text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] active:bg-brand-hover;
     }
@@ -986,7 +1034,7 @@
     }
 
     .support-chat-fab-hint-card {
-        @apply relative w-[min(19rem,calc(100vw-2.5rem))] rounded-2xl border border-line bg-surface p-4 shadow-[0_8px_32px_rgba(15,23,42,0.12)] md:p-5;
+        @apply relative w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-line bg-surface p-4 shadow-[0_8px_32px_rgba(15,23,42,0.12)] md:p-5;
     }
 
     .support-chat-fab-shell {
@@ -1070,7 +1118,7 @@
 
     /* Portadas entregables — sello azul mínimo sobre papel tintado */
     .service-detail-page .sd-deliverable-cover-list {
-        @apply m-0 flex list-none flex-col gap-3 p-0;
+        @apply m-0 flex list-none flex-col gap-4 p-0;
     }
 
     .service-detail-page .sd-deliverable-cover {
@@ -1663,7 +1711,7 @@
 
     /* Tabs móvil ficha — carril scroll alineado al gutter px-5 (1.25rem) del sheet */
     .sd-tablist-shell {
-        @apply relative;
+        @apply relative overflow-visible;
     }
 
     .service-detail-page .sd-tablist-shell::before,
@@ -1694,7 +1742,9 @@
     }
 
     .sd-tablist {
-        @apply flex w-full min-w-0 snap-x snap-mandatory items-center gap-2 overflow-x-auto border-b-0 py-0;
+        @apply flex w-full min-w-0 snap-x snap-mandatory items-end gap-2 overflow-x-auto border-b-0 pb-0;
+        /* Reserva vertical para burbujas sd-tab__badge (no recortar con overflow-x) */
+        padding-top: 0.75rem;
         padding-inline: 1.25rem;
         scrollbar-width: none;
         overscroll-behavior-x: contain;
@@ -1740,12 +1790,17 @@
         @apply min-w-0 whitespace-nowrap;
     }
 
+    /* Burbuja tipo notificación — esquina sup. dcha. del pill */
+    .sd-tab--counted {
+        @apply pr-3.5;
+    }
+
     .sd-tab__badge {
-        @apply inline-flex min-w-4 shrink-0 items-center justify-center text-badge font-medium leading-none tabular-nums text-ink-muted;
+        @apply absolute right-0 top-0 z-[2] flex h-[1.125rem] min-w-[1.125rem] -translate-y-1/2 translate-x-1/4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold leading-none tabular-nums text-white ring-2 ring-white;
     }
 
     .sd-tab[data-active='true'] .sd-tab__badge {
-        @apply font-semibold text-white;
+        @apply bg-white text-brand ring-brand;
     }
 
     .sd-tab-panel {
@@ -2072,6 +2127,38 @@ input, textarea {
         animation: coordination-radio-settle 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
+    /* Header wizard móvil: ola ink-strong; el main arranca bajo el header (sin margen). */
+    .checkout-wizard-header--wave {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .checkout-wizard-header-wave {
+        pointer-events: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -16px;
+        z-index: 1;
+        height: 22px;
+        width: 100%;
+        color: hsl(var(--ink-strong));
+    }
+
+    /* Selector de camino checkout: preview de pasos al cambiar opción. */
+    @keyframes coordination-path-preview-in {
+        from {
+            opacity: 0.65;
+            transform: translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .coordination-path-preview {
+        animation: coordination-path-preview-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
     /* Agenda del experto: los chips de hora "entran" en cascada corta al cargar un
        día (ritmo de lista, no coreografía de carga). `backwards` para no pisar el
        hover/active del chip; el índice va capado en el JSX (~12) para acotar el
@@ -2167,291 +2254,40 @@ input, textarea {
         animation-delay: calc(180ms + var(--di, 0) * 40ms);
     }
 
-    /* Wizard móvil — barra de pasos: frontera viva + chispas en el paso activo. */
+    /* Wizard móvil — barra de pasos: fill plano al avanzar. */
     @keyframes checkout-stepper-ignite {
         from {
-            transform: scaleX(0);
-            opacity: 0.55;
+            transform: scaleX(0.35);
+            opacity: 0.7;
         }
         to {
             transform: scaleX(1);
             opacity: 1;
         }
     }
-    @keyframes checkout-stepper-shimmer {
-        0% {
-            transform: translateX(-120%);
-            opacity: 0;
-        }
-        18% {
-            opacity: 0.95;
-        }
-        100% {
-            transform: translateX(120%);
-            opacity: 0;
-        }
-    }
-    @keyframes checkout-stepper-frontier-pulse {
-        0%, 100% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 0.95;
-            box-shadow:
-                0 0 0 0 hsl(var(--brand) / 0.5),
-                0 0 10px 2px hsl(var(--brand) / 0.45),
-                0 0 0 1px hsl(0 0% 100% / 0.55);
-        }
-        50% {
-            transform: translate(-50%, -50%) scale(1.28);
-            opacity: 1;
-            box-shadow:
-                0 0 0 4px hsl(var(--brand) / 0.14),
-                0 0 16px 5px hsl(var(--brand) / 0.55),
-                0 0 0 2px hsl(0 0% 100% / 0.75);
-        }
-    }
-    @keyframes checkout-stepper-halo-ring {
-        0% {
-            transform: translate(-50%, -50%) scale(0.55);
-            opacity: 0.7;
-        }
-        100% {
-            transform: translate(-50%, -50%) scale(2.6);
-            opacity: 0;
-        }
-    }
-    @keyframes checkout-stepper-burst-flare {
-        0% {
-            transform: translate(-50%, -50%) scale(0.4);
-            opacity: 0.95;
-        }
-        100% {
-            transform: translate(-50%, -50%) scale(3.2);
-            opacity: 0;
-        }
-    }
-    @keyframes checkout-stepper-spark-pop {
-        0% {
-            transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
-            opacity: 0;
-        }
-        12% {
-            opacity: 1;
-        }
-        35% {
-            transform: translate(
-                    calc(-50% + var(--spark-x, 0px) * 0.45),
-                    calc(-50% + var(--spark-y, 0px) * 0.45)
-                )
-                scale(1.15)
-                rotate(var(--spark-rot, 0deg));
-            opacity: 1;
-        }
-        100% {
-            transform: translate(calc(-50% + var(--spark-x, 0px)), calc(-50% + var(--spark-y, 0px)))
-                scale(0.1)
-                rotate(calc(var(--spark-rot, 0deg) + 18deg));
-            opacity: 0;
-        }
-    }
-    @keyframes checkout-stepper-ember-drift {
-        0% {
-            transform: translate(-50%, -50%) scale(0.5);
-            opacity: 0;
-        }
-        20% {
-            opacity: 0.9;
-        }
-        100% {
-            transform: translate(calc(-50% + var(--ember-x, 0px)), calc(-50% + var(--ember-y, 0px)))
-                scale(0.05);
-            opacity: 0;
-        }
-    }
 
     .checkout-stepper-segment {
-        overflow: visible;
-    }
-    .checkout-stepper-segment--active {
-        filter: drop-shadow(0 0 5px hsl(var(--brand) / 0.28));
+        overflow: hidden;
     }
     .checkout-stepper-fill {
         transform-origin: left center;
     }
-    .checkout-stepper-fill--active {
-        overflow: hidden;
-        box-shadow: 0 0 10px hsl(var(--brand) / 0.35);
-    }
     .checkout-stepper-fill--ignite {
-        animation: checkout-stepper-ignite 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .checkout-stepper-fill--active::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        background: linear-gradient(
-            90deg,
-            transparent 0%,
-            hsl(0 0% 100% / 0.55) 48%,
-            transparent 100%
-        );
-        animation: checkout-stepper-shimmer 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-        pointer-events: none;
-    }
-    .checkout-stepper-frontier {
-        position: absolute;
-        top: 50%;
-        right: 0;
-        z-index: 2;
-        width: 0;
-        height: 0;
-    }
-    .checkout-stepper-frontier-halo {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 10px;
-        height: 10px;
-        border-radius: 9999px;
-        border: 1.5px solid hsl(var(--brand) / 0.55);
-        animation: checkout-stepper-halo-ring 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    }
-    .checkout-stepper-frontier-halo--b {
-        animation-delay: 0.8s;
-    }
-    .checkout-stepper-frontier-core {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 7px;
-        height: 7px;
-        border-radius: 9999px;
-        background: radial-gradient(
-            circle at 35% 35%,
-            hsl(0 0% 100% / 0.95) 0%,
-            hsl(var(--brand)) 42%,
-            hsl(var(--brand-deep)) 100%
-        );
-        transform: translate(-50%, -50%);
-        animation: checkout-stepper-frontier-pulse 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    }
-    .checkout-stepper-frontier-flare {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 14px;
-        height: 14px;
-        border-radius: 9999px;
-        background: radial-gradient(
-            circle,
-            hsl(0 0% 100% / 0.9) 0%,
-            hsl(var(--brand) / 0.55) 35%,
-            transparent 72%
-        );
-        transform: translate(-50%, -50%) scale(0);
-        opacity: 0;
-        pointer-events: none;
-    }
-    .checkout-stepper-frontier--burst .checkout-stepper-frontier-flare {
-        animation: checkout-stepper-burst-flare 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .checkout-stepper-spark {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 4px;
-        border-radius: 9999px;
-        background: radial-gradient(circle, hsl(0 0% 100%) 0%, hsl(var(--brand)) 70%);
-        box-shadow:
-            0 0 5px 1px hsl(var(--brand) / 0.7),
-            0 0 0 1px hsl(0 0% 100% / 0.4);
-        transform: translate(-50%, -50%);
-        animation: checkout-stepper-spark-pop 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    }
-    .checkout-stepper-spark--1 {
-        --spark-x: 9px;
-        --spark-y: -7px;
-        --spark-rot: -12deg;
-        animation-delay: 0s;
-    }
-    .checkout-stepper-spark--2 {
-        --spark-x: 12px;
-        --spark-y: -2px;
-        --spark-rot: 8deg;
-        animation-delay: 0.18s;
-    }
-    .checkout-stepper-spark--3 {
-        --spark-x: 10px;
-        --spark-y: 6px;
-        --spark-rot: 22deg;
-        animation-delay: 0.36s;
-    }
-    .checkout-stepper-spark--4 {
-        --spark-x: 7px;
-        --spark-y: -9px;
-        --spark-rot: -28deg;
-        animation-delay: 0.54s;
-    }
-    .checkout-stepper-spark--5 {
-        --spark-x: 13px;
-        --spark-y: 4px;
-        --spark-rot: 14deg;
-        animation-delay: 0.72s;
-    }
-    .checkout-stepper-spark--6 {
-        --spark-x: 6px;
-        --spark-y: 8px;
-        --spark-rot: 32deg;
-        animation-delay: 0.9s;
-    }
-    .checkout-stepper-ember {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 2px;
-        height: 2px;
-        border-radius: 9999px;
-        background: hsl(var(--brand));
-        box-shadow: 0 0 4px 1px hsl(var(--brand) / 0.65);
-        transform: translate(-50%, -50%);
-        animation: checkout-stepper-ember-drift 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    }
-    .checkout-stepper-ember--1 {
-        --ember-x: 4px;
-        --ember-y: -12px;
-        animation-delay: 0.25s;
-    }
-    .checkout-stepper-ember--2 {
-        --ember-x: 8px;
-        --ember-y: -14px;
-        animation-delay: 0.85s;
+        animation: checkout-stepper-ignite 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .checkout-stepper-segment--active {
-        filter: none;
-    }
-    .checkout-stepper-fill--active {
-        box-shadow: none;
-    }
-    .checkout-stepper-fill--ignite {
-        animation: none;
-    }
-    .checkout-stepper-fill--active::after,
-    .checkout-stepper-frontier-core,
-    .checkout-stepper-frontier-halo,
-    .checkout-stepper-frontier-flare,
-    .checkout-stepper-spark,
-    .checkout-stepper-ember {
+    .checkout-stepper-fill--ignite,
+    .coordination-card-enter,
+    .coordination-check-draw,
+    .coordination-path-preview,
+    .slot-chip-enter,
+    .checkout-payment-step-enter,
+    .checkout-payment-card-enter,
+    .checkout-payment-trust-enter,
+    .checkout-payment-deliverable-enter {
         animation: none !important;
-    }
-    .checkout-stepper-spark,
-    .checkout-stepper-ember,
-    .checkout-stepper-frontier-halo,
-    .checkout-stepper-frontier-flare {
-        display: none;
     }
 }
 

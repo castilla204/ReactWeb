@@ -12,6 +12,7 @@ import {
 import {
     SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
     SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
+    SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS,
 } from '../../constants/homepageTypography';
 
 const BADGE_BASE_CLASS =
@@ -199,7 +200,7 @@ export function CheckoutSelfChoicePickLocationShell({
             <div className="relative min-h-0 w-full flex-1">
                 {searchBar ? (
                     <div
-                        className="pointer-events-none absolute inset-x-0 top-0 z-[20] bg-gradient-to-b from-white/95 via-white/70 to-transparent px-3.5 pb-5 pt-2.5"
+                        className="pointer-events-none absolute inset-x-0 top-0 z-[20] bg-gradient-to-b from-white/95 via-white/70 to-transparent px-5 pb-5 pt-2.5"
                         aria-hidden={false}
                     >
                         <div className="pointer-events-auto">{searchBar}</div>
@@ -216,16 +217,19 @@ export function CheckoutSelfChoicePreviewMap({
     children,
     className,
     showInnerHeader = true,
+    suppressMobileTitle = false,
 }: {
     children: React.ReactNode;
     className?: string;
     showInnerHeader?: boolean;
+    /** Wizard móvil: el título lo pone CheckoutMobileStepHeader. */
+    suppressMobileTitle?: boolean;
 }) {
     return (
-        <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
+        <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white', className)}>
             {showInnerHeader ? (
                 <CheckoutSelfChoicePreviewLocationHeader className="w-full shrink-0" />
-            ) : (
+            ) : suppressMobileTitle ? null : (
                 <div className="shrink-0 px-5 pb-3 pt-1 lg:hidden">
                     <p className="text-subtitle font-semibold text-ink-strong">
                         Ubicación del taller
@@ -261,13 +265,14 @@ export function CheckoutSelfChoicePreviewCalendar({
                     ? bare
                         ? 'flex h-full w-full flex-col'
                         : 'flex h-full w-full flex-col px-3 py-2 lg:px-4 lg:py-2'
-                    : 'w-full pb-3 pt-2 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
+                    : 'w-full pb-3 pt-0 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
                 className,
             )}
         >
             <div
                 className={cn(
                     !bare && SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
+                    bare && !splitColumn && SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS,
                     splitColumn
                         ? bare
                             ? 'flex h-full min-h-0 w-full flex-col'
@@ -282,6 +287,7 @@ export function CheckoutSelfChoicePreviewCalendar({
                 <div
                     className={cn(
                         !bare && SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
+                        bare && !splitColumn && 'p-2',
                         splitColumn && 'flex min-h-0 flex-1 flex-col',
                         !bare && splitColumn && 'lg:p-2.5',
                     )}
@@ -354,7 +360,7 @@ export function CheckoutSellerChoicePreviewHeader({
     return (
         <div
             className={cn(
-                'relative hidden border-b border-line bg-white lg:block',
+                'relative hidden border-b border-line bg-surface-tinted lg:block',
                 compact ? 'px-4 py-3' : 'px-5 py-3.5',
                 className,
             )}
@@ -381,8 +387,7 @@ export function CheckoutSellerChoicePreviewHeader({
                     </h3>
                     <p
                         className={cn(
-                            'mt-0.5 leading-[1.5] text-ink-muted',
-                            compact ? 'text-kicker' : 'text-caption',
+                            'mt-0.5 leading-[1.5] text-ink-muted text-caption',
                         )}
                     >
                         {headerDetail}
@@ -528,7 +533,7 @@ export function CheckoutMapCoverageOverlayLegend({ className }: { className?: st
                         <span className="h-1 w-1 rounded-full bg-ink-strong" />
                     </span>
                 </span>
-                <p className="text-kicker leading-[1.45] text-ink-muted">
+                <p className="text-caption leading-[1.45] text-ink-muted">
                     <span className="font-semibold text-ink-strong">Zona de cobertura</span>
                     {' · '}
                     solo consulta. El vendedor fija la dirección al reservar.
@@ -553,7 +558,7 @@ export function CheckoutSellerChoicePreviewMap({
     overlayLegend?: boolean;
 }) {
     return (
-        <div className={cn('flex min-h-0 w-full flex-1 flex-col overflow-hidden', className)}>
+        <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white', className)}>
             {!overlayLegend ? (
                 <CheckoutSellerChoicePreviewHeader variant="location" compact className="w-full shrink-0" />
             ) : null}
@@ -587,13 +592,14 @@ export function CheckoutSellerChoicePreviewCalendar({
                     ? bare
                         ? 'flex h-full w-full flex-col'
                         : 'flex h-full w-full flex-col px-3 py-2 lg:px-4 lg:py-2'
-                    : 'w-full pb-3 pt-2 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
+                    : 'w-full pb-3 pt-0 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
                 className,
             )}
         >
             <div
                 className={cn(
                     !bare && SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
+                    bare && !splitColumn && SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS,
                     splitColumn
                         ? bare
                             ? 'flex h-full min-h-0 w-full flex-col'
@@ -614,6 +620,7 @@ export function CheckoutSellerChoicePreviewCalendar({
                 <div
                     className={cn(
                         !bare && SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
+                        bare && !splitColumn && 'p-2',
                         !bare &&
                             !splitColumn &&
                             'select-none [&_td_button]:pointer-events-none [&_td_button]:cursor-default',

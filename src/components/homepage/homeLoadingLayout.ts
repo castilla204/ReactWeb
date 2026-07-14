@@ -1,6 +1,7 @@
 import { HP_WALL_CARD_WIDTH_CLASS } from '../../constants/homepageTypography';
 import {
   HP_MOBILE_SEARCH_PILL_HEIGHT_PX,
+  HP_MOBILE_SEARCH_PILL_SHADOW,
   HP_MOBILE_WALL_CARD_IMAGE_MB_CLASS,
   HP_MOBILE_WALL_FIRST_SECTION_CLASS,
   HP_MOBILE_WALL_OUTER_CLASS,
@@ -27,7 +28,7 @@ export const HP_LOADING_LAYOUT = {
 /** Alturas reales (px) — alineadas con .hp-section-title y ServiceCard móvil */
 export const HP_LOADING_DIMS = {
   searchPillH: HP_MOBILE_SEARCH_PILL_HEIGHT_PX,
-  searchPillShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+  searchPillShadow: HP_MOBILE_SEARCH_PILL_SHADOW,
   sectionTitleH: 23.75,
   sectionSubtitleH: 18,
   cardImageMb: 8,

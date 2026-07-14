@@ -4,7 +4,7 @@ import {
   SD_MOBILE_GUTTER_CLASS,
   SD_MOBILE_IDENTITY_GUTTER_CLASS,
   SD_MOBILE_IDENTITY_STACK_CLASS,
-  SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
+  SD_MOBILE_SCROLL_PAD_CLASS,
   SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_REGION_CLASS,
@@ -39,7 +39,7 @@ export function ServiceDetailSkeleton() {
             </div>
           </div>
           <div
-            className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} rounded-t-xl bg-white ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS} shadow-[0_-1px_0_hsl(var(--line))]`}
+            className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} rounded-t-xl bg-white ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS} shadow-[0_-1px_0_hsl(var(--line))]`}
           >
             <div className={SD_MOBILE_IDENTITY_GUTTER_CLASS}>
               <div className={SD_MOBILE_IDENTITY_STACK_CLASS}>

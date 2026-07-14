@@ -44,6 +44,23 @@ export const HP_MOBILE_WALL_CARD_IMAGE_MB_CLASS = 'mb-2 md:mb-1';
 /** Altura pill de búsqueda móvil (icono + dos líneas) */
 export const HP_MOBILE_SEARCH_PILL_HEIGHT_PX = 52;
 
+/** Sombra mínima pill — elevación instrumento, no card flotante. */
+export const HP_MOBILE_SEARCH_PILL_SHADOW = '0 1px 2px 0 rgba(15, 23, 42, 0.06)';
+
+/** Contenedor icono — tinte brand mínimo (identidad sin decorar como input delivery). */
+export const HP_MOBILE_SEARCH_PILL_ICON_WRAP_CLASS =
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/[0.06]';
+
+export const HP_MOBILE_SEARCH_PILL_ICON_CLASS = 'h-4 w-4 text-brand';
+
+/** Superficie pill — instrumento técnico, un solo borde, feedback al pulsar. */
+export const HP_MOBILE_SEARCH_PILL_BASE_CLASS =
+  'relative flex w-full cursor-pointer items-center gap-2.5 rounded-full border bg-white px-3.5 transition-[border-color,box-shadow,transform] duration-200 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+
+export const HP_MOBILE_SEARCH_PILL_IDLE_BORDER_CLASS = 'border-line';
+
+export const HP_MOBILE_SEARCH_PILL_ACTIVE_BORDER_CLASS = 'border-brand/25';
+
 /** Modal búsqueda móvil — alineado con header compact (0.5rem safe-area, px-4). */
 export const HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS =
   'absolute left-4 right-4 z-20 flex items-center justify-between top-[max(0.5rem,env(safe-area-inset-top,0px))]';

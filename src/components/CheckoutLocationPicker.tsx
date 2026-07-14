@@ -556,7 +556,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     isWizard ? 'relative h-full min-h-0' : 'flex h-full min-h-0 w-full flex-1 flex-col bg-white',
                 )}
             >
-                <CheckoutSelfChoicePreviewMap className="h-full min-h-0" showInnerHeader={!isWizard}>
+                <CheckoutSelfChoicePreviewMap className="h-full min-h-0" showInnerHeader={!isWizard} suppressMobileTitle={isWizard}>
                     <AppointmentMap
                         {...workshopMapProps}
                         className="h-full w-full min-h-[inherit]"
@@ -845,7 +845,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     )}
                 >
                     {referenceMode ? (
-                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0">
+                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0" overlayLegend>
                             <AppointmentMap
                                 {...mapProps}
                                 className="h-full w-full min-h-[inherit]"

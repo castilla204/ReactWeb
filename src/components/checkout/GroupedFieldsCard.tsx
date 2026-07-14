@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 
+import { SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS } from '../../constants/homepageTypography';
+
 /** Etiqueta DENTRO de un campo agrupado (fila de GroupedFieldsCard) o de un campo
  *  secundario subrayado: más tenue que una etiqueta de campo normal — el contorno del
  *  grupo (o el propio underline) ya hace de contenedor, la etiqueta solo identifica la
- *  fila. #6b7280 es el gris tenue validado en el resto del checkout (≥4.5:1 de
- *  contraste; el más claro #8a9099 falla AA a este tamaño). */
-export const groupedLabelClass = 'block text-kicker font-medium text-ink-muted';
+ *  fila. text-caption unifica con el resto del checkout móvil (≥4.5:1). */
+export const groupedLabelClass = SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS;
 
 /** Input SIN caja propia para usar dentro de GroupedFieldsCard: el contorno, la sombra y
  *  el anillo de foco los pinta el grupo (focus-within), no cada campo por separado. */
@@ -60,7 +61,7 @@ export function GroupedFieldsDivider({ label }: { label?: string }) {
         <div className="relative" role="separator" aria-hidden>
             <div className="border-t border-line-soft" />
             {label ? (
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 bg-white pr-1.5 text-[10.5px] font-medium leading-none text-ink-muted">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 bg-white pr-1.5 text-caption font-medium leading-none text-ink-muted">
                     {label}
                 </span>
             ) : null}
@@ -84,7 +85,7 @@ export function GroupedFieldRow({
     return (
         <div
             className={cn(
-                comfortable ? 'px-4 py-3' : 'px-3.5 py-2.5',
+                'px-5 py-3',
                 !first && 'border-t border-line-soft',
             )}
         >

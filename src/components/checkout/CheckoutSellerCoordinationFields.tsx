@@ -300,7 +300,7 @@ export function CheckoutSellerCoordinationFields({
                         </span>{' '}
                         tras tu pago (hasta {SELLER_BOOKING_MAX_DAYS} si la agenda está llena).
                     </p>
-                    <p className="text-kicker leading-relaxed text-ink-muted">
+                    <p className="text-caption leading-relaxed text-ink-muted">
                         Solo podrá elegir días y horas que el experto tenga libres en su calendario.
                     </p>
                 </div>
