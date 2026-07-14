@@ -644,7 +644,7 @@
     }
 
     .hp-section-subtitle {
-        @apply mt-1 text-sm leading-snug text-ink-muted;
+        @apply m-0 text-sm leading-snug text-ink-muted;
     }
 
     .hp-eyebrow {
@@ -750,7 +750,20 @@
     }
 
     .sd-page-title-compact {
-        text-wrap: balance;
+        @apply flex min-w-0 flex-nowrap items-baseline gap-x-1.5;
+        text-wrap: nowrap;
+    }
+
+    .sd-page-title-compact__title {
+        @apply shrink-0;
+    }
+
+    .sd-page-title-compact__sep {
+        @apply shrink-0 font-normal text-line;
+    }
+
+    .sd-page-title-compact__location {
+        @apply min-w-0 flex-1 truncate;
     }
 
     .sd-mobile-identity-stack {
@@ -1036,6 +1049,46 @@
 
     .service-detail-page .sd-availability-mobile-day--inactive {
         @apply bg-transparent font-medium text-ink-muted;
+    }
+
+    /* Calendario tab Agenda — ancho completo y celdas táctiles */
+    .service-detail-page .sd-availability-calendar-frame--mobile-tab {
+        @apply w-full max-w-none;
+    }
+
+    .service-detail-page .sd-availability-calendar-frame--mobile-tab [data-slot='calendar'] {
+        @apply w-full max-w-none p-0;
+    }
+
+    .service-detail-page .sd-availability-calendar-frame--mobile-tab .rdp-weekday {
+        @apply text-caption font-semibold normal-case tracking-normal text-ink-muted;
+    }
+
+    .service-detail-page .sd-availability-calendar-frame--mobile-tab .rdp-day {
+        @apply min-h-[var(--cell-size)] flex-1 p-0.5;
+    }
+
+    /* Portadas entregables — sello azul mínimo sobre papel tintado */
+    .service-detail-page .sd-deliverable-cover-list {
+        @apply m-0 flex list-none flex-col gap-3 p-0;
+    }
+
+    .service-detail-page .sd-deliverable-cover {
+        @apply bg-white;
+    }
+
+    .service-detail-page .sd-deliverable-cover__header {
+        @apply bg-[hsl(var(--brand)/0.04)];
+    }
+
+    .service-detail-page .sd-deliverable-cover-placeholder {
+        @apply rounded-xl border-ink/15 bg-white;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .service-detail-page .sd-deliverable-cover {
+            transition: none;
+        }
     }
 
     .sd-mobile-footer-cta {

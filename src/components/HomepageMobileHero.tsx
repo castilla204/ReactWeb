@@ -1,10 +1,11 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 import {
-  ESCROW_HERO_MOBILE_LEAD,
+  MOBILE_HERO_CARD_SR_DETAIL,
   MOBILE_HERO_CARD_SUBLINE,
-  MOBILE_HERO_LOCATION_BADGE,
+  MOBILE_HERO_CARD_TITLE,
+  MOBILE_HERO_TRUST_BADGE,
 } from '../constants/escrowCopy';
 import {
   HP_MOBILE_HERO_PEEK_RESERVE_CLASS,
@@ -18,8 +19,6 @@ import {
   LAYERED_CARD_BACK_PEEK_PX,
   LayeredHookCard,
 } from './ui/LayeredHookCard';
-
-const MOBILE_HERO_TITLE = 'Revisado por un experto';
 
 /** Placeholder skeleton — misma silueta que la tarjeta hero + tabs. */
 export const HomepageMobileHeroPlaceholder: React.FC = () => (
@@ -39,9 +38,9 @@ export const HomepageMobileHeroPlaceholder: React.FC = () => (
           }}
         />
         <div className="relative z-[1] rounded-[18px] bg-line px-4 py-3.5 min-[390px]:rounded-[20px] min-[390px]:px-5 min-[390px]:py-4">
-          <div className="h-4 w-32 rounded-md bg-line-soft" />
-          <div className="mt-0.5 h-3 w-40 rounded-md bg-line-soft" />
-          <div className="mt-3 h-6 w-28 rounded-full bg-line-soft" />
+          <div className="h-4 w-full max-w-[15.5rem] rounded-md bg-line-soft" />
+          <div className="mt-0.5 h-3 w-48 rounded-md bg-line-soft" />
+          <div className="mt-3 h-6 w-44 rounded-full bg-line-soft" />
         </div>
       </div>
       <div aria-hidden className={HP_MOBILE_HERO_PEEK_RESERVE_CLASS} />
@@ -73,19 +72,19 @@ export const HomepageMobileHero: React.FC = () => (
         peekReserveClass={HP_MOBILE_HERO_PEEK_RESERVE_CLASS}
         title={
           <>
-            {MOBILE_HERO_TITLE}
-            <span className="sr-only">. {ESCROW_HERO_MOBILE_LEAD}</span>
+            {MOBILE_HERO_CARD_TITLE}
+            <span className="sr-only">. {MOBILE_HERO_CARD_SR_DETAIL}</span>
           </>
         }
         subtitle={MOBILE_HERO_CARD_SUBLINE}
         badge={
           <>
-            <MapPin
+            <Lock
               className="h-3 w-3 shrink-0 min-[390px]:h-3.5 min-[390px]:w-3.5"
               strokeWidth={2.25}
               aria-hidden
             />
-            {MOBILE_HERO_LOCATION_BADGE}
+            {MOBILE_HERO_TRUST_BADGE}
           </>
         }
       />

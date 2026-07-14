@@ -185,7 +185,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
                     <DrawerClose asChild>
                       <button
                         type="button"
-                        className="-mr-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="-mr-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label="Cerrar"
                       >
                         <X className="h-[18px] w-[18px]" />
@@ -244,7 +244,6 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           style={{ ...style, ...dialogStyle }}
           hideCloseButton={true}
           overlayClassName="bg-black/40"
-          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {desktopHeader}
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
