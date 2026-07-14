@@ -32,7 +32,8 @@ import {
   SD_MOBILE_IDENTITY_GUTTER_CLASS,
   SD_MOBILE_IDENTITY_STACK_CLASS,
   SD_MOBILE_INSET_STACK_CLASS,
-  SD_MOBILE_SCROLL_PAD_TRUST_CLASS,
+  SD_MOBILE_DELIVERABLES_SECTION_CLASS,
+  SD_MOBILE_SCROLL_PAD_CLASS,
   SD_MOBILE_SHEET_OVERLAP_CLASS,
   SD_MOBILE_SHEET_TOP_CLASS,
   SD_MOBILE_TAB_REGION_CLASS,
@@ -552,6 +553,16 @@ export function ServiceReviewPage({
     const hasMobileDeliverablesSection =
         showInspectionReport || visibleDeliverableTypes.length > 0;
 
+    const mobileDeliverablesCount = useMemo(() => {
+        if (showInspectionReport) {
+            const selectedExtras = inspectionExtraDeliverables.filter(
+                (d) => d.isSelected !== false,
+            ).length;
+            return 1 + selectedExtras;
+        }
+        return allDeliverablesForList.filter((d) => d.isSelected !== false).length;
+    }, [showInspectionReport, inspectionExtraDeliverables, allDeliverablesForList]);
+
     const mobileTabOrder = useMemo(
         () =>
             hasMobileDeliverablesSection
@@ -828,7 +839,7 @@ export function ServiceReviewPage({
                     </div>
 
                     <div
-                        className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-xl bg-white shadow-[0_-1px_0_hsl(var(--line))] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_TRUST_CLASS}`}
+                        className={`relative ${SD_MOBILE_SHEET_OVERLAP_CLASS} z-10 rounded-t-xl bg-white shadow-[0_-1px_0_hsl(var(--line))] ${SD_MOBILE_SHEET_TOP_CLASS} ${SD_MOBILE_SCROLL_PAD_CLASS}`}
                     >
                         <div className={SD_MOBILE_IDENTITY_GUTTER_CLASS}>
                             <section
@@ -901,15 +912,24 @@ export function ServiceReviewPage({
                                             id="sd-tab-deliverables"
                                             aria-controls="sd-panel-about"
                                             aria-selected={activeTab === 'deliverables'}
-                                            aria-label="Qué entregará"
+                                            aria-label={
+                                                mobileDeliverablesCount > 0
+                                                    ? `Qué entregará, ${mobileDeliverablesCount} ${mobileDeliverablesCount === 1 ? 'entregable' : 'entregables'}`
+                                                    : 'Qué entregará'
+                                            }
                                             tabIndex={activeTab === 'deliverables' ? 0 : -1}
                                             data-active={
                                                 activeTab === 'deliverables' ? 'true' : undefined
                                             }
                                             onClick={handleMobileDeliverablesTabClick}
-                                            className="sd-tab"
+                                            className="sd-tab sd-tab--counted"
                                         >
                                             <span className="sd-tab__label">Entregables</span>
+                                            {mobileDeliverablesCount > 0 ? (
+                                                <span className="sd-tab__badge" aria-hidden>
+                                                    {mobileDeliverablesCount}
+                                                </span>
+                                            ) : null}
                                         </button>
                                     ) : null}
                                     <button
@@ -926,7 +946,7 @@ export function ServiceReviewPage({
                                         tabIndex={activeTab === 'reviews' ? 0 : -1}
                                         data-active={activeTab === 'reviews' ? 'true' : undefined}
                                         onClick={() => setActiveTab('reviews')}
-                                        className="sd-tab"
+                                        className="sd-tab sd-tab--counted"
                                     >
                                         <span className="sd-tab__label">Reseñas</span>
                                         {finalReviews.length > 0 ? (
@@ -975,7 +995,7 @@ export function ServiceReviewPage({
                                         <div
                                             ref={mobileDeliverablesRef}
                                             id="sd-section-deliverables"
-                                            className="flex flex-col gap-3 scroll-mt-24"
+                                            className={SD_MOBILE_DELIVERABLES_SECTION_CLASS}
                                         >
                                             {showInspectionReport ? (
                                                 <>

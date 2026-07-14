@@ -14,6 +14,7 @@ import {
     bareGroupedInputClass,
     underlineFieldInputClass,
 } from './GroupedFieldsCard';
+import { SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS } from '../../constants/homepageTypography';
 
 export interface CheckoutDesktopLocationStepBodyProps {
     /** Modo: el cliente reserva (self) o Inspecciono coordina (seller). */
@@ -53,7 +54,7 @@ export interface CheckoutDesktopLocationStepBodyProps {
 const inputBaseClass =
     'h-11 w-full rounded-lg border border-line bg-white px-3.5 text-body text-ink-strong shadow-[0_1px_2px_rgba(16,24,40,0.05)] placeholder:text-ink-soft outline-none transition-[border-color,box-shadow] duration-150 focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,102,204,0.14)]';
 
-const labelBaseClass = 'mb-1 block text-caption font-semibold text-ink';
+const labelBaseClass = cn(SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS, 'mb-1');
 
 export function CheckoutDesktopLocationStepBody({
     mode,

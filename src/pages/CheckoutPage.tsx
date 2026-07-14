@@ -54,11 +54,11 @@ import {
     SD_CHECKOUT_MOBILE_CTA_DARK_CLASS,
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
-    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS,
-    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS,
+    SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS,
+    SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS,
+    SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_ON_DARK_CLASS,
     SD_DESKTOP_STICKY_TOP_CLASS,
     SD_CHECKOUT_DESKTOP_PAGE_CLASS,
     SD_CHECKOUT_DESKTOP_APPOINTMENT_SHELL_HEIGHT_CLASS,
@@ -112,8 +112,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // isSubmittingRef.current=true se aplica INMEDIATAMENTE, bloqueando el segundo handler.
     const isSubmittingRef = useRef(false);
     // 📏 El footer móvil es `position: fixed`, así que no ocupa flujo y su alto VARÍA
-    // (la línea de "pago protegido" solo aparece en el paso de elección). Para poder
-    // centrar de verdad las tarjetas sobre él hay que MEDIRLO, no asumir una constante.
+    // (el paso de pago incluye línea de confianza en el footer). Para poder centrar
+    // de verdad las tarjetas sobre él hay que MEDIRLO, no asumir una constante.
     const mobileFooterRoRef = useRef<ResizeObserver | null>(null);
     const [mobileFooterHeight, setMobileFooterHeight] = useState(0);
     // Callback ref: se engancha cuando el footer monta (no siempre está en el DOM) y
@@ -777,7 +777,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
 ) : null;
     const slotPickerMobileNode =
         requiresAppointment && !isDesktop && coordinationMode === 'self' ? (
-            <SlotPicker {...slotPickerProps} embedded sectionTitle="Fecha y hora" />
+            <SlotPicker {...slotPickerProps} embedded bare sectionTitle="Fecha y hora" />
         ) : null;
 
     // 🗓️ Fase E: ubicación. Radio>0 → el cliente la elige en el mapa; estático (radio 0) → taller del experto.
@@ -896,7 +896,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
         stripedRows: true,
     };
 
-    const mobileContentWidthClass = cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'w-full md:mx-auto md:max-w-[32rem]');
+    const mobileContentWidthClass = 'w-full md:mx-auto md:max-w-[32rem]';
 
     const mobilePaymentSummaryNode = (
         <CheckoutMobileSheet
@@ -914,16 +914,16 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const mobilePaymentHeaderNode = (
         <CheckoutMobileStepHeader
             step={5}
-            steps={MOBILE_SELF_STEPS}
+            steps={coordinationMode === 'seller' ? MOBILE_SELLER_PREVIEW_STEPS : MOBILE_SELF_STEPS}
             hideStepper
             title="Revisa y reserva"
             description="Comprueba que todo está bien antes de pagar."
             trailing={
                 <div className="text-right">
-                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS}>
+                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS}>
                         {priceDisplayNode}
                     </p>
-                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS}>Impuestos incluidos</p>
+                    <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_ON_DARK_CLASS}>Impuestos incluidos</p>
                 </div>
             }
         />
@@ -1031,6 +1031,29 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const inCoordinationChoice = requiresAppointment && coordinationMode === null;
     const mobileOnPaymentStep = !inCoordinationChoice && (!mobileThreeStep || mobileStep === 4);
     const mobileFooterScrollPad = mobileFooterHeight > 0 ? mobileFooterHeight : undefined;
+    const mobileChooseStepperSteps =
+        coordSelection === 'self' ? MOBILE_SELF_STEPS : MOBILE_SELLER_PREVIEW_STEPS;
+    const mobileBackLabel = (() => {
+        if (inCoordinationChoice) {
+            if (coordView === 'seller-contact') {
+                return isWorkshopOnly ? 'Atrás a la agenda' : 'Atrás a la zona';
+            }
+            if (coordView === 'seller-map') return 'Atrás a la agenda';
+            if (coordView === 'seller-plazos') return 'Atrás a la elección';
+            if (coordView === 'choose') return 'Salir';
+            return 'Atrás';
+        }
+        if (mobileThreeStep) {
+            if (mobileStep === 4) return 'Atrás a contacto';
+            if (mobileStep === 3) return 'Atrás a ubicación';
+            if (mobileStep === 2) return 'Atrás a la agenda';
+            if (mobileStep === 1) return 'Atrás a la elección';
+        }
+        if (requiresAppointment && coordinationMode === 'seller' && mobileOnPaymentStep) {
+            return 'Atrás a contacto';
+        }
+        return 'Atrás';
+    })();
     const isCoordOptionPickView =
         coordView === 'choose' || (coordView === 'seller' && coordinationMode === null);
     const coordCanContinue =
@@ -1090,6 +1113,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
             onSellerListingUrlChange={setSellerListingUrl}
             sellerOptionDisabled={sellerOptionDisabled}
             showSellerValidation={showSellerValidation}
+            chooseLayout={coordView === 'choose'}
+            showTrustRail={coordView === 'choose'}
         />
     );
     const coordinationStepMobileNode = (
@@ -1099,7 +1124,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
             // El título/explicación los pone la cabecera del wizard (CheckoutMobileStepHeader):
             // en contacto móvil y en el paso de elección (ahora banda fija fuera del scroll),
             // se oculta el header propio para no duplicar.
-            hideHeader={(coordView === 'seller-contact' && !isWorkshopOnly) || coordView === 'choose'}
+            hideHeader={coordView === 'seller-contact' || coordView === 'choose'}
             // Paso de elección: el shell móvil ya es el scroll container; fillHeight
             // en el paso de coordinación quedaría como doble scroll.
             fillHeight={false}
@@ -1114,6 +1139,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
             onSellerListingUrlChange={setSellerListingUrl}
             sellerOptionDisabled={sellerOptionDisabled}
             showSellerValidation={showSellerValidation}
+            chooseLayout={coordView === 'choose'}
+            showTrustRail={coordView === 'choose'}
         />
     );
 
@@ -1121,8 +1148,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     // el cliente ya coordina con el vendedor, así que se puede continuar sin rellenar nada.
     // El título/explicación del paso los pone la cabecera del wizard (CheckoutMobileStepHeader).
     const sellerDataSelfMobileNode = (
-        <div className={cn(SD_CHECKOUT_MOBILE_GUTTER_CLASS, 'pb-4')}>
-            <CheckoutSellerCoordinationFields
+        <CheckoutSellerCoordinationFields
                 variant="contact"
                 selfMode
                 sellerPhone={sellerPhone}
@@ -1131,8 +1157,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 onSellerPhoneChange={setSellerPhone}
                 onSellerEmailChange={setSellerEmail}
                 onSellerListingUrlChange={setSellerListingUrl}
-            />
-        </div>
+        />
     );
 
     const desktopCoordColumnNode =
@@ -1237,7 +1262,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand px-7 text-body font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-[colors,box-shadow,transform] duration-200 hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
                 Continuar
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -1425,12 +1450,22 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     coordView === 'seller-map' && requiresAppointment && !isWorkshopOnly ? (
                         <CheckoutMobileWizardShell
                             fullBleed
+                            footerInsetPx={mobileFooterScrollPad}
                             header={
                                 <CheckoutMobileStepHeader
                                     step={3}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Zona del experto"
-                                    description={`Aquí solo ves su área de trabajo, para comprobar que cubre tu zona. El vendedor indicará la dirección exacta ${getInspectionSubjectOf(service?.categoryName)} al reservar.`}
+                                    description={
+                                        <>
+                                            <span className={SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS}>
+                                                No eliges nada aquí.
+                                            </span>{' '}
+                                            Comprueba que el experto cubre tu zona. El vendedor indicará la
+                                            dirección exacta {getInspectionSubjectOf(service?.categoryName)} al
+                                            reservar.
+                                        </>
+                                    }
                                 />
                             }
                         >
@@ -1443,35 +1478,44 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     ) : coordView === 'choose' ? (
                         <CheckoutMobileWizardShell
                             footerInsetPx={mobileFooterScrollPad}
-                            trustFooterFallback
                             header={
                                 <CheckoutMobileStepHeader
                                     step={1}
-                                    steps={MOBILE_SELF_STEPS}
+                                    steps={mobileChooseStepperSteps}
                                     title="¿Quién elige la fecha?"
-                                    description={`${getInspectionSubjectCapitalized(service?.categoryName)} lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su disponibilidad.`}
+                                    description="Tiene que encajar con la agenda del vendedor."
                                 />
                             }
-                            bodyClassName={SD_CHECKOUT_MOBILE_GUTTER_CLASS}
+                            bodyClassName={cn(SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS, mobileContentWidthClass)}
                         >
                             {coordinationStepMobileNode}
                         </CheckoutMobileWizardShell>
                     ) : coordView === 'seller-plazos' && requiresAppointment ? (
                         <CheckoutMobileWizardShell
+                            footerInsetPx={mobileFooterScrollPad}
                             header={
                                 <CheckoutMobileStepHeader
                                     step={2}
                                     steps={MOBILE_SELLER_PREVIEW_STEPS}
                                     title="Agenda del experto"
                                     description={
-                                        isWorkshopOnly
-                                            ? 'Consulta los huecos libres del experto antes de continuar.'
-                                            : 'Aquí solo consultas su agenda, para ver que tiene huecos libres. Tras el pago, el vendedor elegirá el día y la hora con el enlace que le enviamos.'
+                                        isWorkshopOnly ? (
+                                            'Consulta los huecos libres del experto antes de continuar.'
+                                        ) : (
+                                            <>
+                                                <span className={SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS}>
+                                                    No eliges nada aquí.
+                                                </span>{' '}
+                                                Solo consultas su agenda para ver que tiene huecos libres. Tras el
+                                                pago, el vendedor elegirá el día y la hora con el enlace que le
+                                                enviamos.
+                                            </>
+                                        )
                                     }
                                 />
                             }
                         >
-                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                            <div className={mobileContentWidthClass}>
                                 {isWorkshopOnly ? (
                                     <CheckoutSellerChoiceMobileWarning
                                         variant="calendar"
@@ -1481,6 +1525,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 <SlotPicker
                                     {...slotPickerProps}
                                     embedded
+                                    bare
                                     previewMode
                                     windowDays={SELLER_BOOKING_MAX_DAYS}
                                     sectionTitle="Disponibilidad del experto"
@@ -1490,6 +1535,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                         </CheckoutMobileWizardShell>
                     ) : coordView === 'seller-contact' ? (
                         <CheckoutMobileWizardShell
+                            footerInsetPx={mobileFooterScrollPad}
                             header={
                                 <CheckoutMobileStepHeader
                                     step={4}
@@ -1499,22 +1545,24 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 />
                             }
                         >
-                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                            <div className={mobileContentWidthClass}>
                                 {coordinationStepMobileNode}
                             </div>
                         </CheckoutMobileWizardShell>
                     ) : (
                         <CheckoutMobileWizardShell
+                            footerInsetPx={mobileFooterScrollPad}
                             header={
                                 <CheckoutMobileStepHeader
                                     step={1}
-                                    steps={MOBILE_SELF_STEPS}
+                                    steps={mobileChooseStepperSteps}
                                     title="¿Quién elige la fecha?"
-                                    description={`${getInspectionSubjectCapitalized(service?.categoryName)} lo tiene el vendedor, así que la cita de la inspección tiene que cuadrar con su disponibilidad.`}
+                                    description="Tiene que encajar con la agenda del vendedor."
                                 />
                             }
+                            bodyClassName={cn(SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS, mobileContentWidthClass)}
                         >
-                            <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                            <div className={mobileContentWidthClass}>
                                 {coordinationStepMobileNode}
                             </div>
                         </CheckoutMobileWizardShell>
@@ -1522,6 +1570,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 ) : mobileThreeStep && mobileStep === 2 ? (
                     <CheckoutMobileWizardShell
                         fullBleed
+                        footerInsetPx={mobileFooterScrollPad}
                         header={
                             <CheckoutMobileStepHeader
                                 step={3}
@@ -1535,6 +1584,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     </CheckoutMobileWizardShell>
                 ) : mobileThreeStep && mobileStep === 1 ? (
                     <CheckoutMobileWizardShell
+                        footerInsetPx={mobileFooterScrollPad}
                         header={
                             <CheckoutMobileStepHeader
                                 step={mobileStep + 1}
@@ -1544,12 +1594,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             />
                         }
                     >
-                        <div className={cn(mobileContentWidthClass, 'pt-1')}>
+                        <div className={mobileContentWidthClass}>
                             {slotPickerMobileNode}
                         </div>
                     </CheckoutMobileWizardShell>
                 ) : mobileThreeStep && mobileStep === 3 ? (
                     <CheckoutMobileWizardShell
+                        footerInsetPx={mobileFooterScrollPad}
                         header={
                             <CheckoutMobileStepHeader
                                 step={mobileStep + 1}
@@ -1559,16 +1610,13 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             />
                         }
                     >
-                        <div className="pt-1 md:mx-auto md:max-w-[32rem]">{sellerDataSelfMobileNode}</div>
+                        <div className={mobileContentWidthClass}>{sellerDataSelfMobileNode}</div>
                     </CheckoutMobileWizardShell>
                 ) : (
                     <CheckoutMobileWizardShell
                         key="checkout-mobile-payment"
                         header={mobilePaymentHeaderNode}
-                        headerClassName={SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS}
-                        bodyClassName={SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS}
                         footerInsetPx={mobileFooterScrollPad}
-                        scrollEndCushionPx={28}
                         trustFooterFallback
                     >
                         {mobilePaymentSummaryNode}
@@ -1576,17 +1624,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 )}
 
                 <CheckoutMobileStickyFooter shellRef={attachMobileFooter}>
-                    {/* Anclaje de confianza dentro del propio bottom bar, ENCIMA de Atrás/Continuar
-                        (solo en el paso de elección). */}
-                    {inCoordinationChoice && coordView === 'choose' ? (
-                        <div className="mb-2.5 flex items-start gap-2">
-                            <ShieldCheck className="mt-[1px] h-[15px] w-[15px] shrink-0 text-brand" strokeWidth={2} aria-hidden />
-                            <p className="text-caption leading-[1.4] text-ink-muted">
-                                Elijas lo que elijas, tu pago queda protegido: no cobramos al experto hasta que apruebes el informe.
-                            </p>
-                        </div>
-                    ) : mobileOnPaymentStep ? (
-                        <div className="checkout-payment-trust-enter mb-2.5 flex items-start gap-2.5 rounded-xl border border-brand/10 bg-brand/[0.05] px-3 py-2.5">
+                    {mobileOnPaymentStep ? (
+                        <div className={cn('mb-2.5', SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS)}>
                             <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
                             <p className="text-caption leading-[1.45] text-ink-muted">
                                 <span className="font-semibold text-ink-strong">Hoy no se te cobra</span>: solo
@@ -1600,7 +1639,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             onClick={inCoordinationChoice ? handleCoordBack : handleMobileBack}
                             className={SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS}
                         >
-                            Atrás
+                            {mobileBackLabel}
                         </button>
                         {inCoordinationChoice ? (
                             <button
@@ -1610,8 +1649,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 className={`${SD_CHECKOUT_MOBILE_CTA_DARK_CLASS} gap-2`}
                             >
                                 {coordView === 'seller-plazos' || coordView === 'seller-map'
-                                    ? 'Siguiente'
-                                    : 'Continuar'}
+                                    ? 'Entendido'
+                                    : coordView === 'choose' && coordSelection === 'seller'
+                                      ? 'Continuar con el vendedor'
+                                      : coordView === 'choose' && coordSelection === 'self'
+                                        ? 'Continuar: yo elijo'
+                                        : 'Continuar'}
                                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                             </button>
                         ) : mobileThreeStep && mobileStep < 4 ? (

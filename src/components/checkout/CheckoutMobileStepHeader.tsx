@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import {
     SD_CHECKOUT_MOBILE_STEP_DESC_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS,
     SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
+    SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS,
     SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutMobileStepper, type StepDef } from './CheckoutMobileStepper';
@@ -22,6 +24,8 @@ interface CheckoutMobileStepHeaderProps {
     hideStepper?: boolean;
     /** Acción o dato anclado a la derecha (p. ej. total en el paso de pago). */
     trailing?: ReactNode;
+    /** Cabecera sobre banda ink-strong (wizard móvil). */
+    onDark?: boolean;
     className?: string;
 }
 
@@ -37,29 +41,59 @@ export function CheckoutMobileStepHeader({
     description,
     hideStepper = false,
     trailing,
+    onDark = true,
     className,
 }: CheckoutMobileStepHeaderProps) {
     return (
-        <header className={cn('min-w-0', className)}>
-            {hideStepper ? null : <CheckoutMobileStepper currentStep={step} steps={steps} />}
-            <div className={cn('flex items-start justify-between gap-4', !hideStepper && 'mt-3.5')}>
+        <div className={cn('min-w-0', className)}>
+            {hideStepper ? null : (
+                <CheckoutMobileStepper currentStep={step} steps={steps} onDark={onDark} />
+            )}
+            <div
+                className={cn(
+                    trailing
+                        ? 'mt-2 flex flex-col gap-2 min-[390px]:flex-row min-[390px]:items-start min-[390px]:justify-between min-[390px]:gap-3'
+                        : cn('flex items-start justify-between gap-3', !hideStepper && 'mt-3'),
+                )}
+            >
                 <div className="min-w-0 flex-1">
                     <h2
                         className={cn(
-                            SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
-                            hideStepper && SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
+                            onDark
+                                ? SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS
+                                : SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
+                            hideStepper &&
+                                !onDark &&
+                                SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
                         )}
                     >
                         {title}
                     </h2>
                     {description ? (
-                        <p className={SD_CHECKOUT_MOBILE_STEP_DESC_CLASS}>
+                        <p
+                            className={
+                                onDark
+                                    ? SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS
+                                    : SD_CHECKOUT_MOBILE_STEP_DESC_CLASS
+                            }
+                        >
                             {description}
                         </p>
                     ) : null}
                 </div>
-                {trailing ? <div className="shrink-0 pt-1">{trailing}</div> : null}
+                {trailing ? (
+                    <div
+                        className={cn(
+                            'shrink-0',
+                            hideStepper
+                                ? 'min-[390px]:pt-1 min-[390px]:text-right'
+                                : 'pt-1',
+                        )}
+                    >
+                        {trailing}
+                    </div>
+                ) : null}
             </div>
-        </header>
+        </div>
     );
 }

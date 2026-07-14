@@ -33,7 +33,7 @@ interface SlotPeriodPanelProps {
 
 /** Rótulo de franja (Mañana/Tarde) — una sola piel en todas las variantes. */
 const SLOT_PERIOD_LABEL_CLASS =
-    'text-kicker font-semibold uppercase tracking-wide text-ink-muted lg:text-xs';
+    'text-caption font-medium text-ink-muted lg:text-xs';
 
 const slotButtonClass = (active: boolean, embedded?: boolean) =>
     cn(
@@ -79,7 +79,7 @@ function PeriodFilterChips({
                         aria-selected={active}
                         onClick={() => onChange(item.id)}
                         className={cn(
-                            'flex-1 select-none rounded-md px-2 py-1.5 text-kicker font-semibold transition-colors',
+                            'flex-1 select-none rounded-md px-2 py-2 text-caption font-semibold transition-colors max-lg:min-h-11',
                             active
                                 ? 'bg-white text-ink-strong shadow-sm'
                                 : 'text-ink-muted hover:text-ink-strong',
@@ -97,7 +97,7 @@ function PreviewPeriodBlock({ period, count }: { period: SlotDayPeriod; count: n
     return (
         <div className="rounded-xl bg-surface-tinted px-3 py-2.5">
             <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
-            <p className="mt-0.5 text-kicker text-ink-muted">{SLOT_PERIOD_HINTS[period]}</p>
+            <p className="mt-0.5 text-caption text-ink-muted">{SLOT_PERIOD_HINTS[period]}</p>
             <p className="mt-1 text-xs font-medium text-ink-muted">
                 {count === 0
                     ? 'Sin huecos'
@@ -270,7 +270,7 @@ const embeddedMiniSlotChipClass = (active: boolean) =>
     cn(
         'inline-flex min-w-[3.25rem] select-none items-center justify-center rounded-full px-2.5 py-1.5',
         'text-meta font-semibold tabular-nums transition-all duration-150',
-        'max-lg:min-w-[2.75rem] max-lg:px-2 max-lg:py-1 max-lg:text-caption',
+        'max-lg:min-h-11 max-lg:min-w-[3rem] max-lg:px-3 max-lg:py-2 max-lg:text-meta',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1',
         active
             ? 'bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.28)] ring-2 ring-brand/20 ring-offset-1 ring-offset-white'
@@ -382,7 +382,7 @@ function SelectableEmbeddedSlotHours({
                     <p className={SLOT_PERIOD_LABEL_CLASS}>
                         {SLOT_PERIOD_LABELS[period]}
                     </p>
-                    <span className="text-kicker text-ink-muted">{SLOT_PERIOD_HINTS[period]}</span>
+                    <span className="text-caption text-ink-muted">{SLOT_PERIOD_HINTS[period]}</span>
                 </div>
                 <div
                     className={cn(
@@ -468,7 +468,7 @@ function SelectablePeriodBlock({
         return (
             <div className="rounded-xl bg-surface-tinted px-3 py-2.5">
                 <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
-                <p className="mt-1 text-kicker text-ink-muted">Sin huecos en esta franja</p>
+                <p className="mt-1 text-caption text-ink-muted">Sin huecos en esta franja</p>
             </div>
         );
     }
@@ -477,7 +477,7 @@ function SelectablePeriodBlock({
         <div>
             <div className="mb-1.5 flex items-baseline gap-1.5">
                 <p className={SLOT_PERIOD_LABEL_CLASS}>{SLOT_PERIOD_LABELS[period]}</p>
-                <span className="text-kicker text-ink-muted">{SLOT_PERIOD_HINTS[period]}</span>
+                <span className="text-caption text-ink-muted">{SLOT_PERIOD_HINTS[period]}</span>
             </div>
             <div
                 className={cn(

@@ -99,7 +99,7 @@ const SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES = {
 function dayButtonSizeClass(splitColumn: boolean) {
     return cn(
         'shrink-0 text-meta',
-        splitColumn ? 'size-10 lg:size-11' : 'size-10',
+        splitColumn ? 'size-9 min-[360px]:size-10 lg:size-11' : 'size-9 min-[360px]:size-10',
     );
 }
 /** Mismo patrón visual que el panel del experto cuando aún no hay día elegido. */

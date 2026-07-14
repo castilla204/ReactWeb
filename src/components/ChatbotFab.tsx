@@ -28,9 +28,39 @@ import { CHATBOT_HIDDEN_PREFIXES, ROUTES, TAB_BAR_PATHS } from '../constants/rou
 const PANEL_ID = 'support-chat-panel';
 const PANEL_TITLE = 'Asistente de Inspecciono';
 const PANEL_DESCRIPTION = 'Respuestas sobre la plataforma';
-const SEEN_KEY = 'support-chat-seen';
+/** Pulso del FAB: deja de llamar la atención tras abrir el asistente. */
+const FAB_ENGAGED_KEY = 'support-chat-fab-engaged';
+/** Tarjeta hint: solo se oculta al cerrar con X o al pulsar «Abrir asistente» en la card. */
+const HINT_DISMISSED_KEY = 'support-chat-fab-hint-v1';
+/** Clave legacy: solo marca engaged, no descarta el hint. */
+const SEEN_KEY_LEGACY = 'support-chat-seen';
 
 const RESERVE_FOOTER_PATH_PREFIXES = ['/service/', '/checkout/'];
+
+function readStorage(key: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return sessionStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeStorage(key: string): void {
+  try {
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* modo privado */
+  }
+}
+
+function getInitialFabEngaged(): boolean {
+  return readStorage(FAB_ENGAGED_KEY) || readStorage(SEEN_KEY_LEGACY);
+}
+
+function getInitialHintDismissed(): boolean {
+  return readStorage(HINT_DISMISSED_KEY);
+}
 
 function hasMobileTabBar(pathname: string): boolean {
   return TAB_BAR_PATHS.has(pathname) || pathname.startsWith(`${ROUTES.hires}/`);
@@ -51,22 +81,13 @@ function getMobileBottomClass(pathname: string, expertServicesFooter: boolean): 
   return CHATBOT_FAB_BOTTOM_STANDALONE_CLASS;
 }
 
-function hasBeenSeen(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    return Boolean(sessionStorage.getItem(SEEN_KEY));
-  } catch {
-    return true;
-  }
-}
-
 interface SupportChatFabHintProps {
   hintId: string;
   onOpen: () => void;
   onDismiss: () => void;
 }
 
-/** Desktop: card contextual (mismo lenguaje que TrustDesktopPopover). */
+/** Desktop: card contextual encima del FAB (mismo lenguaje que TrustDesktopPopover). */
 function SupportChatFabHintDesktop({ hintId, onOpen, onDismiss }: SupportChatFabHintProps) {
   return (
     <div
@@ -109,13 +130,58 @@ function SupportChatFabHintDesktop({ hintId, onOpen, onDismiss }: SupportChatFab
   );
 }
 
+/** Móvil: banner compacto encima del FAB — paridad de onboarding con desktop. */
+function SupportChatFabHintMobile({ hintId, onOpen, onDismiss }: SupportChatFabHintProps) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={`${hintId}-mobile-title`}
+      className="support-chat-fab-hint support-chat-fab-hint-card w-[min(18rem,calc(100vw-5rem))] p-3 md:hidden"
+    >
+      <div className="flex items-start gap-1">
+        <div className="min-w-0 flex-1 pr-1">
+          <p
+            id={`${hintId}-mobile-title`}
+            className="text-body font-semibold leading-snug tracking-[-0.01em] text-ink-strong text-pretty"
+          >
+            {CHATBOT_FAB_HINT_TITLE}
+          </p>
+          <p className="mt-0.5 text-caption leading-snug text-ink-muted text-pretty">
+            {CHATBOT_FAB_HINT_BODY}
+          </p>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="mt-2 inline-flex items-center gap-1 text-caption font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            {CHATBOT_FAB_HINT_CTA}
+            <span aria-hidden>→</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="support-chat-fab-dismiss -mr-1 -mt-1"
+          aria-label="Cerrar aviso del asistente"
+        >
+          <X className="h-4 w-4" strokeWidth={2.1} aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const ChatbotFab: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [cookiesAccepted, setCookiesAccepted] = useState(hasCookieConsent);
-  const [seen, setSeen] = useState(hasBeenSeen);
+  const [fabEngaged, setFabEngaged] = useState(getInitialFabEngaged);
+  const [hintDismissed, setHintDismissed] = useState(getInitialHintDismissed);
   const [expertServicesFooter, setExpertServicesFooter] = useState(false);
   const [mobileSearchOverlay, setMobileSearchOverlay] = useState(false);
   const fabRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const hintId = useId();
   const chat = useSupportChat();
   const location = useLocation();
@@ -128,7 +194,7 @@ export const ChatbotFab: React.FC = () => {
     || isExpertPanelRoute(location.pathname)
     || mobileSearchOverlay;
   const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
-  const showHint = !seen && !isOpen;
+  const showHint = !hintDismissed && !isOpen;
   const hasConversation = chat.messages.length > 0;
 
   useEffect(() => {
@@ -175,33 +241,42 @@ export const ChatbotFab: React.FC = () => {
     };
   }, [isOpen]);
 
-  const markSeen = () => {
-    if (seen) return;
-    setSeen(true);
-    try {
-      sessionStorage.setItem(SEEN_KEY, '1');
-    } catch {
-      /* modo privado */
-    }
+  /** Re-scroll al abrir el teclado en iOS para que el input no tape el último mensaje. */
+  useEffect(() => {
+    if (!keyboardViewport || !isOpen) return;
+    const input = panelRef.current?.querySelector('[aria-label="Tu pregunta"]');
+    input?.scrollIntoView({ block: 'end', behavior: 'auto' });
+  }, [keyboardViewport, isOpen]);
+
+  const markFabEngaged = () => {
+    if (fabEngaged) return;
+    setFabEngaged(true);
+    writeStorage(FAB_ENGAGED_KEY);
+  };
+
+  const dismissHint = () => {
+    if (hintDismissed) return;
+    setHintDismissed(true);
+    writeStorage(HINT_DISMISSED_KEY);
   };
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (open) markSeen();
+    if (open) markFabEngaged();
   };
 
   const openAssistant = () => {
-    markSeen();
+    dismissHint();
+    markFabEngaged();
     setIsOpen(true);
   };
 
   const toggleOpen = () => {
-    markSeen();
-    setIsOpen((prev) => !prev);
-  };
-
-  const dismissHint = () => {
-    markSeen();
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) markFabEngaged();
+      return next;
+    });
   };
 
   if (isHidden || !cookiesAccepted) return null;
@@ -210,8 +285,13 @@ export const ChatbotFab: React.FC = () => {
     <>
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
         <SheetContent
+          ref={panelRef}
           id={PANEL_ID}
           side={isMobile ? 'bottom' : 'right'}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            fabRef.current?.focus();
+          }}
           className={cn(
             'flex flex-col gap-0 bg-white p-0 [&>button]:hidden',
             isMobile
@@ -224,7 +304,9 @@ export const ChatbotFab: React.FC = () => {
               : undefined
           }
         >
-          <SheetTitle className="sr-only">{PANEL_TITLE}</SheetTitle>
+          <SheetTitle className="sr-only" id="support-chat-sheet-title">
+            {PANEL_TITLE}
+          </SheetTitle>
           <SheetDescription className="sr-only">{PANEL_DESCRIPTION}</SheetDescription>
           <ChatbotPanel
             chat={chat}
@@ -240,13 +322,15 @@ export const ChatbotFab: React.FC = () => {
           CHATBOT_FAB_RIGHT_MOBILE_CLASS,
           'md:right-6',
           `${mobileBottomClass} md:bottom-6`,
-          'support-chat-fab-enter',
           isOpen && 'support-chat-fab-shell--dormant',
         )}
         aria-hidden={isOpen}
       >
         {showHint && (
-          <SupportChatFabHintDesktop hintId={hintId} onOpen={openAssistant} onDismiss={dismissHint} />
+          <>
+            <SupportChatFabHintDesktop hintId={hintId} onOpen={openAssistant} onDismiss={dismissHint} />
+            <SupportChatFabHintMobile hintId={hintId} onOpen={openAssistant} onDismiss={dismissHint} />
+          </>
         )}
 
         <button
@@ -255,9 +339,9 @@ export const ChatbotFab: React.FC = () => {
           onClick={toggleOpen}
           tabIndex={isOpen ? -1 : 0}
           className={cn(
-            'support-chat-fab-btn',
+            'support-chat-fab-btn support-chat-fab-enter',
             isMobile ? 'support-chat-fab-btn--mobile' : 'support-chat-fab-btn--dock',
-            !seen && 'support-chat-fab-pulse',
+            !fabEngaged && 'support-chat-fab-pulse',
           )}
           aria-label="Abrir asistente de Inspecciono"
           aria-expanded={isOpen}

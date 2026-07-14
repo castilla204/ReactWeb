@@ -15,7 +15,6 @@ import {
   Camera,
   Wrench,
   Check,
-  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +25,7 @@ import { isAdmin } from '../utils/admin';
 // Importar imágenes directamente desde src/media para que Vite las procese
 import { CurrencySelector } from './CurrencySelector';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
+import { MobileSearchPill } from './homepage/MobileSearchPill';
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
 import motorcycleImg from '../media/motorcycle.png';
@@ -116,14 +116,10 @@ import {
   HP_MOBILE_SEARCH_MODAL_BODY_CLASS,
   HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS,
   HP_MOBILE_SEARCH_MODAL_HEADER_CLASS,
-  HP_MOBILE_SEARCH_PILL_HEIGHT_PX,
 } from '../constants/homepageMobileRhythm';
 import {
-  getMobileSearchPillAriaLabel,
-  getMobileSearchPillSubtitle,
   MOBILE_SEARCH_MODAL_SUBTITLE,
   MOBILE_SEARCH_MODAL_TITLE,
-  MOBILE_SEARCH_PILL_TITLE,
 } from '../constants/homepageSearchCopy';
 import { cn } from '../lib/utils';
 
@@ -591,11 +587,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
     return selectedCategory?.name ?? 'Inmobiliaria';
   }, [drawerCategoryReplacement, selectedCategory]);
 
-  const mobilePillSubtitle = useMemo(
-    () => getMobileSearchPillSubtitle(mobilePillCategoryLabel),
-    [mobilePillCategoryLabel],
-  );
-
   // ✅ Leer parámetros de retorno desde SearchParameterForm y abrir modal automáticamente
   useEffect(() => {
     const returnToSearch = sessionStorage.getItem('returnToSearch');
@@ -917,51 +908,11 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         }`}
       >
         <div className={HP_MOBILE_HEADER_INSET_CLASS}>
-          <div
-            onClick={openMobileSearch}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                openMobileSearch();
-              }
-            }}
-            aria-label={getMobileSearchPillAriaLabel(mobilePillCategoryLabel)}
-            className={cn(
-              'relative flex w-full cursor-pointer items-center gap-3 rounded-full border bg-white px-4 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
-              categoryId != null ? 'border-brand/25' : 'border-line',
-            )}
-            style={{
-              height: `${HP_MOBILE_SEARCH_PILL_HEIGHT_PX}px`,
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-            }}
-          >
-            <MapPin
-              className="h-5 w-5 shrink-0 text-brand"
-              strokeWidth={2}
-              aria-hidden
-            />
-            <div className="min-w-0 flex-1 text-left">
-              <span
-                className="block max-w-full truncate text-sm font-semibold leading-[18px] text-ink-strong"
-                style={{ fontFamily: HP_FONT }}
-              >
-                {MOBILE_SEARCH_PILL_TITLE}
-              </span>
-              <span
-                className="block max-w-full truncate text-xs leading-4 text-ink-muted"
-                style={{ fontFamily: HP_FONT }}
-              >
-                {mobilePillSubtitle}
-              </span>
-            </div>
-            <ChevronRight
-              className="h-4 w-4 shrink-0 text-ink-muted"
-              strokeWidth={2.25}
-              aria-hidden
-            />
-          </div>
+          <MobileSearchPill
+            categoryId={categoryId}
+            categoryLabel={mobilePillCategoryLabel}
+            onOpen={openMobileSearch}
+          />
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS } from '../../constants/homepageTypography';
+import { SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS, SD_CHECKOUT_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
 
 interface CheckoutSlotHoursDrawerProps {
@@ -57,7 +57,7 @@ export function CheckoutSlotHoursDrawer({
             {expanded ? (
                 <button
                     type="button"
-                    className="fixed inset-0 z-[35] bg-black/20 transition-opacity duration-300 lg:hidden"
+                    className="fixed inset-0 z-[80] bg-black/20 transition-opacity duration-300 motion-reduce:transition-none lg:hidden"
                     onClick={onToggle}
                     aria-label="Cerrar selector de hora"
                 />
@@ -65,7 +65,7 @@ export function CheckoutSlotHoursDrawer({
 
             <div
                 className={cn(
-                    'pointer-events-none fixed inset-x-0 bottom-0 z-[36] lg:hidden',
+                    'pointer-events-none fixed inset-x-0 bottom-0 z-[81] motion-reduce:transition-none lg:hidden',
                     SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
                 )}
                 aria-live="polite"
@@ -80,7 +80,8 @@ export function CheckoutSlotHoursDrawer({
                 >
                     <div
                         className={cn(
-                            'relative shrink-0 bg-white px-4 pt-1',
+                            'relative shrink-0 bg-white pt-1',
+                            SD_CHECKOUT_MOBILE_GUTTER_CLASS,
                             expanded ? 'pb-2.5' : 'pb-4',
                         )}
                     >
@@ -135,7 +136,8 @@ export function CheckoutSlotHoursDrawer({
                             // en el propio motor, independiente del valor de destino). El alto pasa
                             // a ser 100% inline e instantáneo; el crecimiento visual ya lo aporta la
                             // lámina exterior, que sí anima su max-height sin problemas.
-                            'min-h-0 overflow-y-auto overscroll-contain border-t border-line bg-white px-4 transition-opacity duration-300',
+                            'min-h-0 overflow-y-auto overscroll-contain border-t border-line bg-white transition-opacity duration-300',
+                            SD_CHECKOUT_MOBILE_GUTTER_CLASS,
                             expanded
                                 ? 'visible pb-4 pt-2.5 opacity-100'
                                 : 'invisible border-t-0 pb-0 pt-0 opacity-0',

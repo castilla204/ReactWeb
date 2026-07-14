@@ -1,6 +1,6 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { CalendarDays, Info, Lock, Send } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import { CalendarDays, Info, Lock, Send, ShieldCheck } from 'lucide-react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
     CheckoutSelfCoordinationInfoNote,
@@ -19,9 +19,9 @@ import {
     SELLER_BOOKING_MIN_LEAD_DAYS,
     SELLER_BOOKING_TARGET_WINDOW_DAYS,
 } from '../../utils/sellerBookingWindow';
-import { getInspectionSubjectCapitalized } from '../../utils/inspectionSubject';
+import { getInspectionSubject, getInspectionSubjectCapitalized } from '../../utils/inspectionSubject';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS } from '../../constants/homepageTypography';
+import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS, SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS, SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS } from '../../constants/homepageTypography';
 import { HP_FONT } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
 
@@ -80,7 +80,7 @@ function OptionCardInfoTrigger({
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     className={cn(
-                        'grid h-7 w-7 shrink-0 place-items-center rounded-full transition-colors',
+                        'grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors',
                         onBlue
                             ? 'bg-white/15 text-white/90 hover:bg-white/25'
                             : 'bg-surface-tinted text-ink-muted ring-1 ring-line hover:bg-brand/10 hover:text-brand hover:ring-brand/20',
@@ -105,8 +105,8 @@ function OptionCardCancelNote({ hint, onBlue }: { hint: string; onBlue?: boolean
     return (
         <p
             className={cn(
-                'text-kicker leading-[1.55] lg:text-caption',
-                onBlue ? 'text-white/75' : 'text-ink-muted',
+                'text-caption leading-[1.55] lg:text-caption',
+                onBlue ? 'text-white' : 'text-ink-muted',
             )}
         >
             {COORD_OPTION_FREE_CANCEL} {hint}
@@ -186,7 +186,7 @@ function OptionCard({
                             compact
                                 ? 'mb-1.5 [&>svg]:h-[22px] [&>svg]:w-[22px]'
                                 : 'mb-2 [&>svg]:h-7 [&>svg]:w-7 lg:[&>svg]:h-8 lg:[&>svg]:w-8',
-                            selected ? 'text-white/90' : 'text-line',
+                            selected ? 'text-white' : 'text-line',
                         )}
                     >
                         {icon}
@@ -213,7 +213,7 @@ function OptionCard({
                     <p
                         className={cn(
                             'mt-2 text-caption font-medium leading-snug',
-                            selected ? 'text-white/80' : 'text-ink-muted',
+                            selected ? 'text-white' : 'text-ink-muted',
                         )}
                     >
                         {tagline}
@@ -222,7 +222,7 @@ function OptionCard({
                 <p
                     className={cn(
                         'flex-1 text-meta',
-                        selected ? 'text-white/90' : 'text-ink-muted',
+                        selected ? 'text-white' : 'text-ink-muted',
                         compact
                             ? 'mt-2 leading-[1.55] lg:mt-2.5 lg:text-meta lg:leading-[1.6]'
                             : 'mt-2.5 leading-[1.6] lg:text-meta lg:leading-[1.6]',
@@ -268,18 +268,11 @@ export function getCoordDesktopStep1Lead(categoryName?: string | null): ReactNod
     );
 }
 
-/** Respuestas a «¿Quién elige la fecha?». Cortas y en primera persona.
- *  NO reutilizan COORD_OPTION_*_TITLE a propósito: esos títulos explícitos los necesitan
- *  el resumen del pedido (checkoutSummary) y las vistas de solo-lectura, donde un
- *  «Yo, ahora» suelto, sin la pregunta delante, no se entiende. */
+/** Respuestas cortas a «¿Quién elige la fecha?» — telegráficas, en primera persona. */
 const COORD_ANSWER_SELLER = 'El vendedor';
 const COORD_ANSWER_SELF = 'Yo, ahora';
 
-/** Los hechos DENTRO de cada tarjeta, estilo tabla (filetes etiqueta/valor): al usuario
- *  le funciona ese flow visual (decisión 2026-07-10 tras probar radios+nota y tabla
- *  comparativa compartida). La primera fila explica el MECANISMO (el enlace / tú
- *  reservas); las demás, las consecuencias. Valores CORTOS para caber en 1-2 líneas:
- *  «Tú haces: nada» justifica la preselección sin badge. */
+/** Hechos comparativos dentro de cada tarjeta (etiqueta tenue / valor semibold). */
 const COORD_COMPARE_FACTS: ReadonlyArray<{
     label: string;
     seller: string;
@@ -287,28 +280,248 @@ const COORD_COMPARE_FACTS: ReadonlyArray<{
 }> = [
     {
         label: 'Cómo se fija la cita',
-        seller: 'Le enviamos un enlace y él reserva',
-        self: 'Tú reservas en el siguiente paso',
+        seller: 'Le mandamos un enlace; él elige hueco libre',
+        self: 'Tú reservas en el calendario del experto',
     },
     {
         label: 'Cuándo será',
-        // «Normalmente»: la ventana real del backend es +3..+14 (SellerBookingWindow); solo se
-        // ofrece 8-14 si el experto no tiene huecos en 3-7. Sin el matiz, una cita a +10 días
-        // contradiría lo prometido en el checkout (auditoría 2026-07-12, M2).
-        seller: `Normalmente en ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días`,
-        self: 'El día que tú elijas',
+        seller: `Suele ser en ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días`,
+        self: 'El día que encaje contigo',
     },
     {
         label: 'Tú haces',
-        seller: 'Nada: te decimos día, hora y lugar',
-        self: 'Eliges día, hora y lugar',
+        seller: 'Nada: te avisamos con día, hora y lugar',
+        self: 'Día, hora y dónde se hace la inspección',
     },
     {
         label: 'Cancelas gratis',
-        seller: 'Hasta que él reserve',
-        self: 'Hasta que el experto confirme',
+        seller: 'Hasta que reserve con el enlace',
+        self: 'Hasta que el experto confirme la cita',
     },
 ];
+
+/** Esquinas desktop / embedded — uniformes. */
+const COORD_CARD_SURFACE_CLASS = 'rounded-2xl';
+
+/** Esquinas uniformes — misma superficie en móvil y desktop. */
+const COORD_CARD_CHOOSE_SHAPE = [COORD_CARD_SURFACE_CLASS, COORD_CARD_SURFACE_CLASS] as const;
+
+function CoordinationCompareCard({
+    value,
+    label,
+    note,
+    active,
+    disabled,
+    index,
+    chooseLayout,
+    onSelect,
+}: {
+    value: CoordinationSelection;
+    label: string;
+    note?: string;
+    active: boolean;
+    disabled?: boolean;
+    index: number;
+    chooseLayout?: boolean;
+    onSelect: (value: CoordinationSelection) => void;
+}) {
+    return (
+        <div
+            role="radio"
+            aria-checked={active}
+            aria-disabled={disabled || undefined}
+            tabIndex={disabled ? -1 : active ? 0 : -1}
+            onClick={disabled ? undefined : () => onSelect(value)}
+            onKeyDown={(e) => {
+                if (disabled) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(value);
+                }
+            }}
+            style={{ ['--i' as string]: index } as CSSProperties}
+            className={cn(
+                'coordination-card-enter group/card relative cursor-pointer overflow-hidden border bg-white text-left',
+                chooseLayout
+                    ? (COORD_CARD_CHOOSE_SHAPE[index] ?? COORD_CARD_CHOOSE_SHAPE[0])
+                    : COORD_CARD_SURFACE_CLASS,
+                'transition-[border-color,background-color,box-shadow] duration-200 ease-out motion-safe:active:scale-[0.995] motion-reduce:transition-none motion-reduce:active:scale-100',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+                active
+                    ? cn(
+                          'border-brand shadow-[0_2px_14px_hsl(var(--brand)/0.12)]',
+                          chooseLayout
+                              ? 'bg-white ring-1 ring-brand/12'
+                              : 'bg-white ring-2 ring-brand/20',
+                      )
+                    : cn(
+                          'border-line hover:border-ink-soft/50',
+                          !chooseLayout && 'shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+                      ),
+                disabled && 'pointer-events-none cursor-not-allowed opacity-45',
+            )}
+        >
+            <div className="flex items-start gap-3 px-5 pb-3 pt-4">
+                <span
+                    aria-hidden
+                    className={cn(
+                        'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ease-out',
+                        active
+                            ? 'bg-brand text-white coordination-radio-settle'
+                            : 'border-2 border-line bg-white group-hover/card:border-ink-soft/60',
+                    )}
+                >
+                    {active ? (
+                        <svg
+                            className="coordination-check-draw h-3 w-3"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={4}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden
+                        >
+                            <path d="M5 13l4 4L19 7" />
+                        </svg>
+                    ) : null}
+                </span>
+                <div className="min-w-0 flex-1">
+                    <p className="text-body font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
+                        {label}
+                    </p>
+                    {note ? (
+                        <p className="mt-1 text-caption leading-snug text-ink-muted">{note}</p>
+                    ) : null}
+                </div>
+            </div>
+
+            <dl className="border-t border-line-soft px-5">
+                {COORD_COMPARE_FACTS.map((fact, rowIdx) => {
+                    const isLast = rowIdx === COORD_COMPARE_FACTS.length - 1;
+                    return (
+                        <div
+                            key={fact.label}
+                            className={cn(
+                                'flex items-baseline justify-between gap-3 py-2.5',
+                                rowIdx > 0 && 'border-t border-line-soft/80',
+                                isLast && 'pb-3.5',
+                            )}
+                        >
+                            <dt className="shrink-0 text-caption text-ink-muted">{fact.label}</dt>
+                            <dd className="text-right text-caption font-semibold leading-[1.45] text-ink-strong">
+                                {value === 'seller' ? fact.seller : fact.self}
+                            </dd>
+                        </div>
+                    );
+                })}
+            </dl>
+        </div>
+    );
+}
+
+function CoordinationChooseTrustRail() {
+    return (
+        <div className={SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS} role="note">
+            <ShieldCheck
+                className="mt-0.5 h-4 w-4 shrink-0 text-brand"
+                strokeWidth={2}
+                aria-hidden
+            />
+            <p className="text-caption leading-[1.45] text-ink-muted">
+                <span className="font-semibold text-ink-strong">Tu pago queda protegido</span>
+                {' '}
+                da igual quién elija la fecha: lo retenemos hasta que apruebes el informe.
+            </p>
+        </div>
+    );
+}
+
+/**
+ * Selector «¿Quién elige la fecha?»: dos opciones apiladas con tabla comparativa.
+ */
+function CoordinationOptionCompare({
+    selection,
+    sellerOptionDisabled,
+    categoryName,
+    embedded,
+    chooseLayout,
+    onSelect,
+}: {
+    selection: CoordinationSelection | null;
+    sellerOptionDisabled?: boolean;
+    categoryName?: string | null;
+    embedded?: boolean;
+    chooseLayout?: boolean;
+    onSelect: (value: CoordinationSelection) => void;
+}) {
+    const sel: CoordinationSelection = selection ?? (sellerOptionDisabled ? 'self' : 'seller');
+    const subject = getInspectionSubject(categoryName);
+
+    const columns: Array<{
+        value: CoordinationSelection;
+        label: string;
+        note?: string;
+        disabled?: boolean;
+    }> = [
+        {
+            value: 'seller',
+            label: COORD_ANSWER_SELLER,
+            note: `Lo más habitual si el vendedor tiene ${subject}.`,
+            disabled: sellerOptionDisabled,
+        },
+        { value: 'self', label: COORD_ANSWER_SELF },
+    ];
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const idx = columns.findIndex((c) => c.value === sel);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            const next = columns[Math.min(idx + 1, columns.length - 1)];
+            if (!next.disabled) onSelect(next.value);
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const prev = columns[Math.max(idx - 1, 0)];
+            if (!prev.disabled) onSelect(prev.value);
+        }
+    };
+
+    return (
+        <div className={cn(!embedded && !chooseLayout && 'mt-1')}>
+            <div
+                role="radiogroup"
+                aria-label="Quién elige la fecha de la cita"
+                className={cn(
+                    chooseLayout
+                        ? SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS
+                        : 'flex flex-col gap-3',
+                )}
+                onKeyDown={handleKeyDown}
+            >
+                {columns.map((col, idx) => (
+                    <CoordinationCompareCard
+                        key={col.value}
+                        value={col.value}
+                        label={col.label}
+                        note={col.disabled ? undefined : col.note}
+                        active={sel === col.value}
+                        disabled={col.disabled}
+                        index={idx}
+                        chooseLayout={chooseLayout}
+                        onSelect={onSelect}
+                    />
+                ))}
+            </div>
+
+            {sellerOptionDisabled ? (
+                <p role="note" className="mt-2.5 text-caption leading-relaxed text-warning">
+                    Este técnico no tiene disponibilidad en plazo. Elige «{COORD_ANSWER_SELF}» o vuelve
+                    cuando el experto abra huecos.
+                </p>
+            ) : null}
+        </div>
+    );
+}
 
 function CoordinationChooseHeader({
     className,
@@ -323,7 +536,7 @@ function CoordinationChooseHeader({
                 pregunta + una línea de contexto. */}
             {/* text-xl = mismo tamaño de título que CheckoutMobileStepHeader en el resto
                 de pasos del checkout (antes 21px, un punto más grande). */}
-            <h2 className="text-xl font-extrabold leading-[1.15] tracking-[-0.025em] text-ink-strong [text-wrap:balance]">
+            <h2 className="text-title font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]">
                 ¿Quién elige la fecha?
             </h2>
             {/* 48ch ≈ ancho del gutter móvil (375-40px): 2 líneas anchas, no una columnita
@@ -362,6 +575,10 @@ export interface CheckoutCoordinationStepProps {
     sellerOptionDisabled?: boolean;
     showSellerValidation?: boolean;
     headingClassName?: string;
+    /** Móvil paso choose: overlap + formas irregulares + tabla sin zebra. */
+    chooseLayout?: boolean;
+    /** Móvil paso choose: rail de confianza in-scroll (no footer). */
+    showTrustRail?: boolean;
 }
 
 function CoordinationOptionCards({
@@ -441,190 +658,6 @@ function CoordinationOptionCards({
     );
 }
 
-/**
- * Selector de «¿Quién elige la fecha?»: DOS tarjetas apiladas, cada una con su tabla de
- * hechos dentro (filetes etiqueta/valor). Mismo componente en móvil y desktop.
- *
- * Es el flow que el usuario validó (2026-07-10) tras probar y descartar: radios con nota
- * en prosa, tabla comparativa compartida de dos columnas, y TODA forma de chip/badge de
- * recomendación (12 variantes). Lo que queda de aquellas rondas: cabecera CLARA sin
- * bandas oscuras (las dos tarjetas se leen como pares), selección por borde ink +
- * check sólido, copy corto a 1 línea, y recomendación comunicada por el orden (el
- * vendedor primero) + la preselección — sin badge.
- *
- * Jerarquía tipográfica: etiqueta de fila tenue (el rótulo se repite en ambas tarjetas,
- * es el eje) y VALOR en semibold ink (la respuesta, lo que se compara).
- *
- * Las vistas de solo-lectura (coordinar/confirmar cita) siguen con CoordinationOptionCards.
- */
-function CoordinationOptionCompare({
-    selection,
-    sellerOptionDisabled,
-    /** Desktop embebido: no hay cabecera de pregunta encima (showStepHeader=false), así
-     *  que el mt-4 pensado para separarse de esa cabecera sobra y desequilibraba el
-     *  margen arriba/abajo de la columna (feedback 2026-07-12). */
-    embedded,
-    onSelect,
-}: {
-    selection: CoordinationSelection | null;
-    sellerOptionDisabled?: boolean;
-    embedded?: boolean;
-    onSelect: (value: CoordinationSelection) => void;
-}) {
-    const sel: CoordinationSelection = selection ?? (sellerOptionDisabled ? 'self' : 'seller');
-
-    const columns: Array<{
-        value: CoordinationSelection;
-        label: string;
-        /** Subtítulo bajo el nombre (solo la recomendada): dice QUE es la recomendada y POR
-         *  QUÉ, en texto plano — el chip/badge está vetado en este paso. Se oculta si la
-         *  opción está deshabilitada (recomendar algo no elegible sería contradictorio). */
-        note?: string;
-        disabled?: boolean;
-    }> = [
-        {
-            value: 'seller',
-            label: COORD_ANSWER_SELLER,
-            note: 'Recomendado: es la opción más sencilla',
-            disabled: sellerOptionDisabled,
-        },
-        { value: 'self', label: COORD_ANSWER_SELF },
-    ];
-
-    return (
-        <div className={cn(!embedded && 'mt-1')}>
-            <div
-                role="radiogroup"
-                aria-label="Quién elige la fecha de la cita"
-                className="flex flex-col gap-2.5"
-            >
-                {columns.map((col, idx) => {
-                    const active = sel === col.value;
-                    return (
-                        <div
-                            key={col.value}
-                            role="radio"
-                            aria-checked={active}
-                            aria-disabled={col.disabled || undefined}
-                            tabIndex={col.disabled ? -1 : 0}
-                            onClick={col.disabled ? undefined : () => onSelect(col.value)}
-                            onKeyDown={(e) => {
-                                if (col.disabled) return;
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    onSelect(col.value);
-                                }
-                            }}
-                            style={{ ['--i' as string]: idx } as CSSProperties}
-                            className={cn(
-                                // Silueta asimétrica (esquinas en diagonal) para que la card no sea
-                                // un rectángulo plano: TL/BR más redondeadas, TR/BL más marcadas.
-                                'coordination-card-enter group/card cursor-pointer overflow-hidden rounded-[1.35rem_0.5rem_1.35rem_0.5rem] border bg-white text-left',
-                                'transition-[border-color,box-shadow,transform] duration-200 ease-out motion-safe:active:scale-[0.995]',
-                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 focus-visible:ring-offset-2',
-                                active
-                                    ? 'border-brand ring-1 ring-inset ring-brand/35 shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(15,23,42,0.06)]'
-                                    : 'border-line hover:border-ink-soft/60 motion-safe:hover:-translate-y-px motion-safe:hover:shadow-[0_4px_14px_rgba(15,23,42,0.07)]',
-                                col.disabled && 'pointer-events-none cursor-not-allowed opacity-45',
-                            )}
-                        >
-                            {/* Cabecera como "etiqueta" (tab) que ABRAZA el texto (w-fit): el
-                                check + la respuesta viven en una píldora redondeada que se rellena
-                                en azul de bolígrafo al elegir — el sello donde se firma. Al no
-                                ocupar todo el ancho, la card gana una silueta irregular (una
-                                pestaña asomando arriba a la izquierda) en vez de un rectángulo
-                                plano. La recomendación: el orden + la preselección. */}
-                            <div className="px-3.5 pb-2 pt-3.5">
-                                <span
-                                    className={cn(
-                                        'inline-flex w-fit items-center gap-2 rounded-full py-1 pl-1 pr-3.5 transition-[background-color,box-shadow,color] duration-200 ease-out',
-                                        active
-                                            ? 'bg-brand text-white shadow-[0_2px_10px_hsl(var(--brand)/0.22)]'
-                                            : 'bg-surface-tinted text-ink-strong ring-1 ring-inset ring-line group-hover/card:ring-ink-soft/40',
-                                    )}
-                                >
-                                    <span
-                                        aria-hidden
-                                        className={cn(
-                                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ease-out',
-                                            active
-                                                ? 'bg-white text-brand coordination-radio-settle'
-                                                : 'border-2 border-line bg-white group-hover/card:border-ink-soft/60',
-                                        )}
-                                    >
-                                        {active ? (
-                                            <svg
-                                                className="coordination-check-draw h-3.5 w-3.5"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth={4}
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                aria-hidden
-                                            >
-                                                <path d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        ) : null}
-                                    </span>
-                                    <span className="text-lead font-bold leading-tight tracking-[-0.01em]">
-                                        {col.label}
-                                    </span>
-                                </span>
-                                {col.note && !col.disabled ? (
-                                    <span className="mt-1.5 block pl-1 text-caption leading-snug text-ink-muted">
-                                        {col.note}
-                                    </span>
-                                ) : null}
-                            </div>
-                            {/* Tabla interior: filetes etiqueta/valor DENTRO de cada tarjeta, con
-                                banda alterna (zebra) — la fila impar lleva fondo gris muy sutil en
-                                vez de depender solo del hairline para separar renglones.
-                                El pb ya NO vive en el <dl>: ese padding quedaba fuera del propio
-                                div de la fila (que lleva el bg-*), así que bajo la última fila
-                                (gris) se veía un filete blanco sin cubrir — parecía una fila
-                                cortada. Ahora el aire extra es pb de la ÚLTIMA fila, dentro del
-                                mismo div que pinta el fondo, así el gris llega hasta la esquina
-                                redondeada de la tarjeta (que recorta con overflow-hidden). */}
-                            <dl className="px-3.5">
-                                {COORD_COMPARE_FACTS.map((fact, idx) => {
-                                    const isLast = idx === COORD_COMPARE_FACTS.length - 1;
-                                    return (
-                                        <div
-                                            key={fact.label}
-                                            className={cn(
-                                                // Desktop un pelín más compacto (lg:py-1.5) para que las
-                                                // dos tarjetas + su aire quepan en la altura fija del panel
-                                                // sin scroll ni quedar pegadas abajo (feedback 2026-07-13).
-                                                'flex items-baseline justify-between gap-4 -mx-3.5 px-3.5 py-2 lg:py-1.5',
-                                                idx === 0 && 'border-t border-line-soft',
-                                                idx % 2 === 1 && 'bg-surface-tinted',
-                                                isLast && 'pb-3 lg:pb-2.5',
-                                            )}
-                                        >
-                                            <dt className="shrink-0 text-kicker text-ink-muted">{fact.label}</dt>
-                                            <dd className="text-right text-caption font-semibold leading-[1.4] text-ink-strong">
-                                                {col.value === 'seller' ? fact.seller : fact.self}
-                                            </dd>
-                                        </div>
-                                    );
-                                })}
-                            </dl>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {sellerOptionDisabled ? (
-                <p role="note" className="mt-2.5 text-caption leading-relaxed text-warning">
-                    Este técnico no tiene disponibilidad en plazo. Elige «{COORD_ANSWER_SELF}» o prueba
-                    más tarde.
-                </p>
-            ) : null}
-        </div>
-    );
-}
-
 export function CheckoutCoordinationStep({
     view,
     selection,
@@ -645,6 +678,8 @@ export function CheckoutCoordinationStep({
     sellerOptionDisabled,
     showSellerValidation,
     headingClassName,
+    chooseLayout = false,
+    showTrustRail = false,
 }: CheckoutCoordinationStepProps) {
     const sellerFieldsVariant =
         view === 'seller-plazos' ? 'plazos' : view === 'seller-contact' ? 'contact' : 'full';
@@ -675,14 +710,17 @@ export function CheckoutCoordinationStep({
                             onSelect={onSelect}
                         />
                     ) : (
-                        // Desktop interactivo: exactamente la misma comparativa que móvil
-                        // (mismos datos y mismas opciones apiladas).
-                        <CoordinationOptionCompare
-                            selection={effectiveSelection}
-                            sellerOptionDisabled={sellerOptionDisabled}
-                            embedded
-                            onSelect={onSelect}
-                        />
+                        <>
+                            <CoordinationOptionCompare
+                                selection={effectiveSelection}
+                                sellerOptionDisabled={sellerOptionDisabled}
+                                categoryName={categoryName}
+                                chooseLayout={chooseLayout}
+                                embedded
+                                onSelect={onSelect}
+                            />
+                            {showTrustRail ? <CoordinationChooseTrustRail /> : null}
+                        </>
                     )}
                 </div>
             </>
@@ -732,7 +770,7 @@ export function CheckoutCoordinationStep({
                     <h2
                         className={cn(
                             'font-bold leading-[1.15] tracking-[-0.02em] text-ink-strong [text-wrap:balance]',
-                            isSubStep ? 'text-title sm:text-lg' : 'text-xl sm:text-2xl lg:text-2xl',
+                            isSubStep ? 'text-title sm:text-lg' : 'text-title sm:text-lg lg:text-title',
                             headingClassName,
                         )}
                         style={{ fontFamily: HP_FONT }}
@@ -759,7 +797,7 @@ export function CheckoutCoordinationStep({
                 El `pb-4` va AQUÍ, como padding del propio item: así siempre forma parte del
                 área scrollable, sin depender de que el navegador honre el padding-bottom de
                 un contenedor de scroll. */}
-            <div className={cn(fillHeight ? 'w-full shrink-0 pb-4 [@media(min-height:700px)]:pt-2' : 'mt-3')}>
+            <div className={cn(fillHeight ? 'w-full shrink-0 pb-4 [@media(min-height:700px)]:pt-2' : !chooseLayout && 'mt-3')}>
                 {view === 'choose' || view === 'seller' ? (
                     readOnly ? (
                         // Solo-lectura (coordinar/confirmar cita): la tarjeta muestra la opción
@@ -771,11 +809,16 @@ export function CheckoutCoordinationStep({
                             onSelect={onSelect}
                         />
                     ) : (
-                        <CoordinationOptionCompare
-                            selection={effectiveSelection}
-                            sellerOptionDisabled={sellerOptionDisabled}
-                            onSelect={onSelect}
-                        />
+                        <>
+                            <CoordinationOptionCompare
+                                selection={effectiveSelection}
+                                sellerOptionDisabled={sellerOptionDisabled}
+                                categoryName={categoryName}
+                                chooseLayout={chooseLayout}
+                                onSelect={onSelect}
+                            />
+                            {showTrustRail ? <CoordinationChooseTrustRail /> : null}
+                        </>
                     )
                 ) : (
                     <div key={view} className="coordination-step-from-right">
@@ -793,8 +836,6 @@ export function CheckoutCoordinationStep({
                 )}
             </div>
 
-            {/* La línea de confianza («tu pago queda protegido») vive ahora en el bottom bar,
-                encima de Atrás/Continuar (ver CheckoutPage), no en el cuerpo. */}
         </div>
     );
 }
