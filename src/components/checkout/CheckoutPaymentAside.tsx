@@ -107,7 +107,7 @@ export function CheckoutPaymentAside({
           disabled={!canPay || isProcessing}
           type="button"
           aria-busy={isProcessing}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-7 text-body font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] transition-[background-color,box-shadow,transform] hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
         >
           {isProcessing ? (
             <>

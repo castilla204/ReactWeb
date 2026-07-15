@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Calendar, ClipboardCheck, MapPin, MessageCircle, Search, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { Calendar, ClipboardCheck, Search, ShoppingBag } from 'lucide-react';
 
 export interface ComoFuncionaStep {
   title: string;
@@ -27,23 +27,5 @@ export const COMO_FUNCIONA_STEPS: ComoFuncionaStep[] = [
     title: 'Confirmas y listo',
     body: 'Si todo encaja, liberas el pago. Si cancelas antes de empezar la revisión, reembolso completo.',
     Icon: ClipboardCheck,
-  },
-];
-
-export const COMO_FUNCIONA_TRUST: { title: string; body: string; Icon: LucideIcon }[] = [
-  {
-    title: 'Expertos verificados',
-    body: 'Revisores con identidad y credenciales validadas en Inspecciono.',
-    Icon: ShieldCheck,
-  },
-  {
-    title: 'Chat antes de pagar',
-    body: 'Aclara dudas con el experto tras reservar, sin compartir datos de pago por mensaje.',
-    Icon: MessageCircle,
-  },
-  {
-    title: 'Cobertura real',
-    body: 'Cada servicio muestra el radio de desplazamiento y la ubicación del revisor.',
-    Icon: MapPin,
   },
 ];

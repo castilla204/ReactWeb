@@ -86,7 +86,7 @@ function ReviewsMeta({
 
   const metaClass = compact
 
-    ? 'mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] leading-5 text-ink-muted'
+    ? 'mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-4 text-ink-muted'
 
     : onImage
 
@@ -290,33 +290,27 @@ export const ServiceDetailPageHeadline: React.FC<ServiceDetailPageHeadlineProps>
 
   return (
 
-    <header className={className}>
+    <header className={`${className} ${isCompact ? 'min-w-0' : ''}`.trim()}>
 
       {isCompact ? (
 
         <>
 
-          <h1 className="sd-page-title-compact m-0 text-lead font-semibold leading-[1.3] tracking-[-0.01em] text-ink-strong">
-            {title}
-
+          <h1 className="sd-page-title-compact m-0 text-xl font-semibold leading-[1.15] tracking-[-0.02em] text-ink-strong">
+            <span className="sd-page-title-compact__title">{title}</span>
             {locationLabel ? (
-
               <>
-
-                <span className="font-normal text-line" aria-hidden>
-
-                  {' '}
-
-                  ·{' '}
-
+                <span className="sd-page-title-compact__sep" aria-hidden>
+                  ·
                 </span>
-
-                <span className="font-normal text-ink-muted">{locationLabel}</span>
-
+                <span
+                  className="sd-page-title-compact__location font-normal text-ink-muted"
+                  title={locationLabel}
+                >
+                  {locationLabel}
+                </span>
               </>
-
             ) : null}
-
           </h1>
 
           <ReviewsMeta

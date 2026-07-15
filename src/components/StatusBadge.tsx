@@ -22,8 +22,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-kicker',
-    md: 'px-2.5 py-0.5 text-xs',
-    lg: 'px-3 py-1 text-sm'
+    md: 'px-2.5 py-0.5 text-caption',
+    lg: 'px-3 py-1 text-body'
   };
 
   // El tono lo decide statusValue (semántica del front), nunca el hex del seed.

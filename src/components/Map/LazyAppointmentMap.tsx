@@ -6,7 +6,7 @@ const AppointmentMap = lazy(() => import('../AppointmentMap'));
 function MapFallback({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`flex min-h-[12rem] items-center justify-center bg-surface-tinted ${className}`}
+      className={`flex min-h-[12rem] items-center justify-center bg-white ${className}`}
       role="status"
       aria-label="Cargando mapa"
     >

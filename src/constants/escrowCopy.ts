@@ -1,14 +1,29 @@
 /** Línea de confianza escrow — homepage y componentes de confianza. */
 export const ESCROW_TRUST_TAGLINE = 'No pagamos al experto hasta que tú confirmes';
 
-/** Primera línea del hero móvil — entregable + precio. */
-export const ESCROW_HERO_MOBILE_LEAD = 'Informe con fotos y vídeo · Precio fijo, sin sorpresas';
-
 /** Chip / pill — titular corto (cabecera del chupachups). */
 export const ESCROW_TRUST_CHIP_HEADLINE = 'Compra protegida';
 
 /** Pill hero móvil — segunda línea del chupachups (teaser). */
 export const ESCROW_TRUST_PILL_SUBLINE = 'Pagas al recibir el informe';
+
+/** Hero móvil — qué hace el servicio (coche, piso, moto, cámara…). */
+export const MOBILE_HERO_CARD_TITLE = 'Un perito revisa lo que compras';
+/** Hero móvil — entregable + cuándo pagas. */
+export const MOBILE_HERO_CARD_SUBLINE = 'Informe con fotos · Pagas al recibirlo';
+
+/** Hero móvil — categorías + transparencia de precio. */
+export const MOBILE_HERO_TRUST_BADGE = 'Coches, pisos, motos · Desde 25 €';
+
+/** Hero móvil — contexto completo para lectores de pantalla. */
+export const MOBILE_HERO_CARD_SR_DETAIL =
+  'Inspección presencial antes de comprar de segunda mano. No pagamos al experto hasta que confirmes el informe con fotos y vídeo, precio fijo.';
+
+/** @deprecated Usar MOBILE_HERO_TRUST_BADGE */
+export const MOBILE_HERO_LOCATION_BADGE = MOBILE_HERO_TRUST_BADGE;
+
+/** @deprecated Usar MOBILE_HERO_CARD_SR_DETAIL */
+export const ESCROW_HERO_MOBILE_LEAD = MOBILE_HERO_CARD_SR_DETAIL;
 
 /** Panel de confianza — titular (mecanismo en lenguaje claro). */
 export const ESCROW_TRUST_PANEL_HEADLINE =

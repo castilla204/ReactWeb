@@ -12,7 +12,7 @@ export type CheckoutMobileWizardStep = 1 | 2 | 3 | 4;
 
 export interface StepDef {
     id: number;
-    /** Nombre del paso: no se pinta, solo alimenta la etiqueta accesible. */
+    /** Nombre del paso: alimenta la etiqueta accesible y el texto visible bajo la barra. */
     label?: string;
 }
 
@@ -21,44 +21,19 @@ interface CheckoutMobileStepperProps {
     className?: string;
     /** Pasos del flujo; por defecto cuatro. */
     steps?: readonly StepDef[];
-}
-
-/** Chispas en la frontera del paso activo (solo con motion permitido). */
-function StepperFrontierSpark({ burst = false }: { burst?: boolean }) {
-    return (
-        <span
-            className={cn(
-                'checkout-stepper-frontier pointer-events-none',
-                burst && 'checkout-stepper-frontier--burst',
-            )}
-            aria-hidden
-        >
-            <span className="checkout-stepper-frontier-halo checkout-stepper-frontier-halo--a" />
-            <span className="checkout-stepper-frontier-halo checkout-stepper-frontier-halo--b" />
-            <span className="checkout-stepper-frontier-core" />
-            <span className="checkout-stepper-frontier-flare" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--1" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--2" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--3" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--4" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--5" />
-            <span className="checkout-stepper-spark checkout-stepper-spark--6" />
-            <span className="checkout-stepper-ember checkout-stepper-ember--1" />
-            <span className="checkout-stepper-ember checkout-stepper-ember--2" />
-        </span>
-    );
+    /** Segmentos sobre banda oscura (header ink-strong). */
+    onDark?: boolean;
 }
 
 /**
- * Progreso del wizard móvil: una línea fina partida en tantos segmentos como
- * pasos. Los tramos ya recorridos (incluido el actual) van en azul de marca; los
- * pendientes, en gris. La frontera del paso actual lleva un pulso de marca y
- * micro-chispas que comunican "aquí estás avanzando".
+ * Progreso del wizard móvil: línea segmentada. Tramos completados y el actual en
+ * azul de marca; pendientes en gris. Motion mínima: solo un fill al avanzar.
  */
 export function CheckoutMobileStepper({
     currentStep,
     className,
     steps = STEPS,
+    onDark = false,
 }: CheckoutMobileStepperProps) {
     const index = Math.max(0, steps.findIndex((s) => s.id === currentStep));
     const current = steps[index];
@@ -68,7 +43,7 @@ export function CheckoutMobileStepper({
     useEffect(() => {
         if (index > prevIndexRef.current) {
             setIgniteIndex(index);
-            const timer = window.setTimeout(() => setIgniteIndex(null), 480);
+            const timer = window.setTimeout(() => setIgniteIndex(null), 220);
             prevIndexRef.current = index;
             return () => window.clearTimeout(timer);
         }
@@ -77,52 +52,60 @@ export function CheckoutMobileStepper({
     }, [index]);
 
     return (
-        <div
-            className={cn('checkout-stepper flex items-center gap-3', className)}
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={steps.length}
-            aria-valuenow={index + 1}
-            aria-valuetext={
-                current?.label
-                    ? `Paso ${index + 1} de ${steps.length}: ${current.label}`
-                    : `Paso ${index + 1} de ${steps.length}`
-            }
-        >
-            {steps.map((step, i) => {
-                const isDone = i < index;
-                const isActive = i === index;
-                const isPending = i > index;
+        <div className={cn('checkout-stepper', className)}>
+            <div
+                className="flex items-center gap-2.5"
+                role="progressbar"
+                aria-valuemin={1}
+                aria-valuemax={steps.length}
+                aria-valuenow={index + 1}
+                aria-valuetext={
+                    current?.label
+                        ? `Paso ${index + 1} de ${steps.length}: ${current.label}`
+                        : `Paso ${index + 1} de ${steps.length}`
+                }
+            >
+                {steps.map((step, i) => {
+                    const isDone = i < index;
+                    const isActive = i === index;
+                    const isPending = i > index;
 
-                return (
-                    <span
-                        key={step.id}
-                        aria-hidden
-                        className={cn(
-                            'checkout-stepper-segment relative h-[3px] min-w-0 flex-1 rounded-full bg-line',
-                            isDone && 'checkout-stepper-segment--done',
-                            isActive && 'checkout-stepper-segment--active',
-                            isPending && 'checkout-stepper-segment--pending',
-                        )}
-                    >
-                        {!isPending ? (
-                            <span
-                                className={cn(
-                                    'checkout-stepper-fill absolute inset-y-0 left-0 rounded-full bg-brand',
-                                    isDone && 'checkout-stepper-fill--done w-full',
-                                    isActive && 'checkout-stepper-fill--active w-full',
-                                    isActive &&
-                                        igniteIndex === i &&
-                                        'checkout-stepper-fill--ignite',
-                                )}
-                            />
-                        ) : null}
-                        {isActive ? (
-                            <StepperFrontierSpark burst={igniteIndex === i} />
-                        ) : null}
-                    </span>
-                );
-            })}
+                    return (
+                        <span
+                            key={step.id}
+                            aria-hidden
+                            className={cn(
+                                'checkout-stepper-segment relative h-[3px] min-w-0 flex-1 rounded-full',
+                                onDark ? 'bg-white/35' : 'bg-line',
+                                isDone && 'checkout-stepper-segment--done',
+                                isActive && 'checkout-stepper-segment--active',
+                                isPending && 'checkout-stepper-segment--pending',
+                            )}
+                        >
+                            {!isPending ? (
+                                <span
+                                    className={cn(
+                                        'checkout-stepper-fill absolute inset-y-0 left-0 rounded-full bg-brand',
+                                        isDone && 'checkout-stepper-fill--done w-full',
+                                        isActive && 'checkout-stepper-fill--active w-full',
+                                        isActive &&
+                                            igniteIndex === i &&
+                                            'checkout-stepper-fill--ignite',
+                                    )}
+                                />
+                            ) : null}
+                        </span>
+                    );
+                })}
+            </div>
+            {current?.label && !onDark ? (
+                <p
+                    className="mt-1.5 text-caption font-medium text-ink-muted"
+                    aria-hidden
+                >
+                    {current.label}
+                </p>
+            ) : null}
         </div>
     );
 }

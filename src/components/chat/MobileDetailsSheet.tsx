@@ -98,7 +98,7 @@ export function MobileDetailsSheet({
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-line-soft text-ink-muted transition-colors hover:bg-line-soft hover:text-ink-strong"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-line-soft text-ink-muted transition-colors hover:bg-line-soft hover:text-ink-strong"
                   aria-label="Cerrar"
                 >
                   <X className="h-4 w-4" />

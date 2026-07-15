@@ -6,7 +6,6 @@ import { capMapWorkers } from '../lib/mapWorkers';
 capMapWorkers(maplibregl);
 import { MapPin } from 'lucide-react';
 import { getCartoVoyagerNoLabelsTiles, isExternalMapTileUrl } from '../utils/mapTileUrls';
-import { INSPECCIONO_RASTER_PAINT } from '../utils/inspeccionoMapStyle';
 import {
   EXPERT_SPARKLE_PALETTES,
   expertSparkleMarkerHtml,
@@ -25,7 +24,11 @@ import {
   pickVisibleSparkleHubIds,
   sparkleMarkerScale,
 } from './Map/expertSparkleVisibility';
-import { MAP_LITERAL } from '../constants/designTokens';
+import {
+  HERO_DESKTOP_MAP_LITERAL,
+  MAP_LITERAL,
+} from '../constants/designTokens';
+import { DESKTOP_HERO_MAP_INTEGRATION_WASH } from '../constants/homepageHeroMap';
 
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
@@ -34,28 +37,83 @@ maplibregl.setWorkerUrl(maplibreWorkerUrl);
  * Contornos globales de tierra/costa (Natural Earth) — app mundial, no solo España.
  */
 
-/** Paleta clara — agua suave, costas en azul marca (alineada con Carto Voyager).
- *  ⚠️ MapLibre `paint.line-color` exige color CSS resuelto (hex/rgb/hsl literal).
- *  Valores en MAP_LITERAL (designTokens.ts), sincronizados con --brand y --map-*. */
+/** Paleta hero desktop — agua neutra, tierra cálida, costas en tinta suave.
+ *  Marca (#0066CC) reservada para sparkles; no compite con el copy ni la foto. */
 const MAP_THEME = {
-  sky: MAP_LITERAL.sky,
-  land: MAP_LITERAL.land,
+  sky: HERO_DESKTOP_MAP_LITERAL.sky,
+  land: HERO_DESKTOP_MAP_LITERAL.land,
   brand: MAP_LITERAL.brand,
-  coastLine: MAP_LITERAL.brand,
-  coastHalo: MAP_LITERAL.coastHalo,
-  border: MAP_LITERAL.border,
+  coastLine: HERO_DESKTOP_MAP_LITERAL.coastLine,
+  coastHalo: HERO_DESKTOP_MAP_LITERAL.coastHalo,
+  border: HERO_DESKTOP_MAP_LITERAL.border,
 } as const;
 
-/** Paint VIVO específico para ExpertsAreaMap (homepage/hero/globe): saturación más
- *  alta que el canon porque el globo necesita color premium y la vista aérea
- *  lejana requiere boost visual (z ~ 0-4). */
+/** Paint hero: baja el cian del agua; mantiene contraste y calidez de la tierra. */
 const HERO_GLOBE_PAINT = {
-  'raster-opacity': 1,
-  'raster-saturation': 0.55,      // Más vivo que canon (0.35)
-  'raster-contrast': 0.20,         // Definición extra para premium
-  'raster-brightness-min': 0.08,   // Menos oscuro, base clara
+  'raster-opacity': 0.97,
+  'raster-saturation': -0.16,
+  'raster-contrast': 0.11,
+  'raster-brightness-min': 0.05,
   'raster-brightness-max': 1,
 } as const;
+
+/** A zoom bajo hay más océano visible → un poco más de desaturación; al acercar, tierra natural. */
+function getHeroPaintForZoom(zoom: number): Record<string, number> {
+  if (zoom <= 4) {
+    return {
+      'raster-opacity': 0.96,
+      'raster-saturation': -0.22,
+      'raster-contrast': 0.1,
+      'raster-brightness-min': 0.07,
+      'raster-brightness-max': 1,
+    };
+  }
+  if (zoom <= 7) {
+    const t = (zoom - 4) / 3;
+    return {
+      'raster-opacity': 0.96 + t * 0.04,
+      'raster-saturation': -0.22 + t * 0.14,
+      'raster-contrast': 0.1 + t * 0.02,
+      'raster-brightness-min': 0.07 - t * 0.04,
+      'raster-brightness-max': 1,
+    };
+  }
+  return { ...HERO_GLOBE_PAINT, 'raster-opacity': 1, 'raster-saturation': -0.05 };
+}
+
+const enableHeroDynamicRasterPaint = (map: maplibregl.Map): void => {
+  const applyPaint = () => {
+    const paint = getHeroPaintForZoom(map.getZoom());
+    try {
+      map.setPaintProperty('carto', 'raster-opacity', paint['raster-opacity']);
+      map.setPaintProperty('carto', 'raster-saturation', paint['raster-saturation']);
+      map.setPaintProperty('carto', 'raster-contrast', paint['raster-contrast']);
+      map.setPaintProperty('carto', 'raster-brightness-min', paint['raster-brightness-min']);
+      map.setPaintProperty('carto', 'raster-brightness-max', paint['raster-brightness-max']);
+    } catch {
+      // Layer aún no lista; reintenta en el próximo zoom.
+    }
+  };
+
+  applyPaint();
+  map.on('zoom', applyPaint);
+  (map as maplibregl.Map & { __heroPaintCleanup?: () => void }).__heroPaintCleanup = () =>
+    map.off('zoom', applyPaint);
+};
+
+const applyHeroGlobeAtmosphere = (map: maplibregl.Map): void => {
+  try {
+    map.setFog({
+      color: HERO_DESKTOP_MAP_LITERAL.sky,
+      'high-color': HERO_DESKTOP_MAP_LITERAL.skyMuted,
+      'horizon-blend': 0.08,
+      'space-color': HERO_DESKTOP_MAP_LITERAL.skyMuted,
+      'star-intensity': 0,
+    });
+  } catch {
+    // Fog cosmético — opcional según runtime.
+  }
+};
 
 /** Estilo Carto ESPECÍFICO para ExpertsAreaMap (homepage/hero): único mapa
  *  descentralizado porque la vista globe + vuelo regional justifican un look propio.
@@ -82,7 +140,7 @@ function buildCartoStyle(): maplibregl.StyleSpecification {
         id: 'carto',
         type: 'raster',
         source: 'carto',
-        // Paint vivo premium: colores más saturados, contraste más alto.
+        // Hero decorativo: raster desaturado + lavado CSS (no compite con copy/foto).
         paint: { ...HERO_GLOBE_PAINT },
       },
     ],
@@ -137,8 +195,8 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     layout: LINE_LAYOUT,
     paint: {
       'line-color': MAP_THEME.coastHalo,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 3.5, 5, 5, 7, 6.5, 9, 8],
-      'line-opacity': 1,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 3.2, 5, 4.5, 7, 5.8, 9, 7],
+      'line-opacity': 0.92,
     },
   });
 
@@ -149,8 +207,8 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     layout: LINE_LAYOUT,
     paint: {
       'line-color': MAP_THEME.coastLine,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.6, 5, 2.2, 7, 3, 9, 3.8],
-      'line-opacity': 0.95,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.4, 5, 1.9, 7, 2.6, 9, 3.2],
+      'line-opacity': 0.55,
     },
   });
 
@@ -161,8 +219,8 @@ function addGlobalOutlineLayers(map: maplibregl.Map): void {
     layout: LINE_LAYOUT,
     paint: {
       'line-color': MAP_THEME.border,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 5, 0.85, 7, 1.2, 9, 1.6],
-      'line-opacity': 0.52,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 5, 0.8, 7, 1.1, 9, 1.4],
+      'line-opacity': 0.48,
     },
   });
 }
@@ -628,6 +686,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         }
         try {
           map.setProjection({ type: 'globe' });
+          applyHeroGlobeAtmosphere(map);
         } catch (err) {
           console.error('[ExpertsAreaMap] Proyección globe:', err);
         }
@@ -642,6 +701,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         try {
           ensureLandFillLayer(map);
           landFillLoadedRef.current = true;
+          enableHeroDynamicRasterPaint(map);
           map.triggerRepaint();
         } catch (err) {
           console.error('[ExpertsAreaMap] Capa de relleno tierra:', err);
@@ -719,6 +779,9 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       markersRef.current.forEach((m) => m.remove());
       markersRef.current.clear();
       clearSparkleMarkers();
+      (
+        map as maplibregl.Map & { __heroPaintCleanup?: () => void }
+      ).__heroPaintCleanup?.();
       map?.remove();
       mapRef.current = null;
       setMapReady(false);
@@ -880,21 +943,17 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative h-full w-full overflow-hidden bg-map-sky ${className}`.trim()}
+      className={`relative h-full w-full overflow-hidden bg-surface-tinted ${className}`.trim()}
     >
-      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
+      <div ref={containerRef} className="experts-hero-map absolute inset-0 h-full w-full" />
 
-      {/* Velo muy suave — no tapar contornos costeros */}
       <div
         className="absolute inset-0 z-[1] pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(to top, rgba(255,255,255,0.12) 0%, transparent 18%)',
-        }}
+        style={{ background: DESKTOP_HERO_MAP_INTEGRATION_WASH }}
       />
 
       {mapLoadFailed && (
-        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-map-sky-muted pointer-events-none">
+        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-surface-tinted pointer-events-none">
           <p className="text-xs text-ink-muted px-4 text-center">
             El mapa no pudo cargarse. Recarga la página o comprueba tu conexión.
           </p>
@@ -925,11 +984,12 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           cursor: grabbing !important;
         }
         .maplibregl-ctrl-attribution {
-          font-size: 9px !important;
+          font-size: 10px !important;
+          line-height: 12px !important;
           background: rgba(255,255,255,0.82) !important;
-          color: hsl(0 0% 65%) !important;
+          color: hsl(var(--ink-muted)) !important;
         }
-        .maplibregl-ctrl-attribution a { color: hsl(0 0% 42%) !important; }
+        .maplibregl-ctrl-attribution a { color: hsl(var(--ink)) !important; }
         .maplibregl-ctrl-group {
           border: none !important;
           box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;

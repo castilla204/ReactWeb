@@ -80,3 +80,20 @@ export function getNotificationTone(
 export function getNotificationToneClass(tone: NotificationTone): string {
     return `nc-item--tone-${tone}`;
 }
+
+/** Etiqueta de texto corta por tono — sustituye a la franja de color como único indicador de
+ * severidad (la franja no distinguía nada sin poder ver el color; esto sí funciona sin color). */
+export function getNotificationToneLabel(tone: NotificationTone): string | null {
+    switch (tone) {
+        case 'info':
+            return 'Info';
+        case 'success':
+            return 'Confirmado';
+        case 'warning':
+            return 'Aviso';
+        case 'error':
+            return 'Alerta';
+        default:
+            return null;
+    }
+}

@@ -226,24 +226,46 @@ export function CheckoutSellerCoordinationFields({
                         formulario genérico, feedback 2026-07-10). El foco/error se pinta en el
                         contenedor entero: mismo componente que la versión desktop de este paso
                         (CheckoutDesktopLocationStepBody), un solo look para el mismo dato. */}
-                    <GroupedFieldsCard error={showContactError}>
-                        {/* Etiquetas cortas «Teléfono»/«Email» (como en desktop): el paso ya se
-                            titula «Datos del vendedor», repetirlo en cada fila era ruido. */}
-                        <GroupedFieldRow first htmlFor="seller-phone" label="Teléfono">
+                    <GroupedFieldsCard error={!selfMode && showContactError}>
+                        <GroupedFieldRow
+                            first
+                            htmlFor="seller-phone"
+                            label={
+                                selfMode ? (
+                                    <>
+                                        Teléfono{' '}
+                                        <span className="font-normal text-ink-muted">(opc.)</span>
+                                    </>
+                                ) : (
+                                    'Teléfono'
+                                )
+                            }
+                        >
                             <PhoneInputField
                                 bare
                                 id="seller-phone"
                                 name="seller-phone"
                                 value={sellerPhone}
                                 onChange={onSellerPhoneChange}
-                                aria-invalid={phoneFieldError}
+                                aria-invalid={!selfMode && phoneFieldError}
                                 defaultCountry="ES"
                             />
                         </GroupedFieldRow>
-                        {/* «o» sobre el filete: con uno de los dos basta (la fila siguiente lleva
-                            `first` para no duplicar el border-t). */}
-                        <GroupedFieldsDivider label="o" />
-                        <GroupedFieldRow first htmlFor="seller-email" label="Email">
+                        {!selfMode ? <GroupedFieldsDivider label="o" /> : null}
+                        <GroupedFieldRow
+                            first={selfMode}
+                            htmlFor="seller-email"
+                            label={
+                                selfMode ? (
+                                    <>
+                                        Email{' '}
+                                        <span className="font-normal text-ink-muted">(opc.)</span>
+                                    </>
+                                ) : (
+                                    'Email'
+                                )
+                            }
+                        >
                             <input
                                 id="seller-email"
                                 value={sellerEmail}
@@ -252,7 +274,7 @@ export function CheckoutSellerCoordinationFields({
                                 type="email"
                                 className={bareGroupedInputClass}
                                 autoComplete="email"
-                                aria-invalid={emailFieldError}
+                                aria-invalid={!selfMode && emailFieldError}
                             />
                         </GroupedFieldRow>
                     </GroupedFieldsCard>
@@ -261,7 +283,7 @@ export function CheckoutSellerCoordinationFields({
                             Indica móvil o email del vendedor y le enviaremos un enlace para que reserve.
                         </p>
                     ) : null}
-                    {showContactError ? (
+                    {showContactError && !selfMode ? (
                         <p role="alert" className="text-caption font-medium text-red-600">
                             {bothEmpty
                                 ? 'Añade un teléfono o un email para continuar.'
@@ -300,7 +322,7 @@ export function CheckoutSellerCoordinationFields({
                         </span>{' '}
                         tras tu pago (hasta {SELLER_BOOKING_MAX_DAYS} si la agenda está llena).
                     </p>
-                    <p className="text-kicker leading-relaxed text-ink-muted">
+                    <p className="text-caption leading-relaxed text-ink-muted">
                         Solo podrá elegir días y horas que el experto tenga libres en su calendario.
                     </p>
                 </div>

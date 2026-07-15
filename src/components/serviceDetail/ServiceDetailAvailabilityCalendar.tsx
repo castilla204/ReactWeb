@@ -23,6 +23,8 @@ interface Props {
     compact?: boolean;
     /** Sin marco tipo card — plano sobre el panel padre. */
     embedded?: boolean;
+    /** Tab Agenda móvil: ancho completo y celdas táctiles (no usar compact). */
+    mobileTab?: boolean;
     /** Leyenda de colores bajo el calendario. Por defecto false en ficha. */
     showLegend?: boolean;
     /** Nota orientativa bajo el calendario. */
@@ -91,6 +93,7 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
     showHeading = true,
     compact = false,
     embedded = false,
+    mobileTab = false,
     showLegend = false,
     showFootnote = false,
     className,
@@ -164,7 +167,8 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
         [activeWeekdays],
     );
 
-    const isFichaCompact = compact && embedded;
+    const isFichaCompact = compact && embedded && !mobileTab;
+    const isMobileTab = mobileTab;
 
     const DayCell = useMemo(() => {
         const Cell = ({ day, modifiers }: any) => {
@@ -184,9 +188,11 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
                         'relative flex select-none items-center justify-center font-medium tabular-nums',
                         isFichaCompact
                             ? 'h-[var(--cell-size)] w-[var(--cell-size)] rounded-sm text-[10px] leading-none'
-                            : compact
-                              ? 'aspect-square w-full rounded-sm text-caption'
-                              : 'aspect-square w-full rounded-md text-meta lg:text-sm',
+                            : isMobileTab
+                              ? 'aspect-square w-full rounded-lg text-sm'
+                              : compact
+                                ? 'aspect-square w-full rounded-sm text-caption'
+                                : 'aspect-square w-full rounded-md text-meta lg:text-sm',
                         tint,
                         isToday && !past && 'ring-1 ring-inset ring-brand/60',
                         past && 'text-line opacity-35',
@@ -197,7 +203,7 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
             );
         };
         return Cell;
-    }, [availByDate, hasSummary, maxSummaryDate, minDate, worksWeekday, compact, isFichaCompact]);
+    }, [availByDate, hasSummary, maxSummaryDate, minDate, worksWeekday, compact, isFichaCompact, isMobileTab]);
 
     const isDateDisabled = useCallback((date: Date) => startOfDay(date) < minDate, [minDate]);
 
@@ -205,7 +211,7 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
         .filter(Boolean)
         .join(', ');
 
-    const cellSize = isFichaCompact ? '1.375rem' : compact ? '1.75rem' : '2.6rem';
+    const cellSize = isFichaCompact ? '1.375rem' : isMobileTab ? '2.75rem' : compact ? '1.75rem' : '2.6rem';
     const calendarClassNames = isFichaCompact ? COMPACT_EMBEDDED_CLASS_NAMES : CALENDAR_CLASS_NAMES;
 
     return (
@@ -233,7 +239,8 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
             <div
                 className={cn(
                     'sd-availability-calendar-frame',
-                    embedded || compact
+                    isMobileTab && 'sd-availability-calendar-frame--mobile-tab w-full',
+                    embedded || compact || isMobileTab
                         ? 'sd-availability-calendar-frame--embedded border-0 bg-transparent p-0 shadow-none'
                         : 'rounded-2xl border border-line bg-white p-3.5',
                 )}
@@ -243,7 +250,13 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
                 <div
                     className={cn(
                         'relative flex select-none items-center justify-between gap-1.5',
-                        isFichaCompact ? 'mb-1 w-fit min-w-[9.75rem]' : compact ? 'mb-1.5' : 'mb-3',
+                        isFichaCompact
+                            ? 'mb-1 w-fit min-w-[9.75rem]'
+                            : isMobileTab
+                              ? 'mb-4 w-full'
+                              : compact
+                                ? 'mb-1.5'
+                                : 'mb-3',
                     )}
                 >
                     <button
@@ -253,15 +266,22 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
                         aria-label="Mes anterior"
                         className={cn(
                             'sd-host-interactive inline-flex shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong disabled:cursor-not-allowed disabled:opacity-35',
-                            isFichaCompact ? 'h-6 w-6' : 'h-8 w-8',
+                            isFichaCompact ? 'h-6 w-6' : isMobileTab ? 'h-9 w-9' : 'h-8 w-8',
                         )}
                     >
-                        <ChevronLeft className={isFichaCompact ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={2} />
+                        <ChevronLeft
+                            className={isFichaCompact ? 'h-3.5 w-3.5' : isMobileTab ? 'h-5 w-5' : 'h-4 w-4'}
+                            strokeWidth={2}
+                        />
                     </button>
                     <span
                         className={cn(
                             'min-w-0 truncate text-center font-medium capitalize text-ink-muted',
-                            isFichaCompact ? 'text-[11px] leading-none' : 'text-caption',
+                            isFichaCompact
+                                ? 'text-[11px] leading-none'
+                                : isMobileTab
+                                  ? 'text-sm font-semibold text-ink-strong'
+                                  : 'text-caption',
                         )}
                     >
                         {cap(calMonthLabel)}
@@ -273,10 +293,13 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
                         aria-label="Mes siguiente"
                         className={cn(
                             'sd-host-interactive inline-flex shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-tinted hover:text-ink-strong disabled:cursor-not-allowed disabled:opacity-35',
-                            isFichaCompact ? 'h-6 w-6' : 'h-8 w-8',
+                            isFichaCompact ? 'h-6 w-6' : isMobileTab ? 'h-9 w-9' : 'h-8 w-8',
                         )}
                     >
-                        <ChevronRight className={isFichaCompact ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={2} />
+                        <ChevronRight
+                            className={isFichaCompact ? 'h-3.5 w-3.5' : isMobileTab ? 'h-5 w-5' : 'h-4 w-4'}
+                            strokeWidth={2}
+                        />
                     </button>
                 </div>
 
@@ -321,7 +344,12 @@ export const ServiceDetailAvailabilityCalendar: React.FC<Props> = ({
             </div>
 
             {showFootnote ? (
-                <p className={cn('leading-snug text-ink-soft', compact ? 'mt-1.5 text-caption' : 'mt-2 text-caption')}>
+                <p
+                    className={cn(
+                        'leading-snug text-ink-soft',
+                        isMobileTab ? 'mt-4 text-meta' : compact ? 'mt-1.5 text-caption' : 'mt-2 text-caption',
+                    )}
+                >
                     Disponibilidad orientativa. Las horas concretas se eligen al reservar.
                 </p>
             ) : null}

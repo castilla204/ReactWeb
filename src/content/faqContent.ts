@@ -258,8 +258,13 @@ export const FAQ_ITEMS: FaqItem[] = [
 
 export const CHATBOT_EMPTY_TITLE = '¿En qué te ayudo?';
 
+export const CHATBOT_SUBTITLE = 'Automatizado · Información general';
+
+export const CHATBOT_PRIVACY_NOTE =
+  'No accede a datos de tu cuenta ni reservas concretas. Para tu reserva, entra en Mis revisiones.';
+
 export const CHATBOT_WELCOME_MESSAGE =
-  'Respondo sobre inspecciones, pagos retenidos, cancelaciones, disputas, cómo contratar un experto y cómo registrarte como revisor.';
+  'Te ayudo con reservas, pagos en custodia, cancelaciones y uso de la plataforma.';
 
 export const CHATBOT_SUGGESTED_QUESTIONS = [
   '¿Cómo funciona el pago retenido?',
@@ -269,3 +274,14 @@ export const CHATBOT_SUGGESTED_QUESTIONS = [
   '¿Puedo cancelar si cambio de opinión?',
   '¿Cómo me hago experto?',
 ] as const;
+
+export const CHATBOT_FAB_LABEL = 'Asistente';
+
+export const CHATBOT_FAB_SUBLABEL = 'Ayuda con la plataforma';
+
+export const CHATBOT_FAB_HINT_TITLE = '¿Dudas sobre Inspecciono?';
+
+export const CHATBOT_FAB_HINT_BODY =
+  'Respondo sobre reservas, pagos retenidos, cancelaciones y uso de la plataforma.';
+
+export const CHATBOT_FAB_HINT_CTA = 'Abrir asistente';

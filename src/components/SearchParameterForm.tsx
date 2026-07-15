@@ -7,6 +7,8 @@ import { ArrowRight, ArrowLeft, Search, X, Star, User, Info, MapPin, Award, Zap,
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImageCarousel } from './ui/image-carousel';
 import { FavoriteHeart } from './FavoriteHeart';
+import { SileoSkeleton } from './ui/sileo-skeleton';
+import { MapServiceCardSkeleton } from './ui/map-page-skeleton';
 // useLoadScript ya no es necesario - MapContainer lo maneja internamente
 import { useServices } from '../hooks/useServices';
 import { useInfiniteServices } from '../hooks/useInfiniteServices';
@@ -1359,9 +1361,14 @@ function MapStripOverlayChrome({
             {!lightSurface && (
                 <div className="mb-2 flex items-center justify-between gap-3 md:gap-4">
                     <div className="min-w-0 flex-1">
-                        <h2 className="truncate font-display text-[1.125rem] font-semibold leading-[1.25] tracking-[-0.01em] text-white md:text-[1.25rem] md:leading-[1.3]">
-                            {resultCount} {resultCount === 1 ? 'experto disponible' : 'expertos disponibles'}
-                        </h2>
+                        {isLoading ? (
+                            // Evita el flash de "0 expertos disponibles" mientras aún no se conoce el recuento real.
+                            <SileoSkeleton className="h-5 w-40 max-w-full rounded bg-white/20 md:h-6 md:w-48" />
+                        ) : (
+                            <h2 className="truncate font-display text-[1.125rem] font-semibold leading-[1.25] tracking-[-0.01em] text-white md:text-[1.25rem] md:leading-[1.3]">
+                                {resultCount} {resultCount === 1 ? 'experto disponible' : 'expertos disponibles'}
+                            </h2>
+                        )}
                     </div>
                     {resultCount > 0 ? (
                         <MapStripNavArrows
@@ -2678,7 +2685,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                     >
                                     {displayedServices.length > 0 ? (
                                         <>
-                                            {displayedServices.map((service) => {
+                                            {displayedServices.map((service, idx) => {
                                                 const serviceId = service.id || (service as any).Id;
                                                 const isSelected = selectedService === serviceId;
                                                 const isHovered = hoveredServiceId === serviceId;
@@ -2686,7 +2693,8 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     <div
                                                         key={serviceId}
                                                         data-strip-card={serviceId}
-                                                        className="shrink-0"
+                                                        className="hp-wall-enter shrink-0"
+                                                        style={{ animationDelay: `${Math.min(idx, 6) * 40}ms` }}
                                                         onMouseEnter={() => setHoveredServiceId(serviceId)}
                                                         onMouseLeave={() => setHoveredServiceId(null)}
                                                     >
@@ -2712,9 +2720,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                             )}
                                         </>
                                     ) : (
-                                        [1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="h-[200px] w-[250px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
-                                        ))
+                                        [0, 1, 2, 3].map((i) => <MapServiceCardSkeleton key={i} index={i} />)
                                     )}
                                     </div>
                                     )}
@@ -2893,11 +2899,16 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                     className="-mx-5 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto px-5 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                                                 >
                                                 {displayedServices.length > 0 ? (
-                                                    displayedServices.map((service) => {
+                                                    displayedServices.map((service, idx) => {
                                                         const serviceId = service.id || (service as any).Id;
                                                         const isSelected = selectedService === serviceId;
                                                         return (
-                                                            <div key={serviceId} data-strip-card={serviceId} className="shrink-0 snap-center">
+                                                            <div
+                                                                key={serviceId}
+                                                                data-strip-card={serviceId}
+                                                                className="hp-wall-enter shrink-0 snap-center"
+                                                                style={{ animationDelay: `${Math.min(idx, 6) * 40}ms` }}
+                                                            >
                                                                 <MapServiceCard
                                                                     service={service}
                                                                     isSelected={isSelected}
@@ -2911,9 +2922,7 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                                                         );
                                                     })
                                                 ) : (
-                                                    [1, 2, 3].map((i) => (
-                                                        <div key={i} className="h-[150px] w-[176px] shrink-0 animate-pulse rounded-2xl bg-white/85" />
-                                                    ))
+                                                    [0, 1, 2].map((i) => <MapServiceCardSkeleton key={i} index={i} isMobile />)
                                                 )}
                                                 </div>
                                                 )}

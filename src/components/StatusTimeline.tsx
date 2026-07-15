@@ -1,6 +1,26 @@
 import { SystemStatusDto } from '../types/searchDetails';
-import { CheckCircle, Circle, Clock } from 'lucide-react';
+import { CheckCircle, Circle, Clock, XCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { getStatusTone, StatusTone } from '../utils/statusUtils';
+
+// Solo los desenlaces (éxito/cancelación) encienden color; los hitos
+// intermedios quedan en gris tranquilo — mismo criterio que CHAT_STATUS_PILL_CLASSES
+// en Chat.tsx, fuente: getStatusTone (nunca el hex del seed).
+const TIMELINE_TONE_CLASSES: Record<StatusTone, string> = {
+    success: 'bg-success-tint text-success',
+    danger: 'bg-destructive/10 text-destructive',
+    warning: 'bg-line-soft text-ink-muted',
+    info: 'bg-line-soft text-ink-muted',
+    neutral: 'bg-line-soft text-ink-muted',
+};
+
+const TIMELINE_TONE_ICON: Record<StatusTone, typeof CheckCircle> = {
+    success: CheckCircle,
+    danger: XCircle,
+    warning: Clock,
+    info: Circle,
+    neutral: Circle,
+};
 
 interface StatusTimelineProps {
     currentStatus: SystemStatusDto;
@@ -17,7 +37,6 @@ export default function StatusTimeline({ currentStatus, allStatuses, statusType 
     const currentIndex = filteredStatuses.findIndex(s => s.statusValue === currentStatus.statusValue);
     // Solo mostrar estados pasados (hasta el actual, incluido)
     const pastStatuses = filteredStatuses.slice(0, currentIndex + 1);
-    const isActive = (index: number) => index <= currentIndex;
 
     if (pastStatuses.length === 0) return null;
 
@@ -25,15 +44,17 @@ export default function StatusTimeline({ currentStatus, allStatuses, statusType 
         <div className="space-y-3">
             {pastStatuses.map((status, index) => {
                 const isCurrent = index === pastStatuses.length - 1;
+                const tone = getStatusTone(status);
+                const ToneIcon = TIMELINE_TONE_ICON[tone];
 
                 return (
                     <div key={status.id} className="flex gap-3 items-start">
-                        {/* Simple Icon */}
+                        {/* Icono coloreado por tono real del estado (éxito/cancelación/etc.) */}
                         <div className={cn(
                             "flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0 mt-0.5",
-                            "bg-success-tint text-success"
+                            TIMELINE_TONE_CLASSES[tone]
                         )}>
-                            <CheckCircle className="w-3.5 h-3.5" strokeWidth={2} />
+                            <ToneIcon className="w-3.5 h-3.5" strokeWidth={2} />
                         </div>
 
                         {/* Status Content - Simplified */}

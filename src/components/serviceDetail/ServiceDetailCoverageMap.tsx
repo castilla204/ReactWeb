@@ -19,6 +19,11 @@ export interface CoverageMapCanvasProps {
   rangeKm: number;
   className?: string;
   variant?: 'preview' | 'interactive' | 'fullscreen';
+  /** Override del padding de fitBounds usado para encuadrar el círculo. Un número se aplica
+   *  igual en los 4 lados; un objeto compensa chrome asimétrico (topbar flotante, tarjeta
+   *  superpuesta) que tapa más mapa por un lado que por otro, para que el círculo quede
+   *  centrado respecto a lo que el usuario ve realmente, no respecto al contenedor completo. */
+  fitPadding?: number | { top: number; bottom: number; left: number; right: number };
 }
 
 /** Mapa MapLibre con círculo de cobertura */
@@ -28,6 +33,7 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
   rangeKm,
   className = '',
   variant = 'interactive',
+  fitPadding: fitPaddingProp,
 }) => {
   const isPreview = variant === 'preview';
   const isFullscreen = variant === 'fullscreen';
@@ -37,7 +43,7 @@ export const CoverageMapCanvas: React.FC<CoverageMapCanvasProps> = ({
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const [ready, setReady] = useState(false);
 
-  const fitPadding = isPreview ? 20 : isFullscreen ? 56 : 48;
+  const fitPadding = fitPaddingProp ?? (isPreview ? 20 : isFullscreen ? 56 : 48);
   const maxFitZoom = isFullscreen ? 13 : isPreview ? 10.5 : 11;
 
   useLayoutEffect(() => {
@@ -236,7 +242,8 @@ export interface ServiceDetailCoverageMapProps extends CoverageMapCanvasProps {
   /** Miniatura clicable + modal pantalla completa */
   expandable?: boolean;
   /** Evita solaparse con controles flotantes del hero móvil; 'bottom-raised'
-   *  queda por encima del solape de la card blanca (SD_MOBILE_SHEET_OVERLAP_CLASS = -mt-10). */
+   *  queda por encima del solape de la card blanca (SD_MOBILE_SHEET_OVERLAP_CLASS = -mt-5)
+   *  y de la fila de dots del carrusel. */
   expandButtonPosition?: 'top' | 'bottom' | 'bottom-raised';
 }
 
@@ -313,7 +320,7 @@ export const ServiceDetailCoverageMap: React.FC<ServiceDetailCoverageMapProps> =
             expandButtonPosition === 'bottom'
               ? 'bottom-2'
               : expandButtonPosition === 'bottom-raised'
-                ? 'bottom-12'
+                ? 'sd-coverage-map-expand-btn--raised'
                 : 'top-2'
           }`}
           aria-label="Ampliar mapa a pantalla completa"

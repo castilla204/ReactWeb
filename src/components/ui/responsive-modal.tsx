@@ -36,14 +36,26 @@ interface ResponsiveModalProps {
   drawerScrollClassName?: string
   /** Oculta la cabecera blanca del diálogo en desktop (el contenido lleva su propia cabecera). */
   hideDialogHeader?: boolean
+  /** Oculta la cabecera sticky del drawer en móvil (título + asa). El contenido lleva su propia cabecera. */
+  hideDrawerHeader?: boolean
   /** Clases extra para la cabecera del drawer en móvil. */
   drawerHeaderClassName?: string
   /** En desktop, renderiza un panel lateral derecho (drawer) en vez del popup centrado. */
   desktopSidePanel?: boolean
+  /**
+   * Vaul escala y redondea la página real detrás del drawer (no hay
+   * `[data-vaul-drawer-wrapper]` en el proyecto, así que escala `body`
+   * entero). Por defecto asoma un borde de esa página real arriba del
+   * drawer — útil casi siempre, pero si lo que asoma repite el mensaje del
+   * propio drawer (p. ej. el picker "elige qué revisar" sobre su propia
+   * tarjeta hero) lee como una cabecera duplicada. Pon `false` para volver
+   * al overlay oscuro plano sin el asomo de página.
+   */
+  scaleBackground?: boolean
 }
 
-const AUTH_SURFACE_GRADIENT =
-  'linear-gradient(to right, rgba(0,102,204,0.10) 0%, rgba(245,158,11,0.10) 100%), hsl(var(--surface))'
+// Papel plano: sin gradiente decorativo (DESIGN.md — el azul de marca solo donde paga).
+const AUTH_SURFACE_BG = 'hsl(var(--surface))'
 
 // Panel lateral derecho a pantalla completa (desktop). Doble override con `!`
 // para anular el centrado por defecto de DialogContent y respetar el deslizado.
@@ -78,8 +90,10 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   drawerMaxHeight,
   drawerScrollClassName,
   hideDialogHeader = false,
+  hideDrawerHeader = false,
   drawerHeaderClassName,
   desktopSidePanel = false,
+  scaleBackground = true,
 }) => {
   const { width } = useWindowSize()
   
@@ -118,7 +132,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         fadeFromIndex={fadeFromIndex}
         handleOnly={handleOnly}
         snapToSequentialPoint={snapToSequentialPoint !== undefined ? snapToSequentialPoint : true} // ✅ true por defecto para fluidez
-        shouldScaleBackground={true} // ✅ Efecto de escalado del fondo como Airbnb
+        shouldScaleBackground={scaleBackground} // ✅ Efecto de escalado del fondo como Airbnb (opt-out: scaleBackground={false})
       >
         <DrawerContent
             className={cn(
@@ -143,7 +157,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
             // ✅ Vaul maneja las transiciones nativamente - no sobrescribir
           }}
           noOverlay={noOverlay}
-          noHandle
+          // DrawerContent trae su propio asa genérica; ResponsiveModal ya
+          // pinta la suya dentro de la cabecera sticky (línea ~184, más abajo
+          // en este archivo). Sin este `true` ambas se renderizaban a la vez
+          // — dos líneas grises apiladas en todo drawer con título.
+          noHandle={true}
           title={title}
           description={description}
         >
@@ -157,16 +175,18 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
               paddingTop: drawerStyle?.marginTop ? '0' : undefined,
             }}
           >
-            {(!noHandle || title) && (
+            {!hideDrawerHeader && (!noHandle || title) && (
               <div
                 className={cn(
                   "sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-line",
                   drawerHeaderClassName,
                 )}
-                style={{ background: AUTH_SURFACE_GRADIENT }}
+                style={{ background: AUTH_SURFACE_BG }}
               >
                 {!noHandle && (
-                  <div className="flex justify-center pb-0 pt-2">
+                  // pb-1.5 (6px) + el pt-0.5 (2px) del bloque de título de abajo = 8px,
+                  // el paso "micro" del sistema para asa/imagen → texto (vs. los ~2px de antes).
+                  <div className="flex justify-center pb-1.5 pt-2">
                     <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-line" />
                   </div>
                 )}
@@ -185,7 +205,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
                     <DrawerClose asChild>
                       <button
                         type="button"
-                        className="-mr-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="-mr-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black/[0.05] text-ink-muted transition-colors hover:bg-black/[0.1] hover:text-ink-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label="Cerrar"
                       >
                         <X className="h-[18px] w-[18px]" />
@@ -209,7 +229,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           'flex-shrink-0 border-b border-line px-6 pb-3 pt-4 text-left md:px-7',
           dialogHeaderClassName
         )}
-        style={{ background: AUTH_SURFACE_GRADIENT }}
+        style={{ background: AUTH_SURFACE_BG }}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 pr-2">
@@ -244,9 +264,15 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           style={{ ...style, ...dialogStyle }}
           hideCloseButton={true}
           overlayClassName="bg-black/40"
-          onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {desktopHeader}
+          {title && hideDialogHeader ? (
+            <DialogHeader className="sr-only">
+              <DialogTitle>{title}</DialogTitle>
+              {description ? <DialogDescription>{description}</DialogDescription> : null}
+            </DialogHeader>
+          ) : (
+            desktopHeader
+          )}
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             {children}
           </div>
@@ -272,15 +298,28 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           gap: 0
         }}
         hideCloseButton={true}
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => {
+          if (hideDialogHeader && title) {
+            e.preventDefault();
+            const root = e.currentTarget as HTMLElement;
+            const tab = root.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+            tab?.focus();
+          }
+        }}
       >
+        {title && hideDialogHeader && (
+          <DialogHeader className="sr-only">
+            <DialogTitle>{title}</DialogTitle>
+            {description ? <DialogDescription>{description}</DialogDescription> : null}
+          </DialogHeader>
+        )}
         {title && !hideDialogHeader && (
           <DialogHeader
             className={cn(
               'flex-shrink-0 border-b border-line px-6 pb-3 pt-4 text-left md:px-7',
               dialogHeaderClassName
             )}
-            style={{ background: AUTH_SURFACE_GRADIENT }}
+            style={{ background: AUTH_SURFACE_BG }}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 pr-2">

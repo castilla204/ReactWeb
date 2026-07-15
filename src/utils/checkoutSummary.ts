@@ -96,8 +96,8 @@ export function buildCheckoutSummaryDisplay(
             locationHint = `Zona de búsqueda: ${hireSearchLocation.locationName}`;
         }
     } else if (coordinationMode === 'seller') {
-        // «normalmente»: la ventana real es +3..+14 (se amplía si el experto no tiene huecos
-        // en 3-7); sin el matiz, una cita a +10 días contradiría el resumen (auditoría M2).
+        // «normalmente»: la ventana real es +1..+14 (se amplía si el experto no tiene huecos
+        // en 1-5); sin el matiz, una cita a +10 días contradiría el resumen (auditoría M2).
         appointmentLabel = `El vendedor elige en la agenda del experto (normalmente ${SELLER_BOOKING_MIN_LEAD_DAYS}–${SELLER_BOOKING_TARGET_WINDOW_DAYS} días tras el pago)`;
 
         if (isWorkshopOnly) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS } from '../../constants/homepageTypography';
+import { SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS, SD_CHECKOUT_MOBILE_GUTTER_CLASS } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
 
 interface CheckoutSlotHoursDrawerProps {
@@ -10,6 +10,8 @@ interface CheckoutSlotHoursDrawerProps {
     expanded: boolean;
     onToggle: () => void;
     children: React.ReactNode;
+    /** Alto medido del footer sticky — ancla el drawer justo encima sin franja. */
+    footerInsetPx?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export function CheckoutSlotHoursDrawer({
     expanded,
     onToggle,
     children,
+    footerInsetPx,
 }: CheckoutSlotHoursDrawerProps) {
     const [entered, setEntered] = useState(false);
     const expandedMaxHeightPx = useViewportCappedHeight(0.5, 340);
@@ -57,7 +60,7 @@ export function CheckoutSlotHoursDrawer({
             {expanded ? (
                 <button
                     type="button"
-                    className="fixed inset-0 z-[35] bg-black/20 transition-opacity duration-300 lg:hidden"
+                    className="fixed inset-0 z-[80] bg-black/20 transition-opacity duration-300 motion-reduce:transition-none lg:hidden"
                     onClick={onToggle}
                     aria-label="Cerrar selector de hora"
                 />
@@ -65,9 +68,16 @@ export function CheckoutSlotHoursDrawer({
 
             <div
                 className={cn(
-                    'pointer-events-none fixed inset-x-0 bottom-0 z-[36] lg:hidden',
-                    SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
+                    'pointer-events-none fixed inset-x-0 z-[81] motion-reduce:transition-none lg:hidden',
+                    footerInsetPx == null || footerInsetPx <= 0
+                        ? cn('bottom-0', SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS)
+                        : undefined,
                 )}
+                style={
+                    footerInsetPx != null && footerInsetPx > 0
+                        ? { bottom: footerInsetPx }
+                        : undefined
+                }
                 aria-live="polite"
             >
                 <div
@@ -80,7 +90,8 @@ export function CheckoutSlotHoursDrawer({
                 >
                     <div
                         className={cn(
-                            'relative shrink-0 bg-white px-4 pt-1',
+                            'relative shrink-0 bg-white pt-1',
+                            SD_CHECKOUT_MOBILE_GUTTER_CLASS,
                             expanded ? 'pb-2.5' : 'pb-4',
                         )}
                     >
@@ -111,7 +122,7 @@ export function CheckoutSlotHoursDrawer({
                                 ) : null}
                             </div>
                             {selectedLabel && !expanded ? (
-                                <span className="shrink-0 rounded-lg bg-brand px-2.5 py-1 text-caption font-bold tabular-nums text-white">
+                                <span className="shrink-0 rounded-xl bg-brand px-3 py-1.5 text-meta font-bold tabular-nums text-white shadow-[0_2px_8px_hsl(var(--brand)/0.28)]">
                                     {selectedLabel}
                                 </span>
                             ) : (
@@ -135,7 +146,8 @@ export function CheckoutSlotHoursDrawer({
                             // en el propio motor, independiente del valor de destino). El alto pasa
                             // a ser 100% inline e instantáneo; el crecimiento visual ya lo aporta la
                             // lámina exterior, que sí anima su max-height sin problemas.
-                            'min-h-0 overflow-y-auto overscroll-contain border-t border-line bg-white px-4 transition-opacity duration-300',
+                            'min-h-0 overflow-y-auto overscroll-contain border-t border-line bg-white transition-opacity duration-300',
+                            SD_CHECKOUT_MOBILE_GUTTER_CLASS,
                             expanded
                                 ? 'visible pb-4 pt-2.5 opacity-100'
                                 : 'invisible border-t-0 pb-0 pt-0 opacity-0',

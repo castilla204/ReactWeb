@@ -11,6 +11,8 @@ interface CheckoutLocationDetailsDrawerProps {
     expanded: boolean;
     onToggle: () => void;
     children: React.ReactNode;
+    /** Desplazamiento sobre el footer sticky del wizard (px). */
+    footerInsetPx?: number;
 }
 
 /** Drawer inferior de detalles de ubicación (móvil checkout — mismo patrón que horas). */
@@ -21,6 +23,7 @@ export function CheckoutLocationDetailsDrawer({
     expanded,
     onToggle,
     children,
+    footerInsetPx,
 }: CheckoutLocationDetailsDrawerProps) {
     const [entered, setEntered] = useState(false);
 
@@ -43,7 +46,7 @@ export function CheckoutLocationDetailsDrawer({
             {expanded ? (
                 <button
                     type="button"
-                    className="fixed inset-0 z-[35] bg-black/20 transition-opacity duration-300 lg:hidden"
+                    className="fixed inset-0 z-[80] bg-black/20 transition-opacity duration-300 motion-reduce:transition-none lg:hidden"
                     onClick={onToggle}
                     aria-label="Cerrar detalles de ubicación"
                 />
@@ -51,9 +54,16 @@ export function CheckoutLocationDetailsDrawer({
 
             <div
                 className={cn(
-                    'pointer-events-none fixed inset-x-0 bottom-0 z-[36] lg:hidden',
-                    SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
+                    'pointer-events-none fixed inset-x-0 z-[81] motion-reduce:transition-none lg:hidden',
+                    footerInsetPx == null || footerInsetPx <= 0
+                        ? cn('bottom-0', SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS)
+                        : undefined,
                 )}
+                style={
+                    footerInsetPx != null && footerInsetPx > 0
+                        ? { bottom: footerInsetPx }
+                        : undefined
+                }
                 aria-live="polite"
             >
                 <div
@@ -65,7 +75,7 @@ export function CheckoutLocationDetailsDrawer({
                 >
                     <div
                         className={cn(
-                            'relative shrink-0 bg-white px-4 pt-1',
+                            'relative shrink-0 bg-white px-5 pt-1',
                             expanded ? 'pb-2.5' : 'pb-4',
                         )}
                     >
@@ -95,7 +105,7 @@ export function CheckoutLocationDetailsDrawer({
                                 ) : null}
                             </div>
                             {detailBadge && !expanded ? (
-                                <span className="max-w-[5.5rem] shrink-0 truncate text-kicker font-medium text-ink-muted">
+                                <span className="max-w-[5.5rem] shrink-0 truncate text-caption font-medium text-ink-muted">
                                     {detailBadge}
                                 </span>
                             ) : null}
@@ -111,7 +121,7 @@ export function CheckoutLocationDetailsDrawer({
 
                     <div
                         className={cn(
-                            'min-h-0 overflow-y-auto overscroll-contain bg-white px-4 transition-[opacity,max-height] duration-300',
+                            'min-h-0 overflow-y-auto overscroll-contain bg-white px-5 transition-[opacity,max-height] duration-300',
                             expanded
                                 ? cn(bodyMaxHeight, 'pb-4 pt-1 opacity-100')
                                 : 'max-h-0 pb-0 pt-0 opacity-0 pointer-events-none',

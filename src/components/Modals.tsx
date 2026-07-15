@@ -1,5 +1,5 @@
 ﻿import { useState, useRef } from 'react';
-import { Star, Trash2, X, Send, Upload, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Star, Trash2, X, Send, Upload, AlertTriangle, AlertCircle, Image as ImageIcon, Film, FileText, Paperclip } from 'lucide-react';
 import { useReview } from '../hooks/useReview.hooks';
 import { useExpertReport } from '../hooks/useExpertReport';
 import { showToast, NotificationType } from '../lib/toast';
@@ -35,15 +35,15 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
 
     const handleSubmit = async () => {
         if (!searchHireId) {
-            addNotification('error', '❌ SearchHire ID not found');
+            addNotification('error', 'No se encontró la contratación.');
             return;
         }
         if (reviewForm.score < 1 || reviewForm.score > 5) {
-            addNotification('error', '❌ Score must be between 1 and 5');
+            addNotification('error', 'La puntuación debe estar entre 1 y 5.');
             return;
         }
         if (!reviewForm.description.trim()) {
-            addNotification('error', '❌ Please provide a review description');
+            addNotification('error', 'Escribe una descripción para tu reseña.');
             return;
         }
         try {
@@ -53,19 +53,18 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                 description: reviewForm.description,
                 images: reviewForm.images,
             });
-            addNotification('success', '✅ Review submitted successfully');
+            addNotification('success', 'Reseña enviada.');
             onClose();
             onSubmit();
         } catch (error) {
             console.error('Error submitting review:', error);
-            addNotification('error', '❌ Error submitting review');
+            addNotification('error', 'No se pudo enviar la reseña.');
         }
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files).filter((file) => file instanceof File);
-            console.log('Selected files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
             setReviewForm((prev) => ({
                 ...prev,
                 images: [...prev.images, ...files],
@@ -84,14 +83,14 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
         <Drawer open={isOpen} onOpenChange={onClose}>
             <DrawerContent className="max-h-[96dvh] flex flex-col border-t-4 border-destructive">
                 <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96dvh]">
-                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+                    <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-line-soft flex-shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
+                            <div className="w-10 h-10 bg-ink-strong rounded-full flex items-center justify-center">
                                 <Star className="w-5 h-5 text-white" fill="currentColor" />
                             </div>
                             <div className="flex-1">
-                                <DrawerTitle className="text-lg sm:text-xl font-semibold">Enviar Reseña</DrawerTitle>
-                                <DrawerDescription className="text-sm">Comparte tu experiencia</DrawerDescription>
+                                <DrawerTitle className="text-lg sm:text-xl font-semibold text-ink-strong">Enviar Reseña</DrawerTitle>
+                                <DrawerDescription className="text-sm text-ink-muted">Comparte tu experiencia</DrawerDescription>
                             </div>
                             <DrawerClose asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -104,8 +103,8 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                     <div className="px-4 sm:px-6 py-4 sm:py-6 flex-1 min-h-0 overflow-y-auto">
                         <div className="space-y-6">
                             <div>
-                                <Label className="text-sm font-semibold mb-3 block">Calificación</Label>
-                                <div className="flex gap-1 justify-center p-4 bg-muted rounded-xl">
+                                <Label className="text-sm font-semibold mb-3 block text-ink-strong">Calificación</Label>
+                                <div className="flex gap-1 justify-center p-4 bg-surface-tinted rounded-xl">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <Button
                                             key={star}
@@ -114,9 +113,9 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                                             size="icon"
                                             onClick={() => setReviewForm((prev) => ({ ...prev, score: star }))}
                                             className={`h-12 w-12 rounded-full transition-all duration-200 transform hover:scale-110 ${
-                                                reviewForm.score >= star 
-                                                    ? 'text-yellow-500 bg-yellow-50 shadow-md' 
-                                                    : 'text-muted-foreground hover:text-yellow-400 hover:bg-yellow-50'
+                                                reviewForm.score >= star
+                                                    ? 'text-ink-strong bg-white shadow-md'
+                                                    : 'text-ink-soft hover:text-ink-strong hover:bg-white'
                                             }`}
                                         >
                                             <Star className="w-7 h-7" fill={reviewForm.score >= star ? "currentColor" : "none"} />
@@ -124,8 +123,8 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                                     ))}
                                 </div>
                                 {reviewForm.score > 0 && (
-                                    <p className="text-center text-sm text-muted-foreground mt-2">
-                                        {reviewForm.score === 5 ? '¡Excelente!' : 
+                                    <p className="text-center text-sm text-ink-muted mt-2">
+                                        {reviewForm.score === 5 ? '¡Excelente!' :
                                          reviewForm.score === 4 ? 'Muy bueno' :
                                          reviewForm.score === 3 ? 'Bueno' :
                                          reviewForm.score === 2 ? 'Regular' : 'Necesita mejorar'}
@@ -133,24 +132,24 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                                 )}
                             </div>
                             <div>
-                                <Label className="text-sm font-semibold mb-3 block">Descripción</Label>
+                                <Label className="text-sm font-semibold mb-3 block text-ink-strong">Descripción</Label>
                                 <textarea
                                     value={reviewForm.description}
                                     onChange={(e) => setReviewForm((prev) => ({ ...prev, description: e.target.value }))}
-                                    className="w-full px-4 py-3 border border-input rounded-xl focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 bg-background resize-none"
+                                    className="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-brand focus:border-brand transition-all duration-200 bg-white resize-none text-ink-strong"
                                     rows={4}
                                     placeholder="Comparte tu experiencia con este servicio..."
                                     required
                                 />
                             </div>
                             <div>
-                                <Label className="text-sm font-semibold mb-3 block">Imágenes (Opcional)</Label>
+                                <Label className="text-sm font-semibold mb-3 block text-ink-strong">Imágenes (Opcional)</Label>
                                 <div className="space-y-3">
                                     {reviewForm.images.filter((image) => image instanceof File).map((image, index) => (
-                                        <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                                        <div key={index} className="flex items-center gap-3 p-3 bg-surface-tinted rounded-lg">
                                             <div className="flex-1">
-                                                <span className="text-sm font-medium text-foreground truncate block">{image.name}</span>
-                                                <span className="text-xs text-muted-foreground">{(image.size / 1024).toFixed(1)} KB</span>
+                                                <span className="text-sm font-medium text-ink-strong truncate block">{image.name}</span>
+                                                <span className="text-xs text-ink-muted">{(image.size / 1024).toFixed(1)} KB</span>
                                             </div>
                                             <Button
                                                 type="button"
@@ -171,11 +170,11 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                                             onChange={handleImageChange}
                                             className="hidden"
                                         />
-                                        <div className="w-full px-4 py-6 border-2 border-dashed border-input rounded-xl text-center hover:border-primary hover:bg-primary/5 transition-all duration-200 cursor-pointer">
+                                        <div className="w-full px-4 py-6 border-2 border-dashed border-line rounded-xl text-center hover:border-brand hover:bg-brand/5 transition-all duration-200 cursor-pointer">
                                             <div className="flex flex-col items-center gap-2">
-                                                <Upload className="w-8 h-8 text-muted-foreground" />
-                                                <span className="text-sm font-medium text-foreground">Agregar imágenes</span>
-                                                <span className="text-xs text-muted-foreground">PNG, JPG hasta 5MB</span>
+                                                <Upload className="w-8 h-8 text-ink-soft" />
+                                                <span className="text-sm font-medium text-ink-strong">Agregar imágenes</span>
+                                                <span className="text-xs text-ink-muted">PNG, JPG hasta 5MB</span>
                                             </div>
                                         </div>
                                     </label>
@@ -201,7 +200,7 @@ export function ReviewModal({ isOpen, onClose, searchHireId, reviewForm, setRevi
                                 type="button"
                                 onClick={handleSubmit}
                                 disabled={isCreatingReview || reviewForm.score === 0}
-                                className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
+                                className="flex-1 bg-brand text-white hover:bg-brand-hover"
                             >
                                 {isCreatingReview ? 'Enviando...' : 'Enviar Reseña'}
                             </Button>
@@ -273,7 +272,7 @@ export function DisputeModal({
         });
 
         if (errors.length > 0) {
-            alert(errors.join('\n'));
+            showToast('error', errors.join(' '));
         }
 
         if (newFiles.length > 0) {
@@ -295,33 +294,30 @@ export function DisputeModal({
 
     const getFileIcon = (file: File) => {
         if (file.type.startsWith('image/')) {
-            return '🖼️';
+            return <ImageIcon className="h-4 w-4 text-ink-soft" aria-hidden />;
         } else if (file.type.startsWith('video/')) {
-            return '🎥';
-        } else if (file.type === 'application/pdf') {
-            return '📄';
-        } else if (file.type.includes('word')) {
-            return '📝';
-        } else {
-            return '📎';
+            return <Film className="h-4 w-4 text-ink-soft" aria-hidden />;
+        } else if (file.type === 'application/pdf' || file.type.includes('word')) {
+            return <FileText className="h-4 w-4 text-ink-soft" aria-hidden />;
         }
+        return <Paperclip className="h-4 w-4 text-ink-soft" aria-hidden />;
     };
 
     return (
         <Drawer open={isOpen} onOpenChange={onClose}>
             <DrawerContent className="max-h-[96dvh] flex flex-col border-t-4 border-destructive">
-                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96dvh] bg-background">
+                <div className="mx-auto w-full max-w-md flex flex-col h-full max-h-[96dvh] bg-white">
                     {/* Header minimalista */}
-                    <DrawerHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-border flex-shrink-0">
+                    <DrawerHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-line-soft flex-shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-destructive/10 rounded-lg flex items-center justify-center">
                                 <AlertTriangle className="w-5 h-5 text-destructive" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <DrawerTitle className="text-lg sm:text-xl font-semibold text-foreground">
+                                <DrawerTitle className="text-lg sm:text-xl font-semibold text-ink-strong">
                                     Iniciar Disputa
                                 </DrawerTitle>
-                                <DrawerDescription className="text-sm text-muted-foreground">
+                                <DrawerDescription className="text-sm text-ink-muted">
                                     Reporta un problema con evidencia
                                 </DrawerDescription>
                             </div>
@@ -342,22 +338,22 @@ export function DisputeModal({
                     <div className="px-4 sm:px-6 py-5 sm:py-6 flex-1 min-h-0 overflow-y-auto">
                         <div className="space-y-5">
                             {/* Alerta importante minimalista */}
-                            <div className="p-3 bg-muted/50 border border-border rounded-lg">
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    <span className="font-medium text-foreground">Importante:</span> Una disputa iniciará un proceso de mediación. Por favor, explica claramente el problema y adjunta evidencia para una resolución rápida.
+                            <div className="p-3 bg-surface-tinted border border-line-soft rounded-lg">
+                                <p className="text-xs text-ink-muted leading-relaxed">
+                                    <span className="font-medium text-ink-strong">Importante:</span> Una disputa iniciará un proceso de mediación. Por favor, explica claramente el problema y adjunta evidencia para una resolución rápida.
                                 </p>
                             </div>
                 
                             {/* Campo de motivo */}
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-sm font-medium text-ink-strong">
                                     Motivo de la disputa <span className="text-destructive">*</span>
                                 </Label>
                                 <div className="relative">
                                     <textarea
                                         value={disputeReason}
                                         onChange={(e) => setDisputeReason(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-destructive transition-colors bg-background resize-none text-sm"
+                                        className="w-full px-3 py-2.5 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-destructive transition-colors bg-white resize-none text-sm"
                                         rows={5}
                                         placeholder="Describe detalladamente el problema que has experimentado con este servicio..."
                                         required
@@ -365,7 +361,7 @@ export function DisputeModal({
                                         maxLength={1000}
                                     />
                                     <div className="absolute bottom-2 right-2">
-                                        <span className={`text-xs ${disputeReason.length > 900 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                        <span className={`text-xs ${disputeReason.length > 900 ? 'text-destructive' : 'text-ink-muted'}`}>
                                             {disputeReason.length}/1000
                                         </span>
                                     </div>
@@ -374,8 +370,8 @@ export function DisputeModal({
 
                             {/* File Upload Section */}
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium text-foreground">
-                                    Archivos de evidencia <span className="text-muted-foreground font-normal">(opcional)</span>
+                                <Label className="text-sm font-medium text-ink-strong">
+                                    Archivos de evidencia <span className="text-ink-muted font-normal">(opcional)</span>
                                 </Label>
                                 
                                 {/* Drop Zone */}
@@ -383,7 +379,7 @@ export function DisputeModal({
                                     className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                                         dragActive 
                                             ? 'border-destructive bg-destructive/5' 
-                                            : 'border-input hover:border-primary/50'
+                                            : 'border-line hover:border-brand/50'
                                     }`}
                                     onDragEnter={(e) => {
                                         e.preventDefault();
@@ -401,23 +397,23 @@ export function DisputeModal({
                                     }}
                                 >
                                     <div className="flex flex-col items-center gap-3">
-                                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                                            <Upload className="w-5 h-5 text-muted-foreground" />
+                                        <div className="w-12 h-12 bg-surface-tinted rounded-lg flex items-center justify-center">
+                                            <Upload className="w-5 h-5 text-ink-muted" />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-foreground">
+                                            <p className="text-sm text-ink-strong">
                                                 Arrastra archivos aquí o{' '}
                                                 <Button
                                                     type="button"
                                                     variant="link"
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={isSubmitting}
-                                                    className="h-auto p-0 text-primary"
+                                                    className="h-auto p-0 text-brand"
                                                 >
                                                     selecciona archivos
                                                 </Button>
                                             </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
+                                            <p className="text-xs text-ink-muted mt-1">
                                                 JPG, PNG, GIF, PDF, DOC, DOCX, MP4, AVI, MOV • Máximo 10MB por archivo
                                             </p>
                                         </div>
@@ -437,20 +433,20 @@ export function DisputeModal({
                                 {/* File List */}
                                 {files.length > 0 && (
                                     <div className="mt-3 space-y-2">
-                                        <h4 className="text-xs font-medium text-muted-foreground">Archivos seleccionados ({files.length})</h4>
+                                        <h4 className="text-xs font-medium text-ink-muted">Archivos seleccionados ({files.length})</h4>
                                         <div className="space-y-1.5">
                                             {files.map((file, index) => (
                                                 <div 
                                                     key={index} 
-                                                    className="flex items-center justify-between p-2.5 bg-muted/50 border border-border rounded-lg"
+                                                    className="flex items-center justify-between p-2.5 bg-surface-tinted border border-line-soft rounded-lg"
                                                 >
                                                     <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                                        <span className="text-base">{getFileIcon(file)}</span>
+                                                        <span className="shrink-0">{getFileIcon(file)}</span>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm text-foreground truncate">
+                                                            <p className="text-sm text-ink-strong truncate">
                                                                 {file.name}
                                                             </p>
-                                                            <p className="text-xs text-muted-foreground">
+                                                            <p className="text-xs text-ink-muted">
                                                                 {formatFileSize(file.size)}
                                                             </p>
                                                         </div>

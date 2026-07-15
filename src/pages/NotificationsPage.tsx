@@ -1,38 +1,48 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { HomepageDesktopTopBar } from '../components/HomepageDesktopTopBar';
-import { useNotificationList } from '../hooks/useNotifications';
-import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
 import {
-    getNotificationDisplay,
-    getNotificationTone,
-    getNotificationToneClass,
-} from '../utils/notificationTypeMeta';
+    useNotificationList,
+    useMarkNotificationRead,
+    useMarkAllNotificationsRead,
+    useUnreadNotificationCount,
+} from '../hooks/useNotifications';
+import { Button } from '../components/ui/button';
+import { ErrorDisplay } from '../components/ErrorDisplay';
+import { NotificationRow } from '../components/notifications/NotificationRow';
+import { NotificationSkeletonRows, NotificationEmptyState } from '../components/notifications/NotificationStates';
 import '../styles/notification-center.css';
-
-function formatNotificationDate(createdAt: string) {
-    const date = new Date(createdAt);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
 
 const NotificationsPage: React.FC = () => {
     const navigate = useNavigate();
     const {
         notifications,
         isLoading,
-        isFetching,
+        isFetchingNextPage,
         error,
+        refetchNotifications,
         hasNextPage,
         fetchNextPage,
     } = useNotificationList({ enabled: true });
+
+    const { data: unreadCount = 0 } = useUnreadNotificationCount();
+    const markReadMutation = useMarkNotificationRead();
+    const markAllAsReadMutation = useMarkAllNotificationsRead();
+    const unreadCountRef = useRef(unreadCount);
+    unreadCountRef.current = unreadCount;
+
+    // Simétrico al drawer: marcar todo como leído al ABANDONAR la página (equivalente a "cerrar el
+    // panel" para una vista de página completa), nunca al entrar — así la insignia de "sin leer"
+    // sigue siendo fiable mientras el usuario está repasando la lista.
+    useEffect(() => {
+        return () => {
+            if (unreadCountRef.current > 0) {
+                markAllAsReadMutation.mutate();
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="min-h-screen" style={{ background: 'hsl(var(--nc-canvas))' }}>
@@ -42,12 +52,14 @@ const NotificationsPage: React.FC = () => {
             <HomepageDesktopTopBar variant="plain" showLogo />
             <main className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
                 <div className="mb-5 flex items-center gap-3">
+                    {/* Volver es redundante en escritorio: la topbar global + la navegación del
+                        navegador ya cubren esa acción (mismo patrón que CentroAyudaPage). */}
                     <Button
                         variant="ghost"
                         size="icon"
                         aria-label="Volver"
                         onClick={() => navigate(-1)}
-                        className="h-9 w-9"
+                        className="h-11 w-11 md:hidden"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
@@ -55,91 +67,44 @@ const NotificationsPage: React.FC = () => {
                         <h1 className="text-lead font-semibold tracking-tight" style={{ color: 'hsl(var(--nc-ink))' }}>
                             Notificaciones
                         </h1>
-                        <p className="text-xs mt-0.5" style={{ color: 'hsl(215 14% 38%)' }}>
+                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--nc-muted))' }}>
                             Avisos de cuenta, pagos, contrataciones y mensajes
                         </p>
                     </div>
                 </div>
 
                 {isLoading && (
-                    <div className="space-y-0 rounded-lg border overflow-hidden" style={{ borderColor: 'hsl(var(--nc-border))' }}>
-                        {[0, 1, 2, 3].map((i) => (
-                            <Skeleton key={i} className="h-20 w-full rounded-none border-b last:border-b-0" />
-                        ))}
+                    <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'hsl(var(--nc-border))' }}>
+                        <NotificationSkeletonRows />
                     </div>
                 )}
 
                 {error && !isLoading && (
-                    <div
-                        className="rounded-lg border p-4 text-sm"
-                        style={{
-                            borderColor: 'hsl(var(--ep-error) / 0.35)',
-                            background: 'hsl(0 60% 97%)',
-                            color: 'hsl(var(--ep-error))',
-                        }}
-                    >
-                        No hemos podido cargar tus notificaciones. Recarga la página o vuelve a intentarlo más tarde.
-                    </div>
+                    <ErrorDisplay
+                        message="No hemos podido cargar tus notificaciones."
+                        onRetry={() => refetchNotifications()}
+                        fullScreen={false}
+                        noBackground
+                        compact
+                    />
                 )}
 
                 {!isLoading && !error && notifications.length === 0 && (
-                    <div className="nc-state rounded-lg border" style={{ borderColor: 'hsl(var(--nc-border))', background: 'hsl(var(--nc-surface))' }}>
-                        <p className="nc-state-title">Todo al día</p>
-                        <p className="nc-state-text">
-                            No tienes notificaciones pendientes en este momento.
-                        </p>
+                    <div className="rounded-lg border" style={{ borderColor: 'hsl(var(--nc-border))', background: 'hsl(var(--nc-surface))' }}>
+                        <NotificationEmptyState />
                     </div>
                 )}
 
                 {!isLoading && notifications.length > 0 && (
                     <>
                         <ul className="nc-list rounded-lg border overflow-hidden" style={{ borderColor: 'hsl(var(--nc-border-strong))' }}>
-                            {notifications.map((n) => {
-                                const tone = getNotificationTone(n.type, n.title);
-                                const toneClass = getNotificationToneClass(tone);
-                                const { headline, body } = getNotificationDisplay(n.title, n.message);
-                                const isInternal = n.url && n.url.startsWith('/');
-
-                                return (
-                                    <li
-                                        key={n.id}
-                                        className={`nc-item ${toneClass}${body ? '' : ' nc-item--headline-only'}${n.read ? ' nc-item--read' : ' nc-item--unread'}`}
-                                    >
-                                        <div className="nc-item-head">
-                                            <h2 className="nc-item-title">{headline}</h2>
-                                            <time className="nc-item-date">
-                                                {formatNotificationDate(n.createdAt)}
-                                            </time>
-                                        </div>
-                                        {body && <p className="nc-item-message">{body}</p>}
-                                        {n.imageUrl && (
-                                            <div className="nc-item-image">
-                                                <img src={n.imageUrl} alt="" loading="lazy" />
-                                            </div>
-                                        )}
-                                        {n.url && (
-                                            isInternal ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => navigate(n.url!)}
-                                                    className="nc-item-link"
-                                                >
-                                                    Ver detalles
-                                                </button>
-                                            ) : (
-                                                <a
-                                                    href={n.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="nc-item-link"
-                                                >
-                                                    Ver detalles
-                                                </a>
-                                            )
-                                        )}
-                                    </li>
-                                );
-                            })}
+                            {notifications.map((n) => (
+                                <NotificationRow
+                                    key={n.id}
+                                    notification={n}
+                                    onInteract={(id) => markReadMutation.mutate(id)}
+                                />
+                            ))}
                         </ul>
 
                         {hasNextPage && (
@@ -147,9 +112,9 @@ const NotificationsPage: React.FC = () => {
                                 <Button
                                     variant="outline"
                                     onClick={() => fetchNextPage()}
-                                    disabled={isFetching}
+                                    disabled={isFetchingNextPage}
                                 >
-                                    {isFetching ? 'Cargando…' : 'Cargar más'}
+                                    {isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
                                 </Button>
                             </div>
                         )}

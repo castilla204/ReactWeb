@@ -1,11 +1,13 @@
 /** Tope de la ventana de reserva del vendedor (2 semanas). */
 export const SELLER_BOOKING_MAX_DAYS = 14;
 
-/** Días de antelación mínima fijos (suelo de la cita). */
-export const SELLER_BOOKING_MIN_LEAD_DAYS = 3;
+/** Días de antelación mínima fijos (suelo de la cita). El suelo real efectivo lo marca la
+ *  generación de huecos del backend (12h de antelación), así que +1 día es seguro: al experto
+ *  siempre le quedan ≥12h para confirmar. Espejo de SellerBookingWindow.MinLeadDays (NewApi). */
+export const SELLER_BOOKING_MIN_LEAD_DAYS = 1;
 
-/** Ventana objetivo habitual: cita entre +3 y +7 días tras el pago. */
-export const SELLER_BOOKING_TARGET_WINDOW_DAYS = 7;
+/** Ventana objetivo habitual: cita entre +1 y +5 días tras el pago. */
+export const SELLER_BOOKING_TARGET_WINDOW_DAYS = 5;
 
 /** Plazo para que el vendedor use el enlace y reserve (backend: SellerBookingDeadline). */
 export const SELLER_BOOKING_LINK_DEADLINE_HOURS = 48;

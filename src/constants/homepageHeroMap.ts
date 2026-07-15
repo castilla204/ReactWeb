@@ -1,6 +1,6 @@
 import heroBannerAvif from '../media/imagenbanner.avif';
 import heroBannerWebp from '../media/imagenbanner.webp';
-import { MAP_LITERAL } from './designTokens';
+import { HERO_DESKTOP_MAP_LITERAL, MAP_LITERAL } from './designTokens';
 
 /** Foto hero homepage — peritos a la derecha, zona clara a la izquierda para el copy */
 export const HERO_BANNER_AVIF = heroBannerAvif;
@@ -12,9 +12,25 @@ export const MOBILE_HERO_PHOTO_PATH = HERO_BANNER_WEBP;
 /** Fracción del ancho cubierta por el panel de copy (desktop). Legacy map hero. */
 export const DESKTOP_HERO_MAP_OVERLAY_PADDING = 0.26;
 
-/** Viñeta suave bajo el copy desktop — legibilidad sobre el mapa */
+/** Viñeta suave bajo el copy desktop — legibilidad sin tapar el mapa derecho */
 export const DESKTOP_HERO_SOFT_OVAL =
-  `radial-gradient(ellipse 72% 100% at 20% 48%, ${MAP_LITERAL.coastHalo} 0%, ${MAP_LITERAL.coastHalo} 36%, rgba(255,255,255,0.92) 48%, rgba(255,255,255,0.55) 58%, transparent 78%)`;
+  `radial-gradient(ellipse 78% 105% at 18% 50%, ${HERO_DESKTOP_MAP_LITERAL.skyMuted} 0%, rgba(255,255,255,0.92) 32%, rgba(255,255,255,0.45) 48%, rgba(255,255,255,0.12) 62%, transparent 76%)`;
+
+/** Lavado lateral muy suave — solo funde copy+foto con el mapa, no apaga el canvas */
+export const DESKTOP_HERO_MAP_INTEGRATION_WASH = [
+  `linear-gradient(90deg, rgba(250,250,250,0.5) 0%, rgba(250,250,250,0.16) 26%, transparent 44%)`,
+  'linear-gradient(to top, rgba(255,255,255,0.08) 0%, transparent 14%)',
+].join(', ');
+
+/** Poster estático mientras carga MapLibre — misma paleta que el mapa vivo */
+export const DESKTOP_HERO_MAP_POSTER = [
+  `radial-gradient(ellipse 56% 50% at 74% 46%, ${HERO_DESKTOP_MAP_LITERAL.land} 0%, ${HERO_DESKTOP_MAP_LITERAL.sky} 42%, ${HERO_DESKTOP_MAP_LITERAL.skyMuted} 72%, transparent 86%)`,
+  DESKTOP_HERO_MAP_INTEGRATION_WASH,
+].join(', ');
+
+/** Alturas mínimas del hero desktop — crece si el copy escala (zoom / i18n) */
+export const DESKTOP_HERO_MIN_HEIGHT_CLASS =
+  'min-h-[400px] lg:min-h-[500px] xl:min-h-[520px]';
 
 /** Máscara columna foto desktop — foto más transparente, fade largo hacia el mapa */
 export const DESKTOP_HERO_BANNER_MASK =
