@@ -13,3 +13,10 @@ export function dispatchHomepagePickCategory(categoryId: number, categoryName?: 
     })
   );
 }
+
+/** Abre el picker "Elige qué quieres revisar" desde componentes fuera de AirbnbSearchBar (p.ej. HomepageMobileHero). */
+export const HOMEPAGE_OPEN_SEARCH = 'inspecciono:homepage-open-search';
+
+export function dispatchHomepageOpenSearch() {
+  window.dispatchEvent(new CustomEvent(HOMEPAGE_OPEN_SEARCH));
+}

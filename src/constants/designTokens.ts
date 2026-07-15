@@ -69,6 +69,23 @@ export const MAP_LITERAL = {
   brandFill: 'rgba(0, 102, 204, 0.06)',
 } as const;
 
+/**
+ * Hero desktop — agua neutra integrada con surface-tinted (#fafafa).
+ * Sin azul acuático; costas en tinta suave (marca solo en sparkles).
+ * Literales hex: sincronizar con --surface-tinted / --ink-soft en index.css.
+ */
+export const HERO_DESKTOP_MAP_LITERAL = {
+  /** Agua/cielo: gris neutro (#fafafa family), no cian Carto */
+  sky: '#f2f2f2',
+  skyMuted: '#fafafa',
+  /** Tierra: misma cálida que MAP_LITERAL — no tocar */
+  land: '#ebe8e3',
+  /** Costas: tinta suave; marca solo en sparkles */
+  coastLine: '#949494',
+  coastHalo: '#ffffff',
+  border: '#c8c8c8',
+} as const;
+
 /** Gradientes compartidos — literales para style/background inline */
 export const GRADIENT = {
   checkoutTitleUnderline: `linear-gradient(to right, ${MAP_LITERAL.brand} 0%, ${MAP_LITERAL.brandMid} 38%, ${MAP_LITERAL.warning} 100%)`,

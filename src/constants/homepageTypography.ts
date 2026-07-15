@@ -47,9 +47,9 @@ export const HP_CARD_TITLE_CLASS =
 /** Carrusel de servicios en homepage — solo afecta a móvil (< md). */
 export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[184px]';
 
-/** Botón icono flotante (hero, modal categorías) */
+/** Botón icono flotante sobre foto/mapa (hero) — touch target 44px */
 export const hpIconButtonClass =
-  'flex h-8 w-8 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white';
+  'flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
 /** Subrayado decorativo bajo titulares (checkout / ¿Qué revisamos?) */
 export const HP_TITLE_UNDERLINE_GRADIENT =
@@ -285,9 +285,13 @@ export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_BLEED_X_CLASS =
 export const SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS =
   'pl-[calc(1.25rem+1.5rem+0.625rem)] pr-5';
 
-/** Bloque interactivo embebido (calendario, mapa, horas) — contorno unificado */
+/** Sombra bloques interactivos checkout (calendario, mapa) — legible sobre surface-tinted */
+export const SD_CHECKOUT_INTERACTIVE_SURFACE_SHADOW_CLASS =
+  'shadow-[0_4px_24px_rgba(15,23,42,0.13),0_2px_8px_rgba(15,23,42,0.07),0_0_0_1px_rgba(15,23,42,0.06)]';
+
+/** Bloque interactivo embebido (calendario, mapa, horas) — contorno legible sobre surface-tinted */
 export const SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS =
-  'overflow-hidden rounded-xl border border-line-soft bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
+  `overflow-hidden rounded-2xl border border-line bg-white ${SD_CHECKOUT_INTERACTIVE_SURFACE_SHADOW_CLASS}`;
 
 /** Padding interior del bloque calendario embebido (compacto; más ajustado en móvil para dar aire a las celdas del día). */
 export const SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS = 'p-2 lg:p-3';
@@ -341,15 +345,85 @@ export const SD_CHECKOUT_MOBILE_STEP_DESC_CLASS =
   'mt-2.5 max-w-[46ch] text-meta leading-relaxed text-ink-muted';
 
 /**
- * Superficie del header móvil de checkout — blanca y plana con una línea fina de
- * separación. Sin el degradado azul del diseño antiguo (competía con la cabecera
- * limpia y el mapa). Compartida por las barras del stepper para que se vean iguales.
+ * Superficie del header móvil de checkout — banda ink (chrome del wizard).
+ * Separa orientación (pregunta + stepper) del cuerpo blanco de decisión.
+ * Precedente: ServiceDetailDesktopBookingAside (banda precio bg-ink-strong).
  */
-// Fondo gris SUSURRO (#f8f9fb) + hairline #e9edf2: la banda se lee como topbar de
-// chrome sin romper el minimalismo (elección del usuario 2026-07-11). Mismo fondo en
-// todos los topbars: mapa, scroll, elección y AppointmentWizardShell.
+export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS =
+  'bg-ink-strong';
+
+/** @deprecated Usar SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS en el wizard. */
 export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
   'border-b border-line-soft bg-surface-tinted';
+
+/**
+ * Padding superior del header wizard móvil.
+ * safe-area + 0.875rem: aire real bajo el notch sin robar espacio al cuerpo.
+ */
+export const SD_CHECKOUT_MOBILE_WIZARD_TOP_PAD_CLASS =
+  'pt-[calc(env(safe-area-inset-top,0px)+0.875rem)]';
+
+/** Aire bajo título/descripción antes de la ola decorativa */
+export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS = 'pb-6';
+
+/** Aire bajo la ola en el cuerpo scroll del wizard (todos los pasos) */
+export const SD_CHECKOUT_MOBILE_WIZARD_BODY_PT_CLASS = 'pt-5';
+
+/** Cuerpo scroll del wizard: gutter + ritmo bajo la ola (un solo lugar, no en hijos) */
+export const SD_CHECKOUT_MOBILE_WIZARD_SCROLL_BODY_CLASS =
+  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} ${SD_CHECKOUT_MOBILE_WIZARD_BODY_PT_CLASS}`;
+
+/** Shell mapa full-bleed — fondo blanco para que la ola no muestre tinted en valles */
+export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_SHELL_CLASS = 'bg-white';
+
+/** Cuerpo mapa full-bleed — blanco edge-to-edge bajo header ink */
+export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BODY_CLASS =
+  'relative z-0 overflow-x-hidden bg-white';
+
+/** Bleed vertical del mapa bajo la ola — pareado con `.checkout-wizard-header-wave` (22px) */
+export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BLEED_CLASS = '-top-[22px]';
+
+/**
+ * Anclaje del buscador flotante sobre mapa wizard self:
+ * compensa bleed (-22px) + voladizo de ola (16px) + respiro (12px) para quedar
+ * claramente bajo la banda ink, fuera del stacking del header (z-10).
+ */
+export const SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_OVERLAY_TOP_CLASS =
+  'top-[calc(22px+16px+0.75rem)]';
+
+/** Padding superior al encuadrar cobertura cuando hay buscador wizard self (px). */
+export const SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_BOUNDS_TOP_PX = 132;
+
+/** Superficie interactiva ligera en wizard móvil (calendario sin card anidada) */
+export const SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS =
+  'overflow-hidden rounded-xl border border-line bg-white shadow-[0_1px_4px_rgba(15,23,42,0.06)]';
+
+/** Aviso de confianza / estado — compartido entre pasos y footer sticky */
+export const SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS =
+  'flex items-start gap-2.5 rounded-xl border border-brand/12 bg-white px-5 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
+
+/** Énfasis en descripciones de paso sobre banda oscura */
+export const SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS =
+  'font-semibold text-white';
+
+/** Etiqueta de campo en formularios del checkout móvil */
+export const SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS =
+  'block text-caption font-medium text-ink-muted';
+
+/** Título de paso sobre banda oscura — text-title para separarse de labels de tarjeta (text-body) */
+export const SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS =
+  'text-title font-bold leading-[1.2] tracking-[-0.02em] text-white [text-wrap:balance]';
+
+/** Descripción sobre banda oscura — misma escala que pasos claros */
+export const SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS =
+  'mt-2.5 max-w-[46ch] text-meta leading-relaxed text-white/85';
+
+/** Precio en cabecera de pago sobre banda oscura — no superar al título del paso */
+export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS =
+  'text-lead font-bold tabular-nums leading-none tracking-[-0.02em] text-white';
+
+export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_ON_DARK_CLASS =
+  'mt-1 text-caption text-white/85';
 
 /**
  * Cabecera de paso móvil como BANDA tipo topbar para los pasos con scroll (donde el
@@ -395,18 +469,47 @@ export const SD_CHECKOUT_MOBILE_META_CLASS =
 export const SD_CHECKOUT_MOBILE_ROW_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} border-b border-line py-4`;
 
-/** Contenedor tabla resumen — estilo Airbnb */
-export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-3 pt-1`;
+/** Contenedor tabla resumen — gutter vive en main del shell */
+export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS = 'pb-3 pt-1';
 
-/** Resumen paso pago — aire claro entre la banda fija y la tarjeta */
-export const SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS = 'bg-surface-tinted';
+/** @deprecated El gutter y pt-5 los aplica CheckoutMobileWizardShell en main */
+export const SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS = '';
 
-/** Cabecera fija del paso de pago (ritmo 16px hasta el borde inferior) */
-export const SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS = 'pb-4';
+/** Wrapper calendario — mismo z que choose; el aire lo da wave-scroll + pt-5 del shell */
+export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_STACK_CLASS = 'relative z-[1]';
 
-export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS =
-  `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} pb-8 pt-3`;
+/** Cuerpo paso calendario self — blanco continuo; pt-5 hereda de SCROLL_BODY_CLASS */
+export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_BODY_CLASS =
+  '!bg-white relative z-[1] pb-5';
+
+/** Shell paso calendario — evita franja tinted en el margen bajo la ola */
+export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_SHELL_CLASS = 'bg-white';
+
+/** Cuerpo paso elección — solo padding inferior extra (tinte/pt en shell) */
+export const SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS = 'pb-5';
+
+/** Stack de cards elección — tuck bajo la ola decorativa */
+export const SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS =
+  'relative z-[1] -mt-2 flex flex-col gap-4 [@media(min-height:700px)]:gap-5';
+
+/** Rail de confianza in-scroll (paso elección) */
+export const SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS =
+  `mt-5 ${SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS}`;
+
+/** @deprecated Alias de SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS */
+export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_CHOOSE_PB_CLASS =
+  SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS;
+
+/** @deprecated Alias de SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS */
+export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_CHOOSE_SURFACE_CLASS =
+  SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS;
+
+/** @deprecated Usar SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS (pb-6 unificado) */
+export const SD_CHECKOUT_MOBILE_PAYMENT_STEP_HEADER_CLASS =
+  SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS;
+
+/** Resumen paso pago — gutter en main del shell */
+export const SD_CHECKOUT_MOBILE_PAYMENT_TABLE_WRAP_CLASS = 'pb-5 pt-0';
 
 /** Fallback scroll pad cuando el footer incluye línea de confianza (antes de medir con ResizeObserver). */
 export const SD_CHECKOUT_MOBILE_FOOTER_WITH_TRUST_PAD_CLASS =
@@ -439,7 +542,7 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_CARD_META_CLASS =
 
 /** Precio anclado en la cabecera del paso de pago móvil */
 export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS =
-  'text-subtitle font-semibold tabular-nums leading-none tracking-[-0.02em] text-ink-strong';
+  'text-title font-bold tabular-nums leading-none tracking-[-0.02em] text-ink-strong min-[390px]:text-subtitle min-[390px]:font-semibold';
 
 export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS =
   'mt-1 text-caption text-ink-muted';
@@ -540,9 +643,9 @@ export const SD_CHECKOUT_MOBILE_TRUST_ICON_CLASS =
 export const SD_CHECKOUT_MOBILE_LEGAL_CLASS =
   `${SD_CHECKOUT_MOBILE_GUTTER_CLASS} py-4`;
 
-/** Scroll checkout móvil — footer con nota + CTA */
+/** Scroll checkout móvil — footer base (pt-2.5 + CTA 2.75rem + pb-2.5 + safe-area). */
 export const SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR =
-  'calc(0.625rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)))';
+  'calc(1.25rem + 2.75rem + max(0.625rem, env(safe-area-inset-bottom, 0px)))';
 
 export const SD_CHECKOUT_MOBILE_SCROLL_PAD_CLASS =
   'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
@@ -590,29 +693,29 @@ export const SD_CHECKOUT_MOBILE_PAYMENT_SCROLL_CLASS =
   'relative pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))] pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] [@media(min-height:700px)]:pt-[calc(env(safe-area-inset-top,0px)+2rem)]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_SHELL_CLASS =
-  'fixed bottom-0 left-0 right-0 z-[70] border-t border-line bg-white';
+  'fixed bottom-0 left-0 right-0 z-[60] border-t border-line bg-white';
 
 /** Offset inferior compartido: drawer, mapa y scroll sobre el footer fijo checkout móvil. */
 export const SD_CHECKOUT_MOBILE_FOOTER_BOTTOM_OFFSET = SD_CHECKOUT_MOBILE_FOOTER_HEIGHT_EXPR;
 
 export const SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS =
-  'bottom-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
+  'bottom-[calc(1.25rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS =
-  'pb-[calc(0.625rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
+  'pb-[calc(1.25rem+2.75rem+max(0.625rem,env(safe-area-inset-bottom,0px)))]';
 
 export const SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS = 'flex items-center gap-2.5';
 
 export const SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-white px-4 text-[13px] font-semibold text-ink-muted transition-[colors,transform,border-color] duration-200 ease-out hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-strong motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100';
+  'inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-white px-4 text-meta font-semibold text-ink-muted transition-[colors,transform,border-color] duration-200 ease-out hover:border-ink-soft hover:bg-surface-tinted hover:text-ink-strong motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:active:scale-100';
 
 /** Contenedor calendario checkout — contorno neutro */
 export const SD_CHECKOUT_CALENDAR_FRAME_CLASS =
-  'rounded-2xl border border-line bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+  `rounded-2xl border border-line bg-white p-2 ${SD_CHECKOUT_INTERACTIVE_SURFACE_SHADOW_CLASS}`;
 
 /** Contenedor mapa checkout — contorno neutro */
 export const SD_CHECKOUT_PICKER_FRAME_CLASS =
-  'overflow-hidden rounded-2xl border border-line bg-white p-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+  `overflow-hidden rounded-2xl border border-line bg-white p-1 ${SD_CHECKOUT_INTERACTIVE_SURFACE_SHADOW_CLASS}`;
 
 /** @deprecated Usar SD_CHECKOUT_PICKER_FRAME_CLASS */
 export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
@@ -623,10 +726,13 @@ export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
  * coexiste en pantalla con el CTA de avance (son ramas del mismo ternario por
  * `mobileStep`), así que compartir color no crea ambigüedad.
  */
+// CTA de acción del checkout: azul de marca (mismo primario que SileoButton/login y el
+// resto de la app). Antes era negro (bg-ink-strong), un huérfano frente al azul de marca
+// de todo lo demás; unificado para que la acción de máxima intención use la identidad.
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-ink-strong text-[15px] font-semibold text-white shadow-[0_2px_10px_rgba(15,23,42,0.12)] transition-[colors,transform,box-shadow] duration-200 ease-out hover:bg-ink hover:shadow-[0_4px_16px_rgba(15,23,42,0.18)] motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-lead font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] transition-[colors,transform,box-shadow] duration-200 ease-out hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)] motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100';
 
-/** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo negro que el de pago. */
+/** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo azul de marca que el de pago. */
 export const SD_CHECKOUT_MOBILE_CTA_DARK_CLASS = SD_CHECKOUT_MOBILE_CTA_CLASS;
 
 /** Separador entre mapa y resumen en checkout móvil paso 2 */
@@ -637,7 +743,32 @@ export const SD_CHECKOUT_MOBILE_SUMMARY_SECTION_CLASS =
 export const SD_MOBILE_GUTTER_CLASS = 'px-5';
 
 /** Solape de la card blanca sobre el hero */
-export const SD_MOBILE_SHEET_OVERLAP_CLASS = '-mt-10';
+export const SD_MOBILE_SHEET_OVERLAP_CLASS = '-mt-5';
+
+/** Padding superior de la sheet — simétrico con el solape (−mt-5 ↔ pt-5) */
+export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-5';
+
+/** Stack identidad móvil: título → host (escala sm+ = 12px) */
+export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-3';
+
+/** Bloque identidad (título + host) — gutter; border-t del carril tabs cierra el bloque */
+export const SD_MOBILE_IDENTITY_GUTTER_CLASS = `${SD_MOBILE_GUTTER_CLASS} pb-3`;
+
+/** Carril scroll tabs móvil — borde superior; padding-top de badges vive en .sd-tablist (CSS) */
+export const SD_MOBILE_TABLIST_SHELL_CLASS =
+  'sd-tablist-shell border-t border-line pt-0 pb-2';
+
+export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-2 pb-4';
+
+/** Panel reseñas — mismo ritmo inferior que el resto de tabs */
+export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-2 pb-4';
+
+/** Stack vertical del panel «Acerca del servicio». */
+export const SD_MOBILE_INSET_STACK_CLASS = 'flex flex-col gap-4';
+
+/** Sección entregables — mismo gap que INSET_STACK + ancla scroll al tablist */
+export const SD_MOBILE_DELIVERABLES_SECTION_CLASS =
+  'flex flex-col gap-4 scroll-mt-[4.5rem]';
 
 /** Mapa preview en ficha móvil (cobertura) */
 export const SD_MOBILE_MAP_PREVIEW_HEIGHT_CLASS = 'h-24';
@@ -652,32 +783,41 @@ export const SD_MOBILE_BOOKING_DIVIDER_CLASS =
 /** Ritmo vertical entre bloques de la sheet móvil */
 export const SD_MOBILE_SECTION_GAP_CLASS = 'mb-4';
 
-/** Padding superior de la sheet tras el solape del hero */
-export const SD_MOBILE_SHEET_TOP_CLASS = 'pt-4';
-
 /** Aire bajo fila revisor */
 export const SD_MOBILE_HEADER_PB_CLASS = 'pb-0';
 
-/** Stack identidad móvil: título → host → horario */
-export const SD_MOBILE_IDENTITY_STACK_CLASS = 'flex flex-col gap-3';
+/** Fila host móvil: avatar + identidad + chat */
+export const SD_MOBILE_HOST_ROW_CLASS = 'flex items-start gap-2';
 
-/** Bloque disponibilidad bajo el host (sin borde; el divisor va antes de tabs) */
+/** Chat inline en fila host móvil */
+export const SD_MOBILE_HOST_CHAT_CLASS =
+  'h-9 shrink-0 self-start rounded-full px-3.5';
+
+/** Línea de confianza bajo nombre (revisor verificado) */
+export const SD_MOBILE_HOST_TRUST_CLASS =
+  'mt-1 truncate text-xs font-medium leading-4 text-brand';
+
+/** Bloque meta bajo el host (sin borde; la separación es espaciado + tarjeta credenciales) */
 export const SD_MOBILE_META_SECTION_CLASS = 'mt-3';
 
-/** Línea full-bleed entre bloque superior (host + horario) y tabs */
-export const SD_MOBILE_SHEET_DIVIDER_CLASS = 'mt-4 border-t border-line';
+/** Zona tabs + panel — carril con border-t en CSS (.service-detail-page .sd-tablist-shell) */
+export const SD_MOBILE_TAB_REGION_CLASS = '';
+
+/** @deprecated Sin divisor horizontal — usar SD_MOBILE_TAB_REGION_CLASS */
+export const SD_MOBILE_SHEET_DIVIDER_CLASS = SD_MOBILE_TAB_REGION_CLASS;
 
 /** Contenedor tabs + panel (sin margen extra al final) */
 export const SD_MOBILE_SHEET_BOTTOM_CLASS = '';
+
+export const SD_MOBILE_TABLIST_CLASS = 'sd-tablist';
+
 /** Etiqueta de fila en bloque reserva (Disponibilidad, Cobertura) — no compite con nombre del experto */
 export const SD_MOBILE_BOOKING_LABEL_CLASS =
   'text-xs font-medium leading-4 text-ink-muted';
+
 /** Hora en fila «Horario habitual» — secundaria respecto al label, no compite con los días */
 export const SD_MOBILE_AVAILABILITY_TIME_CLASS =
   'text-caption font-medium tabular-nums leading-4 text-ink-strong';
-export const SD_MOBILE_TAB_PANEL_PT_CLASS = 'pt-4 pb-6';
-/** Panel reseñas: menos aire inferior (el scroll pad ya reserva hueco para la barra fija). */
-export const SD_MOBILE_TAB_PANEL_REVIEWS_CLASS = 'pt-4 pb-2';
 
 /**
  * Escala tipográfica móvil — tokens DESIGN.md:
@@ -699,20 +839,17 @@ export const SD_MOBILE_SUBHEAD_CLASS =
   'text-sm font-semibold leading-5 text-ink-strong';
 export const SD_MOBILE_SECTION_TITLE_CLASS = SD_MOBILE_SUBHEAD_CLASS;
 
-/** Stack vertical dentro del panel «Acerca del servicio» */
-export const SD_MOBILE_INSET_STACK_CLASS = 'space-y-4';
-
 /** Carruseles horizontales móvil: alinear con gutter sin duplicar en cada card */
 export const SD_MOBILE_CAROUSEL_EDGE_CLASS = 'pl-4 pr-4';
 
 /**
- * Reserva inferior del scroll: barra fija compacta + colchón + safe-area.
- * Barra ≈ py-3 + fila 48px + pb safe-area.
+ * Reserva inferior del scroll: barra fija compacta + colchón md + safe-area.
+ * Barra ≈ py-2.5 + fila 44px + pb safe-area (~54px + safe).
  */
 export const SD_MOBILE_SCROLL_PAD_CLASS =
   'pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]';
 
-/** Barra fija con línea de pago encima del precio (≈20px más que SD_MOBILE_SCROLL_PAD_CLASS). */
+/** @deprecated Sin línea de confianza en footer; usar SD_MOBILE_SCROLL_PAD_CLASS */
 export const SD_MOBILE_SCROLL_PAD_TRUST_CLASS =
   'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]';
 
@@ -773,6 +910,20 @@ export const SD_MOBILE_FOOTER_CTA_CLASS = 'sd-mobile-footer-cta';
 /** CTA principal (desktop / inline) */
 export const HP_SERVICE_CTA_CLASS =
   'inline-flex items-center justify-center h-12 px-6 min-w-[120px] shrink-0 rounded-full bg-brand text-white text-base font-semibold shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover hover:shadow-[0_8px_24px_hsl(var(--brand)/0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-75 disabled:cursor-wait';
+
+/** Pills de categoría — hero desktop. Activo en tinta (no brand): reserva azul para titular y CTA. */
+export const HP_DESKTOP_CATEGORY_TAB_BASE_CLASS =
+  'inline-flex h-10 min-h-10 items-center gap-1.5 rounded-full px-3.5 text-caption font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+
+export const HP_DESKTOP_CATEGORY_TAB_ACTIVE_CLASS =
+  'bg-ink-strong font-semibold text-white hover:bg-ink-strong';
+
+export const HP_DESKTOP_CATEGORY_TAB_INACTIVE_CLASS =
+  'border border-line bg-white text-ink-strong hover:bg-surface-tinted';
+
+/** Variante "Más" — borde discontinuo, sin confundir con selección activa */
+export const HP_DESKTOP_CATEGORY_TAB_HIGHLIGHT_CLASS =
+  'border border-dashed border-line bg-white text-ink-strong hover:bg-surface-tinted';
 
 export const hpCardText = {
   title: {

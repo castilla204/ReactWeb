@@ -6,6 +6,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 // En producción, Vite tree-shake eliminará este código
 import { toast } from './lib/toast'
 import App from './App.tsx'
+import { WelcomeScreen } from './components/WelcomeScreen'
 import { initRum } from './lib/rum'
 import { schedulePrefetchOfLikelyRoutes } from './lib/prefetchRoutes'
 import { registerServiceWorker } from './lib/registerSw'
@@ -169,7 +170,13 @@ bootstrapHomeCriticalPath(queryClient)
 // Componente wrapper para el hook de seguridad
 function AppWithSafety() {
     useBodyScrollSafety();
-    return <App />;
+    return (
+        <>
+            <App />
+            {/* Pantalla de bienvenida de primera apertura (solo app nativa; se auto-gatea). */}
+            <WelcomeScreen />
+        </>
+    );
 }
 
 const rootElement = document.getElementById('root')

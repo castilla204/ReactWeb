@@ -265,7 +265,7 @@ export function CheckoutSummaryTable({
           payment ? SD_CHECKOUT_MOBILE_PAYMENT_CARD_CLASS : SD_CHECKOUT_MOBILE_TABLE_CLASS,
           payment && 'checkout-payment-card-enter',
           brandAccent && !payment && 'relative overflow-hidden',
-          compact && 'rounded-xl border border-line shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
+          compact && 'shadow-[0_1px_3px_rgba(15,23,42,0.05)]',
         )}
       >
         {!compact ? null : (
@@ -481,7 +481,7 @@ export function CheckoutSummaryTable({
               href="/legal/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-caption inline-flex min-h-11 items-center py-2 underline decoration-line underline-offset-2 hover:no-underline text-ink-muted"
+              className="text-caption inline-flex min-h-11 items-center py-2 underline decoration-line underline-offset-2 hover:no-underline text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             >
               Condiciones de contratación
             </a>

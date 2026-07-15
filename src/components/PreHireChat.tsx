@@ -186,6 +186,7 @@ export const PreHireChat = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const lastScrolledMessageIdRef = useRef<number | string | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -371,24 +372,36 @@ export const PreHireChat = ({
         .channel(channelName)
         .on('broadcast', { event: 'new_message' }, ({ payload }) => {
           // 🛡️ W35: el canal `conversation:{id}` es público → el backend deja de enviar el contenido
-          // en el payload. Refetch por el endpoint autenticado (fuente de verdad). Compat con backend
-          // antiguo: si el payload aún trae contenido, se aplica optimista para no perder inmediatez.
+          // en el payload (queda `content: ''`). Refetch por el endpoint autenticado (fuente de
+          // verdad). Compat con backend antiguo: si el payload aún trae contenido, se aplica
+          // optimista para no perder inmediatez.
+          //
+          // 🐛 FIX [burbuja fantasma]: antes se mergeaba SIEMPRE, incluso con content vacío. El
+          // matching por contenido de mergeIncomingMessage ("¿es el eco de mi propio mensaje
+          // optimista?") comparaba el content real ("holaaaa") contra el content vacío del
+          // broadcast → nunca coincidía → se insertaba como mensaje NUEVO, duplicado y vacío, que
+          // quedaba visible unos instantes hasta que el refetch reconciliaba. Con content vacío ya
+          // no aporta nada usable: nos limitamos a disparar el refetch (línea de abajo) y NO
+          // tocamos el array visible.
           const messageDto = normalizeBroadcastMessage(
             payload as Record<string, unknown>,
             convId
           );
-          if (messageDto) {
+          if (messageDto && messageDto.content.trim().length > 0) {
             setMessages((prev) => mergeIncomingMessage(prev, messageDto));
           }
           void refetchRef.current();
         })
         .on('broadcast', { event: 'message_updated' }, ({ payload }) => {
           // 🛡️ W35: igual que new_message — refetch autenticado; compat con payload completo.
+          // 🐛 FIX [burbuja fantasma]: mismo guard. Sin él, un content vacío sobrescribía
+          // (`{...msg, ...messageDto}`) el contenido REAL ya visible con '' hasta el refetch —
+          // peor que el bug de new_message, porque vaciaba un mensaje que el usuario ya veía.
           const messageDto = normalizeBroadcastMessage(
             payload as Record<string, unknown>,
             convId
           );
-          if (messageDto) {
+          if (messageDto && messageDto.content.trim().length > 0) {
             setMessages((prev) =>
               prev.map((msg) => (msg.id === messageDto.id ? { ...msg, ...messageDto } : msg))
             );
@@ -643,6 +656,15 @@ export const PreHireChat = ({
     }
   };
 
+  // Chip de pregunta sugerida (estado vacío): rellena el input y enfoca, en vez de
+  // enviar directo — el usuario puede matizarla antes de mandarla (igual que un
+  // "quick reply" de WhatsApp Business, pero editable).
+  const handleSuggestedQuestion = (question: string) => {
+    setInputValue(question);
+    notifyTypingState(true);
+    inputRef.current?.focus();
+  };
+
   const handleHireClick = () => {
     navigate(`/checkout/${serviceId}`);
   };
@@ -757,13 +779,13 @@ export const PreHireChat = ({
                         {/* Indicador de conexión */}
                         <div className="flex items-center gap-1.5">
                             {isConnected ? (
-                                <span className="text-xs text-green-600 flex items-center gap-1" aria-label="Chat conectado">
-                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></span>
+                                <span className="text-xs text-success flex items-center gap-1" aria-label="Chat conectado">
+                                    <span className="w-2 h-2 bg-success rounded-full animate-pulse" aria-hidden="true"></span>
                                     Conectado
                                 </span>
                             ) : (
-                                <span className="text-xs text-red-600 flex items-center gap-1" aria-label="Chat desconectado">
-                                    <span className="w-2 h-2 bg-red-500 rounded-full" aria-hidden="true"></span>
+                                <span className="text-xs text-destructive-text flex items-center gap-1" aria-label="Chat desconectado">
+                                    <span className="w-2 h-2 bg-destructive rounded-full" aria-hidden="true"></span>
                                     Desconectado
                                 </span>
                             )}
@@ -779,7 +801,7 @@ export const PreHireChat = ({
                 </div>
             )}
       {userIsAdmin && (
-        <p className="mx-4 mt-2 text-kicker text-amber-800 bg-amber-50 rounded-md px-2 py-1">
+        <p className="mx-4 mt-2 text-kicker text-warning-text bg-warning-tint rounded-md px-2 py-1">
           Vista de administrador: los mensajes no se marcarán como leídos para el cliente ni el experto.
         </p>
       )}
@@ -799,8 +821,8 @@ export const PreHireChat = ({
           <div
             className={`mx-3 mt-2 flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
               isConnected
-                ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-                : 'border-amber-100 bg-amber-50 text-amber-800'
+                ? 'border-success-border bg-success-tint text-success'
+                : 'border-warning-border bg-warning-tint text-warning-text'
             }`}
             role="status"
           >
@@ -830,14 +852,33 @@ export const PreHireChat = ({
         aria-label="Mensajes del chat antes de contratar"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full min-h-[12rem] items-center justify-center px-4 py-6">
+          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center px-4 py-6">
             <div className="flex flex-col items-center text-center">
               <h3 className="text-body font-semibold text-ink-strong">
                 {PRE_HIRE_CHAT_COPY.emptyTitle}
               </h3>
-              <p className="mt-1 max-w-[240px] text-caption leading-relaxed text-ink-soft">
+              <p className="mt-1 max-w-[280px] text-caption leading-relaxed text-ink-soft">
                 {PRE_HIRE_CHAT_COPY.emptyBody}
               </p>
+              <p className="mt-3 flex items-center gap-1.5 text-kicker font-medium text-ink-muted">
+                <ShieldCheck className="h-3.5 w-3.5 text-brand" aria-hidden />
+                {PRE_HIRE_CHAT_COPY.emptyTrust}
+              </p>
+            </div>
+
+            {/* Preguntas sugeridas: tocar rellena el input (no envía directo) para
+                que el usuario pueda matizarlas antes de mandarlas. */}
+            <div className="mt-5 flex max-w-[320px] flex-wrap justify-center gap-1.5">
+              {PRE_HIRE_CHAT_COPY.suggestedQuestions.map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  onClick={() => handleSuggestedQuestion(question)}
+                  className="rounded-full border border-line bg-white px-3 py-1.5 text-caption font-medium text-ink-strong shadow-sm transition-colors hover:border-brand/40 hover:bg-brand/[0.04] hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                >
+                  {question}
+                </button>
+              ))}
             </div>
           </div>
         ) : (
@@ -961,12 +1002,13 @@ export const PreHireChat = ({
       {/* Input */}
       <div className="relative z-10 shrink-0 border-t border-line bg-white px-3 py-2.5 sm:px-4 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
         {sendError && (
-          <div className="mb-2.5 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          <div className="mb-2.5 rounded-2xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive-text" role="alert">
             {sendError}
           </div>
         )}
-        <div className="flex items-end gap-1.5 rounded-[1.5rem] border border-line bg-surface-tinted py-1 pl-3.5 pr-1 transition-colors focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
+        <div className="flex items-end gap-1.5 rounded-[1.5rem] border border-line bg-surface-tinted py-1.5 pl-3.5 pr-1.5 transition-colors focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
           <Textarea
+            ref={inputRef}
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
@@ -981,14 +1023,14 @@ export const PreHireChat = ({
             aria-invalid={!!sendError}
             rows={1}
             maxLength={1200}
-            className="min-h-[36px] max-h-32 flex-1 resize-none border-0 bg-transparent px-1 py-[0.4rem] text-sm leading-5 shadow-none ring-offset-0 placeholder:text-ink-soft focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-[40px] max-h-32 flex-1 resize-none border-0 bg-transparent px-1 py-[0.4rem] text-sm leading-5 shadow-none ring-offset-0 placeholder:text-ink-soft focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
             style={{ pointerEvents: 'auto' }}
           />
           <Button
             type="button"
             onClick={handleSend}
             disabled={!inputValue.trim() || sendMessageMutation.isPending}
-            className="h-9 w-9 shrink-0 rounded-full bg-brand p-0 text-white shadow-sm transition-all hover:bg-brand-hover active:scale-90 disabled:bg-transparent disabled:text-ink-soft disabled:shadow-none"
+            className="h-11 w-11 shrink-0 rounded-full bg-brand p-0 text-white shadow-sm transition-all hover:bg-brand-hover active:scale-90 disabled:bg-transparent disabled:text-ink-soft disabled:shadow-none"
             aria-label={sendMessageMutation.isPending ? 'Enviando mensaje' : 'Enviar mensaje'}
           >
             {sendMessageMutation.isPending ? (

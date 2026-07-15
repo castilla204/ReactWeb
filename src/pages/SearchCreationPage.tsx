@@ -115,6 +115,21 @@ const SearchCreationPage: React.FC = () => {
         return () => clearTimeout(t);
     }, [currentStep, isPageReady]);
 
+    // ✅ El MapPageSkeleton se mantiene montado 300ms más allá de isPageReady=true
+    //    (mismo `duration-300` que el fade-in del contenido real) y se desvanece
+    //    en paralelo en vez de desmontarse en seco. Antes el skeleton (z-[99999])
+    //    desaparecía de golpe mientras el contenido real seguía a medio fade-in,
+    //    dejando ver un hueco del fondo blanco durante la transición.
+    const [showMapSkeleton, setShowMapSkeleton] = useState(true);
+    React.useEffect(() => {
+        if (!isPageReady) {
+            setShowMapSkeleton(true);
+            return;
+        }
+        const t = setTimeout(() => setShowMapSkeleton(false), 300);
+        return () => clearTimeout(t);
+    }, [isPageReady]);
+
     // Notificar a App.tsx cuando estamos en un formulario (step 1, 2 o 3) para ocultar el header en móvil
     React.useEffect(() => {
         if (currentStep === 1 || currentStep === 2 || currentStep === 3) {
@@ -625,10 +640,11 @@ const SearchCreationPage: React.FC = () => {
                 <>
                     {/* ✅ Mostrar skeleton mientras carga el mapa Y los servicios.
                         Sin la espera a servicios, el usuario veía la página vacía
-                        y al rato aparecían las cards → mal UX. */}
-                    {!isPageReady && <MapPageSkeleton />}
+                        y al rato aparecían las cards → mal UX. `fadingOut` lo cruza
+                        en paralelo con el fade-in del contenido real (ver showMapSkeleton). */}
+                    {showMapSkeleton && <MapPageSkeleton fadingOut={isPageReady} />}
 
-                    <div className={`relative flex h-[100dvh] w-full flex-col overflow-hidden bg-white ${!isPageReady ? 'pointer-events-none opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
+                    <div className={`relative flex h-[100dvh] w-full flex-col overflow-hidden bg-white ${!isPageReady ? 'pointer-events-none opacity-0' : 'opacity-100 transition-opacity duration-300 ease-out motion-reduce:transition-none'}`}>
                         {searchParameters.category && searchParameters.serviceTypeId ? (
                             <SearchParameterForm
                                 onComplete={handleParametersComplete}

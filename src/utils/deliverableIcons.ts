@@ -14,3 +14,19 @@ export function getDeliverableKind(dt: ServiceDeliverableType): DeliverableKind 
   if (key.includes('llamada') || key.includes('telef') || key.includes('call') || key.includes('phone')) return 'call';
   return 'default';
 }
+
+/** CTA del pie de portada, alineado al tipo de entregable. */
+export function getDeliverableLinkText(kind: DeliverableKind): string {
+  switch (kind) {
+    case 'pdf':
+      return 'Ver informe';
+    case 'video':
+      return 'Ver vídeo';
+    case 'photo':
+      return 'Ver fotos';
+    case 'call':
+      return 'Ver detalle';
+    default:
+      return 'Ver detalle';
+  }
+}

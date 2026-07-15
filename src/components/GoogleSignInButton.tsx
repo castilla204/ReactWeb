@@ -15,7 +15,7 @@ import {
 import { cn } from '../lib/utils';
 
 const GoogleIcon = ({ compact }: { compact?: boolean }) => (
-    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" aria-hidden>
+    <svg className={compact ? 'h-[18px] w-[18px] shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" aria-hidden>
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -38,11 +38,18 @@ interface GoogleSignInButtonProps {
 // Round: el botón "compact" solo se usa en LoginModal (grid social), donde los inputs
 // y el CTA ya no comparten forma pastilla — este radio los alinea con esa familia.
 // El variant "default" (sidebar de App.tsx) se queda en pastilla, sin tocar.
-const OAUTH_RADIUS_COMPACT = 'rounded-[10px]';
+// rounded-xl (12px) = mismo radio que GroupedFieldsCard, para que Google/Apple y los
+// campos de correo lean como una sola familia dentro del modal.
+const OAUTH_RADIUS_COMPACT = 'rounded-xl';
 const OAUTH_RADIUS_DEFAULT = 'rounded-full';
 
+// ⚠️ Tamaño en valor arbitrario `text-[14px]` a propósito, NO el token `text-meta`:
+// `cn()` usa tailwind-merge sin registrar la escala custom de fontSize, así que al ir
+// junto a `text-[#3c4043]` (color) descartaba `text-meta` y la etiqueta caía a 16px.
+// El valor arbitrario de longitud sí sobrevive al merge y fija 14px (spec de Google,
+// misma familia que el CTA principal). Apple usa el mismo 14px para no desalinear en iOS.
 const compactClasses =
-    'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-meta font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
+    'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-[14px] font-medium leading-none tracking-[0.01em] text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
 const defaultClasses =
     'flex h-11 w-full items-center justify-center gap-2.5 border border-[#dadce0] bg-white font-display text-sm font-medium text-[#3c4043] transition-colors hover:border-[#bdc1c6] hover:bg-[#f8f9fa] active:bg-[#f1f3f4]';
 

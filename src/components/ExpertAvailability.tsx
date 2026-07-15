@@ -10,7 +10,7 @@ interface ExpertAvailabilityProps {
 export default function ExpertAvailability({ availability, compact = false }: ExpertAvailabilityProps) {
     if (!availability) {
         return (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-caption text-ink-muted">
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Horarios no disponibles</span>
             </div>
@@ -24,17 +24,17 @@ export default function ExpertAvailability({ availability, compact = false }: Ex
     if (compact) {
         return (
             <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-caption">
                     {isAvailableNow ? (
-                        <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                        <CheckCircle className="w-3.5 h-3.5 text-success" />
                     ) : (
-                        <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                        <Clock className="w-3.5 h-3.5 text-ink-muted" />
                     )}
-                    <span className="font-medium text-foreground">
+                    <span className="font-medium text-ink-strong">
                         {isAvailableNow ? "Disponible ahora" : "Disponible en horario"}
                     </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-5 flex-wrap">
+                <div className="flex items-center gap-1.5 text-caption text-ink-muted ml-[22px] flex-wrap">
                     <span>{daysFormatted}</span>
                     <span>•</span>
                     <span>{timeRange}</span>
@@ -44,29 +44,29 @@ export default function ExpertAvailability({ availability, compact = false }: Ex
     }
 
     return (
-        <div className="space-y-2 text-xs">
+        <div className="space-y-2 text-caption">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     {isAvailableNow ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-4 h-4 text-success" />
                     ) : (
-                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <Clock className="w-4 h-4 text-ink-muted" />
                     )}
                     <span className={cn(
                         "font-semibold",
-                        isAvailableNow ? "text-green-600" : "text-foreground"
+                        isAvailableNow ? "text-success" : "text-ink-strong"
                     )}>
                         {isAvailableNow ? "Disponible ahora" : "Disponible en horario"}
                     </span>
                 </div>
             </div>
-            
+
             <div className="pl-6 space-y-1">
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-ink-muted">
                     <Calendar className="w-3.5 h-3.5" />
                     <span><strong>Días:</strong> {daysFormatted}</span>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex items-center gap-2 text-ink-muted">
                     <Clock className="w-3.5 h-3.5" />
                     <span><strong>Horario:</strong> {timeRange}</span>
                 </div>

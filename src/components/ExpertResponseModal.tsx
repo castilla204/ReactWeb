@@ -62,14 +62,14 @@ export function ExpertResponseModal({
     <Drawer open={isOpen} onOpenChange={handleClose}>
       <DrawerContent className="max-h-[96dvh] flex flex-col border-t-4 border-destructive">
         <div className="mx-auto w-full max-w-lg flex flex-col h-full max-h-[96dvh]">
-          <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
+          <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-line-soft flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-orange-600" />
+              <div className="w-10 h-10 bg-ink-strong rounded-full flex items-center justify-center">
+                <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <DrawerTitle className="text-lg sm:text-xl font-semibold">Responder Disputa</DrawerTitle>
-                <DrawerDescription className="text-sm">Proporciona tu respuesta a la disputa</DrawerDescription>
+                <DrawerTitle className="text-lg sm:text-xl font-semibold text-ink-strong">Responder Disputa</DrawerTitle>
+                <DrawerDescription className="text-sm text-ink-muted">Proporciona tu respuesta a la disputa</DrawerDescription>
               </div>
               <DrawerClose asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -90,24 +90,24 @@ export function ExpertResponseModal({
                   <Card className="p-4 bg-destructive/10 border-destructive/20">
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-5 h-5 text-destructive" />
-                      <h4 className="font-semibold text-destructive-foreground">Información de la Disputa</h4>
+                      <h4 className="font-semibold text-destructive">Información de la Disputa</h4>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       <div>
-                        <span className="text-muted-foreground font-medium">ID:</span>
-                        <span className="text-foreground ml-1">#{dispute.id}</span>
+                        <span className="text-ink-muted font-medium">ID:</span>
+                        <span className="text-ink-strong ml-1">#{dispute.id}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground font-medium">Estado:</span>
-                        <span className="text-foreground ml-1">{dispute.status}</span>
+                        <span className="text-ink-muted font-medium">Estado:</span>
+                        <span className="text-ink-strong ml-1">{dispute.status}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground font-medium">SearchHire ID:</span>
-                        <span className="text-foreground ml-1">#{dispute.searchHireId}</span>
+                        <span className="text-ink-muted font-medium">Nº de contratación:</span>
+                        <span className="text-ink-strong ml-1">#{dispute.searchHireId}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground font-medium">Fecha:</span>
-                        <span className="text-foreground ml-1">
+                        <span className="text-ink-muted font-medium">Fecha:</span>
+                        <span className="text-ink-strong ml-1">
                           {new Date(dispute.createdAt).toLocaleDateString('es-ES')}
                         </span>
                       </div>
@@ -115,32 +115,32 @@ export function ExpertResponseModal({
                   </Card>
 
                   {/* Dispute Reason */}
-                  <Card className="p-4 bg-muted">
+                  <Card className="p-4 bg-surface-tinted">
                     <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <h4 className="font-semibold text-foreground">Motivo de la Disputa</h4>
+                      <User className="w-4 h-4 text-ink-muted" />
+                      <h4 className="font-semibold text-ink-strong">Motivo de la Disputa</h4>
                     </div>
-                    <p className="text-foreground text-sm leading-relaxed">{dispute.reason}</p>
+                    <p className="text-ink-strong text-sm leading-relaxed">{dispute.reason}</p>
                   </Card>
 
                   {/* Search Information */}
-                  <Card className="p-4 bg-primary/10 border-primary/20">
+                  <Card className="p-4 bg-brand/10 border-brand/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <h4 className="font-semibold text-primary-foreground">Detalles del Servicio</h4>
+                      <FileText className="w-4 h-4 text-brand" />
+                      <h4 className="font-semibold text-ink-strong">Detalles del Servicio</h4>
                     </div>
                     <div className="space-y-1 text-sm">
                       <div>
-                        <span className="text-muted-foreground font-medium">SearchHire ID:</span>
-                        <span className="text-foreground ml-1">#{dispute.searchHireId}</span>
+                        <span className="text-ink-muted font-medium">Nº de contratación:</span>
+                        <span className="text-ink-strong ml-1">#{dispute.searchHireId}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground font-medium">Reporter ID:</span>
-                        <span className="text-foreground ml-1">#{dispute.reporterId}</span>
+                        <span className="text-ink-muted font-medium">Reportado por:</span>
+                        <span className="text-ink-strong ml-1">#{dispute.reporterId}</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground font-medium">Estado:</span>
-                        <span className="text-foreground ml-1">{dispute.status}</span>
+                        <span className="text-ink-muted font-medium">Estado:</span>
+                        <span className="text-ink-strong ml-1">{dispute.status}</span>
                       </div>
                     </div>
                   </Card>
@@ -157,7 +157,7 @@ export function ExpertResponseModal({
                   <textarea
                     value={responseText}
                     onChange={(e) => setResponseText(e.target.value)}
-                    className="w-full px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-primary resize-none bg-background"
+                    className="w-full px-4 py-3 border border-line rounded-lg focus:ring-2 focus:ring-brand focus:border-primary resize-none bg-white"
                     rows={4}
                     placeholder="Explica tu punto de vista sobre la disputa y proporciona evidencia si es necesario..."
                     disabled={isSubmitting}
@@ -169,7 +169,7 @@ export function ExpertResponseModal({
                   <Label className="text-sm font-medium mb-2 block">
                     Archivos de soporte (opcional)
                   </Label>
-                  <div className="border-2 border-dashed border-input rounded-lg p-4 hover:border-primary transition-colors">
+                  <div className="border-2 border-dashed border-line rounded-lg p-4 hover:border-brand transition-colors">
                     <input
                       type="file"
                       multiple
@@ -180,13 +180,13 @@ export function ExpertResponseModal({
                     />
                     <label
                       htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center cursor-pointer hover:bg-muted rounded-lg p-4 transition-colors"
+                      className="flex flex-col items-center justify-center cursor-pointer hover:bg-surface-tinted rounded-lg p-4 transition-colors"
                     >
-                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-foreground">
+                      <Upload className="w-8 h-8 text-ink-muted mb-2" />
+                      <span className="text-sm text-ink-strong">
                         Haz clic para subir archivos o arrastra aquí
                       </span>
-                      <span className="text-xs text-muted-foreground mt-1">
+                      <span className="text-xs text-ink-muted mt-1">
                         PDF, imágenes, documentos
                       </span>
                     </label>
@@ -196,16 +196,16 @@ export function ExpertResponseModal({
                   {selectedFiles.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {selectedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                        <div key={index} className="flex items-center justify-between bg-surface-tinted rounded-lg px-3 py-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                              <span className="text-xs font-medium text-primary">
+                            <div className="w-8 h-8 bg-brand/10 rounded flex items-center justify-center">
+                              <span className="text-xs font-medium text-brand">
                                 {file.name.split('.').pop()?.toUpperCase()}
                               </span>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-foreground">{file.name}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-sm font-medium text-ink-strong">{file.name}</p>
+                              <p className="text-xs text-ink-muted">
                                 {(file.size / 1024 / 1024).toFixed(2)} MB
                               </p>
                             </div>
@@ -244,7 +244,7 @@ export function ExpertResponseModal({
               <Button
                 onClick={handleSubmit}
                 disabled={!responseText.trim() || isSubmitting}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                className="flex-1 bg-brand text-white hover:bg-brand-hover"
               >
                 {isSubmitting ? (
                   <>

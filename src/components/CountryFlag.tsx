@@ -31,7 +31,7 @@ export function CountryFlag({
   if (!countryCode) {
     if (showName) {
       return (
-        <span className={`text-gray-400 text-sm ${className}`}>
+        <span className={`text-ink-soft text-sm ${className}`}>
           País no disponible
         </span>
       );
@@ -43,7 +43,7 @@ export function CountryFlag({
   if (!isValidCountryCode(countryCode)) {
     if (showName) {
       return (
-        <span className={`text-gray-400 text-sm ${className}`}>
+        <span className={`text-ink-soft text-sm ${className}`}>
           {countryCode} (código inválido)
         </span>
       );
@@ -62,7 +62,7 @@ export function CountryFlag({
       <img 
         src={flagUrl || undefined}
         alt={countryName}
-        className="object-cover border border-gray-200 country-flag-img"
+        className="object-cover border border-line country-flag-img"
         style={{
           width: `${dimensions.width}px`,
           height: `${dimensions.height}px`,
@@ -74,14 +74,14 @@ export function CountryFlag({
           const parent = target.parentElement;
           if (parent && !parent.querySelector('.flag-fallback')) {
             const fallback = document.createElement('span');
-            fallback.className = 'flag-fallback text-xs text-gray-500';
+            fallback.className = 'flag-fallback text-xs text-ink-muted';
             fallback.textContent = code;
             parent.appendChild(fallback);
           }
         }}
       />
       {showName && (
-        <span className="text-sm text-gray-700">
+        <span className="text-sm text-ink-strong">
           {countryName}
         </span>
       )}

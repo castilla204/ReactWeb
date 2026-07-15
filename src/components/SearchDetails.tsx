@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, MessageSquare, Calendar, CheckCircle, XCircle, MapPin, Home, Info, Euro, Tag, X, Users, Award, Activity, FileCheck, Download, WifiOff, RefreshCw, AlertCircle, List, FastForward, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, Calendar, CheckCircle, XCircle, MapPin, Info, Tag, X, FileCheck, WifiOff, RefreshCw, AlertCircle, FastForward, Loader2 } from 'lucide-react';
 import { SileoSkeleton } from './ui/sileo-skeleton';
 import CountryFlag from './CountryFlag';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { VerifiedBadge } from './ui/VerifiedBadge';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { SearchHire } from '../hooks/useSearch.hooks';
@@ -27,9 +28,8 @@ import { useAppointmentStatuses } from '../hooks/useAppointmentStatuses';
 import { useSearchHireStatuses } from '../hooks/useSearchHireStatuses';
 import StatusTimeline from './StatusTimeline';
 import ExpertAvailability from './ExpertAvailability';
-import AppointmentForm from './AppointmentForm';
 import RejectAppointmentModal from './RejectAppointmentModal';
-import { Appointment, ProposeAppointmentDto, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
+import { Appointment, ConfirmAppointmentDto, RejectAppointmentDto, CancelAppointmentDto } from '../types/appointment';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -50,7 +50,6 @@ import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import {
     canLeaveReview,
-    canProposeAppointment,
     isDisputeResolvedStatus,
     isTerminalSearchHireStatus,
     SEARCH_HIRE_STATUS,
@@ -107,12 +106,6 @@ const categoryBanners: { [key: number]: string } = {
     2: '/src/media/motorcycle.png',
     3: '/src/media/house.png',
 };
-
-const statusRoadmap = [
-    { label: 'Pendiente', status: 'pending', color: 'bg-yellow-600' },
-    { label: 'En revisión', status: 'awaiting_client_decision', color: 'bg-blue-600' },
-    { label: 'Completado', status: 'completed', color: 'bg-green-600' },
-];
 
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers presentacionales del panel de detalles (sidebar derecho de Mensajes).
@@ -181,9 +174,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
 
     // Estado para el sistema de citas
-    const [showAppointmentForm, setShowAppointmentForm] = useState(false);
-    const [appointmentFormError, setAppointmentFormError] = useState<string | null>(null);
-    const [appointmentData, setAppointmentData] = useState<any>(null);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [appointmentToReject, setAppointmentToReject] = useState<Appointment | null>(null);
     const [modalActionType, setModalActionType] = useState<'reject' | 'cancel'>('reject');
@@ -294,10 +284,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // ✅ Cuando search es null, usar expertProfile.user directamente
     const expertInfo = search?.searchHire?.expert || expertProfile?.user || null;
     
-    // Debug: Verificar qué datos tiene expertInfo
-    console.log('[SearchDetails] expertInfo:', expertInfo);
-    console.log('[SearchDetails] user:', user);
-
     // ? HOOKS PARA ACCIONES (chat: un solo useChat dentro de <Chat />)
     const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
         useSearchActions();
@@ -312,12 +298,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const { sendExpertResponse, isSubmitting: isSubmittingExpertResponse } = useExpertResponse();
     
     // Hook para el sistema de citas
-    const { 
-        proposeAppointment, 
-        confirmAppointment, 
-        rejectAppointment, 
-        cancelAppointment, 
-        isProposing,
+    const {
+        confirmAppointment,
+        rejectAppointment,
+        cancelAppointment,
         isConfirming,
         isRejecting,
         isCancelling
@@ -589,7 +573,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             const isValidSize = file.size <= maxDeliverableFileSize;
             return isValidType && isValidSize;
         });
-        console.log('[SearchDetails] Selected deliverable files:', validFiles.map((f) => ({ name: f.name, size: f.size })));
         if (validFiles.length > 0) {
             showToast('success', `${validFiles.length} archivo(s) seleccionado(s) correctamente`);
         }
@@ -601,8 +584,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
     const handleUploadDeliverable = async () => {
         if (selectedDeliverableFiles.length > 0 && search?.searchHire?.id) {
-            console.log('[SearchDetails] Uploading deliverables:', selectedDeliverableFiles.map((f) => ({ name: f.name, size: f.size })));
-            
             try {
                 const formData = new FormData();
                 selectedDeliverableFiles.forEach(file => {
@@ -679,12 +660,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }
 
         try {
-            console.log('[SearchDetails] Sending expert response:', { 
-                disputeId: disputes[0].id, 
-                response, 
-                filesCount: files.length 
-            });
-            
             await sendExpertResponse(disputes[0].id, response, files);
             
             showToast('success', 'Respuesta enviada exitosamente');
@@ -708,7 +683,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         setIsSubmittingReport(true);
         try {
             // Usar el endpoint unificado que maneja todo: subida + validación + envío
-            console.log('[SearchDetails] Enviando reporte con archivos usando endpoint unificado...');
             const result = await submitReportWithFiles(appointment.id, selectedDeliverableFiles, 'Reporte completado por el experto');
             
             if (result.success) {
@@ -863,7 +837,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         // Si SearchHire está finalizado, no mostrar ningún botón
         if (isSearchHireFinalized) {
             return {
-                showPropose: false,
                 showCancel: false,
                 showCancelPending: false,
                 showAccept: false,
@@ -871,21 +844,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             };
         }
 
-        // Si no hay cita, solo el cliente puede proponer (si el SearchHire está en estado válido)
+        // Si no hay cita, no hay botones que mostrar (proponer cita: sistema antiguo retirado).
         if (!appointment) {
-            const currentHireStatus = searchHireStatus || '';
-            const canPropose = !isSearchHireFinalized && canProposeAppointment(currentHireStatus, isSearchHireFinalized);
-            
-            console.log('[SearchDetails] getAppointmentButtons - No appointment:', {
-                isClient,
-                canPropose,
-                currentHireStatus,
-                isSearchHireFinalized,
-                hasSearchHire: !!search?.searchHire
-            });
-            
             return {
-                showPropose: false && isClient && canPropose && !!search?.searchHire, // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: false,
                 showCancelPending: false,
                 showAccept: false,
@@ -894,47 +855,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }
 
         const status = appointment.status;
-        
-        // ✅ Verificar si hay una propuesta activa (timer de tipo "proposal" o "response")
-        // ✅ NORMALIZAR: Asegurar que timerType esté en lowercase para comparación
-        const hasActiveProposal = appointment.timers && appointment.timers.some((timer: any) => {
-          const timerType = (timer.timerType || '').toLowerCase();
-          return (timerType === 'proposal' || timerType === 'response') && !timer.isExpired;
-        });
-        
-        console.log('[SearchDetails] getAppointmentButtons:', {
-            status,
-            hasActiveProposal,
-            timers: appointment.timers,
-            isClient,
-            isExpert
-        });
 
         if (isClient) {
-            // BOTONES PARA CLIENTE según la guía
-            // ✅ CORREGIDO: En 'awaiting_appointment' el cliente SIEMPRE puede proponer cita
-            // El timer activo solo indica que hay tiempo restante, no que no se pueda proponer
-            // Solo mostrar "Proponer" si:
-            // 1. No hay cita (ya manejado arriba)
-            // 2. Estado es 'awaiting_appointment' (cliente puede proponer siempre)
-            // 3. La cita fue rechazada o cancelada
-            const canProposeWhenAwaiting = status === 'awaiting_appointment'; // ✅ SIEMPRE permitir si es awaiting_appointment
-            const canProposeWhenRejectedOrCancelled = [
-                'appointment_rejected',
-                'appointment_cancelled_by_client',
-                'appointment_cancelled_by_expert'
-            ].includes(status);
-            
-            console.log('[SearchDetails] getAppointmentButtons - Client logic:', {
-                status,
-                canProposeWhenAwaiting,
-                canProposeWhenRejectedOrCancelled,
-                hasActiveProposal,
-                showPropose: canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled
-            });
-            
             return {
-                showPropose: false && (canProposeWhenAwaiting || canProposeWhenRejectedOrCancelled), // SISTEMA ANTIGUO: proponer cita retirado (endpoints #if false)
                 showCancel: status === 'appointment_confirmed',
                 // Cancelar SIN COSTE mientras el experto no confirme (pago solo autorizado → devolución 100%).
                 showCancelPending: status === 'appointment_pending_expert_confirmation',
@@ -948,20 +871,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             // 2. Estado es 'awaiting_appointment' PERO hay una propuesta REAL (fecha y hora propuestas)
             // NO mostrar si es 'awaiting_appointment' pero NO hay fecha/hora propuesta (cliente aún no ha propuesto)
             const hasProposedDateTime = !!(appointment.proposedDate && appointment.proposedTime);
-            const canAcceptOrReject = status === 'appointment_proposed' || 
+            const canAcceptOrReject = status === 'appointment_proposed' ||
                                       (status === 'awaiting_appointment' && hasProposedDateTime);
-            
-            console.log('[SearchDetails] getAppointmentButtons - Expert logic:', {
-                status,
-                hasProposedDateTime,
-                proposedDate: appointment.proposedDate,
-                proposedTime: appointment.proposedTime,
-                hasActiveProposal,
-                canAcceptOrReject
-            });
-            
+
             return {
-                showPropose: false,
                 showCancel: status === 'appointment_confirmed',
                 showCancelPending: false,
                 showAccept: false && canAcceptOrReject, // SISTEMA ANTIGUO: aceptar cita retirado (endpoint /confirm #if false)
@@ -970,7 +883,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }
 
         return {
-            showPropose: false,
             showCancel: false,
             showCancelPending: false,
             showAccept: false,
@@ -981,32 +893,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const appointmentButtons = getAppointmentButtons();
 
     const showAdminSkipReport = effectiveIsAdmin && appointment?.status === 'appointment_confirmed';
-    
-    // ✅ Debug: Log de los botones que se mostrarán
-    console.log('[SearchDetails] Appointment buttons:', {
-        appointmentStatus: appointment?.status,
-        hasAppointment: !!appointment,
-        timers: appointment?.timers,
-        hasActiveProposal: appointment?.timers?.some((t: any) => 
-            (t.timerType === 'proposal' || t.timerType === 'response') && !t.isExpired
-        ),
-        buttons: appointmentButtons,
-        isClient,
-        isExpert,
-        searchHireStatus,
-        searchHireId: search?.searchHire?.id,
-        hasSearchHire: !!search?.searchHire,
-        isSearchHireFinalized,
-        userId,
-        clientId,
-        expertUserId
-    });
-
-    // UI: si el flujo actual permite mostrar/enviar "proponer cita" (no confundir con hireStatuses.canProposeAppointment)
-    const shouldAllowProposeAppointmentAction = () => {
-        if (isSearchHireFinalized) return false;
-        return appointmentButtons.showPropose;
-    };
 
     // Función para manejar la confirmación del rechazo desde el modal
     const handleRejectConfirm = async (reason: string) => {
@@ -1104,8 +990,49 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         );
     };
 
-    // W11 FIX: lock síncrono anti doble-click del cancel-pending (ver el case más abajo).
-    const cancelPendingLockRef = useRef(false);
+    // Confirmación genérica para acciones destructivas (cancelar inspección/cita) que antes
+    // usaban window.confirm() nativo: mismo AlertDialog de marca que "Confirmar cita", con
+    // loading visible en el botón mientras la petición está en vuelo (antes no había ningún
+    // feedback durante el window.confirm/fetch).
+    const [dangerConfirm, setDangerConfirm] = useState<{
+        title: string;
+        description: string;
+        confirmLabel: string;
+        onConfirm: () => Promise<void>;
+    } | null>(null);
+    const [dangerConfirmLoading, setDangerConfirmLoading] = useState(false);
+
+    const handleDangerConfirmAction = async () => {
+        if (!dangerConfirm || dangerConfirmLoading) return;
+        setDangerConfirmLoading(true);
+        try {
+            await dangerConfirm.onConfirm();
+        } finally {
+            setDangerConfirmLoading(false);
+            setDangerConfirm(null);
+        }
+    };
+
+    const handleShare = async () => {
+        const shareTitle = search?.title || serviceInfo?.serviceTypeName || category?.name || 'Contratación en Inspecciono';
+        const shareUrl = window.location.href;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: shareTitle, url: shareUrl });
+            } catch (err) {
+                if ((err as Error)?.name !== 'AbortError') {
+                    showToast('error', 'No se pudo compartir el enlace.');
+                }
+            }
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            showToast('success', 'Enlace copiado al portapapeles');
+        } catch {
+            showToast('error', 'No se pudo copiar el enlace.');
+        }
+    };
 
     // 🛡️ FIX [GAP-CANCEL-UI] (auditoría 2026-07-12): el checkout promete "cancelación sin coste si
     // cambias de idea antes de que el vendedor reserve" y el backend tiene el endpoint expreso para
@@ -1113,56 +1040,54 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // componente lo llamaba: el comprador arrepentido se quedaba con la autorización retenida hasta
     // el watchdog de 48h. Botón discreto en la fase "coordinando con el vendedor" (sin cita aún).
     const [cancellingSellerBooking, setCancellingSellerBooking] = useState(false);
-    const handleCancelSellerBooking = async () => {
+    const handleCancelSellerBooking = () => {
         const hireId = search?.searchHire?.id;
         if (!hireId) { showToast('error', 'No se pudo identificar la contratación.'); return; }
         if (cancellingSellerBooking) return;
-        if (!window.confirm('¿Cancelar la inspección? El vendedor aún no ha reservado la cita, así que no se te cobrará nada (devolución del 100%).')) return;
-        setCancellingSellerBooking(true);
-        try {
-            const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-seller-booking`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-            });
-            if (!resp.ok) {
-                const err = await resp.json().catch(() => ({} as any));
-                // 409 = carrera (el vendedor acaba de reservar / ya gestionada): el mensaje del
-                // backend lo explica; refrescar para que la vista muestre la realidad.
-                showToast('error', err.message || 'No se pudo cancelar la contratación.');
-                invalidateAll();
-                return;
-            }
-            showToast('success', 'Contratación cancelada. No se te ha cobrado nada.');
-            invalidateAll();
-        } catch {
-            showToast('error', 'No se pudo cancelar la contratación. Inténtalo de nuevo.');
-        } finally {
-            setCancellingSellerBooking(false);
-        }
+        setDangerConfirm({
+            title: 'Cancelar inspección',
+            description: 'El vendedor aún no ha reservado la cita, así que no se te cobrará nada (devolución del 100%).',
+            confirmLabel: 'Cancelar inspección',
+            onConfirm: async () => {
+                setCancellingSellerBooking(true);
+                try {
+                    const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-seller-booking`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({} as any));
+                        // 409 = carrera (el vendedor acaba de reservar / ya gestionada): el mensaje del
+                        // backend lo explica; refrescar para que la vista muestre la realidad.
+                        showToast('error', err.message || 'No se pudo cancelar la contratación.');
+                        invalidateAll();
+                        return;
+                    }
+                    showToast('success', 'Contratación cancelada. No se te ha cobrado nada.');
+                    invalidateAll();
+                } catch {
+                    showToast('error', 'No se pudo cancelar la contratación. Inténtalo de nuevo.');
+                } finally {
+                    setCancellingSellerBooking(false);
+                }
+            },
+        });
     };
 
     const handleAppointmentAction = async (action: string, appointment: Appointment) => {
-        console.log('[SearchDetails] handleAppointmentAction called:', { action, appointmentId: appointment.id, appointment });
         try {
             switch (action) {
-                // 🧟 LEGACY (2026-06-19): los case 'propose'/'confirm'/'reject' son del flujo antiguo retirado.
+                // 🧟 LEGACY (2026-06-19): los case 'confirm'/'reject' son del flujo antiguo retirado.
                 // Inalcanzables: ningún botón vivo dispara estas acciones (triggers desactivados en
-                // AppointmentStatus.tsx + flags showPropose/showAccept/showReject forzados a false). Se conservan
+                // AppointmentStatus.tsx + flags showAccept/showReject forzados a false). Se conservan
                 // por estructura del switch; las acciones vivas son 'cancel'/'chat'/'dispute'/'approve'/etc.
-                case 'propose':
-                    setAppointmentData(appointment);
-                    setShowAppointmentForm(true);
-                    break;
-                    
+                // ('propose' se retiró del todo: era 100% inalcanzable, ver antiguo AppointmentForm).
                 case 'confirm':
-                    console.log('[SearchDetails] Confirming appointment:', appointment.id);
                     const confirmData: ConfirmAppointmentDto = {
                         appointmentId: appointment.id,
                         notes: 'Cita confirmada'
                     };
-                    console.log('[SearchDetails] Sending confirm data:', confirmData);
                     await confirmAppointment(confirmData);
-                    console.log('[SearchDetails] Appointment confirmed successfully');
                     showToast('success', 'Cita confirmada exitosamente');
                     invalidateAll();
                     setShowConfirmAppointmentDialog(false);
@@ -1186,29 +1111,33 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 case 'cancelPending': {
                     const hireId = appointment.searchHireId;
                     if (!hireId) { showToast('error', 'No se pudo identificar la contratación.'); break; }
-                    // W11 FIX: lock síncrono anti doble-click (el botón no tiene disabled y un doble
-                    // click lanzaba dos POST → el 2º devolvía 409 "ya se está procesando" justo
-                    // después del toast de éxito). Mismo patrón submitLockRef de los magic links.
-                    if (cancelPendingLockRef.current) break;
-                    cancelPendingLockRef.current = true;
-                    try {
-                        if (!window.confirm('¿Cancelar la cita? Como el experto aún no la ha confirmado, no se te cobrará nada (devolución del 100%).')) break;
-                        const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-pending`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-                        });
-                        if (!resp.ok) {
-                            const err = await resp.json().catch(() => ({} as any));
-                            // W11 FIX: en un 409 (el experto acaba de responder / watchdog) la vista está
-                            // obsoleta → refrescar además de avisar; antes el botón muerto persistía.
-                            if (resp.status === 409) invalidateAll();
-                            throw new Error(err.message || 'No se pudo cancelar la cita.');
-                        }
-                        showToast('success', 'Cita cancelada. No se te ha cobrado nada.');
-                        invalidateAll();
-                    } finally {
-                        cancelPendingLockRef.current = false;
-                    }
+                    // El AlertDialog (dangerConfirm) + su propio disabled-while-loading sustituyen
+                    // al lock síncrono que usaba el window.confirm() nativo: solo un fetch a la vez
+                    // puede estar en vuelo porque handleDangerConfirmAction ignora re-entradas.
+                    setDangerConfirm({
+                        title: 'Cancelar cita',
+                        description: 'Como el experto aún no la ha confirmado, no se te cobrará nada (devolución del 100%).',
+                        confirmLabel: 'Cancelar cita',
+                        onConfirm: async () => {
+                            try {
+                                const resp = await fetch(`${API_CONFIG.baseUrl}/api/SearchHire/${hireId}/cancel-pending`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+                                });
+                                if (!resp.ok) {
+                                    const err = await resp.json().catch(() => ({} as any));
+                                    // W11 FIX: en un 409 (el experto acaba de responder / watchdog) la vista está
+                                    // obsoleta → refrescar además de avisar; antes el botón muerto persistía.
+                                    if (resp.status === 409) invalidateAll();
+                                    throw new Error(err.message || 'No se pudo cancelar la cita.');
+                                }
+                                showToast('success', 'Cita cancelada. No se te ha cobrado nada.');
+                                invalidateAll();
+                            } catch (err: any) {
+                                showToast('error', err?.message || 'No se pudo cancelar la cita.');
+                            }
+                        },
+                    });
                     break;
                 }
             }
@@ -1216,63 +1145,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             console.error('Error en acción de cita:', error);
             // Extraer el mensaje del backend si está disponible
             const errorMessage = error?.message || 'Error al realizar la acción';
-            showToast('error', errorMessage);
-        }
-    };
-
-    const handleProposalSubmit = async (data: ProposeAppointmentDto) => {
-        try {
-            setAppointmentFormError(null); // Limpiar errores previos
-            if (appointmentData) {
-                if (!shouldAllowProposeAppointmentAction()) {
-                    const currentHireStatus = search?.searchHire?.status;
-                    const currentAppointmentStatus = appointment?.status;
-                    
-                    let errorMessage = 'No se puede proponer cita.';
-                    if (appointment) {
-                        errorMessage += ` Estado de cita actual: ${currentAppointmentStatus}. Estados válidos: ${appointmentStatuses ? appointmentStatuses.filter((s: any) => s.statusValue === 'awaiting_appointment' || s.statusValue === 'appointment_rejected' || s.statusValue === 'appointment_cancelled_by_client' || s.statusValue === 'appointment_cancelled_by_expert').map((s: any) => s.displayName).join(', ') : 'awaiting_appointment, appointment_rejected, appointment_cancelled_by_client, appointment_cancelled_by_expert'}`;
-                    } else {
-                        errorMessage += ` Estado de contratación actual: ${currentHireStatus}. Estados válidos: pending`;
-                    }
-                    
-                    setAppointmentFormError(errorMessage);
-                    showToast('error', errorMessage);
-                    return;
-                }
-                
-                await proposeAppointment(appointmentData.searchHireId, data);
-                showToast('success', 'Cita propuesta exitosamente');
-                invalidateAll();
-                setShowAppointmentForm(false);
-                setAppointmentData(null);
-                setAppointmentFormError(null);
-            }
-        } catch (error: any) {
-            console.error('Error al proponer cita:', error);
-            
-            let errorMessage = 'Error al proponer cita';
-            
-            if (error && typeof error === 'object') {
-                if (error.message) {
-                    if (error.message.includes('fuera del rango') || 
-                        error.message.includes('Distancia:') || 
-                        error.message.includes('Rango máximo:')) {
-                        errorMessage = error.message;
-                    } else if (error.message.includes('24 horas') || error.message.includes('12 horas')) {
-                        errorMessage = 'La cita debe ser al menos 24 horas en el futuro';
-                    } else if (error.message.includes('fecha')) {
-                        errorMessage = 'La fecha seleccionada no es válida';
-                    } else if (error.message.includes('ubicación')) {
-                        errorMessage = 'Debes seleccionar una ubicación válida';
-                    } else if (error.message.includes('tiempo')) {
-                        errorMessage = 'El tiempo seleccionado no es válido';
-                    } else {
-                        errorMessage = error.message;
-                    }
-                }
-            }
-            
-            setAppointmentFormError(errorMessage);
             showToast('error', errorMessage);
         }
     };
@@ -1298,7 +1170,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         // sobre pantalla en blanco → mejor percepción y menos salto al llegar el contenido.
         return (
             <div
-                className={`bg-gray-50 ${embedded ? 'h-full min-h-[20rem] p-4' : 'min-h-screen px-4 py-6 md:px-8'}`}
+                className={`bg-surface-tinted ${embedded ? 'h-full min-h-[20rem] p-4' : 'min-h-screen px-4 py-6 md:px-8'}`}
                 aria-busy="true"
             >
                 <div className="mx-auto w-full max-w-5xl space-y-4">
@@ -1334,7 +1206,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // Solo mostrar pantalla de error si es crítico y no es un error de red (los de red se manejan con toast)
     if (isError && error && !isNetworkErr) {
         return (
-            <div className={`flex items-center justify-center bg-gray-50 p-4 ${embedded ? 'h-full min-h-[20rem]' : 'min-h-screen'}`}>
+            <div className={`flex items-center justify-center bg-surface-tinted p-4 ${embedded ? 'h-full min-h-[20rem]' : 'min-h-screen'}`}>
                 <div className="text-center space-y-4 max-w-md">
                     <div className="w-16 h-16 bg-line-soft rounded-full flex items-center justify-center mx-auto">
                         <AlertCircle className="w-8 h-8 text-ink-soft" />
@@ -1378,8 +1250,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     return (
         <div className={
             embedded
-                ? `relative flex h-full min-h-0 flex-col overflow-hidden bg-gray-50`
-                : `fixed inset-0 z-30 flex flex-col overflow-hidden bg-gray-50 h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)] ${SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS}`
+                ? `relative flex h-full min-h-0 flex-col overflow-hidden bg-surface-tinted`
+                : `fixed inset-0 z-30 flex flex-col overflow-hidden bg-surface-tinted h-[calc(var(--vh,1vh)*100)] md:relative md:inset-auto md:z-auto md:h-[calc(var(--vh,1vh)*100-4rem)] md:max-h-[calc(var(--vh,1vh)*100-4rem)] ${SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS}`
         }>
             {/* Header de página — oculto cuando va incrustado (la bandeja ya aporta cabecera) */}
             {!embedded && (
@@ -1414,14 +1286,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-surface-tinted" title="Compartir">
+                            <Button variant="ghost" size="icon" onClick={handleShare} className="h-9 w-9 rounded-full hover:bg-surface-tinted" title="Compartir" aria-label="Compartir">
                                 <Share2 className="h-4 w-4 text-ink-muted" />
                             </Button>
-                            {canViewChat && (
-                                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-surface-tinted" title="Mensajes">
-                                    <MessageCircle className="h-4 w-4 text-ink-muted" />
-                                </Button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -1442,7 +1309,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
             {/* ✅ Mensaje simple para errores de red */}
             {isNetworkErr && (
-                <div className="flex flex-col items-center justify-center py-16 px-4 flex-1 bg-gray-50 overflow-y-auto">
+                <div className="flex flex-col items-center justify-center py-16 px-4 flex-1 bg-surface-tinted overflow-y-auto">
                     <div className="flex flex-col items-center gap-4 max-w-sm text-center">
                         <div className="w-16 h-16 rounded-full bg-line-soft flex items-center justify-center">
                             <WifiOff className="w-8 h-8 text-ink-soft" />
@@ -1471,7 +1338,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             {/* Main Layout - Sin scroll, solo scroll interno en componentes */}
             {!isNetworkErr && (
             <div className={sdInnerClass}>
-            <div className={`${sdLayoutClass} ${embedded ? 'bg-white' : 'bg-gray-50 lg:bg-transparent'}`} style={{ minHeight: 0, flex: '1 1 0%' }}>
+            <div className={`${sdLayoutClass} ${embedded ? 'bg-white' : 'bg-surface-tinted lg:bg-transparent'}`} style={{ minHeight: 0, flex: '1 1 0%' }}>
                 {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
                     <div className={sdChatClass}>
@@ -1762,6 +1629,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5">
                                                     <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
+                                                    <VerifiedBadge className="h-4 w-4 shrink-0" />
                                                     {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
                                                     {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                         <CountryFlag
@@ -1774,10 +1642,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             size="sm"
                                                         />
                                                     )}
-                                                </div>
-                                                <div className="mt-0.5 flex items-center gap-1.5">
-                                                    <CheckCircle className="h-3.5 w-3.5 text-success" strokeWidth={2} />
-                                                    <span className="text-caption text-ink-muted">Verificado</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1801,7 +1665,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <div className={`rounded-xl px-3 py-2.5 text-caption font-medium ${
                                                 fileValidation.canSubmit
                                                     ? 'bg-success-tint text-success'
-                                                    : 'bg-brand/10 text-brand'
+                                                    : 'bg-warning-tint text-warning-text'
                                             }`} role="status">
                                                 {fileValidation.message}
                                             </div>
@@ -1818,7 +1682,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             onClick={() => handleDeleteFile(file.id)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-8 w-8 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
+                                                            className="h-11 w-11 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                             aria-label={`Eliminar ${file.fileName}`}
                                                         >
                                                             <X className="h-3.5 w-3.5" />
@@ -1875,7 +1739,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             onClick={() => removeSelectedFile(index)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-8 w-8 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
+                                                            className="h-11 w-11 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
                                                             aria-label={`Eliminar ${file.name}`}
                                                         >
                                                             <X className="h-3.5 w-3.5" />
@@ -1896,10 +1760,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         >
                                             {isSubmittingReport ? (
                                                 <>
-                                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                    </svg>
+                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                     Enviando...
                                                 </>
                                             ) : (
@@ -1930,7 +1791,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 )}
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
-                                    {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
+                                    {(appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
                                         <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
@@ -1984,10 +1845,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isConfirming ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Aceptando...
                                                             </>
                                                         ) : (
@@ -2016,10 +1874,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isRejecting ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Rechazando...
                                                             </>
                                                         ) : (
@@ -2048,10 +1903,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isCancelling ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Cancelando...
                                                             </>
                                                         ) : (
@@ -2087,43 +1939,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 )}
 
                                             </div>
-                                            
-                                            {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
-                                            {appointmentButtons.showPropose && (
-                                                <Button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        handleAppointmentAction('propose', { 
-                                                            id: 0, 
-                                                            searchHireId: search?.searchHire?.id || searchHireId || 0,
-                                                            status: 'awaiting_appointment',
-                                                            amount: serviceInfo?.price || 0
-                                                        } as Appointment);
-                                                    }}
-                                                    className="h-11 w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                    size="sm"
-                                                    disabled={isProposing}
-                                                >
-                                                    {isProposing ? (
-                                                        <>
-                                                            <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                            </svg>
-                                                            Proponiendo...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Calendar className="w-4 h-4 mr-2" />
-                                                            {appointment && appointment.status === 'appointment_cancelled_by_expert'
-                                                                ? 'Proponer Nueva Cita'
-                                                                : 'Programar Cita'
-                                                            }
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            )}
 
                                             {/* ✅ Acciones Principales - Aprobar/Disputar/Responder */}
                                             {canApprove && (
@@ -2238,7 +2053,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     <div className="flex items-baseline gap-1.5">
                                                         <span className="text-xl font-bold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
                                                         {priceDisplay.hasTaxInfo && (
-                                                            <span className="text-[10.5px] font-medium text-ink-soft">IVA incl.</span>
+                                                            <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -2362,7 +2177,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 )}
 
                                 {/* ✅ Botones de acción para desktop - Según la guía - Fuera de needsAppointment para que siempre se muestren */}
-                                {(appointmentButtons.showPropose || appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
+                                {(appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
                                     <div className="mt-4 hidden pt-4 lg:block">
                                         <div className="space-y-3">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
@@ -2417,10 +2232,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isConfirming ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Aceptando...
                                                             </>
                                                         ) : (
@@ -2449,10 +2261,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isRejecting ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Rechazando...
                                                             </>
                                                         ) : (
@@ -2481,10 +2290,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     >
                                                         {isCancelling ? (
                                                             <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
+                                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                                                 Cancelando...
                                                             </>
                                                         ) : (
@@ -2496,42 +2302,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     </Button>
                                                 )}
 
-                                                {/* ✅ BOTÓN: Proponer (Solo Cliente) */}
-                                                {appointmentButtons.showPropose && (
-                                                    <Button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleAppointmentAction('propose', { 
-                                                                id: 0, 
-                                                                searchHireId: search?.searchHire?.id || searchHireId || 0,
-                                                                status: 'awaiting_appointment',
-                                                                amount: serviceInfo?.price || 0
-                                                            } as Appointment);
-                                                        }}
-                                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                                        size="sm"
-                                                        disabled={isProposing}
-                                                    >
-                                                        {isProposing ? (
-                                                            <>
-                                                                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                                </svg>
-                                                                Proponiendo...
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Calendar className="w-4 h-4 mr-2" />
-                                                                {appointment && appointment.status === 'appointment_cancelled_by_expert' 
-                                                                    ? 'Proponer Nueva Cita'
-                                                                    : 'Programar Cita'
-                                                                }
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -2554,7 +2324,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </Avatar>
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
-                                            <p className="mt-0.5 truncate text-caption text-ink-soft">{search.user.email}</p>
+                                            <p className="mt-0.5 truncate text-caption text-ink-muted">{search.user.email}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2577,6 +2347,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5">
                                                 <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
+                                                <VerifiedBadge className="h-4 w-4 shrink-0" />
                                                 {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
                                                 {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
                                                     <CountryFlag
@@ -2589,10 +2360,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         size="sm"
                                                     />
                                                 )}
-                                            </div>
-                                            <div className="mt-0.5 flex items-center gap-1.5">
-                                                <CheckCircle className="h-3.5 w-3.5 text-success" strokeWidth={2} />
-                                                <span className="text-caption text-ink-soft">Verificado</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2656,10 +2423,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 <div className="space-y-3 pt-4">
                                     <SdSectionTitle>Subir informe</SdSectionTitle>
                                 {fileValidation && (
-                                            <div className={`rounded-md px-3 py-2.5 text-caption font-medium ${
+                                            <div className={`rounded-xl px-3 py-2.5 text-caption font-medium ${
                                         fileValidation.canSubmit
                                                     ? 'bg-success-tint text-success'
-                                                    : 'bg-brand/10 text-brand'
+                                                    : 'bg-warning-tint text-warning-text'
                                             }`}>
                                                 {fileValidation.message}
                                     </div>
@@ -2704,12 +2471,12 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             onChange={handleDeliverableFileChange}
                                             className="hidden"
                                         />
-                                            <div className="group w-full cursor-pointer rounded-md border-2 border-dashed border-line p-6 text-center transition-colors hover:border-brand/40 hover:bg-surface-tinted">
+                                            <div className="group w-full cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center transition-colors hover:border-brand/40 hover:bg-surface-tinted">
                                                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-line-soft transition-colors group-hover:bg-brand/10">
                                                     <Upload className="h-5 w-5 text-ink-muted transition-colors group-hover:text-brand" strokeWidth={1.75} />
                                                 </div>
                                                 <p className="mb-0.5 text-meta font-semibold text-ink-strong">Seleccionar archivos</p>
-                                                <p className="text-caption text-ink-soft">
+                                                <p className="text-caption text-ink-muted">
                                                     {(() => {
                                                         // ✅ Mostrar tipos requeridos dinámicamente
                                                         if (requiredDeliverableTypes && requiredDeliverableTypes.length > 0) {
@@ -2752,10 +2519,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         >
                                             {isSubmittingReport ? (
                                                 <>
-                                                    <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                                    </svg>
+                                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" aria-hidden />
                                                     Enviando...
                                                 </>
                                             ) : (
@@ -2793,7 +2557,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         </span>
                                     </div>
                                     {review.description && (
-                                        <p className="rounded-md bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
+                                        <p className="rounded-xl bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
                                             {review.description}
                                         </p>
                                     )}
@@ -2811,56 +2575,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             )}
 
             {/* Modals */}
-            {showAppointmentForm && (
-                    <AppointmentForm
-                    searchHireId={search?.searchHire?.id || 0}
-                        onSubmit={handleProposalSubmit}
-                    onCancel={() => {
-                        setShowAppointmentForm(false);
-                        setAppointmentFormError(null);
-                    }}
-                    error={appointmentFormError}
-                    isLoading={isProposing}
-                    expertAvailability={expertProfile?.currentAvailability || null}
-                    expertLocation={
-                        serviceInfo?.expertLatitude && serviceInfo?.expertLongitude
-                            ? {
-                                latitude: typeof serviceInfo.expertLatitude === 'string' 
-                                    ? parseFloat(serviceInfo.expertLatitude) 
-                                    : Number(serviceInfo.expertLatitude),
-                                longitude: typeof serviceInfo.expertLongitude === 'string' 
-                                    ? parseFloat(serviceInfo.expertLongitude) 
-                                    : Number(serviceInfo.expertLongitude)
-                            }
-                            : null
-                    }
-                    expertRange={serviceInfo?.locationRange || null}
-                    // Radio de trabajo del EXPERTO (0 = solo en su taller → ubicación prefijada).
-                    // ?? para no perder el 0; acepta ambos casings por si la respuesta no pasó por el hook.
-                    expertWorkRadiusKm={
-                        serviceInfo?.expertWorkRadiusKm
-                        ?? (serviceInfo as any)?.ExpertWorkRadiusKm
-                        ?? null
-                    }
-                    expertWorkLocationDoor={serviceInfo?.expertWorkLocationDoor ?? (serviceInfo as any)?.ExpertWorkLocationDoor ?? null}
-                    expertWorkLocationFloor={serviceInfo?.expertWorkLocationFloor ?? (serviceInfo as any)?.ExpertWorkLocationFloor ?? null}
-                    expertWorkLocationDetails={serviceInfo?.expertWorkLocationDetails ?? (serviceInfo as any)?.ExpertWorkLocationDetails ?? null}
-                    // ✅ NUEVO: País y timezone del experto
-                    expertCountry={
-                        search?.searchHire?.expertCountry || 
-                        serviceInfo?.expertCountry || 
-                        expertProfile?.country || 
-                        null
-                    }
-                    serviceTimezone={
-                        search?.searchHire?.expertTimezone || 
-                        serviceInfo?.expertTimezone || 
-                        expertProfile?.timezone || 
-                        null
-                    }
-                />
-            )}
-
             {showRejectModal && appointmentToReject && (
             <RejectAppointmentModal
                 isOpen={showRejectModal}
@@ -2929,14 +2643,43 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         >
                             {isConfirming ? (
                                 <>
-                                    <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
                                     Confirmando...
                                 </>
                             ) : (
                                 'Confirmar cita'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Alert Dialog genérico para acciones destructivas (cancelar inspección/cita) —
+                sustituye a los window.confirm() nativos que rompían la consistencia con el resto
+                de diálogos de la página. */}
+            <AlertDialog open={!!dangerConfirm} onOpenChange={(open) => { if (!open && !dangerConfirmLoading) setDangerConfirm(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{dangerConfirm?.title}</AlertDialogTitle>
+                        <AlertDialogDescription>{dangerConfirm?.description}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={dangerConfirmLoading}>Volver</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDangerConfirmAction();
+                            }}
+                            disabled={dangerConfirmLoading}
+                            className="bg-destructive text-white hover:bg-destructive/90"
+                        >
+                            {dangerConfirmLoading ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
+                                    Cancelando...
+                                </>
+                            ) : (
+                                dangerConfirm?.confirmLabel || 'Confirmar'
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

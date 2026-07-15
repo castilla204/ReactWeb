@@ -47,16 +47,19 @@ const sheetVariants = cva(
   }
 )
 
-type SheetContentProps = React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> & 
-  VariantProps<typeof sheetVariants>
+type SheetContentProps = React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> &
+  VariantProps<typeof sheetVariants> & {
+    /** Sobrescribe el estilo del overlay (p.ej. para paneles ligeros que no deben oscurecer toda la página). */
+    overlayClassName?: string
+  }
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => {
+>(({ side = "right", className, overlayClassName, children, ...props }, ref) => {
   return (
   <SheetPortal>
-    <SheetOverlay />
+    <SheetOverlay className={overlayClassName} />
     <SheetPrimitive.Content
       ref={ref}
       className={cn(sheetVariants({ side }), className)}

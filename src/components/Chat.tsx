@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { getUserId, isMessageFromUser, normalizeSenderId } from '../utils/userId';
 import { getStatusTone, type StatusTone } from '../utils/statusUtils';
-import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle2, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, Info, Share2, ArrowLeft } from 'lucide-react';
+import { Send, Paperclip, MapPin, Download, X, Loader2, HelpCircle, Calendar, FileText, MessageSquare, CheckCircle, XCircle, AlertCircle, Clock, FileCheck, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { showToast } from '../lib/toast';
@@ -301,6 +301,37 @@ const Chat: React.FC<ChatProps> = ({
         }
     }, [error]);
 
+    // Group messages by sender and proximity in time
+    const groupedMessages = useMemo(() => {
+        return conversation?.messages?.reduce((groups: any[], message: any, index: number) => {
+            const previousMessage = conversation?.messages?.[index - 1];
+            const timeDiff = previousMessage
+                ? new Date(message.sentAt).getTime() - new Date(previousMessage.sentAt).getTime()
+                : 0;
+
+            // ✅ Group if same sender and within 5 minutes
+            // Manejar casos cuando senderId es null (usuario eliminado)
+            const prevSid = normalizeSenderId(previousMessage?.senderId);
+            const currSid = normalizeSenderId(message.senderId);
+            const sameSender =
+                previousMessage &&
+                ((prevSid === null && currSid === null) ||
+                    (prevSid !== null && currSid !== null && prevSid === currSid));
+
+            if (sameSender && timeDiff < 5 * 60 * 1000) {
+                groups[groups.length - 1].messages.push(message);
+            } else {
+                groups.push({
+                    senderId: message.senderId,
+                    messages: [message],
+                    timestamp: message.sentAt,
+                    isOwn: isMessageFromUser(message.senderId, userId)
+                });
+            }
+            return groups;
+        }, []) || [];
+    }, [conversation?.messages, userId]);
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files ? Array.from(e.target.files) : [];
         const maxMessageFileSize = 10 * 1024 * 1024; // 10MB
@@ -392,21 +423,6 @@ const Chat: React.FC<ChatProps> = ({
         return 'C';
     };
 
-    const getAvatarColor = (senderId: string | number | null) => {
-        // ✅ Manejar caso cuando senderId es null (usuario eliminado)
-        if (senderId === null || senderId === undefined) {
-            return 'bg-gray-500';
-        }
-
-        if (String(senderId) === String(user?.id)) {
-            return 'bg-gray-600';
-        }
-        if (senderId === 'other') {
-            return isClient ? 'bg-green-500' : 'bg-blue-500';
-        }
-        return String(senderId) === String(expertId) ? 'bg-green-500' : 'bg-blue-500';
-    };
-
     const getAvatarImage = (senderId: string | number | null) => {
         // ✅ Manejar caso cuando senderId es null (usuario eliminado)
         if (senderId === null || senderId === undefined) {
@@ -483,35 +499,6 @@ const Chat: React.FC<ChatProps> = ({
         );
     }
 
-    // Group messages by sender and proximity in time
-    const groupedMessages = conversation.messages?.reduce((groups: any[], message: any, index: number) => {
-        const previousMessage = conversation.messages?.[index - 1];
-        const timeDiff = previousMessage
-            ? new Date(message.sentAt).getTime() - new Date(previousMessage.sentAt).getTime()
-            : 0;
-
-        // ✅ Group if same sender and within 5 minutes
-        // Manejar casos cuando senderId es null (usuario eliminado)
-        const prevSid = normalizeSenderId(previousMessage?.senderId);
-        const currSid = normalizeSenderId(message.senderId);
-        const sameSender =
-            previousMessage &&
-            ((prevSid === null && currSid === null) ||
-                (prevSid !== null && currSid !== null && prevSid === currSid));
-
-        if (sameSender && timeDiff < 5 * 60 * 1000) {
-            groups[groups.length - 1].messages.push(message);
-        } else {
-            groups.push({
-                senderId: message.senderId,
-                messages: [message],
-                timestamp: message.sentAt,
-                isOwn: isMessageFromUser(message.senderId, userId)
-            });
-        }
-        return groups;
-    }, []) || [];
-
     const otherAvatarSrc = otherParticipantId > 0 ? getAvatarImage(otherParticipantId) : null;
 
     return (
@@ -523,7 +510,7 @@ const Chat: React.FC<ChatProps> = ({
                     <p
                         role="status"
                         aria-live="polite"
-                        className="shrink-0 border-b border-line bg-white px-4 py-2 text-center text-kicker leading-snug text-amber-800"
+                        className="shrink-0 border-b border-line bg-white px-4 py-2 text-center text-kicker leading-snug text-warning-text"
                     >
                         Reconectando…
                     </p>
@@ -552,15 +539,15 @@ const Chat: React.FC<ChatProps> = ({
                             {otherParticipantName}
                         </p>
                         {peerPresenceStatus?.kind === 'typing' && (
-                            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-primary">
-                                <TypingDots className="text-primary" />
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-brand">
+                                <TypingDots className="text-brand" />
                                 <span>está escribiendo</span>
                             </p>
                         )}
                         {peerPresenceStatus?.kind === 'online' && (
-                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-600">
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-success">
                                 <span
-                                    className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 ring-2 ring-emerald-500/25 animate-pulse"
+                                    className="h-2 w-2 shrink-0 rounded-full bg-success ring-2 ring-success/25 animate-pulse"
                                     aria-hidden
                                 />
                                 <span>En línea</span>
@@ -575,7 +562,7 @@ const Chat: React.FC<ChatProps> = ({
                     </div>
                     {isReconnecting && (
                         <span
-                            className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-badge font-medium text-amber-800"
+                            className="shrink-0 rounded-full bg-warning-tint px-2.5 py-1 text-badge font-medium text-warning-text"
                             role="status"
                             aria-live="polite"
                         >
@@ -584,7 +571,7 @@ const Chat: React.FC<ChatProps> = ({
                     )}
                 </div>
                 {userIsAdmin && (
-                    <p className="mt-2.5 rounded-lg border border-amber-100 bg-amber-50/90 px-2.5 py-1.5 text-kicker text-amber-900">
+                    <p className="mt-2.5 rounded-lg border border-warning-border bg-warning-tint/90 px-2.5 py-1.5 text-kicker text-warning-text">
                         Vista de administrador: puedes leer el chat; los mensajes no se marcarán como leídos.
                     </p>
                 )}
@@ -641,7 +628,7 @@ const Chat: React.FC<ChatProps> = ({
                                                                 src={getAvatarImage(group.senderId) || undefined}
                                                                 alt={message.senderName || 'Usuario'}
                                                             />
-                                                            <AvatarFallback className="bg-gray-800 text-white text-xs">
+                                                            <AvatarFallback className="bg-ink-strong text-white text-xs">
                                                                 {getAvatarInitials(group.senderId)}
                                                             </AvatarFallback>
                                                         </Avatar>
@@ -685,12 +672,20 @@ const Chat: React.FC<ChatProps> = ({
                                         {message.attachmentUrls && message.attachmentUrls.length > 0 && (
                                                     <div className="flex flex-wrap gap-2 mt-2">
                                                         {message.attachmentUrls.map((url: string, idx: number) => (
-                                                            <img
+                                                            <button
                                                                 key={idx}
-                                                                            src={url}
-                                                                alt={`Adjunto ${idx + 1}`}
-                                                                className="max-w-[200px] max-h-[200px] rounded-lg object-cover"
-                                                            />
+                                                                type="button"
+                                                                onClick={() => setSelectedImage(url)}
+                                                                aria-label={`Ampliar adjunto ${idx + 1}`}
+                                                                className="block rounded-lg transition-opacity hover:opacity-90"
+                                                            >
+                                                                <img
+                                                                    src={url}
+                                                                    alt={`Adjunto ${idx + 1}`}
+                                                                    loading="lazy"
+                                                                    className="max-w-[200px] max-h-[200px] rounded-lg object-cover"
+                                                                />
+                                                            </button>
                                                         ))}
                                                                                 </div>
                                         )}
@@ -718,7 +713,7 @@ const Chat: React.FC<ChatProps> = ({
             {/* Indicador de escritura sobre el input (patrón WhatsApp / iMessage) */}
             {peerPresenceStatus?.kind === 'typing' && (
                 <div
-                    className="flex shrink-0 items-center gap-2 border-t border-gray-100 bg-white/95 px-4 py-2 backdrop-blur-sm"
+                    className="flex shrink-0 items-center gap-2 border-t border-line-soft bg-white/95 px-4 py-2 backdrop-blur-sm"
                     role="status"
                     aria-live="polite"
                 >
@@ -756,14 +751,14 @@ const Chat: React.FC<ChatProps> = ({
                             </span>
                         ))}
                         {location && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 py-1 pl-2.5 pr-1 text-caption font-medium text-emerald-700">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-success-tint py-1 pl-2.5 pr-1 text-caption font-medium text-success">
                                 <MapPin className="h-3 w-3 shrink-0" strokeWidth={2.25} aria-hidden />
                                 <span>Ubicación adjunta</span>
                                 <button
                                     type="button"
                                     onClick={() => setLocation(null)}
                                     aria-label="Quitar ubicación"
-                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-emerald-600/70 transition-colors hover:bg-emerald-100 hover:text-emerald-700"
+                                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-success/70 transition-colors hover:bg-success/15 hover:text-success"
                                 >
                                     <X className="h-3 w-3" strokeWidth={2.5} />
                                 </button>
@@ -876,12 +871,12 @@ const Chat: React.FC<ChatProps> = ({
                                 className={[
                                     'flex items-center gap-1.5',
                                     'text-ink-soft transition-colors duration-200',
-                                    isDetailsOpen ? 'text-primary' : 'group-hover:text-primary',
+                                    isDetailsOpen ? 'text-brand' : 'group-hover:text-brand',
                                 ].join(' ')}
                             >
                                 <div
                                     className={[
-                                        'h-px bg-gray-300 transition-all duration-200 group-hover:bg-primary/50',
+                                        'h-px bg-line transition-all duration-200 group-hover:bg-brand/50',
                                         isDetailsOpen ? 'w-10' : 'w-8',
                                     ].join(' ')}
                                 />
@@ -902,7 +897,7 @@ const Chat: React.FC<ChatProps> = ({
                                 </svg>
                                 <div
                                     className={[
-                                        'h-px bg-gray-300 transition-all duration-200 group-hover:bg-primary/50',
+                                        'h-px bg-line transition-all duration-200 group-hover:bg-brand/50',
                                         isDetailsOpen ? 'w-10' : 'w-8',
                                     ].join(' ')}
                                 />
@@ -910,7 +905,7 @@ const Chat: React.FC<ChatProps> = ({
                             <span
                                 className={[
                                     'text-badge tracking-wide transition-colors duration-200',
-                                    isDetailsOpen ? 'text-primary' : 'text-ink-soft group-hover:text-primary',
+                                    isDetailsOpen ? 'text-brand' : 'text-ink-soft group-hover:text-brand',
                                 ].join(' ')}
                             >
                                 {isDetailsOpen ? 'Ocultar' : 'Detalles'}

@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom';
 
 /** Rutas internas sin parámetro que el asistente menciona y podemos enlazar. */
 const INTERNAL_ROUTES = [
+  '/faq',
+  '/busquedas',
   '/expert/join',
   '/help',
   '/hires',
@@ -33,6 +35,15 @@ const INLINE_PATTERN = new RegExp(
 
 const linkClass =
   'font-medium text-brand underline decoration-brand/30 underline-offset-2 transition-colors hover:decoration-brand';
+
+function safeHttpUrl(raw: string): string | null {
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 function renderInline(
   text: string,
@@ -73,23 +84,30 @@ function renderInline(
         trailing = value[value.length - 1] + trailing;
         value = value.slice(0, -1);
       }
-      nodes.push(
-        email ? (
+      if (email) {
+        nodes.push(
           <a key={k} href={`mailto:${value}`} className={linkClass}>
             {value}
-          </a>
-        ) : (
-          <a
-            key={k}
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={linkClass}
-          >
-            {value}
-          </a>
-        ),
-      );
+          </a>,
+        );
+      } else {
+        const href = safeHttpUrl(value);
+        nodes.push(
+          href ? (
+            <a
+              key={k}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClass}
+            >
+              {value}
+            </a>
+          ) : (
+            value
+          ),
+        );
+      }
       if (trailing) nodes.push(trailing);
     }
     last = match.index + match[0].length;

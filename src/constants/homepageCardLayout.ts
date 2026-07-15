@@ -5,3 +5,24 @@ const raw = import.meta.env.VITE_HP_CARD_LAYOUT as string | undefined;
 
 export const HP_CARD_LAYOUT_VARIANT: HpCardLayoutVariant =
   raw === 'price-first' ? 'price-first' : 'default';
+
+/** Barra superior de la foto en ServiceCard — badge izquierda, favorito derecha. */
+export const HP_CARD_IMAGE_OVERLAY_CLASS =
+  'pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-1.5 p-3';
+
+/** Altura compartida del badge «Top» y del botón de favorito (paridad con top-3 + 24px del layout anterior). */
+export const HP_CARD_OVERLAY_CONTROL_H_CLASS = 'h-6';
+
+/** Pill «Mejor valorado» / «Top» sobre la imagen. Sombra ajustada al techo
+ * α≤0.08 de DESIGN.md + anillo de 1px para dar borde garantizado contra
+ * fotos claras (coches blancos, fachadas, cielo) donde la sombra sola no
+ * define el contorno. */
+export const HP_CARD_TOP_BADGE_CLASS =
+  'inline-flex h-6 w-max max-w-full items-center gap-1 overflow-hidden rounded-full bg-surface px-2 shadow-[0_1px_2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.06)] md:gap-1.5 md:px-2.5';
+
+/** Botón de favorito sobre la imagen — caja de layout 24px (paridad real con
+ * el badge, no solo de comentario) + hit area de 44px vía pseudo-elemento
+ * `before:-inset-2.5` que no participa en el flex, así no empuja el badge
+ * hacia abajo por el `items-center` de HP_CARD_IMAGE_OVERLAY_CLASS. */
+export const HP_CARD_FAVORITE_BTN_CLASS =
+  'relative pointer-events-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full before:absolute before:-inset-2.5 before:content-[""] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';

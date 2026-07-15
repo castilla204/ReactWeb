@@ -7,7 +7,7 @@ import { API_CONFIG } from '../config/api';
 import { Service } from '../hooks/useServices';
 import { PreHireChat } from '../components/PreHireChat';
 import { SileoSkeleton } from '../components/ui/sileo-skeleton';
-import { ArrowLeft, MoreVertical, MapPin, Star, Clock, Heart, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, MapPin, Star, Heart, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import {
@@ -22,11 +22,12 @@ import CountryFlag from '../components/CountryFlag';
 import { useServiceFavorites } from '../hooks/useServiceFavorites';
 import { showToast } from '../lib/toast';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
-import { LazyAppointmentMap as AppointmentMap } from '../components/map/LazyAppointmentMap';
+import { LazyAppointmentMap as AppointmentMap } from '../components/Map/LazyAppointmentMap';
 import { LoginModal } from '../components/LoginModal';
 
 import { useIsMobile } from '../hooks/useIsMobile';
 import { buildClientPreHireChatPath } from '../utils/preHireChatNavigation';
+import { HP_FONT } from '../constants/homepageTypography';
 
 export function PreHireChatPage() {
     const { serviceId } = useParams<{ serviceId: string }>();
@@ -342,14 +343,6 @@ export function PreHireChatPage() {
         ? `${expertCity}${expertCountryName ? `, ${expertCountryName}` : ''}`
         : expertCountryName || 'Zona no especificada';
     
-    const servicePrice = service?.price ?? 0;
-    // 🛡️ Round 28: usar divisa real del servicio (priceCurrency/currency) en vez de EUR hardcoded.
-    const serviceCurrencyCode = ((service as any)?.priceCurrency || (service as any)?.currency || 'EUR').toUpperCase();
-    const priceLabel =
-      servicePrice > 0
-        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: serviceCurrencyCode }).format(servicePrice)
-        : null;
-    
     // Handler para favorito
     const handleFavoriteClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -385,14 +378,15 @@ export function PreHireChatPage() {
     };
     
     return (
-        <div 
-            className="fixed inset-0 bg-gray-50 flex flex-col overflow-hidden" 
-            style={{ 
+        <div
+            className="fixed inset-0 flex flex-col overflow-hidden bg-surface-tinted"
+            style={{
                 height: 'calc(var(--vh, 1vh) * 100)', // Fallback para navegadores que no soportan dvh
+                fontFamily: HP_FONT, // único punto de fuente — los hijos la heredan, sin repetir por elemento
             }}
         >
-            {/* Header con información del servicio - Estilo Wallapop */}
-            <div className="bg-gray-50 flex-shrink-0 shadow-sm border-b border-gray-200">
+            {/* Cabecera: identidad del experto + acciones rápidas */}
+            <div className="flex-shrink-0 border-b border-line bg-surface-tinted shadow-sm">
                 <div className="max-w-4xl mx-auto">
                     {/* Header superior con botón atrás y menú */}
                     <div className="flex items-center gap-1 px-2 py-2 md:px-4 md:py-1.5">
@@ -416,13 +410,13 @@ export function PreHireChatPage() {
                             >
                                 <Avatar className="h-9 w-9">
                                     <AvatarImage src={expertAvatar} alt={expertName} />
-                                    <AvatarFallback className="bg-gray-900 text-xs text-white">
+                                    <AvatarFallback className="bg-ink-strong text-xs text-white">
                                         {expertName.charAt(0)}
                                     </AvatarFallback>
                                 </Avatar>
                                 {isChatConnected && (
                                     <span
-                                        className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-gray-50 bg-green-500"
+                                        className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface-tinted bg-success"
                                         aria-label="Chat en directo activo"
                                     />
                                 )}
@@ -431,16 +425,20 @@ export function PreHireChatPage() {
                                 <span className="block truncate text-lead font-semibold text-ink-strong">
                                     {expertName}
                                 </span>
-                                <span className={`block truncate text-caption ${isChatConnected ? 'text-green-600' : 'text-ink-muted'}`}>
+                                <span className={`block truncate text-caption ${isChatConnected ? 'text-success' : 'text-ink-muted'}`}>
                                     {isChatConnected ? 'En directo' : locationLabel}
                                 </span>
                             </Link>
+                            {/* Sin precio: el CTA de escritorio tampoco lo lleva (ya se vio en la
+                                ficha del servicio y se repite en el checkout al pulsar). Con precio,
+                                "Contratar · 87,00 €" le dejaba a nombre+ciudad ~100px en un móvil
+                                estrecho y quedaban truncados de forma casi ilegible. */}
                             <Button
                                 type="button"
                                 onClick={handleHireClick}
                                 className="ml-auto shrink-0 rounded-full bg-brand hover:bg-brand-hover text-white text-meta font-semibold px-4 py-1.5 shadow-[0_2px_8px_hsl(var(--brand)/0.2)] transition-all hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] active:scale-[0.98]"
                             >
-                                Contratar{priceLabel ? ` · ${priceLabel}` : ''}
+                                Contratar
                             </Button>
                         </div>
 
@@ -454,17 +452,17 @@ export function PreHireChatPage() {
                             >
                                 <Avatar className="w-10 h-10">
                                     <AvatarImage src={expertAvatar} alt={expertName} />
-                                    <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                    <AvatarFallback className="bg-ink-strong text-white text-sm">
                                         {expertName.charAt(0)}
                                     </AvatarFallback>
                                 </Avatar>
                                 {isChatConnected && (
-                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" aria-label="Chat conectado"></span>
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-surface-tinted bg-success animate-pulse" aria-label="Chat conectado" />
                                 )}
                             </button>
-                            <Link 
+                            <Link
                                 to={`/service/${serviceIdNumber}`}
-                                className="font-semibold text-ink-strong hover:opacity-80 transition-opacity"
+                                className="font-display font-semibold text-ink-strong hover:opacity-80 transition-opacity"
                             >
                                 {expertName}
                             </Link>
@@ -489,31 +487,22 @@ export function PreHireChatPage() {
                     
                     {/* Información del servicio - Desktop */}
                     <div className="hidden md:flex flex-col">
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-2.5">
                             {/* Sección del experto - A la derecha de la foto */}
-                            <div className="mb-3">
+                            <div className="mb-2.5">
                                 <div className="flex items-start gap-4">
                                     {serviceImage && (
-                                        <div 
-                                            className="relative w-20 h-20 rounded-lg flex-shrink-0 bg-gray-200 bg-cover bg-center overflow-hidden"
+                                        <div
+                                            className="relative w-20 h-20 rounded-lg flex-shrink-0 bg-line-soft bg-cover bg-center overflow-hidden"
                                             style={{ backgroundImage: `url(${serviceImage})` }}
                                         />
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <Link 
+                                        <Link
                                             to={`/service/${serviceIdNumber}`}
                                             className="block hover:opacity-90 transition-opacity"
                                         >
-                                            <div 
-                                                style={{
-                                                    fontSize: '14px',
-                                                    lineHeight: '20px',
-                                                    fontWeight: 400,
-                                                    color: 'rgb(34, 34, 34)',
-                                                    fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
-                                                    marginBottom: '4px',
-                                                }}
-                                            >
+                                            <div className="mb-1 font-display text-body font-normal text-ink-strong">
                                                 {expertName}
                                             </div>
                                             {expertRating > 0 && (
@@ -524,36 +513,19 @@ export function PreHireChatPage() {
                                                                 key={star}
                                                                 className={`w-3.5 h-3.5 ${
                                                                     star <= Math.round(expertRating)
-                                                                        ? 'fill-gray-900 text-ink-strong'
-                                                                        : 'fill-gray-200 text-gray-200'
+                                                                        ? 'fill-ink-strong text-ink-strong'
+                                                                        : 'fill-line text-line'
                                                                 }`}
                                                             />
                                                         ))}
                                                     </div>
-                                                    <span 
-                                                        style={{
-                                                            fontSize: '14px',
-                                                            lineHeight: '20px',
-                                                            fontWeight: 400,
-                                                            color: 'rgb(113, 113, 113)',
-                                                            fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
-                                                        }}
-                                                    >
+                                                    <span className="font-display text-body font-normal text-ink-muted">
                                                         {expertRating.toFixed(1)} ({reviewsCount})
                                                     </span>
                                                 </div>
                                             )}
                                             {(expertCity || expertCountryName) && (
-                                                <div 
-                                                    style={{
-                                                        fontSize: '14px',
-                                                        lineHeight: '20px',
-                                                        fontWeight: 400,
-                                                        color: 'rgb(113, 113, 113)',
-                                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
-                                                        marginTop: '4px',
-                                                    }}
-                                                >
+                                                <div className="mt-1 font-display text-body font-normal text-ink-muted">
                                                     {locationLabel}
                                                 </div>
                                             )}
@@ -569,32 +541,30 @@ export function PreHireChatPage() {
                                         >
                                             <Avatar className="w-10 h-10">
                                                 <AvatarImage src={expertAvatar} alt={expertName} />
-                                                <AvatarFallback className="bg-gray-900 text-white text-sm">
+                                                <AvatarFallback className="bg-ink-strong text-white text-sm">
                                                     {expertName.charAt(0)}
                                                 </AvatarFallback>
                                             </Avatar>
                                             {isChatConnected && (
-                                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full animate-pulse" aria-label="Chat conectado"></span>
+                                                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-surface-tinted bg-success animate-pulse" aria-label="Chat conectado" />
                                             )}
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs text-ink-strong">
+                            {/* 2 tiles con función real (se quitó el tercero, "Mensajes antes de
+                                contratar": no enlazaba a nada y solo rellenaba la fila). */}
+                            <div className="mb-2.5 grid grid-cols-2 gap-2 font-display text-caption text-ink-strong">
                                 <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
                                     {expertCountry ? <CountryFlag countryCode={expertCountry} className="h-4 w-5" /> : <MapPin className="h-4 w-4 text-ink-muted" />}
                                     <span className="truncate">{locationLabel}</span>
-                                </div>
-                                <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm">
-                                    <Clock className="h-4 w-4 text-ink-muted" />
-                                    <span className="truncate">Mensajes antes de contratar</span>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowMapPreview((value) => !value)}
                                     disabled={!hasExpertLocation}
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-ink-strong shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-2 font-semibold text-ink-strong shadow-sm transition hover:bg-surface-tinted disabled:cursor-not-allowed disabled:opacity-50"
                                     aria-expanded={showMapPreview}
                                 >
                                     <MapPin className="h-4 w-4 text-destructive" />
@@ -603,7 +573,7 @@ export function PreHireChatPage() {
                             </div>
 
                             {hasExpertLocation && showMapPreview && (
-                                <div className="mb-3 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                                <div className="mb-2.5 overflow-hidden rounded-2xl border border-line bg-white">
                                     <AppointmentMap
                                         className="h-40 w-full"
                                         expertLocation={{ latitude: expertLatitude!, longitude: expertLongitude! }}
@@ -616,39 +586,29 @@ export function PreHireChatPage() {
                                     />
                                 </div>
                             )}
-                            
+
                             {/* Barra de separación */}
-                            <div className="border-t border-gray-200 my-3"></div>
-                            
+                            <div className="border-t border-line my-2.5" />
+
                             {/* Barra de botones */}
                             <div className="flex items-center gap-2">
                                 <Button
                                     onClick={handleFavoriteClick}
                                     variant="outline"
-                                    className="flex-1 rounded-full"
+                                    className="flex-1 rounded-full font-display text-body font-semibold"
                                     aria-pressed={isFavorite}
                                     aria-label={isFavorite ? 'Quitar servicio de favoritos' : 'Guardar servicio en favoritos'}
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
-                                    }}
                                 >
-                                    <Heart 
+                                    {/* Rojo deliberado (no el token `destructive`, reservado para peligro/error):
+                                        el corazón favorito es una convención universal de UI, no un estado de error. */}
+                                    <Heart
                                         className={`w-4 h-4 mr-2 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-ink-muted'}`}
                                     />
                                     Favorito
                                 </Button>
                                 <Button
                                     onClick={handleHireClick}
-                                    className="flex-1 rounded-full bg-brand hover:bg-brand-hover text-white font-semibold transition-colors shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
-                                    style={{
-                                        fontSize: '14px',
-                                        lineHeight: '20px',
-                                        fontWeight: 600,
-                                        fontFamily: 'Manrope, "SF Pro Display", system-ui, -apple-system, "Helvetica Neue", sans-serif',
-                                    }}
+                                    className="flex-1 rounded-full bg-brand font-display text-body font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.2)] transition-colors hover:bg-brand-hover"
                                 >
                                     Contratar
                                 </Button>

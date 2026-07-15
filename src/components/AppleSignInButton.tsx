@@ -17,7 +17,7 @@ interface AppleSignInButtonProps {
 
 // Apple SVG Icon Component
 const AppleIcon = ({ compact }: { compact?: boolean }) => (
-    <svg className={compact ? 'w-4 h-4 shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" fill="currentColor">
+    <svg className={compact ? 'h-[18px] w-[18px] shrink-0' : 'w-5 h-5'} viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
     </svg>
 );
@@ -132,10 +132,12 @@ export const AppleSignInButton = ({ className = '', variant = 'default', onSucce
     const isWebOrUnavailable = !isNative || isAvailable === false;
     const showAsDisabled = isWebOrUnavailable;
 
+    // text-[14px] (no el token text-meta) para igualar exactamente al botón de Google en
+    // el grid de iOS; rounded-xl = misma familia que los campos de correo.
     const compactEnabledClasses =
-        'flex h-11 w-full items-center justify-center gap-2.5 rounded-[10px] border border-ink-strong bg-ink-strong font-display text-meta font-medium text-white transition-colors hover:bg-black active:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-50';
+        'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-ink-strong bg-ink-strong font-display text-[14px] font-medium leading-none tracking-[0.01em] text-white transition-colors hover:bg-black active:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-50';
     const compactDisabledClasses =
-        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-[10px] border border-line bg-white font-display text-meta font-medium text-ink-soft';
+        'flex h-11 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-xl border border-line bg-white font-display text-[14px] font-medium leading-none tracking-[0.01em] text-ink-soft';
     const defaultEnabledClasses =
         'flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-ink-strong bg-ink-strong font-display text-sm font-medium text-white transition-colors hover:bg-black active:bg-ink-strong disabled:cursor-not-allowed disabled:opacity-50';
     const defaultDisabledClasses =

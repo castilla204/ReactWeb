@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Image, MapPin } from 'lucide-react';
 import { SileoSkeleton } from '../ui/sileo-skeleton';
 
@@ -19,11 +19,20 @@ interface ServiceDetailMobilePhotoMapHeroProps {
   location: { latitude: number; longitude: number } | null;
   locationLabel?: string;
   rangeKm?: number;
-  /** Superpuesto sobre la mitad de la foto (p. ej. formación animada). */
+  /** Superpuesto sobre el hero (p. ej. formación animada). */
   overlay?: React.ReactNode;
 }
 
-function PhotoCell({
+const MAX_PILL_INDICATORS = 7;
+
+// El hero móvil tapa el mapa de forma asimétrica: arriba con el scrim + los botones flotantes
+// del topbar (~80px), abajo con la tarjeta blanca que se solapa -mt-5 (20px opacos) más el
+// scrim/puntos del carrusel. Referencia como objeto module-level (no inline) para que su
+// identidad sea estable entre renders: CoverageMapCanvas usa este valor en dependencias de
+// efecto y un objeto nuevo en cada render forzaría recrear el mapa constantemente.
+const MOBILE_HERO_MAP_FIT_PADDING = { top: 30, bottom: 72, left: 20, right: 20 };
+
+function PhotoSlide({
   src,
   index,
   alt,
@@ -33,7 +42,6 @@ function PhotoCell({
   onImageLoad,
   onImageLoadStart,
   onOpen,
-  overlay,
   eager = false,
 }: {
   src: string;
@@ -45,14 +53,13 @@ function PhotoCell({
   onImageLoad: (url: string) => void;
   onImageLoadStart: (url: string) => void;
   onOpen: (index: number) => void;
-  overlay?: React.ReactNode;
   eager?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={() => onOpen(index)}
-      className="relative h-full w-full min-h-0 overflow-hidden border-0 bg-ink-strong p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97]"
+      className="sd-mobile-hero-slide relative h-full w-full overflow-hidden border-0 bg-ink-strong p-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/80 active:opacity-[0.97]"
       aria-label={alt}
     >
       {loadingImages.has(src) ? (
@@ -76,69 +83,118 @@ function PhotoCell({
           <Image className="h-8 w-8 text-ink-soft" strokeWidth={1.5} aria-hidden />
         </div>
       ) : null}
-      {overlay}
     </button>
   );
 }
 
-function MobileHeroPhotoStack({
-  images,
-  loadingImages,
-  failedImages,
-  onImageError,
-  onImageLoad,
-  onImageLoadStart,
-  onOpenImage,
-}: Pick<
-  ServiceDetailMobilePhotoMapHeroProps,
-  | 'images'
-  | 'loadingImages'
-  | 'failedImages'
-  | 'onImageError'
-  | 'onImageLoad'
-  | 'onImageLoadStart'
-  | 'onOpenImage'
->) {
-  if (images.length === 0) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-surface-tinted px-3 text-center">
-        <Image className="mb-2 h-8 w-8 text-ink-soft" strokeWidth={1.5} aria-hidden />
-        <p className="text-xs font-medium text-ink-muted">Sin imágenes</p>
-      </div>
-    );
-  }
-
-  const total = images.length;
-
-  // Una sola foto protagonista a toda altura. Apilar 2 celdas aquí las dejaba en
-  // 188×140 y el solape de la card blanca (-mt-10) tapaba 40px de la segunda:
-  // siempre se veía cortada. El resto de fotos vive en la galería (chip "N fotos").
+function MapSlide({
+  location,
+  locationLabel,
+  radius,
+  isWorkshopOnly,
+}: {
+  location: { latitude: number; longitude: number } | null;
+  locationLabel?: string;
+  radius: number;
+  isWorkshopOnly: boolean;
+}) {
   return (
-    <PhotoCell
-      src={images[0]}
-      index={0}
-      alt={total > 1 ? `Imagen del servicio, abrir galería de ${total} fotos` : 'Imagen del servicio'}
-      loadingImages={loadingImages}
-      failedImages={failedImages}
-      onImageError={onImageError}
-      onImageLoad={onImageLoad}
-      onImageLoadStart={onImageLoadStart}
-      onOpen={onOpenImage}
-      eager
-      overlay={
-        total > 1 ? (
-          // bottom-12 = por encima del solape de la card (2.5rem) + aire; misma
-          // línea base que el botón de ampliar mapa (bottom-raised) en la otra columna.
-          <span
-            className="pointer-events-none absolute bottom-12 left-2 z-[2] inline-flex h-7 items-center gap-1.5 rounded-sm bg-black/45 px-2.5 text-kicker font-medium text-white backdrop-blur-[2px]"
-            aria-hidden
-          >
-            <Image className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-            {total} fotos
-          </span>
-        ) : undefined
+    <div
+      className="sd-mobile-hero-slide relative h-full w-full overflow-hidden bg-surface-tinted"
+      aria-label={
+        location
+          ? isWorkshopOnly
+            ? 'Mapa: el experto atiende en su taller'
+            : `Mapa de cobertura, radio ${radius} km`
+          : 'Sin ubicación'
       }
-    />
+    >
+      {location ? (
+        <Suspense
+          fallback={
+            <div className="flex h-full w-full items-center justify-center bg-brand/10">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-brand" />
+            </div>
+          }
+        >
+          <ServiceDetailCoverageMap
+            latitude={location.latitude}
+            longitude={location.longitude}
+            rangeKm={isWorkshopOnly ? 0 : radius}
+            variant="preview"
+            fitPadding={MOBILE_HERO_MAP_FIT_PADDING}
+            className="h-full min-h-0 w-full rounded-none border-0"
+          />
+        </Suspense>
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-1.5 px-3 text-center">
+          <MapPin className="h-6 w-6 text-ink-soft" strokeWidth={1.5} aria-hidden />
+          <p className="text-kicker font-medium leading-snug text-ink-muted">
+            {locationLabel || 'Sin ubicación'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeroSlideIndicator({
+  activeIndex,
+  slideCount,
+  photoCount,
+}: {
+  activeIndex: number;
+  slideCount: number;
+  photoCount: number;
+}) {
+  if (slideCount <= 1) return null;
+
+  const showPills = slideCount <= MAX_PILL_INDICATORS;
+  const onMap = activeIndex === 0;
+  const showSwipeHint = onMap && photoCount > 0;
+
+  return (
+    <>
+      <div
+        className={`sd-mobile-hero-indicator-scrim${
+          showSwipeHint ? ' sd-mobile-hero-indicator-scrim--with-hint' : ''
+        }`}
+        aria-hidden
+      />
+
+      {showSwipeHint ? (
+        <div className="sd-mobile-hero-swipe-hint" aria-hidden>
+          <span className="sd-mobile-hero-swipe-hint-pill">
+            Desliza
+            <span className="sd-mobile-hero-swipe-hint-arrow">→</span>
+          </span>
+        </div>
+      ) : null}
+
+      {showPills ? (
+        <div className="sd-mobile-hero-indicator-dots" aria-hidden>
+          {Array.from({ length: slideCount }).map((_, idx) => {
+            const isActive = idx === activeIndex;
+            return (
+              <span
+                key={idx}
+                className={`sd-mobile-hero-indicator-dot ${
+                  isActive
+                    ? 'sd-mobile-hero-indicator-dot--active'
+                    : 'sd-mobile-hero-indicator-dot--inactive'
+                }`}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="sd-mobile-hero-indicator-counter" aria-live="polite">
+          <span className="sd-mobile-hero-indicator-counter-text">
+            {activeIndex + 1} / {slideCount}
+          </span>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -157,51 +213,88 @@ export const ServiceDetailMobilePhotoMapHero: React.FC<ServiceDetailMobilePhotoM
 }) => {
   const isWorkshopOnly = rangeKm === 0;
   const radius = isWorkshopOnly ? 0 : Math.max(5, rangeKm);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const slideCount = 1 + images.length;
+
+  const syncIndexFromScroll = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel || slideCount <= 1) return;
+    const width = carousel.offsetWidth;
+    if (width <= 0) return;
+    const next = Math.min(slideCount - 1, Math.max(0, Math.round(carousel.scrollLeft / width)));
+    setActiveIndex((prev) => (prev === next ? prev : next));
+  }, [slideCount]);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    carousel.addEventListener('scroll', syncIndexFromScroll, { passive: true });
+    carousel.addEventListener('scrollend', syncIndexFromScroll, { passive: true });
+    return () => {
+      carousel.removeEventListener('scroll', syncIndexFromScroll);
+      carousel.removeEventListener('scrollend', syncIndexFromScroll);
+    };
+  }, [syncIndexFromScroll]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    const carousel = carouselRef.current;
+    if (carousel) carousel.scrollLeft = 0;
+  }, [images.length, location?.latitude, location?.longitude]);
+
+  const photoTotal = images.length;
 
   return (
-    <div className="relative grid aspect-[4/3] w-full grid-cols-2 bg-ink-strong">
+    <div className="sd-mobile-hero relative w-full overflow-hidden bg-ink-strong">
       <div className="sd-mobile-hero-top-scrim" aria-hidden />
-      <div className="relative min-h-0 min-w-0 overflow-hidden">
-        <MobileHeroPhotoStack
-          images={images}
-          loadingImages={loadingImages}
-          failedImages={failedImages}
-          onImageError={onImageError}
-          onImageLoad={onImageLoad}
-          onImageLoadStart={onImageLoadStart}
-          onOpenImage={onOpenImage}
+
+      <div
+        ref={carouselRef}
+        className="sd-mobile-hero-track scrollbar-hide flex h-full w-full snap-x snap-mandatory overflow-x-auto"
+        aria-roledescription="carrusel"
+        aria-label={
+          photoTotal > 0
+            ? `Mapa de cobertura y ${photoTotal} fotos del servicio`
+            : 'Mapa de cobertura del servicio'
+        }
+      >
+        <MapSlide
+          location={location}
+          locationLabel={locationLabel}
+          radius={radius}
+          isWorkshopOnly={isWorkshopOnly}
         />
-        {overlay}
+
+        {images.map((src, idx) => (
+          <PhotoSlide
+            key={`${src}-${idx}`}
+            src={src}
+            index={idx}
+            alt={
+              photoTotal > 1
+                ? `Foto ${idx + 1} de ${photoTotal}, abrir galería`
+                : 'Foto del servicio, abrir galería'
+            }
+            loadingImages={loadingImages}
+            failedImages={failedImages}
+            onImageError={onImageError}
+            onImageLoad={onImageLoad}
+            onImageLoadStart={onImageLoadStart}
+            onOpen={onOpenImage}
+            eager={idx === 0}
+          />
+        ))}
       </div>
 
-      <div className="relative min-h-0 min-w-0 overflow-hidden border-l border-black/10">
-        {location ? (
-          <Suspense
-            fallback={
-              <div className="flex h-full w-full items-center justify-center bg-brand/10">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-brand" />
-              </div>
-            }
-          >
-            <ServiceDetailCoverageMap
-              latitude={location.latitude}
-              longitude={location.longitude}
-              rangeKm={radius}
-              variant="preview"
-              expandable
-              expandButtonPosition="bottom-raised"
-              className="h-full min-h-0 w-full rounded-none border-0"
-            />
-          </Suspense>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-1.5 bg-line-soft px-3 text-center">
-            <MapPin className="h-6 w-6 text-ink-soft" strokeWidth={1.5} aria-hidden />
-            <p className="text-kicker font-medium leading-snug text-ink-muted">
-              {locationLabel || 'Sin ubicación'}
-            </p>
-          </div>
-        )}
-      </div>
+      <HeroSlideIndicator
+        activeIndex={activeIndex}
+        slideCount={slideCount}
+        photoCount={photoTotal}
+      />
+
+      {overlay}
     </div>
   );
 };

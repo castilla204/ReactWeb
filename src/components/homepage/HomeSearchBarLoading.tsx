@@ -1,51 +1,35 @@
 import React from 'react';
-import { HP_LOADING_DIMS } from './homeLoadingLayout';
 
-/**
- * Header móvil — mismas cajas que AirbnbSearchBar (pill 56px + fila tabs).
- * Tabs: solo reserva de altura (sin iconos/labels dibujados).
- */
+import {
+  HP_MOBILE_HEADER_INSET_CLASS,
+  HP_MOBILE_SEARCH_PILL_BASE_CLASS,
+  HP_MOBILE_SEARCH_PILL_IDLE_BORDER_CLASS,
+  HP_MOBILE_SEARCH_PILL_SHADOW,
+} from '../../constants/homepageMobileRhythm';
+import { HP_LOADING_DIMS } from './homeLoadingLayout';
+import { MobileSearchPillIcon } from './MobileSearchPillIcon';
+
+/** Header móvil — pill de búsqueda (misma silueta que MobileSearchPill). */
 export const HomeSearchBarLoading: React.FC = () => (
   <>
     <header
-      className="sticky top-0 z-50 md:hidden border-b border-line bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90"
-      style={{ top: 'env(safe-area-inset-top, 0px)' }}
+      className="sticky top-0 z-50 md:hidden border-b border-transparent bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90"
       aria-hidden
     >
-      <div className="px-4 pt-3.5 pb-1.5">
+      <div className={HP_MOBILE_HEADER_INSET_CLASS}>
         <div
-          className="relative w-full rounded-full border border-line bg-white overflow-hidden"
+          className={`${HP_MOBILE_SEARCH_PILL_BASE_CLASS} ${HP_MOBILE_SEARCH_PILL_IDLE_BORDER_CLASS}`}
           style={{
             height: HP_LOADING_DIMS.searchPillH,
-            boxShadow: HP_LOADING_DIMS.searchPillShadow,
+            boxShadow: HP_MOBILE_SEARCH_PILL_SHADOW,
           }}
         >
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-14">
-            <div className="h-3.5 w-24 rounded bg-line-soft" />
-            <div className="h-3 w-32 rounded bg-surface-tinted" />
+          <MobileSearchPillIcon />
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="h-3.5 w-36 rounded bg-line-soft" />
+            <div className="h-3 w-40 rounded bg-surface-tinted" />
           </div>
-          <div className="absolute right-3 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full bg-brand/10" />
-        </div>
-      </div>
-
-      <div className="w-full" role="presentation">
-        <div className="flex justify-center gap-3 min-[390px]:gap-4 px-2 pt-0 pb-1">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="flex w-[5.5rem] min-[390px]:w-[6rem] shrink-0 flex-col items-center border-b-2 border-transparent py-0.5"
-            >
-              <div
-                className="h-14 w-14 min-[390px]:h-[3.75rem] min-[390px]:w-[3.75rem] rounded-full bg-surface-tinted"
-                aria-hidden
-              />
-              <span
-                className="mt-0.5 block w-14 min-[390px]:w-16 rounded-sm bg-line-soft"
-                style={{ height: HP_LOADING_DIMS.tabLabelH }}
-                aria-hidden
-              />
-            </div>
-          ))}
+          <div className="h-4 w-4 shrink-0 rounded-sm bg-surface-tinted" aria-hidden />
         </div>
       </div>
     </header>

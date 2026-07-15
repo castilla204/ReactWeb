@@ -49,6 +49,8 @@ export default {
                 destructive: {
                     DEFAULT: "hsl(var(--destructive))",
                     foreground: "hsl(var(--destructive-foreground))",
+                    // Texto/iconos sobre fondo claro (--destructive por sí solo falla AA ~3.5:1)
+                    text: "hsl(var(--destructive-text) / <alpha-value>)",
                 },
                 muted: {
                     DEFAULT: "hsl(var(--muted))",
@@ -100,6 +102,8 @@ export default {
                     DEFAULT: "hsl(var(--warning) / <alpha-value>)",
                     tint: "hsl(var(--warning-tint) / <alpha-value>)",
                     border: "hsl(var(--warning-border) / <alpha-value>)",
+                    // Texto sobre fondo claro (--warning por sí solo falla AA ~3.2:1)
+                    text: "hsl(var(--warning-text) / <alpha-value>)",
                 },
                 avail: {
                     free: "hsl(var(--avail-free) / <alpha-value>)",

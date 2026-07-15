@@ -62,6 +62,8 @@ interface Props {
     showSectionHeader?: boolean;
     /** Renderizado plano: sin tarjeta/borde/fondo propios (usado dentro del shell del checkout desktop). */
     bare?: boolean;
+    /** Alto medido del footer sticky móvil (drawer de horas). */
+    footerInsetPx?: number;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -99,7 +101,7 @@ const SPLIT_EMBEDDED_CALENDAR_CLASS_NAMES = {
 function dayButtonSizeClass(splitColumn: boolean) {
     return cn(
         'shrink-0 text-meta',
-        splitColumn ? 'size-10 lg:size-11' : 'size-10',
+        splitColumn ? 'size-9 min-[360px]:size-10 lg:size-11' : 'size-9 min-[360px]:size-10',
     );
 }
 /** Mismo patrón visual que el panel del experto cuando aún no hay día elegido. */
@@ -213,12 +215,14 @@ const SlotPicker: React.FC<Props> = ({
     embeddedSplitColumn = false,
     showSectionHeader = true,
     bare = false,
+    footerInsetPx,
 }) => {
     const embeddedSplitLayout = embedded && embeddedSplitColumn;
     const bareLayout = embedded && bare;
+    const mobileWizardBare = bareLayout && !embeddedSplitColumn;
     const previewBrowseHours = embedded && previewMode && embeddedSplitColumn;
     const mobilePreviewDrawer = embedded && previewMode && !embeddedSplitColumn;
-    const blockDayPick = previewMode && !embeddedSplitColumn && !mobilePreviewDrawer;
+    const blockDayPick = previewMode && !embeddedSplitColumn;
 
     const availBase = slotsBaseUrl ?? `${API_CONFIG.baseUrl}/api/Availability/service/${serviceId}`;
     const effWindow = windowDays && windowDays > 0 ? windowDays : BOOKING_WINDOW_DAYS;
@@ -231,9 +235,10 @@ const SlotPicker: React.FC<Props> = ({
         if (previewBrowseHours) return defaultDate;
         if (mobilePreviewDrawer) return defaultDate;
         if (embedded && previewMode) return null;
+        if (mobileWizardBare) return null;
         if (embedded) return defaultDate;
         return defaultDate;
-    }, [embedded, previewMode, previewBrowseHours, mobilePreviewDrawer, defaultDate]);
+    }, [embedded, previewMode, previewBrowseHours, mobilePreviewDrawer, mobileWizardBare, defaultDate]);
 
     const [selectedDate, setSelectedDate] = useState<Date | null>(initialSelectedDate);
     const [slots, setSlots] = useState<ChosenSlot[]>([]);
@@ -359,7 +364,7 @@ const SlotPicker: React.FC<Props> = ({
 
     // Color en cada celda del día (no en el contenedor del calendario).
     const AvailabilityDayButton = useMemo(() => {
-        const Btn = ({ day, modifiers, className, ...props }: any) => {
+        const Btn = ({ day, modifiers, className, tabIndex: dayTabIndex, ...restProps }: any) => {
             const ref = useRef<HTMLButtonElement>(null);
             const ymd = toYmd(day.date);
             const free = availByDate[ymd];
@@ -392,14 +397,15 @@ const SlotPicker: React.FC<Props> = ({
                 <button
                     type="button"
                     ref={ref}
-                    {...props}
+                    tabIndex={blockDayPick ? -1 : dayTabIndex}
+                    {...restProps}
                     onClick={(e) => {
                         if (blockDayPick) {
                             e.preventDefault();
                             e.stopPropagation();
                             return;
                         }
-                        props.onClick?.(e);
+                        restProps.onClick?.(e);
                     }}
                     className={cn(
                         'relative mx-auto flex select-none items-center justify-center rounded-full font-semibold tabular-nums transition-[transform,background-color,box-shadow,color] duration-150 motion-reduce:transition-[background-color,box-shadow,color]',
@@ -532,8 +538,18 @@ const SlotPicker: React.FC<Props> = ({
         );
     }
 
-    const useMobileHoursDrawer = !previewMode || mobilePreviewDrawer;
+    const useMobileHoursDrawer = !previewMode && !mobilePreviewDrawer;
     const useDesktopSideHoursDrawer = embeddedSplitColumn;
+
+    const handleMobileSlotSelect = useCallback(
+        (slot: ChosenSlot | null) => {
+            onSelect(slot);
+            if (useMobileHoursDrawer && slot) {
+                setHoursDrawerExpanded(false);
+            }
+        },
+        [onSelect, useMobileHoursDrawer],
+    );
 
     const inlineSlotsColumnClass = cn(
         slotsColClass,
@@ -597,7 +613,7 @@ const SlotPicker: React.FC<Props> = ({
                 splitPeriodsOnMobile={opts?.splitPeriodsOnMobile}
                 periodFilter={periodFilter}
                 onPeriodFilterChange={setPeriodFilter}
-                onSelectSlot={onSelect}
+                onSelectSlot={opts?.splitPeriodsOnMobile ? handleMobileSlotSelect : onSelect}
             />
         );
     };
@@ -709,6 +725,7 @@ const SlotPicker: React.FC<Props> = ({
                 selectedLabel={selected?.label ?? null}
                 expanded={hoursDrawerExpanded}
                 onToggle={() => setHoursDrawerExpanded((v) => !v)}
+                footerInsetPx={footerInsetPx}
             >
                 {renderSelectableHoursBody({ splitPeriodsOnMobile: true })}
             </CheckoutSlotHoursDrawer>
@@ -761,7 +778,7 @@ const SlotPicker: React.FC<Props> = ({
                     {desktopHoursDrawer}
                     {mobileHoursDrawer}
                 </>
-            ) : embedded && previewMode && !mobilePreviewDrawer && !embeddedSplitColumn ? (
+            ) : embedded && previewMode && !embeddedSplitColumn ? (
                 <CheckoutSellerChoicePreviewCalendar
                     splitColumn={embeddedSplitColumn}
                     showInnerHeader={!embeddedSplitColumn}

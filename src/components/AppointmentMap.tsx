@@ -551,6 +551,50 @@ const AppointmentMap: React.FC<AppointmentMapProps> = ({
     referencePreview,
   ]);
 
+  const boundsPaddingKey = React.useMemo(
+    () => JSON.stringify(boundsPadding ?? null),
+    [boundsPadding],
+  );
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isMinimalCoverage || memoizedCoordinates.radius <= 0) return;
+
+    const fitCoverage = () => {
+      if (!map.isStyleLoaded()) return;
+      const fitRadiusKm = memoizedCoordinates.radius * 1.12;
+      const [[minLng, minLat], [maxLng, maxLat]] = boundsFromCircle(
+        memoizedCoordinates.lng,
+        memoizedCoordinates.lat,
+        fitRadiusKm,
+      );
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        {
+          padding: boundsPadding ?? (referencePreview ? 44 : 48),
+          duration: 0,
+          maxZoom: 13,
+        },
+      );
+    };
+
+    if (map.isStyleLoaded()) {
+      fitCoverage();
+    } else {
+      map.once('load', fitCoverage);
+    }
+  }, [
+    boundsPaddingKey,
+    memoizedCoordinates.lat,
+    memoizedCoordinates.lng,
+    memoizedCoordinates.radius,
+    isMinimalCoverage,
+    referencePreview,
+  ]);
+
   // ---------------------------------------------------------------------------
   // Autocomplete (Mapbox)
   // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 // 🛡️ Round 28 — Sprint 4: i18n para textos UI multi-idioma (ES/EN).
 import { useTranslation, Trans } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Loader2, ArrowLeft, ShieldCheck, Eye, EyeOff, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -16,9 +16,10 @@ import { GoogleSignInButton } from './GoogleSignInButton';
 import { AppleSignInButton } from './AppleSignInButton';
 import { ResponsiveModal } from './ui/responsive-modal';
 import { DrawerHandle } from './ui/drawer';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
+import { GroupedFieldsCard, GroupedFieldRow, bareGroupedInputClass } from './checkout/GroupedFieldsCard';
+import { cn } from '../lib/utils';
 
 /**
  * 🛡️ Round 16: Modal de autenticación unificado.
@@ -41,6 +42,8 @@ export interface LoginModalProps {
     onSuccess?: () => void;
     /** Tab inicial — útil para abrir directamente en "Crear cuenta". */
     initialTab?: 'login' | 'register';
+    /** Si false, el usuario no puede cerrar el modal (p. ej. /login obligatorio). */
+    dismissible?: boolean;
 }
 
 type Step = 'social' | 'verify-email' | 'forgot-email' | 'verify-reset';
@@ -58,21 +61,15 @@ interface OtpContext {
     isLinking?: boolean;
 }
 
-// Copys de la cabecera: el titular es la propia acción ("Inicia sesión"), no el logo —
-// el wordmark pasa a firma discreta arriba. Sin subtítulo: era redundante con el titular
-// y el conmutador de modo ya vive en el pie (AuthFooterLine).
-const AUTH_COPY: Record<'login' | 'register', { title: string }> = {
-    login: { title: 'Inicia sesión' },
-    register: { title: 'Crea tu cuenta' },
-};
-
 export const LoginModal: React.FC<LoginModalProps> = ({
     open,
     onOpenChange,
     onSuccess,
     initialTab = 'login',
+    dismissible = true,
 }) => {
     const navigate = useNavigate();
+    const reduceMotion = useReducedMotion();
     const { user, isAuthenticated } = useAuth();
     const [step, setStep] = useState<Step>('social');
     const [tab, setTab] = useState<'login' | 'register'>(initialTab);
@@ -126,31 +123,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         toast.message('Completa el registro arriba para seguir con el alta de experto.', { duration: 3500 });
     }, [isAuthenticated, isExpert, navigate, onOpenChange]);
 
+    const stepMotion = reduceMotion
+        ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 }, transition: { duration: 0 } }
+        : { initial: { opacity: 0, x: -20 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 20 }, transition: { duration: 0.2 } };
+    const substepMotion = reduceMotion
+        ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 }, transition: { duration: 0 } }
+        : { initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -20 }, transition: { duration: 0.2 } };
+
+    const a11yTitle =
+        step === 'social'
+            ? tab === 'login'
+                ? 'Iniciar sesión'
+                : 'Crear cuenta'
+            : step === 'forgot-email'
+              ? 'Recuperar contraseña'
+              : step === 'verify-reset'
+                ? 'Nueva contraseña'
+                : 'Verifica tu correo';
+
     return (
         <ResponsiveModal
             open={open}
             onOpenChange={onOpenChange}
-            title={
-                step === 'social'
-                    ? undefined
-                    : step === 'forgot-email'
-                      ? 'Recuperar contraseña'
-                      : 'Verifica tu correo'
-            }
-            description={
-                step === 'social'
-                    ? undefined
-                    : step === 'forgot-email'
-                      ? 'Te enviaremos un código a tu correo.'
-                      : `Código enviado a ${otpCtx?.email ?? ''}`
-            }
+            hideDialogHeader
+            hideDrawerHeader
+            dismissible={dismissible}
+            title={a11yTitle}
+            description={undefined}
             mobileBreakpoint={768}
             noHandle={step === 'social'}
             className="w-full max-w-none md:max-h-[min(90vh,680px)]"
-            drawerClassName="!h-auto !max-w-none bg-white"
+            drawerClassName="!h-auto !max-w-none border-t-2 border-brand bg-white"
             drawerMaxHeight="min(92dvh, calc(100dvh - env(safe-area-inset-bottom, 0px) - 2.75rem))"
             drawerScrollClassName="bg-white"
-            dialogClassName="md:!max-w-[560px] lg:!max-w-[560px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_48px_rgba(15,23,42,0.14)]"
+            dialogClassName="md:!max-w-[480px] lg:!max-w-[480px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_16px_48px_rgba(15,23,42,0.14)]"
             dialogHeaderClassName="border-line"
         >
             <div className="w-full">
@@ -163,20 +169,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 >
                 <AnimatePresence mode="wait" initial={false}>
                     {step === 'social' && (
-                        <motion.div
-                            key="social"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <div className="flex w-full flex-col">
-                                <AuthHeader tab={tab} onClose={() => onOpenChange(false)} />
-
-                                <div className="px-5 pt-5 md:px-7 md:pt-5">
-                                    <div className="flex w-full flex-col gap-4">
-                                        <SocialButtonsRow onSuccess={handleSuccess} active={open} />
-                                        <Separator />
+                        <motion.div key="social" {...stepMotion}>
+                            <AuthShell
+                                tab={tab}
+                                dismissible={dismissible}
+                                isExpert={isExpert}
+                                onClose={() => onOpenChange(false)}
+                                onSwitchTab={setTab}
+                                onExpertAction={handleExpertSignupClick}
+                            >
+                                <SocialButtonsRow onSuccess={handleSuccess} active={open} />
+                                <OrDivider />
+                                <AnimatePresence mode="wait" initial={false}>
+                                    <motion.div
+                                        key={tab}
+                                        id={tab === 'login' ? 'auth-panel-login' : 'auth-panel-register'}
+                                        role="tabpanel"
+                                        aria-labelledby={`auth-tab-${tab}`}
+                                        initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                                        transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                    >
                                         {tab === 'login' ? (
                                             <LoginForm
                                                 onSuccess={handleSuccess}
@@ -194,27 +208,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                                                 }}
                                             />
                                         )}
-                                        <AuthFooterLine tab={tab} isExpert={isExpert} onSwitch={setTab} onExpertAction={handleExpertSignupClick} />
-                                    </div>
-                                </div>
-                            </div>
+                                    </motion.div>
+                                </AnimatePresence>
+                            </AuthShell>
                         </motion.div>
                     )}
 
                     {step === 'verify-email' && otpCtx && (
-                        <motion.div
-                            key="otp"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <button
-                                onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
-                            >
-                                <ArrowLeft className="h-4 w-4" /> Volver
-                            </button>
+                        <motion.div key="otp" {...substepMotion}>
+                            <AuthSubstepHeader
+                                title="Verifica tu correo"
+                                description={`Código enviado a ${otpCtx.email}`}
+                                onBack={() => setStep('social')}
+                            />
                             <OtpForm
                                 ctx={otpCtx}
                                 onSuccess={handleSuccess}
@@ -224,19 +230,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {step === 'forgot-email' && (
-                        <motion.div
-                            key="forgot"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <button
-                                onClick={() => setStep('social')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
-                            >
-                                <ArrowLeft className="h-4 w-4" /> Volver
-                            </button>
+                        <motion.div key="forgot" {...substepMotion}>
+                            <AuthSubstepHeader
+                                title="Recuperar contraseña"
+                                description="Te enviaremos un código a tu correo."
+                                onBack={() => setStep('social')}
+                            />
                             <ForgotPasswordForm
                                 onCodeSent={(ctx) => {
                                     setOtpCtx({ ...ctx, origin: 'reset' });
@@ -247,19 +246,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     )}
 
                     {step === 'verify-reset' && otpCtx && (
-                        <motion.div
-                            key="reset"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <button
-                                onClick={() => setStep('forgot-email')}
-                                className="mb-4 flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand"
-                            >
-                                <ArrowLeft className="h-4 w-4" /> Volver
-                            </button>
+                        <motion.div key="reset" {...substepMotion}>
+                            <AuthSubstepHeader
+                                title="Nueva contraseña"
+                                description={`Código enviado a ${otpCtx.email}`}
+                                onBack={() => setStep('forgot-email')}
+                            />
                             <ResetPasswordForm
                                 ctx={otpCtx}
                                 onSuccess={handleSuccess}
@@ -275,95 +267,141 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 };
 
 /**
- * Cabecera: el wordmark baja a firma discreta arriba y el titular real ("Inicia sesión")
- * pasa a ser el elemento dominante — la pantalla habla de la acción, no del logo.
- * Fondo blanco plano + hairline (antes tenía un tinte azul de marca).
+ * Contenedor principal del paso social: tabs + cuerpo con ritmo editorial.
+ * Sin wordmark — la acción (tab activo) es el ancla visual.
  */
-const AuthHeader: React.FC<{ tab: 'login' | 'register'; onClose: () => void }> = ({ tab, onClose }) => {
-    const { t } = useTranslation();
-    const { title } = AUTH_COPY[tab];
+const AuthShell: React.FC<{
+    tab: 'login' | 'register';
+    dismissible?: boolean;
+    isExpert: boolean;
+    onClose: () => void;
+    onSwitchTab: (next: 'login' | 'register') => void;
+    onExpertAction: () => void;
+    children: React.ReactNode;
+}> = ({ tab, dismissible = true, isExpert, onClose, onSwitchTab, onExpertAction, children }) => {
+    const reduceMotion = useReducedMotion();
 
     return (
-        <div className="sticky top-0 z-10 shrink-0 overflow-hidden rounded-t-[24px] border-b border-line bg-white md:rounded-t-2xl">
-            {/* Asa del drawer (solo móvil) — la fila ocupa solo ~10px. */}
-            <div className="flex justify-center pt-1.5 md:hidden">
-                <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-line" />
-            </div>
-            {/* Botón cerrar: absoluto esquina sup-der. Wordmark es siempre izquierdo → no chocan. */}
-            <button
-                type="button"
-                onClick={onClose}
-                className="absolute right-2 top-2 rounded-full p-1.5 text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1"
-                aria-label={t('common.actions.close')}
-            >
-                <X className="h-[18px] w-[18px]" />
-            </button>
-            <div className="px-5 pb-4 pt-3 md:px-7 md:pb-5 md:pt-4">
-                <p className="font-display text-kicker font-semibold leading-none tracking-[-0.01em]">
-                    <span className="text-brand">Inspecciono</span>
-                    <span className="text-amber-500">.</span>
-                </p>
-                <div className="relative mt-1.5">
-                    <motion.div
-                        key={tab}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                        <h2 className="font-display text-xl font-bold leading-tight tracking-[-0.02em] text-ink-strong">
-                            {title}
-                        </h2>
-                    </motion.div>
+        <div className="flex w-full flex-col" aria-label={tab === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}>
+            <h2 className="sr-only">{tab === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h2>
+            <div className="sticky top-0 z-10 shrink-0 bg-white md:rounded-t-2xl">
+                <div className="flex justify-center pt-2 md:hidden">
+                    <DrawerHandle className="!mt-0 !mb-0 h-1 w-10 rounded-full bg-line" />
+                </div>
+                <div className="relative px-5 md:px-7">
+                    {dismissible && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="absolute right-3 top-2 z-10 rounded-full p-2 text-ink-muted transition-colors hover:bg-black/[0.05] hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 md:right-5 md:top-2.5"
+                            aria-label="Cerrar"
+                        >
+                            <X className="h-[18px] w-[18px]" />
+                        </button>
+                    )}
+                    <AuthTabSwitcher
+                        tab={tab}
+                        onSwitch={onSwitchTab}
+                        reduceMotion={!!reduceMotion}
+                        hasCloseOffset={dismissible}
+                    />
                 </div>
             </div>
+
+            <div className="flex flex-col gap-5 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 md:gap-6 md:px-7 md:pb-6 md:pt-5">
+                {children}
+                {tab === 'register' && (
+                    <p className="text-center font-display text-caption leading-relaxed text-ink-soft">
+                        ¿Eres profesional?{' '}
+                        <button
+                            type="button"
+                            onClick={onExpertAction}
+                            className="font-semibold text-ink-muted underline-offset-2 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                        >
+                            {isExpert ? 'Panel de experto' : 'Hazte experto'}
+                        </button>
+                    </p>
+                )}
+            </div>
         </div>
     );
 };
 
-/** Pie unificado: switch de modo + CTA de experto en una sola línea (patrón Stripe). */
-const AuthFooterLine: React.FC<{
+/** Tabs con subrayado de marca — el modo activo es obvio sin depender del pie. */
+const AuthTabSwitcher: React.FC<{
     tab: 'login' | 'register';
-    isExpert: boolean;
     onSwitch: (next: 'login' | 'register') => void;
-    onExpertAction: () => void;
-}> = ({ tab, isExpert, onSwitch, onExpertAction }) => {
-    const isLogin = tab === 'login';
-    const linkCls =
-        'font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30';
-    return (
-        <div className="pb-1 flex flex-col items-center gap-1.5">
-            <p className="text-center font-display text-meta leading-relaxed text-ink-muted">
-                {isLogin ? (
-                    <>
-                        ¿Aún no tienes cuenta?{' '}
-                        <button type="button" onClick={() => onSwitch('register')} className={linkCls}>
-                            Regístrate
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        ¿Ya tienes cuenta?{' '}
-                        <button type="button" onClick={() => onSwitch('login')} className={linkCls}>
-                            Inicia sesión
-                        </button>
-                    </>
-                )}
+    reduceMotion: boolean;
+    hasCloseOffset?: boolean;
+}> = ({ tab, onSwitch, reduceMotion, hasCloseOffset }) => (
+    <div
+        // Con la X en la esquina, el hueco para no chocar debe ir a AMBOS lados: un padding
+        // simétrico deja la frontera entre las dos pestañas justo en el centro del panel
+        // (si solo se acolcha a la derecha, el par se desplaza a la izquierda). El border-b
+        // vive en este contenedor, así que la línea inferior sigue a ancho completo.
+        className={cn('flex border-b border-line', hasCloseOffset && 'px-10 md:px-12')}
+        role="tablist"
+        aria-label="Modo de acceso"
+    >
+        {(['login', 'register'] as const).map((mode) => {
+            const active = tab === mode;
+            const panelId = mode === 'login' ? 'auth-panel-login' : 'auth-panel-register';
+            return (
+                <button
+                    key={mode}
+                    type="button"
+                    role="tab"
+                    id={`auth-tab-${mode}`}
+                    aria-selected={active}
+                    aria-controls={panelId}
+                    onClick={() => onSwitch(mode)}
+                    className={cn(
+                        'relative min-h-[48px] flex-1 py-3.5 font-display text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2',
+                        active ? 'font-bold text-ink-strong' : 'font-semibold text-ink-muted hover:text-ink',
+                    )}
+                >
+                    {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+                    {active && (
+                        reduceMotion ? (
+                            <span className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full bg-brand" />
+                        ) : (
+                            <motion.span
+                                layoutId="auth-tab-underline"
+                                className="absolute bottom-0 left-4 right-4 h-[3px] rounded-full bg-brand"
+                                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                            />
+                        )
+                    )}
+                </button>
+            );
+        })}
+    </div>
+);
+
+/** Cabecera unificada para sub-pasos (OTP, recuperar contraseña). */
+const AuthSubstepHeader: React.FC<{
+    title: string;
+    description?: string;
+    onBack: () => void;
+}> = ({ title, description, onBack }) => (
+    <div className="mb-5">
+        <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 font-display text-meta font-medium text-ink-muted transition-colors hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-1"
+        >
+            <ArrowLeft className="h-4 w-4" aria-hidden /> Volver
+        </button>
+        <h2 className="mt-3 font-display text-xl font-bold leading-tight tracking-[-0.02em] text-ink-strong text-balance">
+            {title}
+        </h2>
+        {description && (
+            <p className="mt-1 font-display text-sm leading-snug text-ink-muted text-pretty">
+                {description}
             </p>
-            {!isLogin && (
-                <p className="text-center font-display text-caption leading-relaxed text-ink-soft">
-                    ¿Eres profesional?{' '}
-                    <button
-                        type="button"
-                        onClick={onExpertAction}
-                        className="font-semibold text-ink-muted underline-offset-2 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
-                    >
-                        {isExpert ? 'Panel de experto' : 'Hazte experto'}
-                    </button>
-                </p>
-            )}
-        </div>
-    );
-};
+        )}
+    </div>
+);
 
 // 🛡️ Round 28 — Sprint 4: checkbox T&C reutilizable con i18n. Trans permite que los
 // elementos <a> internos sigan siendo enlaces clicables aunque el texto venga de la traducción.
@@ -375,7 +413,7 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
                 type="checkbox"
                 checked={accepted}
                 onChange={(e) => onChange(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand cursor-pointer"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-brand focus:ring-2 focus:ring-brand/30 cursor-pointer"
                 required
                 aria-label={t('auth.register.termsRequired')}
             />
@@ -408,22 +446,10 @@ const TermsCheckbox: React.FC<{ accepted: boolean; onChange: (v: boolean) => voi
 
 // ─── Subcomponentes ──────────────────────────────────────────────────────────────
 
-const Separator: React.FC = () => (
-    <div className="relative flex items-center py-3">
-        <span className="h-px flex-1 bg-line" />
-        <span className="mx-3 shrink-0 font-display text-xs font-medium tracking-[0.01em] text-ink-soft">
-            o usa tu correo
-        </span>
-        <span className="h-px flex-1 bg-line" />
-    </div>
-);
-
 const SocialButtonsRow: React.FC<{ onSuccess: () => void; active: boolean }> = ({ onSuccess, active }) => {
-    // Apple Sign In solo funciona en iOS/macOS nativo. En web/Android se mostraba un botón
-    // gris "Próximamente" que parecía roto → mostramos Google a ancho completo (limpio).
-    // En iOS, los dos botones en una sola fila (2 columnas) con etiquetas cortas.
     const showApple = Capacitor.getPlatform() === 'ios';
 
+    // El botón se explica solo ("Continuar con Google"): no necesita un rótulo encima.
     return (
         <div className={showApple ? 'grid w-full grid-cols-2 gap-2.5' : 'w-full'}>
             <GoogleSignInButton
@@ -431,11 +457,25 @@ const SocialButtonsRow: React.FC<{ onSuccess: () => void; active: boolean }> = (
                 onSuccess={onSuccess}
                 label={showApple ? 'Google' : 'Continuar con Google'}
                 active={active}
+                shellClassName="!h-12"
             />
             {showApple && <AppleSignInButton variant="compact" onSuccess={onSuccess} label="Apple" />}
         </div>
     );
 };
+
+/**
+ * Separador "o" entre acceso social y correo — patrón canónico de auth (Google, Stripe,
+ * Linear). Sustituye a los dos rótulos en mayúsculas apilados, que competían por atención
+ * y leían como andamiaje de formulario.
+ */
+const OrDivider: React.FC = () => (
+    <div className="flex items-center gap-3" role="separator" aria-hidden>
+        <span className="h-px flex-1 bg-line" />
+        <span className="font-display text-caption font-medium leading-none text-ink-soft">o</span>
+        <span className="h-px flex-1 bg-line" />
+    </div>
+);
 
 // ── Login con email + password ──
 const LoginForm: React.FC<{
@@ -444,6 +484,8 @@ const LoginForm: React.FC<{
     onEmailUnverified: (ctx: { verificationToken: string; expiresAt: string; email: string }) => void;
 }> = ({ onSuccess, onGoToForgot, onEmailUnverified }) => {
     const { updateUser } = useAuth();
+    const emailId = React.useId();
+    const passwordId = React.useId();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPwd, setShowPwd] = useState(false);
@@ -508,43 +550,49 @@ const LoginForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-3.5">
-            <FieldGroup label="Correo electrónico">
-                <Input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="nombre@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={INPUT_REBRAND}
-                />
-            </FieldGroup>
-            <FieldGroup label="Contraseña">
-                <Input
-                    type={showPwd ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    required
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-11`}
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
-                    tabIndex={-1}
-                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-            </FieldGroup>
-            <div className="flex justify-end -mt-0.5">
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+            <GroupedFieldsCard>
+                <GroupedFieldRow label="Correo electrónico" htmlFor={emailId} first>
+                    <input
+                        id={emailId}
+                        type="email"
+                        autoComplete="email"
+                        required
+                        placeholder="nombre@correo.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={cn(bareGroupedInputClass, 'text-base')}
+                    />
+                </GroupedFieldRow>
+                <GroupedFieldRow label="Contraseña" htmlFor={passwordId}>
+                    <div className="relative">
+                        <input
+                            id={passwordId}
+                            type={showPwd ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            required
+                            placeholder="Tu contraseña"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={cn(bareGroupedInputClass, 'pr-10 text-base')}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPwd(v => !v)}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-soft transition-colors hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                            aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            aria-pressed={showPwd}
+                        >
+                            {showPwd ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                        </button>
+                    </div>
+                </GroupedFieldRow>
+            </GroupedFieldsCard>
+            <div className="flex justify-end -mt-1">
                 <button
                     type="button"
                     onClick={onGoToForgot}
-                    className="font-display text-meta font-medium text-ink-muted underline-offset-2 transition-colors hover:text-brand hover:underline"
+                    className="font-display text-meta font-medium text-ink-muted underline-offset-2 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
                 >
                     ¿Olvidaste tu contraseña?
                 </button>
@@ -560,6 +608,9 @@ const LoginForm: React.FC<{
 const RegisterForm: React.FC<{
     onCodeSent: (ctx: { verificationToken: string; expiresAt: string; email: string; isLinking?: boolean }) => void;
 }> = ({ onCodeSent }) => {
+    const nameId = React.useId();
+    const emailId = React.useId();
+    const passwordId = React.useId();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -575,9 +626,9 @@ const RegisterForm: React.FC<{
 
     const strengthHint = (() => {
         if (password.length === 0) return null;
-        if (password.length < 8) return { label: 'Muy corta', cls: 'text-red-600' };
-        if (password.length < 12) return { label: 'Aceptable', cls: 'text-amber-600' };
-        return { label: 'Segura', cls: 'text-emerald-600' };
+        if (password.length < 8) return { label: 'Muy corta', cls: 'text-destructive' };
+        if (password.length < 12) return { label: 'Aceptable', cls: 'text-warning' };
+        return { label: 'Segura', cls: 'text-success' };
     })();
 
     const onSubmit = async (e: React.FormEvent) => {
@@ -632,62 +683,66 @@ const RegisterForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-3.5">
-            <FieldGroup label="Nombre completo">
-                <Input
-                    type="text"
-                    autoComplete="name"
-                    required
-                    minLength={2}
-                    maxLength={100}
-                    placeholder="Ana García"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={INPUT_REBRAND}
-                />
-            </FieldGroup>
-            <FieldGroup label="Correo electrónico">
-                <Input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="nombre@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={INPUT_REBRAND}
-                />
-            </FieldGroup>
-            <FieldGroup label="Contraseña">
-                <Input
-                    type={showPwd ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                    maxLength={128}
-                    placeholder="Mínimo 8 caracteres"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-11`}
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
-                    tabIndex={-1}
-                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-            </FieldGroup>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+            <GroupedFieldsCard>
+                <GroupedFieldRow label="Nombre completo" htmlFor={nameId} first>
+                    <input
+                        id={nameId}
+                        type="text"
+                        autoComplete="name"
+                        required
+                        minLength={2}
+                        maxLength={100}
+                        placeholder="Ana García"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className={cn(bareGroupedInputClass, 'text-base')}
+                    />
+                </GroupedFieldRow>
+                <GroupedFieldRow label="Correo electrónico" htmlFor={emailId}>
+                    <input
+                        id={emailId}
+                        type="email"
+                        autoComplete="email"
+                        required
+                        placeholder="nombre@correo.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={cn(bareGroupedInputClass, 'text-base')}
+                    />
+                </GroupedFieldRow>
+                <GroupedFieldRow label="Contraseña" htmlFor={passwordId}>
+                    <div className="relative">
+                        <input
+                            id={passwordId}
+                            type={showPwd ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            required
+                            minLength={8}
+                            maxLength={128}
+                            placeholder="Mínimo 8 caracteres"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className={cn(bareGroupedInputClass, 'pr-10 text-base')}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPwd(v => !v)}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-soft transition-colors hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                            aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            aria-pressed={showPwd}
+                        >
+                            {showPwd ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                        </button>
+                    </div>
+                </GroupedFieldRow>
+            </GroupedFieldsCard>
             {strengthHint && (
-                <p className={`text-kicker -mt-1.5 ${strengthHint.cls}`}>
-                    {strengthHint.label}
+                <p className={cn('text-kicker -mt-1', strengthHint.cls)} aria-live="polite">
+                    Contraseña: {strengthHint.label}
                 </p>
             )}
-            {/* 🛡️ Round 28 S2-P0-14: checkbox obligatorio de aceptación T&C + Privacidad. */}
-            {/* 🛡️ Round 28 — Sprint 4: textos i18n vía Trans para que los <a> sigan funcionando. */}
             <TermsCheckbox accepted={acceptedTerms} onChange={setAcceptedTerms} />
-
             <Button type="submit" disabled={busy || !name || !email || !password || !acceptedTerms} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Crear cuenta'}
             </Button>
@@ -859,6 +914,7 @@ const OtpForm: React.FC<{
 const ForgotPasswordForm: React.FC<{
     onCodeSent: (ctx: { verificationToken: string; expiresAt: string; email: string }) => void;
 }> = ({ onCodeSent }) => {
+    const emailId = React.useId();
     const [email, setEmail] = useState('');
     const [busy, setBusy] = useState(false);
     // Candado síncrono: doble submit = dos códigos de reset distintos (ver RegisterForm).
@@ -895,22 +951,22 @@ const ForgotPasswordForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="flex flex-col">
-            <p className="mb-3 font-display text-sm leading-snug text-ink-muted">
-                Te enviaremos un código para restablecer o añadir tu contraseña.
-            </p>
-            <FieldGroup label="Correo electrónico">
-                <Input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    placeholder="nombre@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={INPUT_REBRAND}
-                />
-            </FieldGroup>
-            <Button type="submit" disabled={busy || !email} className={`${PRIMARY_BTN} mt-6`}>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+            <GroupedFieldsCard>
+                <GroupedFieldRow label="Correo electrónico" htmlFor={emailId} first>
+                    <input
+                        id={emailId}
+                        type="email"
+                        autoComplete="email"
+                        required
+                        placeholder="nombre@correo.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={cn(bareGroupedInputClass, 'text-base')}
+                    />
+                </GroupedFieldRow>
+            </GroupedFieldsCard>
+            <Button type="submit" disabled={busy || !email} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando código…</> : 'Enviar código'}
             </Button>
         </form>
@@ -924,6 +980,7 @@ const ResetPasswordForm: React.FC<{
     onResend: (newCtx: { verificationToken: string; expiresAt: string }) => void;
 }> = ({ ctx, onSuccess, onResend }) => {
     const { updateUser } = useAuth();
+    const newPasswordId = React.useId();
     const [code, setCode] = useState('');
     const [newPwd, setNewPwd] = useState('');
     const [showPwd, setShowPwd] = useState(false);
@@ -1005,10 +1062,7 @@ const ResetPasswordForm: React.FC<{
     };
 
     return (
-        <form onSubmit={onSubmit} className="space-y-4">
-            <p className="text-center font-display text-sm leading-snug text-ink-muted">
-                Introduce el código que enviamos a <strong className="font-semibold text-ink-strong">{ctx.email}</strong> y tu nueva contraseña.
-            </p>
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
             <div className="flex justify-center">
                 <InputOTP maxLength={6} value={code} onChange={(v) => setCode(v.replace(/\D/g, ''))} autoFocus>
                     <InputOTPGroup className="gap-2">
@@ -1022,28 +1076,33 @@ const ResetPasswordForm: React.FC<{
                     </InputOTPGroup>
                 </InputOTP>
             </div>
-            <FieldGroup label="Nueva contraseña">
-                <Input
-                    type={showPwd ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                    maxLength={128}
-                    placeholder="Mínimo 8 caracteres"
-                    value={newPwd}
-                    onChange={(e) => setNewPwd(e.target.value)}
-                    className={`${INPUT_REBRAND} pr-11`}
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPwd(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-muted"
-                    tabIndex={-1}
-                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-            </FieldGroup>
+            <GroupedFieldsCard>
+                <GroupedFieldRow label="Nueva contraseña" htmlFor={newPasswordId} first>
+                    <div className="relative">
+                        <input
+                            id={newPasswordId}
+                            type={showPwd ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            required
+                            minLength={8}
+                            maxLength={128}
+                            placeholder="Mínimo 8 caracteres"
+                            value={newPwd}
+                            onChange={(e) => setNewPwd(e.target.value)}
+                            className={cn(bareGroupedInputClass, 'pr-10 text-base')}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPwd(v => !v)}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-soft transition-colors hover:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+                            aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            aria-pressed={showPwd}
+                        >
+                            {showPwd ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+                        </button>
+                    </div>
+                </GroupedFieldRow>
+            </GroupedFieldsCard>
             <Button type="submit" disabled={busy || code.length !== 6 || newPwd.length < 8} className={PRIMARY_BTN}>
                 {busy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Restableciendo…</> : 'Restablecer contraseña'}
             </Button>
@@ -1062,26 +1121,9 @@ const ResetPasswordForm: React.FC<{
     );
 };
 
-// Helper: label pequeña encima del input (antes era un icono dentro del campo — sin
-// función real, solo relleno visual). La label dice qué es el campo; ya no hace falta
-// repetirlo en el placeholder, que ahora muestra un ejemplo de formato.
-const FieldGroup: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-    <div>
-        <label className="mb-1.5 block font-display text-caption font-medium text-ink-muted">{label}</label>
-        <div className="relative">{children}</div>
-    </div>
-);
-
-/** Clases compartidas para todos los Input del modal. Esquina 10px — comparte familia
- *  con los botones sociales, deja la pastilla (rounded-full) exclusiva del CTA. */
-const INPUT_REBRAND =
-    'h-11 rounded-[10px] border-line bg-white px-4 font-display text-base md:text-body text-ink-strong placeholder:text-ink-soft transition-all focus:border-brand focus:ring-2 focus:ring-brand/20';
-
-/** Botón primario: única forma en pastilla de la tarjeta — por eso ahora se distingue
- *  como "la acción". Plano en reposo, elevación solo al hover (antes tenía un halo
- *  azul difuminado siempre activo). */
+/** Botón primario: pastilla de firma — la única forma redondeada plena del panel. */
 const PRIMARY_BTN =
-    'mt-3 h-11 w-full rounded-full bg-brand font-display text-body font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-all hover:bg-brand-hover hover:shadow-[0_4px_12px_hsl(var(--brand)/0.25)] disabled:opacity-50 disabled:shadow-none';
+    'h-12 w-full rounded-full bg-brand font-display text-body font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] transition-all hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 disabled:shadow-none';
 
 /** Clases compartidas para los slots OTP. */
 const OTP_SLOT =

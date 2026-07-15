@@ -175,7 +175,7 @@ export default function SellerBookingPage() {
     const slotConstraints = useMemo(() => {
         // W6 FIX: fallback cuando /window falló (blip de red). ctx.maxDays es "+N días desde el
         // PAGO", no "días desde hoy": usarlo aquí desalineaba el calendario (podía perder el día
-        // +14 real). Cubrimos [hoy .. hoy+17): contiene la ventana real [pago+3 .. pago+14] se
+        // +14 real). Cubrimos [hoy .. hoy+15): contiene la ventana real [pago+1 .. pago+14] se
         // abra cuando se abra el enlace (≤48h tras el pago); los días fuera de ventana salen
         // vacíos por la defensa server-side de /slots, así que solo son ruido "sin huecos".
         if (!windowInfo) return { minLeadDays: 0, windowDays: SELLER_BOOKING_MAX_DAYS + SELLER_BOOKING_MIN_LEAD_DAYS };

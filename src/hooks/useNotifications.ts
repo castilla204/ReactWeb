@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useApi } from './useApi';
@@ -259,6 +259,50 @@ export function useUnreadNotificationCount(options?: { enabled?: boolean }) {
         refetchIntervalInBackground: false,
         refetchOnWindowFocus: 'always',
         retry: false,
+    });
+}
+
+/** Marca una notificación como leída al interactuar con ella (abrir/expandir). Optimista: no espera
+ *  al refetch para reflejar el cambio, así el usuario ve el efecto al instante. */
+export function useMarkNotificationRead() {
+    const { fetchApi } = useApi();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => fetchApi(API_CONFIG.endpoints.notifications.markAsRead(id), { method: 'PUT' }),
+        onMutate: async (id: string) => {
+            queryClient.setQueryData<{ pages: NotificationsResponse[] }>(USER_NOTIFICATIONS_LIST_KEY, (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page) => ({
+                        ...page,
+                        notifications: page.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+                    })),
+                };
+            });
+            queryClient.setQueryData<number>(NOTIFICATIONS_UNREAD_COUNT_KEY, (old) =>
+                typeof old === 'number' && old > 0 ? old - 1 : old,
+            );
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_KEY });
+        },
+    });
+}
+
+/** Marca todo como leído — pensado para dispararse al CERRAR el panel (red de seguridad para lo que
+ *  se vio pero no se pulsó), nunca al abrirlo: abrir no debería borrar la señal de "sin leer". */
+export function useMarkAllNotificationsRead() {
+    const { fetchApi } = useApi();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: () => fetchApi(API_CONFIG.endpoints.notifications.markAllAsRead, { method: 'PUT' }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: USER_NOTIFICATIONS_LIST_KEY });
+            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_KEY });
+        },
     });
 }
 

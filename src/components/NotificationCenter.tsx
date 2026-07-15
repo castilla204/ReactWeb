@@ -1,24 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { SileoLoader } from './ui/sileo-loader';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi';
 import {
     useNotificationList,
     useUnreadNotificationCount,
-    USER_NOTIFICATIONS_LIST_KEY,
-    NOTIFICATIONS_UNREAD_COUNT_KEY,
-    type Notification,
+    useMarkNotificationRead,
+    useMarkAllNotificationsRead,
 } from '../hooks/useNotifications';
-import { API_CONFIG } from '../config/api';
 import { ErrorDisplay } from './ErrorDisplay';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
-import {
-    getNotificationDisplay,
-    getNotificationTone,
-    getNotificationToneClass,
-} from '../utils/notificationTypeMeta';
+import { NotificationRow } from './notifications/NotificationRow';
+import { NotificationSkeletonRows, NotificationEmptyState } from './notifications/NotificationStates';
 import '../styles/notification-center.css';
 
 export interface NotificationCenterProps {
@@ -26,124 +18,38 @@ export interface NotificationCenterProps {
     onClose: () => void;
 }
 
-function NotificationItem({
-    notification,
-    onClose,
-}: {
-    notification: Notification;
-    onClose: () => void;
-}) {
-    const [expanded, setExpanded] = useState(false);
-    const isUnread = !notification.read;
-    const tone = getNotificationTone(notification.type, notification.title);
-    const toneClass = getNotificationToneClass(tone);
-    const { headline, body } = getNotificationDisplay(
-        notification.title || 'Notificación',
-        notification.message,
-    );
-    const isLongHeadline = headline.length > 160;
-    const isLongBody = body != null && body.length > 160;
-
-    return (
-        <li
-            className={`nc-item ${toneClass}${body ? '' : ' nc-item--headline-only'}${isUnread ? ' nc-item--unread' : ' nc-item--read'}${expanded ? ' nc-item--expanded' : ''}`}
-        >
-            <div className="nc-item-head">
-                <h3 className="nc-item-title">{headline}</h3>
-                {notification.createdAt && (
-                    <time className="nc-item-date" dateTime={notification.createdAt}>
-                        {formatNotificationDate(notification.createdAt)}
-                    </time>
-                )}
-            </div>
-
-            {body && <p className="nc-item-message">{body}</p>}
-
-            {(isLongHeadline || isLongBody) && !expanded && (
-                <button
-                    type="button"
-                    className="nc-item-expand"
-                    onClick={() => setExpanded(true)}
-                >
-                    Ver más
-                </button>
-            )}
-
-            {notification.imageUrl && (
-                <div className="nc-item-image">
-                    <img src={notification.imageUrl} alt="" loading="lazy" />
-                </div>
-            )}
-
-            {notification.url && (
-                <a
-                    href={notification.url}
-                    target={notification.url.startsWith('/') ? '_self' : '_blank'}
-                    rel={notification.url.startsWith('/') ? undefined : 'noopener noreferrer'}
-                    className="nc-item-link"
-                    onClick={notification.url.startsWith('/') ? onClose : undefined}
-                >
-                    Ver detalles
-                </a>
-            )}
-        </li>
-    );
-}
-
-function formatNotificationDate(createdAt: string) {
-    const date = new Date(createdAt);
-    if (Number.isNaN(date.getTime())) return '';
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    }
-    if (diffDays < 7) {
-        return date.toLocaleDateString('es-ES', { weekday: 'short' });
-    }
-    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-}
-
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
-    const { fetchApi } = useApi();
-    const queryClient = useQueryClient();
-    const markedAllOnOpenRef = useRef(false);
-
     const { data: unreadCount = 0 } = useUnreadNotificationCount();
     const {
         notifications,
         isLoading,
         error,
+        refetchNotifications,
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
     } = useNotificationList({ enabled: isOpen });
 
-    const scrollSentinelRef = useRef<HTMLDivElement>(null);
-
-    const markAllAsReadMutation = useMutation({
-        mutationFn: () =>
-            fetchApi(API_CONFIG.endpoints.notifications.markAllAsRead, {
-                method: 'PUT',
-            }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: USER_NOTIFICATIONS_LIST_KEY });
-            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_UNREAD_COUNT_KEY });
-        },
-    });
+    const scrollSentinelRef = useRef<HTMLLIElement>(null);
+    const drawerRef = useRef<HTMLElement>(null);
+    const markReadMutation = useMarkNotificationRead();
+    const markAllAsReadMutation = useMarkAllNotificationsRead();
+    const hadUnreadRef = useRef(false);
 
     useEffect(() => {
-        if (!isOpen) {
-            markedAllOnOpenRef.current = false;
-            return;
-        }
-        if (unreadCount > 0 && !markedAllOnOpenRef.current && !markAllAsReadMutation.isPending) {
-            markedAllOnOpenRef.current = true;
+        if (unreadCount > 0) hadUnreadRef.current = true;
+    }, [unreadCount]);
+
+    // Marcar todo como leído SOLO al cerrar el panel (red de seguridad para lo que se vio pero no
+    // se pulsó) — nunca al abrirlo, para no borrar la señal de "sin leer" antes de que el usuario
+    // llegue a leer nada.
+    const handleClose = () => {
+        if (hadUnreadRef.current && !markAllAsReadMutation.isPending) {
             markAllAsReadMutation.mutate();
+            hadUnreadRef.current = false;
         }
-    }, [isOpen, unreadCount, markAllAsReadMutation.isPending]);
+        onClose();
+    };
 
     useEffect(() => {
         if (!isOpen) return;
@@ -166,11 +72,12 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
     useEffect(() => {
         if (!isOpen) return;
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') handleClose();
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isOpen, onClose]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -181,6 +88,12 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         };
     }, [isOpen]);
 
+    // Mover el foco al diálogo al abrir — antes un usuario de teclado seguía tabulando por el
+    // contenido detrás del overlay porque el foco nunca entraba en el panel.
+    useEffect(() => {
+        if (isOpen) drawerRef.current?.focus();
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
@@ -188,11 +101,18 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             <button
                 type="button"
                 className="nc-overlay-backdrop"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Cerrar notificaciones"
             />
 
-            <aside className="nc-drawer" role="dialog" aria-modal="true" aria-labelledby="nc-drawer-title">
+            <aside
+                ref={drawerRef}
+                className="nc-drawer"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="nc-drawer-title"
+                tabIndex={-1}
+            >
                 <header className="nc-header">
                     <div className="nc-header-text">
                         <h2 id="nc-drawer-title" className="nc-header-title">
@@ -212,8 +132,8 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={onClose}
-                        className="nc-close-btn h-8 w-8"
+                        onClick={handleClose}
+                        className="nc-close-btn h-11 w-11"
                         aria-label="Cerrar"
                     >
                         <X className="w-4 h-4" />
@@ -223,9 +143,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 <ScrollArea className="nc-body">
                     <div className="nc-body-inner">
                         {isLoading && notifications.length === 0 ? (
-                            <div className="nc-state">
-                                <SileoLoader size="md" message="Cargando avisos…" color="muted" />
-                            </div>
+                            <NotificationSkeletonRows />
                         ) : error ? (
                             <div className="nc-error-wrap">
                                 <ErrorDisplay
@@ -234,32 +152,27 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                             ? error.message
                                             : 'Error al cargar notificaciones'
                                     }
+                                    onRetry={() => refetchNotifications()}
                                     fullScreen={false}
                                     noBackground={true}
                                     compact={true}
                                 />
                             </div>
                         ) : notifications.length === 0 ? (
-                            <div className="nc-state">
-                                <p className="nc-state-title">Todo al día</p>
-                                <p className="nc-state-text">
-                                    No tienes notificaciones pendientes en este momento.
-                                </p>
-                            </div>
+                            <NotificationEmptyState />
                         ) : (
                             <ul className="nc-list">
                                 {notifications.map((notification) => (
-                                    <NotificationItem
+                                    <NotificationRow
                                         key={notification.id || `${notification.title}-${notification.createdAt}`}
                                         notification={notification}
-                                        onClose={onClose}
+                                        onInteract={(id) => markReadMutation.mutate(id)}
+                                        onNavigateInternal={handleClose}
                                     />
                                 ))}
 
                                 <li ref={scrollSentinelRef} className="nc-load-more" aria-hidden>
-                                    {isFetchingNextPage && (
-                                        <SileoLoader size="sm" color="muted" />
-                                    )}
+                                    {isFetchingNextPage && <NotificationSkeletonRows count={1} />}
                                 </li>
                             </ul>
                         )}
