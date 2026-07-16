@@ -14,6 +14,7 @@ import {
   HP_MOBILE_TABS_SCROLLER_CLASS,
 } from '../constants/homepageMobileRhythm';
 import { HP_FONT } from '../constants/homepageTypography';
+import { dispatchHomepageOpenSearch } from '../utils/homepageCategoryPick';
 import {
   LAYERED_CARD_BACK_INSET_X,
   LAYERED_CARD_BACK_PEEK_PX,
@@ -70,6 +71,8 @@ export const HomepageMobileHero: React.FC = () => (
     <div style={{ fontFamily: HP_FONT }}>
       <LayeredHookCard
         peekReserveClass={HP_MOBILE_HERO_PEEK_RESERVE_CLASS}
+        onClick={dispatchHomepageOpenSearch}
+        ariaLabel={`Elige qué quieres revisar. ${MOBILE_HERO_CARD_SR_DETAIL}`}
         title={
           <>
             {MOBILE_HERO_CARD_TITLE}

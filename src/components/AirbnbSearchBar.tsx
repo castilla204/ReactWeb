@@ -90,6 +90,7 @@ import { ResponsiveModal } from './ui/responsive-modal';
 import { Separator } from './ui/separator';
 import { SileoSkeleton } from './ui/sileo-skeleton';
 import {
+  HOMEPAGE_OPEN_SEARCH,
   HOMEPAGE_PICK_CATEGORY,
   type HomepagePickCategoryDetail,
 } from '../utils/homepageCategoryPick';
@@ -467,7 +468,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
   const openMobileSearch = useCallback(() => {
     setIsMobileSearchOpen(true);
   }, []);
-  
+
+  // Permite abrir el picker "Elige qué quieres revisar" desde fuera (p.ej. la
+  // tarjeta hero de HomepageMobileHero, que no es hija de AirbnbSearchBar).
+  useEffect(() => {
+    window.addEventListener(HOMEPAGE_OPEN_SEARCH, openMobileSearch);
+    return () => window.removeEventListener(HOMEPAGE_OPEN_SEARCH, openMobileSearch);
+  }, [openMobileSearch]);
+
   const userEmail = (user as any)?.Email || user?.email;
   const userRole = (user as any)?.Role || user?.role;
   const isAdminByEmail = userEmail ? isAdmin(userEmail) : false;
