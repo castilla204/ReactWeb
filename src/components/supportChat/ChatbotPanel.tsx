@@ -338,11 +338,11 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                       )}
                       {failed && (
                         <div role="alert" className="rounded-lg bg-destructive/5 px-3 py-2.5">
-                          <p className="text-meta leading-snug text-destructive">{error}</p>
+                          <p className="text-meta leading-snug text-destructive-text">{error}</p>
                           <button
                             type="button"
                             onClick={retry}
-                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-destructive-text transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
                           >
                             <RotateCcw className="h-3 w-3" strokeWidth={2.25} aria-hidden />
                             Reintentar
@@ -376,7 +376,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
         className="shrink-0 border-t border-line bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5"
       >
         <div className={READING_WIDTH}>
-          <div className="flex items-end gap-2 rounded-2xl border border-line bg-white py-1.5 pl-3.5 pr-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand focus-within:shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]">
+          {/* Relleno tintado (no blanco+borde marcado) para que la píldora no lea como
+              una caja aparte flotando sobre el fondo blanco — mismo lenguaje que el
+              composer de PreHireChat. */}
+          <div className="flex items-end gap-2 rounded-2xl border border-line bg-surface-tinted py-1.5 pl-3.5 pr-1.5 transition-colors duration-150 focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
             <textarea
               ref={inputRef}
               rows={1}
@@ -408,16 +411,20 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
               <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
             </button>
           </div>
-          <p
-            id="support-chat-input-hint"
-            className={cn(
-              'mt-1 text-right text-caption tabular-nums transition-colors',
-              isOverLimit ? 'text-destructive' : isNearLimit ? 'text-warning' : 'text-ink-soft',
-            )}
-            aria-live="polite"
-          >
-            {draftLen}/{MAX_MESSAGE_LENGTH}
-          </p>
+          {/* Contador solo cuando importa (cerca/fuera de límite) — en reposo no añade
+              una línea de ruido permanente bajo la píldora. */}
+          {(isNearLimit || isOverLimit) && (
+            <p
+              id="support-chat-input-hint"
+              className={cn(
+                'mt-1 text-right text-caption tabular-nums transition-colors',
+                isOverLimit ? 'text-destructive-text' : 'text-warning-text',
+              )}
+              aria-live="polite"
+            >
+              {draftLen}/{MAX_MESSAGE_LENGTH}
+            </p>
+          )}
           <Link
             to="/faq"
             onClick={onClose}

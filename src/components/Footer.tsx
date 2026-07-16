@@ -4,22 +4,23 @@ import erizoImg from '../media/erizo.png';
 import { useAuth } from '../contexts/AuthContext';
 import { CATEGORY_LANDINGS } from '../content/categoryLandingContent';
 
-const FONT =
-  '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif';
-
 const linkClass =
   'text-meta text-ink-muted hover:text-ink transition-colors whitespace-nowrap';
 
 const Sep = () => <span className="text-ink-soft select-none" aria-hidden>·</span>;
 
-export const Footer = () => {
+interface FooterProps {
+  /** Renderiza también en móvil (por defecto solo ≥md, comportamiento histórico). */
+  mobile?: boolean;
+}
+
+export const Footer: React.FC<FooterProps> = ({ mobile = false }) => {
   const { user } = useAuth();
   const isExpert = ((user as any)?.Role || (user as any)?.role) === 'Expert';
 
   return (
     <footer
-      className="hidden md:block border-t border-line/80 bg-surface-tinted"
-      style={{ fontFamily: FONT }}
+      className={`${mobile ? 'block' : 'hidden md:block'} border-t border-line/80 bg-surface-tinted font-display`}
     >
       {/* Enlazado interno a las landings de categoría (SEO): fila discreta propia. */}
       <div className="max-w-[1280px] mx-auto px-6 lg:px-10 pt-3.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
@@ -62,21 +63,23 @@ export const Footer = () => {
 
         <Sep />
 
-        <a href="/legal/terms" className={linkClass}>
+        <Link to="/legal/terms" className={linkClass}>
           Términos
-        </a>
+        </Link>
 
         <Sep />
 
-        <a href="/legal/privacy" className={linkClass}>
+        <Link to="/legal/privacy" className={linkClass}>
           Privacidad
-        </a>
+        </Link>
 
         <Sep />
 
-        <a href="/cookies" className={linkClass}>
+        {/* La política de cookies vive dentro de la de privacidad (mismo destino
+            que el "Más información" del CookieBanner). /cookies no está enrutado. */}
+        <Link to="/legal/privacy" className={linkClass}>
           Cookies
-        </a>
+        </Link>
 
         <Sep />
 

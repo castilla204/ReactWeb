@@ -22,7 +22,27 @@ export const HP_MOBILE_HERO_PEEK_RESERVE_CLASS = 'h-2.5 shrink-0';
 /** Tabs categoría */
 export const HP_MOBILE_TABS_NAV_CLASS = 'bg-white md:hidden px-4 pb-1.5 pt-1.5';
 export const HP_MOBILE_TABS_SCROLLER_CLASS =
-  'flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-5';
+  'flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-4';
+
+/** Botón de cada pestaña — hit area 44px, sin fondo propio (lo aporta el chip interior). */
+export const HP_MOBILE_CATEGORY_TAB_BTN_CLASS =
+  'inline-flex min-h-11 shrink-0 snap-start items-center border-0 bg-transparent px-0 py-2 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
+
+/** Base tipográfica compartida por los 3 estados (activo/inactivo primario/drawer). */
+export const HP_MOBILE_CATEGORY_TAB_LABEL_BASE_CLASS =
+  'inline-flex items-center whitespace-nowrap text-sm leading-snug min-[390px]:text-body transition-[background-color,box-shadow,color] duration-200';
+
+/** Categoría primaria inactiva — texto plano, mismo padding que el chip activo para no saltar de tamaño al cambiar. */
+export const HP_MOBILE_CATEGORY_TAB_INACTIVE_PRIMARY_CLASS =
+  'px-3.5 py-1.5 font-normal text-ink-muted';
+
+/** Categoría drawer (Cámaras/Fontanería) inactiva — más discreta, separada por el divisor. */
+export const HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS =
+  'px-0.5 py-1 font-normal text-ink-muted';
+
+/** Chip brand — solo la categoría activa lo lleva (variante B-lite). */
+export const HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS =
+  'rounded-full bg-brand/[0.08] px-3.5 py-1.5 font-semibold text-brand ring-1 ring-brand/15';
 
 /** Contenedor del muro (Suspense + live) */
 export const HP_MOBILE_WALL_OUTER_CLASS =

@@ -7,7 +7,7 @@ import { useHomepageWallQuery } from '../hooks/useHomepageWall';
 import { SearchServiceDetailDto, SearchServiceHomepageDto, HomepageSection } from '../types/homepageWall';
 import { mapHomepageServiceToDetail } from '../utils/mapHomepageService';
 import { dispatchHomepagePickCategory } from '../utils/homepageCategoryPick';
-import { Star, ChevronLeft, ChevronRight, X, AlertCircle, RefreshCw, Heart } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, X, AlertCircle, RefreshCw, Heart } from 'lucide-react';
 import { readWorkRadiusKm, formatWorkRadius } from '../utils/workRadius';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -331,18 +331,20 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
                         className={HP_CARD_TOP_BADGE_CLASS}
                         aria-label="Mejor valorado"
                       >
-                        <Star
-                          className="h-3 w-3 shrink-0 fill-brand text-brand"
+                        {/* Award, no Star: la nota exacta ya se lee como «★ 4,8» en la
+                            línea de precio; este pill certifica, no repite el número. */}
+                        <Award
+                          className="h-3.5 w-3.5 shrink-0 text-brand"
                           aria-hidden
                         />
                         <span
-                          className="hidden min-w-0 truncate text-badge leading-3 text-brand-deep md:inline"
+                          className="hidden min-w-0 truncate text-badge leading-3 md:inline"
                           style={hpType.badge}
                         >
                           Mejor valorado
                         </span>
                         <span
-                          className="inline shrink-0 whitespace-nowrap text-badge leading-3 text-brand-deep md:hidden"
+                          className="inline shrink-0 whitespace-nowrap text-badge leading-3 md:hidden"
                           style={hpType.badge}
                         >
                           Top

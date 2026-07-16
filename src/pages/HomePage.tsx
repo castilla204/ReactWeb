@@ -7,6 +7,7 @@ import { HomeServicesLoading } from '../components/homepage/HomePageWallSkeleton
 import { HomeSearchBarLoading } from '../components/homepage/HomeSearchBarLoading';
 import { HomeBottomBarLoading } from '../components/homepage/HomeBottomBarLoading';
 import { SEO } from '../components/SEO';
+import { Footer } from '../components/Footer';
 import { FAQ_ITEMS } from '../content/faqContent';
 import { faqPageSchema } from '../utils/jsonLd';
 
@@ -114,11 +115,14 @@ const HomePage: React.FC = () => {
           </Suspense>
         }
         desktopFooter={
-          <div className="hidden md:block">
-            <Suspense fallback={null}>
-              <DesktopLanding />
-            </Suspense>
-          </div>
+          <>
+            <div className="hidden md:block">
+              <Suspense fallback={null}>
+                <DesktopLanding />
+              </Suspense>
+            </div>
+            <Footer mobile />
+          </>
         }
         bottomBar={
           <Suspense fallback={<HomeBottomBarLoading />}>

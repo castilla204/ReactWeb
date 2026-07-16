@@ -1,12 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { createPortal } from 'react-dom';
 import {
   Search,
-  ChevronDown,
   ChevronRight,
   FolderTree,
-  ChevronUp,
   Heart,
   User,
   Car,
@@ -26,6 +23,7 @@ import { isAdmin } from '../utils/admin';
 import { CurrencySelector } from './CurrencySelector';
 import { HomepageDesktopTopBar } from './HomepageDesktopTopBar';
 import { MobileSearchPill } from './homepage/MobileSearchPill';
+import { CategoryPickerRow } from './homepage/CategoryPickerRow';
 import casapngImg from '../media/casapng.png';
 import cochepngImg from '../media/cochepng.png';
 import motorcycleImg from '../media/motorcycle.png';
@@ -40,7 +38,7 @@ import calderaImg from '../media/caldera.png';
 import revisionCocheImg from '../media/revisioncoche.jpg';
 import revisionMotoImg from '../media/revisionmoto.jpg';
 import revisionCasaImg from '../media/revisioncasa.jpg';
-import { getCategoryMeta, type CategoryOfficeMeta } from '../data/categoryMeta';
+import { getCategoryMeta } from '../data/categoryMeta';
 
 // Mapa de imágenes importadas
 const imageMap: Record<string, string> = {
@@ -102,11 +100,6 @@ const LoginModalLazy = lazy(() =>
 );
 import {
   HP_FONT,
-  HP_COLOR,
-  hpType,
-  hpCardText,
-  hpTitleUnderlineBarStyle,
-  hpIconButtonClass,
 } from '../constants/homepageTypography';
 import {
   DESKTOP_HERO_MAP_POSTER,
@@ -114,9 +107,6 @@ import {
 } from '../constants/homepageHeroMap';
 import {
   HP_MOBILE_HEADER_INSET_CLASS,
-  HP_MOBILE_SEARCH_MODAL_BODY_CLASS,
-  HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS,
-  HP_MOBILE_SEARCH_MODAL_HEADER_CLASS,
 } from '../constants/homepageMobileRhythm';
 import {
   MOBILE_SEARCH_MODAL_SUBTITLE,
@@ -189,260 +179,6 @@ const getCategoryImage = (categoryName: string): string | null => {
   return null;
 };
 
-interface CategoryPickerRowProps {
-  name: string;
-  isSelected: boolean;
-  onClick: () => void;
-  /** 'list' = sidebar desktop. 'tile' = legacy grid (mantenido por compat con
-   *  callsites desktop). 'office-row' = NUEVO mobile picker con foto real del
-   *  oficio + ficha técnica (precio, expertos, descripción). */
-  variant?: 'list' | 'tile' | 'office-row';
-  /** Marca la categoría como "próximamente": render disabled, badge "Pronto",
-   *  sin onClick. Para anunciar verticales que aún no están en el backend. */
-  comingSoon?: boolean;
-  /** Metadata del oficio. Solo usada por variant='office-row'. */
-  meta?: CategoryOfficeMeta | null;
-}
-
-const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
-  name,
-  isSelected,
-  onClick,
-  variant = 'list',
-  comingSoon = false,
-  meta = null,
-}) => {
-  const Icon = getCategoryLucideIcon(name);
-  const imgSrc = getCategoryImage(name);
-
-  // VARIANT OFFICE-ROW · lista vertical con foto real + ficha técnica del oficio.
-  // Mismo lenguaje "carpeta del despacho" que SearchInspectionListItem en
-  // /busquedas. Altura uniforme garantizada por thumb 80px fijo + line-clamp-1
-  // en todos los textos.
-  if (variant === 'office-row') {
-    const photo = getCategoryPhoto(name);
-    const thumbSrc = photo || imgSrc;
-    const isPhotoReal = Boolean(photo);
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={isSelected}
-        aria-label={
-          `${name}${meta ? `: ${meta.delivery}, desde ${meta.priceFromEur} euros, ${meta.expertCount} expertos disponibles, informe en ${meta.reportHours} horas` : ''}${isSelected ? ' (seleccionado)' : ''}`
-        }
-        className={[
-          'group relative flex w-full items-stretch gap-3 overflow-hidden rounded-[14px] border bg-white p-2.5 text-left',
-          'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          'active:scale-[0.995]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
-          isSelected
-            ? 'border-brand bg-brand/[0.04] shadow-[0_4px_18px_hsl(var(--brand)/0.14),0_2px_8px_rgba(0,0,0,0.06)]'
-            : 'border-line hover:border-line hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
-        ].join(' ')}
-        style={{ fontFamily: HP_FONT }}
-      >
-        {/* THUMB del oficio · foto real si existe, ilustración si no. */}
-        <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-[10px] bg-surface-tinted">
-          {thumbSrc ? (
-            <img
-              src={thumbSrc}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              className={`h-full w-full select-none ${isPhotoReal ? 'object-cover' : 'object-contain p-2'}`}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-ink-muted">
-              <Icon className="h-7 w-7" strokeWidth={1.75} />
-            </div>
-          )}
-        </div>
-
-        {/* FICHA: nombre + entrega + meta-line (precio · expertos) */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
-          <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
-            {name}
-          </h3>
-          {meta ? (
-            <>
-              <p className="mt-0.5 line-clamp-1 text-caption leading-snug text-ink-muted">
-                {meta.delivery}
-              </p>
-              <div className="mt-1.5 flex items-center gap-1.5 text-caption leading-none">
-                <span className="font-semibold text-ink-strong">
-                  desde {meta.priceFromEur}€
-                </span>
-                <span className="text-line" aria-hidden>·</span>
-                <span className="text-ink-muted">
-                  {meta.expertCount} expertos
-                </span>
-              </div>
-            </>
-          ) : (
-            <p className="mt-0.5 line-clamp-1 text-caption leading-snug text-ink-muted">
-              Toca para empezar
-            </p>
-          )}
-        </div>
-
-        {/* Indicador a la derecha · chevron sutil (sin tick en la activa). */}
-        <div className="flex shrink-0 items-center pr-0.5">
-          <ChevronRight
-            className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand' : 'text-line group-hover:text-brand'}`}
-            strokeWidth={2}
-            aria-hidden
-          />
-        </div>
-      </button>
-    );
-  }
-
-  if (variant === 'tile') {
-    // Versión "próximamente": disabled, badge "Pronto", sin hover ni click.
-    if (comingSoon) {
-      return (
-        <div
-          role="button"
-          aria-disabled
-          aria-label={`${name} (próximamente)`}
-          tabIndex={-1}
-          className="relative flex aspect-square cursor-not-allowed flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-line bg-surface-tinted p-3 text-center"
-        >
-          <div className="flex h-[64px] w-[64px] items-center justify-center opacity-55">
-            {imgSrc ? (
-              <img
-                src={imgSrc}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-                className="h-full w-full select-none object-contain grayscale"
-              />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-line-soft text-ink-soft">
-                <Icon className="h-6 w-6" strokeWidth={2} />
-              </div>
-            )}
-          </div>
-          {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
-              grid no se descuadre cuando algún label parta. line-clamp-2 corta
-              con "..." en el (improbable) caso de un nombre aún más largo. */}
-          <span className="line-clamp-2 min-h-[2.2em] text-meta font-semibold leading-tight tracking-[-0.01em] text-ink-muted">
-            {name}
-          </span>
-          <span
-            aria-hidden
-            className="absolute right-2 top-2 inline-flex h-[18px] items-center rounded-full bg-ink-strong px-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.06em] text-white"
-          >
-            Pronto
-          </span>
-        </div>
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={isSelected}
-        aria-label={`${name}${isSelected ? ' (seleccionado)' : ''}`}
-        className={[
-          'group relative flex aspect-square flex-col items-center justify-center gap-2.5 rounded-2xl border-2 bg-white p-3 text-center',
-          'transition-[border-color,background-color,box-shadow,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          'active:scale-[0.97]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
-          isSelected
-            ? 'border-brand bg-brand/[0.04] shadow-[0_6px_20px_-6px_hsl(var(--brand)/0.28)]'
-            : 'border-line hover:border-ink-soft hover:shadow-[0_4px_14px_-6px_rgba(15,23,42,0.10)]',
-        ].join(' ')}
-      >
-        {/* PNG real de la app si existe; icon lucide solo como fallback */}
-        <div
-          className={[
-            'flex h-[64px] w-[64px] items-center justify-center transition-transform duration-200',
-            isSelected ? 'scale-105' : 'group-hover:scale-105 motion-reduce:group-hover:scale-100',
-          ].join(' ')}
-        >
-          {imgSrc ? (
-            <img
-              src={imgSrc}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              className="h-full w-full select-none object-contain"
-            />
-          ) : (
-            <div
-              className={`flex h-14 w-14 items-center justify-center rounded-full ${
-                isSelected ? 'bg-brand text-white' : 'bg-surface-tinted text-ink-muted'
-              }`}
-            >
-              <Icon className="h-6 w-6" strokeWidth={2} />
-            </div>
-          )}
-        </div>
-
-        {/* min-h reserva el alto de 2 líneas en TODAS las cards para que la
-            grid no se descuadre cuando algún label del backend parta. */}
-        <span className="line-clamp-2 min-h-[2.2em] text-body font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
-          {name}
-        </span>
-
-        {/* Check indicator estilo Airbnb en esquina superior derecha */}
-        {isSelected && (
-          <span
-            aria-hidden
-            className="absolute right-2.5 top-2.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand shadow-[0_2px_6px_hsl(var(--brand)/0.45)]"
-          >
-            <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
-          </span>
-        )}
-      </button>
-    );
-  }
-
-  // variant === 'list' — versión para sidebar/desktop con PNG también si lo hay
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={isSelected}
-      className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${
-        isSelected
-          ? 'border-brand/30 bg-brand/[0.06]'
-          : 'border-transparent hover:bg-line-soft/80 active:bg-line-soft'
-      }`}
-    >
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden ${
-          imgSrc ? 'bg-white' : isSelected ? 'bg-brand/10' : 'bg-line-soft'
-        }`}
-      >
-        {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            draggable={false}
-            className="h-9 w-9 select-none object-contain"
-          />
-        ) : (
-          <Icon
-            className={`h-[18px] w-[18px] ${isSelected ? 'text-brand' : 'text-ink-muted'}`}
-            strokeWidth={2}
-          />
-        )}
-      </div>
-      <span className="min-w-0 flex-1 truncate text-lead font-medium leading-tight text-ink-strong">
-        {name}
-      </span>
-    </button>
-  );
-};
 
 interface AirbnbSearchBarProps {
   onSearch?: (searchData: {
@@ -924,656 +660,80 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         </div>
       </header>
 
-      {/* Modal Mobile */}
-      {isMobileSearchOpen && typeof document !== 'undefined' && createPortal(
-        <>
-          <div 
-            className="md:hidden fixed inset-0 z-50 flex flex-col"
-            style={{
-              background: 'hsl(var(--surface))',
-              boxShadow: isMobile ? undefined : '0 4px 24px rgba(15, 23, 42, 0.08)',
-            }}
-          >
-            {!isMobile && (
-            <div className="absolute top-4 left-4 right-4 z-[60] flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/');
-                  setIsMobileSearchOpen(false);
-                }}
-                className={hpIconButtonClass}
-                aria-label="Volver a inicio"
-              >
-                <ChevronUp className="h-4 w-4" style={{ strokeWidth: 2.5 }} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsMobileSearchOpen(false)}
-                className={hpIconButtonClass}
-                aria-label="Cerrar"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 32 32" 
-                  aria-hidden="true" 
-                  role="presentation" 
-                  focusable="false"
-                  className="h-4 w-4"
-                  style={{ display: 'block', fill: 'none', stroke: 'currentColor', strokeWidth: 2.25, overflow: 'visible' }}
-                >
-                  <path d="m6 6 20 20M26 6 6 26"></path>
-                </svg>
-              </button>
-            </div>
+      {/* Picker móvil "elige qué revisar" — hoja que se ajusta a su contenido real
+          (3 categorías + enlace), no pantalla completa. A pantalla completa, 3
+          filas cortas dejaban un vacío estructural en cualquier móvil alto
+          (376px de hueco medido en iPhone 15 Pro Max) sin importar cómo se
+          repartiera el contenido dentro. */}
+      <ResponsiveModal
+        open={isMobileSearchOpen}
+        onOpenChange={setIsMobileSearchOpen}
+        title={MOBILE_SEARCH_MODAL_TITLE}
+        description={MOBILE_SEARCH_MODAL_SUBTITLE}
+        className="md:hidden"
+        drawerClassName="md:hidden"
+        scaleBackground={false}
+      >
+        <div className="px-4 pb-6 pt-2">
+          <div className="mx-auto flex w-full max-w-md flex-col">
+            {categoriesLoading ? (
+              <div role="status" aria-busy="true" className="flex flex-col gap-2.5 py-2">
+                <span className="sr-only">Cargando categorías…</span>
+                {[...Array(4)].map((_, index) => (
+                  <SileoSkeleton key={index} className="h-[88px] w-full rounded-2xl" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {mobilePickerCategories.map((category, index) => (
+                  <CategoryPickerRow
+                    key={category.id}
+                    index={index}
+                    name={category.name}
+                    image={getCategoryImage(category.name)}
+                    fallbackIcon={getCategoryLucideIcon(category.name)}
+                    meta={getCategoryMeta(category.id)}
+                    selected={categoryId === category.id}
+                    onClick={() => {
+                      setCategorySearchQuery('');
+
+                      if (category.id === CATEGORIES.COCHES) {
+                        handleTabClick('coches', category.id);
+                      } else if (category.id === CATEGORIES.MOTOS) {
+                        handleTabClick('motos', category.id);
+                      } else {
+                        handleTabClick('inmobiliaria', category.id);
+                      }
+
+                      navigateToCategoryMap(category.id);
+                    }}
+                  />
+                ))}
+              </div>
             )}
 
-            <div className="flex-1 overflow-y-auto">
-              <div className={isMobile ? 'h-full' : 'pt-20 px-4 pb-6 space-y-4'}>
-              {/* Categorías */}
-              <div 
-                ref={categoriesContainerRef}
-                className={`border-0 flex flex-col ${
-                  (expandedAccordion === 'where' || isMobile)
-                    ? 'fixed inset-0 z-[60] rounded-none'
-                    : 'bg-white rounded-2xl shadow-[0_8px_20px_rgba(0,0,0,0.18),0_4px_8px_rgba(0,0,0,0.12)]'
-                } ${
-                  expandedAccordion === 'where' && !isMobile
-                    ? 'shadow-[0_8px_24px_rgba(0,0,0,0.15),0_4px_8px_rgba(0,0,0,0.12)]'
-                    : ''
-                }`}
-                style={{
-                  height: (expandedAccordion === 'where' || isMobile) ? '100dvh' : 'auto',
-                  minHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '280px',
-                  maxHeight: (expandedAccordion === 'where' || isMobile) ? '100dvh' : '320px',
-                  transition: isMobile ? 'none' : 'box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                {/* ✅ En móvil: Siempre mostrar desplegado, sin modo colapsado */}
-                {(expandedAccordion === 'where' || isMobile) ? (
-                  <>
-                    {isMobile && (
-                      <div className={HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigate('/');
-                            setIsMobileSearchOpen(false);
-                          }}
-                          className={hpIconButtonClass}
-                          aria-label="Volver a inicio"
-                        >
-                          <ChevronUp className="h-4 w-4" style={{ strokeWidth: 2.5 }} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsMobileSearchOpen(false)}
-                          className={hpIconButtonClass}
-                          aria-label="Cerrar"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 32 32"
-                            aria-hidden="true"
-                            role="presentation"
-                            focusable="false"
-                            className="h-4 w-4"
-                            style={{ display: 'block', fill: 'none', stroke: 'currentColor', strokeWidth: 2.25, overflow: 'visible' }}
-                          >
-                            <path d="m6 6 20 20M26 6 6 26" />
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-
-                    <div
-                      className={
-                        isMobile
-                          ? HP_MOBILE_SEARCH_MODAL_HEADER_CLASS
-                          : 'border-b border-line px-5 pb-4 pt-6'
-                      }
-                    >
-                      <div className={`flex items-start justify-between gap-3 ${isMobile ? '' : 'mb-4'}`}>
-                        <div className="min-w-0 flex-1">
-                          <h2
-                            tabIndex={-1}
-                            className={
-                              isMobile
-                                ? 'm-0 text-xl font-semibold leading-tight tracking-[-0.02em] text-ink-strong'
-                                : 'hp-section-title m-0'
-                            }
-                            style={isMobile ? { fontFamily: HP_FONT } : undefined}
-                          >
-                            {isMobile ? MOBILE_SEARCH_MODAL_TITLE : '¿Qué revisamos?'}
-                          </h2>
-                          {isMobile && (
-                            <p
-                              className="mt-1 text-meta leading-snug text-ink-muted"
-                              style={{ fontFamily: HP_FONT }}
-                            >
-                              {MOBILE_SEARCH_MODAL_SUBTITLE}
-                            </p>
-                          )}
-                        </div>
-                        {!isMobile && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedAccordion(null)}
-                            className={hpIconButtonClass}
-                            aria-label="Comprimir categorías"
-                          >
-                            <ChevronDown className="h-4 w-4 rotate-180" style={{ strokeWidth: 2.5 }} />
-                          </button>
-                        )}
-                      </div>
-                      {!isMobile && (
-                        <form role="search" className="w-full">
-                          <label
-                            htmlFor="categories-search-input"
-                            className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
-                            style={{
-                              fontFamily: HP_FONT,
-                            }}
-                          >
-                            <div className="flex items-center justify-center mr-3">
-                              <svg
-                                viewBox="0 0 32 32"
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="presentation"
-                                focusable="false"
-                                style={{
-                                  display: 'block',
-                                  fill: 'none',
-                                  height: '16px',
-                                  width: '16px',
-                                  stroke: 'currentcolor',
-                                  strokeWidth: 4,
-                                  overflow: 'visible',
-                                }}
-                              >
-                                <path d="m20.666 20.666 10 10"></path>
-                                <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                              </svg>
-                            </div>
-                            <input
-                              id="categories-search-input"
-                              type="search"
-                              placeholder="Buscar categorías"
-                              value={categorySearchQuery}
-                              onChange={(e) => setCategorySearchQuery(e.target.value)}
-                              className="flex-1 border-0 text-sm outline-none bg-transparent text-ink-strong placeholder:text-ink-muted"
-                              style={{
-                                fontSize: '14px',
-                                lineHeight: '18px',
-                                fontWeight: 400,
-                                fontFamily: HP_FONT,
-                              }}
-                              autoComplete="off"
-                              autoCorrect="off"
-                              spellCheck="false"
-                              aria-label="Buscar categorías"
-                            />
-                          </label>
-                        </form>
-                      )}
-                    </div>
-
-                    {/* Contenido expandido al 100% */}
-                    <div
-                      className={
-                        isMobile ? HP_MOBILE_SEARCH_MODAL_BODY_CLASS : 'flex-1 overflow-y-auto px-4 py-6'
-                      }
-                    >
-                      <div className={isMobile ? 'mx-auto max-w-md' : undefined}>
-                        {categoriesLoading ? (
-                          <div
-                            role="status"
-                            aria-busy="true"
-                            className={isMobile ? 'grid grid-cols-3 gap-2.5' : 'flex flex-col gap-3'}
-                          >
-                            <span className="sr-only">Cargando categorías…</span>
-                            {[...Array(isMobile ? 6 : 4)].map((_, index) => (
-                              <SileoSkeleton
-                                key={index}
-                                className={isMobile ? 'h-[120px] w-full rounded-2xl' : 'h-[72px] w-full rounded-2xl'}
-                              />
-                            ))}
-                          </div>
-                        ) : isMobile ? (
-                          // LISTA VERTICAL minimalista (igual que el drawer desktop):
-                          // ilustración + nombre + entrega + "desde X€ · N expertos",
-                          // sin contornos.
-                          (
-                              <div className="flex flex-col">
-                                {mobilePickerCategories.map((category) => {
-                                  const meta = getCategoryMeta(category.id);
-                                  const img = getCategoryImage(category.name);
-                                  const selected = categoryId === category.id;
-                                  return (
-                                    <button
-                                      key={category.id}
-                                      type="button"
-                                      aria-pressed={selected}
-                                      onClick={() => {
-                                        setCategorySearchQuery('');
-
-                                        if (category.id === CATEGORIES.COCHES) {
-                                          handleTabClick('coches', category.id);
-                                        } else if (category.id === CATEGORIES.MOTOS) {
-                                          handleTabClick('motos', category.id);
-                                        } else {
-                                          handleTabClick('inmobiliaria', category.id);
-                                        }
-
-                                        navigateToCategoryMap(category.id);
-                                      }}
-                                      className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
-                                        selected ? 'bg-brand/[0.06]' : 'active:bg-surface-tinted'
-                                      }`}
-                                    >
-                                      <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-                                        {img ? (
-                                          <img
-                                            src={img}
-                                            alt=""
-                                            loading="lazy"
-                                            decoding="async"
-                                            draggable={false}
-                                            className="h-full w-full select-none object-contain"
-                                          />
-                                        ) : (
-                                          <FolderTree className="h-6 w-6 text-line" strokeWidth={1.75} />
-                                        )}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
-                                          {category.name}
-                                        </h3>
-                                        {meta ? (
-                                          <>
-                                            <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
-                                              {meta.delivery}
-                                            </p>
-                                            <p className="mt-1 text-caption leading-none text-ink-muted">
-                                              <span className="font-semibold text-ink-strong">desde {meta.priceFromEur}€</span>
-                                              {' · '}
-                                              {meta.expertCount} expertos
-                                            </p>
-                                          </>
-                                        ) : (
-                                          <p className="mt-0.5 text-caption leading-snug text-ink-muted">
-                                            Toca para ver expertos
-                                          </p>
-                                        )}
-                                      </div>
-                                      <ChevronRight
-                                        className={`h-4 w-4 shrink-0 ${selected ? 'text-brand' : 'text-line'}`}
-                                        strokeWidth={2}
-                                        aria-hidden
-                                      />
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )
-                        ) : (
-                    <div className="flex flex-col gap-1">
-                              {normalizedCategories
-                                .filter((cat) => cat.isActive && !isVehiculosParentCategory(cat))
-                                .filter((cat) => {
-                                  if (categorySearchQuery.trim()) {
-                                    return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                  }
-                                  return true;
-                                })
-                        .map((category) => (
-                                    <CategoryPickerRow
-                                      key={category.id}
-                                      name={category.name}
-                                      isSelected={categoryId === category.id}
-                                      onClick={() => {
-                                          setCategoryId(category.id);
-                                          setCategorySearchQuery('');
-                                          setExpandedAccordion('type');
-                                          if (onSearch) {
-                                            onSearch({
-                                              serviceTypeId,
-                                              categoryId: category.id,
-                                              adUrl,
-                                            });
-                                          }
-                              }}
-                                    />
-                                  ))}
-                      {normalizedCategories
-                        .filter((cat) => cat.isActive && !isVehiculosParentCategory(cat))
-                              .filter((cat) => {
-                                if (categorySearchQuery.trim()) {
-                                  return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                }
-                                return true;
-                              }).length === 0 && (
-                              <div
-                                className="text-center py-4"
-                                style={{ ...hpType.body, color: HP_COLOR.muted }}
-                              >
-                          No se encontraron categorías
-                            </div>
-                      )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* ✅ SOLO EN DESKTOP: Vista colapsada (en móvil nunca se muestra) */}
-                    {!isMobile && (
-                      <>
-                        {/* Header fijo con título y buscador - Estilo Airbnb */}
-                        <div className="px-4 pt-6 pb-4 border-b border-line">
-                          <h2
-                            tabIndex={-1}
-                            className="relative mb-4 inline-block"
-                            style={{
-                              ...hpType.modalTitle,
-                              color: HP_COLOR.secondary,
-                              fontFeatureSettings: '"liga" 1, "kern" 1',
-                              WebkitFontSmoothing: 'antialiased',
-                              MozOsxFontSmoothing: 'grayscale',
-                            }}
-                          >
-                            ¿Qué revisamos?
-                            <span aria-hidden style={hpTitleUnderlineBarStyle} />
-                          </h2>
-                          
-                          {/* Buscador fijo fuera del scroll */}
-                          <form role="search" className="w-full">
-                            <label 
-                              htmlFor="categories-search-input-collapsed"
-                              className="flex items-center w-full px-4 py-3.5 border-0 rounded-lg bg-gray-50 shadow-sm"
-                              style={{ 
-                                fontFamily: HP_FONT 
-                              }}
-                            >
-                              <div className="flex items-center justify-center mr-3">
-                                <svg 
-                                  viewBox="0 0 32 32" 
-                                  xmlns="http://www.w3.org/2000/svg" 
-                                  aria-hidden="true" 
-                                  role="presentation" 
-                                  focusable="false"
-                                  style={{ display: 'block', fill: 'none', height: '16px', width: '16px', stroke: 'currentcolor', strokeWidth: 4, overflow: 'visible' }}
-                                >
-                                  <path d="m20.666 20.666 10 10"></path>
-                                  <path d="m24.0002 12.6668c0 6.2593-5.0741 11.3334-11.3334 11.3334-6.2592 0-11.3333-5.0741-11.3333-11.3334 0-6.2592 5.0741-11.3333 11.3333-11.3333 6.2593 0 11.3334 5.0741 11.3334 11.3333z" fill="none"></path>
-                                </svg>
-                              </div>
-                              <input
-                                id="categories-search-input-collapsed"
-                                type="search"
-                                placeholder="Buscar categorías"
-                                value={categorySearchQuery}
-                                onChange={(e) => setCategorySearchQuery(e.target.value)}
-                                className="flex-1 border-0 text-sm outline-none bg-transparent text-ink-strong placeholder:text-ink-muted"
-                                style={{ 
-                                  fontSize: '14px',
-                                  lineHeight: '18px',
-                                  fontWeight: 400,
-                                  fontFamily: HP_FONT 
-                                }}
-                                autoComplete="off"
-                                autoCorrect="off"
-                                spellCheck="false"
-                                aria-label="Buscar categorías"
-                              />
-                            </label>
-                          </form>
-                        </div>
-
-                        {/* Lista de categorías con scroll */}
-                        <div className="flex-1 overflow-y-auto px-4 py-4">
-                          <div>
-                            {categoriesLoading ? (
-                              <div role="status" aria-busy="true" className="space-y-2">
-                                <span className="sr-only">Cargando categorías…</span>
-                                {[...Array(4)].map((_, index) => (
-                                  <SileoSkeleton key={index} className="h-20 w-20 rounded-xl" />
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="flex flex-col gap-2.5">
-                                {normalizedCategories
-                                  .filter(cat => cat.isActive && !isVehiculosParentCategory(cat))
-                                  .filter(cat => {
-                                    if (categorySearchQuery.trim()) {
-                                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                    }
-                                    return true;
-                                  })
-                                  .map((category) => (
-                                    <CategoryPickerRow
-                                      key={category.id}
-                                      name={category.name}
-                                      isSelected={categoryId === category.id}
-                                      onClick={() => {
-                                          setCategoryId(category.id);
-                                          setCategorySearchQuery('');
-                                          setExpandedAccordion('type');
-                                          if (onSearch) {
-                                            onSearch({
-                                              serviceTypeId,
-                                              categoryId: category.id,
-                                              adUrl,
-                                            });
-                                          }
-                                        }}
-                                    />
-                                  ))}
-                                {normalizedCategories
-                                  .filter(cat => cat.isActive && !isVehiculosParentCategory(cat))
-                                  .filter(cat => {
-                                    if (categorySearchQuery.trim()) {
-                                      return cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase());
-                                    }
-                                    return true;
-                                  }).length === 0 && (
-                                  <div 
-                                    className="text-center py-4 text-ink-muted"
-                                    style={{ 
-                                      fontSize: '14px',
-                                      lineHeight: '18px',
-                                      fontWeight: 400,
-                                      fontFamily: HP_FONT 
-                                    }}
-                                  >
-                                    No se encontraron categorías
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-
-                {/* Separador y flecha al final - Solo cuando NO está expandido Y NO es móvil */}
-                {/* ✅ En móvil: Nunca mostrar la flecha de expandir */}
-                {expandedAccordion !== 'where' && !isMobile && (
-                  <div className="border-t border-line mt-auto">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedAccordion('where')}
-                      className="w-full flex items-center justify-center py-3 bg-transparent border-none cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <ChevronDown className="w-4 h-4 text-ink-muted" style={{ strokeWidth: 2.5 }} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* ✅ OCULTAR en móvil: Tipo de servicio - Rectángulo con sombra - Estilo Airbnb */}
-              {!isMobile && (
-              <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
+            {!categoriesLoading && (
+              <div className="mt-8 flex flex-col items-center gap-2 text-center">
                 <button
                   type="button"
-                  onClick={() => setExpandedAccordion(expandedAccordion === 'type' ? null : 'type')}
-                  className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
+                  onClick={() => {
+                    setIsMobileSearchOpen(false);
+                    setDrawerIntent('filter');
+                    setIsDrawerOpen(true);
+                  }}
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-line px-4 text-body font-semibold text-ink-strong transition-colors hover:bg-surface-tinted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 >
-                  <div className="flex flex-col items-start">
-                    <span 
-                      className="font-semibold text-ink-strong mb-1"
-                      style={{ 
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        fontWeight: 600,
-                        fontFamily: HP_FONT 
-                      }}
-                    >
-                      Tipo de servicio
-                    </span>
-                    <span 
-                      className="text-ink-muted"
-                      style={{ 
-                        fontSize: '14px',
-                        lineHeight: '18px',
-                        fontWeight: 400,
-                        fontFamily: HP_FONT 
-                      }}
-                    >
-                      {selectedServiceType?.name || 'Añade tipo'}
-                    </span>
-                  </div>
-                  <ChevronDown className={`w-3 h-3 text-ink-soft transition-transform ${expandedAccordion === 'type' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
+                  <FolderTree className="h-4 w-4 text-ink-soft" strokeWidth={2} aria-hidden />
+                  Ver catálogo completo
                 </button>
-                
-                {expandedAccordion === 'type' && (
-                  <div className="px-4 pb-6">
-                      {serviceTypesLoading ? (
-                      <div className="space-y-2">
-                        {[...Array(4)].map((_, index) => (
-                          <SileoSkeleton key={index} className="h-12 w-full rounded-lg" />
-                        ))}
-                      </div>
-                      ) : (
-                      <div className="flex flex-col gap-2">
-                        {normalizedServiceTypes.map((st) => (
-                          <button
-                            key={st.id}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setServiceTypeId(st.id);
-                              // Llamar a onSearch para actualizar los filtros
-                              if (onSearch) {
-                                onSearch({
-                                  serviceTypeId: st.id,
-                                  categoryId,
-                                  adUrl,
-                                });
-                              }
-                              // Mantener el desplegable abierto
-                              setExpandedAccordion('type');
-                            }}
-                            className={`w-full px-4 py-4 rounded-lg text-left transition-colors flex flex-col gap-1 ${
-                              serviceTypeId === st.id
-                                ? 'bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.2)]'
-                                : 'bg-surface-tinted text-ink-strong hover:bg-surface-tinted'
-                            }`}
-                          >
-                            <span className="text-sm font-semibold">{st.name}</span>
-                            {st.description && (
-                              <span className={`text-xs ${
-                                serviceTypeId === st.id 
-                                  ? 'text-line' 
-                                  : 'text-ink-muted'
-                              }`}>
-                                {st.description}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                      )}
-                    </div>
-                )}
+                <p className="max-w-[15rem] text-caption leading-snug text-ink-muted">
+                  Cámaras y fontanería llegan pronto — de momento solo para explorar.
+                </p>
               </div>
-              )}
-
-              {/* ✅ OCULTAR en móvil: URL del anuncio - Rectángulo con sombra */}
-              {!isMobile && (
-              <div className="bg-white border-0 rounded-2xl shadow-xl hover:shadow-2xl transition-all">
-                <button
-                  type="button"
-                  onClick={() => setExpandedAccordion(expandedAccordion === 'url' ? null : 'url')}
-                  className="w-full flex items-center justify-between px-4 py-5 bg-transparent border-none cursor-pointer"
-                >
-                  <label className="text-xs font-semibold text-ink-strong flex items-center gap-1" style={{ fontFamily: HP_FONT }}>
-                      URL del anuncio
-                    <span className="text-ink-soft font-normal">(opcional)</span>
-                  </label>
-                  <ChevronDown className={`w-3 h-3 text-ink-soft transition-transform ${expandedAccordion === 'url' ? 'rotate-180' : ''}`} style={{ strokeWidth: 4 }} />
-                </button>
-                
-                {expandedAccordion === 'url' && (
-                  <div className="px-4 pb-6">
-                      <input
-                        type="text"
-                      placeholder="Pega la URL aquí..."
-                        value={adUrl}
-                        onChange={(e) => setAdUrl(e.target.value)}
-                      className="w-full px-4 py-4 border border-line rounded-lg text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 transition-colors"
-                      autoFocus
-                    />
-                    </div>
-                )}
-              </div>
-              )}
-            </div>
+            )}
           </div>
-
-          {/* ✅ OCULTAR en móvil: Botones de acción */}
-          {!isMobile && (
-          <div className="px-4 py-5 border-t border-line bg-white flex justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => {
-                setServiceTypeId(null);
-                setCategoryId(null);
-                setAdUrl('');
-                setCategorySearchQuery('');
-                setExpandedAccordion(null);
-              }}
-              className="px-4 py-2 text-sm font-semibold text-ink-strong underline bg-transparent border-none cursor-pointer"
-            >
-              Restablecer
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                // ✅ OPTIMIZADO: Cerrar modal primero para transición más fluida
-                setIsMobileSearchOpen(false);
-                setExpandedAccordion(null);
-                // Pequeño delay para que la animación de cierre se vea
-                setTimeout(() => {
-                  handleSearch();
-                }, 150);
-              }}
-              className="px-6 py-3.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-sm font-semibold border-none cursor-pointer flex items-center gap-2 transition-colors active:scale-95 shadow-[0_4px_16px_hsl(var(--brand)/0.2)]"
-            >
-              <Search className="w-4 h-4" />
-              Buscar
-            </button>
-          </div>
-          )}
         </div>
-        </>,
-        document.body
-      )}
+      </ResponsiveModal>
 
       {/* Modal Más Categorías */}
       <ResponsiveModal

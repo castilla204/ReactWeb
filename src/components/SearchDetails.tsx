@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, Calendar, CheckCircle, XCircle, MapPin, Info, Tag, X, FileCheck, WifiOff, RefreshCw, AlertCircle, FastForward, Loader2 } from 'lucide-react';
+import { useState, useEffect, type ReactNode } from 'react';
+import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, Calendar, CheckCircle, XCircle, MapPin, Tag, X, FileCheck, Film, Download, WifiOff, RefreshCw, AlertCircle, FastForward, Loader2 } from 'lucide-react';
 import { SileoSkeleton } from './ui/sileo-skeleton';
 import CountryFlag from './CountryFlag';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { VerifiedBadge } from './ui/VerifiedBadge';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { SearchHire } from '../hooks/useSearch.hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserId } from '../utils/userId';
 import { LazyChat as Chat } from './chat/LazyChat';
@@ -17,9 +14,8 @@ import { MobileDetailsSheet } from './chat/MobileDetailsSheet';
 import { ReviewModal, DisputeModal } from './Modals';
 import { ExpertResponseModal } from './ExpertResponseModal';
 import { useSearchActions } from '../hooks/useSearchActions';
-import { useDisputes } from '../hooks/useDisputes';
 import { useParams, useNavigate } from 'react-router-dom';
-import { showToast, NotificationType } from '../lib/toast';
+import { showToast } from '../lib/toast';
 import { useErrorHandler, isNetworkError } from '../hooks/useErrorHandler';
 
 // Imports para el sistema de citas
@@ -41,16 +37,11 @@ import {
     AlertDialogTitle,
 } from './ui/alert-dialog';
 
-// Imports para distribución de dinero
-import MoneyDistributionInfo from './MoneyDistributionInfo';
-import { useMoneyDistributionConfig, shouldShowMoneyDistribution } from '../hooks/useMoneyDistributionConfig';
-
 // ✅ NUEVOS IMPORTS PARA SISTEMA DE ESTADOS
 import StatusBadge from './StatusBadge';
 import { getStatusInfoWithFallback } from '../utils/statusUtils';
 import {
     canLeaveReview,
-    isDisputeResolvedStatus,
     isTerminalSearchHireStatus,
     SEARCH_HIRE_STATUS,
 } from '../constants/hireStatuses';
@@ -71,21 +62,7 @@ import {
     SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS,
     SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS,
     SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS,
-    HP_FONT,
 } from '../constants/homepageTypography';
-
-interface NewAd {
-    title: string;
-    description: string;
-    price: number;
-    url: string;
-    images: string[];
-    category: string;
-    province: string;
-    city: string;
-    sellerType: string;
-    platformId: number;
-}
 
 interface SearchDetailsProps {
     isAdmin: boolean;
@@ -101,12 +78,6 @@ interface SearchDetailsProps {
     embedded?: boolean;
 }
 
-const categoryBanners: { [key: number]: string } = {
-    1: '/src/media/Car.png',
-    2: '/src/media/motorcycle.png',
-    3: '/src/media/house.png',
-};
-
 // ───────────────────────────────────────────────────────────────────────────
 // Helpers presentacionales del panel de detalles (sidebar derecho de Mensajes).
 // Lenguaje minimalista compartido con la bandeja: micro-etiqueta de sección +
@@ -114,63 +85,39 @@ const categoryBanners: { [key: number]: string } = {
 // hairline #f0f0f0). Sin gradientes ni sombras decorativas.
 // ───────────────────────────────────────────────────────────────────────────
 
-/** Micro-etiqueta de sección, en mayúsculas finas — solo para escanear el panel. */
+/** Etiqueta de sección del panel — jerarquía por peso (600 vs 500), sin uppercase:
+ *  el único uppercase del sistema es el eyebrow brand puntual, y aquí habría 6 seguidos. */
 function SdSectionTitle({ children }: { children: ReactNode }) {
     return (
-        <h3 className="text-kicker font-semibold uppercase tracking-[0.07em] text-ink-soft">
+        <h3 className="text-meta font-semibold text-ink-strong">
             {children}
         </h3>
     );
 }
 
 export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHireIdProp, embedded = false }: SearchDetailsProps) {
-    const queryClient = useQueryClient();
     const { id } = useParams<{ id: string }>();
     const searchIdParam = parseInt(id || '0', 10);
     // ✅ Si searchId es 0, significa que solo tenemos searchHireId (cliente eliminado)
     const searchId = searchIdParam === 0 ? null : searchIdParam;
     const navigate = useNavigate();
     const [modalState, setModalState] = useState({
-        showFinalizeModal: false,
-        showCancelConfirm: false,
-        showAddAdForm: false,
         showDisputeModal: false,
-        showResolveDisputeModal: false,
         showReviewModal: false,
-        showReportModal: false,
     });
     const [disputeReason, setDisputeReason] = useState('');
     const [disputeFiles, setDisputeFiles] = useState<File[]>([]);
-    const [resolveInFavorOfClient, setResolveInFavorOfClient] = useState<boolean | null>(null);
-    const [resolutionReason, setResolutionReason] = useState('');
-    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-    
-    // Estados para respuesta del experto
-    const [expertResponseText, setExpertResponseText] = useState('');
-    const [expertResponseFiles, setExpertResponseFiles] = useState<File[]>([]);
+
+    // Estado para respuesta del experto
     const [showExpertResponseModal, setShowExpertResponseModal] = useState(false);
     const [reviewForm, setReviewForm] = useState({
         score: 0,
         description: '',
         images: [] as File[],
     });
-    const [newAd, setNewAd] = useState<NewAd>({
-        title: '',
-        description: '',
-        price: 0,
-        url: '',
-        images: [],
-        category: '',
-        province: '',
-        city: '',
-        sellerType: 'particular',
-        platformId: 1,
-    });
     const [selectedDeliverableFiles, setSelectedDeliverableFiles] = useState<File[]>([]);
     const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
     const [fileValidation, setFileValidation] = useState<{canSubmit: boolean, message: string} | null>(null);
-    const [showTrackOrder, setShowTrackOrder] = useState(false);
-    const lastSearchHireId = useRef<number | null>(null);
     const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
 
     // Estado para el sistema de citas
@@ -179,10 +126,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const [modalActionType, setModalActionType] = useState<'reject' | 'cancel'>('reject');
     const [showConfirmAppointmentDialog, setShowConfirmAppointmentDialog] = useState(false);
     const [appointmentToConfirm, setAppointmentToConfirm] = useState<Appointment | null>(null);
-    
-    // Estado para mostrar información de porcentajes
-    const [showMoneyDistribution, setShowMoneyDistribution] = useState(false);
-    const [selectedDistributionStatus, setSelectedDistributionStatus] = useState<string>('');
 
     // Bloquear scroll + altura real del viewport en móvil (evita hueco inferior).
     // Incrustado NO debe tocar el <body> (rompería la bandeja de Mensajes).
@@ -256,11 +199,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     
     const {
         search,
-        moneyDistribution,
         category,
         review,
         expertProfile,
-        conversations,
         appointment,
         deliverables,
         requiredDeliverableTypes, // ✅ NUEVO: Tipos de reportes requeridos
@@ -275,7 +216,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const searchHireId = initialSearchHireId || search?.searchHire?.id;
 
     // ? DATOS DERIVADOS
-    const hireId = searchHireId || search?.searchHire?.id;
     const hasSearchHireData = !!search?.searchHire || !!searchHireId;
     // ✅ Cuando search es null, usar serviceInfo de searchHire si está disponible
     const serviceInfo = search?.searchHire?.service;
@@ -285,15 +225,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     const expertInfo = search?.searchHire?.expert || expertProfile?.user || null;
     
     // ? HOOKS PARA ACCIONES (chat: un solo useChat dentro de <Chat />)
-    const { handleCancelService, handleForceFinalize, handleCompleteService, handleDisputeSubmit: submitDispute, handleResolveDispute, handleAddAd } =
-        useSearchActions();
-    
-    // Hook para obtener información de disputa
-    const { expertResponse, debugDispute, useDisputeBySearchHire } = useDisputes();
-    
-    // Obtener disputa por searchHireId
-    const { data: disputeData, isLoading: isLoadingDispute } = useDisputeBySearchHire(searchHireId || 0);
-    
+    const { handleCompleteService, handleDisputeSubmit: submitDispute } = useSearchActions();
+
     // Hook para enviar respuesta del experto
     const { sendExpertResponse, isSubmitting: isSubmittingExpertResponse } = useExpertResponse();
     
@@ -323,7 +256,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 
                 // Si no hay tipos requeridos definidos, no hay nada que validar
                 if (!result.requiredTypes || result.requiredTypes.length === 0) {
-                    return { canSubmit: true, message: 'No hay tipos de archivo requeridos definidos' };
+                    return { canSubmit: true, message: 'Puedes enviar el informe cuando quieras.' };
                 }
                 
                 // Si hay tipos requeridos pero no hay archivos subidos
@@ -331,7 +264,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     const requiredText = result.requiredTypes.map((t: any) => t.displayName || t.name).join(' y ');
                     return { 
                         canSubmit: false, 
-                        message: `Para enviar el reporte necesitas subir: ${requiredText}` 
+                        message: `Para enviar el informe necesitas subir: ${requiredText}` 
                     };
                 }
                 
@@ -343,7 +276,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         : result.requiredTypes?.map((t: any) => t.displayName || t.name).join(' y ') || 'archivos requeridos';
                     return { 
                         canSubmit: false, 
-                        message: `Para enviar el reporte necesitas subir: ${missingText}` 
+                        message: `Para enviar el informe necesitas subir: ${missingText}` 
                     };
                 }
             } else {
@@ -433,8 +366,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 return { success: false, message: error.message };
             }
         } catch (error) {
-            console.error('Error enviando reporte:', error);
-            return { success: false, message: 'Error al enviar reporte' };
+            console.error('Error enviando informe:', error);
+            return { success: false, message: 'Error al enviar el informe' };
         }
     };
 
@@ -501,7 +434,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 if (!hasMP4) missing.push('MP4');
                 setFileValidation({ 
                     canSubmit: false, 
-                    message: `Para enviar el reporte necesitas subir: ${missing.join(' y ')}` 
+                    message: `Para enviar el informe necesitas subir: ${missing.join(' y ')}` 
                 });
             }
         } else {
@@ -538,7 +471,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                     : missing.slice(0, -1).join(', ') + ' y ' + missing[missing.length - 1];
                 setFileValidation({ 
                     canSubmit: false, 
-                    message: `Para enviar el reporte necesitas subir: ${missingText}` 
+                    message: `Para enviar el informe necesitas subir: ${missingText}` 
                 });
             }
         }
@@ -550,7 +483,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         try {
             const result = await deleteFile(appointment.id, deliverableId);
             if (result.success) {
-                showToast('success', 'Archivo eliminado exitosamente');
+                showToast('success', 'Archivo eliminado');
                 // Recargar archivos y validación
                 await loadUploadedFiles();
                 await validateFilesAndUpdate();
@@ -573,45 +506,21 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             const isValidSize = file.size <= maxDeliverableFileSize;
             return isValidType && isValidSize;
         });
+        // Avisar de los descartados: antes se filtraban en silencio y arrastrar un
+        // .docx no producía NINGUNA reacción visible (parecía que la app estaba rota).
+        const rejectedCount = files.length - validFiles.length;
+        if (rejectedCount > 0) {
+            showToast('error', rejectedCount === 1
+                ? 'Un archivo no se ha añadido: solo se admiten PDF o MP4 de hasta 10MB.'
+                : `${rejectedCount} archivos no se han añadido: solo se admiten PDF o MP4 de hasta 10MB.`);
+        }
         if (validFiles.length > 0) {
-            showToast('success', `${validFiles.length} archivo(s) seleccionado(s) correctamente`);
+            showToast('success', validFiles.length === 1 ? 'Archivo añadido' : `${validFiles.length} archivos añadidos`);
         }
         setSelectedDeliverableFiles(prev => [...prev, ...validFiles]);
         
         // Limpiar el input para permitir seleccionar los mismos archivos otra vez
         e.target.value = '';
-    };
-
-    const handleUploadDeliverable = async () => {
-        if (selectedDeliverableFiles.length > 0 && search?.searchHire?.id) {
-            try {
-                const formData = new FormData();
-                selectedDeliverableFiles.forEach(file => {
-                    formData.append('Files', file);
-                });
-
-                const response = await fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.chat.deliverable(search.searchHire.id)}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${getAuthToken()}`
-                    },
-                    body: formData
-                });
-
-                if (response.ok) {
-                    showToast('success', 'Archivos subidos exitosamente. Ahora puedes enviar el reporte.');
-                    // No limpiar archivos aquí, se limpiarán al enviar el reporte
-                    invalidateAll();
-                } else {
-                    throw new Error('Error al subir archivos');
-                }
-            } catch (error) {
-                console.error('[SearchDetails] Error uploading deliverables:', error);
-                showToast('error', 'Error al subir los archivos');
-            }
-        } else {
-            showToast('error', 'Por favor, selecciona al menos un archivo para subir como entregable.', 5000);
-        }
     };
 
     const removeSelectedFile = (index: number) => {
@@ -637,7 +546,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 disputeFiles,
                 () => {
                     // Callback de éxito
-                    showToast('success', 'Disputa enviada exitosamente');
+                    showToast('success', 'Disputa enviada correctamente');
                     // Limpiar el formulario
                     setDisputeReason('');
                     setDisputeFiles([]);
@@ -662,7 +571,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         try {
             await sendExpertResponse(disputes[0].id, response, files);
             
-            showToast('success', 'Respuesta enviada exitosamente');
+            showToast('success', 'Respuesta enviada correctamente');
             
             setShowExpertResponseModal(false);
             invalidateAll();
@@ -683,10 +592,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         setIsSubmittingReport(true);
         try {
             // Usar el endpoint unificado que maneja todo: subida + validación + envío
-            const result = await submitReportWithFiles(appointment.id, selectedDeliverableFiles, 'Reporte completado por el experto');
-            
+            const result = await submitReportWithFiles(appointment.id, selectedDeliverableFiles, 'Informe completado por el experto');
+
             if (result.success) {
-                showToast('success', 'Reporte enviado exitosamente');
+                showToast('success', 'Informe enviado correctamente');
                 // Limpiar archivos seleccionados
                 setSelectedDeliverableFiles([]);
                 // Refrescar datos
@@ -696,7 +605,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             }
         } catch (error) {
             console.error('[SearchDetails] Error submitting report:', error);
-            showToast('error', 'Error al enviar el reporte');
+            showToast('error', 'Error al enviar el informe');
         } finally {
             setIsSubmittingReport(false);
         }
@@ -711,18 +620,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // ✅ HOOK DINÁMICO PARA ESTADOS
     const { data: appointmentStatuses } = useAppointmentStatuses();
     const { data: searchHireStatuses } = useSearchHireStatuses();
-    
-    // ? USAR HOOK ESPECÍFICO PARA DISTRIBUCIÓN DE DINERO
-    const { 
-        data: moneyDistributionConfig, 
-        isLoading: isLoadingMoneyConfig, 
-        error: moneyConfigError 
-    } = useMoneyDistributionConfig(
-        appointment?.status || '', 
-        serviceInfo?.categoryId, 
-        serviceInfo?.serviceTypeCategoryId
-    );
-    
+
     // Opción 1: Verificar por serviceTypeCategoryId (1 o 2)
     const isAppointmentCategory = serviceInfo?.serviceTypeCategoryId === 1 || serviceInfo?.serviceTypeCategoryId === 2;
     
@@ -796,15 +694,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     
     const canDispute = isClient && searchHireStatus === SEARCH_HIRE_STATUS.AWAITING_CLIENT_DECISION;
     const canApprove = isClient && searchHireStatus === SEARCH_HIRE_STATUS.AWAITING_CLIENT_DECISION;
-    const nonCancellableStatuses = [
-        SEARCH_HIRE_STATUS.COMPLETED,
-        SEARCH_HIRE_STATUS.CANCELLED,
-        SEARCH_HIRE_STATUS.DISPUTED,
-    ];
-    const canCancel = isExpert && search?.searchHire && !nonCancellableStatuses.includes(searchHireStatus || '');
-    const isDisputed = (isClient || isExpert) && searchHireStatus === SEARCH_HIRE_STATUS.DISPUTED;
-    const isDisputeResolved = (isClient || isExpert) && isDisputeResolvedStatus(searchHireStatus || '');
-    
+
     // Determinar si el experto puede responder a la disputa
     // ✅ SOLO PARA EXPERTOS: Verificar que el usuario actual es el experto de la disputa
     const canExpertRespond = isExpert && // ← AÑADIDO: Solo si es experto
@@ -823,9 +713,6 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
     // ✅ Si tenemos searchHireId y usuario autenticado, mostrar el chat (el backend validará permisos)
     const canViewChat =
         hasValidSearchHire && !!user && (effectiveIsAdmin || isClient || isExpert);
-
-    // ✅ Usar categoría del endpoint details-complete
-    const categoryName = category?.name || 'Unknown Category';
 
     const isSearchHireFinalized = isTerminalSearchHireStatus(
         searchHireStatus || '',
@@ -907,7 +794,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 
                 await cancelAppointment(cancelData);
                 
-                showToast('success', 'Cita cancelada exitosamente');
+                showToast('success', 'Cita cancelada correctamente');
             } else {
             const rejectData: RejectAppointmentDto = {
                 appointmentId: appointmentToReject.id,
@@ -916,7 +803,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             
             await rejectAppointment(rejectData);
             
-            showToast('success', 'Cita rechazada exitosamente');
+            showToast('success', 'Cita rechazada correctamente');
             }
             
             setShowRejectModal(false);
@@ -976,7 +863,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                 }}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0 rounded-full text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                className="h-8 w-8 shrink-0 rounded-full text-warning-text hover:bg-warning-tint hover:text-warning-text"
                 disabled={isSkippingReport}
                 aria-label="Admin: saltar a esperando reporte"
                 title="Admin (pruebas): salta la espera de 3h post-cita"
@@ -1088,7 +975,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         notes: 'Cita confirmada'
                     };
                     await confirmAppointment(confirmData);
-                    showToast('success', 'Cita confirmada exitosamente');
+                    showToast('success', 'Cita confirmada correctamente');
                     invalidateAll();
                     setShowConfirmAppointmentDialog(false);
                     setAppointmentToConfirm(null);
@@ -1255,7 +1142,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }>
             {/* Header de página — oculto cuando va incrustado (la bandeja ya aporta cabecera) */}
             {!embedded && (
-            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-line bg-white" style={{ margin: 0 }}>
+            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-line bg-white">
                 <div className={`${SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS} px-6 py-3.5`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -1268,10 +1155,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 <ArrowLeft className="h-4 w-4 text-ink" />
                             </Button>
                             <div className="min-w-0 flex-1">
-                                <h1
-                                    className="truncate font-display text-title font-semibold tracking-[-0.02em] text-ink-strong"
-                                    style={{ fontFamily: HP_FONT }}
-                                >
+                                <h1 className="truncate font-display text-title font-semibold tracking-[-0.02em] text-ink-strong">
                                     {search?.title || serviceInfo?.name || category?.name || 'Contratación'}
                                 </h1>
                                 {searchHireStatusInfo && (
@@ -1302,8 +1186,18 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         Error en la transferencia de pago
                     </div>
                     <p className="mt-1">
-                        El servicio se marcó como completado pero la transferencia al experto falló. Contacta con soporte si persiste.
+                        El servicio se completó, pero el pago al experto no se pudo transferir.
+                        {isClient
+                            ? ' Tu dinero no corre riesgo: nuestro equipo ya lo está revisando.'
+                            : ' Nuestro equipo ya lo está revisando para que recibas tu pago.'}
                     </p>
+                    <button
+                        type="button"
+                        onClick={() => navigate('/help')}
+                        className="mt-2 text-sm font-semibold text-destructive underline underline-offset-2 hover:no-underline"
+                    >
+                        Contactar con soporte
+                    </button>
                 </div>
             )}
 
@@ -1413,7 +1307,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     <div className="flex items-baseline justify-between gap-3">
                                                         <span className="text-meta font-medium text-ink-muted">Precio total</span>
                                                         <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-xl font-bold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
+                                                            <span className="text-xl font-semibold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
                                                             {priceDisplay.hasTaxInfo && (
                                                                 <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
                                                             )}
@@ -1421,7 +1315,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     </div>
 
                                                     {priceDisplay.hasTaxInfo && (
-                                                        <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-line">
+                                                        <Accordion type="single" collapsible className="mt-1.5 w-full">
                                                             <AccordionItem value="price-breakdown" className="border-none">
                                                                 <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                                     <span>Ver desglose de impuestos</span>
@@ -1465,7 +1359,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             {searchHireStatuses && Array.isArray(searchHireStatuses) && searchHireStatuses.length > 0 && (
                                                 <AccordionItem value="status-timeline" className="border-none">
                                                     <AccordionTrigger className="py-2 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
-                                                        Timeline del estado
+                                                        Historial del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
                                                         <StatusTimeline
@@ -1530,24 +1424,37 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                         </p>
                                                     )}
-                                                    {/* Reportes del Experto - Dentro del cuadro de cita */}
+                                                    {/* Entregables — el producto de la compra: tarjeta con icono por tipo y descarga visible */}
                                                     {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                        <div className="space-y-1.5 pt-1">
+                                                        <div className="space-y-2 pt-2">
                                                             <div className="flex items-center gap-1.5 text-caption font-medium text-success">
                                                                 <FileCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                                                                 <span>Informe enviado</span>
                                                             </div>
                                                             {deliverables.map((deliverable) => {
-                                                                const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                // Nombre limpio: sin query string (las URLs firmadas llevan ?token=…)
+                                                                const fileName = (deliverable.url.split('/').pop() || 'archivo').split('?')[0];
+                                                                const isVideo = /\.(mp4|mov|webm)$/i.test(fileName);
+                                                                const TypeIcon = isVideo ? Film : FileText;
                                                                 return (
-                                                                    <button
+                                                                    <a
                                                                         key={deliverable.id}
-                                                                        onClick={() => window.open(deliverable.url, '_blank')}
-                                                                        className="flex w-full items-center gap-1.5 text-left text-caption text-ink-muted transition-colors hover:text-ink-strong"
+                                                                        href={deliverable.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="group flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3 transition-colors hover:border-brand/40 hover:bg-surface-tinted"
                                                                     >
-                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
-                                                                        <span className="truncate underline-offset-2 hover:underline">{fileName}</span>
-                                                                    </button>
+                                                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                                                                            <TypeIcon className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden />
+                                                                        </span>
+                                                                        <span className="min-w-0 flex-1">
+                                                                            <span className="block truncate text-meta font-medium text-ink-strong">
+                                                                                {isVideo ? 'Vídeo de la inspección' : 'Informe de inspección'}
+                                                                            </span>
+                                                                            <span className="mt-0.5 block truncate text-caption text-ink-muted">{fileName}</span>
+                                                                        </span>
+                                                                        <Download className="h-4 w-4 shrink-0 text-ink-soft transition-colors group-hover:text-ink-strong" strokeWidth={1.75} aria-hidden />
+                                                                    </a>
                                                                 );
                                                             })}
                                                         </div>
@@ -1575,7 +1482,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <Accordion type="single" collapsible className="mt-3 w-full">
                                                 <AccordionItem value="appointment-timeline" className="border-none">
                                                     <AccordionTrigger className="py-2 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
-                                                        Timeline del estado
+                                                        Historial del estado
                                                     </AccordionTrigger>
                                                     <AccordionContent className="pt-2 pb-0">
                                                         <StatusTimeline
@@ -1753,7 +1660,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             className={`h-11 w-full font-semibold transition-colors ${
                                                 fileValidation && !fileValidation.canSubmit
                                                     ? 'cursor-not-allowed bg-line text-ink-soft hover:bg-line'
-                                                    : 'bg-success text-white hover:bg-success-hover'
+                                                    : 'bg-brand text-white hover:bg-brand-hover'
                                             }`}
                                             disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
                                             size="sm"
@@ -1766,7 +1673,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             ) : (
                                                 <>
                                                     <CheckCircle className="w-4 h-4 mr-2" />
-                                                    Enviar reporte
+                                                    Enviar informe
                                                 </>
                                             )}
                                         </Button>
@@ -1778,7 +1685,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         <div className="flex items-center justify-between">
                                             <SdSectionTitle>Reseña</SdSectionTitle>
                                             <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
-                                                <Star className="h-3.5 w-3.5" />
+                                                <Star className="h-3.5 w-3.5 fill-current" />
                                                 {review.score}/5
                                             </span>
                                         </div>
@@ -1792,7 +1699,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
                                                 <div className="space-y-1.5 border-b border-line-soft pb-3">
@@ -1819,7 +1726,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                     ? appointment.doorNumber
                                                                     : 'no aportada'}
                                                             </span>
-                                                            <span className="px-1.5 text-line">·</span>
+                                                            <span className="px-1.5 text-ink-soft">·</span>
                                                             Tel. <span className="font-medium text-ink-strong">
                                                                 {appointment.phoneNumber && appointment.phoneNumber.trim()
                                                                     ? appointment.phoneNumber
@@ -1944,7 +1851,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             {canApprove && (
                                                 <Button
                                                     onClick={handleApproveService}
-                                                    className="h-11 w-full bg-success text-white hover:bg-success-hover"
+                                                    className="h-11 w-full bg-brand text-white hover:bg-brand-hover"
                                                     size="sm"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -1982,7 +1889,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             <SdSectionTitle>Reseña</SdSectionTitle>
                                             <Button
                                                 onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                                className="h-11 w-full bg-ink-strong text-white hover:bg-black"
+                                                variant="outline"
+                                                className="h-11 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                                 size="sm"
                                             >
                                                 <Star className="w-4 h-4 mr-2" />
@@ -2016,7 +1924,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                             </div>
                         )}
                     </div>
-                    <ScrollArea className="min-h-0 flex-1">
+                    {/* [&>div>div]:!block — el viewport de Radix usa display:table (min-width:100%),
+                        que deja crecer el contenido más allá del panel (nombres de archivo largos
+                        rompían el borde derecho). En bloque, truncate vuelve a funcionar. */}
+                    <ScrollArea className="min-h-0 flex-1 [&>div>div]:!block">
                         <div className="space-y-4 p-4">
                             
                             {/* Resumen del Servicio */}
@@ -2036,7 +1947,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                     year: 'numeric'
                                                 })}</>
                                             )}
-                                            {search?.createdAt && serviceInfo?.locationRange && <span className="px-1.5 text-line">·</span>}
+                                            {search?.createdAt && serviceInfo?.locationRange && <span className="px-1.5 text-ink-soft">·</span>}
                                             {serviceInfo?.locationRange && <>Radio {serviceInfo.locationRange} km</>}
                                         </p>
                                     )}
@@ -2051,7 +1962,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 <div className="flex items-baseline justify-between gap-3">
                                                     <span className="text-meta font-medium text-ink-muted">Precio total</span>
                                                     <div className="flex items-baseline gap-1.5">
-                                                        <span className="text-xl font-bold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
+                                                        <span className="text-xl font-semibold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
                                                         {priceDisplay.hasTaxInfo && (
                                                             <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
                                                         )}
@@ -2059,9 +1970,9 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 </div>
 
                                                 {priceDisplay.hasTaxInfo && (
-                                                    <Accordion type="single" collapsible className="mt-1.5 w-full border-t border-line">
+                                                    <Accordion type="single" collapsible className="mt-1.5 w-full">
                                                         <AccordionItem value="price-breakdown" className="border-none">
-                                                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-soft hover:text-ink-strong hover:no-underline">
+                                                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
                                                                 <span>Ver desglose de impuestos</span>
                                                             </AccordionTrigger>
                                                             <AccordionContent className="space-y-1 pb-0 pt-1">
@@ -2132,24 +2043,37 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                             Puerta <span className="font-medium text-ink-strong">{appointment.doorNumber}</span>
                                                         </p>
                                                     )}
-                                                    {/* Reportes del Experto - Dentro del cuadro de cita (Desktop) */}
+                                                    {/* Entregables (Desktop) — mismo tratamiento de tarjeta que en móvil */}
                                                     {appointment.status === 'appointment_report_sent' && deliverables && deliverables.length > 0 && (
-                                                        <div className="space-y-1.5 pt-1">
+                                                        <div className="space-y-2 pt-2">
                                                             <div className="flex items-center gap-1.5 text-caption font-medium text-success">
                                                                 <FileCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                                                                 <span>Informe enviado</span>
                                                             </div>
                                                             {deliverables.map((deliverable) => {
-                                                                const fileName = deliverable.url.split('/').pop() || 'archivo';
+                                                                // Nombre limpio: sin query string (las URLs firmadas llevan ?token=…)
+                                                                const fileName = (deliverable.url.split('/').pop() || 'archivo').split('?')[0];
+                                                                const isVideo = /\.(mp4|mov|webm)$/i.test(fileName);
+                                                                const TypeIcon = isVideo ? Film : FileText;
                                                                 return (
-                                                                    <button
+                                                                    <a
                                                                         key={deliverable.id}
-                                                                        onClick={() => window.open(deliverable.url, '_blank')}
-                                                                        className="flex w-full items-center gap-1.5 text-left text-caption text-ink-muted transition-colors hover:text-ink-strong"
+                                                                        href={deliverable.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="group flex w-full items-center gap-3 rounded-xl border border-line bg-white p-3 transition-colors hover:border-brand/40 hover:bg-surface-tinted"
                                                                     >
-                                                                        <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" strokeWidth={1.75} />
-                                                                        <span className="truncate underline-offset-2 hover:underline">{fileName}</span>
-                                                                    </button>
+                                                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                                                                            <TypeIcon className="h-4 w-4 text-brand" strokeWidth={1.75} aria-hidden />
+                                                                        </span>
+                                                                        <span className="min-w-0 flex-1">
+                                                                            <span className="block truncate text-meta font-medium text-ink-strong">
+                                                                                {isVideo ? 'Vídeo de la inspección' : 'Informe de inspección'}
+                                                                            </span>
+                                                                            <span className="mt-0.5 block truncate text-caption text-ink-muted">{fileName}</span>
+                                                                        </span>
+                                                                        <Download className="h-4 w-4 shrink-0 text-ink-soft transition-colors group-hover:text-ink-strong" strokeWidth={1.75} aria-hidden />
+                                                                    </a>
                                                                 );
                                                             })}
                                                         </div>
@@ -2206,7 +2130,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                                     ? appointment.doorNumber
                                                                     : 'no aportada'}
                                                             </span>
-                                                            <span className="px-1.5 text-line">·</span>
+                                                            <span className="px-1.5 text-ink-soft">·</span>
                                                             Tel. <span className="font-medium text-ink-strong">
                                                                 {appointment.phoneNumber && appointment.phoneNumber.trim()
                                                                     ? appointment.phoneNumber
@@ -2296,7 +2220,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         ) : (
                                                             <>
                                                                 <XCircle className="w-4 h-4 mr-2" />
-                                                                Cancelar Cita
+                                                                Cancelar cita
                                                             </>
                                                         )}
                                                     </Button>
@@ -2384,7 +2308,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                         {canApprove && (
                                             <Button
                                                 onClick={handleApproveService}
-                                                className="h-10 w-full bg-success text-white hover:bg-success-hover"
+                                                className="h-10 w-full bg-brand text-white hover:bg-brand-hover"
                                                 size="sm"
                                             >
                                                 <CheckCircle className="mr-2 h-4 w-4" />
@@ -2443,9 +2367,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         onClick={() => handleDeleteFile(file.id)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-6 w-6 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
+                                                            className="h-8 w-8 shrink-0 rounded-full p-0 text-ink-soft hover:bg-surface-tinted hover:text-ink-strong"
+                                                            aria-label={`Eliminar ${file.fileName}`}
                                                     >
-                                                            <X className="h-3 w-3" />
+                                                            <X className="h-3.5 w-3.5" />
                                                         </Button>
                                                 </div>
                                             ))}
@@ -2499,9 +2424,10 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                         onClick={() => removeSelectedFile(index)}
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="h-6 w-6 shrink-0 p-0 text-ink-soft hover:text-ink-strong"
+                                                            className="h-8 w-8 shrink-0 rounded-full p-0 text-ink-soft hover:bg-surface-tinted hover:text-ink-strong"
+                                                            aria-label={`Eliminar ${file.name}`}
                                                     >
-                                                            <X className="h-3 w-3" />
+                                                            <X className="h-3.5 w-3.5" />
                                                         </Button>
                                                 </div>
                                             ))}
@@ -2512,7 +2438,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             className={`h-11 w-full font-semibold transition-colors ${
                                                 fileValidation && !fileValidation.canSubmit
                                                     ? 'cursor-not-allowed bg-line text-ink-soft hover:bg-line'
-                                                    : 'bg-success text-white hover:bg-success-hover'
+                                                    : 'bg-brand text-white hover:bg-brand-hover'
                                             }`}
                                             disabled={(fileValidation ? !fileValidation.canSubmit : false) || isSubmittingReport}
                                             size="lg"
@@ -2525,7 +2451,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             ) : (
                                                 <>
                                                     <CheckCircle className="w-5 h-5 mr-2" />
-                                                    Enviar reporte
+                                                    Enviar informe
                                                 </>
                                             )}
                                         </Button>
@@ -2538,7 +2464,8 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <SdSectionTitle>Reseña</SdSectionTitle>
                                     <Button
                                         onClick={() => setModalState((prev) => ({ ...prev, showReviewModal: true }))}
-                                        className="h-10 w-full bg-ink-strong text-white hover:bg-black"
+                                        variant="outline"
+                                        className="h-10 w-full border-line text-ink-strong hover:bg-surface-tinted"
                                         size="sm"
                                     >
                                         <Star className="mr-2 h-3.5 w-3.5" />
@@ -2552,7 +2479,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     <div className="flex items-center justify-between">
                                         <SdSectionTitle>Reseña</SdSectionTitle>
                                         <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
-                                            <Star className="h-3.5 w-3.5" />
+                                            <Star className="h-3.5 w-3.5 fill-current" />
                                             {review.score}/5
                                         </span>
                                     </div>
@@ -2639,7 +2566,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 }
                             }}
                             disabled={isConfirming}
-                            className="bg-success text-white hover:bg-success-hover"
+                            className="bg-brand text-white hover:bg-brand-hover"
                         >
                             {isConfirming ? (
                                 <>
