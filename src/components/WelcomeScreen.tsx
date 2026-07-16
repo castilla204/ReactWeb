@@ -2,8 +2,48 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
-import { ShieldCheck, Lock, FileText, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { WELCOME_OPEN_EVENT } from '../lib/welcomeScreen';
+
+/**
+ * Iconos BESPOKE de confianza — dibujados para Inspecciono, no lucide.
+ * Duotono: trazo blanco (currentColor) + un acento ámbar (#FFC61A) por icono,
+ * la misma firma amarilla del icono de la app → coherencia marca. Nada de chips
+ * redondos glassy (el tell de plantilla). El #1 es una LUPA: la marca es "inspecciono".
+ */
+const AMBER = '#FFC61A';
+
+function IconInspect({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className={className} aria-hidden>
+      <circle cx="18" cy="18" r="12.5" stroke="currentColor" strokeWidth="3.2" />
+      <path d="M27.5 27.5 L38 38" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" />
+      <path d="M12.5 18 L16.5 22 L24 13.5" stroke={AMBER} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconShieldEuro({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className={className} aria-hidden>
+      <path d="M20 4 L35 9.5 V21 C35 30 28.5 36.5 20 39.5 C11.5 36.5 5 30 5 21 V9.5 Z" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round" />
+      <path d="M25 15.5 C22.5 13 18 13.4 16 16.8 C14 20.2 15.4 25.2 18.6 26.8 C21 28 24 27.4 25.6 25.5" stroke={AMBER} strokeWidth="2.8" strokeLinecap="round" />
+      <path d="M12.5 19 H22.5" stroke={AMBER} strokeWidth="2.8" strokeLinecap="round" />
+      <path d="M12.5 23 H21" stroke={AMBER} strokeWidth="2.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconReport({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className={className} aria-hidden>
+      <path d="M9 6.5 h16 l7 7 v22 a2.5 2.5 0 0 1 -2.5 2.5 h-20.5 a2.5 2.5 0 0 1 -2.5 -2.5 v-26.5 a2.5 2.5 0 0 1 2.5 -2.5 z" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round" />
+      <path d="M25 6.5 v7 h7" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round" />
+      <path d="M17 20.5 L25 25 L17 29.5 Z" fill={AMBER} />
+      <path d="M10.5 34 H21" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" opacity="0.65" />
+    </svg>
+  );
+}
 
 /**
  * Pantalla de bienvenida de PRIMERA APERTURA — solo en la app nativa (Capacitor),
@@ -71,9 +111,9 @@ function useNativeStatusBarOverride(active: boolean) {
 }
 
 const TRUST_POINTS = [
-  { icon: ShieldCheck, label: 'Expertos verificados', detail: 'peritos, mecánicos y técnicos con credenciales revisadas.' },
-  { icon: Lock, label: 'Pago protegido', detail: 'el importe queda retenido hasta que apruebes el informe.' },
-  { icon: FileText, label: 'Informe con pruebas', detail: 'fotos, vídeo y conclusiones claras de lo revisado.' },
+  { icon: IconInspect, label: 'Expertos verificados', detail: 'peritos, mecánicos y técnicos con credenciales revisadas.' },
+  { icon: IconShieldEuro, label: 'Pago protegido', detail: 'el importe queda retenido hasta que apruebes el informe.' },
+  { icon: IconReport, label: 'Informe con pruebas', detail: 'fotos, vídeo y conclusiones claras de lo revisado.' },
 ] as const;
 
 export function WelcomeScreen({ force = false }: { force?: boolean }) {
@@ -208,15 +248,14 @@ export function WelcomeScreen({ force = false }: { force?: boolean }) {
             Un experto revisa lo que vas a comprar.
           </motion.p>
 
-          <motion.ul {...rise(0.37)} className="mt-7 flex flex-col gap-3.5">
+          <motion.ul {...rise(0.37)} className="mt-8 flex flex-col gap-6">
             {TRUST_POINTS.map(({ icon: Icon, label, detail }) => (
-              <li key={label} className="flex items-start gap-3.5">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.14] ring-1 ring-inset ring-white/15">
-                  <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
-                </span>
-                <p className="pt-0.5 font-display text-[14px] leading-snug text-white/85">
-                  <span className="font-semibold text-white">{label}</span>: {detail}
-                </p>
+              <li key={label} className="flex items-start gap-4">
+                <Icon className="mt-px h-[30px] w-[30px] shrink-0 text-white" />
+                <div className="min-w-0">
+                  <p className="font-display text-[15px] font-bold leading-tight text-white">{label}</p>
+                  <p className="mt-1 max-w-[26ch] font-display text-[14px] leading-snug text-white/80">{detail}</p>
+                </div>
               </li>
             ))}
           </motion.ul>
