@@ -15,6 +15,7 @@ import {
   useAccountIdentity,
   type AccountMenuItem,
 } from './accountMenuShared';
+import { openWelcomeScreen } from '../lib/welcomeScreen';
 import { cn } from '../lib/utils';
 
 function openAccountSettings() {
@@ -41,7 +42,7 @@ function openAccountSettings() {
  */
 export const AccountMenu: React.FC = () => {
   const navigate = useNavigate();
-  const { userAvatar, initials, isExpert, userIsAdmin, signOut } = useAccountIdentity();
+  const { userAvatar, initials, isExpert, userIsAdmin, userEmail, signOut } = useAccountIdentity();
 
   const handleLogout = () => {
     signOut();
@@ -53,6 +54,8 @@ export const AccountMenu: React.FC = () => {
     userIsAdmin,
     go: navigate,
     openSettings: openAccountSettings,
+    userEmail,
+    openWelcome: openWelcomeScreen,
   });
 
   const renderMenuItem = (item: AccountMenuItem) => {

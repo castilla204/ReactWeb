@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { ShieldCheck, Lock, FileText, ArrowRight } from 'lucide-react';
+import { WELCOME_OPEN_EVENT } from '../lib/welcomeScreen';
 
 /**
  * Pantalla de bienvenida de PRIMERA APERTURA — solo en la app nativa (Capacitor),
@@ -100,6 +101,22 @@ export function WelcomeScreen({ force = false }: { force?: boolean }) {
 
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
+
+  // Reapertura a demanda (botón "Ver bienvenida" del menú de cuenta, web y app).
+  // El componente está montado siempre (main.tsx), así que este listener vive aunque
+  // la pantalla no se esté mostrando. Cancela cualquier cierre en curso y la reabre.
+  useEffect(() => {
+    const open = () => {
+      if (closeTimer.current) {
+        clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+      setClosing(false);
+      setShow(true);
+    };
+    window.addEventListener(WELCOME_OPEN_EVENT, open);
+    return () => window.removeEventListener(WELCOME_OPEN_EVENT, open);
   }, []);
 
   // Foco al CTA al abrir: es la única acción y el ancla para teclado/lector de pantalla.

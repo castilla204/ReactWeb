@@ -8,6 +8,7 @@ import {
   useAccountIdentity,
   type AccountMenuItem,
 } from './accountMenuShared';
+import { openWelcomeScreen } from '../lib/welcomeScreen';
 import { cn } from '../lib/utils';
 
 interface MobileProfileMenuProps {
@@ -30,7 +31,7 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
   onOpenSettings,
 }) => {
   const navigate = useNavigate();
-  const { isExpert, userIsAdmin, signOut } = useAccountIdentity();
+  const { isExpert, userIsAdmin, userEmail, signOut } = useAccountIdentity();
 
   const handleLogout = () => {
     signOut();
@@ -47,6 +48,11 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
     },
     openSettings: () => {
       onOpenSettings();
+      onClose();
+    },
+    userEmail,
+    openWelcome: () => {
+      openWelcomeScreen();
       onClose();
     },
   });
