@@ -16,13 +16,22 @@ export const HP_MOBILE_HEADER_INSET_CLASS =
 /** Hero: respiro bajo la pill (pb-2.5 header + pt-2 hero = 18px, escala meso). */
 export const HP_MOBILE_HERO_SECTION_CLASS = 'relative bg-white md:hidden px-4 pt-2 pb-0';
 
-/** Reserva bajo la tarjeta hero (capa clara) — 10px antes de tabs */
-export const HP_MOBILE_HERO_PEEK_RESERVE_CLASS = 'h-2.5 shrink-0';
+/**
+ * Reserva bajo la tarjeta hero — 12px antes de tabs (+6px de pt-1.5 del nav = 18px arriba),
+ * igualado al margen de abajo (6px pb-1.5 nav + 12px pt-3 del muro = 18px). Antes eran
+ * 10px aquí → 16px arriba vs 18px abajo, asimetría real de 2px. Ver reference_hp_mobile_category_vertical_margin.md.
+ */
+export const HP_MOBILE_HERO_PEEK_RESERVE_CLASS = 'h-3 shrink-0';
 
 /** Tabs categoría */
 export const HP_MOBILE_TABS_NAV_CLASS = 'bg-white md:hidden px-4 pb-1.5 pt-1.5';
+/**
+ * Gap comprimido a 8/10px (antes 12/16): con el padding de label ya unificado,
+ * el hueco óptico real entre palabras venía de sumar gap + padding invisible
+ * de cada lado (hasta 40-53px). Ver reference_hp_mobile_category_gap.md.
+ */
 export const HP_MOBILE_TABS_SCROLLER_CLASS =
-  'flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-4';
+  'flex snap-x snap-mandatory gap-2 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-2.5';
 
 /** Botón de cada pestaña — hit area 44px, sin fondo propio (lo aporta el chip interior). */
 export const HP_MOBILE_CATEGORY_TAB_BTN_CLASS =
@@ -34,15 +43,15 @@ export const HP_MOBILE_CATEGORY_TAB_LABEL_BASE_CLASS =
 
 /** Categoría primaria inactiva — texto plano, mismo padding que el chip activo para no saltar de tamaño al cambiar. */
 export const HP_MOBILE_CATEGORY_TAB_INACTIVE_PRIMARY_CLASS =
-  'px-3.5 py-1.5 font-normal text-ink-muted';
+  'px-2.5 py-1.5 font-normal text-ink-muted';
 
-/** Categoría drawer (Cámaras/Fontanería) inactiva — más discreta, separada por el divisor. */
+/** Categoría drawer (Cámaras/Fontanería) inactiva — mismo padding vertical que el primario; horizontal ligeramente más discreto, ya no un extremo de 2px. */
 export const HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS =
-  'px-0.5 py-1 font-normal text-ink-muted';
+  'px-2 py-1.5 font-normal text-ink-muted';
 
-/** Chip brand — solo la categoría activa lo lleva (variante B-lite). */
+/** Chip brand — solo la categoría activa lo lleva (variante B-lite). Padding igual al inactivo para no saltar de tamaño al activarse. */
 export const HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS =
-  'rounded-full bg-brand/[0.08] px-3.5 py-1.5 font-semibold text-brand ring-1 ring-brand/15';
+  'rounded-full bg-brand/[0.08] px-2.5 py-1.5 font-semibold text-brand ring-1 ring-brand/15';
 
 /** Contenedor del muro (Suspense + live) */
 export const HP_MOBILE_WALL_OUTER_CLASS =
