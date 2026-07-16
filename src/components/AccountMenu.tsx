@@ -114,7 +114,7 @@ export const AccountMenu: React.FC = () => {
       <DropdownMenuContent
         align="end"
         sideOffset={10}
-        className="w-[248px] overflow-hidden rounded-xl border border-line bg-white p-0 shadow-[0_8px_28px_rgba(0,0,0,0.12)] motion-reduce:animate-none"
+        className="account-menu-pop w-[248px] overflow-hidden rounded-xl border border-line bg-white p-0 shadow-[0_8px_28px_rgba(0,0,0,0.12)]"
       >
         <AccountIdentityHeader
           avatarSize={36}

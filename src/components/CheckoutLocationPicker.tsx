@@ -8,7 +8,6 @@ import {
     SD_CHECKOUT_DESKTOP_CARD_HEADER_CLASS,
     SD_CHECKOUT_MOBILE_META_CLASS,
     SD_CHECKOUT_MOBILE_TABLE_LABEL_CLASS,
-    SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_BOUNDS_TOP_PX,
 } from '../constants/homepageTypography';
 import { showToast } from '../lib/toast';
 import {
@@ -50,8 +49,6 @@ interface Props {
     externalForm?: boolean;
     /** Ubicación controlada por el padre (con `externalForm`): el mapa coloca aquí su marcador. */
     controlledLocation?: CheckoutLocationData | null;
-    /** Inset inferior medido del footer sticky (mapa full-bleed wizard). */
-    footerInsetPx?: number;
 }
 
 const FIELD_INPUT_CLS =
@@ -327,12 +324,10 @@ function LocationMapDrawer({
     onToggle,
     doorInputRef,
     desktopSidebar = false,
-    footerInsetPx,
 }: LocationDetailsFieldsProps & {
     expanded: boolean;
     onToggle: () => void;
     desktopSidebar?: boolean;
-    footerInsetPx?: number;
 }) {
     const [entered, setEntered] = useState(false);
 
@@ -379,7 +374,6 @@ function LocationMapDrawer({
             detailBadge={detailBadge}
             expanded={expanded}
             onToggle={onToggle}
-            footerInsetPx={footerInsetPx}
         >
             <LocationDetailsFields
                 picked={picked}
@@ -410,7 +404,6 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     showEmbeddedHeader = true,
     externalForm = false,
     controlledLocation = null,
-    footerInsetPx,
 }) => {
     const isWizard = variant === 'wizard';
     const isSidebar = variant === 'sidebar';
@@ -650,16 +643,6 @@ const CheckoutLocationPicker: React.FC<Props> = ({
     };
 
     const wizardPickLocation = isWizard && !referenceMode && !isWorkshopOnly;
-    const mapBoundsBottomPad =
-        referenceMode && isWizard
-            ? 72
-            : (footerInsetPx != null && footerInsetPx > 0 ? footerInsetPx : 96) + 24;
-    const wizardMapBoundsPadding = {
-        top: referenceMode ? 48 : SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_BOUNDS_TOP_PX,
-        bottom: mapBoundsBottomPad,
-        left: 28,
-        right: 28,
-    } as const;
 
     const mapProps = {
         onLocationSelect: handleLocationSelect,
@@ -712,7 +695,7 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                 <div className="relative h-full min-h-0 w-full">
                     <AppointmentMap
                         {...mapProps}
-                        boundsPadding={wizardMapBoundsPadding}
+                        boundsPadding={{ top: 88, bottom: 96, left: 28, right: 28 }}
                         className="h-full w-full min-h-[inherit]"
                     />
                     <LocationMapDrawer
@@ -720,7 +703,6 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         expanded={drawerExpanded}
                         onToggle={() => setDrawerExpanded((v) => !v)}
                         doorInputRef={doorInputRef}
-                        footerInsetPx={footerInsetPx}
                     />
                 </div>
             </CheckoutSelfChoicePickLocationShell>
@@ -863,15 +845,10 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                     )}
                 >
                     {referenceMode ? (
-                        <CheckoutSellerChoicePreviewMap
-                            className="h-full min-h-0"
-                            bare={isWizard}
-                            overlayLegend={!isWizard}
-                        >
+                        <CheckoutSellerChoicePreviewMap className="h-full min-h-0" overlayLegend>
                             <AppointmentMap
                                 {...mapProps}
                                 className="h-full w-full min-h-[inherit]"
-                                boundsPadding={wizardMapBoundsPadding}
                             />
                         </CheckoutSellerChoicePreviewMap>
                     ) : (
@@ -904,7 +881,6 @@ const CheckoutLocationPicker: React.FC<Props> = ({
                         expanded={drawerExpanded}
                         onToggle={() => setDrawerExpanded((v) => !v)}
                         doorInputRef={doorInputRef}
-                        footerInsetPx={footerInsetPx}
                     />
                     </>
                     )}

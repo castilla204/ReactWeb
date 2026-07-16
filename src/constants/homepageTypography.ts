@@ -47,7 +47,7 @@ export const HP_CARD_TITLE_CLASS =
 /** Carrusel de servicios en homepage — solo afecta a móvil (< md). */
 export const HP_WALL_CARD_WIDTH_CLASS = 'w-[148px] min-[428px]:w-[160px] md:w-[184px]';
 
-/** Botón icono flotante sobre foto/mapa (hero) — touch target 44px */
+/** Botón icono flotante (hero, modal categorías) — touch target 44px */
 export const hpIconButtonClass =
   'flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line/80 bg-white/80 text-ink-muted backdrop-blur-sm transition-colors active:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
 
@@ -378,21 +378,7 @@ export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_SHELL_CLASS = 'bg-white';
 
 /** Cuerpo mapa full-bleed — blanco edge-to-edge bajo header ink */
 export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BODY_CLASS =
-  'relative z-0 overflow-x-hidden bg-white';
-
-/** Bleed vertical del mapa bajo la ola — pareado con `.checkout-wizard-header-wave` (22px) */
-export const SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BLEED_CLASS = '-top-[22px]';
-
-/**
- * Anclaje del buscador flotante sobre mapa wizard self:
- * compensa bleed (-22px) + voladizo de ola (16px) + respiro (12px) para quedar
- * claramente bajo la banda ink, fuera del stacking del header (z-10).
- */
-export const SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_OVERLAY_TOP_CLASS =
-  'top-[calc(22px+16px+0.75rem)]';
-
-/** Padding superior al encuadrar cobertura cuando hay buscador wizard self (px). */
-export const SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_BOUNDS_TOP_PX = 132;
+  'relative z-0 overflow-hidden bg-white';
 
 /** Superficie interactiva ligera en wizard móvil (calendario sin card anidada) */
 export const SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS =
@@ -475,22 +461,12 @@ export const SD_CHECKOUT_MOBILE_TABLE_WRAP_CLASS = 'pb-3 pt-1';
 /** @deprecated El gutter y pt-5 los aplica CheckoutMobileWizardShell en main */
 export const SD_CHECKOUT_MOBILE_PAYMENT_BODY_CLASS = '';
 
-/** Wrapper calendario — mismo z que choose; el aire lo da wave-scroll + pt-5 del shell */
-export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_STACK_CLASS = 'relative z-[1]';
-
-/** Cuerpo paso calendario self — blanco continuo; pt-5 hereda de SCROLL_BODY_CLASS */
-export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_BODY_CLASS =
-  '!bg-white relative z-[1] pb-5';
-
-/** Shell paso calendario — evita franja tinted en el margen bajo la ola */
-export const SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_SHELL_CLASS = 'bg-white';
-
 /** Cuerpo paso elección — solo padding inferior extra (tinte/pt en shell) */
 export const SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS = 'pb-5';
 
-/** Stack de cards elección — tuck bajo la ola decorativa */
+/** Stack de cards elección — por encima de la ola decorativa del header */
 export const SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS =
-  'relative z-[1] -mt-2 flex flex-col gap-4 [@media(min-height:700px)]:gap-5';
+  'relative flex flex-col gap-4 [@media(min-height:700px)]:gap-5';
 
 /** Rail de confianza in-scroll (paso elección) */
 export const SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS =
@@ -726,13 +702,10 @@ export const SD_CHECKOUT_MAP_FRAME_CLASS = SD_CHECKOUT_PICKER_FRAME_CLASS;
  * coexiste en pantalla con el CTA de avance (son ramas del mismo ternario por
  * `mobileStep`), así que compartir color no crea ambigüedad.
  */
-// CTA de acción del checkout: azul de marca (mismo primario que SileoButton/login y el
-// resto de la app). Antes era negro (bg-ink-strong), un huérfano frente al azul de marca
-// de todo lo demás; unificado para que la acción de máxima intención use la identidad.
 export const SD_CHECKOUT_MOBILE_CTA_CLASS =
-  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-brand text-lead font-semibold text-white shadow-[0_4px_16px_hsl(var(--brand)/0.22)] transition-[colors,transform,box-shadow] duration-200 ease-out hover:bg-brand-hover hover:shadow-[0_6px_20px_hsl(var(--brand)/0.28)] motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100';
+  'inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-full bg-ink-strong text-lead font-semibold text-white shadow-[0_2px_10px_rgba(15,23,42,0.12)] transition-[colors,transform,box-shadow] duration-200 ease-out hover:bg-ink hover:shadow-[0_4px_16px_rgba(15,23,42,0.18)] motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100';
 
-/** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo azul de marca que el de pago. */
+/** CTA de AVANCE del wizard (Continuar/Siguiente). Mismo negro que el de pago. */
 export const SD_CHECKOUT_MOBILE_CTA_DARK_CLASS = SD_CHECKOUT_MOBILE_CTA_CLASS;
 
 /** Separador entre mapa y resumen en checkout móvil paso 2 */

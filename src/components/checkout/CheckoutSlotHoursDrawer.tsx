@@ -10,8 +10,6 @@ interface CheckoutSlotHoursDrawerProps {
     expanded: boolean;
     onToggle: () => void;
     children: React.ReactNode;
-    /** Alto medido del footer sticky — ancla el drawer justo encima sin franja. */
-    footerInsetPx?: number;
 }
 
 /**
@@ -38,7 +36,6 @@ export function CheckoutSlotHoursDrawer({
     expanded,
     onToggle,
     children,
-    footerInsetPx,
 }: CheckoutSlotHoursDrawerProps) {
     const [entered, setEntered] = useState(false);
     const expandedMaxHeightPx = useViewportCappedHeight(0.5, 340);
@@ -68,16 +65,9 @@ export function CheckoutSlotHoursDrawer({
 
             <div
                 className={cn(
-                    'pointer-events-none fixed inset-x-0 z-[81] motion-reduce:transition-none lg:hidden',
-                    footerInsetPx == null || footerInsetPx <= 0
-                        ? cn('bottom-0', SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS)
-                        : undefined,
+                    'pointer-events-none fixed inset-x-0 bottom-0 z-[81] motion-reduce:transition-none lg:hidden',
+                    SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
                 )}
-                style={
-                    footerInsetPx != null && footerInsetPx > 0
-                        ? { bottom: footerInsetPx }
-                        : undefined
-                }
                 aria-live="polite"
             >
                 <div
@@ -122,7 +112,7 @@ export function CheckoutSlotHoursDrawer({
                                 ) : null}
                             </div>
                             {selectedLabel && !expanded ? (
-                                <span className="shrink-0 rounded-xl bg-brand px-3 py-1.5 text-meta font-bold tabular-nums text-white shadow-[0_2px_8px_hsl(var(--brand)/0.28)]">
+                                <span className="shrink-0 rounded-lg bg-brand px-2.5 py-1 text-caption font-bold tabular-nums text-white">
                                     {selectedLabel}
                                 </span>
                             ) : (

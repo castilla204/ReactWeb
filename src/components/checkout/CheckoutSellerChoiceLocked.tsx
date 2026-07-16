@@ -13,8 +13,6 @@ import {
     SD_CHECKOUT_EMBEDDED_INTERACTIVE_SHELL_CLASS,
     SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
     SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS,
-    SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-    SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_OVERLAY_TOP_CLASS,
 } from '../../constants/homepageTypography';
 
 const BADGE_BASE_CLASS =
@@ -202,12 +200,7 @@ export function CheckoutSelfChoicePickLocationShell({
             <div className="relative min-h-0 w-full flex-1">
                 {searchBar ? (
                     <div
-                        className={cn(
-                            'pointer-events-none absolute inset-x-0 z-[20]',
-                            SD_CHECKOUT_MOBILE_WIZARD_MAP_SEARCH_OVERLAY_TOP_CLASS,
-                            SD_CHECKOUT_MOBILE_GUTTER_CLASS,
-                            'pb-3',
-                        )}
+                        className="pointer-events-none absolute inset-x-0 top-0 z-[20] bg-gradient-to-b from-white/95 via-white/70 to-transparent px-5 pb-5 pt-2.5"
                         aria-hidden={false}
                     >
                         <div className="pointer-events-auto">{searchBar}</div>
@@ -272,7 +265,7 @@ export function CheckoutSelfChoicePreviewCalendar({
                     ? bare
                         ? 'flex h-full w-full flex-col'
                         : 'flex h-full w-full flex-col px-3 py-2 lg:px-4 lg:py-2'
-                    : 'w-full pb-2 pt-0 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
+                    : 'w-full pb-3 pt-0 max-lg:px-0 lg:pl-[calc(1.25rem+1.5rem+0.625rem)] lg:pr-5',
                 className,
             )}
         >
@@ -557,26 +550,23 @@ export function CheckoutSellerChoicePreviewMap({
     showFooter = false,
     /** Leyenda flotante en vez de franja de cabecera (desktop sidebar vendedor). */
     overlayLegend = false,
-    /** Solo mapa: sin cabecera, leyenda ni pie (wizard móvil con header ink). */
-    bare = false,
 }: {
     children: React.ReactNode;
     className?: string;
     /** Pie desactivado en referencia: el aviso superior basta. */
     showFooter?: boolean;
     overlayLegend?: boolean;
-    bare?: boolean;
 }) {
     return (
         <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white', className)}>
-            {!bare && !overlayLegend ? (
+            {!overlayLegend ? (
                 <CheckoutSellerChoicePreviewHeader variant="location" compact className="w-full shrink-0" />
             ) : null}
             <div className="relative min-h-0 w-full flex-1">
-                {!bare && overlayLegend ? <CheckoutMapCoverageOverlayLegend /> : null}
+                {overlayLegend ? <CheckoutMapCoverageOverlayLegend /> : null}
                 {children}
             </div>
-            {!bare && showFooter ? <CheckoutSellerChoicePreviewFooter variant="location" /> : null}
+            {showFooter ? <CheckoutSellerChoicePreviewFooter variant="location" /> : null}
         </div>
     );
 }
@@ -630,7 +620,7 @@ export function CheckoutSellerChoicePreviewCalendar({
                 <div
                     className={cn(
                         !bare && SD_CHECKOUT_EMBEDDED_CALENDAR_SHELL_PADDING_CLASS,
-                        bare && !splitColumn && 'p-2 select-none [&_td_button]:pointer-events-none [&_td_button]:cursor-default',
+                        bare && !splitColumn && 'p-2',
                         !bare &&
                             !splitColumn &&
                             'select-none [&_td_button]:pointer-events-none [&_td_button]:cursor-default',

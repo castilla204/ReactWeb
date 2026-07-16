@@ -22,8 +22,6 @@ import {
 
   SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BODY_CLASS,
 
-  SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BLEED_CLASS,
-
   SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_SHELL_CLASS,
 
 } from '../../constants/homepageTypography';
@@ -154,8 +152,6 @@ export function CheckoutMobileWizardShell({
 
           'checkout-wizard-header--wave relative z-10 shrink-0 overflow-visible',
 
-          !fullBleed && 'checkout-wizard-header--wave-scroll',
-
           headerClassName,
 
         )}
@@ -231,9 +227,11 @@ export function CheckoutMobileWizardShell({
           <div
 
             className={cn(
-              'absolute inset-x-0',
-              SD_CHECKOUT_MOBILE_WIZARD_FULLBLEED_BLEED_CLASS,
+
+              'absolute inset-x-0 -top-4',
+
               fullBleedInsetStyle == null && SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
+
             )}
 
             style={fullBleedInsetStyle}

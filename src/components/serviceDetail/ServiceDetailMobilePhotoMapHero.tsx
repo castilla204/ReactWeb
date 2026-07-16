@@ -25,13 +25,6 @@ interface ServiceDetailMobilePhotoMapHeroProps {
 
 const MAX_PILL_INDICATORS = 7;
 
-// El hero móvil tapa el mapa de forma asimétrica: arriba con el scrim + los botones flotantes
-// del topbar (~80px), abajo con la tarjeta blanca que se solapa -mt-5 (20px opacos) más el
-// scrim/puntos del carrusel. Referencia como objeto module-level (no inline) para que su
-// identidad sea estable entre renders: CoverageMapCanvas usa este valor en dependencias de
-// efecto y un objeto nuevo en cada render forzaría recrear el mapa constantemente.
-const MOBILE_HERO_MAP_FIT_PADDING = { top: 30, bottom: 72, left: 20, right: 20 };
-
 function PhotoSlide({
   src,
   index,
@@ -122,7 +115,6 @@ function MapSlide({
             longitude={location.longitude}
             rangeKm={isWorkshopOnly ? 0 : radius}
             variant="preview"
-            fitPadding={MOBILE_HERO_MAP_FIT_PADDING}
             className="h-full min-h-0 w-full rounded-none border-0"
           />
         </Suspense>
