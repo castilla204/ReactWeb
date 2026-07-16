@@ -20,6 +20,8 @@ interface ResponsiveModalProps {
   dialogStyle?: React.CSSProperties
   noOverlay?: boolean
   noHandle?: boolean
+  /** Foco nativo al abrir (Vaul lo desactiva por defecto). Opt-in: no cambia el resto de drawers. */
+  autoFocus?: boolean
   mobileBreakpoint?: number
   snapPoints?: (number | string)[]
   activeSnapPoint?: number | string | null
@@ -77,6 +79,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   dialogStyle,
   noOverlay = false,
   noHandle = false,
+  autoFocus = false,
   mobileBreakpoint = 1024,
   snapPoints,
   activeSnapPoint,
@@ -133,6 +136,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
         handleOnly={handleOnly}
         snapToSequentialPoint={snapToSequentialPoint !== undefined ? snapToSequentialPoint : true} // ✅ true por defecto para fluidez
         shouldScaleBackground={scaleBackground} // ✅ Efecto de escalado del fondo como Airbnb (opt-out: scaleBackground={false})
+        autoFocus={autoFocus}
       >
         <DrawerContent
             className={cn(
@@ -264,6 +268,18 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
           style={{ ...style, ...dialogStyle }}
           hideCloseButton={true}
           overlayClassName="bg-black/40"
+          onOpenAutoFocus={(e) => {
+            // En escritorio el usuario espera poder escribir de inmediato (a
+            // diferencia de móvil, donde el foco automático es molesto). Si el
+            // panel trae un buscador, foca ahí en vez del primer elemento
+            // enfocable por orden del DOM (antes caía en el botón cerrar).
+            const root = e.currentTarget as HTMLElement
+            const input = root.querySelector<HTMLElement>('input')
+            if (input) {
+              e.preventDefault()
+              input.focus()
+            }
+          }}
         >
           {title && hideDialogHeader ? (
             <DialogHeader className="sr-only">

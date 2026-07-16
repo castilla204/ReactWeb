@@ -66,8 +66,12 @@ const FAQS = [
   },
 ] as const;
 
+/* Un solo techo tipográfico para toda la página: el mismo token "headline"
+   que usa el H1 del hero (index.css .hp-hero-title-lg lg:), en vez de un
+   valor suelto que escalaba por encima de él (2rem → sensación de "grande"
+   sin escalón real entre hero y secciones). */
 const sectionTitle =
-  'text-[1.65rem] lg:text-[2rem] font-semibold leading-[1.12] tracking-[-0.035em] text-ink-strong';
+  'text-headline font-semibold leading-[1.12] tracking-[-0.035em] text-ink-strong';
 
 const sectionSubtitle = 'mt-3 text-lead lg:text-[16px] leading-snug text-ink-muted';
 

@@ -8,7 +8,15 @@ export default {
     theme: {
         extend: {
             fontFamily: {
+                // `sans` (clase por defecto en <body>, index.html) y `display` eran dos
+                // stacks distintos: sans arrancaba en "SF Pro Display"/system-ui SIN
+                // Manrope, así que todo texto que no pidiera `font-display` explícitamente
+                // (la mayoría de <p>/<span>/<div> de la app) nunca cargaba la fuente de
+                // marca — contradice DESIGN.md, que declara Manrope para TODOS los roles
+                // tipográficos, body incluido. Unificados: `sans` = `display`.
                 sans: [
+                    'Manrope',
+                    '"Manrope Fallback"',
                     '"SF Pro Display"',
                     'system-ui',
                     '-apple-system',

@@ -50,7 +50,7 @@ export function MobileDetailsSheet({
           <motion.button
             type="button"
             aria-label="Cerrar detalles"
-            className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-[2px] lg:hidden"
+            className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-[2px] md:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -64,7 +64,7 @@ export function MobileDetailsSheet({
             aria-modal="true"
             aria-labelledby="mobile-details-sheet-title"
             className={cn(
-              'fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-[1.25rem] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.12)] lg:hidden',
+              'fixed inset-x-0 bottom-0 z-[60] flex flex-col rounded-t-[1.25rem] bg-white shadow-[0_-8px_40px_rgba(0,0,0,0.12)] md:hidden',
               className
             )}
             style={{ maxHeight: `${SHEET_MAX_VH}vh` }}

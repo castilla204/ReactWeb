@@ -150,7 +150,7 @@ export function CheckoutMobileWizardShell({
 
           SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS,
 
-          'checkout-wizard-header--wave relative z-10 shrink-0 overflow-visible',
+          'relative z-10 shrink-0',
 
           headerClassName,
 
@@ -159,28 +159,6 @@ export function CheckoutMobileWizardShell({
       >
 
         {header}
-
-        <svg
-
-          className="checkout-wizard-header-wave"
-
-          viewBox="0 0 375 24"
-
-          preserveAspectRatio="none"
-
-          aria-hidden
-
-        >
-
-          <path
-
-            fill="currentColor"
-
-            d="M0 0 H375 V8 C295 8 240 22 187 12 C130 0 75 20 0 16 Z"
-
-          />
-
-        </svg>
 
       </header>
 
@@ -228,7 +206,7 @@ export function CheckoutMobileWizardShell({
 
             className={cn(
 
-              'absolute inset-x-0 -top-4',
+              'absolute inset-x-0 top-0',
 
               fullBleedInsetStyle == null && SD_CHECKOUT_MOBILE_FOOTER_INSET_BOTTOM_CLASS,
 

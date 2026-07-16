@@ -76,6 +76,7 @@ const PreHireChat = lazy(() =>
 );
 
 const SearchDetails = lazy(() => import('../components/SearchDetails'));
+import { SearchDetailsSkeleton } from '../components/SearchDetailsSkeleton';
 
 /**
  * MessagesPage — Rediseño 2026-06 "El gabinete del perito" (iter. 2).
@@ -840,16 +841,7 @@ const HireConversationPanel: React.FC<HireConversationPanelProps> = ({
                 </button>
             </div>
             <div className="min-h-0 flex-1">
-                <Suspense
-                    fallback={
-                        <div className="flex h-full items-center justify-center bg-white">
-                            <MessageCircle
-                                className="h-6 w-6 animate-pulse text-line"
-                                aria-hidden
-                            />
-                        </div>
-                    }
-                >
+                <Suspense fallback={<SearchDetailsSkeleton embedded />}>
                     <SearchDetails
                         isAdmin={isAdmin}
                         searchHireId={conversation.searchHireId ?? undefined}

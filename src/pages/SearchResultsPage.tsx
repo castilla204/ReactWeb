@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { NotFoundPage } from './NotFoundPage';
 import { parsePositiveIntegerParam } from '../utils/routeParams';
 import { isAdmin as isAdminUser } from '../utils/admin';
-import { SileoSkeleton } from '../components/ui/sileo-skeleton';
+import { SearchDetailsSkeleton } from '../components/SearchDetailsSkeleton';
 
 const SearchDetails = lazy(() => import('../components/SearchDetails'));
 
@@ -21,13 +21,7 @@ export function SearchResultsPage() {
     }
 
     return (
-        <Suspense
-            fallback={
-                <div className="flex min-h-[50vh] items-center justify-center p-8">
-                    <SileoSkeleton className="h-8 w-48" />
-                </div>
-            }
-        >
+        <Suspense fallback={<SearchDetailsSkeleton />}>
             <SearchDetails
                 searchId={searchId}
                 onBack={() => navigate('/hires')}

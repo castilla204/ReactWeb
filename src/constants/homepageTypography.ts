@@ -305,7 +305,7 @@ export const SD_CHECKOUT_DESKTOP_MAP_COLUMN_CLASS =
   'min-w-0 flex-1 lg:min-w-[50%]';
 
 /** SearchDetails desktop — layout marketplace (misma paleta que checkout) */
-export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'lg:bg-surface-tinted';
+export const SD_SEARCH_DETAILS_DESKTOP_PAGE_CLASS = 'md:bg-surface-tinted';
 
 export const SD_SEARCH_DETAILS_DESKTOP_CARD_CLASS = SD_CHECKOUT_DESKTOP_CARD_CLASS;
 
@@ -321,10 +321,13 @@ export const SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS =
   'mx-auto flex h-full w-full max-w-[90rem] flex-1 flex-col min-h-0';
 
 export const SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS =
-  'flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:items-stretch lg:gap-4 lg:p-0 lg:px-6 lg:pb-5 lg:pt-4';
+  'flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 md:flex-row md:items-stretch md:gap-4 md:p-0 md:px-6 md:pb-5 md:pt-4';
 
+/** Alineado con el breakpoint `md` que usa MessagesPage para su grid de dos
+ * columnas — antes usaba `lg` (1024px) y dejaba un hueco 768-1023px donde la
+ * bandeja ya mostraba el panel embebido pero este aside desaparecía sin aviso. */
 export const SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS =
-  'hidden lg:flex lg:w-[320px] lg:shrink-0 xl:w-[360px] lg:flex-col lg:min-h-0';
+  'hidden md:flex md:w-[320px] md:shrink-0 xl:w-[360px] md:flex-col md:min-h-0';
 
 export const SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS =
   'flex min-h-0 min-w-0 flex-1 flex-col';
@@ -345,12 +348,17 @@ export const SD_CHECKOUT_MOBILE_STEP_DESC_CLASS =
   'mt-2.5 max-w-[46ch] text-meta leading-relaxed text-ink-muted';
 
 /**
- * Superficie del header móvil de checkout — banda ink (chrome del wizard).
- * Separa orientación (pregunta + stepper) del cuerpo blanco de decisión.
- * Precedente: ServiceDetailDesktopBookingAside (banda precio bg-ink-strong).
+ * Superficie del header móvil de checkout — app-bar blanca con elevación suave.
+ * Cabecera clara tipo comercio (Stripe/Airbnb/Booking): progreso + pregunta sobre
+ * blanco, separada del cuerpo por una SOMBRA descendente (no hairline) para que
+ * flote como barra de app y el cambio "se note". Decisión usuario 2026-07-17
+ * (banda ink-strong + ola decorativa retiradas antes; hairline → sombra ahora).
+ * Alternativa "más oscura" a un token: cambiar `bg-white` por `bg-surface-tinted`.
+ * Sombra de dos capas: sello nítido de 1px + difusa muy baja (respeta α baja del
+ * sistema; el pico de opacidad cae por el blur + spread negativo).
  */
 export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS =
-  'bg-ink-strong';
+  'bg-white shadow-[0_1px_0_0_rgba(15,23,42,0.05),0_6px_16px_-8px_rgba(15,23,42,0.18)]';
 
 /** @deprecated Usar SD_CHECKOUT_MOBILE_WIZARD_HEADER_SURFACE_CLASS en el wizard. */
 export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
@@ -363,10 +371,10 @@ export const SD_CHECKOUT_MOBILE_HEADER_SURFACE_CLASS =
 export const SD_CHECKOUT_MOBILE_WIZARD_TOP_PAD_CLASS =
   'pt-[calc(env(safe-area-inset-top,0px)+0.875rem)]';
 
-/** Aire bajo título/descripción antes de la ola decorativa */
-export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS = 'pb-6';
+/** Aire bajo título/descripción del header claro (sin ola: hairline hace la separación) */
+export const SD_CHECKOUT_MOBILE_WIZARD_HEADER_PB_CLASS = 'pb-4';
 
-/** Aire bajo la ola en el cuerpo scroll del wizard (todos los pasos) */
+/** Aire bajo la cabecera en el cuerpo scroll del wizard (todos los pasos) */
 export const SD_CHECKOUT_MOBILE_WIZARD_BODY_PT_CLASS = 'pt-5';
 
 /** Cuerpo scroll del wizard: gutter + ritmo bajo la ola (un solo lugar, no en hijos) */
@@ -388,28 +396,13 @@ export const SD_CHECKOUT_MOBILE_INTERACTIVE_SURFACE_CLASS =
 export const SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS =
   'flex items-start gap-2.5 rounded-xl border border-brand/12 bg-white px-5 py-3 shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
 
-/** Énfasis en descripciones de paso sobre banda oscura */
-export const SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS =
-  'font-semibold text-white';
+/** Énfasis en descripciones de paso (header claro) */
+export const SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_CLASS =
+  'font-semibold text-ink-strong';
 
 /** Etiqueta de campo en formularios del checkout móvil */
 export const SD_CHECKOUT_MOBILE_FIELD_LABEL_CLASS =
   'block text-caption font-medium text-ink-muted';
-
-/** Título de paso sobre banda oscura — text-title para separarse de labels de tarjeta (text-body) */
-export const SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS =
-  'text-title font-bold leading-[1.2] tracking-[-0.02em] text-white [text-wrap:balance]';
-
-/** Descripción sobre banda oscura — misma escala que pasos claros */
-export const SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS =
-  'mt-2.5 max-w-[46ch] text-meta leading-relaxed text-white/85';
-
-/** Precio en cabecera de pago sobre banda oscura — no superar al título del paso */
-export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS =
-  'text-lead font-bold tabular-nums leading-none tracking-[-0.02em] text-white';
-
-export const SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_ON_DARK_CLASS =
-  'mt-1 text-caption text-white/85';
 
 /**
  * Cabecera de paso móvil como BANDA tipo topbar para los pasos con scroll (donde el

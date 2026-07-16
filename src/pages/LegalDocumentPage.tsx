@@ -17,8 +17,10 @@ const MobileBottomBar = lazy(() =>
   import('../components/MobileBottomBar').then((m) => ({ default: m.MobileBottomBar })),
 );
 
-/** Contenedor de página, ancho. Hero e índice+contenido comparten ancho. */
-const PAGE_CONTAINER = 'mx-auto w-full max-w-[1240px] px-4 md:px-6';
+/** Contenedor de página, ancho. Hero e índice+contenido comparten ancho.
+ *  Mismo ancho que el Footer compartido (Footer.tsx: max-w-[1280px] px-6 lg:px-10)
+ *  para que el borde del contenido y el del pie coincidan (antes: 1240px vs 1280px). */
+const PAGE_CONTAINER = 'mx-auto w-full max-w-[1280px] px-6 lg:px-10';
 
 interface LegalApiResponse {
   content: string;

@@ -21,19 +21,18 @@ interface CheckoutMobileStepperProps {
     className?: string;
     /** Pasos del flujo; por defecto cuatro. */
     steps?: readonly StepDef[];
-    /** Segmentos sobre banda oscura (header ink-strong). */
-    onDark?: boolean;
 }
 
 /**
- * Progreso del wizard móvil: línea segmentada. Tramos completados y el actual en
- * azul de marca; pendientes en gris. Motion mínima: solo un fill al avanzar.
+ * Progreso del wizard móvil: línea segmentada sobre header claro. Tramos completados
+ * y el actual en azul de marca; pendientes en gris. Motion mínima: solo un fill al
+ * avanzar. La etiqueta del paso la pone el título del header (CheckoutMobileStepHeader),
+ * así que aquí solo va la barra; el nombre viaja en aria-valuetext para lectores.
  */
 export function CheckoutMobileStepper({
     currentStep,
     className,
     steps = STEPS,
-    onDark = false,
 }: CheckoutMobileStepperProps) {
     const index = Math.max(0, steps.findIndex((s) => s.id === currentStep));
     const current = steps[index];
@@ -75,8 +74,7 @@ export function CheckoutMobileStepper({
                             key={step.id}
                             aria-hidden
                             className={cn(
-                                'checkout-stepper-segment relative h-[3px] min-w-0 flex-1 rounded-full',
-                                onDark ? 'bg-white/35' : 'bg-line',
+                                'checkout-stepper-segment relative h-[3px] min-w-0 flex-1 rounded-full bg-line',
                                 isDone && 'checkout-stepper-segment--done',
                                 isActive && 'checkout-stepper-segment--active',
                                 isPending && 'checkout-stepper-segment--pending',
@@ -98,14 +96,6 @@ export function CheckoutMobileStepper({
                     );
                 })}
             </div>
-            {current?.label && !onDark ? (
-                <p
-                    className="mt-1.5 text-caption font-medium text-ink-muted"
-                    aria-hidden
-                >
-                    {current.label}
-                </p>
-            ) : null}
         </div>
     );
 }

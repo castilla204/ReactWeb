@@ -34,6 +34,17 @@ import { HomepageDesktopTopBar } from './components/HomepageDesktopTopBar';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { RouteSuspense } from './components/RouteSuspense';
 import { MapPageSkeleton } from './components/ui/map-page-skeleton';
+import { SearchDetailsSkeleton } from './components/SearchDetailsSkeleton';
+import { ServiceDetailSkeleton } from './components/ui/service-detail-skeleton';
+import { SearchDashboardSkeleton } from './components/searches/SearchDashboardSkeleton';
+import { AdminTableSkeleton } from './components/admin/ui/AdminSkeleton';
+import { CheckoutPageSkeleton } from './components/ui/checkout-page-skeleton';
+import { HelpCenterSkeleton } from './components/ui/help-center-skeleton';
+import { LandingPageSkeleton } from './components/ui/landing-page-skeleton';
+import { PreHireChatSkeleton } from './components/ui/prehire-chat-skeleton';
+import { MessagesPageSkeleton } from './components/ui/messages-page-skeleton';
+import { ExpertPanelSkeleton } from './components/ui/expert-panel-skeleton';
+import { ReceiptPageSkeleton, ListPageSkeleton } from './components/ui/generic-page-skeletons';
 import HomePage from './pages/HomePage';
 import * as LazyPages from './routes/lazyPages';
 import { GoogleAuth } from './components/GoogleAuth';
@@ -92,7 +103,7 @@ const SearchDetailsWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin }) => {
     const navigate = useNavigate();
     
     return (
-        <RouteSuspense>
+        <RouteSuspense fallback={<SearchDetailsSkeleton />}>
             <LazyPages.SearchDetails
                 onBack={() => navigate(-1)}
                 isAdmin={isAdmin}
@@ -123,7 +134,7 @@ const SearchDetailsByHireWrapper: React.FC<{ isAdmin: boolean }> = ({ isAdmin })
     }
 
     return (
-        <RouteSuspense>
+        <RouteSuspense fallback={<SearchDetailsSkeleton />}>
             <LazyPages.SearchDetails
                 onBack={() => navigate(-1)}
                 isAdmin={isAdmin}
@@ -559,9 +570,9 @@ const AppContent: React.FC = () => {
                             <Route path="/appointment/schedule/:token" element={<RouteSuspense><LazyPages.SellerBookingPage /></RouteSuspense>} />
                             <Route path="/appointment/confirm/:token" element={<RouteSuspense><LazyPages.ExpertConfirmationPage /></RouteSuspense>} />
 
-                            <Route path="/success" element={<RouteSuspense><PaymentSuccessPage /></RouteSuspense>} />
-                            <Route path="/cancel" element={<RouteSuspense><PaymentCancelPage /></RouteSuspense>} />
-                            <Route path="/login" element={<RouteSuspense><LazyPages.LoginPage /></RouteSuspense>} />
+                            <Route path="/success" element={<RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando confirmación de pago" />}><PaymentSuccessPage /></RouteSuspense>} />
+                            <Route path="/cancel" element={<RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando" />}><PaymentCancelPage /></RouteSuspense>} />
+                            <Route path="/login" element={<RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando inicio de sesión" />}><LazyPages.LoginPage /></RouteSuspense>} />
                             <Route path="/ad/:id" element={<RouteSuspense><AdDetails onBack={() => window.history.back()} /></RouteSuspense>} />
 
                             {/* MFA */}
@@ -569,7 +580,7 @@ const AppContent: React.FC = () => {
                                 path="/mfa/setup"
                                 element={
                                     <ProtectedRoute>
-                                        <RouteSuspense>
+                                        <RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando verificación en dos pasos" />}>
                                             <LazyPages.MFASetupPage />
                                         </RouteSuspense>
                                     </ProtectedRoute>
@@ -577,67 +588,67 @@ const AppContent: React.FC = () => {
                             />
 
                             {/* Contrataciones e informes */}
-                            <Route path="/hires" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchesPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/hires" element={<ProtectedRouteWithMFA><RouteSuspense fallback={<SearchDashboardSkeleton />}><LazyPages.SearchesPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/hires/:id" element={<ProtectedRouteWithMFA><SearchDetailsByHireWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
                             <Route path="/searches/:id" element={<ProtectedRouteWithMFA><SearchDetailsWrapper isAdmin={user?.role === 'Admin' || user?.email === 'dcastillaa@gmail.com'} /></ProtectedRouteWithMFA>} />
                             <Route path="/searches/:id/report" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.SearchResultsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
 
                             <Route path="/admin" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Admin]}><AdminLayout /></ProtectedRouteWithMFA>}>
-                                <Route index element={<RouteSuspense><LazyPages.AdminDashboard /></RouteSuspense>} />
-                                <Route path="users" element={<RouteSuspense><LazyPages.UserManagement onBack={() => window.location.href = '/'} /></RouteSuspense>} />
-                                <Route path="experts/:expertId/edit" element={<RouteSuspense><LazyPages.AdminExpertEditPage /></RouteSuspense>} />
-                                <Route path="config/*" element={<RouteSuspense><LazyPages.AdminConfigPage /></RouteSuspense>} />
-                                <Route path="categories" element={<RouteSuspense><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
-                                <Route path="mappings" element={<RouteSuspense><LazyPages.AdminMappingsPage /></RouteSuspense>} />
-                                <Route path="templates/email" element={<RouteSuspense><LazyPages.AdminEmailTemplatesPage /></RouteSuspense>} />
-                                <Route path="notifications" element={<RouteSuspense><LazyPages.NotificationManagement /></RouteSuspense>} />
-                                <Route path="disputes" element={<RouteSuspense><LazyPages.DisputePanel /></RouteSuspense>} />
-                                <Route path="jobs" element={<RouteSuspense><LazyPages.HangfirePanel /></RouteSuspense>} />
+                                <Route index element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminDashboard /></RouteSuspense>} />
+                                <Route path="users" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.UserManagement onBack={() => window.location.href = '/'} /></RouteSuspense>} />
+                                <Route path="experts/:expertId/edit" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminExpertEditPage /></RouteSuspense>} />
+                                <Route path="config/*" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminConfigPage /></RouteSuspense>} />
+                                <Route path="categories" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminCategoriesPage /></RouteSuspense>} />
+                                <Route path="mappings" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminMappingsPage /></RouteSuspense>} />
+                                <Route path="templates/email" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.AdminEmailTemplatesPage /></RouteSuspense>} />
+                                <Route path="notifications" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.NotificationManagement /></RouteSuspense>} />
+                                <Route path="disputes" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.DisputePanel /></RouteSuspense>} />
+                                <Route path="jobs" element={<RouteSuspense fallback={<AdminTableSkeleton rows={8} />}><LazyPages.HangfirePanel /></RouteSuspense>} />
                             </Route>
 
                             <Route path="/expert/join" element={<ProtectedRoute><RouteSuspense><LazyPages.BecomeExpertPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/expert" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/expert" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense fallback={<ExpertPanelSkeleton />}><LazyPages.ExpertPanelPage /></RouteSuspense></ProtectedRouteWithMFA>} />
                             <Route path="/expert/inspection/:hireId" element={<ProtectedRouteWithMFA requireMfa allowedRoles={[UserRole.Expert]}><RouteSuspense><LazyPages.ExpertInspectionPage /></RouteSuspense></ProtectedRouteWithMFA>} />
-                            <Route path="/expert/stripe/complete" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/expert/stripe/refresh" element={<ProtectedRoute><RouteSuspense><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/account/transactions" element={<ProtectedRouteWithMFA><RouteSuspense><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
-                            <Route path="/service/:serviceId" element={<RouteSuspense><LazyPages.ServiceDetailPage /></RouteSuspense>} />
-                            <Route path="/checkout/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.CheckoutPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/inquiry/:serviceId" element={<ProtectedRoute><RouteSuspense><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
-                            <Route path="/messages" element={<ProtectedRoute><RouteSuspense><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/expert/stripe/complete" element={<ProtectedRoute><RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando estado de Stripe" />}><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/expert/stripe/refresh" element={<ProtectedRoute><RouteSuspense fallback={<ReceiptPageSkeleton ariaLabel="Cargando estado de Stripe" />}><LazyPages.StripeOnboardingReturnPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/account/transactions" element={<ProtectedRouteWithMFA><RouteSuspense fallback={<ListPageSkeleton ariaLabel="Cargando transacciones" />}><LazyPages.TransactionsPage /></RouteSuspense></ProtectedRouteWithMFA>} />
+                            <Route path="/service/:serviceId" element={<RouteSuspense fallback={<ServiceDetailSkeleton />}><LazyPages.ServiceDetailPage /></RouteSuspense>} />
+                            <Route path="/checkout/:serviceId" element={<ProtectedRoute><RouteSuspense fallback={<CheckoutPageSkeleton />}><LazyPages.CheckoutPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/inquiry/:serviceId" element={<ProtectedRoute><RouteSuspense fallback={<PreHireChatSkeleton />}><LazyPages.PreHireChatPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/messages" element={<ProtectedRoute><RouteSuspense fallback={<MessagesPageSkeleton />}><LazyPages.MessagesPage /></RouteSuspense></ProtectedRoute>} />
                             {/* fallback = MapPageSkeleton (immediateFallback, sin Delayed): mismo skeleton
                                 que pinta SearchCreationPage mientras carga mapa/servicios. Antes el
                                 RouteSuspense por defecto metía un spinner "Preparando página…" totalmente
                                 distinto entre medias → doble salto visual al pulsar "Buscar". */}
                             <Route path="/hire" element={<RouteSuspense fallback={<MapPageSkeleton />} immediateFallback><LazyPages.SearchCreationPage /></RouteSuspense>} />
-                            <Route path="/help" element={<RouteSuspense><LazyPages.CentroAyudaPage /></RouteSuspense>} />
+                            <Route path="/help" element={<RouteSuspense fallback={<HelpCenterSkeleton />}><LazyPages.CentroAyudaPage /></RouteSuspense>} />
                             <Route path="/favorites" element={<RouteSuspense><LazyPages.FavoritesPage /></RouteSuspense>} />
-                            <Route path="/notifications" element={<ProtectedRoute><RouteSuspense><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
+                            <Route path="/notifications" element={<ProtectedRoute><RouteSuspense fallback={<ListPageSkeleton ariaLabel="Cargando notificaciones" />}><LazyPages.NotificationsPage /></RouteSuspense></ProtectedRoute>} />
                             <Route path="/" element={<HomePage />} />
 
                             {/* Landings SEO españolas */}
-                            <Route path="/inspeccion-coche-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-coche-segunda-mano" /></RouteSuspense>} />
-                            <Route path="/peritaje-piso" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-piso" /></RouteSuspense>} />
-                            <Route path="/inspeccion-moto-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-moto-segunda-mano" /></RouteSuspense>} />
-                            <Route path="/peritaje-maquinaria-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="peritaje-maquinaria-segunda-mano" /></RouteSuspense>} />
-                            <Route path="/inspeccion-bici-electrica-segunda-mano" element={<RouteSuspense><LazyPages.CategoryLandingPage slug="inspeccion-bici-electrica-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/inspeccion-coche-segunda-mano" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug="inspeccion-coche-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/peritaje-piso" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug="peritaje-piso" /></RouteSuspense>} />
+                            <Route path="/inspeccion-moto-segunda-mano" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug="inspeccion-moto-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/peritaje-maquinaria-segunda-mano" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug="peritaje-maquinaria-segunda-mano" /></RouteSuspense>} />
+                            <Route path="/inspeccion-bici-electrica-segunda-mano" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug="inspeccion-bici-electrica-segunda-mano" /></RouteSuspense>} />
 
                             {/* Alias SEO inglés */}
                             {Object.entries(SEO_LANDING_ALIASES).map(([spanishSlug, englishPath]) => (
                                 <Route
                                     key={englishPath}
                                     path={englishPath}
-                                    element={<RouteSuspense><LazyPages.CategoryLandingPage slug={spanishSlug} /></RouteSuspense>}
+                                    element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CategoryLandingPage slug={spanishSlug} /></RouteSuspense>}
                                 />
                             ))}
 
                             {/* SEO local: hub de cobertura + una landing por provincia */}
-                            <Route path="/inspeccion-segunda-mano-espana" element={<RouteSuspense><LazyPages.CoverageHubPage /></RouteSuspense>} />
+                            <Route path="/inspeccion-segunda-mano-espana" element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CoverageHubPage /></RouteSuspense>} />
                             {CITY_LANDINGS.map((c) => (
                                 <Route
                                     key={c.slug}
                                     path={`/inspeccion-segunda-mano-${c.slug}`}
-                                    element={<RouteSuspense><LazyPages.CityLandingPage slug={c.slug} /></RouteSuspense>}
+                                    element={<RouteSuspense fallback={<LandingPageSkeleton />}><LazyPages.CityLandingPage slug={c.slug} /></RouteSuspense>}
                                 />
                             ))}
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
-import { SileoPageLoader } from '../components/ui/sileo-loader';
+import { ExpertPanelSkeleton } from '../components/ui/expert-panel-skeleton';
 import '../styles/expert-panel.css';
 /* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
 import '../styles/expert-profile-form.css';
@@ -1087,9 +1087,7 @@ export function ExpertPanelPage() {
     // false) en la que se colaba la pantalla "No se encontró tu perfil". Si la carga
     // falla de verdad, profileError se setea y caemos al bloque de error de abajo.
     if (!profile && !profileError && (isLoadingProfile || isExpert)) {
-        return (
-            <SileoPageLoader message="Cargando tu panel de experto…" className="bg-white" />
-        );
+        return <ExpertPanelSkeleton />;
     }
 
     if (profileError) {
@@ -1139,9 +1137,7 @@ export function ExpertPanelPage() {
 
     // ✅ Mostrar spinner mientras se carga el estado de Stripe
     if (isLoadingStripeStatus && stripeStatus === null) {
-        return (
-            <SileoPageLoader message="Verificando estado de pagos…" className="bg-white" />
-        );
+        return <ExpertPanelSkeleton />;
     }
 
     if (!isLoadingStripeStatus && stripeStatus === null) {

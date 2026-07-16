@@ -5,7 +5,7 @@ type SupportChatAssistantIconProps = {
   className?: string;
 };
 
-/** Burbuja con líneas de texto — ayuda contextual, no icono genérico de chat. */
+/** Marca del asistente: chispa de cuatro puntas — inteligencia, no globo de chat genérico. */
 export function SupportChatAssistantIcon({ className }: SupportChatAssistantIconProps) {
   return (
     <svg
@@ -16,16 +16,12 @@ export function SupportChatAssistantIcon({ className }: SupportChatAssistantIcon
       aria-hidden
     >
       <path
-        d="M19 4.5H5A2.5 2.5 0 0 0 2.5 7v8.5A2.5 2.5 0 0 0 5 18h2.75L11 20.8a.65.65 0 0 0 1-.52V18h7a2.5 2.5 0 0 0 2.5-2.5V7A2.5 2.5 0 0 0 19 4.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
+        d="M12 2.5c.6 4.68 1.1 5.18 5.78 5.78-4.68.6-5.18 1.1-5.78 5.78-.6-4.68-1.1-5.18-5.78-5.78 4.68-.6 5.18-1.1 5.78-5.78Z"
+        fill="currentColor"
       />
       <path
-        d="M8 9.25h8M8 12.25h5.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
+        d="M17.5 15.4c.32 2.5.58 2.76 3.08 3.08-2.5.32-2.76.58-3.08 3.08-.32-2.5-.58-2.76-3.08-3.08 2.5-.32 2.76-.58 3.08-3.08Z"
+        fill="currentColor"
       />
     </svg>
   );
