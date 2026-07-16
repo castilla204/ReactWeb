@@ -3023,3 +3023,65 @@ img[alt*="country"],
         animation: hp-hero-underline-draw 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
 }
+/* ============================================================
+   Menú de cuenta (AccountMenu desktop + MobileProfileMenu sheet)
+   Animación LOCAL con keyframes propios: el proyecto no carga
+   tailwindcss-animate, así que las clases animate-in/slide-in-*
+   heredadas de ui/dropdown-menu y ui/sheet son CSS muerto (los
+   menús aparecían de golpe). Scoped a estas dos superficies para
+   no activar animaciones latentes en el resto de la app.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+    @keyframes account-menu-pop {
+        from {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+    .account-menu-pop[data-state="open"] {
+        transform-origin: var(--radix-dropdown-menu-content-transform-origin, top right);
+        animation: account-menu-pop 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes account-sheet-up {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: none;
+        }
+    }
+    @keyframes account-sheet-down {
+        from {
+            transform: none;
+        }
+        to {
+            transform: translateY(100%);
+        }
+    }
+    .account-sheet-up[data-state="open"] {
+        animation: account-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .account-sheet-up[data-state="closed"] {
+        animation: account-sheet-down 200ms cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    @keyframes account-overlay-fade {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    .account-sheet-overlay[data-state="open"] {
+        animation: account-overlay-fade 280ms ease-out;
+    }
+    .account-sheet-overlay[data-state="closed"] {
+        animation: account-overlay-fade 200ms ease-in reverse;
+    }
+}
